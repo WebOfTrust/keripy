@@ -9,14 +9,14 @@ SEPARATOR =  "\r\n\r\n"
 SEPARATOR_BYTES = SEPARATOR.encode("utf-8")
 
 
-class LeopyError(Exception):
+class KeriError(Exception):
     """
-    Base Class for leopy exceptions
+    Base Class for keri exceptions
 
-    To use   raise LeopyError("Error: message")
+    To use   raise KeriError("Error: message")
     """
 
-class ValidationError(LeopyError):
+class ValidationError(KeriError):
     """
     Validation related errors
     Usage:
