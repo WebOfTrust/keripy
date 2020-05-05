@@ -3,6 +3,10 @@
 """
 $ python setup.py register sdist upload
 
+First Time register project on pypi
+https://pypi.org/manage/projects/
+
+
 More secure to use twine to upload
 $ pip3 install twine
 $ python3 setup.py sdist
@@ -38,7 +42,7 @@ setup(
     zip_safe=False,
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'Development Status :: 5 - Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: Unix',
