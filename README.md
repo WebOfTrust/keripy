@@ -1,2 +1,4 @@
-# keripy
-Python Implementation of the KERI Core Libraries
+# Python Implementation of the KERI Core Libraries
+
+Project Name:  keripy
+

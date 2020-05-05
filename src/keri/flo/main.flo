@@ -1,0 +1,14 @@
+# Main Flow
+
+house main
+
+    framer keri be active first keri
+        frame keri
+            print Starting Server
+            bid start server
+
+    framer server be inactive via .main.server
+        frame server
+            do keri server open at enter
+            do keri server service
+            do keri server close at exit
