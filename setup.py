@@ -12,6 +12,12 @@ $ pip3 install twine
 $ python3 setup.py sdist
 $ twine upload dist/keri-0.0.1.tar.gz
 
+
+Best practices for setup.py vs requirements.txt
+
+https://caremad.io/posts/2013/07/setup-vs-requirement/
+
+
 """
 
 
