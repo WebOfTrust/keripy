@@ -13,8 +13,7 @@ $ python3 setup.py sdist
 $ twine upload dist/keri-0.0.1.tar.gz
 
 
-Best practices for setup.py vs requirements.txt
-
+Best practices for setup.py and requirements.txt
 https://caremad.io/posts/2013/07/setup-vs-requirement/
 
 
@@ -23,8 +22,6 @@ https://caremad.io/posts/2013/07/setup-vs-requirement/
 
 from glob import glob
 from os.path import basename
-from os.path import dirname
-from os.path import join
 from os.path import splitext
 
 from setuptools import find_packages
@@ -40,7 +37,7 @@ setup(
     long_description="KERI Decentralized Key Management Infrastructure",
     author='Samuel M. Smith',
     author_email='smith.samuel.m@gmail.com',
-    url='https://github.com/SmithSamuelM/keri',
+    url='https://github.com/decentralized-identity/keripy',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
@@ -66,7 +63,7 @@ setup(
     project_urls={
         'Documentation': 'https://keri.readthedocs.io/',
         'Changelog': 'https://keri.readthedocs.io/en/latest/changelog.html',
-        'Issue Tracker': 'https://github.com/SmithSamuelM/keri/issues',
+        'Issue Tracker': 'https://github.com/decentralized-identity/keripy/issues',
     },
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
