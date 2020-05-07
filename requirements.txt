@@ -1,3 +1,10 @@
-"""
-requirements.txt
-"""
+# requirements.txt
+# Best practices for setup.py vs requirements.txt
+# https://caremad.io/posts/2013/07/setup-vs-requirement/
+# https://pip.pypa.io/en/stable/reference/pip_install/#install-index-url
+
+# enables pip install -r requirements.txt  to work with setup.py dependencies
+# pull the dependencies from setup.py for keri from pip index
+--index-url https://pypi.org/simple/   # pypi base pip index or local pip index
+
+--editable .  # install as editable
