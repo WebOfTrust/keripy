@@ -14,6 +14,7 @@ libsodium 1.0.18+
 
 
 #### python packages
+lmdb 0.98+
 pysodium 0.7.5+
 blake3 0.1.5+
 argon2-cffi 19.2.0+
@@ -21,6 +22,7 @@ msgpack 1.0.0+
 simplejson 3.17.0+
 cbor2 5.1.0+
 
+$ pip3 install -U lmdb
 $ pip3 install -U pysodium
 $ pip3 install -U blake3
 $ pip3 install -U argon2-cffi

@@ -70,6 +70,7 @@ setup(
     ],
     python_requires='>=3.82',
     install_requires=[
+        'lmdb>=0.98'
         'pysodium>=0.7.5',
         'blake3>=0.1.5',
         'argon2-cffi>=19.2.0',
