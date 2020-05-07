@@ -34,7 +34,7 @@ def test_stuff():
     assert seed == sk[:32]
     assert vk == sk[32:]
 
-
+    #  try key stretching from 16 bytes using  pysodium.crypto_pwhash_
 
 
 
