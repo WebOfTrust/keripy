@@ -3,12 +3,12 @@
 keri.help.helping module
 
 """
-
-
 import os
 import shutil
 import tempfile
+import base64
 
+import pysodium
 
 def cleanupBaseDir(baseDirPath):
     """
@@ -40,19 +40,41 @@ def cleanupTmpBaseDir(baseDirPath):
             baseDirPath = os.path.dirname(baseDirPath)
 
 
-import pytest
-
-@pytest.fixture(autouse=True)
-def setupTeardown():
+def keyToKey64u(key):
     """
-    Pytest runs this function before every test when autouse=True
-    Without autouse=True you would have to add a setupTeardown parameter
-    to each test function
+    Convert and return bytes key to unicode base64 url-file safe version
     """
-    #setup
-    DB_DIR_PATH = "/tmp/db_setup_test"
-    yield DB_DIR_PATH  # this allows the test to run
+    return base64.urlsafe_b64encode(key).decode("utf-8")
 
-    # teardown
-    cleanupBaseDir(DB_DIR_PATH)
-    assert not os.path.exists(DB_DIR_PATH)
+def key64uToKey(key64u):
+    """
+    Convert and return unicode base64 url-file safe key64u to bytes key
+    """
+    return base64.urlsafe_b64decode(key64u.encode("utf-8"))
+
+def verify(sig, msg, vk):
+    """
+    Returns True if signature sig of message msg is verified with
+    verification key vk Otherwise False
+    All of sig, msg, vk are bytes
+    """
+    try:
+        result = pysodium.crypto_sign_verify_detached(sig, msg, vk)
+    except Exception as ex:
+        return False
+    return (True if result else False)
+
+def verify64u(signature, message, verkey):
+    """
+    Returns True if signature is valid for message with respect to verification
+    key verkey
+
+    signature and verkey are encoded as unicode base64 url-file strings
+    and message is unicode string as would be the case for a json object
+
+    """
+    sig = key64uToKey(signature)
+    vk = key64uToKey(verkey)
+    msg = message.encode("utf-8")
+    return (verify(sig, msg, vk))
+
