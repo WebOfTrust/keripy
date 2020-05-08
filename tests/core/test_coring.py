@@ -42,13 +42,12 @@ def test_cryptoStuff():
 
 
     # creates signing/verification key pair
-    vk, sk = pysodium.crypto_sign_seed_keypair(seed)
-
-    assert len(vk) == 32
-    assert len(sk) == 64
-
-    assert seed == sk[:32]
-    assert vk == sk[32:]
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
+    assert len(verkey) == 32
+    assert len(sigkey) == 64
+    # sigkey is verkey and seed concatenated. Not sure why libsodium does this
+    assert seed == sigkey[:32]
+    assert verkey == sigkey[32:]
 
     # vk = (b'B\xdd\xbb}8V\xa0\xd6lk\xcf\x15\xad9\x1e\xa7\xa1\xfe\xe0p<\xb6\xbex\xb0s\x8d\xd6\xf5\xa5\xe8Q')
 
@@ -59,7 +58,7 @@ def test_cryptoStuff():
     msg = "The lazy dog jumped over the river"
     msgb = msg.encode("utf-8") # must convert unicode string to bytes in order to sign it
     assert msgb == b'The lazy dog jumped over the river'
-    sig = pysodium.crypto_sign_detached(msgb, sk)
+    sig = pysodium.crypto_sign_detached(msgb, verkey + seed)  #  sigkey = verkey + seed
     assert len(sig) == 64
 
     """
@@ -72,7 +71,7 @@ def test_cryptoStuff():
     #assert sig == siga
 
     try:  #  verify returns None if valid else raises ValueError
-        result = pysodium.crypto_sign_verify_detached(sig, msgb, vk)
+        result = pysodium.crypto_sign_verify_detached(sig, msgb, verkey)
     except Exception as ex:
         assert False
     assert not result
@@ -82,12 +81,13 @@ def test_cryptoStuff():
     sigbad += b'A'
 
     try:  #  verify returns None if valid else raises ValueError
-        result = pysodium.crypto_sign_verify_detached(sigbad, msgb, vk)
+        result = pysodium.crypto_sign_verify_detached(sigbad, msgb, verkey)
     except Exception as ex:
         assert True
         assert isinstance(ex, ValueError)
 
 
+    pk, sigkey = pysodium.crypto_box_keypair()
 
 
     """
@@ -97,78 +97,68 @@ def test_cryptoStuff():
 
 
 """
+  def encrypt(self, plaintext, nonce, encoder=encoding.RawEncoder):
+        """
+        Encrypts the plaintext message using the given `nonce` and returns
+        the ciphertext encoded with the encoder.
 
+        .. warning:: It is **VITALLY** important that the nonce is a nonce,
+            i.e. it is a number used only once for any given key. If you fail
+            to do this, you compromise the privacy of the messages encrypted.
 
+        :param plaintext: [:class:`bytes`] The plaintext message to encrypt
+        :param nonce: [:class:`bytes`] The nonce to use in the encryption
+        :param encoder: The encoder to use to encode the ciphertext
+        :rtype: [:class:`nacl.utils.EncryptedMessage`]
+        """
+        if len(nonce) != self.NONCE_SIZE:
+            raise ValueError("The nonce must be exactly %s bytes long" %
+                             self.NONCE_SIZE)
 
-def crypto_sign_open(sm, pk):
-    if sm is None or pk is None:
-        raise ValueError("invalid parameters")
-    if not (len(pk) == crypto_sign_PUBLICKEYBYTES): raise ValueError('Truncated public key')
-    msg = ctypes.create_string_buffer(len(sm))
-    msglen = ctypes.c_ulonglong()
-    __check(sodium.crypto_sign_open(msg, ctypes.byref(msglen), sm, ctypes.c_ulonglong(len(sm)), pk))
-    return msg.raw[:msglen.value]
+        ciphertext = libnacl.crypto_box_afternm(
+            plaintext,
+            nonce,
+            self._shared_key,
+        )
 
+        encoded_nonce = encoder.encode(nonce)
+        encoded_ciphertext = encoder.encode(ciphertext)
 
-def crypto_sign_verify_detached(sig, msg, pk):
-    if None in (sig, msg, pk):
-        raise ValueError
-    if len(sig) != crypto_sign_BYTES:
-        raise ValueError("invalid sign")
-    if not (len(pk) == crypto_sign_PUBLICKEYBYTES): raise ValueError('Truncated public key')
-    __check(sodium.crypto_sign_verify_detached(sig, msg, ctypes.c_ulonglong(len(msg)), pk))
+        return EncryptedMessage._from_parts(
+            encoded_nonce,
+            encoded_ciphertext,
+            encoder.encode(nonce + ciphertext),
+        )
 
+    def decrypt(self, ciphertext, nonce=None, encoder=encoding.RawEncoder):
+        """
+        Decrypts the ciphertext using the given nonce and returns the
+        plaintext message.
 
-# int crypto_pwhash(unsigned char * const out,
-#                   unsigned long long outlen,
-#                   const char * const passwd,
-#                   unsigned long long passwdlen,
-#                   const unsigned char * const salt,
-#                   unsigned long long opslimit,
-#                   size_t memlimit, int alg);
-@sodium_version(1, 0, 9)
-@encode_strings
-def crypto_pwhash(outlen, passwd, salt, opslimit, memlimit, alg=crypto_pwhash_ALG_DEFAULT):
-    if None in (outlen, passwd, salt, opslimit, memlimit):
-        raise ValueError("invalid parameters")
-    if len(salt) != crypto_pwhash_SALTBYTES: raise ValueError("invalid salt")
-    if not (crypto_pwhash_BYTES_MIN <= outlen <= crypto_pwhash_BYTES_MAX): raise ValueError("invalid hash len")
-    if not (crypto_pwhash_PASSWD_MIN <= len(passwd) <= crypto_pwhash_PASSWD_MAX): raise ValueError("invalid passwd len")
-    if not (crypto_pwhash_OPSLIMIT_MIN <= opslimit <= crypto_pwhash_OPSLIMIT_MAX): raise ValueError("invalid opslimit")
-    if not (crypto_pwhash_MEMLIMIT_MIN <= memlimit <= crypto_pwhash_MEMLIMIT_MAX): raise ValueError("invalid memlimit")
+        :param ciphertext: [:class:`bytes`] The encrypted message to decrypt
+        :param nonce: [:class:`bytes`] The nonce used when encrypting the
+            ciphertext
+        :param encoder: The encoder used to decode the ciphertext.
+        :rtype: [:class:`bytes`]
+        """
+        # Decode our ciphertext
+        ciphertext = encoder.decode(ciphertext)
 
-    out = ctypes.create_string_buffer(outlen)
-    __check(sodium.crypto_pwhash(ctypes.byref(out), ctypes.c_ulonglong(outlen), passwd, ctypes.c_ulonglong(len(passwd)), salt, ctypes.c_ulonglong(opslimit), ctypes.c_size_t(memlimit), ctypes.c_int(alg)))
-    return out.raw
+        if nonce is None:
+            # If we were given the nonce and ciphertext combined, split them.
+            nonce = ciphertext[:self.NONCE_SIZE]
+            ciphertext = ciphertext[self.NONCE_SIZE:]
 
-# int crypto_pwhash_str(char out[crypto_pwhash_STRBYTES],
-#                       const char * const passwd,
-#                       unsigned long long passwdlen,
-#                       unsigned long long opslimit,
-#                       size_t memlimit);
-@sodium_version(1, 0, 9)
-@encode_strings
-def crypto_pwhash_str(passwd, opslimit, memlimit):
-    if None in (passwd, opslimit, memlimit):
-        raise ValueError("invalid parameters")
-    if not (crypto_pwhash_PASSWD_MIN <= len(passwd) <= crypto_pwhash_PASSWD_MAX): raise ValueError("invalid passwd len")
-    if not (crypto_pwhash_OPSLIMIT_MIN <= opslimit <= crypto_pwhash_OPSLIMIT_MAX): raise ValueError("invalid opslimit")
-    if not (crypto_pwhash_MEMLIMIT_MIN <= memlimit <= crypto_pwhash_MEMLIMIT_MAX): raise ValueError("invalid memlimit")
-    out = ctypes.create_string_buffer(crypto_pwhash_STRBYTES)
-    __check(sodium.crypto_pwhash_str(ctypes.byref(out), passwd, ctypes.c_ulonglong(len(passwd)), ctypes.c_ulonglong(opslimit), ctypes.c_size_t(memlimit)))
-    return out.raw
+        if len(nonce) != self.NONCE_SIZE:
+            raise ValueError("The nonce must be exactly %s bytes long" %
+                             self.NONCE_SIZE)
 
-# int crypto_pwhash_str_verify(const char str[crypto_pwhash_STRBYTES],
-#                              const char * const passwd,
-#                              unsigned long long passwdlen);
-@sodium_version(1, 0, 9)
-@encode_strings
-def crypto_pwhash_str_verify(pstr, passwd):
-    if None in (pstr, passwd) or len(pstr) != crypto_pwhash_STRBYTES:
-        raise ValueError("invalid parameters")
-    if not (crypto_pwhash_PASSWD_MIN < len(passwd) <= crypto_pwhash_PASSWD_MAX): raise ValueError("invalid passwd len")
-    return sodium.crypto_pwhash_str_verify(pstr, passwd, ctypes.c_ulonglong(len(passwd))) == 0
+        plaintext = libnacl.crypto_box_open_afternm(
+            ciphertext,
+            nonce,
+            self._shared_key,
+        )
 
-
+        return plaintext
 
 """
