@@ -5,19 +5,22 @@ tests.test_coring module
 """
 
 import pysodium
+import blake3
 
-def test_cryptoStuff():
+
+def test_pysodium():
     """
-
-
-    https://crypto.stackexchange.com/questions/75834/difference-between-tag-and-signature
+    Test all the functions needed from pysodium libarary (libsodium)
 
     """
-
     # crypto_sign signatures with Ed25519 keys
-    sigseedl = pysodium.crypto_sign_SEEDBYTES
-    assert sigseedl == 32
 
+    # create keypair without seed
+    verkey,  sigkey = pysodium.crypto_sign_keypair()
+    assert len(verkey) == 32 == pysodium.crypto_sign_PUBLICKEYBYTES
+    assert len(sigkey) == 64 == pysodium.crypto_sign_SECRETKEYBYTES
+
+    assert 32 == pysodium.crypto_sign_SEEDBYTES
     sigseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     assert  len(sigseed) == 32
     # seed = (b'J\xeb\x06\xf2BA\xd6/T\xe1\xe2\xe2\x838\x8a\x99L\xd9\xb5(\\I\xccRb\xc8\xd5\xc7Y\x1b\xb6\xf0')
@@ -28,8 +31,7 @@ def test_cryptoStuff():
     assert  len(sigseed) == 32
 
     #  try key stretching from 16 bytes using  pysodium.crypto_pwhash()
-    saltl = pysodium.crypto_pwhash_SALTBYTES
-    assert saltl == 16
+    assert 16 == pysodium.crypto_pwhash_SALTBYTES
     salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     assert len(salt) == 16
     #  salt = b'\x19?\xfa\xc7\x8f\x8b\x7f\x8b\xdbS"$\xd7[\x85\x87'
@@ -46,7 +48,7 @@ def test_cryptoStuff():
     #  seed = (b'\xa9p\x89\x7f+\x0e\xc4\x9c\xf2\x01r\xafTI\xc0\xfa\xac\xd5\x99\xf8O\x8f=\x843\xa2\xb6e\x9fO\xff\xd0')
 
 
-    # creates signing/verification key pair
+    # creates signing/verification key pair from seed
     verkey, sigkey = pysodium.crypto_sign_seed_keypair(sigseed)
     assert len(verkey) == 32
     assert len(sigkey) == 64
@@ -64,9 +66,7 @@ def test_cryptoStuff():
     #  utility function to extract seed from secret sigkey (really just extracting from front half)
     assert sigseed == pysodium.crypto_sign_sk_to_seed(sigkey)
 
-
-    signl =  pysodium.crypto_sign_BYTES
-    assert signl == 64
+    assert 64 == pysodium.crypto_sign_BYTES
 
     msg = "The lazy dog jumped over the river"
     msgb = msg.encode("utf-8") # must convert unicode string to bytes in order to sign it
@@ -99,23 +99,17 @@ def test_cryptoStuff():
         assert True
         assert isinstance(ex, ValueError)
 
+
     # crypto_box authentication encryption with X25519 keys
 
-    prikeyl = pysodium.crypto_box_SECRETKEYBYTES
-    assert prikeyl == 32
-
-    pubkeyl = pysodium.crypto_box_PUBLICKEYBYTES
-    assert pubkeyl == 32
-
     apubkey, aprikey = pysodium.crypto_box_keypair()
-    assert len(apubkey) == 32
-    assert len(aprikey) == 32
+    assert len(apubkey) == 32 == pysodium.crypto_box_SECRETKEYBYTES
+    assert len(aprikey) == 32 == pysodium.crypto_box_PUBLICKEYBYTES
 
     repubkey = pysodium.crypto_scalarmult_curve25519_base(aprikey)
     assert repubkey == apubkey
 
-    boxseedl = pysodium.crypto_box_SEEDBYTES
-    assert boxseedl == 32
+    assert 32 == pysodium.crypto_box_SEEDBYTES
 
     boxseed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
     assert  len(boxseed) == 32
@@ -127,8 +121,7 @@ def test_cryptoStuff():
     repubkey = pysodium.crypto_scalarmult_curve25519_base(bprikey)
     assert repubkey == bpubkey
 
-    noncel = pysodium.crypto_box_NONCEBYTES
-    assert noncel == 24
+    assert 24 == pysodium.crypto_box_NONCEBYTES
     nonce = pysodium.randombytes(pysodium.crypto_box_NONCEBYTES)
     assert len(nonce) == 24
     # nonce = b'\x11\xfbi<\xf2\xb6k\xa05\x0c\xf9\x86t\x07\x8e\xab\x8a\x97nG\xe8\x87,\x94'
@@ -200,11 +193,10 @@ def test_cryptoStuff():
     #  so when converting sign key Ed25519 to X25519 can use for both types of encryption
 
     pubkey, prikey = pysodium.crypto_box_keypair()
-    assert len(pubkey) == 32
-    assert len(prikey) == 32
+    assert len(pubkey) == 32 == pysodium.crypto_box_PUBLICKEYBYTES
+    assert len(prikey) == 32 ==  pysodium.crypto_box_SECRETKEYBYTES
 
-    seall = pysodium.crypto_box_SEALBYTES
-    assert seall == 48
+    assert 48 == pysodium.crypto_box_SEALBYTES
 
     msg_txb = "Catch me if you can.".encode("utf-8")
     assert msg_txb == b'Catch me if you can.'
@@ -215,6 +207,7 @@ def test_cryptoStuff():
     assert msg_rxb == msg_txb
 
     #  convert Ed25519 key pair to X25519 key pair
+    #  https://blog.filippo.io/using-ed25519-keys-for-encryption/
     #  https://libsodium.gitbook.io/doc/advanced/ed25519-curve25519
     #  crypto_sign_ed25519_pk_to_curve25519
     #  crypto_sign_ed25519_sk_to_curve25519
@@ -243,4 +236,25 @@ def test_cryptoStuff():
 
 
 
+def test_blake3():
+    """
+    Test needed functions from blake3
+    https://github.com/BLAKE3-team/BLAKE3/
+
+    """
+    # create keypair without seed
+    verkey,  sigkey = pysodium.crypto_sign_keypair()
+    assert len(verkey) == 32 == pysodium.crypto_sign_PUBLICKEYBYTES
+    assert len(sigkey) == 64 == pysodium.crypto_sign_SECRETKEYBYTES
+
+    #  digest of publickey
+
+    digest = blake3.blake3(verkey).digest()
+    assert len(digest) == 32 == blake3.OUT_LEN
+    #  digest = (b'\x96\xc5\xb8\xa8\xc6\xa1g[\x94\xd2\xe1\xd7c\xd1\xeb\xf4zPM\xf30L0\xcb=p\x96\x1c\xd3\xaa\xb0P')
+
+
+    """
+    Done Test
+    """
 

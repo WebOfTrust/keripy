@@ -102,7 +102,10 @@ not complete stopped dev 4 years ago
 
 
 
-### Python Libraries that Support
+### Python Libraries that Support conversion from Ed25519 to X25519
+
+https://blog.filippo.io/using-ed25519-keys-for-encryption/
+
 https://doc.libsodium.org/advanced/ed25519-curve25519
 
 crypto_sign_ed25519_pk_to_curve25519
