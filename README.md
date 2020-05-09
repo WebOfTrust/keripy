@@ -29,7 +29,7 @@ $ pip3 install -U argon2-cffi
 $ pip3 install -U msgpack
 $ pip3 install -U simplejson
 $ pip3 install -U cbor2
- 
+
 
 ## Python Binding Types
 https://realpython.com/python-bindings-overview/
@@ -57,7 +57,7 @@ Uses binary wheels
 $ pip3 install blake3
 
 
-### Seed Stretching 
+### Seed Stretching
 
 #### Argon2
 Argon2 with Libsodium pwhash
@@ -65,8 +65,6 @@ Argon2 with Libsodium pwhash
 https://libsodium.gitbook.io/doc/password_hashing
 
 Sodium's high-level crypto_pwhash_* API currently leverages the Argon2id function on all platforms. This can change at any point in time, but it is guaranteed that a given version of libsodium can verify all hashes produced by all previous versions, from any platform. Applications don't have to worry about backward compatibility.
-
-The more specific crypto_pwhash_scryptsalsa208sha256_* API uses the more conservative and widely deployed Scrypt function.
 
 
 https://github.com/hynek/argon2-cffi
@@ -104,7 +102,10 @@ not complete stopped dev 4 years ago
 
 
 
-### Python Libraries that Support
+### Python Libraries that Support conversion from Ed25519 to X25519
+
+https://blog.filippo.io/using-ed25519-keys-for-encryption/
+
 https://doc.libsodium.org/advanced/ed25519-curve25519
 
 crypto_sign_ed25519_pk_to_curve25519
@@ -171,11 +172,11 @@ def crypto_sign_ed25519_sk_to_curve25519(ed25519_sk):
 
 
 #### pynacl
-pynacl/src/nacl/bindings/__init__.py 
-from nacl.bindings.crypto_sign import 
+pynacl/src/nacl/bindings/__init__.py
+from nacl.bindings.crypto_sign import
     crypto_sign_ed25519_pk_to_curve25519,
     crypto_sign_ed25519_sk_to_curve25519,
-    
+
 def crypto_sign_ed25519_pk_to_curve25519(public_key_bytes):
     """
     Converts a public Ed25519 key (encoded as bytes ``public_key_bytes``) to
@@ -243,12 +244,12 @@ $ pip install ujson
 
 #### python-rapidjson
  almost as fact as ujson but supports more options
- 
+
 ### msgpack
 
 msgpack 1.0.0+
 $ pip3 install -U msgpack
- 
+
 ### cbor
 
 cbor2 5.1.0
@@ -257,6 +258,6 @@ https://pypi.org/project/cbor2/
 $ pip3 install -U cbor2
 
 Not sure if cbor2 uses libcbor or not
-$ brew install libcbor 
+$ brew install libcbor
 
 libcbor 0.7.0
