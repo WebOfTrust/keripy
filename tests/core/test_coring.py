@@ -247,11 +247,16 @@ def test_blake3():
     assert len(verkey) == 32 == pysodium.crypto_sign_PUBLICKEYBYTES
     assert len(sigkey) == 64 == pysodium.crypto_sign_SECRETKEYBYTES
 
-    #  digest of publickey
+    verkey = b'Z\x80s\x81\xd3\xf4\xaa\x94\x80\x86\x9bH\x8ay\xc2\xf9\x89k_\x946\xf1_`\x8c\xa9\xd8\xd2b\xe4\x00\x08'
 
+    #  digest of publickey
     digest = blake3.blake3(verkey).digest()
     assert len(digest) == 32 == blake3.OUT_LEN
-    #  digest = (b'\x96\xc5\xb8\xa8\xc6\xa1g[\x94\xd2\xe1\xd7c\xd1\xeb\xf4zPM\xf30L0\xcb=p\x96\x1c\xd3\xaa\xb0P')
+    assert digest == b'\xb4\xaf\xd5,G\x97\xaf\x06\xda\xbbTNs\xcbM4\xa81\xb8\xcd\xc60\xc7c"\xe2B\xe5_\x96\xcb\x95'
+
+    digestbig = blake3.blake3(verkey).digest(length=64)
+    assert len(digestbig) == 64
+    assert digestbig[:32] == digest
 
 
     """
