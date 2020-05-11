@@ -261,3 +261,41 @@ Not sure if cbor2 uses libcbor or not
 $ brew install libcbor
 
 libcbor 0.7.0
+
+
+### ECDSA SHA2
+
+Because ECDSA curve is linear may use the EDCSA curve directly without conversion
+for DH encryption.  Exmaple is OpenSSH using
+ECDHE (eliptic curve Diffie Hellman Exchange) key
+exchange with SHA2  CHACHA20 POLY1305
+
+
+https://tools.ietf.org/html/rfc5656
+
+IANA name:
+TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+OpenSSL name:
+ECDHE-ECDSA-CHACHA20-POLY1305
+GnuTLS name:
+TLS_ECDHE_ECDSA_CHACHA20_POLY1305
+Hex code:
+0xCC, 0xA9
+TLS Version(s):
+TLS1.2
+Protocol:
+Transport Layer Security (TLS)
+Key Exchange:
+Elliptic Curve Diffie-Hellman Ephemeral (ECDHE)
+Authentication:
+Elliptic Curve Digital Signature Algorithm (ECDSA)
+Encryption:
+ChaCha stream cipher and Poly1305 authenticator (CHACHA20 POLY1305)
+Hash:
+Secure Hash Algorithm 256 (SHA256)
+Included in RFC:
+RFC 7905
+Machine-readable:
+application/json
+
+https://medium.com/@joehonton/cipher-suites-demystified-ada2e97be9c9
