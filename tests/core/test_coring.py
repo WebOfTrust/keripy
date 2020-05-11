@@ -1,11 +1,22 @@
 # -*- encoding: utf-8 -*-
 """
-tests.test_coring module
+tests.core.test_coring module
 
 """
 
 import pysodium
 import blake3
+
+
+def test_derivationcodes():
+    """
+    Test the support functionality for derivation codes
+    """
+
+
+    """
+    Done Test
+    """
 
 
 def test_pysodium():

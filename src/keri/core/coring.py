@@ -3,6 +3,3 @@
 keri.core.coring module
 
 """
-
-
-
