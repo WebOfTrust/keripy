@@ -6,12 +6,49 @@ tests.core.test_coring module
 
 import pysodium
 import blake3
+import dataclasses
 
 
 def test_derivationcodes():
     """
     Test the support functionality for derivation codes
     """
+    from keri.core.coring import Select, One, Two
+
+    assert Select.skip == '_'
+    assert Select.two == '0'
+
+    assert '-' not in Select
+    assert 'A' not in Select
+
+    for x in ['_', '0']:
+        assert x in Select
+
+    assert One.Ed25519N == 'A'
+    assert One.X25519 == 'B'
+    assert One.Ed25519 == 'C'
+    assert One.Blake3_256 == 'D'
+    assert One.Blake2b_256 == 'E'
+    assert One.Blake2s_256 == 'F'
+    assert One.ECDSA_256k1N == 'G'
+    assert One.ECDSA_256k1 == 'H'
+    assert One.SHA3_256 == 'I'
+    assert One.SHA2_256 == 'J'
+
+    assert '_' not in One
+    assert '0' not in One
+
+    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']:
+        assert x in One
+
+    assert Two.Ed25519 == '0A'
+    assert Two.ECDSA_256k1 == '0B'
+
+    assert '_' not in Two
+    assert 'A' not in Two
+
+    for x in ['0A', '0B']:
+        assert x in Two
 
 
     """
