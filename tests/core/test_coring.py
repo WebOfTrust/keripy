@@ -98,6 +98,31 @@ def test_crymat():
     assert crymat.code == One.Ed25519N
     assert crymat.raw == verkey
 
+    sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
+           b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
+           b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
+    sig64 = encodeB64(sig).decode("utf-8")
+    assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
+
+    qsig64 = '0AmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qbin = (b'\xd0\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+            b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
+            b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
+
+    crymat = CryMat(raw=sig, code=Two.Ed25519)
+    assert crymat.raw == sig
+    assert crymat.code == Two.Ed25519
+    assert crymat.qb64 == qsig64
+    assert crymat.qb2 == qbin
+
+    crymat = CryMat(qb64=qsig64)
+    assert crymat.raw == sig
+    assert crymat.code == Two.Ed25519
+
+    crymat = CryMat(qb2=qbin)
+    assert crymat.raw == sig
+    assert crymat.code == Two.Ed25519
 
 
     """
@@ -172,9 +197,10 @@ def test_pysodium():
     assert len(sig) == 64
 
     """
-    sig = (b'F\x82\x0b\x1b\xacmC\xf0E6&\xb7o\xca\xcau\x9b\xf26R\xf4f\xc4\xcd\x1a \x81\xaf'
-           b'\x17\xae\x9d\xf8\xff\x96\xda\x06\x11\xb0\x16.\xb3\xe1N\xbc$\xa0`@'
-           b'\x10\xfc'\xe2\n\xc6\x910\x05\x87\xe9\x1a\xa6*\xde\x0c')
+    sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
+           b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
+           b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
     """
     #siga = pysodium.crypto_sign(msg.encode("utf-8"), sk)[:pysodium.crypto_sign_BYTES]
     #assert len(siga) == 64
