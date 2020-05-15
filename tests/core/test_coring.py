@@ -17,13 +17,11 @@ def test_derivationcodes():
     """
     Test the support functionality for derivation codes
     """
-    assert Select.skip == '_'
     assert Select.two == '0'
 
-    assert '-' not in Select
     assert 'A' not in Select
 
-    for x in ['_', '0']:
+    for x in ['0']:
         assert x in Select
 
     assert One.Ed25519N == 'A'
@@ -37,7 +35,6 @@ def test_derivationcodes():
     assert One.SHA3_256 == 'I'
     assert One.SHA2_256 == 'J'
 
-    assert '_' not in One
     assert '0' not in One
 
     for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']:
@@ -46,13 +43,12 @@ def test_derivationcodes():
     assert Two.Ed25519 == '0A'
     assert Two.ECDSA_256k1 == '0B'
 
-    assert '_' not in Two
     assert 'A' not in Two
 
     for x in ['0A', '0B']:
         assert x in Two
 
-    assert '_' not in Four
+    assert '0' not in Four
     assert 'A' not in Four
     assert '0A' not in Four
 

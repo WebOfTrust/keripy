@@ -19,7 +19,6 @@ class SelectCodex:
     Only provide defined characters. Undefined are left out so that inclusion
     exclusion via 'in' operator works.
     """
-    skip: str = '_'  #  start with next character
     two: str = '0'  # use two character table.
 
     def __iter__(self):
@@ -146,10 +145,6 @@ class CryMat:
         """
         pre = 1
         code = qb64[:pre]
-
-        while code == Select.skip:
-            pre += 1
-            code = qb64[pre-1:pre]
 
         if code in One:  # One Char code
             pad = pre % 4  # pad is remainder pre mod 4
