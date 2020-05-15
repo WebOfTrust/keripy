@@ -3,18 +3,20 @@
 tests.core.test_coring module
 
 """
-
+import pytest
 import pysodium
 import blake3
-import dataclasses
+
+from base64 import urlsafe_b64encode as encodeB64
+from base64 import urlsafe_b64decode as decodeB64
+
+from keri.core.coring import Select, One, Two, Four, CryMat
 
 
 def test_derivationcodes():
     """
     Test the support functionality for derivation codes
     """
-    from keri.core.coring import Select, One, Two
-
     assert Select.skip == '_'
     assert Select.two == '0'
 
@@ -49,6 +51,53 @@ def test_derivationcodes():
 
     for x in ['0A', '0B']:
         assert x in Two
+
+    assert '_' not in Four
+    assert 'A' not in Four
+    assert '0A' not in Four
+
+    for x in []:
+        assert x in Four
+
+
+    """
+    Done Test
+    """
+
+def test_crymat():
+    """
+    Test the support functionality for cryptographic material
+    """
+    # verkey,  sigkey = pysodium.crypto_sign_keypair()
+    verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
+    prefix = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    prebin = (b'\x01\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@'
+              b'\xa13Y\x1fu\x0b\xbd\x80\x1fIS\xf3\x874\xbao\x90\x8c')
+
+    with pytest.raises(ValueError):
+        crymat = CryMat()
+
+    crymat = CryMat(raw=verkey)
+    assert crymat.raw == verkey
+    assert crymat.code == One.Ed25519N
+    assert crymat.qb64 == prefix
+    assert crymat.qb2 == prebin
+
+    assert crymat.qb64 == encodeB64(crymat.qb2).decode("utf-8")
+    assert crymat.qb2 == decodeB64(crymat.qb64.encode("utf-8"))
+
+    crymat._exfil(prefix)
+    assert crymat.code == One.Ed25519N
+    assert crymat.raw == verkey
+
+    crymat = CryMat(qb64=prefix)
+    assert crymat.code == One.Ed25519N
+    assert crymat.raw == verkey
+
+    crymat = CryMat(qb2=prebin)
+    assert crymat.code == One.Ed25519N
+    assert crymat.raw == verkey
+
 
 
     """
@@ -310,4 +359,5 @@ def test_blake3():
     """
     Done Test
     """
-
+if __name__ == "__main__":
+    test_crymat()
