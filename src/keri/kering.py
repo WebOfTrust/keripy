@@ -2,8 +2,9 @@
 """
 Generic Constants and Classes
 """
-
 import sys
+
+VERSION = (1, 0)  # KERI Protocol Version
 
 SEPARATOR =  "\r\n\r\n"
 SEPARATOR_BYTES = SEPARATOR.encode("utf-8")

@@ -6,11 +6,18 @@ tests.core.test_coring module
 import pytest
 import pysodium
 import blake3
+import json
+
+import msgpack
+import cbor2 as cbor
 
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
+from keri.kering import VERSION
 from keri.core.coring import Select, One, Two, Four, CryMat
+from keri.core.coring import Serials, Serializations
+from keri.core.coring import KeyEventer
 
 
 def test_derivationcodes():
@@ -119,6 +126,86 @@ def test_crymat():
     crymat = CryMat(qb2=qbin)
     assert crymat.raw == sig
     assert crymat.code == Two.Ed25519
+
+    """
+    Done Test
+    """
+
+def test_serials():
+    """
+    Test Serializations namedtuple instance Serials
+    """
+
+    assert isinstance(Serials, Serializations)
+
+    assert Serials.json == 'json'
+    assert Serials.msgpack == 'msgpack'
+    assert Serials.cbor == 'cbor'
+    assert Serials.binary == 'binary'
+
+    assert 'json' in Serials
+    assert 'msgpack' in Serials
+    assert 'cbor' in Serials
+    assert 'binary' in Serials
+
+    assert VERSION == (1, 0)
+    v = '.'.join(str(x) for x in VERSION)
+    assert v == '1.0'
+
+    version = "KERI_{}_application/keri+{}".format(v, Serials.json)
+    assert version == 'KERI_1.0_application/keri+json'
+
+    version = "KERI_{}_application/keri+{}".format(v, Serials.msgpack)
+    assert version == 'KERI_1.0_application/keri+msgpack'
+
+    version = "KERI_{}_application/keri+{}".format(v, Serials.cbor)
+    assert version == 'KERI_1.0_application/keri+cbor'
+
+    version = "KERI_{}_application/keri+{}".format(v, Serials.binary)
+    assert version == 'KERI_1.0_application/keri+binary'
+
+
+    """
+    Done Test
+    """
+
+def test_keyeventer():
+    """
+    Test the support functionality for key event serialization
+    """
+    event = KeyEventer()
+
+    e1 = {}
+    e1["version"] = "KERI_1.0_application/keri+json"
+    e1["prefix"] = "ABCDEFG"
+    e1["sn"] = "0001"
+    e1["ilk"] = "rot"
+    e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    kind1 = event._sniff(e1s)
+    assert kind1 == Serials.json
+    ked1 = event._inhale(e1s, kind1)
+    assert ked1 == e1
+
+    e2 = dict(e1)
+    e2["version"] = "KERI_1.0_application/keri+msgpack"
+    e2s = msgpack.dumps(e2)
+    kind2 = event._sniff(e2s)
+    assert kind2 == Serials.msgpack
+    ked2 = event._inhale(e2s, kind2)
+    assert ked2 == e2
+
+    e3 = dict(e1)
+    e3["version"] = "KERI_1.0_application/keri+cbor"
+    e3s = cbor.dumps(e3)
+    kind3 = event._sniff(e3s)
+    assert kind3 == Serials.cbor
+    ked3 = event._inhale(e3s, kind3)
+    assert ked3 == e3
+
+    event = KeyEventer(raw=e1s)
+    assert event.kind == kind1
+    assert event.raw == e1s
+    assert event.ked == ked1
 
 
     """
@@ -382,4 +469,4 @@ def test_blake3():
     Done Test
     """
 if __name__ == "__main__":
-    test_crymat()
+    test_keyeventer()

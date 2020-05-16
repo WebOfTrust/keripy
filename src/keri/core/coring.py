@@ -3,11 +3,22 @@
 keri.core.coring module
 
 """
+import json
+import cbor2 as cbor
+import msgpack
+
 from dataclasses import dataclass, astuple
+from collections import namedtuple
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
+
 from ..kering import ValidationError
+
+
+Serializations = namedtuple("Serializations", 'json msgpack cbor binary')
+
+Serials = Serializations(json='json', msgpack='msgpack', cbor='cbor', binary='binary')
 
 
 BASE64_PAD = '='
@@ -95,6 +106,16 @@ class CryMat:
     def __init__(self, raw=b'', qb64='', qb2='', code=One.Ed25519N):
         """
         Validate as fully qualified
+        Parameters:
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64 is str of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+
+        When raw provided then validate that code is correct for length of raw
+            and assign .raw
+        Else when qb64 pr qb2 provided extract and assign .raw and .code
+
         """
         if raw:  #  raw provided so infil with code
             if not isinstance(raw, (bytes, bytearray)):
@@ -199,3 +220,135 @@ class CryMat:
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil().encode("utf-8"))
+
+"""
+Need to add factory that figures out what type of event and creates appropriate
+subclass
+
+"""
+
+class KeyEventer:
+    """
+    KERI KeyEvent Serializer Deserializer
+
+    """
+    InceptionElements = ["version", "prefix", "sn", "ilk",
+                         "threshold", "signers", "next",
+                         "tally", "witnesses",
+                         "data", "signatures"]
+
+    RotationElements = ["version", "prefix", "sn", "ilk", "digest",
+                        "threshold", "signers", "next",
+                        "tally", "prune", "graft", "prune",
+                        "seals", "signatures"]
+
+
+    def __init__(self, raw=b'', kind=None, ked=None):
+        """
+        Parameters:
+          raw is bytes of serialized event
+          kind is serialization kind string value (see namedtuple coring.Serials)
+            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+          ked is key event dict
+
+        Note:
+          loads and jumps of json use str whereas cbor and msgpack use bytes
+        """
+        if raw:
+            if not kind:
+                kind = self._sniff(raw)
+            if kind not in Serials:
+                raise ValueError("Unrecognized serialization ser='{}'".format(raw))
+            ked = self._inhale(raw, kind)
+
+        self.raw = raw
+        self.kind = kind
+        self.ked = ked
+
+
+    @staticmethod
+    def _sniff(raw):
+        """
+        Returns serialization kind of serialized event ser by investigating
+        leading bytes
+
+        Parameters:
+          ser is bytes
+        """
+        # Need to auto generate these from VERSION and store as module globals
+
+        jsonite = b'{"version":"KERI_1.0_application/keri+json",'
+        mgpkite = b'\xa7version\xd9!KERI_1.0_application/keri+msgpack'
+        cborite = b'gversionx\x1eKERI_1.0_application/keri+cbor'
+
+        if raw.find(jsonite) == 0:  #  json serialization
+            kind = Serials.json
+        elif 1 <= raw.find(mgpkite) <= 8:  #  msgpack serialization
+            kind = Serials.msgpack
+        elif 1 <= raw.find(cborite) <= 8:  #  cbor serialization
+            kind = Serials.cbor
+        else:
+            kind = None  # unknown serializaiton kind
+
+        return kind
+
+
+    def _inhale(self, raw, kind):
+        """
+        Parses serilized event ser of serialization kind and assigns to
+        instance attributes.
+
+        Parameters:
+          raw is bytes of serialized event
+          kind id str of serialization kind (see namedtuple Serials)
+
+        Note:
+          loads and jumps of json use str whereas cbor and msgpack use bytes
+
+        """
+        if kind == Serials.json:
+            try:
+                ked = json.loads(raw.decode("utf-8"))
+            except Exception as ex:
+                raise ex
+
+        elif kind == Serials.msgpack:
+            try:
+                ked = msgpack.loads(raw)
+            except Exception as ex:
+                raise ex
+
+        elif kind ==  Serials.cbor:
+            try:
+                ked = cbor.loads(raw)
+            except Exception as ex:
+                raise ex
+
+        else:
+            ked = None
+
+        return ked
+
+
+    def _exhale(self, kind=None, ked=None):
+        """
+        ked is key event dict
+        Returns serialized event as bytes of kind
+        """
+        if kind not in Serials:
+            raise ValueError("Invalid serialization kind = {}".format(kind))
+
+        if not ked:
+            raise ValueError("Missing or empty key event dict = {}".format(ked))
+
+        if kind == Serials.json:
+            raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        elif kind == Serials.msgpack:
+            raw = msgpack.dumps(ked)
+        elif kind == Serials.cbor:
+            raw = cbor.dumps(ked)
+        else:
+            raw = b""
+
+        return raw
+
