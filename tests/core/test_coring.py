@@ -207,6 +207,16 @@ def test_keyeventer():
     assert event.raw == e1s
     assert event.ked == ked1
 
+    event = KeyEventer(raw=e2s)
+    assert event.kind == kind2
+    assert event.raw == e2s
+    assert event.ked == ked2
+
+    event = KeyEventer(raw=e3s)
+    assert event.kind == kind3
+    assert event.raw == e3s
+    assert event.ked == ked3
+
 
     """
     Done Test
