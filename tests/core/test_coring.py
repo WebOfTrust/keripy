@@ -1,11 +1,226 @@
 # -*- encoding: utf-8 -*-
 """
-tests.test_coring module
+tests.core.test_coring module
 
 """
-
+import pytest
 import pysodium
 import blake3
+import json
+
+import msgpack
+import cbor2 as cbor
+
+from base64 import urlsafe_b64encode as encodeB64
+from base64 import urlsafe_b64decode as decodeB64
+
+from keri.kering import VERSION
+from keri.core.coring import Select, One, Two, Four, CryMat
+from keri.core.coring import Serials, Serializations
+from keri.core.coring import KeyEventer
+
+
+def test_derivationcodes():
+    """
+    Test the support functionality for derivation codes
+    """
+    assert Select.two == '0'
+
+    assert 'A' not in Select
+
+    for x in ['0']:
+        assert x in Select
+
+    assert One.Ed25519N == 'A'
+    assert One.X25519 == 'B'
+    assert One.Ed25519 == 'C'
+    assert One.Blake3_256 == 'D'
+    assert One.Blake2b_256 == 'E'
+    assert One.Blake2s_256 == 'F'
+    assert One.ECDSA_256k1N == 'G'
+    assert One.ECDSA_256k1 == 'H'
+    assert One.SHA3_256 == 'I'
+    assert One.SHA2_256 == 'J'
+
+    assert '0' not in One
+
+    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']:
+        assert x in One
+
+    assert Two.Ed25519 == '0A'
+    assert Two.ECDSA_256k1 == '0B'
+
+    assert 'A' not in Two
+
+    for x in ['0A', '0B']:
+        assert x in Two
+
+    assert '0' not in Four
+    assert 'A' not in Four
+    assert '0A' not in Four
+
+    for x in []:
+        assert x in Four
+
+
+    """
+    Done Test
+    """
+
+def test_crymat():
+    """
+    Test the support functionality for cryptographic material
+    """
+    # verkey,  sigkey = pysodium.crypto_sign_keypair()
+    verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
+    prefix = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    prebin = (b'\x01\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@'
+              b'\xa13Y\x1fu\x0b\xbd\x80\x1fIS\xf3\x874\xbao\x90\x8c')
+
+    with pytest.raises(ValueError):
+        crymat = CryMat()
+
+    crymat = CryMat(raw=verkey)
+    assert crymat.raw == verkey
+    assert crymat.code == One.Ed25519N
+    assert crymat.qb64 == prefix
+    assert crymat.qb2 == prebin
+
+    assert crymat.qb64 == encodeB64(crymat.qb2).decode("utf-8")
+    assert crymat.qb2 == decodeB64(crymat.qb64.encode("utf-8"))
+
+    crymat._exfil(prefix)
+    assert crymat.code == One.Ed25519N
+    assert crymat.raw == verkey
+
+    crymat = CryMat(qb64=prefix)
+    assert crymat.code == One.Ed25519N
+    assert crymat.raw == verkey
+
+    crymat = CryMat(qb2=prebin)
+    assert crymat.code == One.Ed25519N
+    assert crymat.raw == verkey
+
+    sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
+           b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
+           b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
+    sig64 = encodeB64(sig).decode("utf-8")
+    assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
+
+    qsig64 = '0AmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qbin = (b'\xd0\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+            b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
+            b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
+
+    crymat = CryMat(raw=sig, code=Two.Ed25519)
+    assert crymat.raw == sig
+    assert crymat.code == Two.Ed25519
+    assert crymat.qb64 == qsig64
+    assert crymat.qb2 == qbin
+
+    crymat = CryMat(qb64=qsig64)
+    assert crymat.raw == sig
+    assert crymat.code == Two.Ed25519
+
+    crymat = CryMat(qb2=qbin)
+    assert crymat.raw == sig
+    assert crymat.code == Two.Ed25519
+
+    """
+    Done Test
+    """
+
+def test_serials():
+    """
+    Test Serializations namedtuple instance Serials
+    """
+
+    assert isinstance(Serials, Serializations)
+
+    assert Serials.json == 'json'
+    assert Serials.msgpack == 'msgpack'
+    assert Serials.cbor == 'cbor'
+    assert Serials.binary == 'binary'
+
+    assert 'json' in Serials
+    assert 'msgpack' in Serials
+    assert 'cbor' in Serials
+    assert 'binary' in Serials
+
+    assert VERSION == (1, 0)
+    v = '.'.join(str(x) for x in VERSION)
+    assert v == '1.0'
+
+    version = "KERI_{}_application/keri+{}".format(v, Serials.json)
+    assert version == 'KERI_1.0_application/keri+json'
+
+    version = "KERI_{}_application/keri+{}".format(v, Serials.msgpack)
+    assert version == 'KERI_1.0_application/keri+msgpack'
+
+    version = "KERI_{}_application/keri+{}".format(v, Serials.cbor)
+    assert version == 'KERI_1.0_application/keri+cbor'
+
+    version = "KERI_{}_application/keri+{}".format(v, Serials.binary)
+    assert version == 'KERI_1.0_application/keri+binary'
+
+
+    """
+    Done Test
+    """
+
+def test_keyeventer():
+    """
+    Test the support functionality for key event serialization
+    """
+    event = KeyEventer()
+
+    e1 = {}
+    e1["version"] = "KERI_1.0_application/keri+json"
+    e1["prefix"] = "ABCDEFG"
+    e1["sn"] = "0001"
+    e1["ilk"] = "rot"
+    e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    kind1 = event._sniff(e1s)
+    assert kind1 == Serials.json
+    ked1 = event._inhale(e1s, kind1)
+    assert ked1 == e1
+
+    e2 = dict(e1)
+    e2["version"] = "KERI_1.0_application/keri+msgpack"
+    e2s = msgpack.dumps(e2)
+    kind2 = event._sniff(e2s)
+    assert kind2 == Serials.msgpack
+    ked2 = event._inhale(e2s, kind2)
+    assert ked2 == e2
+
+    e3 = dict(e1)
+    e3["version"] = "KERI_1.0_application/keri+cbor"
+    e3s = cbor.dumps(e3)
+    kind3 = event._sniff(e3s)
+    assert kind3 == Serials.cbor
+    ked3 = event._inhale(e3s, kind3)
+    assert ked3 == e3
+
+    event = KeyEventer(raw=e1s)
+    assert event.kind == kind1
+    assert event.raw == e1s
+    assert event.ked == ked1
+
+    event = KeyEventer(raw=e2s)
+    assert event.kind == kind2
+    assert event.raw == e2s
+    assert event.ked == ked2
+
+    event = KeyEventer(raw=e3s)
+    assert event.kind == kind3
+    assert event.raw == e3s
+    assert event.ked == ked3
+
+
+    """
+    Done Test
+    """
 
 
 def test_pysodium():
@@ -75,9 +290,10 @@ def test_pysodium():
     assert len(sig) == 64
 
     """
-    sig = (b'F\x82\x0b\x1b\xacmC\xf0E6&\xb7o\xca\xcau\x9b\xf26R\xf4f\xc4\xcd\x1a \x81\xaf'
-           b'\x17\xae\x9d\xf8\xff\x96\xda\x06\x11\xb0\x16.\xb3\xe1N\xbc$\xa0`@'
-           b'\x10\xfc'\xe2\n\xc6\x910\x05\x87\xe9\x1a\xa6*\xde\x0c')
+    sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
+           b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
+           b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
     """
     #siga = pysodium.crypto_sign(msg.encode("utf-8"), sk)[:pysodium.crypto_sign_BYTES]
     #assert len(siga) == 64
@@ -262,4 +478,5 @@ def test_blake3():
     """
     Done Test
     """
-
+if __name__ == "__main__":
+    test_keyeventer()
