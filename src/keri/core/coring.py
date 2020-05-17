@@ -13,12 +13,24 @@ from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
 
-from ..kering import ValidationError
+from ..kering import ValidationError, VERSION
+
+Serializations = namedtuple("Serializations", 'json mgpk cbor')
+
+Serials = Serializations(json='json', mgpk='mgpk', cbor='cbor')
+
+Mimes = Serializations(json='application/keri+json',
+                       mgpk='application/keri+msgpack',
+                       cbor='application/keri+cbor',)
+
+Versions = Serializations(json="KERI_{}_{}.{}".format(Serials.json, VERSION[0], VERSION[1]),
+                          mgpk="KERI_{}_{}.{}".format(Serials.mgpk, VERSION[0], VERSION[1]),
+                          cbor="KERI_{}_{}.{}".format(Serials.cbor, VERSION[0], VERSION[1]))
 
 
-Serializations = namedtuple("Serializations", 'json msgpack cbor binary')
-
-Serials = Serializations(json='json', msgpack='msgpack', cbor='cbor', binary='binary')
+Sniffs = Serializations(json=b'{"vs":"KERI_json_',
+                        mgpk=b'\xa2vs\xadKERI_mgpk_',
+                        cbor=b'bvsmKERI_cbor_')
 
 
 BASE64_PAD = '='
@@ -232,15 +244,6 @@ class KeyEventer:
     KERI KeyEvent Serializer Deserializer
 
     """
-    InceptionElements = ["version", "prefix", "sn", "ilk",
-                         "threshold", "signers", "next",
-                         "tally", "witnesses",
-                         "data", "signatures"]
-
-    RotationElements = ["version", "prefix", "sn", "ilk", "digest",
-                        "threshold", "signers", "next",
-                        "tally", "prune", "graft", "prune",
-                        "seals", "signatures"]
 
 
     def __init__(self, raw=b'', kind=None, ked=None):
@@ -277,15 +280,11 @@ class KeyEventer:
         """
         # Need to auto generate these from VERSION and store as module globals
 
-        jsonite = b'{"version":"KERI_1.0_application/keri+json",'
-        mgpkite = b'\xa7version\xd9!KERI_1.0_application/keri+msgpack'
-        cborite = b'gversionx\x1eKERI_1.0_application/keri+cbor'
-
-        if raw.find(jsonite) == 0:  #  json serialization
+        if raw.find(Sniffs.json) == 0:  #  json serialization
             kind = Serials.json
-        elif 1 <= raw.find(mgpkite) <= 8:  #  msgpack serialization
-            kind = Serials.msgpack
-        elif 1 <= raw.find(cborite) <= 8:  #  cbor serialization
+        elif 1 <= raw.find(Sniffs.mgpk) <= 8:  #  msgpack serialization
+            kind = Serials.mgpk
+        elif 1 <= raw.find(Sniffs.cbor) <= 8:  #  cbor serialization
             kind = Serials.cbor
         else:
             kind = None  # unknown serializaiton kind
@@ -312,7 +311,7 @@ class KeyEventer:
             except Exception as ex:
                 raise ex
 
-        elif kind == Serials.msgpack:
+        elif kind == Serials.mgpk:
             try:
                 ked = msgpack.loads(raw)
             except Exception as ex:
@@ -343,7 +342,7 @@ class KeyEventer:
 
         if kind == Serials.json:
             raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-        elif kind == Serials.msgpack:
+        elif kind == Serials.mgpk:
             raw = msgpack.dumps(ked)
         elif kind == Serials.cbor:
             raw = cbor.dumps(ked)
