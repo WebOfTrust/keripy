@@ -167,7 +167,7 @@ def test_serials():
               sith = 1,
               keys = ['AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'],
               next = 'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM',
-              tad = 0,
+              toad = 0,
               wits = [],
               data = [],
               sigs = [0]
@@ -181,7 +181,7 @@ def test_serials():
               sith = 1,
               keys = ['AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'],
               next = 'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM',
-              tad = 0,
+              toad = 0,
               cuts = [],
               adds = [],
               data = [],
@@ -189,20 +189,20 @@ def test_serials():
              )
 
     icps = json.dumps(icp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert len(icps) == 309
+    assert len(icps) == 310
     assert icps == (b'{"vs":"KERI_json_1.0","id":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM","s'
                     b'n":"0001","ilk":"icp","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS","'
                     b'sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"DZ-i'
-                    b'0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","tad":0,"wits":[],"data":[],"sigs"'
-                    b':[0]}')
+                    b'0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"data":[],"sigs'
+                    b'":[0]}')
 
     rots = json.dumps(rot, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert len(rots) == 319
+    assert len(rots) == 320
     assert rots == (b'{"vs":"KERI_json_1.0","id":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM","s'
                     b'n":"0001","ilk":"rot","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS","'
                     b'sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"DZ-i'
-                    b'0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","tad":0,"cuts":[],"adds":[],"data"'
-                    b':[],"sigs":[0]}')
+                    b'0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"cuts":[],"adds":[],"data'
+                    b'":[],"sigs":[0]}')
 
     assert Sniffs.json == b'{"vs":"KERI_json_'
     assert icps.find(Sniffs.json) == 0
@@ -210,21 +210,22 @@ def test_serials():
 
     icp["vs"] = Versions.mgpk
     icps = msgpack.dumps(icp)
-    assert len(icps) == 266
+    assert len(icps) == 267
     assert icps == (b'\x8c\xa2vs\xadKERI_mgpk_1.0\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzh'
                     b'zS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwyZ-i0d'
                     b'8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULv'
                     b'YAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
-                    b'CM\xa3tad\x00\xa4wits\x90\xa4data\x90\xa4sigs\x91\x00')
+                    b'CM\xa4toad\x00\xa4wits\x90\xa4data\x90\xa4sigs\x91\x00')
+
 
     rot["vs"] = Versions.mgpk
     rots = msgpack.dumps(rot)
-    assert len(rots) == 272
+    assert len(rots) == 273
     assert rots == (b'\x8d\xa2vs\xadKERI_mgpk_1.0\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzh'
                     b'zS6b5CM\xa2sn\xa40001\xa3ilk\xa3rot\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwyZ-i0d'
                     b'8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULv'
                     b'YAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
-                    b'CM\xa3tad\x00\xa4cuts\x90\xa4adds\x90\xa4data\x90\xa4sigs\x91\x00')
+                    b'CM\xa4toad\x00\xa4cuts\x90\xa4adds\x90\xa4data\x90\xa4sigs\x91\x00')
 
 
     assert Sniffs.mgpk == b'\xa2vs\xadKERI_mgpk_'
@@ -233,20 +234,21 @@ def test_serials():
 
     icp["vs"] = Versions.cbor
     icps = cbor.dumps(icp)
-    assert len(icps) == 266
+    assert len(icps) == 267
     assert icps == (b'\xacbvsmKERI_cbor_1.0bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMbsnd0'
                     b'001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01dkeys'
                     b'\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZH3UL'
-                    b'vaU6JR2nmwyYAfSVPzhzS6b5CMctad\x00dwits\x80ddata\x80dsigs\x81\x00')
+                    b'vaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80ddata\x80dsigs\x81\x00')
 
 
     rot["vs"] = Versions.cbor
     rots = cbor.dumps(rot)
-    assert len(rots) == 272
+    assert len(rots) == 273
     assert rots == (b'\xadbvsmKERI_cbor_1.0bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMbsnd0'
                     b'001cilkcrotcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01dkeys'
                     b'\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZH3UL'
-                    b'vaU6JR2nmwyYAfSVPzhzS6b5CMctad\x00dcuts\x80dadds\x80ddata\x80dsigs\x81\x00')
+                    b'vaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dcuts\x80dadds\x80ddata\x80dsigs\x81\x00')
+
 
 
     assert Sniffs.cbor == b'bvsmKERI_cbor_'
