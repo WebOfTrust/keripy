@@ -164,12 +164,12 @@ def test_serials():
               sn = '0001',
               ilk = 'icp',
               dig = 'DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS',
-              sth = 1,
-              sins = ['AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'],
+              th = 1,
+              keys = ['AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'],
               next = 'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM',
-              wth = 0,
-              wins = [],
-              dats = [],
+              tally = 0,
+              wits = [],
+              data = [],
               sigs = [0]
              )
 
@@ -178,31 +178,31 @@ def test_serials():
               sn = '0001',
               ilk = 'rot',
               dig = 'DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS',
-              sth = 1,
-              sins = ['AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'],
+              th = 1,
+              keys = ['AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'],
               next = 'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM',
-              wth = 0,
-              wexs = [],
-              wads = [],
-              dats = [],
+              tally = 0,
+              prune = [],
+              graft = [],
+              seals = [],
               sigs = [0]
              )
 
     icps = json.dumps(icp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert len(icps) == 308
+    assert len(icps) == 309
     assert icps == (b'{"vs":"KERI_json_1.0","id":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM","s'
                     b'n":"0001","ilk":"icp","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS","'
-                    b'sth":1,"sins":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"DZ-i0'
-                    b'd8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","wth":0,"wins":[],"dats":[],"sigs":'
-                    b'[0]}')
+                    b'th":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"DZ-i0d'
+                    b'8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","tally":0,"wits":[],"data":[],"sigs"'
+                    b':[0]}')
 
     rots = json.dumps(rot, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert len(rots) == 318
+    assert len(rots) == 322
     assert rots == (b'{"vs":"KERI_json_1.0","id":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM","s'
                     b'n":"0001","ilk":"rot","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS","'
-                    b'sth":1,"sins":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"DZ-i0'
-                    b'd8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","wth":0,"wexs":[],"wads":[],"dats":'
-                    b'[],"sigs":[0]}')
+                    b'th":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"DZ-i0d'
+                    b'8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","tally":0,"prune":[],"graft":[],"sea'
+                    b'ls":[],"sigs":[0]}')
 
     assert Sniffs.json == b'{"vs":"KERI_json_'
     assert icps.find(Sniffs.json) == 0
@@ -210,21 +210,22 @@ def test_serials():
 
     icp["vs"] = Versions.mgpk
     icps = msgpack.dumps(icp)
-    assert len(icps) == 265
+    assert len(icps) == 266
     assert icps == (b'\x8c\xa2vs\xadKERI_mgpk_1.0\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzh'
                     b'zS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwyZ-i0d'
-                    b'8JZAoTNZH3ULvYAfS\xa3sth\x01\xa4sins\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvY'
-                    b'AfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5C'
-                    b'M\xa3wth\x00\xa4wins\x90\xa4dats\x90\xa4sigs\x91\x00')
+                    b'8JZAoTNZH3ULvYAfS\xa2th\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYA'
+                    b'fSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM'
+                    b'\xa5tally\x00\xa4wits\x90\xa4data\x90\xa4sigs\x91\x00')
 
     rot["vs"] = Versions.mgpk
     rots = msgpack.dumps(rot)
-    assert len(rots) == 271
+    assert len(rots) == 275
     assert rots == (b'\x8d\xa2vs\xadKERI_mgpk_1.0\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzh'
                     b'zS6b5CM\xa2sn\xa40001\xa3ilk\xa3rot\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwyZ-i0d'
-                    b'8JZAoTNZH3ULvYAfS\xa3sth\x01\xa4sins\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvY'
-                    b'AfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5C'
-                    b'M\xa3wth\x00\xa4wexs\x90\xa4wads\x90\xa4dats\x90\xa4sigs\x91\x00')
+                    b'8JZAoTNZH3ULvYAfS\xa2th\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYA'
+                    b'fSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM'
+                    b'\xa5tally\x00\xa5prune\x90\xa5graft\x90\xa5seals\x90\xa4sigs\x91\x00')
+
 
     assert Sniffs.mgpk == b'\xa2vs\xadKERI_mgpk_'
     assert icps.find(Sniffs.mgpk) == 1
@@ -232,21 +233,22 @@ def test_serials():
 
     icp["vs"] = Versions.cbor
     icps = cbor.dumps(icp)
-    assert len(icps) == 265
+    assert len(icps) == 266
     assert icps == (b'\xacbvsmKERI_cbor_1.0bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMbsnd0'
-                    b'001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfScsth\x01ds'
-                    b'ins\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZH'
-                    b'3ULvaU6JR2nmwyYAfSVPzhzS6b5CMcwth\x00dwins\x80ddats\x80dsigs\x81\x00')
+                    b'001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSbth\x01dke'
+                    b'ys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZH3'
+                    b'ULvaU6JR2nmwyYAfSVPzhzS6b5CMetally\x00dwits\x80ddata\x80dsigs\x81\x00')
 
 
     rot["vs"] = Versions.cbor
     rots = cbor.dumps(rot)
-    assert len(rots) == 271
+    assert len(rots) == 275
     assert rots == (b'\xadbvsmKERI_cbor_1.0bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMbsnd0'
-                    b'001cilkcrotcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfScsth\x01ds'
-                    b'ins\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZH'
-                    b'3ULvaU6JR2nmwyYAfSVPzhzS6b5CMcwth\x00dwexs\x80dwads\x80ddats\x80dsig'
+                    b'001cilkcrotcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSbth\x01dke'
+                    b'ys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZH3'
+                    b'ULvaU6JR2nmwyYAfSVPzhzS6b5CMetally\x00eprune\x80egraft\x80eseals\x80dsig'
                     b's\x81\x00')
+
 
     assert Sniffs.cbor == b'bvsmKERI_cbor_'
     assert icps.find(Sniffs.cbor) == 1
