@@ -17,20 +17,21 @@ from ..kering import ValidationError, VERSION
 
 Serializations = namedtuple("Serializations", 'json mgpk cbor')
 
-Serials = Serializations(json='json', mgpk='mgpk', cbor='cbor')
+Serials = Serializations(json='JSON', mgpk='MGPK', cbor='CBOR')
 
 Mimes = Serializations(json='application/keri+json',
                        mgpk='application/keri+msgpack',
                        cbor='application/keri+cbor',)
 
-Versions = Serializations(json="KERI_{}_{}.{}".format(Serials.json, VERSION[0], VERSION[1]),
-                          mgpk="KERI_{}_{}.{}".format(Serials.mgpk, VERSION[0], VERSION[1]),
-                          cbor="KERI_{}_{}.{}".format(Serials.cbor, VERSION[0], VERSION[1]))
+VERFMT = "KERI{}{:x}{:x}{:06x}_"
+Versions = Serializations(json=VERFMT.format(Serials.json, VERSION[0], VERSION[1], 0),
+                          mgpk=VERFMT.format(Serials.mgpk, VERSION[0], VERSION[1], 0),
+                          cbor=VERFMT.format(Serials.cbor, VERSION[0], VERSION[1], 0))
 
 
-Sniffs = Serializations(json=b'{"vs":"KERI_json_',
-                        mgpk=b'\xa2vs\xadKERI_mgpk_',
-                        cbor=b'bvsmKERI_cbor_')
+Sniffs = Serializations(json=b'{"vs":"KERIJSON',
+                        mgpk=b'\xa2vs\xb1KERIMGPK',
+                        cbor=b'bvsqKERICBOR')
 
 
 BASE64_PAD = '='
@@ -239,9 +240,9 @@ subclass
 
 """
 
-class KeyEventer:
+class Serder:
     """
-    KERI KeyEvent Serializer Deserializer
+    KERI Key Event Serializer Deserializer
 
     """
 
@@ -257,6 +258,8 @@ class KeyEventer:
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
         """
+        self.size = 0
+
         if raw:
             if not kind:
                 kind = self._sniff(raw)
