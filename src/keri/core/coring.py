@@ -15,6 +15,9 @@ from base64 import urlsafe_b64decode as decodeB64
 
 from ..kering import ValidationError, VERSION
 
+
+BASE64_PAD = '='
+
 Serializations = namedtuple("Serializations", 'json mgpk cbor')
 
 Serials = Serializations(json='JSON', mgpk='MGPK', cbor='CBOR')
@@ -29,18 +32,20 @@ Versions = Serializations(json=VERFMT.format(Serials.json, VERSION[0], VERSION[1
                           cbor=VERFMT.format(Serials.cbor, VERSION[0], VERSION[1], 0))
 
 
-Sniffs = Serializations(json=b'{"vs":"KERIJSON',
-                        mgpk=b'\xa2vs\xb1KERIMGPK',
-                        cbor=b'bvsqKERICBOR')
+Sniffs = Serializations(json=b'KERIJSON',
+                        mgpk=b'KERIMGPK',
+                        cbor=b'KERICBOR')
+
+RAWSIZE = 6  # hex characters in raw serialization size in version string
 
 VERNUMSIZE = 2  # hex characters in version number in version string
+
 SniffSizeOffs = Serializations(json=len(Sniffs.json) + VERNUMSIZE,
                           mgpk=len(Sniffs.mgpk) + VERNUMSIZE,
                          cbor=len(Sniffs.cbor) + VERNUMSIZE)
 
-RAWSIZE = 6  # hex characters in raw serialization size in version string
 
-BASE64_PAD = '='
+
 
 @dataclass(frozen=True)
 class SelectCodex:
@@ -287,19 +292,19 @@ class Serder:
 
         """
         offset = raw.find(Sniffs.json)
-        if offset == 0:  #  json serialization
+        if offset == 7:  #  json serialization
             kind = Serials.json
             size = int(raw[offset+SniffSizeOffs.json:offset+SniffSizeOffs.json+RAWSIZE], 16)
             return (kind, size)
 
         offset = raw.find(Sniffs.mgpk)
-        if 1 <= offset <=  8:  #  msgpack serialization
+        if 5 <= offset <=  12:  #  msgpack serialization
             kind = Serials.mgpk
             size = int(raw[offset+SniffSizeOffs.mgpk:offset+SniffSizeOffs.mgpk+RAWSIZE], 16)
             return (kind, size)
 
         offset = raw.find(Sniffs.cbor)
-        if 1 <= offset <=  8:  #  msgpack serialization
+        if 5 <= offset <=  12:  #  msgpack serialization
             kind = Serials.cbor
             size = int(raw[offset+SniffSizeOffs.cbor:offset+SniffSizeOffs.cbor+RAWSIZE], 16)
             return (kind, size)

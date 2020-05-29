@@ -205,9 +205,9 @@ def test_serials():
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"cuts":[],"adds":[],"'
                     b'data":[],"sigs":[0]}')
 
-    assert Sniffs.json == b'{"vs":"KERIJSON'
-    assert icps.find(Sniffs.json) == 0
-    assert rots.find(Sniffs.json) == 0
+    assert Sniffs.json == b'KERIJSON'
+    assert icps.find(Sniffs.json) == 7
+    assert rots.find(Sniffs.json) == 7
 
     icp["vs"] = Versions.mgpk
     icps = msgpack.dumps(icp)
@@ -229,9 +229,9 @@ def test_serials():
                     b'CM\xa4toad\x00\xa4cuts\x90\xa4adds\x90\xa4data\x90\xa4sigs\x91\x00')
 
 
-    assert Sniffs.mgpk == b'\xa2vs\xb1KERIMGPK'
-    assert icps.find(Sniffs.mgpk) == 1
-    assert rots.find(Sniffs.mgpk) == 1
+    assert Sniffs.mgpk == b'KERIMGPK'
+    assert icps.find(Sniffs.mgpk) == 5
+    assert rots.find(Sniffs.mgpk) == 5
 
     icp["vs"] = Versions.cbor
     icps = cbor.dumps(icp)
@@ -253,9 +253,9 @@ def test_serials():
 
 
 
-    assert Sniffs.cbor == b'bvsqKERICBOR'
-    assert icps.find(Sniffs.cbor) == 1
-    assert rots.find(Sniffs.cbor) == 1
+    assert Sniffs.cbor == b'KERICBOR'
+    assert icps.find(Sniffs.cbor) == 5
+    assert rots.find(Sniffs.cbor) == 5
 
 
 
