@@ -278,8 +278,17 @@ def test_serder():
     kind1, size1 = event._sniff(e1s)
     assert kind1 == Serials.json
     assert size1 == 65
-    ked1 = event._inhale(e1s, kind1, size1)
+    e1ss = e1s + b'extra attached at the end.'
+    ked1, knd1, siz1 = event._inhale(e1ss, kind1, size1)
     assert ked1 == e1
+    ked1, knd1, siz1 = event._inhale(e1ss)
+    assert ked1 == e1
+    assert knd1 == kind1
+    assert siz1 == size1
+
+    raw1, knd1 = event._exhale(ked=ked1)
+    assert raw1 == e1s
+    assert knd1 == kind1
 
     e2 = dict(e1)
     e2["vs"] = Versions.mgpk
@@ -291,8 +300,17 @@ def test_serder():
     kind2, size2 = event._sniff(e2s)
     assert kind2 == Serials.mgpk
     assert size2 == 49
-    ked2 = event._inhale(e2s, kind2, size2)
+    e2ss = e2s + b'extra attached  at the end.'
+    ked2, knd2, siz2 = event._inhale(e2ss, kind2, size2)
     assert ked2 == e2
+    ked2, knd2, siz2 = event._inhale(e2ss)
+    assert ked2 == e2
+    assert knd2 == kind2
+    assert siz2 == size2
+
+    raw2, knd2 = event._exhale(ked=ked2)
+    assert raw2 == e2s
+    assert knd2 == kind2
 
     e3 = dict(e1)
     e3["vs"] = Versions.cbor
@@ -304,20 +322,31 @@ def test_serder():
     kind3, size3 = event._sniff(e3s)
     assert kind3 == Serials.cbor
     assert size3 == 49
-    ked3 = event._inhale(e3s, kind3, size3)
+    e3ss = e3s + b'extra attached  at the end.'
+    ked3, knd3, siz3 = event._inhale(e3ss, kind3, size3)
     assert ked3 == e3
+    ked3, knd3, siz3 = event._inhale(e3ss)
+    assert ked3 == e3
+    assert knd3 == kind3
+    assert siz3 == size3
 
-    event = Serder(raw=e1s)
+    raw3, knd3 = event._exhale(ked=ked3)
+    assert raw3 == e3s
+    assert knd3 == kind3
+
+    event = Serder(raw=e1ss)
     assert event.kind == kind1
     assert event.raw == e1s
     assert event.ked == ked1
 
-    event = Serder(raw=e2s)
+    # event = Serder(kind=kind1, ked=ked1)
+
+    event = Serder(raw=e2ss)
     assert event.kind == kind2
     assert event.raw == e2s
     assert event.ked == ked2
 
-    event = Serder(raw=e3s)
+    event = Serder(raw=e3ss)
     assert event.kind == kind3
     assert event.raw == e3s
     assert event.ked == ked3
@@ -584,4 +613,4 @@ def test_blake3():
     Done Test
     """
 if __name__ == "__main__":
-    test_keyeventer()
+    test_serder()

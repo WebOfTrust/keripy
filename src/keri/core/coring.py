@@ -26,25 +26,32 @@ Mimes = Serializations(json='application/keri+json',
                        mgpk='application/keri+msgpack',
                        cbor='application/keri+cbor',)
 
+VERRAWSIZE = 6  # hex characters in raw serialization size in version string
+
 VERFMT = "KERI{}{:x}{:x}{:06x}_"  #  version format string
-Versions = Serializations(json=VERFMT.format(Serials.json, VERSION[0], VERSION[1], 0),
-                          mgpk=VERFMT.format(Serials.mgpk, VERSION[0], VERSION[1], 0),
-                          cbor=VERFMT.format(Serials.cbor, VERSION[0], VERSION[1], 0))
+
+def Versionify(kind, size=0):
+    """
+    Return version string with serializaiton kind and size
+    """
+    if kind not in Serials:
+        raise  ValueError("Invalid serialization kind = {}".format(kind))
+    return VERFMT.format(Serials.json, VERSION[0], VERSION[1], size)
+
+Versions = Serializations(json=Versionify(Serials.json, 0),
+                          mgpk=Versionify(Serials.mgpk, 0),
+                          cbor=Versionify(Serials.cbor, 0))
 
 
 Sniffs = Serializations(json=b'KERIJSON',
                         mgpk=b'KERIMGPK',
                         cbor=b'KERICBOR')
 
-RAWSIZE = 6  # hex characters in raw serialization size in version string
-
+KERISIZE = 4 #  characters in KERI
+SERIALSIZE = 4  #  characters in serialization code such as CBOR
 VERNUMSIZE = 2  # hex characters in version number in version string
-
-SniffSizeOffs = Serializations(json=len(Sniffs.json) + VERNUMSIZE,
-                          mgpk=len(Sniffs.mgpk) + VERNUMSIZE,
-                         cbor=len(Sniffs.cbor) + VERNUMSIZE)
-
-
+VERSERSIZE = KERISIZE + SERIALSIZE + VERNUMSIZE
+VERSIONSIZE = VERSERSIZE + VERRAWSIZE
 
 
 @dataclass(frozen=True)
@@ -261,20 +268,31 @@ class Serder:
     def __init__(self, raw=b'', kind=None, size=0, ked=None):
         """
         Parameters:
-          raw is bytes of serialized event
-          kind is serialization kind string value (see namedtuple coring.Serials)
+          raw is bytes of serialized event plus any attached signatures
+          kind is serialization kind string value or None (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-          ked is key event dict
+            if None then its extracted from raw if raw is not empty
+          size is int of number of bytes in serialed event offset
+            if 0 then its extracted from raw if raw is not empty
+          ked is key event dict or None
+            if None its deserialized from raw
+
+        Attributes:
+          .raw is bytes of serialized event only
+          . kind is serialization kind string value (see namedtuple coring.Serials)
+            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+          .size is int of number of bytes in serialed event only
+          .ked is key event dict
 
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
         """
-        if raw:
-            if not kind or not size:
-                kind, size = self._sniff(raw)
-            ked = self._inhale(raw, kind, size)
+        if raw:  # deserialize raw
+            ked, kind, size = self._inhale(raw=raw, kind=kind, size=size)
+        elif ked: # serialize ked
+            raw, kind = self._exhale(ked=ked, kind=kind)
 
-        self.raw = raw
+        self.raw = raw[:size]
         self.kind = kind
         self.size = size
         self.ked = ked
@@ -294,26 +312,26 @@ class Serder:
         offset = raw.find(Sniffs.json)
         if offset == 7:  #  json serialization
             kind = Serials.json
-            size = int(raw[offset+SniffSizeOffs.json:offset+SniffSizeOffs.json+RAWSIZE], 16)
+            size = int(raw[offset+VERSERSIZE:offset+VERSIONSIZE], 16)
             return (kind, size)
 
         offset = raw.find(Sniffs.mgpk)
         if 5 <= offset <=  12:  #  msgpack serialization
             kind = Serials.mgpk
-            size = int(raw[offset+SniffSizeOffs.mgpk:offset+SniffSizeOffs.mgpk+RAWSIZE], 16)
+            size = int(raw[offset+VERSERSIZE:offset+VERSIONSIZE], 16)
             return (kind, size)
 
         offset = raw.find(Sniffs.cbor)
         if 5 <= offset <=  12:  #  msgpack serialization
             kind = Serials.cbor
-            size = int(raw[offset+SniffSizeOffs.cbor:offset+SniffSizeOffs.cbor+RAWSIZE], 16)
+            size = int(raw[offset+VERSERSIZE:offset+VERSIONSIZE], 16)
             return (kind, size)
 
        # unknown serializaiton kind
         raise ValueError("Unrecognized serialization ser='{}'".format(raw))
 
 
-    def _inhale(self, raw, kind, size):
+    def _inhale(self, raw, kind=None, size=0):
         """
         Parses serilized event ser of serialization kind and assigns to
         instance attributes.
@@ -327,49 +345,77 @@ class Serder:
           loads and jumps of json use str whereas cbor and msgpack use bytes
 
         """
+        if not kind or not size:
+            kind, size = self._sniff(raw)
+
         if kind == Serials.json:
             try:
-                ked = json.loads(raw.decode("utf-8"))
+                ked = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
                 raise ex
 
         elif kind == Serials.mgpk:
             try:
-                ked = msgpack.loads(raw)
+                ked = msgpack.loads(raw[:size])
             except Exception as ex:
                 raise ex
 
         elif kind ==  Serials.cbor:
             try:
-                ked = cbor.loads(raw)
+                ked = cbor.loads(raw[:size])
             except Exception as ex:
                 raise ex
 
         else:
             ked = None
 
-        return ked
+        return (ked, kind, size)
 
 
-    def _exhale(self, kind=None, ked=None):
+    def _exhale(self, ked,  kind=None):
         """
         ked is key event dict
-        Returns serialized event as bytes of kind
+        kind is serialization is given else extracted from key
+        Returns tuple of (raw, kind) where raw is serialized event as bytes of kind
+        and kind is serialzation kind
         """
-        if kind not in Serials:
-            raise ValueError("Invalid serialization kind = {}".format(kind))
+        if "vs" not in ked:
+            raise ValueError("Missing or empty version string in key event dict = {}".format(ked))
 
-        if not ked:
-            raise ValueError("Missing or empty key event dict = {}".format(ked))
+        if kind: # overwrite version string with new kind
+            if kind not in Serials:
+                raise ValueError("Invalid serialization kind = {}".format(kind))
+
+            vs = ked["vs"]
+            ked["vs"] = "{}{}{}".format(vs[:KERISIZE],kind,vs[KERISIZE + SERIALSIZE:])
+
+        else:  # extract kind from version string
+            kind = ked['vs'][KERISIZE:KERISIZE + SERIALSIZE]
 
         if kind == Serials.json:
             raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-        elif kind == Serials.mgpk:
-            raw = msgpack.dumps(ked)
-        elif kind == Serials.cbor:
-            raw = cbor.dumps(ked)
-        else:
-            raw = b""
+            offset = raw.find(Sniffs.json)
+            size = len(raw)
+            raw = b'%b%06x%b' % (raw[:offset+VERSERSIZE], size, raw[offset+VERSIONSIZE:])
+            assert size == len(raw)
+            return (raw, kind)
 
-        return raw
+        if kind == Serials.mgpk:
+            raw = msgpack.dumps(ked)
+            offset = raw.find(Sniffs.mgpk)
+            size = len(raw)
+            raw = b'%b%06x%b' % (raw[:offset+VERSERSIZE], size, raw[offset+VERSIONSIZE:])
+            assert size == len(raw)
+            return (raw,  kind)
+
+        if kind == Serials.cbor:
+            raw = cbor.dumps(ked)
+            offset = raw.find(Sniffs.cbor)
+            size = len(raw)
+            raw = b'%b%06x%b' % (raw[:offset+VERSERSIZE], size, raw[offset+VERSIONSIZE:])
+            assert size == len(raw)
+            return (raw, kind)
+
+        else:
+            raise ValueError("Invalid serialization kind = {}".format(kind))
 
