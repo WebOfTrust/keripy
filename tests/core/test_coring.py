@@ -18,6 +18,7 @@ from keri.kering import VERSION
 from keri.core.coring import Select, One, Two, Four, CryMat
 from keri.core.coring import Serializations,  Serials, Mimes, Versions, Sniffs
 from keri.core.coring import Serder
+from keri.core.coring import VERFMT
 
 
 def test_derivationcodes():
@@ -269,27 +270,41 @@ def test_serder():
     event = Serder()
 
     e1 = dict(vs=Versions.json, id="ABCDEFG", sn="0001", ilk="rot")
-    e1["ilk"] = "rot"
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    kind1 = event._sniff(e1s)
+    vs = VERFMT.format(Serials.json, VERSION[0], VERSION[1], len(e1s))  # use real length
+    assert vs == 'KERIJSON10000041_'
+    e1["vs"] = vs  # has real length
+    e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    kind1, size1 = event._sniff(e1s)
     assert kind1 == Serials.json
-    ked1 = event._inhale(e1s, kind1)
+    assert size1 == 65
+    ked1 = event._inhale(e1s, kind1, size1)
     assert ked1 == e1
 
     e2 = dict(e1)
     e2["vs"] = Versions.mgpk
     e2s = msgpack.dumps(e2)
-    kind2 = event._sniff(e2s)
+    vs = VERFMT.format(Serials.mgpk, VERSION[0], VERSION[1], len(e2s))  # use real length
+    assert vs == 'KERIMGPK10000031_'
+    e2["vs"] = vs  # has real length
+    e2s = msgpack.dumps(e2)
+    kind2, size2 = event._sniff(e2s)
     assert kind2 == Serials.mgpk
-    ked2 = event._inhale(e2s, kind2)
+    assert size2 == 49
+    ked2 = event._inhale(e2s, kind2, size2)
     assert ked2 == e2
 
     e3 = dict(e1)
     e3["vs"] = Versions.cbor
     e3s = cbor.dumps(e3)
-    kind3 = event._sniff(e3s)
+    vs = VERFMT.format(Serials.cbor, VERSION[0], VERSION[1], len(e3s))  # use real length
+    assert vs == 'KERICBOR10000031_'
+    e3["vs"] = vs  # has real length
+    e3s = cbor.dumps(e3)
+    kind3, size3 = event._sniff(e3s)
     assert kind3 == Serials.cbor
-    ked3 = event._inhale(e3s, kind3)
+    assert size3 == 49
+    ked3 = event._inhale(e3s, kind3, size3)
     assert ked3 == e3
 
     event = Serder(raw=e1s)

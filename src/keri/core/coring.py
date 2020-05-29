@@ -23,7 +23,7 @@ Mimes = Serializations(json='application/keri+json',
                        mgpk='application/keri+msgpack',
                        cbor='application/keri+cbor',)
 
-VERFMT = "KERI{}{:x}{:x}{:06x}_"
+VERFMT = "KERI{}{:x}{:x}{:06x}_"  #  version format string
 Versions = Serializations(json=VERFMT.format(Serials.json, VERSION[0], VERSION[1], 0),
                           mgpk=VERFMT.format(Serials.mgpk, VERSION[0], VERSION[1], 0),
                           cbor=VERFMT.format(Serials.cbor, VERSION[0], VERSION[1], 0))
@@ -33,6 +33,12 @@ Sniffs = Serializations(json=b'{"vs":"KERIJSON',
                         mgpk=b'\xa2vs\xb1KERIMGPK',
                         cbor=b'bvsqKERICBOR')
 
+VERNUMSIZE = 2  # hex characters in version number in version string
+SniffSizeOffs = Serializations(json=len(Sniffs.json) + VERNUMSIZE,
+                          mgpk=len(Sniffs.mgpk) + VERNUMSIZE,
+                         cbor=len(Sniffs.cbor) + VERNUMSIZE)
+
+RAWSIZE = 6  # hex characters in raw serialization size in version string
 
 BASE64_PAD = '='
 
@@ -247,7 +253,7 @@ class Serder:
     """
 
 
-    def __init__(self, raw=b'', kind=None, ked=None):
+    def __init__(self, raw=b'', kind=None, size=0, ked=None):
         """
         Parameters:
           raw is bytes of serialized event
@@ -258,51 +264,59 @@ class Serder:
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
         """
-        self.size = 0
-
         if raw:
-            if not kind:
-                kind = self._sniff(raw)
-            if kind not in Serials:
-                raise ValueError("Unrecognized serialization ser='{}'".format(raw))
-            ked = self._inhale(raw, kind)
+            if not kind or not size:
+                kind, size = self._sniff(raw)
+            ked = self._inhale(raw, kind, size)
 
         self.raw = raw
         self.kind = kind
+        self.size = size
         self.ked = ked
+
 
 
     @staticmethod
     def _sniff(raw):
         """
-        Returns serialization kind of serialized event ser by investigating
-        leading bytes
+        Returns serialization kind and size of serialized event raw
+        by investigating leading bytes that contain version string
 
         Parameters:
-          ser is bytes
+          raw is bytes of serialized event
+
         """
-        # Need to auto generate these from VERSION and store as module globals
-
-        if raw.find(Sniffs.json) == 0:  #  json serialization
+        offset = raw.find(Sniffs.json)
+        if offset == 0:  #  json serialization
             kind = Serials.json
-        elif 1 <= raw.find(Sniffs.mgpk) <= 8:  #  msgpack serialization
+            size = int(raw[offset+SniffSizeOffs.json:offset+SniffSizeOffs.json+RAWSIZE], 16)
+            return (kind, size)
+
+        offset = raw.find(Sniffs.mgpk)
+        if 1 <= offset <=  8:  #  msgpack serialization
             kind = Serials.mgpk
-        elif 1 <= raw.find(Sniffs.cbor) <= 8:  #  cbor serialization
+            size = int(raw[offset+SniffSizeOffs.mgpk:offset+SniffSizeOffs.mgpk+RAWSIZE], 16)
+            return (kind, size)
+
+        offset = raw.find(Sniffs.cbor)
+        if 1 <= offset <=  8:  #  msgpack serialization
             kind = Serials.cbor
-        else:
-            kind = None  # unknown serializaiton kind
+            size = int(raw[offset+SniffSizeOffs.cbor:offset+SniffSizeOffs.cbor+RAWSIZE], 16)
+            return (kind, size)
 
-        return kind
+       # unknown serializaiton kind
+        raise ValueError("Unrecognized serialization ser='{}'".format(raw))
 
 
-    def _inhale(self, raw, kind):
+    def _inhale(self, raw, kind, size):
         """
         Parses serilized event ser of serialization kind and assigns to
         instance attributes.
 
         Parameters:
           raw is bytes of serialized event
-          kind id str of serialization kind (see namedtuple Serials)
+          kind id str of raw serialization kind (see namedtuple Serials)
+          size is int size of raw to be deserialized
 
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
