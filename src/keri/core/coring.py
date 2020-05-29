@@ -36,7 +36,7 @@ def Versionify(kind, size=0):
     """
     if kind not in Serials:
         raise  ValueError("Invalid serialization kind = {}".format(kind))
-    return VERFMT.format(Serials.json, VERSION[0], VERSION[1], size)
+    return VERFMT.format(kind, VERSION[0], VERSION[1], size)
 
 Versions = Serializations(json=Versionify(Serials.json, 0),
                           mgpk=Versionify(Serials.mgpk, 0),
