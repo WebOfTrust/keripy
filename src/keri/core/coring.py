@@ -391,7 +391,7 @@ class Serder:
         Returns tuple of (raw, kind) where raw is serialized event as bytes of kind
         and kind is serialzation kind
 
-        Assumes only supports VERSION
+        Assumes only supports Version
         """
         if "vs" not in ked:
             raise ValueError("Missing or empty version string in key event dict = {}".format(ked))
@@ -422,7 +422,7 @@ class Serder:
         size = len(raw)
 
         match = Rever.search(raw)  #  Rever's regex takes bytes
-        if not match:
+        if not match or match.start() > 12:
             raise ValueError("Invalid version string in raw = {}".format(raw))
 
         fore, back = match.span()  #  full version string
