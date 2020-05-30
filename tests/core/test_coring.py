@@ -379,8 +379,14 @@ def test_serder():
     assert evt3.size == size3
     assert evt3.raw == e3ss[:size3]
 
-    # Test change in kind by Serder
+    #  round trip
+    evt2 = Serder(ked=evt1.ked)
+    assert evt2.kind == evt1.kind
+    assert evt2.raw == evt1.raw
+    assert evt2.ked == evt1.ked
+    assert evt2.size == evt1.size
 
+    # Test change in kind by Serder
     evt1 = Serder(ked=ked1, kind=Serials.mgpk)  # ked is json but kind mgpk
     assert evt1.kind == kind2
     assert evt1.raw == e2s
@@ -388,12 +394,27 @@ def test_serder():
     assert evt1.size == size2
     assert evt1.raw == e2ss[:size2]
 
+    #  round trip
+    evt2 = Serder(raw=evt1.raw)
+    assert evt2.kind == evt1.kind
+    assert evt2.raw == evt1.raw
+    assert evt2.ked == evt1.ked
+    assert evt2.size == evt1.size
+
+
     evt1 = Serder(ked=ked1, kind=Serials.cbor)  # ked is json but kind mgpk
     assert evt1.kind == kind3
     assert evt1.raw == e3s
     assert evt1.ked == ked3
     assert evt1.size == size3
     assert evt1.raw == e3ss[:size3]
+
+    #  round trip
+    evt2 = Serder(raw=evt1.raw)
+    assert evt2.kind == evt1.kind
+    assert evt2.raw == evt1.raw
+    assert evt2.ked == evt1.ked
+    assert evt2.size == evt1.size
 
 
     """
