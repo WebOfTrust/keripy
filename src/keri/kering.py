@@ -3,8 +3,11 @@
 Generic Constants and Classes
 """
 import sys
+from collections import namedtuple
 
-VERSION = (1, 0)  # KERI Protocol Version
+Versionage = namedtuple("Versionage", "major minor")
+
+Version = Versionage(major=1, minor=0)  # KERI Protocol Version
 
 SEPARATOR =  "\r\n\r\n"
 SEPARATOR_BYTES = SEPARATOR.encode("utf-8")
@@ -18,6 +21,13 @@ class KeriError(Exception):
     """
 
 class ValidationError(KeriError):
+    """
+    Validation related errors
+    Usage:
+        raise ValidationError("error message")
+    """
+
+class VersionError(ValidationError):
     """
     Validation related errors
     Usage:

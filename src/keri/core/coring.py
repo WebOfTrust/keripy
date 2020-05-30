@@ -3,6 +3,7 @@
 keri.core.coring module
 
 """
+import re
 import json
 import cbor2 as cbor
 import msgpack
@@ -12,28 +13,64 @@ from collections import namedtuple
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
+from ..kering import ValidationError, VersionError, Versionage, Version
 
-from ..kering import ValidationError, VERSION
+
+BASE64_PAD = '='
 
 Serializations = namedtuple("Serializations", 'json mgpk cbor')
 
-Serials = Serializations(json='json', mgpk='mgpk', cbor='cbor')
+Serials = Serializations(json='JSON', mgpk='MGPK', cbor='CBOR')
 
 Mimes = Serializations(json='application/keri+json',
                        mgpk='application/keri+msgpack',
                        cbor='application/keri+cbor',)
 
-Versions = Serializations(json="KERI_{}_{}.{}".format(Serials.json, VERSION[0], VERSION[1]),
-                          mgpk="KERI_{}_{}.{}".format(Serials.mgpk, VERSION[0], VERSION[1]),
-                          cbor="KERI_{}_{}.{}".format(Serials.cbor, VERSION[0], VERSION[1]))
+VERRAWSIZE = 6  # hex characters in raw serialization size in version string
+# "{:0{}x}".format(300, 6)  # make num char in hex a variable
+# '00012c'
+VERFMT = "KERI{}{:x}{:x}{:0{}x}_"  #  version format string
 
+def Versify(kind, version=None, size=0):
+    """
+    Return version string
+    """
+    if kind not in Serials:
+        raise  ValueError("Invalid serialization kind = {}".format(kind))
+    version = version if version else Version
+    return VERFMT.format(kind, version[0], version[1], size, VERRAWSIZE)
 
-Sniffs = Serializations(json=b'{"vs":"KERI_json_',
-                        mgpk=b'\xa2vs\xadKERI_mgpk_',
-                        cbor=b'bvsmKERI_cbor_')
+Versions = Serializations(json=Versify(Serials.json, size=0),
+                          mgpk=Versify(Serials.mgpk, size=0),
+                          cbor=Versify(Serials.cbor, size=0))
 
+Sniffs = Serializations(json=b'KERIJSON',
+                        mgpk=b'KERIMGPK',
+                        cbor=b'KERICBOR')
 
-BASE64_PAD = '='
+VEREX = b'KERI(?P<kind>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<size>[0-9a-f]{6})_'
+Rever = re.compile(VEREX) #compile is faster
+
+def Deversify(vs):
+    """
+    Returns tuple(kind, version, size)
+      Where kind is serialization kind
+            version is version tuple
+            size is int of raw size
+    Parameters:
+      vs is version string str
+    """
+    match = Rever.match(vs.encode("utf-8"))  #  match takes bytes
+    if match:
+        kind, major, minor, size = match.group(1, 2, 3, 4)
+        kind = kind.decode("utf-8")
+        if kind not in Serials:
+            raise ValueError("Invalid serialization kind = {}".format(kind))
+        version = Versionage(major=int(major, 16), minor=int(minor, 16))
+        size = int(size, 16)
+        return(kind, version, size)
+
+    raise ValueError("Invalid version string = {}".format(vs))
 
 @dataclass(frozen=True)
 class SelectCodex:
@@ -233,121 +270,168 @@ class CryMat:
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil().encode("utf-8"))
 
-"""
-Need to add factory that figures out what type of event and creates appropriate
-subclass
 
 """
+Need to add Serdery  as Serder factory that figures out what type of
+serialization and creates appropriate subclass
 
-class KeyEventer:
+"""
+
+class Serder:
     """
-    KERI KeyEvent Serializer Deserializer
+    KERI Key Event Serializer Deserializer
+    Only Supports Current Version VERSION
 
     """
-
-
-    def __init__(self, raw=b'', kind=None, ked=None):
+    def __init__(self, raw=b'', ked=None, kind=None, size=0):
         """
         Parameters:
-          raw is bytes of serialized event
-          kind is serialization kind string value (see namedtuple coring.Serials)
+          raw is bytes of serialized event plus any attached signatures
+          ked is key event dict or None
+            if None its deserialized from raw
+          kind is serialization kind string value or None (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-          ked is key event dict
+            if kind is None then its extracted from ked or raw
+          size is int number of bytes in raw if any
+
+
+        Attributes:
+          .raw is bytes of serialized event only
+          .ked is key event dict
+          . kind is serialization kind string value (see namedtuple coring.Serials)
+            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+          .size is int of number of bytes in serialed event only
+
 
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
         """
-        if raw:
-            if not kind:
-                kind = self._sniff(raw)
-            if kind not in Serials:
-                raise ValueError("Unrecognized serialization ser='{}'".format(raw))
-            ked = self._inhale(raw, kind)
+        if raw:  # deserialize raw
+            ked, kind, size = self._inhale(raw=raw)
+        elif ked: # serialize ked
+            raw, kind = self._exhale(ked=ked, kind=kind)
+            size = len(raw)
 
-        self.raw = raw
-        self.kind = kind
+        self.raw = raw[:size]
         self.ked = ked
+        self.kind = kind
+        self.size = size
 
 
     @staticmethod
     def _sniff(raw):
         """
-        Returns serialization kind of serialized event ser by investigating
-        leading bytes
+        Returns serialization kind, version and size from serialized event raw
+        by investigating leading bytes that contain version string
 
         Parameters:
-          ser is bytes
+          raw is bytes of serialized event
+
         """
-        # Need to auto generate these from VERSION and store as module globals
+        match = Rever.search(raw)  #  Rever's regex takes bytes
+        if not match or match.start() > 12:
+            raise ValueError("Invalid version string in raw = {}".format(raw))
 
-        if raw.find(Sniffs.json) == 0:  #  json serialization
-            kind = Serials.json
-        elif 1 <= raw.find(Sniffs.mgpk) <= 8:  #  msgpack serialization
-            kind = Serials.mgpk
-        elif 1 <= raw.find(Sniffs.cbor) <= 8:  #  cbor serialization
-            kind = Serials.cbor
-        else:
-            kind = None  # unknown serializaiton kind
-
-        return kind
+        kind, major, minor, size = match.group(1, 2, 3, 4)
+        kind = kind.decode("utf-8")
+        if kind not in Serials:
+            raise ValueError("Invalid serialization kind = {}".format(kind))
+        version = Versionage(major=int(major, 16), minor=int(minor, 16))
+        size = int(size, 16)
+        return(kind, version, size)
 
 
-    def _inhale(self, raw, kind):
+    def _inhale(self, raw):
         """
         Parses serilized event ser of serialization kind and assigns to
         instance attributes.
 
         Parameters:
           raw is bytes of serialized event
-          kind id str of serialization kind (see namedtuple Serials)
+          kind id str of raw serialization kind (see namedtuple Serials)
+          size is int size of raw to be deserialized
 
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
 
         """
+        kind, version, size = self._sniff(raw)
+        if version != Version:
+            raise VersionError("Unsupported version = {}.{}".format(version.major,
+                                                                    version.minor))
+
         if kind == Serials.json:
             try:
-                ked = json.loads(raw.decode("utf-8"))
+                ked = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
                 raise ex
 
         elif kind == Serials.mgpk:
             try:
-                ked = msgpack.loads(raw)
+                ked = msgpack.loads(raw[:size])
             except Exception as ex:
                 raise ex
 
         elif kind ==  Serials.cbor:
             try:
-                ked = cbor.loads(raw)
+                ked = cbor.loads(raw[:size])
             except Exception as ex:
                 raise ex
 
         else:
             ked = None
 
-        return ked
+        return (ked, kind, size)
 
 
-    def _exhale(self, kind=None, ked=None):
+    def _exhale(self, ked,  kind=None):
         """
         ked is key event dict
-        Returns serialized event as bytes of kind
+        kind is serialization if given else use one given in ked
+        Returns tuple of (raw, kind) where raw is serialized event as bytes of kind
+        and kind is serialzation kind
+
+        Assumes only supports VERSION
         """
+        if "vs" not in ked:
+            raise ValueError("Missing or empty version string in key event dict = {}".format(ked))
+
+        knd, version, size = Deversify(ked['vs'])  # extract kind and version
+        if version != Version:
+            raise VersionError("Unsupported version = {}.{}".format(version.major,
+                                                                    version.minor))
+
+        if not kind:
+            kind = knd
+
         if kind not in Serials:
             raise ValueError("Invalid serialization kind = {}".format(kind))
 
-        if not ked:
-            raise ValueError("Missing or empty key event dict = {}".format(ked))
-
         if kind == Serials.json:
             raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
         elif kind == Serials.mgpk:
             raw = msgpack.dumps(ked)
+
         elif kind == Serials.cbor:
             raw = cbor.dumps(ked)
+
         else:
-            raw = b""
+            raise ValueError("Invalid serialization kind = {}".format(kind))
 
-        return raw
+        size = len(raw)
 
+        match = Rever.search(raw)  #  Rever's regex takes bytes
+        if not match:
+            raise ValueError("Invalid version string in raw = {}".format(raw))
+
+        fore, back = match.span()  #  full version string
+        # update vs with latest kind version size
+        vs = Versify(kind=kind, version=version, size=size)
+        # replace old version string in raw with new one
+        raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
+        if size != len(raw):  # substitution messed up
+            raise ValueError("Malformed version string size = {}".format(vs))
+        ked['vs'] = vs  #  update ked
+
+        return (raw, kind)
