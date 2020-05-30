@@ -14,11 +14,10 @@ import cbor2 as cbor
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
-from keri.kering import VERSION
+from keri.kering import Version, Versionage
 from keri.core.coring import Select, One, Two, Four, CryMat
 from keri.core.coring import Serializations,  Serials, Mimes, Versions, Sniffs
-from keri.core.coring import Serder
-from keri.core.coring import VERFMT
+from keri.core.coring import Versify, Deversify, Serder
 
 
 def test_derivationcodes():
@@ -139,6 +138,7 @@ def test_serials():
     """
     Test Serializations namedtuple instance Serials
     """
+    assert Version == Versionage(major=1, minor=0)
 
     assert isinstance(Serials, Serializations)
 
@@ -154,7 +154,6 @@ def test_serials():
     assert Mimes.mgpk == 'application/keri+msgpack'
     assert Mimes.cbor == 'application/keri+cbor'
 
-    assert VERSION == (1, 0)
     assert Versions.json == 'KERIJSON10000000_'
     assert Versions.mgpk == 'KERIMGPK10000000_'
     assert Versions.cbor == 'KERICBOR10000000_'
@@ -267,20 +266,32 @@ def test_serder():
     """
     Test the support functionality for key event serialization deserialization
     """
+    vs = Versify(Serials.json, size=0)
+    assert vs == "KERIJSON10000000_"
+    kind, version, size = Deversify(vs)
+    assert kind == Serials.json
+    assert version == Version
+    assert size == 0
+
+    vs = Versify(Serials.mgpk, size=65)
+    assert vs == "KERIMGPK10000041_"
+    kind, version, size = Deversify(vs)
+    assert kind == Serials.mgpk
+    assert version == Version
+    assert size == 65
+
     event = Serder()
 
     e1 = dict(vs=Versions.json, id="ABCDEFG", sn="0001", ilk="rot")
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    vs = VERFMT.format(Serials.json, VERSION[0], VERSION[1], len(e1s))  # use real length
+    vs = Versify(Serials.json, size=len(e1s))  # use real length
     assert vs == 'KERIJSON10000041_'
     e1["vs"] = vs  # has real length
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    kind1, size1 = event._sniff(e1s)
+    kind1, vers1, size1 = event._sniff(e1s)
     assert kind1 == Serials.json
     assert size1 == 65
     e1ss = e1s + b'extra attached at the end.'
-    ked1, knd1, siz1 = event._inhale(e1ss, kind1, size1)
-    assert ked1 == e1
     ked1, knd1, siz1 = event._inhale(e1ss)
     assert ked1 == e1
     assert knd1 == kind1
@@ -293,16 +304,14 @@ def test_serder():
     e2 = dict(e1)
     e2["vs"] = Versions.mgpk
     e2s = msgpack.dumps(e2)
-    vs = VERFMT.format(Serials.mgpk, VERSION[0], VERSION[1], len(e2s))  # use real length
+    vs = Versify(Serials.mgpk, size=len(e2s))  # use real length
     assert vs == 'KERIMGPK10000031_'
     e2["vs"] = vs  # has real length
     e2s = msgpack.dumps(e2)
-    kind2, size2 = event._sniff(e2s)
+    kind2, vers2, size2 = event._sniff(e2s)
     assert kind2 == Serials.mgpk
     assert size2 == 49
     e2ss = e2s + b'extra attached  at the end.'
-    ked2, knd2, siz2 = event._inhale(e2ss, kind2, size2)
-    assert ked2 == e2
     ked2, knd2, siz2 = event._inhale(e2ss)
     assert ked2 == e2
     assert knd2 == kind2
@@ -315,16 +324,14 @@ def test_serder():
     e3 = dict(e1)
     e3["vs"] = Versions.cbor
     e3s = cbor.dumps(e3)
-    vs = VERFMT.format(Serials.cbor, VERSION[0], VERSION[1], len(e3s))  # use real length
+    vs = Versify(Serials.cbor, size=len(e3s))  # use real length
     assert vs == 'KERICBOR10000031_'
     e3["vs"] = vs  # has real length
     e3s = cbor.dumps(e3)
-    kind3, size3 = event._sniff(e3s)
+    kind3, vers3, size3 = event._sniff(e3s)
     assert kind3 == Serials.cbor
     assert size3 == 49
     e3ss = e3s + b'extra attached  at the end.'
-    ked3, knd3, siz3 = event._inhale(e3ss, kind3, size3)
-    assert ked3 == e3
     ked3, knd3, siz3 = event._inhale(e3ss)
     assert ked3 == e3
     assert knd3 == kind3
@@ -334,22 +341,59 @@ def test_serder():
     assert raw3 == e3s
     assert knd3 == kind3
 
-    event = Serder(raw=e1ss)
-    assert event.kind == kind1
-    assert event.raw == e1s
-    assert event.ked == ked1
+    evt1 = Serder(raw=e1ss)
+    assert evt1.kind == kind1
+    assert evt1.raw == e1s
+    assert evt1.ked == ked1
+    assert evt1.size == size1
+    assert evt1.raw == e1ss[:size1]
 
-    # event = Serder(kind=kind1, ked=ked1)
+    evt1 = Serder(ked=ked1)
+    assert evt1.kind == kind1
+    assert evt1.raw == e1s
+    assert evt1.ked == ked1
+    assert evt1.size == size1
+    assert evt1.raw == e1ss[:size1]
 
-    event = Serder(raw=e2ss)
-    assert event.kind == kind2
-    assert event.raw == e2s
-    assert event.ked == ked2
+    evt2 = Serder(raw=e2ss)
+    assert evt2.kind == kind2
+    assert evt2.raw == e2s
+    assert evt2.ked == ked2
 
-    event = Serder(raw=e3ss)
-    assert event.kind == kind3
-    assert event.raw == e3s
-    assert event.ked == ked3
+    evt2 = Serder(ked=ked2)
+    assert evt2.kind == kind2
+    assert evt2.raw == e2s
+    assert evt2.ked == ked2
+    assert evt2.size == size2
+    assert evt2.raw == e2ss[:size2]
+
+    evt3 = Serder(raw=e3ss)
+    assert evt3.kind == kind3
+    assert evt3.raw == e3s
+    assert evt3.ked == ked3
+
+    evt3 = Serder(ked=ked3)
+    assert evt3.kind == kind3
+    assert evt3.raw == e3s
+    assert evt3.ked == ked3
+    assert evt3.size == size3
+    assert evt3.raw == e3ss[:size3]
+
+    # Test change in kind by Serder
+
+    evt1 = Serder(ked=ked1, kind=Serials.mgpk)  # ked is json but kind mgpk
+    assert evt1.kind == kind2
+    assert evt1.raw == e2s
+    assert evt1.ked == ked2
+    assert evt1.size == size2
+    assert evt1.raw == e2ss[:size2]
+
+    evt1 = Serder(ked=ked1, kind=Serials.cbor)  # ked is json but kind mgpk
+    assert evt1.kind == kind3
+    assert evt1.raw == e3s
+    assert evt1.ked == ked3
+    assert evt1.size == size3
+    assert evt1.raw == e3ss[:size3]
 
 
     """
