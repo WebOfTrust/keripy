@@ -29,26 +29,23 @@ Mimes = Serializations(json='application/keri+json',
 VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
 # '00012c'
-VERFMT = "KERI{}{:x}{:x}{:0{}x}_"  #  version format string
+VERFMT = "KERI{:x}{:x}{}{:0{}x}_"  #  version format string
 
-def Versify(kind, version=None, size=0):
+def Versify(version=None, kind=Serials.json, size=0):
     """
     Return version string
     """
     if kind not in Serials:
         raise  ValueError("Invalid serialization kind = {}".format(kind))
     version = version if version else Version
-    return VERFMT.format(kind, version[0], version[1], size, VERRAWSIZE)
+    return VERFMT.format(version[0], version[1], kind, size, VERRAWSIZE)
 
-Versions = Serializations(json=Versify(Serials.json, size=0),
-                          mgpk=Versify(Serials.mgpk, size=0),
-                          cbor=Versify(Serials.cbor, size=0))
+Versions = Serializations(json=Versify(kind=Serials.json, size=0),
+                          mgpk=Versify(kind=Serials.mgpk, size=0),
+                          cbor=Versify(kind=Serials.cbor, size=0))
 
-Sniffs = Serializations(json=b'KERIJSON',
-                        mgpk=b'KERIMGPK',
-                        cbor=b'KERICBOR')
 
-VEREX = b'KERI(?P<kind>[A-Z]{4})(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<size>[0-9a-f]{6})_'
+VEREX = b'KERI(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
 Rever = re.compile(VEREX) #compile is faster
 
 def Deversify(vs):
@@ -62,11 +59,11 @@ def Deversify(vs):
     """
     match = Rever.match(vs.encode("utf-8"))  #  match takes bytes
     if match:
-        kind, major, minor, size = match.group(1, 2, 3, 4)
+        major, minor, kind, size = match.group("major", "minor", "kind", "size")
+        version = Versionage(major=int(major, 16), minor=int(minor, 16))
         kind = kind.decode("utf-8")
         if kind not in Serials:
             raise ValueError("Invalid serialization kind = {}".format(kind))
-        version = Versionage(major=int(major, 16), minor=int(minor, 16))
         size = int(size, 16)
         return(kind, version, size)
 
@@ -332,11 +329,11 @@ class Serder:
         if not match or match.start() > 12:
             raise ValueError("Invalid version string in raw = {}".format(raw))
 
-        kind, major, minor, size = match.group(1, 2, 3, 4)
+        major, minor, kind, size = match.group("major", "minor", "kind", "size")
+        version = Versionage(major=int(major, 16), minor=int(minor, 16))
         kind = kind.decode("utf-8")
         if kind not in Serials:
             raise ValueError("Invalid serialization kind = {}".format(kind))
-        version = Versionage(major=int(major, 16), minor=int(minor, 16))
         size = int(size, 16)
         return(kind, version, size)
 
@@ -427,7 +424,7 @@ class Serder:
 
         fore, back = match.span()  #  full version string
         # update vs with latest kind version size
-        vs = Versify(kind=kind, version=version, size=size)
+        vs = Versify(version=version, kind=kind, size=size)
         # replace old version string in raw with new one
         raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
         if size != len(raw):  # substitution messed up

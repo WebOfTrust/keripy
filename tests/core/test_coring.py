@@ -16,7 +16,7 @@ from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage
 from keri.core.coring import Select, One, Two, Four, CryMat
-from keri.core.coring import Serializations,  Serials, Mimes, Versions, Sniffs
+from keri.core.coring import Serializations,  Serials, Mimes, Versions
 from keri.core.coring import Versify, Deversify, Serder
 
 
@@ -131,9 +131,6 @@ def test_crymat():
     Done Test
     """
 
-
-
-
 def test_serials():
     """
     Test Serializations namedtuple instance Serials
@@ -154,9 +151,9 @@ def test_serials():
     assert Mimes.mgpk == 'application/keri+msgpack'
     assert Mimes.cbor == 'application/keri+cbor'
 
-    assert Versions.json == 'KERIJSON10000000_'
-    assert Versions.mgpk == 'KERIMGPK10000000_'
-    assert Versions.cbor == 'KERICBOR10000000_'
+    assert Versions.json == 'KERI10JSON000000_'
+    assert Versions.mgpk == 'KERI10MGPK000000_'
+    assert Versions.cbor == 'KERI10CBOR000000_'
 
 
     icp = dict(vs = Versions.json,
@@ -190,73 +187,55 @@ def test_serials():
 
     icps = json.dumps(icp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert len(icps) == 314
-    assert icps == (b'{"vs":"KERIJSON10000000_","id":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    assert icps == (b'{"vs":"KERI10JSON000000_","id":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"icp","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"'
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"data":[],"'
                     b'sigs":[0]}')
 
+
     rots = json.dumps(rot, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert len(rots) == 324
-    assert rots == (b'{"vs":"KERIJSON10000000_","id":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    assert rots == (b'{"vs":"KERI10JSON000000_","id":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"rot","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"'
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"cuts":[],"adds":[],"'
                     b'data":[],"sigs":[0]}')
 
-    assert Sniffs.json == b'KERIJSON'
-    assert icps.find(Sniffs.json) == 7
-    assert rots.find(Sniffs.json) == 7
-
     icp["vs"] = Versions.mgpk
     icps = msgpack.dumps(icp)
     assert len(icps) == 271
-    assert icps == (b'\x8c\xa2vs\xb1KERIMGPK10000000_\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS'
+    assert icps == (b'\x8c\xa2vs\xb1KERI10MGPK000000_\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS'
                     b'VPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwyZ'
                     b'-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH'
                     b'3ULvYAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
                     b'CM\xa4toad\x00\xa4wits\x90\xa4data\x90\xa4sigs\x91\x00')
 
-
     rot["vs"] = Versions.mgpk
     rots = msgpack.dumps(rot)
     assert len(rots) == 277
-    assert rots == (b'\x8d\xa2vs\xb1KERIMGPK10000000_\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS'
+    assert rots == (b'\x8d\xa2vs\xb1KERI10MGPK000000_\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS'
                     b'VPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3rot\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwyZ'
                     b'-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH'
                     b'3ULvYAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
                     b'CM\xa4toad\x00\xa4cuts\x90\xa4adds\x90\xa4data\x90\xa4sigs\x91\x00')
 
-
-    assert Sniffs.mgpk == b'KERIMGPK'
-    assert icps.find(Sniffs.mgpk) == 5
-    assert rots.find(Sniffs.mgpk) == 5
-
     icp["vs"] = Versions.cbor
     icps = cbor.dumps(icp)
     assert len(icps) == 271
-    assert icps == (b'\xacbvsqKERICBOR10000000_bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMb'
+    assert icps == (b'\xacbvsqKERI10CBOR000000_bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMb'
                     b'snd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01d'
                     b'keys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZ'
                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80ddata\x80dsigs\x81\x00')
 
-
     rot["vs"] = Versions.cbor
     rots = cbor.dumps(rot)
     assert len(rots) == 277
-    assert rots == (b'\xadbvsqKERICBOR10000000_bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMb'
+    assert rots == (b'\xadbvsqKERI10CBOR000000_bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMb'
                     b'snd0001cilkcrotcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01d'
                     b'keys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZ'
                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dcuts\x80dadds\x80ddata\x80dsigs\x81'
                     b'\x00')
-
-
-
-    assert Sniffs.cbor == b'KERICBOR'
-    assert icps.find(Sniffs.cbor) == 5
-    assert rots.find(Sniffs.cbor) == 5
-
-
 
     """
     Done Test
@@ -266,15 +245,15 @@ def test_serder():
     """
     Test the support functionality for key event serialization deserialization
     """
-    vs = Versify(Serials.json, size=0)
-    assert vs == "KERIJSON10000000_"
+    vs = Versify(kind=Serials.json, size=0)
+    assert vs == "KERI10JSON000000_"
     kind, version, size = Deversify(vs)
     assert kind == Serials.json
     assert version == Version
     assert size == 0
 
-    vs = Versify(Serials.mgpk, size=65)
-    assert vs == "KERIMGPK10000041_"
+    vs = Versify(kind=Serials.mgpk, size=65)
+    assert vs == "KERI10MGPK000041_"
     kind, version, size = Deversify(vs)
     assert kind == Serials.mgpk
     assert version == Version
@@ -284,8 +263,8 @@ def test_serder():
 
     e1 = dict(vs=Versions.json, id="ABCDEFG", sn="0001", ilk="rot")
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    vs = Versify(Serials.json, size=len(e1s))  # use real length
-    assert vs == 'KERIJSON10000041_'
+    vs = Versify(kind=Serials.json, size=len(e1s))  # use real length
+    assert vs == 'KERI10JSON000041_'
     e1["vs"] = vs  # has real length
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     kind1, vers1, size1 = event._sniff(e1s)
@@ -304,8 +283,8 @@ def test_serder():
     e2 = dict(e1)
     e2["vs"] = Versions.mgpk
     e2s = msgpack.dumps(e2)
-    vs = Versify(Serials.mgpk, size=len(e2s))  # use real length
-    assert vs == 'KERIMGPK10000031_'
+    vs = Versify(kind=Serials.mgpk, size=len(e2s))  # use real length
+    assert vs == 'KERI10MGPK000031_'
     e2["vs"] = vs  # has real length
     e2s = msgpack.dumps(e2)
     kind2, vers2, size2 = event._sniff(e2s)
@@ -324,8 +303,8 @@ def test_serder():
     e3 = dict(e1)
     e3["vs"] = Versions.cbor
     e3s = cbor.dumps(e3)
-    vs = Versify(Serials.cbor, size=len(e3s))  # use real length
-    assert vs == 'KERICBOR10000031_'
+    vs = Versify(kind=Serials.cbor, size=len(e3s))  # use real length
+    assert vs == 'KERI10CBOR000031_'
     e3["vs"] = vs  # has real length
     e3s = cbor.dumps(e3)
     kind3, vers3, size3 = event._sniff(e3s)
@@ -678,4 +657,4 @@ def test_blake3():
     Done Test
     """
 if __name__ == "__main__":
-    test_serder()
+    test_serials()
