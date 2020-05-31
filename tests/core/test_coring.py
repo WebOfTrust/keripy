@@ -194,7 +194,7 @@ def test_serials():
                     b'sigs":[0]}')
 
     match = Rever.search(icps)
-    # assert match.group ==
+    assert match.group() == Vstrings.json.encode("utf-8")
 
     rots = json.dumps(rot, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert len(rots) == 324
@@ -204,7 +204,8 @@ def test_serials():
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"cuts":[],"adds":[],"'
                     b'data":[],"sigs":[0]}')
 
-
+    match = Rever.search(rots)
+    assert match.group() == Vstrings.json.encode("utf-8")
 
     icp["vs"] = Vstrings.mgpk
     icps = msgpack.dumps(icp)
@@ -215,6 +216,9 @@ def test_serials():
                     b'3ULvYAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
                     b'CM\xa4toad\x00\xa4wits\x90\xa4data\x90\xa4sigs\x91\x00')
 
+    match = Rever.search(icps)
+    assert match.group() == Vstrings.mgpk.encode("utf-8")
+
     rot["vs"] = Vstrings.mgpk
     rots = msgpack.dumps(rot)
     assert len(rots) == 277
@@ -224,6 +228,9 @@ def test_serials():
                     b'3ULvYAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
                     b'CM\xa4toad\x00\xa4cuts\x90\xa4adds\x90\xa4data\x90\xa4sigs\x91\x00')
 
+    match = Rever.search(rots)
+    assert match.group() == Vstrings.mgpk.encode("utf-8")
+
     icp["vs"] = Vstrings.cbor
     icps = cbor.dumps(icp)
     assert len(icps) == 271
@@ -231,6 +238,9 @@ def test_serials():
                     b'snd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01d'
                     b'keys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZ'
                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80ddata\x80dsigs\x81\x00')
+
+    match = Rever.search(icps)
+    assert match.group() == Vstrings.cbor.encode("utf-8")
 
     rot["vs"] = Vstrings.cbor
     rots = cbor.dumps(rot)
@@ -240,6 +250,9 @@ def test_serials():
                     b'keys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZ'
                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dcuts\x80dadds\x80ddata\x80dsigs\x81'
                     b'\x00')
+
+    match = Rever.search(rots)
+    assert match.group() == Vstrings.cbor.encode("utf-8")
 
     """
     Done Test
