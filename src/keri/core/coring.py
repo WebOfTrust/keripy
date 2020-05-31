@@ -77,6 +77,7 @@ class SelectCodex:
     exclusion via 'in' operator works.
     """
     two: str = '0'  # use two character table.
+    four: str = '1'  # use four character table.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -209,6 +210,7 @@ class CryMat:
         m = len(raw) % 3
         return (3 - m if m else 0)
 
+
     def _infil(self):
         """
         Returns fully qualified base64 given self.pad, self.code and self.raw
@@ -222,6 +224,7 @@ class CryMat:
                                   .format(self.code, self.pad))
         # prepending derivation code and strip off trailing pad characters
         return (self.code + encodeB64(self.raw).decode("utf-8")[:-pad])
+
 
     def _exfil(self, qb64):
         """
@@ -238,7 +241,6 @@ class CryMat:
             pad = pre % 4  # pad is remainder pre mod 4
             # strip off prepended code and append pad characters
             base = qb64[pre:] + pad * BASE64_PAD
-
 
         elif code == Select.two: # two char code
             code = qb64[pre-1:pre+1]
@@ -259,6 +261,7 @@ class CryMat:
 
         self.code = code
         self.raw = raw
+
 
     @property
     def pad(self):
