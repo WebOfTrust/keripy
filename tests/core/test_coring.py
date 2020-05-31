@@ -270,7 +270,7 @@ def test_serials():
 
 def test_serder():
     """
-    Test the support functionality for key event serialization deserialization
+    Test the support functionality for Serder key event serialization deserialization
     """
     vs = Versify(kind=Serials.json, size=0)
     assert vs == "KERI10JSON000000_"
@@ -286,24 +286,28 @@ def test_serder():
     assert version == Version
     assert size == 65
 
-    event = Serder()
+    with pytest.raises(ValueError):
+        serder = Serder()
+
 
     e1 = dict(vs=Vstrings.json, id="ABCDEFG", sn="0001", ilk="rot")
+    serder = Serder(ked=e1)
+
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     vs = Versify(kind=Serials.json, size=len(e1s))  # use real length
     assert vs == 'KERI10JSON000041_'
     e1["vs"] = vs  # has real length
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    kind1, vers1, size1 = event._sniff(e1s)
+    kind1, vers1, size1 = serder._sniff(e1s)
     assert kind1 == Serials.json
     assert size1 == 65
     e1ss = e1s + b'extra attached at the end.'
-    ked1, knd1, siz1 = event._inhale(e1ss)
+    ked1, knd1, siz1 = serder._inhale(e1ss)
     assert ked1 == e1
     assert knd1 == kind1
     assert siz1 == size1
 
-    raw1, knd1 = event._exhale(ked=ked1)
+    raw1, knd1 = serder._exhale(ked=ked1)
     assert raw1 == e1s
     assert knd1 == kind1
 
@@ -314,16 +318,16 @@ def test_serder():
     assert vs == 'KERI10MGPK000031_'
     e2["vs"] = vs  # has real length
     e2s = msgpack.dumps(e2)
-    kind2, vers2, size2 = event._sniff(e2s)
+    kind2, vers2, size2 = serder._sniff(e2s)
     assert kind2 == Serials.mgpk
     assert size2 == 49
     e2ss = e2s + b'extra attached  at the end.'
-    ked2, knd2, siz2 = event._inhale(e2ss)
+    ked2, knd2, siz2 = serder._inhale(e2ss)
     assert ked2 == e2
     assert knd2 == kind2
     assert siz2 == size2
 
-    raw2, knd2 = event._exhale(ked=ked2)
+    raw2, knd2 = serder._exhale(ked=ked2)
     assert raw2 == e2s
     assert knd2 == kind2
 
@@ -334,16 +338,16 @@ def test_serder():
     assert vs == 'KERI10CBOR000031_'
     e3["vs"] = vs  # has real length
     e3s = cbor.dumps(e3)
-    kind3, vers3, size3 = event._sniff(e3s)
+    kind3, vers3, size3 = serder._sniff(e3s)
     assert kind3 == Serials.cbor
     assert size3 == 49
     e3ss = e3s + b'extra attached  at the end.'
-    ked3, knd3, siz3 = event._inhale(e3ss)
+    ked3, knd3, siz3 = serder._inhale(e3ss)
     assert ked3 == e3
     assert knd3 == kind3
     assert siz3 == size3
 
-    raw3, knd3 = event._exhale(ked=ked3)
+    raw3, knd3 = serder._exhale(ked=ked3)
     assert raw3 == e3s
     assert knd3 == kind3
 

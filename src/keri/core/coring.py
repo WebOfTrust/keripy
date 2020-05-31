@@ -332,6 +332,8 @@ class Serder:
         elif ked: # serialize ked
             raw, kind = self._exhale(ked=ked, kind=kind)
             size = len(raw)
+        else:
+            raise ValueError("Improper initialization need raw or ked.")
 
         self.raw = raw[:size]
         self.ked = ked
