@@ -87,7 +87,7 @@ Select = SelectCodex()  # Make instance
 class OneCodex:
     """
     One codex of one character length derivation codes
-    Only provide defined characters. Undefined are left out so that inclusion
+    Only provide defined codes. Undefined are left out so that inclusion
     exclusion via 'in' operator works.
 
     Note binary length of everything in One results in 1 Base64 pad byte.
@@ -108,11 +108,19 @@ class OneCodex:
 
 One = OneCodex()  # Make instance
 
+
+# Mapping of Code to Size
+OneSizes = {
+            "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
+            "G": 44, "H": 44, "I": 44, "J": 44,
+           }
+
+
 @dataclass(frozen=True)
 class TwoCodex:
     """
     Two codex of two character length derivation codes
-    Only provide defined characters. Undefined are left out so that inclusion
+    Only provide defined codes. Undefined are left out so that inclusion
     exclusion via 'in' operator works.
 
     Note binary length of everything in Two results in 2 Base64 pad bytes.
@@ -126,11 +134,17 @@ class TwoCodex:
 
 Two = TwoCodex()  #  Make instance
 
+# Mapping of Code to Size
+TwoSizes = {
+            "0A": 88,
+            "0B": 88,
+           }
+
 @dataclass(frozen=True)
 class FourCodex:
     """
     Four codex of four character length derivation codes
-    Only provide defined characters. Undefined are left out so that inclusion
+    Only provide defined codes. Undefined are left out so that inclusion
     exclusion via 'in' operator works.
 
     Note binary length of everything in Four results in 0 Base64 pad bytes.
@@ -140,6 +154,9 @@ class FourCodex:
         return iter(astuple(self))
 
 Four = FourCodex()  #  Make instance
+
+# Mapping of Code to Size
+FourSizes = {}
 
 
 class CryMat:
@@ -213,18 +230,25 @@ class CryMat:
         pre = 1
         code = qb64[:pre]
 
+        # need to map code to length so can only consume proper number of chars
+        #  from front of qb64 so can use with full identifiers not just id prefixes
+
         if code in One:  # One Char code
+            qb64 = qb64[:OneSizes[code]]  # strip of identifier after prefix
             pad = pre % 4  # pad is remainder pre mod 4
             # strip off prepended code and append pad characters
             base = qb64[pre:] + pad * BASE64_PAD
+
 
         elif code == Select.two: # two char code
             code = qb64[pre-1:pre+1]
             if code not in Two:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+            qb64 = qb64[:TwoSizes[code]]  # strip of identifier after prefix
             pre += 1
-            pad = pre % 4
-            base = qb64[pre:] + pad * BASE64_PAD
+            pad = pre % 4 # pad is remainder pre mod 4
+            # strip off prepended code and append pad characters
+            base = qb64[pre:TwoSizes[code]] + pad * BASE64_PAD
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
 

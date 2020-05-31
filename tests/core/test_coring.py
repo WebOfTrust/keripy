@@ -101,6 +101,14 @@ def test_crymat():
     assert crymat.code == One.Ed25519N
     assert crymat.raw == verkey
 
+    # test prefix on full identifier
+    full = prefix + ":mystuff/mypath/toresource?query=what#fragment"
+    crymat = CryMat(qb64=full)
+    assert crymat.code == One.Ed25519N
+    assert crymat.raw == verkey
+    assert crymat.qb64 == prefix
+    assert crymat.qb2 == prebin
+
     sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
            b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
            b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
@@ -126,6 +134,8 @@ def test_crymat():
     crymat = CryMat(qb2=qbin)
     assert crymat.raw == sig
     assert crymat.code == Two.Ed25519
+
+
 
     """
     Done Test
