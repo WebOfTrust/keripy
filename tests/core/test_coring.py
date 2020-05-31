@@ -16,8 +16,8 @@ from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage
 from keri.core.coring import Select, One, Two, Four, CryMat
-from keri.core.coring import Serializations,  Serials, Mimes, Versions
-from keri.core.coring import Versify, Deversify, Serder
+from keri.core.coring import Serialage, Serials, Mimes, Vstrings
+from keri.core.coring import Versify, Deversify, Rever, Serder
 
 
 def test_derivationcodes():
@@ -137,7 +137,7 @@ def test_serials():
     """
     assert Version == Versionage(major=1, minor=0)
 
-    assert isinstance(Serials, Serializations)
+    assert isinstance(Serials, Serialage)
 
     assert Serials.json == 'JSON'
     assert Serials.mgpk == 'MGPK'
@@ -151,12 +151,12 @@ def test_serials():
     assert Mimes.mgpk == 'application/keri+msgpack'
     assert Mimes.cbor == 'application/keri+cbor'
 
-    assert Versions.json == 'KERI10JSON000000_'
-    assert Versions.mgpk == 'KERI10MGPK000000_'
-    assert Versions.cbor == 'KERI10CBOR000000_'
+    assert Vstrings.json == 'KERI10JSON000000_'
+    assert Vstrings.mgpk == 'KERI10MGPK000000_'
+    assert Vstrings.cbor == 'KERI10CBOR000000_'
 
 
-    icp = dict(vs = Versions.json,
+    icp = dict(vs = Vstrings.json,
               id = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
               sn = '0001',
               ilk = 'icp',
@@ -170,7 +170,7 @@ def test_serials():
               sigs = [0]
              )
 
-    rot = dict(vs = Versions.json,
+    rot = dict(vs = Vstrings.json,
               id = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
               sn = '0001',
               ilk = 'rot',
@@ -193,6 +193,8 @@ def test_serials():
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"data":[],"'
                     b'sigs":[0]}')
 
+    match = Rever.search(icps)
+    # assert match.group ==
 
     rots = json.dumps(rot, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert len(rots) == 324
@@ -202,7 +204,9 @@ def test_serials():
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"cuts":[],"adds":[],"'
                     b'data":[],"sigs":[0]}')
 
-    icp["vs"] = Versions.mgpk
+
+
+    icp["vs"] = Vstrings.mgpk
     icps = msgpack.dumps(icp)
     assert len(icps) == 271
     assert icps == (b'\x8c\xa2vs\xb1KERI10MGPK000000_\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS'
@@ -211,7 +215,7 @@ def test_serials():
                     b'3ULvYAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
                     b'CM\xa4toad\x00\xa4wits\x90\xa4data\x90\xa4sigs\x91\x00')
 
-    rot["vs"] = Versions.mgpk
+    rot["vs"] = Vstrings.mgpk
     rots = msgpack.dumps(rot)
     assert len(rots) == 277
     assert rots == (b'\x8d\xa2vs\xb1KERI10MGPK000000_\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS'
@@ -220,7 +224,7 @@ def test_serials():
                     b'3ULvYAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
                     b'CM\xa4toad\x00\xa4cuts\x90\xa4adds\x90\xa4data\x90\xa4sigs\x91\x00')
 
-    icp["vs"] = Versions.cbor
+    icp["vs"] = Vstrings.cbor
     icps = cbor.dumps(icp)
     assert len(icps) == 271
     assert icps == (b'\xacbvsqKERI10CBOR000000_bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMb'
@@ -228,7 +232,7 @@ def test_serials():
                     b'keys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZ'
                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80ddata\x80dsigs\x81\x00')
 
-    rot["vs"] = Versions.cbor
+    rot["vs"] = Vstrings.cbor
     rots = cbor.dumps(rot)
     assert len(rots) == 277
     assert rots == (b'\xadbvsqKERI10CBOR000000_bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMb'
@@ -261,7 +265,7 @@ def test_serder():
 
     event = Serder()
 
-    e1 = dict(vs=Versions.json, id="ABCDEFG", sn="0001", ilk="rot")
+    e1 = dict(vs=Vstrings.json, id="ABCDEFG", sn="0001", ilk="rot")
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     vs = Versify(kind=Serials.json, size=len(e1s))  # use real length
     assert vs == 'KERI10JSON000041_'
@@ -281,7 +285,7 @@ def test_serder():
     assert knd1 == kind1
 
     e2 = dict(e1)
-    e2["vs"] = Versions.mgpk
+    e2["vs"] = Vstrings.mgpk
     e2s = msgpack.dumps(e2)
     vs = Versify(kind=Serials.mgpk, size=len(e2s))  # use real length
     assert vs == 'KERI10MGPK000031_'
@@ -301,7 +305,7 @@ def test_serder():
     assert knd2 == kind2
 
     e3 = dict(e1)
-    e3["vs"] = Versions.cbor
+    e3["vs"] = Vstrings.cbor
     e3s = cbor.dumps(e3)
     vs = Versify(kind=Serials.cbor, size=len(e3s))  # use real length
     assert vs == 'KERI10CBOR000031_'

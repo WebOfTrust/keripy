@@ -18,11 +18,11 @@ from ..kering import ValidationError, VersionError, Versionage, Version
 
 BASE64_PAD = '='
 
-Serializations = namedtuple("Serializations", 'json mgpk cbor')
+Serialage = namedtuple("Serializations", 'json mgpk cbor')
 
-Serials = Serializations(json='JSON', mgpk='MGPK', cbor='CBOR')
+Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
-Mimes = Serializations(json='application/keri+json',
+Mimes = Serialage(json='application/keri+json',
                        mgpk='application/keri+msgpack',
                        cbor='application/keri+cbor',)
 
@@ -40,9 +40,9 @@ def Versify(version=None, kind=Serials.json, size=0):
     version = version if version else Version
     return VERFMT.format(version[0], version[1], kind, size, VERRAWSIZE)
 
-Versions = Serializations(json=Versify(kind=Serials.json, size=0),
-                          mgpk=Versify(kind=Serials.mgpk, size=0),
-                          cbor=Versify(kind=Serials.cbor, size=0))
+Vstrings = Serialage(json=Versify(kind=Serials.json, size=0),
+                     mgpk=Versify(kind=Serials.mgpk, size=0),
+                     cbor=Versify(kind=Serials.cbor, size=0))
 
 
 VEREX = b'KERI(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
