@@ -16,6 +16,7 @@ from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage
 from keri.core.coring import Select, One, Two, Four, CryMat
+from keri.core.coring import IntToB64, B64ToInt, SigTwo, SigTwoSizes, SigMat
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, Serder
 
@@ -140,6 +141,84 @@ def test_crymat():
     """
     Done Test
     """
+
+def test_sigmat():
+    """
+    Test the support functionality for attached signature cryptographic material
+    """
+    assert SigTwo.Ed25519 ==  'A'  # Ed25519 signature.
+    assert SigTwo.ECDSA_256k1 == 'B'  # ECDSA secp256k1 signature.
+
+    assert SigTwoSizes[SigTwo.Ed25519] == 88
+    assert SigTwoSizes[SigTwo.ECDSA_256k1] == 88
+
+    cs = IntToB64(80)
+    assert cs ==  "BQ"
+    i = B64ToInt(cs)
+    assert i ==  80
+
+    sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
+           b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
+           b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
+    assert len(sig) == 64
+
+    sig64 = encodeB64(sig).decode("utf-8")
+    assert len(sig64) == 88
+    assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
+
+    qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    assert len(qsig64) == 88
+    qbin = decodeB64(qsig64.encode("utf-8"))
+    assert len(qbin) == 66
+    assert qbin == (b'\x00\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+                    b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
+                    b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
+
+
+    sigmat = SigMat(raw=sig)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsig64
+    assert sigmat.qb2 == qbin
+
+    sigmat = SigMat(qb64=qsig64)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.index == 0
+
+    sigmat = SigMat(qb2=qbin)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.index == 0
+
+    sigmat = SigMat(raw=sig, code=SigTwo.Ed25519, index=5)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.index == 5
+    qsig64 = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    assert sigmat.qb64 == qsig64
+    qbin = (b'\x00Y\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+            b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
+            b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
+    assert sigmat.qb2 == qbin
+
+    sigmat = SigMat(qb64=qsig64)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.index == 5
+
+    sigmat = SigMat(qb2=qbin)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.index == 5
+
+
+    """
+    Done Test
+    """
+
 
 def test_serials():
     """
@@ -688,4 +767,4 @@ def test_blake3():
     Done Test
     """
 if __name__ == "__main__":
-    test_serials()
+    test_sigmat()
