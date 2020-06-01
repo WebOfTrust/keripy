@@ -15,7 +15,7 @@ from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage
-from keri.core.coring import Select, One, Two, Four, CryMat
+from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat
 from keri.core.coring import IntToB64, B64ToInt, SigTwo, SigTwoSizes, SigMat
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, Serder
@@ -25,43 +25,43 @@ def test_derivationcodes():
     """
     Test the support functionality for derivation codes
     """
-    assert Select.two == '0'
+    assert CrySelect.two == '0'
 
-    assert 'A' not in Select
+    assert 'A' not in CrySelect
 
     for x in ['0']:
-        assert x in Select
+        assert x in CrySelect
 
-    assert One.Ed25519N == 'A'
-    assert One.X25519 == 'B'
-    assert One.Ed25519 == 'C'
-    assert One.Blake3_256 == 'D'
-    assert One.Blake2b_256 == 'E'
-    assert One.Blake2s_256 == 'F'
-    assert One.ECDSA_256k1N == 'G'
-    assert One.ECDSA_256k1 == 'H'
-    assert One.SHA3_256 == 'I'
-    assert One.SHA2_256 == 'J'
+    assert CryOne.Ed25519N == 'A'
+    assert CryOne.X25519 == 'B'
+    assert CryOne.Ed25519 == 'C'
+    assert CryOne.Blake3_256 == 'D'
+    assert CryOne.Blake2b_256 == 'E'
+    assert CryOne.Blake2s_256 == 'F'
+    assert CryOne.ECDSA_256k1N == 'G'
+    assert CryOne.ECDSA_256k1 == 'H'
+    assert CryOne.SHA3_256 == 'I'
+    assert CryOne.SHA2_256 == 'J'
 
-    assert '0' not in One
+    assert '0' not in CryOne
 
     for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']:
-        assert x in One
+        assert x in CryOne
 
-    assert Two.Ed25519 == '0A'
-    assert Two.ECDSA_256k1 == '0B'
+    assert CryTwo.Ed25519 == '0A'
+    assert CryTwo.ECDSA_256k1 == '0B'
 
-    assert 'A' not in Two
+    assert 'A' not in CryTwo
 
     for x in ['0A', '0B']:
-        assert x in Two
+        assert x in CryTwo
 
-    assert '0' not in Four
-    assert 'A' not in Four
-    assert '0A' not in Four
+    assert '0' not in CryFour
+    assert 'A' not in CryFour
+    assert '0A' not in CryFour
 
     for x in []:
-        assert x in Four
+        assert x in CryFour
 
 
     """
@@ -83,7 +83,7 @@ def test_crymat():
 
     crymat = CryMat(raw=verkey)
     assert crymat.raw == verkey
-    assert crymat.code == One.Ed25519N
+    assert crymat.code == CryOne.Ed25519N
     assert crymat.qb64 == prefix
     assert crymat.qb2 == prebin
 
@@ -91,21 +91,21 @@ def test_crymat():
     assert crymat.qb2 == decodeB64(crymat.qb64.encode("utf-8"))
 
     crymat._exfil(prefix)
-    assert crymat.code == One.Ed25519N
+    assert crymat.code == CryOne.Ed25519N
     assert crymat.raw == verkey
 
     crymat = CryMat(qb64=prefix)
-    assert crymat.code == One.Ed25519N
+    assert crymat.code == CryOne.Ed25519N
     assert crymat.raw == verkey
 
     crymat = CryMat(qb2=prebin)
-    assert crymat.code == One.Ed25519N
+    assert crymat.code == CryOne.Ed25519N
     assert crymat.raw == verkey
 
     # test prefix on full identifier
     full = prefix + ":mystuff/mypath/toresource?query=what#fragment"
     crymat = CryMat(qb64=full)
-    assert crymat.code == One.Ed25519N
+    assert crymat.code == CryOne.Ed25519N
     assert crymat.raw == verkey
     assert crymat.qb64 == prefix
     assert crymat.qb2 == prebin
@@ -122,19 +122,19 @@ def test_crymat():
             b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
             b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
 
-    crymat = CryMat(raw=sig, code=Two.Ed25519)
+    crymat = CryMat(raw=sig, code=CryTwo.Ed25519)
     assert crymat.raw == sig
-    assert crymat.code == Two.Ed25519
+    assert crymat.code == CryTwo.Ed25519
     assert crymat.qb64 == qsig64
     assert crymat.qb2 == qbin
 
     crymat = CryMat(qb64=qsig64)
     assert crymat.raw == sig
-    assert crymat.code == Two.Ed25519
+    assert crymat.code == CryTwo.Ed25519
 
     crymat = CryMat(qb2=qbin)
     assert crymat.raw == sig
-    assert crymat.code == Two.Ed25519
+    assert crymat.code == CryTwo.Ed25519
 
 
 

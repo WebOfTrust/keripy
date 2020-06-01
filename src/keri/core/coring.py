@@ -67,9 +67,9 @@ def Deversify(vs):
     raise ValueError("Invalid version string = {}".format(vs))
 
 @dataclass(frozen=True)
-class SelectCodex:
+class CrySelectCodex:
     """
-    Select codex of selector characters
+    Select codex of selector characters for cyptographic material
     Only provide defined characters. Undefined are left out so that inclusion
     exclusion via 'in' operator works.
     """
@@ -79,10 +79,10 @@ class SelectCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-Select = SelectCodex()  # Make instance
+CrySelect = CrySelectCodex()  # Make instance
 
 @dataclass(frozen=True)
-class OneCodex:
+class CryOneCodex:
     """
     One codex of one character length derivation codes
     Only provide defined codes. Undefined are left out so that inclusion
@@ -104,18 +104,18 @@ class OneCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-One = OneCodex()  # Make instance
+CryOne = CryOneCodex()  # Make instance
 
 
 # Mapping of Code to Size
-OneSizes = {
+CryOneSizes = {
             "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
             "G": 44, "H": 44, "I": 44, "J": 44,
            }
 
 
 @dataclass(frozen=True)
-class TwoCodex:
+class CryTwoCodex:
     """
     Two codex of two character length derivation codes
     Only provide defined codes. Undefined are left out so that inclusion
@@ -130,16 +130,16 @@ class TwoCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-Two = TwoCodex()  #  Make instance
+CryTwo = CryTwoCodex()  #  Make instance
 
 # Mapping of Code to Size
-TwoSizes = {
+CryTwoSizes = {
             "0A": 88,
             "0B": 88,
            }
 
 @dataclass(frozen=True)
-class FourCodex:
+class CryFourCodex:
     """
     Four codex of four character length derivation codes
     Only provide defined codes. Undefined are left out so that inclusion
@@ -151,10 +151,10 @@ class FourCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-Four = FourCodex()  #  Make instance
+CryFour = CryFourCodex()  #  Make instance
 
 # Mapping of Code to Size
-FourSizes = {}
+CryFourSizes = {}
 
 
 class CryMat:
@@ -164,7 +164,7 @@ class CryMat:
     Sub classes provide key event element context.
     """
 
-    def __init__(self, raw=b'', qb64='', qb2='', code=One.Ed25519N):
+    def __init__(self, raw=b'', qb64='', qb2='', code=CryOne.Ed25519N):
         """
         Validate as fully qualified
         Parameters:
@@ -182,9 +182,9 @@ class CryMat:
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
             pad = self._pad(raw)
-            if (not ( (pad == 1 and (code in One)) or  # One or Five or Nine
-                      (pad == 2 and (code in Two)) or  # Two or Six or Ten
-                      (pad == 0 and (code in Four)) )):  #  Four or Eight
+            if (not ( (pad == 1 and (code in CryOne)) or  # One or Five or Nine
+                      (pad == 2 and (code in CryTwo)) or  # Two or Six or Ten
+                      (pad == 0 and (code in CryFour)) )):  #  Four or Eight
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
 
@@ -234,15 +234,15 @@ class CryMat:
         # need to map code to length so can only consume proper number of chars
         #  from front of qb64 so can use with full identifiers not just id prefixes
 
-        if code in One:  # One Char code
-            qb64 = qb64[:OneSizes[code]]  # strip of identifier after prefix
+        if code in CryOne:  # One Char code
+            qb64 = qb64[:CryOneSizes[code]]  # strip of identifier after prefix
 
-        elif code == Select.two: # first char of two char code
+        elif code == CrySelect.two: # first char of two char code
             pre += 1
             code = qb64[pre-2:pre]  #  get full code
-            if code not in Two:
+            if code not in CryTwo:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:TwoSizes[code]]  # strip of identifier after prefix
+            qb64 = qb64[:CryTwoSizes[code]]  # strip of identifier after prefix
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
@@ -326,7 +326,7 @@ def B64ToInt(cs):
 @dataclass(frozen=True)
 class SigSelectCodex:
     """
-    Select codex of selector characters
+    Select codex of selector characters for attached signature cyptographic material
     Only provide defined characters. Undefined are left out so that inclusion
     exclusion via 'in' operator works.
     """
