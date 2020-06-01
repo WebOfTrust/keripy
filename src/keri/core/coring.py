@@ -238,11 +238,11 @@ class CryMat:
             qb64 = qb64[:OneSizes[code]]  # strip of identifier after prefix
 
         elif code == Select.two: # first char of two char code
-            qb64 = qb64[:TwoSizes[code]]  # strip of identifier after prefix
             pre += 1
             code = qb64[pre-2:pre]  #  get full code
             if code not in Two:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+            qb64 = qb64[:TwoSizes[code]]  # strip of identifier after prefix
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
@@ -525,11 +525,11 @@ class SigMat:
             index = B64IdxByChr[qb64[pre-1:pre]]
 
         elif code == SigSelect.four:  #  '0'
-            qb64 = qb64[:SigFourSizes[code]]  # strip of identifier after prefix
             pre += 1
             code = qb64[pre-2:pre]
             if code not in SigFour:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+            qb64 = qb64[:SigFourSizes[code]]  # strip of identifier after prefix
             pre += 2
             index = B64ToInt(qb64[pre-2:pre])
 

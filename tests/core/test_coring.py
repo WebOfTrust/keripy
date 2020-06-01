@@ -767,4 +767,4 @@ def test_blake3():
     Done Test
     """
 if __name__ == "__main__":
-    test_sigmat()
+    test_crymat()
