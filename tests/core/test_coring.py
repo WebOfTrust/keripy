@@ -508,6 +508,12 @@ def test_serder():
     assert evt2.ked == evt1.ked
     assert evt2.size == evt1.size
 
+    # use kind setter property
+    assert evt2.kind == Serials.cbor
+    evt2.kind = Serials.json
+    assert evt2.kind == Serials.json
+    knd, version, size = Deversify(evt2.ked['vs'])
+    assert knd == Serials.json
 
     """
     Done Test
