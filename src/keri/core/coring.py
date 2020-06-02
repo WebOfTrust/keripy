@@ -593,7 +593,7 @@ class Serder:
     Only Supports Current Version VERSION
 
     """
-    def __init__(self, raw=b'', ked=None, kind=None, size=0):
+    def __init__(self, raw=b'', ked=None, kind=None):
         """
         Parameters:
           raw is bytes of serialized event plus any attached signatures
@@ -608,7 +608,7 @@ class Serder:
         Attributes:
           .raw is bytes of serialized event only
           .ked is key event dict
-          . kind is serialization kind string value (see namedtuple coring.Serials)
+          .kind is serialization kind string value (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
           .size is int of number of bytes in serialed event only
 
@@ -617,18 +617,20 @@ class Serder:
           loads and jumps of json use str whereas cbor and msgpack use bytes
         """
         if raw:  # deserialize raw
-            ked, kind, size = self._inhale(raw=raw)
+            # ked, kind, size = self._inhale(raw=raw)
+            self.raw = raw
         elif ked: # serialize ked
-            raw, kind = self._exhale(ked=ked, kind=kind)
-            size = len(raw)
+            # raw, kind, ked = self._exhale(ked=ked, kind=kind)
+            # size = len(raw)
+            self._kind = kind
+            self.ked = ked
         else:
             raise ValueError("Improper initialization need raw or ked.")
 
-        self.raw = raw[:size]
-        self.ked = ked
-        self.kind = kind
-        self.size = size
-
+        #self._raw = raw[:size]
+        #self._ked = ked
+        #self._kind = kind
+        #self._size = size
 
     @staticmethod
     def _sniff(raw):
@@ -746,4 +748,53 @@ class Serder:
             raise ValueError("Malformed version string size = {}".format(vs))
         ked['vs'] = vs  #  update ked
 
-        return (raw, kind)
+        return (raw, kind, ked)
+
+    @property
+    def raw(self):
+        """ raw property getter """
+        return self._raw
+
+    @raw.setter
+    def raw(self, raw):
+        """ raw property setter """
+        ked, kind, size = self._inhale(raw=raw)
+        self._raw = raw[:size]
+        self._ked = ked
+        self._kind = kind
+        self._size = size
+
+    @property
+    def ked(self):
+        """ ked property getter"""
+        return self._ked
+
+    @ked.setter
+    def ked(self, ked):
+        """ ked property setter """
+        raw, kind, ked = self._exhale(ked=ked, kind=self._kind)
+        size = len(raw)
+        self._raw = raw[:size]
+        self._ked = ked
+        self._kind = kind
+        self._size = size
+
+    @property
+    def kind(self):
+        """ kind property getter"""
+        return self._kind
+
+    @kind.setter
+    def kind(self, kind):
+        """ kind property setter Assumes ._ked """
+        raw, kind, ked = self._exhale(ked=self._ked, kind=kind)
+        size = len(raw)
+        self._raw = raw[:size]
+        self._ked = ked
+        self._kind = kind
+        self._size = size
+
+    @property
+    def size(self):
+        """ size property getter"""
+        return self._size

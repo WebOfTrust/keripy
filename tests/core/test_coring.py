@@ -386,9 +386,10 @@ def test_serder():
     assert knd1 == kind1
     assert siz1 == size1
 
-    raw1, knd1 = serder._exhale(ked=ked1)
+    raw1, knd1, ked1 = serder._exhale(ked=e1)
     assert raw1 == e1s
     assert knd1 == kind1
+    assert ked1 == e1
 
     e2 = dict(e1)
     e2["vs"] = Vstrings.mgpk
@@ -406,9 +407,10 @@ def test_serder():
     assert knd2 == kind2
     assert siz2 == size2
 
-    raw2, knd2 = serder._exhale(ked=ked2)
+    raw2, knd2, ked2 = serder._exhale(ked=e2)
     assert raw2 == e2s
     assert knd2 == kind2
+    assert ked2 == e2
 
     e3 = dict(e1)
     e3["vs"] = Vstrings.cbor
@@ -426,9 +428,10 @@ def test_serder():
     assert knd3 == kind3
     assert siz3 == size3
 
-    raw3, knd3 = serder._exhale(ked=ked3)
+    raw3, knd3, ked3 = serder._exhale(ked=e3)
     assert raw3 == e3s
     assert knd3 == kind3
+    assert ked3 == e3
 
     evt1 = Serder(raw=e1ss)
     assert evt1.kind == kind1
@@ -767,4 +770,4 @@ def test_blake3():
     Done Test
     """
 if __name__ == "__main__":
-    test_crymat()
+    test_serder()
