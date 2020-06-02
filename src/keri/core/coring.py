@@ -606,10 +606,16 @@ class Serder:
 
 
         Attributes:
+          ._raw is bytes of serialized event only
+          ._ked is key event dict
+          ._kind is serialization kind string value (see namedtuple coring.Serials)
+            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+          ._size is int of number of bytes in serialed event only
+
+        Properties:
           .raw is bytes of serialized event only
           .ked is key event dict
           .kind is serialization kind string value (see namedtuple coring.Serials)
-            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
           .size is int of number of bytes in serialed event only
 
 
@@ -617,20 +623,12 @@ class Serder:
           loads and jumps of json use str whereas cbor and msgpack use bytes
         """
         if raw:  # deserialize raw
-            # ked, kind, size = self._inhale(raw=raw)
-            self.raw = raw
+            self.raw = raw  # raw property setter does the deserialization
         elif ked: # serialize ked
-            # raw, kind, ked = self._exhale(ked=ked, kind=kind)
-            # size = len(raw)
             self._kind = kind
-            self.ked = ked
+            self.ked = ked  # ked property setter does the serialization
         else:
             raise ValueError("Improper initialization need raw or ked.")
-
-        #self._raw = raw[:size]
-        #self._ked = ked
-        #self._kind = kind
-        #self._size = size
 
     @staticmethod
     def _sniff(raw):
@@ -771,7 +769,7 @@ class Serder:
 
     @ked.setter
     def ked(self, ked):
-        """ ked property setter """
+        """ ked property setter  assumes ._kind """
         raw, kind, ked = self._exhale(ked=ked, kind=self._kind)
         size = len(raw)
         self._raw = raw[:size]
