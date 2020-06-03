@@ -219,7 +219,6 @@ class CryMat:
         return self._pad(self.raw)
 
 
-
     def _infil(self):
         """
         Returns fully qualified base64 given self.pad, self.code and self.raw
