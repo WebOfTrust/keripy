@@ -209,6 +209,17 @@ class CryMat:
         return (3 - m if m else 0)
 
 
+    @property
+    def pad(self):
+        """
+        Returns number of pad characters that would result from converting
+        self.raw to Base64 encoding
+        self.raw is raw is bytes or bytearray
+        """
+        return self._pad(self.raw)
+
+
+
     def _infil(self):
         """
         Returns fully qualified base64 given self.pad, self.code and self.raw
@@ -257,17 +268,6 @@ class CryMat:
 
         self.code = code
         self.raw = raw
-
-
-    @property
-    def pad(self):
-        """
-        Returns number of pad characters that would result from converting
-        self.raw to Base64 encoding
-        self.raw is raw is bytes or bytearray
-        """
-        return self._pad(self.raw)
-
 
     @property
     def qb64(self):
