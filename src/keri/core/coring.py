@@ -15,14 +15,11 @@ from base64 import urlsafe_b64decode as decodeB64
 
 from ..kering import ValidationError, VersionError, Versionage, Version
 
+Serialage = namedtuple("Serializations", 'json mgpk cbor')
 
-BASE64_PAD = '='
+Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
-Serializations = namedtuple("Serializations", 'json mgpk cbor')
-
-Serials = Serializations(json='JSON', mgpk='MGPK', cbor='CBOR')
-
-Mimes = Serializations(json='application/keri+json',
+Mimes = Serialage(json='application/keri+json',
                        mgpk='application/keri+msgpack',
                        cbor='application/keri+cbor',)
 
@@ -40,9 +37,9 @@ def Versify(version=None, kind=Serials.json, size=0):
     version = version if version else Version
     return VERFMT.format(version[0], version[1], kind, size, VERRAWSIZE)
 
-Versions = Serializations(json=Versify(kind=Serials.json, size=0),
-                          mgpk=Versify(kind=Serials.mgpk, size=0),
-                          cbor=Versify(kind=Serials.cbor, size=0))
+Vstrings = Serialage(json=Versify(kind=Serials.json, size=0),
+                     mgpk=Versify(kind=Serials.mgpk, size=0),
+                     cbor=Versify(kind=Serials.cbor, size=0))
 
 
 VEREX = b'KERI(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
@@ -70,67 +67,82 @@ def Deversify(vs):
     raise ValueError("Invalid version string = {}".format(vs))
 
 @dataclass(frozen=True)
-class SelectCodex:
+class CrySelectCodex:
     """
-    Select codex of selector characters
+    Select codex of selector characters for cyptographic material
     Only provide defined characters. Undefined are left out so that inclusion
     exclusion via 'in' operator works.
     """
-    two: str = '0'  # use two character table.
+    two:  str = '0'  # use two character table.
+    four: str = '1'  # use four character table.
 
     def __iter__(self):
         return iter(astuple(self))
 
-Select = SelectCodex()  # Make instance
+CrySelect = CrySelectCodex()  # Make instance
 
 @dataclass(frozen=True)
-class OneCodex:
+class CryOneCodex:
     """
     One codex of one character length derivation codes
-    Only provide defined characters. Undefined are left out so that inclusion
+    Only provide defined codes. Undefined are left out so that inclusion
     exclusion via 'in' operator works.
 
     Note binary length of everything in One results in 1 Base64 pad byte.
     """
-    Ed25519N: str =  'A'  # Ed25519 verification key non-transferable, basic derivation.
-    X25519: str = 'B'  # X25519 public encryption key, converted from Ed25519.
-    Ed25519: str = 'C'  #  Ed25519 verification key basic derivation
-    Blake3_256: str = 'D'  # Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256: str = 'E'  # Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256: str = 'F'  # Blake2s 256 bit digest self-addressing derivation.
+    Ed25519N:     str = 'A'  # Ed25519 verification key non-transferable, basic derivation.
+    X25519:       str = 'B'  # X25519 public encryption key, converted from Ed25519.
+    Ed25519:      str = 'C'  #  Ed25519 verification key basic derivation
+    Blake3_256:   str = 'D'  # Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:  str = 'E'  # Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:  str = 'F'  # Blake2s 256 bit digest self-addressing derivation.
     ECDSA_256k1N: str = 'G'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    ECDSA_256k1: str = 'H'  #  Ed25519 verification key basic derivation
-    SHA3_256: str = 'I'  # SHA3 256 bit digest self-addressing derivation.
-    SHA2_256: str = 'J'  # SHA2 256 bit digest self-addressing derivation.
+    ECDSA_256k1:  str = 'H'  #  Ed25519 verification key basic derivation
+    SHA3_256:     str = 'I'  # SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:     str = 'J'  # SHA2 256 bit digest self-addressing derivation.
 
     def __iter__(self):
         return iter(astuple(self))
 
-One = OneCodex()  # Make instance
+CryOne = CryOneCodex()  # Make instance
+
+
+# Mapping of Code to Size
+CryOneSizes = {
+            "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
+            "G": 44, "H": 44, "I": 44, "J": 44,
+           }
+
 
 @dataclass(frozen=True)
-class TwoCodex:
+class CryTwoCodex:
     """
     Two codex of two character length derivation codes
-    Only provide defined characters. Undefined are left out so that inclusion
+    Only provide defined codes. Undefined are left out so that inclusion
     exclusion via 'in' operator works.
 
     Note binary length of everything in Two results in 2 Base64 pad bytes.
     """
-    Ed25519: str =  '0A'  # Ed25519 signature.
+    Ed25519:     str =  '0A'  # Ed25519 signature.
     ECDSA_256k1: str = '0B'  # ECDSA secp256k1 signature.
 
 
     def __iter__(self):
         return iter(astuple(self))
 
-Two = TwoCodex()  #  Make instance
+CryTwo = CryTwoCodex()  #  Make instance
+
+# Mapping of Code to Size
+CryTwoSizes = {
+            "0A": 88,
+            "0B": 88,
+           }
 
 @dataclass(frozen=True)
-class FourCodex:
+class CryFourCodex:
     """
     Four codex of four character length derivation codes
-    Only provide defined characters. Undefined are left out so that inclusion
+    Only provide defined codes. Undefined are left out so that inclusion
     exclusion via 'in' operator works.
 
     Note binary length of everything in Four results in 0 Base64 pad bytes.
@@ -139,7 +151,10 @@ class FourCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-Four = FourCodex()  #  Make instance
+CryFour = CryFourCodex()  #  Make instance
+
+# Mapping of Code to Size
+CryFourSizes = {}
 
 
 class CryMat:
@@ -149,7 +164,7 @@ class CryMat:
     Sub classes provide key event element context.
     """
 
-    def __init__(self, raw=b'', qb64='', qb2='', code=One.Ed25519N):
+    def __init__(self, raw=b'', qb64='', qb2='', code=CryOne.Ed25519N):
         """
         Validate as fully qualified
         Parameters:
@@ -167,11 +182,12 @@ class CryMat:
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
             pad = self._pad(raw)
-            if (not ( (pad == 1 and (code in One)) or  # One or Five or Nine
-                      (pad == 2 and (code in Two)) or  # Two or Six or Ten
-                      (pad == 0 and (code in Four)) )):  #  Four or Eight
+            if (not ( (pad == 1 and (code in CryOne)) or  # One or Five or Nine
+                      (pad == 2 and (code in CryTwo)) or  # Two or Six or Ten
+                      (pad == 0 and (code in CryFour)) )):  #  Four or Eight
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
+
             self.code = code
             self.raw = raw
         elif qb64:
@@ -192,6 +208,17 @@ class CryMat:
         m = len(raw) % 3
         return (3 - m if m else 0)
 
+
+    @property
+    def pad(self):
+        """
+        Returns number of pad characters that would result from converting
+        self.raw to Base64 encoding
+        self.raw is raw is bytes or bytearray
+        """
+        return self._pad(self.raw)
+
+
     def _infil(self):
         """
         Returns fully qualified base64 given self.pad, self.code and self.raw
@@ -206,6 +233,7 @@ class CryMat:
         # prepending derivation code and strip off trailing pad characters
         return (self.code + encodeB64(self.raw).decode("utf-8")[:-pad])
 
+
     def _exfil(self, qb64):
         """
         Extracts self.code and self.raw from qualified base64 qb64
@@ -213,21 +241,25 @@ class CryMat:
         pre = 1
         code = qb64[:pre]
 
-        if code in One:  # One Char code
-            pad = pre % 4  # pad is remainder pre mod 4
-            # strip off prepended code and append pad characters
-            base = qb64[pre:] + pad * BASE64_PAD
+        # need to map code to length so can only consume proper number of chars
+        #  from front of qb64 so can use with full identifiers not just id prefixes
 
-        elif code == Select.two: # two char code
-            code = qb64[pre-1:pre+1]
-            if code not in Two:
-                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+        if code in CryOne:  # One Char code
+            qb64 = qb64[:CryOneSizes[code]]  # strip of identifier after prefix
+
+        elif code == CrySelect.two: # first char of two char code
             pre += 1
-            pad = pre % 4
-            base = qb64[pre:] + pad * BASE64_PAD
+            code = qb64[pre-2:pre]  #  get full code
+            if code not in CryTwo:
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+            qb64 = qb64[:CryTwoSizes[code]]  # strip of identifier after prefix
+
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
 
+        pad = pre % 4  # pad is remainder pre mod 4
+        # strip off prepended code and append pad characters
+        base = qb64[pre:] + pad * BASE64_PAD
         raw = decodeB64(base.encode("utf-8"))
 
         if len(raw) != (len(qb64) - pre) * 3 // 4:  # exact lengths
@@ -237,6 +269,222 @@ class CryMat:
         self.raw = raw
 
     @property
+    def qb64(self):
+        """
+        Property qb64:
+        Returns Fully Qualified Base64 Version
+        Assumes self.raw and self.code are correctly populated
+        """
+        return self._infil()
+
+
+    @property
+    def qb2(self):
+        """
+        Property qb2:
+        Returns Fully Qualified Binary Version
+        redo to use b64 to binary decode table since faster
+        """
+        # rewrite to do direct binary infiltration by
+        # decode self.code as bits and prepend to self.raw
+        return decodeB64(self._infil().encode("utf-8"))
+
+
+BASE64_PAD = '='
+
+# Mappings between Base64 Encode Index and Decode Characters
+# Map Base64 index to char
+B64ChrByIdx = dict((index, char) for index,  char in enumerate([chr(x) for x in range(65, 91)]))
+B64ChrByIdx.update([(index + 26, char) for index,  char in enumerate([chr(x) for x in range(97, 123)])])
+B64ChrByIdx.update([(index + 52, char) for index,  char in enumerate([chr(x) for x in range(48, 58)])])
+B64ChrByIdx[62] = '-'
+B64ChrByIdx[63] = '_'
+
+B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}  # map char to Base64 index
+
+def IntToB64(i):
+    """
+    Returns conversion of int i to 2 digit Base64 str
+    0 <= 1 <= 4095
+    """
+    if i < 0 or i >  4095:
+        raise ValueError("Invalid int = {}".format(i))
+
+    return "{}{}".format(B64ChrByIdx[i // 64], B64ChrByIdx[i % 64])
+
+def B64ToInt(cs):
+    """
+    Returns conversion of 2 digit Base64 str cs to int
+    """
+    if len(cs) > 2:
+        raise ValueError("Invalid cs = {}".format(cs))
+
+    return (B64IdxByChr[cs[0]] * 64 + B64IdxByChr[cs[1]])
+
+
+@dataclass(frozen=True)
+class SigSelectCodex:
+    """
+    Select codex of selector characters for attached signature cyptographic material
+    Only provide defined characters. Undefined are left out so that inclusion
+    exclusion via 'in' operator works.
+    """
+    four: str = '0'  # use four character table.
+    five: str = '1'  # use five character table.
+    six:  str = '2'  # use siz character table.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+SigSelect = SigSelectCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class SigTwoCodex:
+    """
+    Two codex of two character length derivation codes for attached signatures
+    Only provide defined codes. Undefined are left out so that inclusion
+    exclusion via 'in' operator works.
+
+    Note binary length of everything in Two results in 2 Base64 pad bytes.
+
+    First code character selects signature cipher suite
+    Second code charater selects index into current signing key list
+    Only provide first character here
+    """
+    Ed25519: str =  'A'  # Ed25519 signature.
+    ECDSA_256k1: str = 'B'  # ECDSA secp256k1 signature.
+
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+SigTwo = SigTwoCodex()  #  Make instance
+
+# Mapping of Code to Size
+SigTwoSizes = {
+                "A": 88,
+                "B": 88,
+              }
+
+SIGTWOMAX = 63  # maximum index value given one base64 digit
+
+@dataclass(frozen=True)
+class SigFourCodex:
+    """
+    Four codex of four character length derivation codes
+    Only provide defined codes. Undefined are left out so that inclusion
+    exclusion via 'in' operator works.
+
+    Note binary length of everything in Four results in 0 Base64 pad bytes.
+
+    First two code characters select signature cipher suite
+    Next two code charaters select index into current signing key list
+    Only provide first two characters here
+    """
+    Ed448: str =  '0A'  # Ed448 signature.
+
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+SigFour = SigFourCodex()  #  Make instance
+
+# Mapping of Code to Size
+SigFourSizes = {
+                "0A": 156,
+               }
+
+SIGFOURMAX = 4095  # maximum index value given two base 64 digits
+
+@dataclass(frozen=True)
+class SigFiveCodex:
+    """
+    Five codex of five character length derivation codes
+    Only provide defined codes. Undefined are left out so that inclusion
+    exclusion via 'in' operator works.
+
+    Note binary length of everything in Four results in 0 Base64 pad bytes.
+
+    First three code characters select signature cipher suite
+    Next two code charaters select index into current signing key list
+    Only provide first three characters here
+    """
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+SigFive = SigFiveCodex()  #  Make instance
+
+# Mapping of Code to Size
+SigFiveSizes = {}
+
+SIGFIVEMAX = 4095  # maximum index value given two base 64 digits
+
+class SigMat:
+    """
+    Fully Qualified Attached Signature  Material Base Class
+    Material has derivation code that indicates cipher suite and public key index
+    offset into current signing key list
+    """
+
+    def __init__(self, raw=b'', qb64='', qb2='', code=SigTwo.Ed25519, index=0):
+        """
+        Validate as fully qualified
+        Parameters:
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64 is str of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of offset index into current signing key list
+
+        When raw provided then validate that code is correct for length of raw
+            and assign .raw .code and .index
+        Else when qb64 pr qb2 provided extract and assign .raw and .code
+
+        """
+        if raw:  #  raw provided
+            if not isinstance(raw, (bytes, bytearray)):
+                raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
+            pad = self._pad(raw)
+            if (not ( (pad == 2 and (code in SigTwo)) or  # Two or Six or Ten
+                      (pad == 0 and (code in SigFour)) or  #  Four or Eight
+                      (pad == 1 and (code in SigFive)) )):   # Five or Nine
+
+                raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
+
+            if ( (code in SigTwo and ((index < 0) or (index > SIGTWOMAX)) ) or
+                 (code in SigFour and ((index < 0) or (index > SIGFOURMAX)) ) or
+                 (code in SigFive and ((index < 0) or (index > SIGFIVEMAX)) ) ):
+
+                raise ValidationError("Invalid index={} for code={}.".format(index, code))
+
+            self.code = code  # front part without index
+            self.index = index
+            self.raw = raw
+
+        elif qb64:
+            self._exfil(qb64)
+
+        elif qb2:  # rewrite to use direct binary exfiltration
+            self._exfil(encodeB64(qb2).decode("utf-8"))
+
+        else:
+            raise ValueError("Improper initialization need raw or b64 or b2.")
+
+
+    @staticmethod
+    def _pad(raw):
+        """
+        Returns number of pad characters that would result from converting raw
+        to Base64 encoding
+        raw is bytes or bytearray
+        """
+        m = len(raw) % 3
+        return (3 - m if m else 0)
+
+
+    @property
     def pad(self):
         """
         Returns number of pad characters that would result from converting
@@ -244,6 +492,70 @@ class CryMat:
         self.raw is raw is bytes or bytearray
         """
         return self._pad(self.raw)
+
+
+    def _infil(self):
+        """
+        Returns fully qualified attached sig base64 computed from
+        self.raw, self.code and self.index.
+        """
+        pad = self.pad
+        # valid pad for code length
+        if self.code in SigTwo:  # 2 char = code + index
+            full = "{}{}".format(self.code, B64ChrByIdx[self.index])
+
+        elif self.code == SigSelect.four: # 4 char = code + index
+            pass
+
+        else:
+            raise ValueError("Unrecognized code = {}".format(self.code))
+
+        if len(full) % 4 != pad:  # pad is not remainder of len(code) % 4
+            raise ValidationError("Invalid code + index = {} for converted raw pad = {}."
+                                  .format(full, self.pad))
+        # prepending full derivation code with index and strip off trailing pad characters
+        return (full + encodeB64(self.raw).decode("utf-8")[:-pad])
+
+
+    def _exfil(self, qb64):
+        """
+        Extracts self.code,self.index, and self.raw from qualified base64 qb64
+        """
+        pre = 1
+        code = qb64[:pre]
+        index = 0
+
+        # need to map code to length so can only consume proper number of chars
+        #  from front of qb64 so can use with full identifiers not just id prefixes
+
+        if code in SigTwo:  # 2 char = 1 code + 1 index
+            qb64 = qb64[:SigTwoSizes[code]]  # strip of identifier after prefix
+            pre += 1
+            index = B64IdxByChr[qb64[pre-1:pre]]
+
+        elif code == SigSelect.four:  #  '0'
+            pre += 1
+            code = qb64[pre-2:pre]
+            if code not in SigFour:  # 4 char = 2 code + 2 index
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+            qb64 = qb64[:SigFourSizes[code]]  # strip of identifier after prefix
+            pre += 2
+            index = B64ToInt(qb64[pre-2:pre])
+
+        else:
+            raise ValueError("Improperly coded material = {}".format(qb64))
+
+        pad = pre % 4  # pad is remainder pre mod 4
+        # strip off prepended code and append pad characters
+        base = qb64[pre:] + pad * BASE64_PAD
+        raw = decodeB64(base.encode("utf-8"))
+
+        if len(raw) != (len(qb64) - pre) * 3 // 4:  # exact lengths
+            raise ValueError("Improperly qualified material = {}".format(qb64))
+
+        self.code = code
+        self.index = index
+        self.raw = raw
 
 
     @property
@@ -280,7 +592,7 @@ class Serder:
     Only Supports Current Version VERSION
 
     """
-    def __init__(self, raw=b'', ked=None, kind=None, size=0):
+    def __init__(self, raw=b'', ked=None, kind=None):
         """
         Parameters:
           raw is bytes of serialized event plus any attached signatures
@@ -293,10 +605,16 @@ class Serder:
 
 
         Attributes:
+          ._raw is bytes of serialized event only
+          ._ked is key event dict
+          ._kind is serialization kind string value (see namedtuple coring.Serials)
+            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+          ._size is int of number of bytes in serialed event only
+
+        Properties:
           .raw is bytes of serialized event only
           .ked is key event dict
-          . kind is serialization kind string value (see namedtuple coring.Serials)
-            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+          .kind is serialization kind string value (see namedtuple coring.Serials)
           .size is int of number of bytes in serialed event only
 
 
@@ -304,16 +622,12 @@ class Serder:
           loads and jumps of json use str whereas cbor and msgpack use bytes
         """
         if raw:  # deserialize raw
-            ked, kind, size = self._inhale(raw=raw)
+            self.raw = raw  # raw property setter does the deserialization
         elif ked: # serialize ked
-            raw, kind = self._exhale(ked=ked, kind=kind)
-            size = len(raw)
-
-        self.raw = raw[:size]
-        self.ked = ked
-        self.kind = kind
-        self.size = size
-
+            self._kind = kind
+            self.ked = ked  # ked property setter does the serialization
+        else:
+            raise ValueError("Improper initialization need raw or ked.")
 
     @staticmethod
     def _sniff(raw):
@@ -431,4 +745,53 @@ class Serder:
             raise ValueError("Malformed version string size = {}".format(vs))
         ked['vs'] = vs  #  update ked
 
-        return (raw, kind)
+        return (raw, kind, ked)
+
+    @property
+    def raw(self):
+        """ raw property getter """
+        return self._raw
+
+    @raw.setter
+    def raw(self, raw):
+        """ raw property setter """
+        ked, kind, size = self._inhale(raw=raw)
+        self._raw = raw[:size]
+        self._ked = ked
+        self._kind = kind
+        self._size = size
+
+    @property
+    def ked(self):
+        """ ked property getter"""
+        return self._ked
+
+    @ked.setter
+    def ked(self, ked):
+        """ ked property setter  assumes ._kind """
+        raw, kind, ked = self._exhale(ked=ked, kind=self._kind)
+        size = len(raw)
+        self._raw = raw[:size]
+        self._ked = ked
+        self._kind = kind
+        self._size = size
+
+    @property
+    def kind(self):
+        """ kind property getter"""
+        return self._kind
+
+    @kind.setter
+    def kind(self, kind):
+        """ kind property setter Assumes ._ked """
+        raw, kind, ked = self._exhale(ked=self._ked, kind=kind)
+        size = len(raw)
+        self._raw = raw[:size]
+        self._ked = ked
+        self._kind = kind
+        self._size = size
+
+    @property
+    def size(self):
+        """ size property getter"""
+        return self._size
