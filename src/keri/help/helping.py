@@ -27,6 +27,7 @@ def setupTmpBaseDir(baseDirPath=""):
     baseDirPath = os.path.abspath(os.path.expanduser(baseDirPath))
     return baseDirPath
 
+
 def cleanupTmpBaseDir(baseDirPath):
     """
     Remove temporary root of baseDirPath
@@ -42,17 +43,21 @@ def cleanupTmpBaseDir(baseDirPath):
 
 def keyToKey64u(key):
     """
+    Returns 64u
     Convert and return bytes key to unicode base64 url-file safe version
     """
     return base64.urlsafe_b64encode(key).decode("utf-8")
 
+
 def key64uToKey(key64u):
     """
+    Returns bytes
     Convert and return unicode base64 url-file safe key64u to bytes key
     """
     return base64.urlsafe_b64decode(key64u.encode("utf-8"))
 
-def verify(sig, msg, vk):
+
+def verifyEd25519(sig, msg, vk):
     """
     Returns True if signature sig of message msg is verified with
     verification key vk Otherwise False
@@ -64,7 +69,8 @@ def verify(sig, msg, vk):
         return False
     return (True if result else False)
 
-def verify64u(signature, message, verkey):
+
+def verify64uEd25519(signature, message, verkey):
     """
     Returns True if signature is valid for message with respect to verification
     key verkey
@@ -76,5 +82,5 @@ def verify64u(signature, message, verkey):
     sig = key64uToKey(signature)
     vk = key64uToKey(verkey)
     msg = message.encode("utf-8")
-    return (verify(sig, msg, vk))
+    return (verifyEd25519(sig, msg, vk))
 
