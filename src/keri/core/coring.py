@@ -20,8 +20,8 @@ Serialage = namedtuple("Serializations", 'json mgpk cbor')
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
 Mimes = Serialage(json='application/keri+json',
-                       mgpk='application/keri+msgpack',
-                       cbor='application/keri+cbor',)
+                  mgpk='application/keri+msgpack',
+                  cbor='application/keri+cbor',)
 
 VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
@@ -48,11 +48,19 @@ Rever = re.compile(VEREX) #compile is faster
 def Deversify(vs):
     """
     Returns tuple(kind, version, size)
-      Where kind is serialization kind
-            version is version tuple
-            size is int of raw size
+      Where:
+        kind is serialization kind, one of Serials
+                   json='JSON', mgpk='MGPK', cbor='CBOR'
+        version is version tuple of type Version
+        size is int of raw size
+
     Parameters:
       vs is version string str
+
+    Uses regex match to extract:
+        serialization kind
+        keri version
+        serialization size
     """
     match = Rever.match(vs.encode("utf-8"))  #  match takes bytes
     if match:
@@ -70,8 +78,8 @@ def Deversify(vs):
 class CrySelectCodex:
     """
     Select codex of selector characters for cyptographic material
-    Only provide defined characters. Undefined are left out so that inclusion
-    exclusion via 'in' operator works.
+    Only provide defined characters.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
     two:  str = '0'  # use two character table.
     four: str = '1'  # use four character table.
@@ -84,22 +92,22 @@ CrySelect = CrySelectCodex()  # Make instance
 @dataclass(frozen=True)
 class CryOneCodex:
     """
-    One codex of one character length derivation codes
-    Only provide defined codes. Undefined are left out so that inclusion
-    exclusion via 'in' operator works.
+    CryOneCodex is codex of one character length derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Note binary length of everything in One results in 1 Base64 pad byte.
+    Note binary length of everything in CryOneCodex results in 1 Base64 pad byte.
     """
-    Ed25519N:     str = 'A'  # Ed25519 verification key non-transferable, basic derivation.
-    X25519:       str = 'B'  # X25519 public encryption key, converted from Ed25519.
+    Ed25519N:     str = 'A'  #  Ed25519 verification key non-transferable, basic derivation.
+    X25519:       str = 'B'  #  X25519 public encryption key, converted from Ed25519.
     Ed25519:      str = 'C'  #  Ed25519 verification key basic derivation
-    Blake3_256:   str = 'D'  # Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256:  str = 'E'  # Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256:  str = 'F'  # Blake2s 256 bit digest self-addressing derivation.
-    ECDSA_256k1N: str = 'G'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    Blake3_256:   str = 'D'  #  Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:  str = 'E'  #  Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:  str = 'F'  #  Blake2s 256 bit digest self-addressing derivation.
+    ECDSA_256k1N: str = 'G'  #  ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:  str = 'H'  #  Ed25519 verification key basic derivation
-    SHA3_256:     str = 'I'  # SHA3 256 bit digest self-addressing derivation.
-    SHA2_256:     str = 'J'  # SHA2 256 bit digest self-addressing derivation.
+    SHA3_256:     str = 'I'  #  SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:     str = 'J'  #  SHA2 256 bit digest self-addressing derivation.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -109,19 +117,19 @@ CryOne = CryOneCodex()  # Make instance
 
 # Mapping of Code to Size
 CryOneSizes = {
-            "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
-            "G": 44, "H": 44, "I": 44, "J": 44,
-           }
+               "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
+               "G": 44, "H": 44, "I": 44, "J": 44,
+              }
 
 
 @dataclass(frozen=True)
 class CryTwoCodex:
     """
-    Two codex of two character length derivation codes
-    Only provide defined codes. Undefined are left out so that inclusion
-    exclusion via 'in' operator works.
+    CryTwoCodex is codex of two character length derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Note binary length of everything in Two results in 2 Base64 pad bytes.
+    Note binary length of everything in CryTwoCodex results in 2 Base64 pad bytes.
     """
     Ed25519:     str =  '0A'  # Ed25519 signature.
     ECDSA_256k1: str = '0B'  # ECDSA secp256k1 signature.
@@ -134,18 +142,18 @@ CryTwo = CryTwoCodex()  #  Make instance
 
 # Mapping of Code to Size
 CryTwoSizes = {
-            "0A": 88,
-            "0B": 88,
-           }
+               "0A": 88,
+               "0B": 88,
+              }
 
 @dataclass(frozen=True)
 class CryFourCodex:
     """
-    Four codex of four character length derivation codes
-    Only provide defined codes. Undefined are left out so that inclusion
-    exclusion via 'in' operator works.
+    CryFourCodex codex of four character length derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Note binary length of everything in Four results in 0 Base64 pad bytes.
+    Note binary length of everything in CryFourCodex results in 0 Base64 pad bytes.
     """
 
     def __iter__(self):
@@ -159,9 +167,20 @@ CryFourSizes = {}
 
 class CryMat:
     """
-    Fully Qualified Cryptographic Material Base Class
-    Material has derivation code that indicates cipher suite
-    Sub classes provide key event element context.
+    CryMat is fully qualified cryptographic material base class
+    Sub classes are derivation code and key event element context specific.
+
+    Includes the following attributes and properties:
+
+    Attributes:
+        .code  str derivation code to indicate cypher suite
+        .raw   bytes crypto material only without code
+
+    Properties:
+        .pad  int number of pad chars
+        .qb64 str in Base64 with derivation code and crypto material
+        .qb2  bytes in binary with derivation code and crypto material
+
     """
 
     def __init__(self, raw=b'', qb64='', qb2='', code=CryOne.Ed25519N):
@@ -175,7 +194,7 @@ class CryMat:
 
         When raw provided then validate that code is correct for length of raw
             and assign .raw
-        Else when qb64 pr qb2 provided extract and assign .raw and .code
+        Else when qb64 or qb2 provided extract and assign .raw and .code
 
         """
         if raw:  #  raw provided so infil with code
@@ -282,7 +301,7 @@ class CryMat:
     def qb2(self):
         """
         Property qb2:
-        Returns Fully Qualified Binary Version
+        Returns Fully Qualified Binary Version Bytes
         redo to use b64 to binary decode table since faster
         """
         # rewrite to do direct binary infiltration by
@@ -293,6 +312,8 @@ class CryMat:
 BASE64_PAD = '='
 
 # Mappings between Base64 Encode Index and Decode Characters
+#  B64ChrByIdx is dict where each key is a B64 index and each value is the B64 char
+#  B64IdxByChr is dict where each key is a B64 chars and each values is the B64 indexe
 # Map Base64 index to char
 B64ChrByIdx = dict((index, char) for index,  char in enumerate([chr(x) for x in range(65, 91)]))
 B64ChrByIdx.update([(index + 26, char) for index,  char in enumerate([chr(x) for x in range(97, 123)])])
@@ -325,9 +346,9 @@ def B64ToInt(cs):
 @dataclass(frozen=True)
 class SigSelectCodex:
     """
-    Select codex of selector characters for attached signature cyptographic material
-    Only provide defined characters. Undefined are left out so that inclusion
-    exclusion via 'in' operator works.
+    SigSelectCodex codex of selector characters for attached signature cyptographic material
+    Only provide defined characters.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
     four: str = '0'  # use four character table.
     five: str = '1'  # use five character table.
@@ -342,11 +363,11 @@ SigSelect = SigSelectCodex()  # Make instance
 @dataclass(frozen=True)
 class SigTwoCodex:
     """
-    Two codex of two character length derivation codes for attached signatures
-    Only provide defined codes. Undefined are left out so that inclusion
-    exclusion via 'in' operator works.
+    SigTwoCodex codex of two character length derivation codes for attached signatures
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Note binary length of everything in Two results in 2 Base64 pad bytes.
+    Note binary length of everything in SigTwoCodex results in 2 Base64 pad bytes.
 
     First code character selects signature cipher suite
     Second code charater selects index into current signing key list
@@ -372,11 +393,11 @@ SIGTWOMAX = 63  # maximum index value given one base64 digit
 @dataclass(frozen=True)
 class SigFourCodex:
     """
-    Four codex of four character length derivation codes
-    Only provide defined codes. Undefined are left out so that inclusion
-    exclusion via 'in' operator works.
+    SigFourCodex codex of four character length derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Note binary length of everything in Four results in 0 Base64 pad bytes.
+    Note binary length of everything in SigFourCodex results in 0 Base64 pad bytes.
 
     First two code characters select signature cipher suite
     Next two code charaters select index into current signing key list
@@ -423,9 +444,20 @@ SIGFIVEMAX = 4095  # maximum index value given two base 64 digits
 
 class SigMat:
     """
-    Fully Qualified Attached Signature  Material Base Class
-    Material has derivation code that indicates cipher suite and public key index
-    offset into current signing key list
+    SigMat is fully qualified attached signature crypto material base class
+    Sub classes are derivation code specific.
+
+    Includes the following attributes and properites.
+
+    Attributes:
+        .code  str derivation code of cipher suite for signature
+        .index int zero based offset into signing key list
+        .raw   bytes crypto material only without code
+
+    Properties:
+        .pad  int number of pad chars
+        .qb64 str in Base64 with derivation code and signature crypto material
+        .qb2  bytes in binary with derivation code and signature crypto material
     """
 
     def __init__(self, raw=b'', qb64='', qb2='', code=SigTwo.Ed25519, index=0):
@@ -435,7 +467,7 @@ class SigMat:
             raw is bytes of unqualified crypto material usable for crypto operations
             qb64 is str of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
+            code is str of derivation code cipher suite
             index is int of offset index into current signing key list
 
         When raw provided then validate that code is correct for length of raw
@@ -588,12 +620,24 @@ serialization and creates appropriate subclass
 
 class Serder:
     """
-    KERI Key Event Serializer Deserializer
-    Only Supports Current Version VERSION
+    Serder is KERI key event serializer-deserializer class
+    Only supports current version VERSION
+
+    Has the following public properties:
+
+    Properties:
+        .raw is bytes of serialized event only
+        .ked is key event dict
+        .kind is serialization kind string value (see namedtuple coring.Serials)
+        .size is int of number of bytes in serialed event only
 
     """
     def __init__(self, raw=b'', ked=None, kind=None):
         """
+        Deserialize if raw provided
+        Serialize if ked provided but not raw
+        When serilaizing if kind provided then use kind instead of field in ked
+
         Parameters:
           raw is bytes of serialized event plus any attached signatures
           ked is key event dict or None
@@ -621,7 +665,7 @@ class Serder:
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
         """
-        if raw:  # deserialize raw
+        if raw:  # deserialize raw using property
             self.raw = raw  # raw property setter does the deserialization
         elif ked: # serialize ked
             self._kind = kind
