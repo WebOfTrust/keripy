@@ -19,6 +19,7 @@ from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat
 from keri.core.coring import IntToB64, B64ToInt, SigTwo, SigTwoSizes, SigMat
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, Serder
+from keri.core.coring import Ilkage, Ilks, Corver
 
 
 def test_derivationcodes():
@@ -519,11 +520,47 @@ def test_serder():
     Done Test
     """
 
+def test_ilds():
+    """
+    Test Ilkage namedtuple instance Ilks
+    """
+    assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt')
 
-def test_corer():
+    assert isinstance(Ilks, Ilkage)
+
+    assert Ilks.icp == 'icp'
+    assert Ilks.rot == 'rot'
+    assert Ilks.ixn == 'ixn'
+    assert Ilks.dip == 'dip'
+    assert Ilks.drt == 'drt'
+
+    assert 'icp' in Ilks
+    assert 'rot' in Ilks
+    assert 'ixn' in Ilks
+    assert 'dip' in Ilks
+    assert 'drt' in Ilks
+
+
+def test_corver():
     """
-    Test the support functionality for Corer key event validation engine
+    Test the support functionality for Corver key event verifier engine
     """
+    with pytest.raises(ValueError):
+        corver = Corver()
+
+
+    ked1 = dict(vs=Versify(kind=Serials.json, size=0),
+                id="AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                sn="0",  # hex string no leading zeros
+                ilk=Ilks.icp,
+                sith="1", # hex string no leading zeros
+                keys=["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],  # list of qual Base64
+                next="DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",  # qual Base64
+                toad="1",  # hex string no leading zeros
+                wits=[],  # list of qual Base64
+                data=[],  # list of config ordered mappings
+                sigs=[]  # list of hex strings no leading zeros or or single hex string
+               )
 
     ked1 = dict(vs=Vstrings.json, id="ABCDEFG", sn="0001", ilk="rot")
 

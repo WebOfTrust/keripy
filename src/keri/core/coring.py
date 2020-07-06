@@ -15,7 +15,7 @@ from base64 import urlsafe_b64decode as decodeB64
 
 from ..kering import ValidationError, VersionError, Versionage, Version
 
-Serialage = namedtuple("Serializations", 'json mgpk cbor')
+Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
@@ -73,6 +73,10 @@ def Deversify(vs):
         return(kind, version, size)
 
     raise ValueError("Invalid version string = {}".format(vs))
+
+Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt')  # Event ilk (type of event)
+
+Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt')
 
 @dataclass(frozen=True)
 class CrySelectCodex:
@@ -839,3 +843,41 @@ class Serder:
     def size(self):
         """ size property getter"""
         return self._size
+
+
+class Corver:
+    """
+    Corver is KERI key event verifier class
+    Only supports current version VERSION
+
+    Has the following public attributes and properties:
+
+    Attributes:
+        .serder is Serder instance created from serialized event
+
+    """
+    def __init__(self, raws=b''):
+        """
+        Extract event and attached signatures from event stream raws
+
+        Parameters:
+          raws is bytes of serialized event stream.
+            Stream raws may have zero or more sets of a serialized event plus any
+            attached signatures
+
+
+        Attributes:
+
+
+        Properties:
+          .raw is bytes of serialized event plus attached signatures
+          .size is int of number of bytes in serialed event plus attached signatures
+
+
+
+        Note:
+          loads and jumps of json use str whereas cbor and msgpack use bytes
+        """
+        if not raws:
+            raise ValueError("Empty serialized event stream.")
+
