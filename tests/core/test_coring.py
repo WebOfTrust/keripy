@@ -520,5 +520,21 @@ def test_serder():
     """
 
 
+def test_corer():
+    """
+    Test the support functionality for Corer key event validation engine
+    """
+
+    ked1 = dict(vs=Vstrings.json, id="ABCDEFG", sn="0001", ilk="rot")
+
+    srdr1 = Serder(ked=ked1)
+
+    #  round trip
+    srdr2 = Serder(raw=srdr1.raw)
+
+    """
+    Done Test
+    """
+
 if __name__ == "__main__":
     test_serder()
