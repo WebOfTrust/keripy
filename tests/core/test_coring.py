@@ -548,15 +548,16 @@ def test_corver():
     with pytest.raises(ValueError):
         corver = Corver()
 
+    # create qualified aid in basic format
     # workflow is start with seed and save seed. Seed in this case is 32 bytes
-    # sigseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    sigseed = b'p6\xac\xb7\x10R\xc4\x9c7\xe8\x97\xa3\xdb!Z\x08\xdf\xfaR\x07\x9a\xb3\x1e\x9d\xda\xee\xa2\xbc\xe4;w\xae'
-    assert len(sigseed) == 32
+    # aidseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    aidseed = b'p6\xac\xb7\x10R\xc4\x9c7\xe8\x97\xa3\xdb!Z\x08\xdf\xfaR\x07\x9a\xb3\x1e\x9d\xda\xee\xa2\xbc\xe4;w\xae'
+    assert len(aidseed) == 32
 
     # create and save verkey. Given we have sigseed and verkey then sigkey is
     # redundant, that is, sigkey = sigseed + verkey. So we can easily recreate
     # sigkey by concatenating sigseed + verkey.
-    verkey, sigkey = pysodium.crypto_sign_seed_keypair(sigseed)
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(aidseed)
     assert verkey == b'\xaf\x96\xb0p\xfb0\xa7\xd0\xa4\x18\xc9\xdc\x1d\x86\xc2:\x98\xf7?t\x1b\xde.\xcc\xcb;\x8a\xb0\xa2O\xe7K'
     assert len(verkey) == 32
 
@@ -564,29 +565,59 @@ def test_corver():
     aidmat = CryMat(raw=verkey, code=CryOne.Ed25519)
     assert aidmat.qb64 == 'Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
 
+    # create qualified next public key in basic format
+    nxtseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    nxtseed = b'm\x04\xf9\xe4\xd5`<\x91]>y\xe9\xe5$\xb6\xd8\xd5D\xb7\xea\xf6\x13\xd4\x08TYL\xb6\xc7 D\xc7'
+    assert len(nxtseed) == 32
 
-    ked1 = dict(vs=Versify(kind=Serials.json, size=0),
-                id="AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-                sn="0",  # hex string no leading zeros
+    # create and save verkey. Given we have sigseed and verkey then sigkey is
+    # redundant, that is, sigkey = sigseed + verkey. So we can easily recreate
+    # sigkey by concatenating sigseed + verkey.
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(nxtseed)
+    assert verkey == b'\xf5DOB:<\xcd\x16\x18\x9b\x83L\xa5\x0c\x98X\x90C\x1a\xb30O\xa5\x0f\xe39l\xa6\xdfX\x185'
+    assert len(verkey) == 32
+
+    # create qualified nxt key in basic format
+    nxtkeymat = CryMat(raw=verkey, code=CryOne.Ed25519)
+    assert nxtkeymat.qb64 == 'C9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
+
+    # create next hash
+    nxtsith =  "{:x}".format(1)  # lowecase hex no leading zeros
+    assert nxtsith == "1"
+    nxts = []  # create list to concatenate for hashing
+    nxts.append(nxtsith.encode("utf-8"))
+    nxts.append(nxtkeymat.qb64.encode("utf-8"))
+    nxtsraw = b''.join(nxts)
+    assert nxtsraw == b'1C9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
+    nxtdig = blake3.blake3(nxtsraw).digest()
+    assert nxtdig == b'm>m\xa0\t\xe1\xfcO\xb8S\xe7\xfcvu\x82\xac&t6\xa2\x7f~\x8e\xaa\xd4v%\xbf>\xe5\x96\x1f'
+
+    nxtdigmat = CryMat(raw=nxtdig, code=CryOne.Blake3_256)
+    assert nxtdigmat.qb64 == 'DbT5toAnh_E-4U-f8dnWCrCZ0NqJ_fo6q1HYlvz7llh8'
+
+    #create key event dict
+    ked0 = dict(vs=Versify(kind=Serials.json, size=0),
+                id=aidmat.qb64,  # qual base 64 prefix
+                sn="0",  # hex string no leading zeros lowercase
                 ilk=Ilks.icp,
-                sith="1", # hex string no leading zeros
-                keys=["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],  # list of qual Base64
-                next="DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",  # qual Base64
-                toad="1",  # hex string no leading zeros
-                wits=[],  # list of qual Base64
-                data=[],  # list of config ordered mappings
-                sigs=[]  # list of hex strings no leading zeros or or single hex string
+                sith="1", # hex string no leading zeros lowercase
+                keys=[aidmat.qb64],  # list of signing keys each qual Base64
+                next=nxtdigmat.qb64,  # hash qual Base64
+                toad="1",  # hex string no leading zeros lowercase
+                wits=[],  # list of qual Base64 may be empty
+                data=[],  # list of config ordered mappings may be empty
+                sigs=[]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
                )
 
 
-    srdr1 = Serder(ked=ked1)
+    srdr0 = Serder(ked=ked0)
 
     #  round trip
-    srdr2 = Serder(raw=srdr1.raw)
+    srdr2 = Serder(raw=srdr0.raw)
 
     """
     Done Test
     """
 
 if __name__ == "__main__":
-    test_serder()
+    test_corver()
