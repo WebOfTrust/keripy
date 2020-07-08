@@ -57,12 +57,18 @@ def test_pysodium():
     verkey, sigkey = pysodium.crypto_sign_seed_keypair(sigseed)
     assert len(verkey) == 32
     assert len(sigkey) == 64
-    # sigkey is seed and verkey concatenated. Libsodium does this as an optimization
-    #  becasue the signing scheme needs both the private key (seed) and the public key so
-    #  instead of recomputing the public key each time from the public key it requires
-    #  input of the public key, and instead of doing this as two separate keys it
-    #  uses a concatenated form.
-    # https://crypto.stackexchange.com/questions/54353/why-are-nacl-secret-keys-64-bytes-for-signing-but-32-bytes-for-box
+    #  sigkey is seed and verkey concatenated. Libsodium does this as an optimization
+    #  because the signing scheme needs both the private key (seed) and the public key so
+    #  instead of recomputing the public key each time from the secret key it requires
+    #  the public key as an input of and instead of two separate inputs, one for the
+    #  secret key and one for the public key, it uses a concatenated form.
+    #  Essentially crypto_sign_seed_keypair and crypto_sign_keypair return redundant
+    #  information in the duple (verkey, sigkey) because sigkey includes verkey
+    #  so one could just store sigkey and extract verkey or sigseed when needed
+    #  or one could just store verkey and sigseed and reconstruct sigkey when needed.
+    #  crypto_sign_detached requires sigkey (sigseed + verkey)
+    #  crypto_sign_verify_detached reqires verkey only
+    #  https://crypto.stackexchange.com/questions/54353/why-are-nacl-secret-keys-64-bytes-for-signing-but-32-bytes-for-box
     assert sigseed == sigkey[:32]
     assert verkey == sigkey[32:]
     assert sigkey == sigseed + verkey

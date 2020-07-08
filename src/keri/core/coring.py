@@ -856,7 +856,7 @@ class Corver:
         .serder is Serder instance created from serialized event
 
     """
-    def __init__(self, raws=b''):
+    def __init__(self, raws=bytearray()):
         """
         Extract event and attached signatures from event stream raws
 
@@ -881,3 +881,5 @@ class Corver:
         if not raws:
             raise ValueError("Empty serialized event stream.")
 
+        if not isinstance(raws, bytearray):
+            raws = bytearray(raws)

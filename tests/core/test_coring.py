@@ -548,6 +548,22 @@ def test_corver():
     with pytest.raises(ValueError):
         corver = Corver()
 
+    # workflow is start with seed and save seed. Seed in this case is 32 bytes
+    # sigseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    sigseed = b'p6\xac\xb7\x10R\xc4\x9c7\xe8\x97\xa3\xdb!Z\x08\xdf\xfaR\x07\x9a\xb3\x1e\x9d\xda\xee\xa2\xbc\xe4;w\xae'
+    assert len(sigseed) == 32
+
+    # create and save verkey. Given we have sigseed and verkey then sigkey is
+    # redundant, that is, sigkey = sigseed + verkey. So we can easily recreate
+    # sigkey by concatenating sigseed + verkey.
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(sigseed)
+    assert verkey == b'\xaf\x96\xb0p\xfb0\xa7\xd0\xa4\x18\xc9\xdc\x1d\x86\xc2:\x98\xf7?t\x1b\xde.\xcc\xcb;\x8a\xb0\xa2O\xe7K'
+    assert len(verkey) == 32
+
+    # create qualified aid in basic format
+    aidmat = CryMat(raw=verkey, code=CryOne.Ed25519)
+    assert aidmat.qb64 == 'Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
+
 
     ked1 = dict(vs=Versify(kind=Serials.json, size=0),
                 id="AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
@@ -562,7 +578,6 @@ def test_corver():
                 sigs=[]  # list of hex strings no leading zeros or or single hex string
                )
 
-    ked1 = dict(vs=Vstrings.json, id="ABCDEFG", sn="0001", ilk="rot")
 
     srdr1 = Serder(ked=ked1)
 
