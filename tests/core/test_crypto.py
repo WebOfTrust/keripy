@@ -82,7 +82,7 @@ def test_pysodium():
     msg = "The lazy dog jumped over the river"
     msgb = msg.encode("utf-8") # must convert unicode string to bytes in order to sign it
     assert msgb == b'The lazy dog jumped over the river'
-    sig = pysodium.crypto_sign_detached(msgb, sigseed + verkey)  #  sigkey = verkey + seed
+    sig = pysodium.crypto_sign_detached(msgb, sigseed + verkey)  #  sigkey = seed + verkey
     assert len(sig) == 64
 
     """

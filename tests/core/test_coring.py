@@ -595,22 +595,44 @@ def test_corver():
     nxtdigmat = CryMat(raw=nxtdig, code=CryOne.Blake3_256)
     assert nxtdigmat.qb64 == 'DbT5toAnh_E-4U-f8dnWCrCZ0NqJ_fo6q1HYlvz7llh8'
 
+    sn =  0
+    sith = 1
+    toad = 1
+
     #create key event dict
     ked0 = dict(vs=Versify(kind=Serials.json, size=0),
                 id=aidmat.qb64,  # qual base 64 prefix
-                sn="0",  # hex string no leading zeros lowercase
+                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                 ilk=Ilks.icp,
-                sith="1", # hex string no leading zeros lowercase
+                sith="{:x}".format(sith), # hex string no leading zeros lowercase
                 keys=[aidmat.qb64],  # list of signing keys each qual Base64
                 next=nxtdigmat.qb64,  # hash qual Base64
-                toad="1",  # hex string no leading zeros lowercase
+                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 data=[],  # list of config ordered mappings may be empty
                 sigs=[]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
                )
 
 
-    srdr0 = Serder(ked=ked0)
+    srdr0 = Serder(ked=ked0, kind=Serials.json)
+    assert srdr0.raw == (b'{"vs":"KERI10JSON000105_","id":"Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
+                         b'","sn":"0","ilk":"icp","sith":"1","keys":["Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
+                         b'yzuKsKJP50s"],"next":"DbT5toAnh_E-4U-f8dnWCrCZ0NqJ_fo6q1HYlvz7llh8","toad":"'
+                         b'1","wits":[],"data":[],"sigs":[]}')
+
+    sig0raw = pysodium.crypto_sign_detached(srdr0.raw, aidseed + aidmat.raw)  #  sigkey = seed + verkey
+    assert len(sig0raw) == 64
+
+    """
+    sig0raw = (b'Hu\xc5|V\xd8\x81\xe7(\xf9\xc4\xe5\xc9\xbe\xab\xeb\x17\xa45X\xaf\xd8FN'
+               b'y\xe7\xee\\\x9c\xb4\x8a\xc3\xc4G\x8f\t\x91D\xd1\x80\xe0.\x01QR\xdc\x0e\xcd'
+               b'\xba "\x16\x9b\xf2\xe5(\xa6\xfa\xbb\xf4(\x02\x95\n')
+
+    """
+    result = pysodium.crypto_sign_verify_detached(sig0raw, srdr0.raw, aidmat.raw)
+    assert not result
+
+
 
     #  round trip
     srdr2 = Serder(raw=srdr0.raw)
