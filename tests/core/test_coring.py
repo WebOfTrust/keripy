@@ -541,9 +541,9 @@ def test_ilds():
     assert 'drt' in Ilks
 
 
-def test_corver():
+def test_event_manual():
     """
-    Test the support functionality for Corver key event verifier engine
+    Test manual process of key event message
     """
     with pytest.raises(ValueError):
         corver = Corver()
@@ -643,11 +643,11 @@ def test_corver():
     assert len(msgb) == 349  #  261 + 88
 
     #  Recieve side
-    rxsrdr = Serder(raw=txsrdr.raw)
+    rxsrdr = Serder(raw=msgb)
 
     """
     Done Test
     """
 
 if __name__ == "__main__":
-    test_corver()
+    test_event_manual()
