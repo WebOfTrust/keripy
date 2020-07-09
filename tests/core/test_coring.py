@@ -597,7 +597,7 @@ def test_corver():
 
     sn =  0
     sith = 1
-    toad = 1
+    toad = 0
 
     #create key event dict
     ked0 = dict(vs=Versify(kind=Serials.json, size=0),
@@ -614,13 +614,15 @@ def test_corver():
                )
 
 
-    srdr0 = Serder(ked=ked0, kind=Serials.json)
-    assert srdr0.raw == (b'{"vs":"KERI10JSON000105_","id":"Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
-                         b'","sn":"0","ilk":"icp","sith":"1","keys":["Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
-                         b'yzuKsKJP50s"],"next":"DbT5toAnh_E-4U-f8dnWCrCZ0NqJ_fo6q1HYlvz7llh8","toad":"'
-                         b'1","wits":[],"data":[],"sigs":[]}')
+    txsrdr = Serder(ked=ked0, kind=Serials.json)
+    assert txsrdr.raw == (b'{"vs":"KERI10JSON000105_","id":"Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
+                          b'","sn":"0","ilk":"icp","sith":"1","keys":["Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
+                          b'yzuKsKJP50s"],"next":"DbT5toAnh_E-4U-f8dnWCrCZ0NqJ_fo6q1HYlvz7llh8","toad":"'
+                          b'0","wits":[],"data":[],"sigs":[]}')
 
-    sig0raw = pysodium.crypto_sign_detached(srdr0.raw, aidseed + aidmat.raw)  #  sigkey = seed + verkey
+    assert txsrdr.size == 261
+
+    sig0raw = pysodium.crypto_sign_detached(txsrdr.raw, aidseed + aidmat.raw)  #  sigkey = seed + verkey
     assert len(sig0raw) == 64
 
     """
@@ -629,13 +631,19 @@ def test_corver():
                b'\xba "\x16\x9b\xf2\xe5(\xa6\xfa\xbb\xf4(\x02\x95\n')
 
     """
-    result = pysodium.crypto_sign_verify_detached(sig0raw, srdr0.raw, aidmat.raw)
+    result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
     assert not result
 
+    txsigmat = SigMat(raw=sig0raw, code=SigTwo.Ed25519, index=0)
+    assert txsigmat.qb64 == 'AAbtzfaUNKhDf84JFhLiw_JOaj8v1KhmZsd4aQYKJ4KyrpB2X_8cs31MGqJgMHj5-JY5l3OXLvphaHLvGzIs2PBg'
+    assert len(txsigmat.qb64) == 88
 
+    msgb = txsrdr.raw + txsigmat.qb64.encode("utf-8")
 
-    #  round trip
-    srdr2 = Serder(raw=srdr0.raw)
+    assert len(msgb) == 349  #  261 + 88
+
+    #  Recieve side
+    rxsrdr = Serder(raw=txsrdr.raw)
 
     """
     Done Test
