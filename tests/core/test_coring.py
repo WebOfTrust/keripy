@@ -622,6 +622,12 @@ def test_event_manual():
 
     assert txsrdr.size == 261
 
+    txdig = blake3.blake3(txsrdr.raw).digest()
+    assert txdig == b'I\x94\x11_\xb8n\xeai\xc2\xc4\x0ex\xcc\x87\xf4\x86\xf59=\x95\x80(4\x1bV\x87\xbc;o5\x8b4'
+
+    txdigmat = CryMat(raw=txdig, code=CryOne.Blake3_256)
+    assert txdigmat.qb64 == 'DSZQRX7hu6mnCxA54zIf0hvU5PZWAKDQbVoe8O281izQ'
+
     sig0raw = pysodium.crypto_sign_detached(txsrdr.raw, aidseed + aidmat.raw)  #  sigkey = seed + verkey
     assert len(sig0raw) == 64
 
