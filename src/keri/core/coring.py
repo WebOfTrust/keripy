@@ -5,13 +5,16 @@ keri.core.coring module
 """
 import re
 import json
-import cbor2 as cbor
-import msgpack
 
 from dataclasses import dataclass, astuple
 from collections import namedtuple
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
+
+import cbor2 as cbor
+import msgpack
+import pysodium
+import blake3
 
 from ..kering import ValidationError, VersionError, Versionage, Version
 
@@ -843,6 +846,24 @@ class Serder:
     def size(self):
         """ size property getter"""
         return self._size
+
+    @property
+    def digmat(self):
+        """
+        Returns CryMat of digest of self.raw
+        digmat (digest material) property getter
+        """
+        return (CryMat(raw=blake3.blake3(self.raw).digest(), code=CryOne.Blake3_256))
+
+    @property
+    def dig(self):
+        """
+        Returns qualified Base64 digest of self.raw
+        dig (digest) property getter
+        """
+        return self.digmat.qb64
+
+
 
 
 class Corver:

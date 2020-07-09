@@ -15,7 +15,7 @@ from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage
-from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat
+from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat, CryOneSizes
 from keri.core.coring import IntToB64, B64ToInt, SigTwo, SigTwoSizes, SigMat
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, Serder
@@ -441,6 +441,14 @@ def test_serder():
     assert evt1.size == size1
     assert evt1.raw == e1ss[:size1]
 
+    # test digest properties .digmat and .dig
+    assert evt1.digmat.qb64 == evt1.dig
+    assert evt1.digmat.code == CryOne.Blake3_256
+    assert len(evt1.digmat.raw) == 32
+    assert len(evt1.dig) == 44
+    assert len(evt1.dig) == CryOneSizes[CryOne.Blake3_256]
+    assert evt1.dig == 'DB_Qy67YQkcSWmCcZo_3RaoTUQwWGoggAwHlG_0rpmQo'
+
     evt1 = Serder(ked=ked1)
     assert evt1.kind == kind1
     assert evt1.raw == e1s
@@ -627,6 +635,8 @@ def test_event_manual():
 
     txdigmat = CryMat(raw=txdig, code=CryOne.Blake3_256)
     assert txdigmat.qb64 == 'DSZQRX7hu6mnCxA54zIf0hvU5PZWAKDQbVoe8O281izQ'
+
+    assert txsrdr.dig == txdigmat.qb64
 
     sig0raw = pysodium.crypto_sign_detached(txsrdr.raw, aidseed + aidmat.raw)  #  sigkey = seed + verkey
     assert len(sig0raw) == 64
