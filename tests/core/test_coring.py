@@ -14,15 +14,21 @@ import cbor2 as cbor
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
-from keri.kering import Version, Versionage
-from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat, CryOneSizes
-from keri.core.coring import IntToB64, B64ToInt, SigTwo, SigTwoSizes, SigMat
+from keri.kering import Version, Versionage, ValidationError
+from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat
+from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
+from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
+from keri.core.coring import SigSelect, SigTwo, SigTwoSizes, SigTwoRawSizes
+from keri.core.coring import SigFour, SigFourSizes, SigFourRawSizes
+from keri.core.coring import SigFive, SigFiveSizes, SigFiveRawSizes
+from keri.core.coring import SigSizes, SigRawSizes
+from keri.core.coring import IntToB64, B64ToInt, SigMat
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, Serder
 from keri.core.coring import Ilkage, Ilks, Corver
 
 
-def test_derivationcodes():
+def test_cryderivationcodes():
     """
     Test the support functionality for derivation codes
     """
@@ -48,6 +54,8 @@ def test_derivationcodes():
 
     for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']:
         assert x in CryOne
+        assert x in CryOneSizes
+        assert x in CryOneRawSizes
 
     assert CryTwo.Ed25519 == '0A'
     assert CryTwo.ECDSA_256k1 == '0B'
@@ -56,6 +64,8 @@ def test_derivationcodes():
 
     for x in ['0A', '0B']:
         assert x in CryTwo
+        assert x in CryTwoSizes
+        assert x in CryTwoRawSizes
 
     assert '0' not in CryFour
     assert 'A' not in CryFour
@@ -63,6 +73,64 @@ def test_derivationcodes():
 
     for x in []:
         assert x in CryFour
+        assert x in CryFourSizes
+        assert x in CryFourRawSizes
+
+
+    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', '0A', '0B']:
+        assert x in CrySizes
+        assert x in CryRawSizes
+
+
+
+
+    """
+    Done Test
+    """
+
+def test_sigderivationcodes():
+    """
+    Test the support functionality for derivation codes
+    """
+    assert SigSelect.four == '0'
+
+    assert 'A' not in SigSelect
+
+    for x in ['0', '1', '2']:
+        assert x in SigSelect
+
+    assert SigTwo.Ed25519 == 'A'
+    assert SigTwo.ECDSA_256k1 == 'B'
+
+    assert '0' not in SigTwo
+
+    for x in ['A', 'B']:
+        assert x in SigTwo
+        assert x in SigTwoSizes
+        assert x in SigTwoRawSizes
+
+    assert SigFour.Ed448 == '0A'
+
+    assert 'A' not in SigFour
+
+    for x in ['0A']:
+        assert x in SigFour
+        assert x in SigFourSizes
+        assert x in SigFourRawSizes
+
+    assert '0' not in SigFive
+    assert 'A' not in SigFive
+    assert '0A' not in SigFive
+
+    for x in []:
+        assert x in SigFive
+        assert x in SigFiveSizes
+        assert x in SigFiveRawSizes
+
+
+    for x in ['A', 'B', '0A']:
+        assert x in SigSizes
+        assert x in SigRawSizes
 
 
     """
@@ -99,9 +167,19 @@ def test_crymat():
     assert crymat.code == CryOne.Ed25519N
     assert crymat.raw == verkey
 
+    # test wrong size of qb64
+    badprefix = prefix + "ABCD"
+    okcrymat = CryMat(qb64=badprefix)
+    assert len(okcrymat.qb64) == CrySizes[okcrymat.code]
+
     crymat = CryMat(qb2=prebin)
     assert crymat.code == CryOne.Ed25519N
     assert crymat.raw == verkey
+
+    # test wrong size of raw
+    badverkey = verkey + bytes([10, 11, 12])
+    with pytest.raises(ValidationError):
+        crymat = CryMat(raw=badverkey)
 
     # test prefix on full identifier
     full = prefix + ":mystuff/mypath/toresource?query=what#fragment"
@@ -184,10 +262,20 @@ def test_sigmat():
     assert sigmat.qb64 == qsig64
     assert sigmat.qb2 == qbin
 
+    # test wrong size of raw
+    badsig = sig + bytes([10, 11, 12])
+    with pytest.raises(ValidationError):
+        badsigmat = SigMat(raw=badsig)
+
     sigmat = SigMat(qb64=qsig64)
     assert sigmat.raw == sig
     assert sigmat.code == SigTwo.Ed25519
     assert sigmat.index == 0
+
+    # test wrong size of qb64
+    badqsig64 = qsig64 + "ABCD"
+    oksigmat = SigMat(qb64=badqsig64)
+    assert len(oksigmat.qb64) == SigSizes[oksigmat.code]
 
     sigmat = SigMat(qb2=qbin)
     assert sigmat.raw == sig

@@ -121,11 +121,16 @@ class CryOneCodex:
 
 CryOne = CryOneCodex()  # Make instance
 
-
 # Mapping of Code to Size
 CryOneSizes = {
                "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
                "G": 44, "H": 44, "I": 44, "J": 44,
+              }
+
+# Mapping of Code to Size
+CryOneRawSizes = {
+               "A": 32, "B": 32, "C": 32, "D": 32, "E": 32, "F": 32,
+               "G": 32, "H": 32, "I": 32, "J": 32,
               }
 
 
@@ -153,6 +158,11 @@ CryTwoSizes = {
                "0B": 88,
               }
 
+CryTwoRawSizes = {
+               "0A": 64,
+               "0B": 64,
+              }
+
 @dataclass(frozen=True)
 class CryFourCodex:
     """
@@ -170,6 +180,18 @@ CryFour = CryFourCodex()  #  Make instance
 
 # Mapping of Code to Size
 CryFourSizes = {}
+
+CryFourRawSizes = {}
+
+# all sizes in one dict
+CrySizes = dict(CryOneSizes)
+CrySizes.update(CryTwoSizes)
+CrySizes.update(CryFourSizes)
+
+# all sizes in one dict
+CryRawSizes = dict(CryOneRawSizes)
+CryRawSizes.update(CryTwoRawSizes)
+CryRawSizes.update(CryFourRawSizes)
 
 
 class CryMat:
@@ -213,6 +235,12 @@ class CryMat:
                       (pad == 0 and (code in CryFour)) )):  #  Four or Eight
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
+
+            if len(raw) != CryRawSizes[code]:
+                raise ValidationError("Unexpected raw size={} for code={}"
+                                      " not size={}.".format(len(raw),
+                                                             code,
+                                                             CryRawSizes[code]))
 
             self.code = code
             self.raw = raw
@@ -395,6 +423,12 @@ SigTwoSizes = {
                 "B": 88,
               }
 
+SigTwoRawSizes = {
+                "A": 64,
+                "B": 64,
+              }
+
+
 SIGTWOMAX = 63  # maximum index value given one base64 digit
 
 @dataclass(frozen=True)
@@ -423,6 +457,11 @@ SigFourSizes = {
                 "0A": 156,
                }
 
+SigFourRawSizes = {
+                "0A": 114,
+               }
+
+
 SIGFOURMAX = 4095  # maximum index value given two base 64 digits
 
 @dataclass(frozen=True)
@@ -446,8 +485,19 @@ SigFive = SigFiveCodex()  #  Make instance
 
 # Mapping of Code to Size
 SigFiveSizes = {}
+SigFiveRawSizes = {}
 
 SIGFIVEMAX = 4095  # maximum index value given two base 64 digits
+
+# all sizes in one dict
+SigSizes = dict(SigTwoSizes)
+SigSizes.update(SigFourSizes)
+SigSizes.update(SigFiveSizes)
+
+SigRawSizes = dict(SigTwoRawSizes)
+SigRawSizes.update(SigFourRawSizes)
+SigRawSizes.update(SigFiveRawSizes)
+
 
 class SigMat:
     """
@@ -497,6 +547,12 @@ class SigMat:
                  (code in SigFive and ((index < 0) or (index > SIGFIVEMAX)) ) ):
 
                 raise ValidationError("Invalid index={} for code={}.".format(index, code))
+
+            if len(raw) != SigRawSizes[code]:
+                raise ValidationError("Unexpected raw size={} for code={}"
+                                      " not size={}.".format(len(raw),
+                                                             code,
+                                                             SigRawSizes[code]))
 
             self.code = code  # front part without index
             self.index = index
