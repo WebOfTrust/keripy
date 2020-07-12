@@ -5,17 +5,20 @@ keri.core.coring module
 """
 import re
 import json
-import cbor2 as cbor
-import msgpack
 
 from dataclasses import dataclass, astuple
 from collections import namedtuple
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
+import cbor2 as cbor
+import msgpack
+import pysodium
+import blake3
+
 from ..kering import ValidationError, VersionError, Versionage, Version
 
-Serialage = namedtuple("Serializations", 'json mgpk cbor')
+Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
@@ -74,6 +77,10 @@ def Deversify(vs):
 
     raise ValueError("Invalid version string = {}".format(vs))
 
+Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt')  # Event ilk (type of event)
+
+Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt')
+
 @dataclass(frozen=True)
 class CrySelectCodex:
     """
@@ -114,11 +121,16 @@ class CryOneCodex:
 
 CryOne = CryOneCodex()  # Make instance
 
-
 # Mapping of Code to Size
 CryOneSizes = {
                "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
                "G": 44, "H": 44, "I": 44, "J": 44,
+              }
+
+# Mapping of Code to Size
+CryOneRawSizes = {
+               "A": 32, "B": 32, "C": 32, "D": 32, "E": 32, "F": 32,
+               "G": 32, "H": 32, "I": 32, "J": 32,
               }
 
 
@@ -146,6 +158,11 @@ CryTwoSizes = {
                "0B": 88,
               }
 
+CryTwoRawSizes = {
+               "0A": 64,
+               "0B": 64,
+              }
+
 @dataclass(frozen=True)
 class CryFourCodex:
     """
@@ -163,6 +180,18 @@ CryFour = CryFourCodex()  #  Make instance
 
 # Mapping of Code to Size
 CryFourSizes = {}
+
+CryFourRawSizes = {}
+
+# all sizes in one dict
+CrySizes = dict(CryOneSizes)
+CrySizes.update(CryTwoSizes)
+CrySizes.update(CryFourSizes)
+
+# all sizes in one dict
+CryRawSizes = dict(CryOneRawSizes)
+CryRawSizes.update(CryTwoRawSizes)
+CryRawSizes.update(CryFourRawSizes)
 
 
 class CryMat:
@@ -207,12 +236,22 @@ class CryMat:
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
 
+            raw = raw[:CryRawSizes[code]]  #  allows longer by truncating if stream
+            if len(raw) != CryRawSizes[code]:  # forbids shorter
+                raise ValidationError("Unexpected raw size={} for code={}"
+                                      " not size={}.".format(len(raw),
+                                                             code,
+                                                             CryRawSizes[code]))
+
             self.code = code
             self.raw = raw
+
         elif qb64:
             self._exfil(qb64)
+
         elif qb2:  # rewrite to use direct binary exfiltration
             self._exfil(encodeB64(qb2).decode("utf-8"))
+
         else:
             raise ValueError("Improper initialization need raw or b64 or b2.")
 
@@ -275,6 +314,12 @@ class CryMat:
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
+
+        if len(qb64) != CrySizes[code]:  # forbids shorter
+            raise ValidationError("Unexpected qb64 size={} for code={}"
+                                  " not size={}.".format(len(qb64),
+                                                         code,
+                                                         CrySizes[code]))
 
         pad = pre % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters
@@ -388,6 +433,12 @@ SigTwoSizes = {
                 "B": 88,
               }
 
+SigTwoRawSizes = {
+                "A": 64,
+                "B": 64,
+              }
+
+
 SIGTWOMAX = 63  # maximum index value given one base64 digit
 
 @dataclass(frozen=True)
@@ -416,6 +467,11 @@ SigFourSizes = {
                 "0A": 156,
                }
 
+SigFourRawSizes = {
+                "0A": 114,
+               }
+
+
 SIGFOURMAX = 4095  # maximum index value given two base 64 digits
 
 @dataclass(frozen=True)
@@ -439,8 +495,19 @@ SigFive = SigFiveCodex()  #  Make instance
 
 # Mapping of Code to Size
 SigFiveSizes = {}
+SigFiveRawSizes = {}
 
 SIGFIVEMAX = 4095  # maximum index value given two base 64 digits
+
+# all sizes in one dict
+SigSizes = dict(SigTwoSizes)
+SigSizes.update(SigFourSizes)
+SigSizes.update(SigFiveSizes)
+
+SigRawSizes = dict(SigTwoRawSizes)
+SigRawSizes.update(SigFourRawSizes)
+SigRawSizes.update(SigFiveRawSizes)
+
 
 class SigMat:
     """
@@ -490,6 +557,13 @@ class SigMat:
                  (code in SigFive and ((index < 0) or (index > SIGFIVEMAX)) ) ):
 
                 raise ValidationError("Invalid index={} for code={}.".format(index, code))
+
+            raw = raw[:SigRawSizes[code]]  # allows longer by truncating stream
+            if len(raw) != SigRawSizes[code]:  # forbids shorter
+                raise ValidationError("Unexpected raw size={} for code={}"
+                                      " not size={}.".format(len(raw),
+                                                             code,
+                                                             SigRawSizes[code]))
 
             self.code = code  # front part without index
             self.index = index
@@ -561,7 +635,7 @@ class SigMat:
         #  from front of qb64 so can use with full identifiers not just id prefixes
 
         if code in SigTwo:  # 2 char = 1 code + 1 index
-            qb64 = qb64[:SigTwoSizes[code]]  # strip of identifier after prefix
+            qb64 = qb64[:SigTwoSizes[code]]  # strip of exact len identifier after prefix
             pre += 1
             index = B64IdxByChr[qb64[pre-1:pre]]
 
@@ -570,12 +644,18 @@ class SigMat:
             code = qb64[pre-2:pre]
             if code not in SigFour:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:SigFourSizes[code]]  # strip of identifier after prefix
+            qb64 = qb64[:SigFourSizes[code]]  # strip of exact len identifier after prefix
             pre += 2
             index = B64ToInt(qb64[pre-2:pre])
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
+
+        if len(qb64) != SigSizes[code]:  # forbit shorter
+            raise ValidationError("Unexpected qb64 size={} for code={}"
+                                  " not size={}.".format(len(qb64),
+                                                         code,
+                                                         SigSizes[code]))
 
         pad = pre % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters
@@ -839,3 +919,61 @@ class Serder:
     def size(self):
         """ size property getter"""
         return self._size
+
+    @property
+    def digmat(self):
+        """
+        Returns CryMat of digest of self.raw
+        digmat (digest material) property getter
+        """
+        return (CryMat(raw=blake3.blake3(self.raw).digest(), code=CryOne.Blake3_256))
+
+    @property
+    def dig(self):
+        """
+        Returns qualified Base64 digest of self.raw
+        dig (digest) property getter
+        """
+        return self.digmat.qb64
+
+
+
+
+class Corver:
+    """
+    Corver is KERI key event verifier class
+    Only supports current version VERSION
+
+    Has the following public attributes and properties:
+
+    Attributes:
+        .serder is Serder instance created from serialized event
+
+    """
+    def __init__(self, raws=bytearray()):
+        """
+        Extract event and attached signatures from event stream raws
+
+        Parameters:
+          raws is bytes of serialized event stream.
+            Stream raws may have zero or more sets of a serialized event plus any
+            attached signatures
+
+
+        Attributes:
+
+
+        Properties:
+          .raw is bytes of serialized event plus attached signatures
+          .size is int of number of bytes in serialed event plus attached signatures
+
+
+
+        Note:
+          loads and jumps of json use str whereas cbor and msgpack use bytes
+        """
+        if not raws:
+            raise ValueError("Empty serialized event stream.")
+
+        if not isinstance(raws, bytearray):
+            raws = bytearray(raws)

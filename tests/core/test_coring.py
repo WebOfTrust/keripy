@@ -14,14 +14,21 @@ import cbor2 as cbor
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
-from keri.kering import Version, Versionage
+from keri.kering import Version, Versionage, ValidationError
 from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat
-from keri.core.coring import IntToB64, B64ToInt, SigTwo, SigTwoSizes, SigMat
+from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
+from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
+from keri.core.coring import SigSelect, SigTwo, SigTwoSizes, SigTwoRawSizes
+from keri.core.coring import SigFour, SigFourSizes, SigFourRawSizes
+from keri.core.coring import SigFive, SigFiveSizes, SigFiveRawSizes
+from keri.core.coring import SigSizes, SigRawSizes
+from keri.core.coring import IntToB64, B64ToInt, SigMat
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, Serder
+from keri.core.coring import Ilkage, Ilks, Corver
 
 
-def test_derivationcodes():
+def test_cryderivationcodes():
     """
     Test the support functionality for derivation codes
     """
@@ -47,6 +54,8 @@ def test_derivationcodes():
 
     for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']:
         assert x in CryOne
+        assert x in CryOneSizes
+        assert x in CryOneRawSizes
 
     assert CryTwo.Ed25519 == '0A'
     assert CryTwo.ECDSA_256k1 == '0B'
@@ -55,6 +64,8 @@ def test_derivationcodes():
 
     for x in ['0A', '0B']:
         assert x in CryTwo
+        assert x in CryTwoSizes
+        assert x in CryTwoRawSizes
 
     assert '0' not in CryFour
     assert 'A' not in CryFour
@@ -62,6 +73,64 @@ def test_derivationcodes():
 
     for x in []:
         assert x in CryFour
+        assert x in CryFourSizes
+        assert x in CryFourRawSizes
+
+
+    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', '0A', '0B']:
+        assert x in CrySizes
+        assert x in CryRawSizes
+
+
+
+
+    """
+    Done Test
+    """
+
+def test_sigderivationcodes():
+    """
+    Test the support functionality for derivation codes
+    """
+    assert SigSelect.four == '0'
+
+    assert 'A' not in SigSelect
+
+    for x in ['0', '1', '2']:
+        assert x in SigSelect
+
+    assert SigTwo.Ed25519 == 'A'
+    assert SigTwo.ECDSA_256k1 == 'B'
+
+    assert '0' not in SigTwo
+
+    for x in ['A', 'B']:
+        assert x in SigTwo
+        assert x in SigTwoSizes
+        assert x in SigTwoRawSizes
+
+    assert SigFour.Ed448 == '0A'
+
+    assert 'A' not in SigFour
+
+    for x in ['0A']:
+        assert x in SigFour
+        assert x in SigFourSizes
+        assert x in SigFourRawSizes
+
+    assert '0' not in SigFive
+    assert 'A' not in SigFive
+    assert '0A' not in SigFive
+
+    for x in []:
+        assert x in SigFive
+        assert x in SigFiveSizes
+        assert x in SigFiveRawSizes
+
+
+    for x in ['A', 'B', '0A']:
+        assert x in SigSizes
+        assert x in SigRawSizes
 
 
     """
@@ -98,9 +167,26 @@ def test_crymat():
     assert crymat.code == CryOne.Ed25519N
     assert crymat.raw == verkey
 
+    # test wrong size of qb64
+    longprefix = prefix + "ABCD"
+    okcrymat = CryMat(qb64=longprefix)
+    assert len(okcrymat.qb64) == CrySizes[okcrymat.code]
+
+    shortprefix = prefix[:-4]
+    with pytest.raises(ValidationError):
+        okcrymat = CryMat(qb64=shortprefix)
+
     crymat = CryMat(qb2=prebin)
     assert crymat.code == CryOne.Ed25519N
     assert crymat.raw == verkey
+
+    # test wrong size of raw
+    longverkey = verkey + bytes([10, 11, 12])
+    crymat = CryMat(raw=longverkey)
+
+    shortverkey =  verkey[:-3]
+    with pytest.raises(ValidationError):
+        crymat = CryMat(raw=shortverkey)
 
     # test prefix on full identifier
     full = prefix + ":mystuff/mypath/toresource?query=what#fragment"
@@ -183,10 +269,27 @@ def test_sigmat():
     assert sigmat.qb64 == qsig64
     assert sigmat.qb2 == qbin
 
+    # test wrong size of raw
+    longsig = sig + bytes([10, 11, 12])
+    sigmat = SigMat(raw=longsig)
+
+    shortsig = sig[:-3]
+    with pytest.raises(ValidationError):
+        sigmat = SigMat(raw=shortsig)
+
     sigmat = SigMat(qb64=qsig64)
     assert sigmat.raw == sig
     assert sigmat.code == SigTwo.Ed25519
     assert sigmat.index == 0
+
+    # test wrong size of qb64
+    longqsig64 = qsig64 + "ABCD"
+    oksigmat = SigMat(qb64=longqsig64)
+    assert len(oksigmat.qb64) == SigSizes[oksigmat.code]
+
+    shortqsig64 = qsig64[:-4]
+    with pytest.raises(ValidationError):
+        oksigmat = SigMat(qb64=shortqsig64)
 
     sigmat = SigMat(qb2=qbin)
     assert sigmat.raw == sig
@@ -440,6 +543,14 @@ def test_serder():
     assert evt1.size == size1
     assert evt1.raw == e1ss[:size1]
 
+    # test digest properties .digmat and .dig
+    assert evt1.digmat.qb64 == evt1.dig
+    assert evt1.digmat.code == CryOne.Blake3_256
+    assert len(evt1.digmat.raw) == 32
+    assert len(evt1.dig) == 44
+    assert len(evt1.dig) == CryOneSizes[CryOne.Blake3_256]
+    assert evt1.dig == 'DB_Qy67YQkcSWmCcZo_3RaoTUQwWGoggAwHlG_0rpmQo'
+
     evt1 = Serder(ked=ked1)
     assert evt1.kind == kind1
     assert evt1.raw == e1s
@@ -519,6 +630,142 @@ def test_serder():
     Done Test
     """
 
+def test_ilds():
+    """
+    Test Ilkage namedtuple instance Ilks
+    """
+    assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt')
+
+    assert isinstance(Ilks, Ilkage)
+
+    assert Ilks.icp == 'icp'
+    assert Ilks.rot == 'rot'
+    assert Ilks.ixn == 'ixn'
+    assert Ilks.dip == 'dip'
+    assert Ilks.drt == 'drt'
+
+    assert 'icp' in Ilks
+    assert 'rot' in Ilks
+    assert 'ixn' in Ilks
+    assert 'dip' in Ilks
+    assert 'drt' in Ilks
+
+
+def test_event_manual():
+    """
+    Test manual process of key event message
+    """
+    with pytest.raises(ValueError):
+        corver = Corver()
+
+    # create qualified aid in basic format
+    # workflow is start with seed and save seed. Seed in this case is 32 bytes
+    # aidseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    aidseed = b'p6\xac\xb7\x10R\xc4\x9c7\xe8\x97\xa3\xdb!Z\x08\xdf\xfaR\x07\x9a\xb3\x1e\x9d\xda\xee\xa2\xbc\xe4;w\xae'
+    assert len(aidseed) == 32
+
+    # create and save verkey. Given we have sigseed and verkey then sigkey is
+    # redundant, that is, sigkey = sigseed + verkey. So we can easily recreate
+    # sigkey by concatenating sigseed + verkey.
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(aidseed)
+    assert verkey == b'\xaf\x96\xb0p\xfb0\xa7\xd0\xa4\x18\xc9\xdc\x1d\x86\xc2:\x98\xf7?t\x1b\xde.\xcc\xcb;\x8a\xb0\xa2O\xe7K'
+    assert len(verkey) == 32
+
+    # create qualified aid in basic format
+    aidmat = CryMat(raw=verkey, code=CryOne.Ed25519)
+    assert aidmat.qb64 == 'Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
+
+    # create qualified next public key in basic format
+    nxtseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    nxtseed = b'm\x04\xf9\xe4\xd5`<\x91]>y\xe9\xe5$\xb6\xd8\xd5D\xb7\xea\xf6\x13\xd4\x08TYL\xb6\xc7 D\xc7'
+    assert len(nxtseed) == 32
+
+    # create and save verkey. Given we have sigseed and verkey then sigkey is
+    # redundant, that is, sigkey = sigseed + verkey. So we can easily recreate
+    # sigkey by concatenating sigseed + verkey.
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(nxtseed)
+    assert verkey == b'\xf5DOB:<\xcd\x16\x18\x9b\x83L\xa5\x0c\x98X\x90C\x1a\xb30O\xa5\x0f\xe39l\xa6\xdfX\x185'
+    assert len(verkey) == 32
+
+    # create qualified nxt key in basic format
+    nxtkeymat = CryMat(raw=verkey, code=CryOne.Ed25519)
+    assert nxtkeymat.qb64 == 'C9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
+
+    # create next hash
+    nxtsith =  "{:x}".format(1)  # lowecase hex no leading zeros
+    assert nxtsith == "1"
+    nxts = []  # create list to concatenate for hashing
+    nxts.append(nxtsith.encode("utf-8"))
+    nxts.append(nxtkeymat.qb64.encode("utf-8"))
+    nxtsraw = b''.join(nxts)
+    assert nxtsraw == b'1C9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
+    nxtdig = blake3.blake3(nxtsraw).digest()
+    assert nxtdig == b'm>m\xa0\t\xe1\xfcO\xb8S\xe7\xfcvu\x82\xac&t6\xa2\x7f~\x8e\xaa\xd4v%\xbf>\xe5\x96\x1f'
+
+    nxtdigmat = CryMat(raw=nxtdig, code=CryOne.Blake3_256)
+    assert nxtdigmat.qb64 == 'DbT5toAnh_E-4U-f8dnWCrCZ0NqJ_fo6q1HYlvz7llh8'
+
+    sn =  0
+    sith = 1
+    toad = 0
+
+    #create key event dict
+    ked0 = dict(vs=Versify(kind=Serials.json, size=0),
+                id=aidmat.qb64,  # qual base 64 prefix
+                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+                ilk=Ilks.icp,
+                sith="{:x}".format(sith), # hex string no leading zeros lowercase
+                keys=[aidmat.qb64],  # list of signing keys each qual Base64
+                next=nxtdigmat.qb64,  # hash qual Base64
+                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+                wits=[],  # list of qual Base64 may be empty
+                data=[],  # list of config ordered mappings may be empty
+                sigs=[]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
+               )
+
+
+    txsrdr = Serder(ked=ked0, kind=Serials.json)
+    assert txsrdr.raw == (b'{"vs":"KERI10JSON000105_","id":"Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
+                          b'","sn":"0","ilk":"icp","sith":"1","keys":["Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
+                          b'yzuKsKJP50s"],"next":"DbT5toAnh_E-4U-f8dnWCrCZ0NqJ_fo6q1HYlvz7llh8","toad":"'
+                          b'0","wits":[],"data":[],"sigs":[]}')
+
+    assert txsrdr.size == 261
+
+    txdig = blake3.blake3(txsrdr.raw).digest()
+    assert txdig == b'I\x94\x11_\xb8n\xeai\xc2\xc4\x0ex\xcc\x87\xf4\x86\xf59=\x95\x80(4\x1bV\x87\xbc;o5\x8b4'
+
+    txdigmat = CryMat(raw=txdig, code=CryOne.Blake3_256)
+    assert txdigmat.qb64 == 'DSZQRX7hu6mnCxA54zIf0hvU5PZWAKDQbVoe8O281izQ'
+
+    assert txsrdr.dig == txdigmat.qb64
+
+    sig0raw = pysodium.crypto_sign_detached(txsrdr.raw, aidseed + aidmat.raw)  #  sigkey = seed + verkey
+    assert len(sig0raw) == 64
+
+    """
+    sig0raw = (b'Hu\xc5|V\xd8\x81\xe7(\xf9\xc4\xe5\xc9\xbe\xab\xeb\x17\xa45X\xaf\xd8FN'
+               b'y\xe7\xee\\\x9c\xb4\x8a\xc3\xc4G\x8f\t\x91D\xd1\x80\xe0.\x01QR\xdc\x0e\xcd'
+               b'\xba "\x16\x9b\xf2\xe5(\xa6\xfa\xbb\xf4(\x02\x95\n')
+
+    """
+    result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
+    assert not result
+
+    txsigmat = SigMat(raw=sig0raw, code=SigTwo.Ed25519, index=0)
+    assert txsigmat.qb64 == 'AAbtzfaUNKhDf84JFhLiw_JOaj8v1KhmZsd4aQYKJ4KyrpB2X_8cs31MGqJgMHj5-JY5l3OXLvphaHLvGzIs2PBg'
+    assert len(txsigmat.qb64) == 88
+
+    msgb = txsrdr.raw + txsigmat.qb64.encode("utf-8")
+
+    assert len(msgb) == 349  #  261 + 88
+
+    #  Recieve side
+    rxsrdr = Serder(raw=msgb)
+
+    """
+    Done Test
+    """
 
 if __name__ == "__main__":
-    test_serder()
+    test_event_manual()
