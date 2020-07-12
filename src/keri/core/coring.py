@@ -236,7 +236,8 @@ class CryMat:
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
 
-            if len(raw) != CryRawSizes[code]:
+            raw = raw[:CryRawSizes[code]]  #  allows longer by truncating if stream
+            if len(raw) != CryRawSizes[code]:  # forbids shorter
                 raise ValidationError("Unexpected raw size={} for code={}"
                                       " not size={}.".format(len(raw),
                                                              code,
@@ -244,10 +245,13 @@ class CryMat:
 
             self.code = code
             self.raw = raw
+
         elif qb64:
             self._exfil(qb64)
+
         elif qb2:  # rewrite to use direct binary exfiltration
             self._exfil(encodeB64(qb2).decode("utf-8"))
+
         else:
             raise ValueError("Improper initialization need raw or b64 or b2.")
 
@@ -310,6 +314,12 @@ class CryMat:
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
+
+        if len(qb64) != CrySizes[code]:  # forbids shorter
+            raise ValidationError("Unexpected qb64 size={} for code={}"
+                                  " not size={}.".format(len(qb64),
+                                                         code,
+                                                         CrySizes[code]))
 
         pad = pre % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters
@@ -548,7 +558,8 @@ class SigMat:
 
                 raise ValidationError("Invalid index={} for code={}.".format(index, code))
 
-            if len(raw) != SigRawSizes[code]:
+            raw = raw[:SigRawSizes[code]]  # allows longer by truncating stream
+            if len(raw) != SigRawSizes[code]:  # forbids shorter
                 raise ValidationError("Unexpected raw size={} for code={}"
                                       " not size={}.".format(len(raw),
                                                              code,
@@ -624,7 +635,7 @@ class SigMat:
         #  from front of qb64 so can use with full identifiers not just id prefixes
 
         if code in SigTwo:  # 2 char = 1 code + 1 index
-            qb64 = qb64[:SigTwoSizes[code]]  # strip of identifier after prefix
+            qb64 = qb64[:SigTwoSizes[code]]  # strip of exact len identifier after prefix
             pre += 1
             index = B64IdxByChr[qb64[pre-1:pre]]
 
@@ -633,12 +644,18 @@ class SigMat:
             code = qb64[pre-2:pre]
             if code not in SigFour:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:SigFourSizes[code]]  # strip of identifier after prefix
+            qb64 = qb64[:SigFourSizes[code]]  # strip of exact len identifier after prefix
             pre += 2
             index = B64ToInt(qb64[pre-2:pre])
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
+
+        if len(qb64) != SigSizes[code]:  # forbit shorter
+            raise ValidationError("Unexpected qb64 size={} for code={}"
+                                  " not size={}.".format(len(qb64),
+                                                         code,
+                                                         SigSizes[code]))
 
         pad = pre % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters

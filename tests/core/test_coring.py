@@ -168,18 +168,25 @@ def test_crymat():
     assert crymat.raw == verkey
 
     # test wrong size of qb64
-    badprefix = prefix + "ABCD"
-    okcrymat = CryMat(qb64=badprefix)
+    longprefix = prefix + "ABCD"
+    okcrymat = CryMat(qb64=longprefix)
     assert len(okcrymat.qb64) == CrySizes[okcrymat.code]
+
+    shortprefix = prefix[:-4]
+    with pytest.raises(ValidationError):
+        okcrymat = CryMat(qb64=shortprefix)
 
     crymat = CryMat(qb2=prebin)
     assert crymat.code == CryOne.Ed25519N
     assert crymat.raw == verkey
 
     # test wrong size of raw
-    badverkey = verkey + bytes([10, 11, 12])
+    longverkey = verkey + bytes([10, 11, 12])
+    crymat = CryMat(raw=longverkey)
+
+    shortverkey =  verkey[:-3]
     with pytest.raises(ValidationError):
-        crymat = CryMat(raw=badverkey)
+        crymat = CryMat(raw=shortverkey)
 
     # test prefix on full identifier
     full = prefix + ":mystuff/mypath/toresource?query=what#fragment"
@@ -263,9 +270,12 @@ def test_sigmat():
     assert sigmat.qb2 == qbin
 
     # test wrong size of raw
-    badsig = sig + bytes([10, 11, 12])
+    longsig = sig + bytes([10, 11, 12])
+    sigmat = SigMat(raw=longsig)
+
+    shortsig = sig[:-3]
     with pytest.raises(ValidationError):
-        badsigmat = SigMat(raw=badsig)
+        sigmat = SigMat(raw=shortsig)
 
     sigmat = SigMat(qb64=qsig64)
     assert sigmat.raw == sig
@@ -273,9 +283,13 @@ def test_sigmat():
     assert sigmat.index == 0
 
     # test wrong size of qb64
-    badqsig64 = qsig64 + "ABCD"
-    oksigmat = SigMat(qb64=badqsig64)
+    longqsig64 = qsig64 + "ABCD"
+    oksigmat = SigMat(qb64=longqsig64)
     assert len(oksigmat.qb64) == SigSizes[oksigmat.code]
+
+    shortqsig64 = qsig64[:-4]
+    with pytest.raises(ValidationError):
+        oksigmat = SigMat(qb64=shortqsig64)
 
     sigmat = SigMat(qb2=qbin)
     assert sigmat.raw == sig
