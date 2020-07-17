@@ -630,7 +630,7 @@ def test_serder():
     Done Test
     """
 
-def test_ilds():
+def test_ilks():
     """
     Test Ilkage namedtuple instance Ilks
     """
