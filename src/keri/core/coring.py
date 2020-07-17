@@ -202,11 +202,12 @@ class CryMat:
     Includes the following attributes and properties:
 
     Attributes:
-        .code  str derivation code to indicate cypher suite
-        .raw   bytes crypto material only without code
+
 
     Properties:
-        .pad  int number of pad chars
+        .code  str derivation code to indicate cypher suite
+        .raw   bytes crypto material only without code
+        .pad  int number of pad chars given raw
         .qb64 str in Base64 with derivation code and crypto material
         .qb2  bytes in binary with derivation code and crypto material
 
@@ -243,8 +244,8 @@ class CryMat:
                                                              code,
                                                              CryRawSizes[code]))
 
-            self.code = code
-            self.raw = raw
+            self._code = code
+            self._raw = raw
 
         elif qb64:
             self._exfil(qb64)
@@ -274,8 +275,23 @@ class CryMat:
         self.raw to Base64 encoding
         self.raw is raw is bytes or bytearray
         """
-        return self._pad(self.raw)
+        return self._pad(self._raw)
 
+    @property
+    def code(self):
+        """
+        Returns ._code
+        Makes .code read only
+        """
+        return self._code
+
+    @property
+    def raw(self):
+        """
+        Returns ._raw
+        Makes .raw read only
+        """
+        return self._raw
 
     def _infil(self):
         """
@@ -285,11 +301,11 @@ class CryMat:
         """
         pad = self.pad
         # valid pad for code length
-        if len(self.code) % 4 != pad:  # pad is not remainder of len(code) % 4
+        if len(self._code) % 4 != pad:  # pad is not remainder of len(code) % 4
             raise ValidationError("Invalid code = {} for converted raw pad = {}."
-                                  .format(self.code, self.pad))
+                                  .format(self._code, self.pad))
         # prepending derivation code and strip off trailing pad characters
-        return (self.code + encodeB64(self.raw).decode("utf-8")[:-pad])
+        return (self._code + encodeB64(self._raw).decode("utf-8")[:-pad])
 
 
     def _exfil(self, qb64):
@@ -329,8 +345,8 @@ class CryMat:
         if len(raw) != (len(qb64) - pre) * 3 // 4:  # exact lengths
             raise ValueError("Improperly qualified material = {}".format(qb64))
 
-        self.code = code
-        self.raw = raw
+        self._code = code
+        self._raw = raw
 
     @property
     def qb64(self):
@@ -352,6 +368,36 @@ class CryMat:
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil().encode("utf-8"))
+
+
+class Verifier(CryMat):
+    """
+    Verifier is CryMat subclass with method to verifiy signature of serialization
+    using the .raw as verifier key and .code for signature cipher suite.
+
+    See CryMat for inhereted attributes and properties:
+
+    Attributes:
+
+
+    Properties:
+
+
+    """
+
+    def __init__(self, **kwa):
+        """
+        Assign verification cipher suite function to ._verify
+
+        """
+        super(Signer, self).__init__(**kwa)
+
+    def verify(sig, data):
+        """
+        Returns True if sig verifies on data given .raw as verifier public key
+        for ._verify determined by .code
+        """
+        pass
 
 
 BASE64_PAD = '='
@@ -517,12 +563,12 @@ class SigMat:
     Includes the following attributes and properites.
 
     Attributes:
+
+    Properties:
         .code  str derivation code of cipher suite for signature
         .index int zero based offset into signing key list
         .raw   bytes crypto material only without code
-
-    Properties:
-        .pad  int number of pad chars
+        .pad  int number of pad chars given .raw
         .qb64 str in Base64 with derivation code and signature crypto material
         .qb2  bytes in binary with derivation code and signature crypto material
     """
@@ -565,9 +611,9 @@ class SigMat:
                                                              code,
                                                              SigRawSizes[code]))
 
-            self.code = code  # front part without index
-            self.index = index
-            self.raw = raw
+            self._code = code  # front part without index
+            self._index = index
+            self._raw = raw
 
         elif qb64:
             self._exfil(qb64)
@@ -597,7 +643,32 @@ class SigMat:
         self.raw to Base64 encoding
         self.raw is raw is bytes or bytearray
         """
-        return self._pad(self.raw)
+        return self._pad(self._raw)
+
+    @property
+    def code(self):
+        """
+        Returns ._code
+        Makes .code read only
+        """
+        return self._code
+
+    @property
+    def index(self):
+        """
+        Returns ._index
+        Makes .index read only
+        """
+        return self._index
+
+
+    @property
+    def raw(self):
+        """
+        Returns ._raw
+        Makes .raw read only
+        """
+        return self._raw
 
 
     def _infil(self):
@@ -607,20 +678,20 @@ class SigMat:
         """
         pad = self.pad
         # valid pad for code length
-        if self.code in SigTwo:  # 2 char = code + index
-            full = "{}{}".format(self.code, B64ChrByIdx[self.index])
+        if self._code in SigTwo:  # 2 char = code + index
+            full = "{}{}".format(self._code, B64ChrByIdx[self._index])
 
-        elif self.code == SigSelect.four: # 4 char = code + index
+        elif self._code == SigSelect.four: # 4 char = code + index
             pass
 
         else:
-            raise ValueError("Unrecognized code = {}".format(self.code))
+            raise ValueError("Unrecognized code = {}".format(self._code))
 
         if len(full) % 4 != pad:  # pad is not remainder of len(code) % 4
             raise ValidationError("Invalid code + index = {} for converted raw pad = {}."
                                   .format(full, self.pad))
         # prepending full derivation code with index and strip off trailing pad characters
-        return (full + encodeB64(self.raw).decode("utf-8")[:-pad])
+        return (full + encodeB64(self._raw).decode("utf-8")[:-pad])
 
 
     def _exfil(self, qb64):
@@ -665,9 +736,9 @@ class SigMat:
         if len(raw) != (len(qb64) - pre) * 3 // 4:  # exact lengths
             raise ValueError("Improperly qualified material = {}".format(qb64))
 
-        self.code = code
-        self.index = index
-        self.raw = raw
+        self._code = code
+        self._index = index
+        self._raw = raw
 
 
     @property
