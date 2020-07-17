@@ -379,9 +379,10 @@ class Verifier(CryMat):
 
     Attributes:
 
-
     Properties:
 
+    Methods:
+        verify: verifies signature
 
     """
 
@@ -392,12 +393,51 @@ class Verifier(CryMat):
         """
         super(Signer, self).__init__(**kwa)
 
-    def verify(sig, data):
+        if self.code == CryOne.Ed25519N:
+            self._verify = self._ed25519
+        else:
+            self_verify = self._unknown
+
+
+    def verify(sig, ser):
         """
-        Returns True if sig verifies on data given .raw as verifier public key
-        for ._verify determined by .code
+        Returns True if bytes signature sig verifies on bytes serializtion ser
+        using .raw as verifier public key for ._verify cipher suite determined
+        by .code
         """
-        pass
+        return (self._verify(sig=sig, ser=ser, key=self.raw))
+
+    @staticmethod
+    def _unknown(sig, ser, key):
+        """
+        Returns False
+        Unknown verificaton cipher suite
+
+        Parameters:
+            key is bytes public key
+            sig is bytes signature
+            ser is bytes serialization
+        """
+        return False
+
+    @staticmethod
+    def _ed25519(sig, ser, key):
+        """
+        Returns True if verified False otherwise
+        Verifiy ed25519 sig on ser using key
+
+        Parameters:
+            key is bytes public key
+            sig is bytes signature
+            ser is bytes serialization
+        """
+        try:  # verify returns None if valid else raises ValueError
+            result = pysodium.crypto_sign_verify_detached(sig, ser, key)
+        except Exception as ex:
+            return False
+
+        return True
+
 
 
 BASE64_PAD = '='

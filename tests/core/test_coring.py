@@ -750,7 +750,7 @@ def test_event_manual():
 
     """
     result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
-    assert not result
+    assert not result  # None if verify else raises ValueError
 
     txsigmat = SigMat(raw=sig0raw, code=SigTwo.Ed25519, index=0)
     assert txsigmat.qb64 == 'AAbtzfaUNKhDf84JFhLiw_JOaj8v1KhmZsd4aQYKJ4KyrpB2X_8cs31MGqJgMHj5-JY5l3OXLvphaHLvGzIs2PBg'
