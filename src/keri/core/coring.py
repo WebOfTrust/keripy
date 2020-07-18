@@ -105,16 +105,18 @@ class CryOneCodex:
 
     Note binary length of everything in CryOneCodex results in 1 Base64 pad byte.
     """
-    Ed25519N:     str = 'A'  #  Ed25519 verification key non-transferable, basic derivation.
-    X25519:       str = 'B'  #  X25519 public encryption key, converted from Ed25519.
-    Ed25519:      str = 'C'  #  Ed25519 verification key basic derivation
-    Blake3_256:   str = 'D'  #  Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256:  str = 'E'  #  Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256:  str = 'F'  #  Blake2s 256 bit digest self-addressing derivation.
-    ECDSA_256k1N: str = 'G'  #  ECDSA secp256k1 verification key non-transferable, basic derivation.
-    ECDSA_256k1:  str = 'H'  #  Ed25519 verification key basic derivation
-    SHA3_256:     str = 'I'  #  SHA3 256 bit digest self-addressing derivation.
-    SHA2_256:     str = 'J'  #  SHA2 256 bit digest self-addressing derivation.
+    Seed_256:     str = 'A'  #  256 Bit Random Seed or private key
+    Ed25519N:     str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
+    X25519:       str = 'C'  #  X25519 public encryption key, converted from Ed25519.
+    Ed25519:      str = 'D'  #  Ed25519 verification key basic derivation
+    Blake3_256:   str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:  str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:  str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:     str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:     str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
+    Seed_448:     str = 'J'  #  448 Bit Random Seed or private key
+    X448:         str = 'K'  #  X448 public encryption key, converted from Ed448
+
 
     def __iter__(self):
         return iter(astuple(self))
@@ -124,13 +126,13 @@ CryOne = CryOneCodex()  # Make instance
 # Mapping of Code to Size
 CryOneSizes = {
                "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
-               "G": 44, "H": 44, "I": 44, "J": 44,
+               "G": 44, "H": 44, "I": 44, "J": 76, "K": 76,
               }
 
 # Mapping of Code to Size
 CryOneRawSizes = {
                "A": 32, "B": 32, "C": 32, "D": 32, "E": 32, "F": 32,
-               "G": 32, "H": 32, "I": 32, "J": 32,
+               "G": 32, "H": 32, "I": 32, "J": 56, "K": 56,
               }
 
 
@@ -143,8 +145,9 @@ class CryTwoCodex:
 
     Note binary length of everything in CryTwoCodex results in 2 Base64 pad bytes.
     """
-    Ed25519:     str =  '0A'  # Ed25519 signature.
-    ECDSA_256k1: str = '0B'  # ECDSA secp256k1 signature.
+    Seed_128:    str = '0A'  # Ed25519 signature.
+    Ed25519:     str = '0B'  # Ed25519 signature.
+    ECDSA_256k1: str = '0C'  # ECDSA secp256k1 signature.
 
 
     def __iter__(self):
@@ -154,14 +157,16 @@ CryTwo = CryTwoCodex()  #  Make instance
 
 # Mapping of Code to Size
 CryTwoSizes = {
-               "0A": 88,
+               "0A": 24,
+               "0B": 88,
                "0B": 88,
               }
 
 CryTwoRawSizes = {
-               "0A": 64,
-               "0B": 64,
-              }
+                  "0A": 16,
+                  "0B": 64,
+                  "0B": 64,
+                 }
 
 @dataclass(frozen=True)
 class CryFourCodex:
@@ -172,6 +177,8 @@ class CryFourCodex:
 
     Note binary length of everything in CryFourCodex results in 0 Base64 pad bytes.
     """
+    ECDSA_256k1N:  str = "1AAA"  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    ECDSA_256k1:   str = "1AAB"  # Ed25519 verification key basic derivation
 
     def __iter__(self):
         return iter(astuple(self))
@@ -179,9 +186,15 @@ class CryFourCodex:
 CryFour = CryFourCodex()  #  Make instance
 
 # Mapping of Code to Size
-CryFourSizes = {}
+CryFourSizes = {
+                "1AAA": 48,
+                "1AAB": 48,
+               }
 
-CryFourRawSizes = {}
+CryFourRawSizes = {
+                   "1AAA": 33,
+                   "1AAB": 33,
+                  }
 
 # all sizes in one dict
 CrySizes = dict(CryOneSizes)
@@ -202,11 +215,12 @@ class CryMat:
     Includes the following attributes and properties:
 
     Attributes:
-        .code  str derivation code to indicate cypher suite
-        .raw   bytes crypto material only without code
+
 
     Properties:
-        .pad  int number of pad chars
+        .code  str derivation code to indicate cypher suite
+        .raw   bytes crypto material only without code
+        .pad  int number of pad chars given raw
         .qb64 str in Base64 with derivation code and crypto material
         .qb2  bytes in binary with derivation code and crypto material
 
@@ -243,8 +257,8 @@ class CryMat:
                                                              code,
                                                              CryRawSizes[code]))
 
-            self.code = code
-            self.raw = raw
+            self._code = code
+            self._raw = raw
 
         elif qb64:
             self._exfil(qb64)
@@ -274,8 +288,23 @@ class CryMat:
         self.raw to Base64 encoding
         self.raw is raw is bytes or bytearray
         """
-        return self._pad(self.raw)
+        return self._pad(self._raw)
 
+    @property
+    def code(self):
+        """
+        Returns ._code
+        Makes .code read only
+        """
+        return self._code
+
+    @property
+    def raw(self):
+        """
+        Returns ._raw
+        Makes .raw read only
+        """
+        return self._raw
 
     def _infil(self):
         """
@@ -285,11 +314,11 @@ class CryMat:
         """
         pad = self.pad
         # valid pad for code length
-        if len(self.code) % 4 != pad:  # pad is not remainder of len(code) % 4
+        if len(self._code) % 4 != pad:  # pad is not remainder of len(code) % 4
             raise ValidationError("Invalid code = {} for converted raw pad = {}."
-                                  .format(self.code, self.pad))
+                                  .format(self._code, self.pad))
         # prepending derivation code and strip off trailing pad characters
-        return (self.code + encodeB64(self.raw).decode("utf-8")[:-pad])
+        return (self._code + encodeB64(self._raw).decode("utf-8")[:-pad])
 
 
     def _exfil(self, qb64):
@@ -329,8 +358,8 @@ class CryMat:
         if len(raw) != (len(qb64) - pre) * 3 // 4:  # exact lengths
             raise ValueError("Improperly qualified material = {}".format(qb64))
 
-        self.code = code
-        self.raw = raw
+        self._code = code
+        self._raw = raw
 
     @property
     def qb64(self):
@@ -352,6 +381,80 @@ class CryMat:
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil().encode("utf-8"))
+
+
+class Verifier(CryMat):
+    """
+    Verifier is CryMat subclass with method to verifiy signature of serialization
+    using the .raw as verifier key and .code for signature cipher suite.
+
+    See CryMat for inhereted attributes and properties:
+
+    Attributes:
+
+    Properties:
+
+    Methods:
+        verify: verifies signature
+
+    """
+
+    def __init__(self, **kwa):
+        """
+        Assign verification cipher suite function to ._verify
+
+        """
+        super(Verifier, self).__init__(**kwa)
+
+        if self.code == CryOne.Ed25519N:
+            self._verify = self._ed25519
+        else:
+            self_verify = self._unknown
+
+
+    def verify(self, sig, ser):
+        """
+        Returns True if bytes signature sig verifies on bytes serialization ser
+        using .raw as verifier public key for ._verify cipher suite determined
+        by .code
+
+        Parameters:
+            sig is bytes signature
+            ser is bytes serialization
+        """
+        return (self._verify(sig=sig, ser=ser, key=self.raw))
+
+    @staticmethod
+    def _unknown(sig, ser, key):
+        """
+        Returns False
+        Unknown verificaton cipher suite
+
+        Parameters:
+            key is bytes public key
+            sig is bytes signature
+            ser is bytes serialization
+        """
+        return False
+
+    @staticmethod
+    def _ed25519(sig, ser, key):
+        """
+        Returns True if verified False otherwise
+        Verifiy ed25519 sig on ser using key
+
+        Parameters:
+            key is bytes public key
+            sig is bytes signature
+            ser is bytes serialization
+        """
+        try:  # verify returns None if valid else raises ValueError
+            result = pysodium.crypto_sign_verify_detached(sig, ser, key)
+        except Exception as ex:
+            return False
+
+        return True
+
 
 
 BASE64_PAD = '='
@@ -517,12 +620,12 @@ class SigMat:
     Includes the following attributes and properites.
 
     Attributes:
+
+    Properties:
         .code  str derivation code of cipher suite for signature
         .index int zero based offset into signing key list
         .raw   bytes crypto material only without code
-
-    Properties:
-        .pad  int number of pad chars
+        .pad  int number of pad chars given .raw
         .qb64 str in Base64 with derivation code and signature crypto material
         .qb2  bytes in binary with derivation code and signature crypto material
     """
@@ -565,9 +668,9 @@ class SigMat:
                                                              code,
                                                              SigRawSizes[code]))
 
-            self.code = code  # front part without index
-            self.index = index
-            self.raw = raw
+            self._code = code  # front part without index
+            self._index = index
+            self._raw = raw
 
         elif qb64:
             self._exfil(qb64)
@@ -597,7 +700,32 @@ class SigMat:
         self.raw to Base64 encoding
         self.raw is raw is bytes or bytearray
         """
-        return self._pad(self.raw)
+        return self._pad(self._raw)
+
+    @property
+    def code(self):
+        """
+        Returns ._code
+        Makes .code read only
+        """
+        return self._code
+
+    @property
+    def index(self):
+        """
+        Returns ._index
+        Makes .index read only
+        """
+        return self._index
+
+
+    @property
+    def raw(self):
+        """
+        Returns ._raw
+        Makes .raw read only
+        """
+        return self._raw
 
 
     def _infil(self):
@@ -607,20 +735,20 @@ class SigMat:
         """
         pad = self.pad
         # valid pad for code length
-        if self.code in SigTwo:  # 2 char = code + index
-            full = "{}{}".format(self.code, B64ChrByIdx[self.index])
+        if self._code in SigTwo:  # 2 char = code + index
+            full = "{}{}".format(self._code, B64ChrByIdx[self._index])
 
-        elif self.code == SigSelect.four: # 4 char = code + index
+        elif self._code == SigSelect.four: # 4 char = code + index
             pass
 
         else:
-            raise ValueError("Unrecognized code = {}".format(self.code))
+            raise ValueError("Unrecognized code = {}".format(self._code))
 
         if len(full) % 4 != pad:  # pad is not remainder of len(code) % 4
             raise ValidationError("Invalid code + index = {} for converted raw pad = {}."
                                   .format(full, self.pad))
         # prepending full derivation code with index and strip off trailing pad characters
-        return (full + encodeB64(self.raw).decode("utf-8")[:-pad])
+        return (full + encodeB64(self._raw).decode("utf-8")[:-pad])
 
 
     def _exfil(self, qb64):
@@ -665,9 +793,9 @@ class SigMat:
         if len(raw) != (len(qb64) - pre) * 3 // 4:  # exact lengths
             raise ValueError("Improperly qualified material = {}".format(qb64))
 
-        self.code = code
-        self.index = index
-        self.raw = raw
+        self._code = code
+        self._index = index
+        self._raw = raw
 
 
     @property
