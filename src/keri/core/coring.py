@@ -105,16 +105,18 @@ class CryOneCodex:
 
     Note binary length of everything in CryOneCodex results in 1 Base64 pad byte.
     """
-    Ed25519N:     str = 'A'  #  Ed25519 verification key non-transferable, basic derivation.
-    X25519:       str = 'B'  #  X25519 public encryption key, converted from Ed25519.
-    Ed25519:      str = 'C'  #  Ed25519 verification key basic derivation
-    Blake3_256:   str = 'D'  #  Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256:  str = 'E'  #  Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256:  str = 'F'  #  Blake2s 256 bit digest self-addressing derivation.
-    ECDSA_256k1N: str = 'G'  #  ECDSA secp256k1 verification key non-transferable, basic derivation.
-    ECDSA_256k1:  str = 'H'  #  Ed25519 verification key basic derivation
-    SHA3_256:     str = 'I'  #  SHA3 256 bit digest self-addressing derivation.
-    SHA2_256:     str = 'J'  #  SHA2 256 bit digest self-addressing derivation.
+    Seed_256:     str = 'A'  #  256 Bit Random Seed or private key
+    Ed25519N:     str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
+    X25519:       str = 'C'  #  X25519 public encryption key, converted from Ed25519.
+    Ed25519:      str = 'D'  #  Ed25519 verification key basic derivation
+    Blake3_256:   str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:  str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:  str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:     str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:     str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
+    Seed_448:     str = 'J'  #  448 Bit Random Seed or private key
+    X448:         str = 'K'  #  X448 public encryption key, converted from Ed448
+
 
     def __iter__(self):
         return iter(astuple(self))
@@ -124,13 +126,13 @@ CryOne = CryOneCodex()  # Make instance
 # Mapping of Code to Size
 CryOneSizes = {
                "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
-               "G": 44, "H": 44, "I": 44, "J": 44,
+               "G": 44, "H": 44, "I": 44, "J": 76, "K": 76,
               }
 
 # Mapping of Code to Size
 CryOneRawSizes = {
                "A": 32, "B": 32, "C": 32, "D": 32, "E": 32, "F": 32,
-               "G": 32, "H": 32, "I": 32, "J": 32,
+               "G": 32, "H": 32, "I": 32, "J": 56, "K": 56,
               }
 
 
@@ -143,8 +145,9 @@ class CryTwoCodex:
 
     Note binary length of everything in CryTwoCodex results in 2 Base64 pad bytes.
     """
-    Ed25519:     str =  '0A'  # Ed25519 signature.
-    ECDSA_256k1: str = '0B'  # ECDSA secp256k1 signature.
+    Seed_128:    str = '0A'  # Ed25519 signature.
+    Ed25519:     str = '0B'  # Ed25519 signature.
+    ECDSA_256k1: str = '0C'  # ECDSA secp256k1 signature.
 
 
     def __iter__(self):
@@ -154,14 +157,16 @@ CryTwo = CryTwoCodex()  #  Make instance
 
 # Mapping of Code to Size
 CryTwoSizes = {
-               "0A": 88,
+               "0A": 24,
+               "0B": 88,
                "0B": 88,
               }
 
 CryTwoRawSizes = {
-               "0A": 64,
-               "0B": 64,
-              }
+                  "0A": 16,
+                  "0B": 64,
+                  "0B": 64,
+                 }
 
 @dataclass(frozen=True)
 class CryFourCodex:
@@ -172,6 +177,8 @@ class CryFourCodex:
 
     Note binary length of everything in CryFourCodex results in 0 Base64 pad bytes.
     """
+    ECDSA_256k1N:  str = "1AAA"  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    ECDSA_256k1:   str = "1AAB"  # Ed25519 verification key basic derivation
 
     def __iter__(self):
         return iter(astuple(self))
@@ -179,9 +186,15 @@ class CryFourCodex:
 CryFour = CryFourCodex()  #  Make instance
 
 # Mapping of Code to Size
-CryFourSizes = {}
+CryFourSizes = {
+                "1AAA": 48,
+                "1AAB": 48,
+               }
 
-CryFourRawSizes = {}
+CryFourRawSizes = {
+                   "1AAA": 33,
+                   "1AAB": 33,
+                  }
 
 # all sizes in one dict
 CrySizes = dict(CryOneSizes)
@@ -391,7 +404,7 @@ class Verifier(CryMat):
         Assign verification cipher suite function to ._verify
 
         """
-        super(Signer, self).__init__(**kwa)
+        super(Verifier, self).__init__(**kwa)
 
         if self.code == CryOne.Ed25519N:
             self._verify = self._ed25519
@@ -399,11 +412,15 @@ class Verifier(CryMat):
             self_verify = self._unknown
 
 
-    def verify(sig, ser):
+    def verify(self, sig, ser):
         """
-        Returns True if bytes signature sig verifies on bytes serializtion ser
+        Returns True if bytes signature sig verifies on bytes serialization ser
         using .raw as verifier public key for ._verify cipher suite determined
         by .code
+
+        Parameters:
+            sig is bytes signature
+            ser is bytes serialization
         """
         return (self._verify(sig=sig, ser=ser, key=self.raw))
 

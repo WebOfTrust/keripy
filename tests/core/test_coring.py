@@ -15,7 +15,7 @@ from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage, ValidationError
-from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat
+from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat, Verifier
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import SigSelect, SigTwo, SigTwoSizes, SigTwoRawSizes
@@ -39,26 +39,28 @@ def test_cryderivationcodes():
     for x in ['0']:
         assert x in CrySelect
 
-    assert CryOne.Ed25519N == 'A'
-    assert CryOne.X25519 == 'B'
-    assert CryOne.Ed25519 == 'C'
-    assert CryOne.Blake3_256 == 'D'
-    assert CryOne.Blake2b_256 == 'E'
-    assert CryOne.Blake2s_256 == 'F'
-    assert CryOne.ECDSA_256k1N == 'G'
-    assert CryOne.ECDSA_256k1 == 'H'
-    assert CryOne.SHA3_256 == 'I'
-    assert CryOne.SHA2_256 == 'J'
+    assert CryOne.Seed_256 == 'A'
+    assert CryOne.Ed25519N == 'B'
+    assert CryOne.X25519 == 'C'
+    assert CryOne.Ed25519 == 'D'
+    assert CryOne.Blake3_256 == 'E'
+    assert CryOne.Blake2b_256 == 'F'
+    assert CryOne.Blake2s_256 == 'G'
+    assert CryOne.SHA3_256 == 'H'
+    assert CryOne.SHA2_256 == 'I'
+    assert CryOne.Seed_448 == 'J'
+    assert CryOne.X448 == 'K'
 
     assert '0' not in CryOne
 
-    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']:
+    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']:
         assert x in CryOne
         assert x in CryOneSizes
         assert x in CryOneRawSizes
 
-    assert CryTwo.Ed25519 == '0A'
-    assert CryTwo.ECDSA_256k1 == '0B'
+    assert CryTwo.Seed_128 == '0A'
+    assert CryTwo.Ed25519 == '0B'
+    assert CryTwo.ECDSA_256k1 == '0C'
 
     assert 'A' not in CryTwo
 
@@ -67,17 +69,21 @@ def test_cryderivationcodes():
         assert x in CryTwoSizes
         assert x in CryTwoRawSizes
 
+    assert CryFour.ECDSA_256k1N == '1AAA'
+    assert CryFour.ECDSA_256k1 == '1AAB'
+
     assert '0' not in CryFour
     assert 'A' not in CryFour
     assert '0A' not in CryFour
 
-    for x in []:
+    for x in ['1AAA', '1AAB']:
         assert x in CryFour
         assert x in CryFourSizes
         assert x in CryFourRawSizes
 
 
-    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', '0A', '0B']:
+    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', '0A', '0B',
+              '1AAA', '1AAB']:
         assert x in CrySizes
         assert x in CryRawSizes
 
@@ -143,9 +149,9 @@ def test_crymat():
     """
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
-    prefix = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
-    prebin = (b'\x01\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@'
-              b'\xa13Y\x1fu\x0b\xbd\x80\x1fIS\xf3\x874\xbao\x90\x8c')
+    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
+              b'IS\xf3\x874\xbao\x90\x8c')
 
     with pytest.raises(ValueError):
         crymat = CryMat()
@@ -203,8 +209,8 @@ def test_crymat():
     sig64 = encodeB64(sig).decode("utf-8")
     assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
 
-    qsig64 = '0AmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-    qbin = (b'\xd0\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+    qsig64 = '0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qbin = (b'\xd0\x19\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
             b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
             b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
 
@@ -222,11 +228,8 @@ def test_crymat():
     assert crymat.raw == sig
     assert crymat.code == CryTwo.Ed25519
 
+    """ Done Test """
 
-
-    """
-    Done Test
-    """
 
 def test_sigmat():
     """
@@ -318,9 +321,7 @@ def test_sigmat():
     assert sigmat.index == 5
 
 
-    """
-    Done Test
-    """
+    """ Done Test """
 
 
 def test_serials():
@@ -549,7 +550,7 @@ def test_serder():
     assert len(evt1.digmat.raw) == 32
     assert len(evt1.dig) == 44
     assert len(evt1.dig) == CryOneSizes[CryOne.Blake3_256]
-    assert evt1.dig == 'DB_Qy67YQkcSWmCcZo_3RaoTUQwWGoggAwHlG_0rpmQo'
+    assert evt1.dig == 'EB_Qy67YQkcSWmCcZo_3RaoTUQwWGoggAwHlG_0rpmQo'
 
     evt1 = Serder(ked=ked1)
     assert evt1.kind == kind1
@@ -651,6 +652,32 @@ def test_ilks():
     assert 'drt' in Ilks
 
 
+def test_verifier():
+    """
+    Test the support functionality for verifier subclass of crymat
+    """
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
+
+    with pytest.raises(ValueError):
+        verfer = Verifier()
+
+    verfer = Verifier(raw=verkey, code=CryOne.Ed25519N)
+    assert verfer.raw == verkey
+    assert verfer.code == CryOne.Ed25519N
+
+    #create something to serialize
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+
+    """ Done Test """
+
+
 def test_event_manual():
     """
     Test manual process of key event message
@@ -673,7 +700,7 @@ def test_event_manual():
 
     # create qualified aid in basic format
     aidmat = CryMat(raw=verkey, code=CryOne.Ed25519)
-    assert aidmat.qb64 == 'Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
+    assert aidmat.qb64 == 'Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
 
     # create qualified next public key in basic format
     nxtseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
@@ -689,7 +716,7 @@ def test_event_manual():
 
     # create qualified nxt key in basic format
     nxtkeymat = CryMat(raw=verkey, code=CryOne.Ed25519)
-    assert nxtkeymat.qb64 == 'C9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
+    assert nxtkeymat.qb64 == 'D9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
 
     # create next hash
     nxtsith =  "{:x}".format(1)  # lowecase hex no leading zeros
@@ -698,12 +725,12 @@ def test_event_manual():
     nxts.append(nxtsith.encode("utf-8"))
     nxts.append(nxtkeymat.qb64.encode("utf-8"))
     nxtsraw = b''.join(nxts)
-    assert nxtsraw == b'1C9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
+    assert nxtsraw == b'1D9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
     nxtdig = blake3.blake3(nxtsraw).digest()
-    assert nxtdig == b'm>m\xa0\t\xe1\xfcO\xb8S\xe7\xfcvu\x82\xac&t6\xa2\x7f~\x8e\xaa\xd4v%\xbf>\xe5\x96\x1f'
+    assert nxtdig == b'\xdeWy\xd3=\xcb`\xce\xe9\x99\x0cF\xdd\xb2C6\x03\xa7F\rS\xd6\xfem\x99\x89\xac`<\xaa\x88\xd2'
 
     nxtdigmat = CryMat(raw=nxtdig, code=CryOne.Blake3_256)
-    assert nxtdigmat.qb64 == 'DbT5toAnh_E-4U-f8dnWCrCZ0NqJ_fo6q1HYlvz7llh8'
+    assert nxtdigmat.qb64 == 'E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI'
 
     sn =  0
     sith = 1
@@ -725,35 +752,30 @@ def test_event_manual():
 
 
     txsrdr = Serder(ked=ked0, kind=Serials.json)
-    assert txsrdr.raw == (b'{"vs":"KERI10JSON000105_","id":"Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
-                          b'","sn":"0","ilk":"icp","sith":"1","keys":["Cr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
-                          b'yzuKsKJP50s"],"next":"DbT5toAnh_E-4U-f8dnWCrCZ0NqJ_fo6q1HYlvz7llh8","toad":"'
+    assert txsrdr.raw == (b'{"vs":"KERI10JSON000105_","id":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
+                          b'","sn":"0","ilk":"icp","sith":"1","keys":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
+                          b'yzuKsKJP50s"],"next":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","toad":"'
                           b'0","wits":[],"data":[],"sigs":[]}')
 
     assert txsrdr.size == 261
 
     txdig = blake3.blake3(txsrdr.raw).digest()
-    assert txdig == b'I\x94\x11_\xb8n\xeai\xc2\xc4\x0ex\xcc\x87\xf4\x86\xf59=\x95\x80(4\x1bV\x87\xbc;o5\x8b4'
+    assert txdig == (b'X\xcb\x8cZd\x1aM\xa9r\xea\x02>u\x1a\xf6\xcc\xfcNqs\x98+\xb5\x80\xf1lD\xe4'
+                     b'?\x02?\xc8')
 
     txdigmat = CryMat(raw=txdig, code=CryOne.Blake3_256)
-    assert txdigmat.qb64 == 'DSZQRX7hu6mnCxA54zIf0hvU5PZWAKDQbVoe8O281izQ'
+    assert txdigmat.qb64 == 'EWMuMWmQaTaly6gI-dRr2zPxOcXOYK7WA8WxE5D8CP8g'
 
     assert txsrdr.dig == txdigmat.qb64
 
     sig0raw = pysodium.crypto_sign_detached(txsrdr.raw, aidseed + aidmat.raw)  #  sigkey = seed + verkey
     assert len(sig0raw) == 64
 
-    """
-    sig0raw = (b'Hu\xc5|V\xd8\x81\xe7(\xf9\xc4\xe5\xc9\xbe\xab\xeb\x17\xa45X\xaf\xd8FN'
-               b'y\xe7\xee\\\x9c\xb4\x8a\xc3\xc4G\x8f\t\x91D\xd1\x80\xe0.\x01QR\xdc\x0e\xcd'
-               b'\xba "\x16\x9b\xf2\xe5(\xa6\xfa\xbb\xf4(\x02\x95\n')
-
-    """
     result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
     assert not result  # None if verify else raises ValueError
 
     txsigmat = SigMat(raw=sig0raw, code=SigTwo.Ed25519, index=0)
-    assert txsigmat.qb64 == 'AAbtzfaUNKhDf84JFhLiw_JOaj8v1KhmZsd4aQYKJ4KyrpB2X_8cs31MGqJgMHj5-JY5l3OXLvphaHLvGzIs2PBg'
+    assert txsigmat.qb64 == 'AARbCWt5fr07OOxJgXVjnA0Em-nIx3nVRxIRAXVXO-Arwuy0MKkzG-yTbSczwPKR-nsbgTCwo964pxLWqVK6jxCw'
     assert len(txsigmat.qb64) == 88
 
     msgb = txsrdr.raw + txsigmat.qb64.encode("utf-8")
@@ -768,4 +790,4 @@ def test_event_manual():
     """
 
 if __name__ == "__main__":
-    test_event_manual()
+    test_verifier()
