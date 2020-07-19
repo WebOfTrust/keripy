@@ -145,7 +145,7 @@ class CryTwoCodex:
 
     Note binary length of everything in CryTwoCodex results in 2 Base64 pad bytes.
     """
-    Seed_128:    str = '0A'  # Ed25519 signature.
+    Seed_128:    str = '0A'  # 128 bit random seed.
     Ed25519:     str = '0B'  # Ed25519 signature.
     ECDSA_256k1: str = '0C'  # ECDSA secp256k1 signature.
 
@@ -406,7 +406,7 @@ class Verifier(CryMat):
         """
         super(Verifier, self).__init__(**kwa)
 
-        if self.code == CryOne.Ed25519N or self.code == CryOne.Ed25519:
+        if self.code in [CryOne.Ed25519N, CryOne.Ed25519]:
             self._verify = self._ed25519
         else:
             raise ValueError("Unsupported code = {} for verifier.".format(self.code))
@@ -446,13 +446,14 @@ class Verifier(CryMat):
 class Signer(CryMat):
     """
     Signer is CryMat subclass with method to create signature of serialization
-    using the .raw as signing (private) key, and new
-    property .verifier whose verifier.raw provides public key and .verifier.code
-    provide cipher suite for creating signature.
+    using the .raw as signing (private) key seed, .code as cipher suite for
+    signing and new property .verifier whose property verifier.raw
+    is public key for signing.
+    If not provided .verifier is generated from private key seed using .code
+    as cipher suite for creating key-pair.
 
-    Signer.code indicates that it is a private key or seed of size.
 
-    See CryMat for inhereted attributes and properties:
+    See CryMat for inherited attributes and properties:
 
     Attributes:
 
@@ -464,48 +465,74 @@ class Signer(CryMat):
 
     """
 
-    def __init__(self, verifier, **kwa):
+    def __init__(self, verifier=None, **kwa):
         """
         Assign signing cipher suite function to ._sign
 
         """
         super(Signer, self).__init__(**kwa)
 
-        if self.code == CryOne.Ed25519N or self.code == CryOne.Ed25519:
+        if self.code == CryOne.Ed25519Seed:
             self._sign = self._ed25519
+            if verifier and verifier.code not in [CryOne.Ed25519N, CryOne.Ed25519]:
+                raise ValueError("Mismatched verifier code = {} for  signer code"
+                                 " = {}.".format(verfier.code, self.code))
         else:
-            raise ValueError("Unsupported code = {} for verifier.".format(self.code))
+            raise ValueError("Unsupported code = {} for signer.".format(self.code))
 
 
-    def sign(self, ser):
+        if verifier is None:
+            # if self.code == CryOne.Ed25519Seed:
+            verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
+            verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
+
+        self._verifier = verifier
+
+    @property
+    def verifier(self):
         """
-        Returns bytes signature on bytes serialization ser
-        using .raw as signer private key for ._sign cipher suite determined
-        by .verifier.code
+        Property verifier:
+        Returns Verifier instance
+        Assumes ._verifier is correctly assigned
+        """
+        return self._verifier
+
+    def sign(self, ser, index=None):
+        """
+        Returns either CryMat or SigMat instance of signature
+        on bytes serialization ser
+
+        If index is None return CryMat instance
+        Otherwise return Sigmat instance
 
         Parameters:
-            sig is bytes signature
             ser is bytes serialization
+            index is
         """
-        return (self._verify(sig=sig, ser=ser, key=self.raw))
+        return (self._sign(ser=ser,
+                           seed=self.raw,
+                           key=self.verifier.raw,
+                           index=index))
 
     @staticmethod
-    def _ed25519(sig, ser, key):
+    def _ed25519(ser, seed, key, index):
         """
-        Returns True if verified False otherwise
-        Verifiy ed25519 sig on ser using key
+        Returns signature
+
 
         Parameters:
-            key is bytes public key
-            sig is bytes signature
             ser is bytes serialization
-        """
-        try:  # verify returns None if valid else raises ValueError
-            result = pysodium.crypto_sign_verify_detached(sig, ser, key)
-        except Exception as ex:
-            return False
+            seed is bytes seed (private key)
+            key is bytes public key
+            index is index of offset into signers list or None
 
-        return True
+        """
+        sig = pysodium.crypto_sign_detached(ser, seed + key)
+        if index is None:
+            return CryMat(raw=sig, code=CryTwo.Ed25519)
+        else:
+            return SigMat(raw=sig, code=SigTwo.Ed25519, index=index)
+
 
 
 
