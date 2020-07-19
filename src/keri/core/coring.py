@@ -406,10 +406,10 @@ class Verifier(CryMat):
         """
         super(Verifier, self).__init__(**kwa)
 
-        if self.code == CryOne.Ed25519N:
+        if self.code == CryOne.Ed25519N or self.code == CryOne.Ed25519:
             self._verify = self._ed25519
         else:
-            self_verify = self._unknown
+            raise ValueError("Unsupported code = {} for verifier.".format(self.code))
 
 
     def verify(self, sig, ser):
@@ -423,19 +423,6 @@ class Verifier(CryMat):
             ser is bytes serialization
         """
         return (self._verify(sig=sig, ser=ser, key=self.raw))
-
-    @staticmethod
-    def _unknown(sig, ser, key):
-        """
-        Returns False
-        Unknown verificaton cipher suite
-
-        Parameters:
-            key is bytes public key
-            sig is bytes signature
-            ser is bytes serialization
-        """
-        return False
 
     @staticmethod
     def _ed25519(sig, ser, key):

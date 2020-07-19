@@ -674,6 +674,21 @@ def test_verifier():
     result = verfer.verify(sig, ser)
     assert result == True
 
+    verfer = Verifier(raw=verkey, code=CryOne.Ed25519)
+    assert verfer.raw == verkey
+    assert verfer.code == CryOne.Ed25519
+
+    #create something to serialize
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    with pytest.raises(ValueError):
+        verfer = Verifier(raw=verkey, code=CryOne.Blake3_256)
+
 
     """ Done Test """
 
