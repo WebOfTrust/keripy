@@ -39,7 +39,7 @@ def test_cryderivationcodes():
     for x in ['0']:
         assert x in CrySelect
 
-    assert CryOne.Seed_256 == 'A'
+    assert CryOne.Ed25519Seed == 'A'
     assert CryOne.Ed25519N == 'B'
     assert CryOne.X25519 == 'C'
     assert CryOne.Ed25519 == 'D'
@@ -48,7 +48,7 @@ def test_cryderivationcodes():
     assert CryOne.Blake2s_256 == 'G'
     assert CryOne.SHA3_256 == 'H'
     assert CryOne.SHA2_256 == 'I'
-    assert CryOne.Seed_448 == 'J'
+    assert CryOne.Ed448Seed == 'J'
     assert CryOne.X448 == 'K'
 
     assert '0' not in CryOne

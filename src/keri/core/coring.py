@@ -105,7 +105,7 @@ class CryOneCodex:
 
     Note binary length of everything in CryOneCodex results in 1 Base64 pad byte.
     """
-    Seed_256:     str = 'A'  #  256 Bit Random Seed or private key
+    Ed25519Seed:  str = 'A'  #  Ed25519 256 bit random seed for private key
     Ed25519N:     str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
     X25519:       str = 'C'  #  X25519 public encryption key, converted from Ed25519.
     Ed25519:      str = 'D'  #  Ed25519 verification key basic derivation
@@ -114,7 +114,7 @@ class CryOneCodex:
     Blake2s_256:  str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
     SHA3_256:     str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
     SHA2_256:     str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
-    Seed_448:     str = 'J'  #  448 Bit Random Seed or private key
+    Ed448Seed:    str = 'J'  #  Ed448 448 bit random Seed for private key
     X448:         str = 'K'  #  X448 public encryption key, converted from Ed448
 
 
@@ -385,7 +385,7 @@ class CryMat:
 
 class Verifier(CryMat):
     """
-    Verifier is CryMat subclass with method to verifiy signature of serialization
+    Verifier is CryMat subclass with method to verify signature of serialization
     using the .raw as verifier key and .code for signature cipher suite.
 
     See CryMat for inhereted attributes and properties:
@@ -417,6 +417,71 @@ class Verifier(CryMat):
         Returns True if bytes signature sig verifies on bytes serialization ser
         using .raw as verifier public key for ._verify cipher suite determined
         by .code
+
+        Parameters:
+            sig is bytes signature
+            ser is bytes serialization
+        """
+        return (self._verify(sig=sig, ser=ser, key=self.raw))
+
+    @staticmethod
+    def _ed25519(sig, ser, key):
+        """
+        Returns True if verified False otherwise
+        Verifiy ed25519 sig on ser using key
+
+        Parameters:
+            key is bytes public key
+            sig is bytes signature
+            ser is bytes serialization
+        """
+        try:  # verify returns None if valid else raises ValueError
+            result = pysodium.crypto_sign_verify_detached(sig, ser, key)
+        except Exception as ex:
+            return False
+
+        return True
+
+
+class Signer(CryMat):
+    """
+    Signer is CryMat subclass with method to create signature of serialization
+    using the .raw as signing (private) key, and new
+    property .verifier whose verifier.raw provides public key and .verifier.code
+    provide cipher suite for creating signature.
+
+    Signer.code indicates that it is a private key or seed of size.
+
+    See CryMat for inhereted attributes and properties:
+
+    Attributes:
+
+    Properties:
+        verifier is Verifier object instance
+
+    Methods:
+        sign: create signature
+
+    """
+
+    def __init__(self, verifier, **kwa):
+        """
+        Assign signing cipher suite function to ._sign
+
+        """
+        super(Signer, self).__init__(**kwa)
+
+        if self.code == CryOne.Ed25519N or self.code == CryOne.Ed25519:
+            self._sign = self._ed25519
+        else:
+            raise ValueError("Unsupported code = {} for verifier.".format(self.code))
+
+
+    def sign(self, ser):
+        """
+        Returns bytes signature on bytes serialization ser
+        using .raw as signer private key for ._sign cipher suite determined
+        by .verifier.code
 
         Parameters:
             sig is bytes signature
