@@ -19,7 +19,7 @@ from keri.kering import ValidationError, EmptyMaterialError
 from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, Verifier, Signer, Digester
+from keri.core.coring import CryMat, Verifier, Signer, Digester, Aider
 from keri.core.coring import SigSelect, SigTwo, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFour, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFive, SigFiveSizes, SigFiveRawSizes
@@ -730,7 +730,6 @@ def test_signer():
 
     assert crymat.raw == sigmat.raw
 
-
     seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     signer = Signer(raw=seed, code=CryOne.Ed25519_Seed)
     assert signer.code == CryOne.Ed25519_Seed
@@ -739,6 +738,12 @@ def test_signer():
     assert signer.verifier.code == CryOne.Ed25519
     assert len(signer.verifier.raw) == CryOneRawSizes[signer.verifier.code]
 
+    crymat = signer.sign(ser)
+    assert crymat.code == CryTwo.Ed25519
+    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    result = signer.verifier.verify(crymat.raw, ser)
+    assert result == True
+
     sigmat = signer.sign(ser, index=1)
     assert sigmat.code == SigTwo.Ed25519
     assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
@@ -746,28 +751,13 @@ def test_signer():
     result = signer.verifier.verify(sigmat.raw, ser)
     assert result == True
 
-    verifier = signer.verifier  #  save to reuse
-
-    signer = Signer(raw=seed, code=CryOne.Ed25519_Seed, verifier=verifier )
-    assert signer.code == CryOne.Ed25519_Seed
-    assert len(signer.raw) == CryOneRawSizes[signer.code]
-    assert signer.raw == seed
-    assert signer.verifier.code == CryOne.Ed25519
-    assert len(signer.verifier.raw) == CryOneRawSizes[signer.verifier.code]
-
-    sigmat = signer.sign(ser, index=2)
-    assert sigmat.code == SigTwo.Ed25519
-    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
-    assert sigmat.index == 2
-    result = signer.verifier.verify(sigmat.raw, ser)
-    assert result == True
+    assert crymat.raw == sigmat.raw
 
     with pytest.raises(ValueError):
-        signer = Signer(raw=seed, code=CryOne.Ed25519N, verifier=verifier)
+        signer = Signer(raw=seed, code=CryOne.Ed25519N)
 
-    verifier = CryMat(raw=seed, code=CryOne.Blake3_256)
     with pytest.raises(ValueError):
-        signer = Signer(raw=seed, verifier=verifier)
+        signer = Signer(code=CryOne.Ed25519N)
 
     """ Done Test """
 
@@ -810,17 +800,50 @@ def test_digester():
 
     """ Done Test """
 
-def test_events():
+def test_aider():
+    """
+    Test the support functionality for aider subclass of crymat
+    """
+    with pytest.raises(EmptyMaterialError):
+        aider = Aider()
+
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
+
+    aider = Aider(raw=verkey)  # defaults provide Ed25519N aider
+    assert aider.code == CryOne.Ed25519N
+    assert len(aider.raw) == CryOneRawSizes[aider.code]
+    assert len(aider.qb64) == CryOneSizes[aider.code]
+
+    data = dict(keys=[aider.qb64])
+    assert aider.verify(data=data) == True
+
+    aider = Aider(raw=verkey, code=CryOne.Ed25519)  # defaults provide Ed25519N aider
+    assert aider.code == CryOne.Ed25519
+    assert len(aider.raw) == CryOneRawSizes[aider.code]
+    assert len(aider.qb64) == CryOneSizes[aider.code]
+
+    data = dict(keys=[aider.qb64])
+    assert aider.verify(data=data) == True
+
+    verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
+    aider = Aider(raw=verifier.raw)
+    assert aider.code == CryOne.Ed25519N
+    assert aider.verify(data) == False
+
+    """ Done Test """
+
+def test_process():
     """
     Test process of generating and validating key event messages
     """
+    signer = Signer()
+    assert signer.code == CryOne.Ed25519_Seed
 
 
-    """
-    Done Test
-    """
+    """ Done Test """
 
-def test_events_manual():
+def test_process_manual():
     """
     Test manual process of generating and validating inception key event message
     """
@@ -950,9 +973,7 @@ def test_events_manual():
     assert not result  # None if verifies successfully else raises ValueError
 
 
-    """
-    Done Test
-    """
+    """ Done Test """
 
 if __name__ == "__main__":
-    test_events_manual()
+    test_aider()

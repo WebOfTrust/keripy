@@ -460,14 +460,14 @@ class Signer(CryMat):
     Attributes:
 
     Properties:
-        verifier is Verifier object instance
+        .verifier is Verifier object instance
 
     Methods:
         sign: create signature
 
     """
 
-    def __init__(self,raw=b'', code=CryOne.Ed25519_Seed, verifier=None, **kwa):
+    def __init__(self,raw=b'', code=CryOne.Ed25519_Seed, **kwa):
         """
         Assign signing cipher suite function to ._sign
 
@@ -479,24 +479,14 @@ class Signer(CryMat):
                 raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
                 super(Signer, self).__init__(raw=raw, code=code, **kwa)
             else:
-                raise ValueError("Unsupported code = {} for signer.".format(self.code))
-
+                raise ValueError("Unsupported signer code = {}.".format(code))
 
         if self.code == CryOne.Ed25519_Seed:
             self._sign = self._ed25519
-            if verifier and verifier.code not in [CryOne.Ed25519N, CryOne.Ed25519]:
-                raise ValueError("Mismatched verifier code = {} for  signer code"
-                                 " = {}.".format(verifier.code, self.code))
+            verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
+            verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
         else:
-            raise ValueError("Unsupported code = {} for signer.".format(self.code))
-
-
-        if verifier is None:
-            if self.code == CryOne.Ed25519_Seed:
-                verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
-                verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
-            else:
-                raise ValueError("Unsupported signer code = {}.".format(self.code))
+            raise ValueError("Unsupported signer code = {}.".format(self.code))
 
         self._verifier = verifier
 
@@ -611,6 +601,95 @@ class Digester(CryMat):
             dig is bytes reference digest
         """
         return(blake3.blake3(ser).digest() == dig)
+
+
+class Aider(CryMat):
+    """
+    Aider is CryMat subclass for autonomic identifier prefix using basic derivation
+    from public key
+
+    See CryMat for other inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+
+    Methods:
+        verify():  Verifies derivation of aid
+
+    """
+
+    def __init__(self, raw=b'', code=CryOne.Ed25519N, **kwa):
+        """
+        assign ._verify to verify derivation of aid  = .qb64
+
+        """
+        super(Aider, self).__init__(raw=raw, code=code, **kwa)
+
+        if self.code == CryOne.Ed25519N:
+            self._verify = self._ed25519n
+        elif self.code == CryOne.Ed25519:
+            self._verify = self._ed25519
+        else:
+            raise ValueError("Unsupported code = {} for airder.".format(self.code))
+
+
+    def verify(self, data):
+        """
+        Returns True if derivation from data for .code matches .qb64,
+                False otherwise
+
+        Parameters:
+            data is inception data dict
+        """
+        return (self._verify(data=data, aid=self.qb64))
+
+
+    @staticmethod
+    def _ed25519n(data, aid):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 aid from inception data dict
+
+        Parameters:
+            data is dict of inception data
+            aid is Base64 fully qualified here
+        """
+        try:
+            keys = data["keys"]
+            if len(keys) != 1:
+                return False
+
+            if keys[0] != aid:
+                return False
+        except Exception as ex:
+            return False
+
+        return True
+
+
+    @staticmethod
+    def _ed25519(data, aid):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 aid from inception data dict
+
+        Parameters:
+            data is dict of inception data
+            aid is Base64 fully qualified here
+        """
+        try:
+            keys = data["keys"]
+            if len(keys) != 1:
+                return False
+
+            if keys[0] != aid:
+                return False
+        except Exception as ex:
+            return False
+
+        return True
+
 
 
 BASE64_PAD = '='
