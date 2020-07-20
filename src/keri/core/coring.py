@@ -634,34 +634,39 @@ class Aider(CryMat):
             raise ValueError("Unsupported code = {} for airder.".format(self.code))
 
 
-    def verify(self, data):
+    def verify(self, iked):
         """
-        Returns True if derivation from data for .code matches .qb64,
+        Returns True if derivation from iked for .code matches .qb64,
                 False otherwise
 
         Parameters:
-            data is inception data dict
+            iked is inception key event dict
         """
-        return (self._verify(data=data, aid=self.qb64))
+        return (self._verify(iked=iked, aid=self.qb64))
 
 
     @staticmethod
-    def _ed25519n(data, aid):
+    def _ed25519n(iked, aid):
         """
         Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 aid from inception data dict
+        Verify derivation of fully qualified Base64 aid from inception iked dict
 
         Parameters:
-            data is dict of inception data
-            aid is Base64 fully qualified here
+            iked is inception key event dict
+            aid is Base64 fully qualified
         """
         try:
-            keys = data["keys"]
-            if len(keys) != 1:
+            keys = iked["keys"]
+            if len(keys) < 1:
                 return False
 
             if keys[0] != aid:
                 return False
+
+            data = iked["data"]
+            if "EstablishOnly" not in data or data["EstablishOnly"] != True:
+                return False
+
         except Exception as ex:
             return False
 
@@ -669,18 +674,18 @@ class Aider(CryMat):
 
 
     @staticmethod
-    def _ed25519(data, aid):
+    def _ed25519(iked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from inception data dict
 
         Parameters:
-            data is dict of inception data
-            aid is Base64 fully qualified here
+            iked is inception key event dict
+            aid is Base64 fully qualified
         """
         try:
-            keys = data["keys"]
-            if len(keys) != 1:
+            keys = iked["keys"]
+            if len(keys) < 1:
                 return False
 
             if keys[0] != aid:
