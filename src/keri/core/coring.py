@@ -179,7 +179,7 @@ class CryFourCodex:
     Note binary length of everything in CryFourCodex results in 0 Base64 pad bytes.
     """
     ECDSA_256k1N:  str = "1AAA"  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    ECDSA_256k1:   str = "1AAB"  # Ed25519 verification key basic derivation
+    ECDSA_256k1:   str = "1AAB"  # Ed25519 public verification or encryption key, basic derivation
 
     def __iter__(self):
         return iter(astuple(self))
