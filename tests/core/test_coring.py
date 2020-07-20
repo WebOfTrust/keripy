@@ -934,12 +934,13 @@ def test_events_manual():
     assert rxsigmat.index == index
 
     rxaidqb64 = rxsrdr.ked["id"]
-    assert rxaidqb64 == aidmat.qb64
+    rxaidmat = CryMat(qb64=rxaidqb64)
+    assert rxaidmat.qb64 == aidmat.qb64
+    assert rxaidmat.code == CryOne.Ed25519
 
-    rxverqb64 = rxsrdr.ked["keys"][0]
-    assert rxaidqb64 == rxverqb64  #  basic derivation same
-
+    rxverqb64 = rxsrdr.ked["keys"][index]
     rxvermat = CryMat(qb64=rxverqb64)
+    assert rxvermat.qb64 == rxaidmat.qb64  #  basic derivation same
 
     indices = [ int(index, 16) for index in rxsrdr.ked["sigs"]]
     assert indices == [0]
