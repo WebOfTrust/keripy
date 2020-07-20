@@ -813,7 +813,7 @@ def test_digester():
 
 def test_event_manual():
     """
-    Test manual process of key event message
+    Test manual process of generating and validating key event message
     """
     with pytest.raises(ValueError):
         corver = Corver()
@@ -868,6 +868,7 @@ def test_event_manual():
     sn =  0
     sith = 1
     toad = 0
+    index = 0
 
     #create key event dict
     ked0 = dict(vs=Versify(kind=Serials.json, size=0),
@@ -880,24 +881,21 @@ def test_event_manual():
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 data=[],  # list of config ordered mappings may be empty
-                sigs=[]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
+                sigs=["{:x}".format(index)]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
                )
 
 
     txsrdr = Serder(ked=ked0, kind=Serials.json)
-    assert txsrdr.raw == (b'{"vs":"KERI10JSON000105_","id":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
+    assert txsrdr.raw == (b'{"vs":"KERI10JSON000108_","id":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
                           b'","sn":"0","ilk":"icp","sith":"1","keys":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
                           b'yzuKsKJP50s"],"next":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","toad":"'
-                          b'0","wits":[],"data":[],"sigs":[]}')
+                          b'0","wits":[],"data":[],"sigs":["0"]}')
 
-    assert txsrdr.size == 261
+    assert txsrdr.size == 264
 
     txdig = blake3.blake3(txsrdr.raw).digest()
-    assert txdig == (b'X\xcb\x8cZd\x1aM\xa9r\xea\x02>u\x1a\xf6\xcc\xfcNqs\x98+\xb5\x80\xf1lD\xe4'
-                     b'?\x02?\xc8')
-
     txdigmat = CryMat(raw=txdig, code=CryOne.Blake3_256)
-    assert txdigmat.qb64 == 'EWMuMWmQaTaly6gI-dRr2zPxOcXOYK7WA8WxE5D8CP8g'
+    assert txdigmat.qb64 == 'EGt8ffYFN2qVZ_6n7mVElKUGayCHjCzsTllwxhyy1OBg'
 
     assert txsrdr.dig == txdigmat.qb64
 
@@ -905,22 +903,42 @@ def test_event_manual():
     assert len(sig0raw) == 64
 
     result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
-    assert not result  # None if verify else raises ValueError
+    assert not result  # None if verifies successfully else raises ValueError
 
-    txsigmat = SigMat(raw=sig0raw, code=SigTwo.Ed25519, index=0)
-    assert txsigmat.qb64 == 'AARbCWt5fr07OOxJgXVjnA0Em-nIx3nVRxIRAXVXO-Arwuy0MKkzG-yTbSczwPKR-nsbgTCwo964pxLWqVK6jxCw'
+    txsigmat = SigMat(raw=sig0raw, code=SigTwo.Ed25519, index=index)
+    assert txsigmat.qb64 == 'AAMtdYrJ7xGyvMYYw2Km8SQd0rKJwPeB24Mebcw2bQk30tX1lk49krbChHy7xooq-DIKvf7FLoBvUdQ1mTqTRTCg'
     assert len(txsigmat.qb64) == 88
+    assert txsigmat.index == index
 
     msgb = txsrdr.raw + txsigmat.qb64.encode("utf-8")
 
-    assert len(msgb) == 349  #  261 + 88
+    assert len(msgb) == 352  #  264 + 88
 
     #  Recieve side
     rxsrdr = Serder(raw=msgb)
+    assert rxsrdr.size == txsrdr.size
+    assert rxsrdr.ked == ked0
+
+    rxsigqb64 = msgb[rxsrdr.size:].decode("utf-8")
+    assert len(rxsigqb64) == len(txsigmat.qb64)
+    rxsigmat = SigMat(qb64=rxsigqb64)
+    assert rxsigmat.index == index
+
+    rxverqb64 = rxsrdr.ked["keys"][0]
+    assert rxverqb64 == aidmat.qb64
+    rxvermat = CryMat(qb64=rxverqb64)
+
+    indices = [ int(index, 16) for index in rxsrdr.ked["sigs"]]
+    assert indices == [0]
+    assert indices[0] == rxsigmat.index
+
+    result = pysodium.crypto_sign_verify_detached(rxsigmat.raw, rxsrdr.raw, rxvermat.raw)
+    assert not result  # None if verifies successfully else raises ValueError
+
 
     """
     Done Test
     """
 
 if __name__ == "__main__":
-    test_digester()
+    test_event_manual()
