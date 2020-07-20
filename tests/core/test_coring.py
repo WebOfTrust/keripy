@@ -810,10 +810,19 @@ def test_digester():
 
     """ Done Test """
 
-
-def test_event_manual():
+def test_events():
     """
-    Test manual process of generating and validating key event message
+    Test process of generating and validating key event messages
+    """
+
+
+    """
+    Done Test
+    """
+
+def test_events_manual():
+    """
+    Test manual process of generating and validating inception key event message
     """
     with pytest.raises(ValueError):
         corver = Corver()
@@ -924,8 +933,12 @@ def test_event_manual():
     rxsigmat = SigMat(qb64=rxsigqb64)
     assert rxsigmat.index == index
 
+    rxaidqb64 = rxsrdr.ked["id"]
+    assert rxaidqb64 == aidmat.qb64
+
     rxverqb64 = rxsrdr.ked["keys"][0]
-    assert rxverqb64 == aidmat.qb64
+    assert rxaidqb64 == rxverqb64  #  basic derivation same
+
     rxvermat = CryMat(qb64=rxverqb64)
 
     indices = [ int(index, 16) for index in rxsrdr.ked["sigs"]]
@@ -941,4 +954,4 @@ def test_event_manual():
     """
 
 if __name__ == "__main__":
-    test_event_manual()
+    test_events_manual()
