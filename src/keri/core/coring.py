@@ -390,7 +390,7 @@ class Verifier(CryMat):
     Verifier is CryMat subclass with method to verify signature of serialization
     using the .raw as verifier key and .code for signature cipher suite.
 
-    See CryMat for inhereted attributes and properties:
+    See CryMat for inherited attributes and properties:
 
     Attributes:
 
@@ -433,9 +433,9 @@ class Verifier(CryMat):
         Verifiy ed25519 sig on ser using key
 
         Parameters:
-            key is bytes public key
             sig is bytes signature
             ser is bytes serialization
+            key is bytes public key
         """
         try:  # verify returns None if valid else raises ValueError
             result = pysodium.crypto_sign_verify_detached(sig, ser, key)
@@ -486,7 +486,7 @@ class Signer(CryMat):
             self._sign = self._ed25519
             if verifier and verifier.code not in [CryOne.Ed25519N, CryOne.Ed25519]:
                 raise ValueError("Mismatched verifier code = {} for  signer code"
-                                 " = {}.".format(verfier.code, self.code))
+                                 " = {}.".format(verifier.code, self.code))
         else:
             raise ValueError("Unsupported code = {} for signer.".format(self.code))
 
@@ -546,6 +546,71 @@ class Signer(CryMat):
             return SigMat(raw=sig, code=SigTwo.Ed25519, index=index)
 
 
+class Digester(CryMat):
+    """
+    Digester is CryMat subclass with method to verify digest of serialization
+    using  .raw as digest and .code for digest algorithm.
+
+    See CryMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+
+    Methods:
+        verify: verifies signature
+
+    """
+
+    def __init__(self, raw=b'', ser=b'', code=CryOne.Blake3_256, **kwa):
+        """
+        Assign digest verification function to ._verify
+
+        See CryMat for inherited parameters
+
+        Parameters:
+           ser is bytes serialization from which raw is computed if not raw
+
+        """
+        try:
+            super(Digester, self).__init__(raw=raw, code=code, **kwa)
+        except EmptyMaterialError as ex:
+            if not ser:
+                raise ex
+            if code == CryOne.Blake3_256:
+                dig = blake3.blake3(ser).digest()
+                super(Digester, self).__init__(raw=dig, code=code, **kwa)
+            else:
+                raise ValueError("Unsupported code = {} for digester.".format(code))
+
+        if self.code == CryOne.Blake3_256:
+            self._verify = self._blake3_256
+        else:
+            raise ValueError("Unsupported code = {} for digester.".format(self.code))
+
+
+    def verify(self, ser):
+        """
+        Returns True if digest of bytes serialization ser matches .raw
+        using .raw as reference digest for ._verify digest algorithm determined
+        by .code
+
+        Parameters:
+            ser is bytes serialization
+        """
+        return (self._verify(ser=ser, dig=self.raw))
+
+    @staticmethod
+    def _blake3_256(ser, dig):
+        """
+        Returns True if verified False otherwise
+        Verifiy blake3_256 digest of ser matches dig
+
+        Parameters:
+            ser is bytes serialization
+            dig is bytes reference digest
+        """
+        return(blake3.blake3(ser).digest() == dig)
 
 
 BASE64_PAD = '='

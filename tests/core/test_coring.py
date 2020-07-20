@@ -19,7 +19,7 @@ from keri.kering import ValidationError, EmptyMaterialError
 from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, Verifier, Signer
+from keri.core.coring import CryMat, Verifier, Signer, Digester
 from keri.core.coring import SigSelect, SigTwo, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFour, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFive, SigFiveSizes, SigFiveRawSizes
@@ -725,6 +725,8 @@ def test_signer():
     assert sigmat.index == 0
     result = signer.verifier.verify(sigmat.raw, ser)
     assert result == True
+    result = signer.verifier.verify(sigmat.raw, ser + b'ABCDEFG')
+    assert result == False
 
     assert crymat.raw == sigmat.raw
 
@@ -760,9 +762,53 @@ def test_signer():
     result = signer.verifier.verify(sigmat.raw, ser)
     assert result == True
 
+    with pytest.raises(ValueError):
+        signer = Signer(raw=seed, code=CryOne.Ed25519N, verifier=verifier)
+
+    verifier = CryMat(raw=seed, code=CryOne.Blake3_256)
+    with pytest.raises(ValueError):
+        signer = Signer(raw=seed, verifier=verifier)
 
     """ Done Test """
 
+def test_digester():
+    """
+    Test the support functionality for digester subclass of crymat
+    """
+    with pytest.raises(EmptyMaterialError):
+        digester = Digester()
+
+    #create something to digest and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    dig = blake3.blake3(ser).digest()
+
+    digester = Digester(raw=dig)  # defaults provide Blake3_256 digester
+    assert digester.code == CryOne.Blake3_256
+    assert len(digester.raw) == CryOneRawSizes[digester.code]
+    result = digester.verify(ser=ser)
+    assert result == True
+    result = digester.verify(ser=ser+b'ABCDEF')
+    assert result == False
+
+    digester = Digester(raw=dig, code=CryOne.Blake3_256)
+    assert digester.code == CryOne.Blake3_256
+    assert len(digester.raw) == CryOneRawSizes[digester.code]
+    result = digester.verify(ser=ser)
+    assert result == True
+
+    with pytest.raises(ValueError):
+        digester = Digester(raw=dig, code=CryOne.Ed25519)
+
+    digester = Digester(ser=ser)
+    assert digester.code == CryOne.Blake3_256
+    assert len(digester.raw) == CryOneRawSizes[digester.code]
+    result = digester.verify(ser=ser)
+    assert result == True
+
+    with pytest.raises(ValueError):
+        digester = Digester(ser=ser, code=CryOne.Ed25519)
+
+    """ Done Test """
 
 
 def test_event_manual():
@@ -877,4 +923,4 @@ def test_event_manual():
     """
 
 if __name__ == "__main__":
-    test_signer()
+    test_digester()
