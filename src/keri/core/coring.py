@@ -105,17 +105,18 @@ class CryOneCodex:
 
     Note binary length of everything in CryOneCodex results in 1 Base64 pad byte.
     """
-    Ed25519Seed:  str = 'A'  #  Ed25519 256 bit random seed for private key
-    Ed25519N:     str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
-    X25519:       str = 'C'  #  X25519 public encryption key, converted from Ed25519.
-    Ed25519:      str = 'D'  #  Ed25519 verification key basic derivation
-    Blake3_256:   str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256:  str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256:  str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
-    SHA3_256:     str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
-    SHA2_256:     str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
-    Ed448Seed:    str = 'J'  #  Ed448 448 bit random Seed for private key
-    X448:         str = 'K'  #  X448 public encryption key, converted from Ed448
+    Ed25519_Seed:         str = 'A'  #  Ed25519 256 bit random seed for private key
+    Ed25519N:             str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
+    X25519:               str = 'C'  #  X25519 public encryption key, converted from Ed25519.
+    Ed25519:              str = 'D'  #  Ed25519 verification key basic derivation
+    Blake3_256:           str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:          str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:          str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:             str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:             str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
+    ECDSA_secp256k1_Seed: str = 'J'  #  ECDSA secp256k1 448 bit random Seed for private key
+    Ed448_Seed:           str = 'K'  #  Ed448 448 bit random Seed for private key
+    X448:                 str = 'L'  #  X448 public encryption key, converted from Ed448
 
 
     def __iter__(self):
@@ -126,13 +127,13 @@ CryOne = CryOneCodex()  # Make instance
 # Mapping of Code to Size
 CryOneSizes = {
                "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
-               "G": 44, "H": 44, "I": 44, "J": 76, "K": 76,
+               "G": 44, "H": 44, "I": 44, "J": 44, "K": 76, "L": 76,
               }
 
 # Mapping of Code to Size
 CryOneRawSizes = {
                "A": 32, "B": 32, "C": 32, "D": 32, "E": 32, "F": 32,
-               "G": 32, "H": 32, "I": 32, "J": 56, "K": 56,
+               "G": 32, "H": 32, "I": 32, "J": 32, "K": 56, "L": 56,
               }
 
 
@@ -472,7 +473,7 @@ class Signer(CryMat):
         """
         super(Signer, self).__init__(**kwa)
 
-        if self.code == CryOne.Ed25519Seed:
+        if self.code == CryOne.Ed25519_Seed:
             self._sign = self._ed25519
             if verifier and verifier.code not in [CryOne.Ed25519N, CryOne.Ed25519]:
                 raise ValueError("Mismatched verifier code = {} for  signer code"
