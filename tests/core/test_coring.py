@@ -14,7 +14,8 @@ import cbor2 as cbor
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
-from keri.kering import Version, Versionage, ValidationError
+from keri.kering import Version, Versionage
+from keri.kering import ValidationError, EmptyMaterialError
 from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat, Verifier
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
@@ -154,7 +155,7 @@ def test_crymat():
     prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
               b'IS\xf3\x874\xbao\x90\x8c')
 
-    with pytest.raises(ValueError):
+    with pytest.raises(EmptyMaterialError):
         crymat = CryMat()
 
     crymat = CryMat(raw=verkey)
@@ -236,6 +237,9 @@ def test_sigmat():
     """
     Test the support functionality for attached signature cryptographic material
     """
+    with pytest.raises(EmptyMaterialError):
+        sigmet = SigMat()
+
     assert SigTwo.Ed25519 ==  'A'  # Ed25519 signature.
     assert SigTwo.ECDSA_256k1 == 'B'  # ECDSA secp256k1 signature.
 
@@ -660,7 +664,7 @@ def test_verifier():
     seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(EmptyMaterialError):
         verfer = Verifier()
 
     verfer = Verifier(raw=verkey, code=CryOne.Ed25519N)
@@ -692,6 +696,47 @@ def test_verifier():
 
 
     """ Done Test """
+
+def test_signer():
+    """
+    Test the support functionality for signer subclass of crymat
+    """
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
+
+    with pytest.raises(EmptyMaterialError):
+        verfer = Verifier()
+
+    verfer = Verifier(raw=verkey, code=CryOne.Ed25519N)
+    assert verfer.raw == verkey
+    assert verfer.code == CryOne.Ed25519N
+
+    #create something to serialize
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    verfer = Verifier(raw=verkey, code=CryOne.Ed25519)
+    assert verfer.raw == verkey
+    assert verfer.code == CryOne.Ed25519
+
+    #create something to serialize
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    with pytest.raises(ValueError):
+        verfer = Verifier(raw=verkey, code=CryOne.Blake3_256)
+
+
+    """ Done Test """
+
 
 
 def test_event_manual():

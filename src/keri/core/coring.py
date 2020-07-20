@@ -16,7 +16,8 @@ import msgpack
 import pysodium
 import blake3
 
-from ..kering import ValidationError, VersionError, Versionage, Version
+from ..kering import ValidationError, EmptyMaterialError, VersionError
+from ..kering import Versionage, Version
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
@@ -268,7 +269,7 @@ class CryMat:
             self._exfil(encodeB64(qb2).decode("utf-8"))
 
         else:
-            raise ValueError("Improper initialization need raw or b64 or b2.")
+            raise EmptyMaterialError("Improper initialization need raw or b64 or b2.")
 
 
     @staticmethod
@@ -483,9 +484,11 @@ class Signer(CryMat):
 
 
         if verifier is None:
-            # if self.code == CryOne.Ed25519Seed:
-            verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
-            verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
+            if self.code == CryOne.Ed25519Seed:
+                verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
+                verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
+            else:
+                raise ValueError("Unsupported signer code = {}.".format(self.code))
 
         self._verifier = verifier
 
@@ -759,7 +762,7 @@ class SigMat:
             self._exfil(encodeB64(qb2).decode("utf-8"))
 
         else:
-            raise ValueError("Improper initialization need raw or b64 or b2.")
+            raise EmptyMaterialError("Improper initialization need raw or b64 or b2.")
 
 
     @staticmethod
