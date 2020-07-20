@@ -16,16 +16,19 @@ from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage
 from keri.kering import ValidationError, EmptyMaterialError
-from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat, Verifier
+from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
+from keri.core.coring import CryMat, Verifier, Signer
 from keri.core.coring import SigSelect, SigTwo, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFour, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFive, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
-from keri.core.coring import IntToB64, B64ToInt, SigMat
+from keri.core.coring import IntToB64, B64ToInt
+from keri.core.coring import SigMat
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
-from keri.core.coring import Versify, Deversify, Rever, Serder
+from keri.core.coring import Versify, Deversify, Rever
+from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks, Corver
 
 
@@ -671,7 +674,7 @@ def test_verifier():
     assert verfer.raw == verkey
     assert verfer.code == CryOne.Ed25519N
 
-    #create something to serialize
+    #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
@@ -683,7 +686,7 @@ def test_verifier():
     assert verfer.raw == verkey
     assert verfer.code == CryOne.Ed25519
 
-    #create something to serialize
+    #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
@@ -701,38 +704,61 @@ def test_signer():
     """
     Test the support functionality for signer subclass of crymat
     """
+    signer = Signer()  # defaults provide Ed25519 signer
+    assert signer.code == CryOne.Ed25519_Seed
+    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert signer.verifier.code == CryOne.Ed25519
+    assert len(signer.verifier.raw) == CryOneRawSizes[signer.verifier.code]
+
+    #create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    crymat = signer.sign(ser)
+    assert crymat.code == CryTwo.Ed25519
+    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    result = signer.verifier.verify(crymat.raw, ser)
+    assert result == True
+
+    sigmat = signer.sign(ser, index=0)
+    assert sigmat.code == SigTwo.Ed25519
+    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.index == 0
+    result = signer.verifier.verify(sigmat.raw, ser)
+    assert result == True
+
+    assert crymat.raw == sigmat.raw
+
+
     seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
+    signer = Signer(raw=seed, code=CryOne.Ed25519_Seed)
+    assert signer.code == CryOne.Ed25519_Seed
+    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert signer.raw == seed
+    assert signer.verifier.code == CryOne.Ed25519
+    assert len(signer.verifier.raw) == CryOneRawSizes[signer.verifier.code]
 
-    with pytest.raises(EmptyMaterialError):
-        verfer = Verifier()
-
-    verfer = Verifier(raw=verkey, code=CryOne.Ed25519N)
-    assert verfer.raw == verkey
-    assert verfer.code == CryOne.Ed25519N
-
-    #create something to serialize
-    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-
-    sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
-
-    result = verfer.verify(sig, ser)
+    sigmat = signer.sign(ser, index=1)
+    assert sigmat.code == SigTwo.Ed25519
+    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.index == 1
+    result = signer.verifier.verify(sigmat.raw, ser)
     assert result == True
 
-    verfer = Verifier(raw=verkey, code=CryOne.Ed25519)
-    assert verfer.raw == verkey
-    assert verfer.code == CryOne.Ed25519
+    verifier = signer.verifier  #  save to reuse
 
-    #create something to serialize
-    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    signer = Signer(raw=seed, code=CryOne.Ed25519_Seed, verifier=verifier )
+    assert signer.code == CryOne.Ed25519_Seed
+    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert signer.raw == seed
+    assert signer.verifier.code == CryOne.Ed25519
+    assert len(signer.verifier.raw) == CryOneRawSizes[signer.verifier.code]
 
-    sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
-
-    result = verfer.verify(sig, ser)
+    sigmat = signer.sign(ser, index=2)
+    assert sigmat.code == SigTwo.Ed25519
+    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.index == 2
+    result = signer.verifier.verify(sigmat.raw, ser)
     assert result == True
-
-    with pytest.raises(ValueError):
-        verfer = Verifier(raw=verkey, code=CryOne.Blake3_256)
 
 
     """ Done Test """
@@ -851,4 +877,4 @@ def test_event_manual():
     """
 
 if __name__ == "__main__":
-    test_verifier()
+    test_signer()

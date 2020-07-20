@@ -467,12 +467,20 @@ class Signer(CryMat):
 
     """
 
-    def __init__(self, verifier=None, **kwa):
+    def __init__(self,raw=b'', code=CryOne.Ed25519_Seed, verifier=None, **kwa):
         """
         Assign signing cipher suite function to ._sign
 
         """
-        super(Signer, self).__init__(**kwa)
+        try:
+            super(Signer, self).__init__(raw=raw, code=code, **kwa)
+        except EmptyMaterialError as ex:
+            if code == CryOne.Ed25519_Seed:
+                raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+                super(Signer, self).__init__(raw=raw, code=code, **kwa)
+            else:
+                raise ValueError("Unsupported code = {} for signer.".format(self.code))
+
 
         if self.code == CryOne.Ed25519_Seed:
             self._sign = self._ed25519
@@ -484,7 +492,7 @@ class Signer(CryMat):
 
 
         if verifier is None:
-            if self.code == CryOne.Ed25519Seed:
+            if self.code == CryOne.Ed25519_Seed:
                 verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
                 verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
             else:
