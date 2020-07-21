@@ -815,10 +815,10 @@ def test_aider():
     assert len(aider.raw) == CryOneRawSizes[aider.code]
     assert len(aider.qb64) == CryOneSizes[aider.code]
 
-    iked = dict(keys=[aider.qb64], data=dict(EstablishOnly=True))
+    iked = dict(keys=[aider.qb64], next="")
     assert aider.verify(iked=iked) == True
 
-    iked = dict(keys=[aider.qb64], data=dict(EstablishOnly=False))
+    iked = dict(keys=[aider.qb64], next="ABC")
     assert aider.verify(iked=iked) == False
 
     aider = Aider(raw=verkey, code=CryOne.Ed25519)  # defaults provide Ed25519N aider

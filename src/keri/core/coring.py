@@ -663,8 +663,7 @@ class Aider(CryMat):
             if keys[0] != aid:
                 return False
 
-            data = iked["data"]
-            if "EstablishOnly" not in data or data["EstablishOnly"] != True:
+            if iked["next"]:  # must be empty
                 return False
 
         except Exception as ex:
