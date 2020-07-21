@@ -16,7 +16,8 @@ import msgpack
 import pysodium
 import blake3
 
-from ..kering import ValidationError, VersionError, Versionage, Version
+from ..kering import ValidationError, EmptyMaterialError, VersionError
+from ..kering import Versionage, Version
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
@@ -105,17 +106,18 @@ class CryOneCodex:
 
     Note binary length of everything in CryOneCodex results in 1 Base64 pad byte.
     """
-    Seed_256:     str = 'A'  #  256 Bit Random Seed or private key
-    Ed25519N:     str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
-    X25519:       str = 'C'  #  X25519 public encryption key, converted from Ed25519.
-    Ed25519:      str = 'D'  #  Ed25519 verification key basic derivation
-    Blake3_256:   str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256:  str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256:  str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
-    SHA3_256:     str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
-    SHA2_256:     str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
-    Seed_448:     str = 'J'  #  448 Bit Random Seed or private key
-    X448:         str = 'K'  #  X448 public encryption key, converted from Ed448
+    Ed25519_Seed:         str = 'A'  #  Ed25519 256 bit random seed for private key
+    Ed25519N:             str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
+    X25519:               str = 'C'  #  X25519 public encryption key, converted from Ed25519.
+    Ed25519:              str = 'D'  #  Ed25519 verification key basic derivation
+    Blake3_256:           str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:          str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:          str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:             str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:             str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
+    ECDSA_secp256k1_Seed: str = 'J'  #  ECDSA secp256k1 448 bit random Seed for private key
+    Ed448_Seed:           str = 'K'  #  Ed448 448 bit random Seed for private key
+    X448:                 str = 'L'  #  X448 public encryption key, converted from Ed448
 
 
     def __iter__(self):
@@ -126,13 +128,13 @@ CryOne = CryOneCodex()  # Make instance
 # Mapping of Code to Size
 CryOneSizes = {
                "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
-               "G": 44, "H": 44, "I": 44, "J": 76, "K": 76,
+               "G": 44, "H": 44, "I": 44, "J": 44, "K": 76, "L": 76,
               }
 
 # Mapping of Code to Size
 CryOneRawSizes = {
                "A": 32, "B": 32, "C": 32, "D": 32, "E": 32, "F": 32,
-               "G": 32, "H": 32, "I": 32, "J": 56, "K": 56,
+               "G": 32, "H": 32, "I": 32, "J": 32, "K": 56, "L": 56,
               }
 
 
@@ -145,7 +147,7 @@ class CryTwoCodex:
 
     Note binary length of everything in CryTwoCodex results in 2 Base64 pad bytes.
     """
-    Seed_128:    str = '0A'  # Ed25519 signature.
+    Seed_128:    str = '0A'  # 128 bit random seed.
     Ed25519:     str = '0B'  # Ed25519 signature.
     ECDSA_256k1: str = '0C'  # ECDSA secp256k1 signature.
 
@@ -178,7 +180,7 @@ class CryFourCodex:
     Note binary length of everything in CryFourCodex results in 0 Base64 pad bytes.
     """
     ECDSA_256k1N:  str = "1AAA"  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    ECDSA_256k1:   str = "1AAB"  # Ed25519 verification key basic derivation
+    ECDSA_256k1:   str = "1AAB"  # Ed25519 public verification or encryption key, basic derivation
 
     def __iter__(self):
         return iter(astuple(self))
@@ -267,7 +269,7 @@ class CryMat:
             self._exfil(encodeB64(qb2).decode("utf-8"))
 
         else:
-            raise ValueError("Improper initialization need raw or b64 or b2.")
+            raise EmptyMaterialError("Improper initialization need raw or b64 or b2.")
 
 
     @staticmethod
@@ -385,10 +387,10 @@ class CryMat:
 
 class Verifier(CryMat):
     """
-    Verifier is CryMat subclass with method to verifiy signature of serialization
+    Verifier is CryMat subclass with method to verify signature of serialization
     using the .raw as verifier key and .code for signature cipher suite.
 
-    See CryMat for inhereted attributes and properties:
+    See CryMat for inherited attributes and properties:
 
     Attributes:
 
@@ -406,10 +408,10 @@ class Verifier(CryMat):
         """
         super(Verifier, self).__init__(**kwa)
 
-        if self.code == CryOne.Ed25519N:
+        if self.code in [CryOne.Ed25519N, CryOne.Ed25519]:
             self._verify = self._ed25519
         else:
-            self_verify = self._unknown
+            raise ValueError("Unsupported code = {} for verifier.".format(self.code))
 
 
     def verify(self, sig, ser):
@@ -425,31 +427,268 @@ class Verifier(CryMat):
         return (self._verify(sig=sig, ser=ser, key=self.raw))
 
     @staticmethod
-    def _unknown(sig, ser, key):
-        """
-        Returns False
-        Unknown verificaton cipher suite
-
-        Parameters:
-            key is bytes public key
-            sig is bytes signature
-            ser is bytes serialization
-        """
-        return False
-
-    @staticmethod
     def _ed25519(sig, ser, key):
         """
         Returns True if verified False otherwise
         Verifiy ed25519 sig on ser using key
 
         Parameters:
-            key is bytes public key
             sig is bytes signature
             ser is bytes serialization
+            key is bytes public key
         """
         try:  # verify returns None if valid else raises ValueError
             result = pysodium.crypto_sign_verify_detached(sig, ser, key)
+        except Exception as ex:
+            return False
+
+        return True
+
+
+class Signer(CryMat):
+    """
+    Signer is CryMat subclass with method to create signature of serialization
+    using the .raw as signing (private) key seed, .code as cipher suite for
+    signing and new property .verifier whose property verifier.raw
+    is public key for signing.
+    If not provided .verifier is generated from private key seed using .code
+    as cipher suite for creating key-pair.
+
+
+    See CryMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .verifier is Verifier object instance
+
+    Methods:
+        sign: create signature
+
+    """
+
+    def __init__(self,raw=b'', code=CryOne.Ed25519_Seed, **kwa):
+        """
+        Assign signing cipher suite function to ._sign
+
+        """
+        try:
+            super(Signer, self).__init__(raw=raw, code=code, **kwa)
+        except EmptyMaterialError as ex:
+            if code == CryOne.Ed25519_Seed:
+                raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+                super(Signer, self).__init__(raw=raw, code=code, **kwa)
+            else:
+                raise ValueError("Unsupported signer code = {}.".format(code))
+
+        if self.code == CryOne.Ed25519_Seed:
+            self._sign = self._ed25519
+            verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
+            verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
+        else:
+            raise ValueError("Unsupported signer code = {}.".format(self.code))
+
+        self._verifier = verifier
+
+    @property
+    def verifier(self):
+        """
+        Property verifier:
+        Returns Verifier instance
+        Assumes ._verifier is correctly assigned
+        """
+        return self._verifier
+
+    def sign(self, ser, index=None):
+        """
+        Returns either CryMat or SigMat instance of signature
+        on bytes serialization ser
+
+        If index is None return CryMat instance
+        Otherwise return Sigmat instance
+
+        Parameters:
+            ser is bytes serialization
+            index is
+        """
+        return (self._sign(ser=ser,
+                           seed=self.raw,
+                           key=self.verifier.raw,
+                           index=index))
+
+    @staticmethod
+    def _ed25519(ser, seed, key, index):
+        """
+        Returns signature
+
+
+        Parameters:
+            ser is bytes serialization
+            seed is bytes seed (private key)
+            key is bytes public key
+            index is index of offset into signers list or None
+
+        """
+        sig = pysodium.crypto_sign_detached(ser, seed + key)
+        if index is None:
+            return CryMat(raw=sig, code=CryTwo.Ed25519)
+        else:
+            return SigMat(raw=sig, code=SigTwo.Ed25519, index=index)
+
+
+class Digester(CryMat):
+    """
+    Digester is CryMat subclass with method to verify digest of serialization
+    using  .raw as digest and .code for digest algorithm.
+
+    See CryMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+
+    Methods:
+        verify: verifies signature
+
+    """
+
+    def __init__(self, raw=b'', ser=b'', code=CryOne.Blake3_256, **kwa):
+        """
+        Assign digest verification function to ._verify
+
+        See CryMat for inherited parameters
+
+        Parameters:
+           ser is bytes serialization from which raw is computed if not raw
+
+        """
+        try:
+            super(Digester, self).__init__(raw=raw, code=code, **kwa)
+        except EmptyMaterialError as ex:
+            if not ser:
+                raise ex
+            if code == CryOne.Blake3_256:
+                dig = blake3.blake3(ser).digest()
+                super(Digester, self).__init__(raw=dig, code=code, **kwa)
+            else:
+                raise ValueError("Unsupported code = {} for digester.".format(code))
+
+        if self.code == CryOne.Blake3_256:
+            self._verify = self._blake3_256
+        else:
+            raise ValueError("Unsupported code = {} for digester.".format(self.code))
+
+
+    def verify(self, ser):
+        """
+        Returns True if digest of bytes serialization ser matches .raw
+        using .raw as reference digest for ._verify digest algorithm determined
+        by .code
+
+        Parameters:
+            ser is bytes serialization
+        """
+        return (self._verify(ser=ser, dig=self.raw))
+
+    @staticmethod
+    def _blake3_256(ser, dig):
+        """
+        Returns True if verified False otherwise
+        Verifiy blake3_256 digest of ser matches dig
+
+        Parameters:
+            ser is bytes serialization
+            dig is bytes reference digest
+        """
+        return(blake3.blake3(ser).digest() == dig)
+
+
+class Aider(CryMat):
+    """
+    Aider is CryMat subclass for autonomic identifier prefix using basic derivation
+    from public key
+
+    See CryMat for other inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+
+    Methods:
+        verify():  Verifies derivation of aid
+
+    """
+
+    def __init__(self, raw=b'', code=CryOne.Ed25519N, **kwa):
+        """
+        assign ._verify to verify derivation of aid  = .qb64
+
+        """
+        super(Aider, self).__init__(raw=raw, code=code, **kwa)
+
+        if self.code == CryOne.Ed25519N:
+            self._verify = self._ed25519n
+        elif self.code == CryOne.Ed25519:
+            self._verify = self._ed25519
+        else:
+            raise ValueError("Unsupported code = {} for airder.".format(self.code))
+
+
+    def verify(self, iked):
+        """
+        Returns True if derivation from iked for .code matches .qb64,
+                False otherwise
+
+        Parameters:
+            iked is inception key event dict
+        """
+        return (self._verify(iked=iked, aid=self.qb64))
+
+
+    @staticmethod
+    def _ed25519n(iked, aid):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 aid from inception iked dict
+
+        Parameters:
+            iked is inception key event dict
+            aid is Base64 fully qualified
+        """
+        try:
+            keys = iked["keys"]
+            if len(keys) < 1:
+                return False
+
+            if keys[0] != aid:
+                return False
+
+            if iked["next"]:  # must be empty
+                return False
+
+        except Exception as ex:
+            return False
+
+        return True
+
+
+    @staticmethod
+    def _ed25519(iked, aid):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 aid from inception data dict
+
+        Parameters:
+            iked is inception key event dict
+            aid is Base64 fully qualified
+        """
+        try:
+            keys = iked["keys"]
+            if len(keys) < 1:
+                return False
+
+            if keys[0] != aid:
+                return False
         except Exception as ex:
             return False
 
@@ -679,7 +918,7 @@ class SigMat:
             self._exfil(encodeB64(qb2).decode("utf-8"))
 
         else:
-            raise ValueError("Improper initialization need raw or b64 or b2.")
+            raise EmptyMaterialError("Improper initialization need raw or b64 or b2.")
 
 
     @staticmethod

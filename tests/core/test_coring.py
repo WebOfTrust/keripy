@@ -14,17 +14,21 @@ import cbor2 as cbor
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
-from keri.kering import Version, Versionage, ValidationError
-from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour, CryMat, Verifier
+from keri.kering import Version, Versionage
+from keri.kering import ValidationError, EmptyMaterialError
+from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
+from keri.core.coring import CryMat, Verifier, Signer, Digester, Aider
 from keri.core.coring import SigSelect, SigTwo, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFour, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFive, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
-from keri.core.coring import IntToB64, B64ToInt, SigMat
+from keri.core.coring import IntToB64, B64ToInt
+from keri.core.coring import SigMat
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
-from keri.core.coring import Versify, Deversify, Rever, Serder
+from keri.core.coring import Versify, Deversify, Rever
+from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks, Corver
 
 
@@ -39,7 +43,7 @@ def test_cryderivationcodes():
     for x in ['0']:
         assert x in CrySelect
 
-    assert CryOne.Seed_256 == 'A'
+    assert CryOne.Ed25519_Seed == 'A'
     assert CryOne.Ed25519N == 'B'
     assert CryOne.X25519 == 'C'
     assert CryOne.Ed25519 == 'D'
@@ -48,12 +52,13 @@ def test_cryderivationcodes():
     assert CryOne.Blake2s_256 == 'G'
     assert CryOne.SHA3_256 == 'H'
     assert CryOne.SHA2_256 == 'I'
-    assert CryOne.Seed_448 == 'J'
-    assert CryOne.X448 == 'K'
+    assert CryOne.ECDSA_secp256k1_Seed == 'J'
+    assert CryOne.Ed448_Seed == 'K'
+    assert CryOne.X448 == 'L'
 
     assert '0' not in CryOne
 
-    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']:
+    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',  'L']:
         assert x in CryOne
         assert x in CryOneSizes
         assert x in CryOneRawSizes
@@ -153,7 +158,7 @@ def test_crymat():
     prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
               b'IS\xf3\x874\xbao\x90\x8c')
 
-    with pytest.raises(ValueError):
+    with pytest.raises(EmptyMaterialError):
         crymat = CryMat()
 
     crymat = CryMat(raw=verkey)
@@ -235,6 +240,9 @@ def test_sigmat():
     """
     Test the support functionality for attached signature cryptographic material
     """
+    with pytest.raises(EmptyMaterialError):
+        sigmet = SigMat()
+
     assert SigTwo.Ed25519 ==  'A'  # Ed25519 signature.
     assert SigTwo.ECDSA_256k1 == 'B'  # ECDSA secp256k1 signature.
 
@@ -659,14 +667,14 @@ def test_verifier():
     seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(EmptyMaterialError):
         verfer = Verifier()
 
     verfer = Verifier(raw=verkey, code=CryOne.Ed25519N)
     assert verfer.raw == verkey
     assert verfer.code == CryOne.Ed25519N
 
-    #create something to serialize
+    #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
@@ -674,13 +682,173 @@ def test_verifier():
     result = verfer.verify(sig, ser)
     assert result == True
 
+    verfer = Verifier(raw=verkey, code=CryOne.Ed25519)
+    assert verfer.raw == verkey
+    assert verfer.code == CryOne.Ed25519
+
+    #create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    with pytest.raises(ValueError):
+        verfer = Verifier(raw=verkey, code=CryOne.Blake3_256)
+
 
     """ Done Test """
 
-
-def test_event_manual():
+def test_signer():
     """
-    Test manual process of key event message
+    Test the support functionality for signer subclass of crymat
+    """
+    signer = Signer()  # defaults provide Ed25519 signer
+    assert signer.code == CryOne.Ed25519_Seed
+    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert signer.verifier.code == CryOne.Ed25519
+    assert len(signer.verifier.raw) == CryOneRawSizes[signer.verifier.code]
+
+    #create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    crymat = signer.sign(ser)
+    assert crymat.code == CryTwo.Ed25519
+    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    result = signer.verifier.verify(crymat.raw, ser)
+    assert result == True
+
+    sigmat = signer.sign(ser, index=0)
+    assert sigmat.code == SigTwo.Ed25519
+    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.index == 0
+    result = signer.verifier.verify(sigmat.raw, ser)
+    assert result == True
+    result = signer.verifier.verify(sigmat.raw, ser + b'ABCDEFG')
+    assert result == False
+
+    assert crymat.raw == sigmat.raw
+
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    signer = Signer(raw=seed, code=CryOne.Ed25519_Seed)
+    assert signer.code == CryOne.Ed25519_Seed
+    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert signer.raw == seed
+    assert signer.verifier.code == CryOne.Ed25519
+    assert len(signer.verifier.raw) == CryOneRawSizes[signer.verifier.code]
+
+    crymat = signer.sign(ser)
+    assert crymat.code == CryTwo.Ed25519
+    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    result = signer.verifier.verify(crymat.raw, ser)
+    assert result == True
+
+    sigmat = signer.sign(ser, index=1)
+    assert sigmat.code == SigTwo.Ed25519
+    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.index == 1
+    result = signer.verifier.verify(sigmat.raw, ser)
+    assert result == True
+
+    assert crymat.raw == sigmat.raw
+
+    with pytest.raises(ValueError):
+        signer = Signer(raw=seed, code=CryOne.Ed25519N)
+
+    with pytest.raises(ValueError):
+        signer = Signer(code=CryOne.Ed25519N)
+
+    """ Done Test """
+
+def test_digester():
+    """
+    Test the support functionality for digester subclass of crymat
+    """
+    with pytest.raises(EmptyMaterialError):
+        digester = Digester()
+
+    #create something to digest and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    dig = blake3.blake3(ser).digest()
+
+    digester = Digester(raw=dig)  # defaults provide Blake3_256 digester
+    assert digester.code == CryOne.Blake3_256
+    assert len(digester.raw) == CryOneRawSizes[digester.code]
+    result = digester.verify(ser=ser)
+    assert result == True
+    result = digester.verify(ser=ser+b'ABCDEF')
+    assert result == False
+
+    digester = Digester(raw=dig, code=CryOne.Blake3_256)
+    assert digester.code == CryOne.Blake3_256
+    assert len(digester.raw) == CryOneRawSizes[digester.code]
+    result = digester.verify(ser=ser)
+    assert result == True
+
+    with pytest.raises(ValueError):
+        digester = Digester(raw=dig, code=CryOne.Ed25519)
+
+    digester = Digester(ser=ser)
+    assert digester.code == CryOne.Blake3_256
+    assert len(digester.raw) == CryOneRawSizes[digester.code]
+    result = digester.verify(ser=ser)
+    assert result == True
+
+    with pytest.raises(ValueError):
+        digester = Digester(ser=ser, code=CryOne.Ed25519)
+
+    """ Done Test """
+
+def test_aider():
+    """
+    Test the support functionality for aider subclass of crymat
+    """
+    with pytest.raises(EmptyMaterialError):
+        aider = Aider()
+
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
+
+    aider = Aider(raw=verkey)  # defaults provide Ed25519N aider
+    assert aider.code == CryOne.Ed25519N
+    assert len(aider.raw) == CryOneRawSizes[aider.code]
+    assert len(aider.qb64) == CryOneSizes[aider.code]
+
+    iked = dict(keys=[aider.qb64], next="")
+    assert aider.verify(iked=iked) == True
+
+    iked = dict(keys=[aider.qb64], next="ABC")
+    assert aider.verify(iked=iked) == False
+
+    aider = Aider(raw=verkey, code=CryOne.Ed25519)  # defaults provide Ed25519N aider
+    assert aider.code == CryOne.Ed25519
+    assert len(aider.raw) == CryOneRawSizes[aider.code]
+    assert len(aider.qb64) == CryOneSizes[aider.code]
+
+    iked = dict(keys=[aider.qb64])
+    assert aider.verify(iked=iked) == True
+
+    verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
+    aider = Aider(raw=verifier.raw)
+    assert aider.code == CryOne.Ed25519N
+    assert aider.verify(iked=iked) == False
+
+    """ Done Test """
+
+def test_process():
+    """
+    Test process of generating and validating key event messages
+    """
+    signer = Signer()
+    assert signer.code == CryOne.Ed25519_Seed
+
+
+    """ Done Test """
+
+def test_process_manual():
+    """
+    Test manual process of generating and validating inception key event message
     """
     with pytest.raises(ValueError):
         corver = Corver()
@@ -735,6 +903,7 @@ def test_event_manual():
     sn =  0
     sith = 1
     toad = 0
+    index = 0
 
     #create key event dict
     ked0 = dict(vs=Versify(kind=Serials.json, size=0),
@@ -747,24 +916,21 @@ def test_event_manual():
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 data=[],  # list of config ordered mappings may be empty
-                sigs=[]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
+                sigs=["{:x}".format(index)]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
                )
 
 
     txsrdr = Serder(ked=ked0, kind=Serials.json)
-    assert txsrdr.raw == (b'{"vs":"KERI10JSON000105_","id":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
+    assert txsrdr.raw == (b'{"vs":"KERI10JSON000108_","id":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
                           b'","sn":"0","ilk":"icp","sith":"1","keys":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
                           b'yzuKsKJP50s"],"next":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","toad":"'
-                          b'0","wits":[],"data":[],"sigs":[]}')
+                          b'0","wits":[],"data":[],"sigs":["0"]}')
 
-    assert txsrdr.size == 261
+    assert txsrdr.size == 264
 
     txdig = blake3.blake3(txsrdr.raw).digest()
-    assert txdig == (b'X\xcb\x8cZd\x1aM\xa9r\xea\x02>u\x1a\xf6\xcc\xfcNqs\x98+\xb5\x80\xf1lD\xe4'
-                     b'?\x02?\xc8')
-
     txdigmat = CryMat(raw=txdig, code=CryOne.Blake3_256)
-    assert txdigmat.qb64 == 'EWMuMWmQaTaly6gI-dRr2zPxOcXOYK7WA8WxE5D8CP8g'
+    assert txdigmat.qb64 == 'EGt8ffYFN2qVZ_6n7mVElKUGayCHjCzsTllwxhyy1OBg'
 
     assert txsrdr.dig == txdigmat.qb64
 
@@ -772,22 +938,45 @@ def test_event_manual():
     assert len(sig0raw) == 64
 
     result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
-    assert not result  # None if verify else raises ValueError
+    assert not result  # None if verifies successfully else raises ValueError
 
-    txsigmat = SigMat(raw=sig0raw, code=SigTwo.Ed25519, index=0)
-    assert txsigmat.qb64 == 'AARbCWt5fr07OOxJgXVjnA0Em-nIx3nVRxIRAXVXO-Arwuy0MKkzG-yTbSczwPKR-nsbgTCwo964pxLWqVK6jxCw'
+    txsigmat = SigMat(raw=sig0raw, code=SigTwo.Ed25519, index=index)
+    assert txsigmat.qb64 == 'AAMtdYrJ7xGyvMYYw2Km8SQd0rKJwPeB24Mebcw2bQk30tX1lk49krbChHy7xooq-DIKvf7FLoBvUdQ1mTqTRTCg'
     assert len(txsigmat.qb64) == 88
+    assert txsigmat.index == index
 
     msgb = txsrdr.raw + txsigmat.qb64.encode("utf-8")
 
-    assert len(msgb) == 349  #  261 + 88
+    assert len(msgb) == 352  #  264 + 88
 
     #  Recieve side
     rxsrdr = Serder(raw=msgb)
+    assert rxsrdr.size == txsrdr.size
+    assert rxsrdr.ked == ked0
 
-    """
-    Done Test
-    """
+    rxsigqb64 = msgb[rxsrdr.size:].decode("utf-8")
+    assert len(rxsigqb64) == len(txsigmat.qb64)
+    rxsigmat = SigMat(qb64=rxsigqb64)
+    assert rxsigmat.index == index
+
+    rxaidqb64 = rxsrdr.ked["id"]
+    rxaidmat = CryMat(qb64=rxaidqb64)
+    assert rxaidmat.qb64 == aidmat.qb64
+    assert rxaidmat.code == CryOne.Ed25519
+
+    rxverqb64 = rxsrdr.ked["keys"][index]
+    rxvermat = CryMat(qb64=rxverqb64)
+    assert rxvermat.qb64 == rxaidmat.qb64  #  basic derivation same
+
+    indices = [ int(index, 16) for index in rxsrdr.ked["sigs"]]
+    assert indices == [0]
+    assert indices[0] == rxsigmat.index
+
+    result = pysodium.crypto_sign_verify_detached(rxsigmat.raw, rxsrdr.raw, rxvermat.raw)
+    assert not result  # None if verifies successfully else raises ValueError
+
+
+    """ Done Test """
 
 if __name__ == "__main__":
-    test_verifier()
+    test_aider()

@@ -27,6 +27,13 @@ class ValidationError(KeriError):
         raise ValidationError("error message")
     """
 
+class EmptyMaterialError(ValidationError):
+    """
+    Empty or Missing Crypto Material
+    Usage:
+        raise EmptyMaterialError("error message")
+    """
+
 class VersionError(ValidationError):
     """
     Validation related errors
