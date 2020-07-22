@@ -260,7 +260,7 @@ class CryMat:
                                                              CryRawSizes[code]))
 
             self._code = code
-            self._raw = raw
+            self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
         elif qb64:
             if hasattr(qb64, "decode"):  # converts bytes like to str
@@ -929,7 +929,7 @@ class SigMat:
 
             self._code = code  # front part without index
             self._index = index
-            self._raw = raw
+            self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
         elif qb64:
             if hasattr(qb64, "decode"):  # converts bytes like to str
@@ -1279,7 +1279,7 @@ class Serder:
     def raw(self, raw):
         """ raw property setter """
         ked, kind, size = self._inhale(raw=raw)
-        self._raw = raw[:size]
+        self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
         self._ked = ked
         self._kind = kind
         self._size = size

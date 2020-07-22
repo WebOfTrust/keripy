@@ -917,32 +917,41 @@ def test_process():
     # sign serialization
     tsig0 = skip0.sign(tser0.raw, index=0)
 
+    # verify signature
+    assert skip0.verifier.verify(tsig0.raw, tser0.raw)
+
     # create packet
-    packet0 = tser0.raw + tsig0.qb64b
+    msgb0 = bytearray(tser0.raw + tsig0.qb64b)
 
     # deserialize packet
-    rser0 = Serder(raw=packet0)
+    rser0 = Serder(raw=msgb0)
+    assert rser0.raw == tser0.raw
+
+    del msgb0[:rser0.size]  # strip off event from front
 
     # extract attached sigs
-    if "sigs" not in rser0.ked: # no info about attached sigs
+    if "sigs" not in rser0.ked or not rser0.ked["sigs"]: # no info about attached sigs
         assert False
 
-    rsigs = rser0.ked["sigs"]
-    if isinstance(rsigs, list):
-        nrsigs = len(rsigs)
     else:
-        nrsigs = int(rsigs, 16)
+        ridxs = rser0.ked["sigs"]  # exract signature indices
+        if isinstance(ridxs, list):
+            for idx in ridxs:
+                pass
+            assert False
 
-    assert nrsigs == 1
-
-    sigstuff = packet0[rser0.size:]
-    for i in range(nrsigs): # verify each attached signature
-        rsig = SigMat(qb64=sigstuff)
-        verifier = Verifier(qb64=rser0.ked["keys"][i])
-        assert verifier.qb64 == aid0.qb64
-        assert verifier.qb64 == skip0.verifier.qb64
-        assert verifier.verify(rsig.raw, rser0.raw)
-        sigstuff = sigstuff[len(rsig.qb64):]
+        else:
+            nrsigs = int(ridxs, 16)
+            assert nrsigs == 1
+            keys = rser0.ked["keys"]
+            for i in range(nrsigs): # verify each attached signature
+                rsig = SigMat(qb64=msgb0)
+                assert rsig.index == 0
+                verifier = Verifier(qb64=keys[rsig.index])
+                assert verifier.qb64 == aid0.qb64
+                assert verifier.qb64 == skip0.verifier.qb64
+                assert verifier.verify(rsig.raw, rser0.raw)
+                del msgb0[:len(rsig.qb64)]
 
     # verify aid
     raid0 = Aider(qb64=rser0.ked["id"])
