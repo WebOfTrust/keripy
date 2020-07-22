@@ -412,7 +412,6 @@ class Verifier(CryMat):
         verify: verifies signature
 
     """
-
     def __init__(self, **kwa):
         """
         Assign verification cipher suite function to ._verify
@@ -478,7 +477,6 @@ class Signer(CryMat):
         sign: create signature
 
     """
-
     def __init__(self,raw=b'', code=CryOne.Ed25519_Seed, transferable=True, **kwa):
         """
         Assign signing cipher suite function to ._sign
@@ -571,7 +569,6 @@ class Digester(CryMat):
         verify: verifies signature
 
     """
-
     def __init__(self, raw=b'', ser=b'', code=CryOne.Blake3_256, **kwa):
         """
         Assign digest verification function to ._verify
@@ -638,7 +635,6 @@ class Nexter(Digester):
 
 
     """
-
     def __init__(self, ser=b'', sith=None, keys=None, ked=None, **kwa):
         """
         Assign digest verification function to ._verify
@@ -724,7 +720,6 @@ class Aider(CryMat):
         verify():  Verifies derivation of aid
 
     """
-
     def __init__(self, raw=b'', code=CryOne.Ed25519N, ked=None, **kwa):
         """
         assign ._verify to verify derivation of aid  = .qb64
@@ -940,7 +935,6 @@ class SigFourCodex:
     """
     Ed448: str =  '0A'  # Ed448 signature.
 
-
     def __iter__(self):
         return iter(astuple(self))
 
@@ -971,7 +965,6 @@ class SigFiveCodex:
     Next two code charaters select index into current signing key list
     Only provide first three characters here
     """
-
     def __iter__(self):
         return iter(astuple(self))
 
@@ -1010,7 +1003,6 @@ class SigMat:
         .qb64 str in Base64 with derivation code and signature crypto material
         .qb2  bytes in binary with derivation code and signature crypto material
     """
-
     def __init__(self, raw=b'', qb64='', qb2='', code=SigTwo.Ed25519, index=0):
         """
         Validate as fully qualified
