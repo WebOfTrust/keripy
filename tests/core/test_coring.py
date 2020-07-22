@@ -930,6 +930,15 @@ def test_aider():
 def test_kever():
     """
     Test the support functionality for Kever class
+    Key Event Verifier
+    """
+    kever = Kever()
+    """ Done Test """
+
+def test_keger():
+    """
+    Test the support functionality for Keger class
+    Key Event Generator
     """
     kever = Kever()
     """ Done Test """

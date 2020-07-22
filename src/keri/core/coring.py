@@ -1458,8 +1458,24 @@ class Kever:
 
     Has the following public attributes and properties:
 
-    Attributes:
-        .serder is Serder instance created from serialized event
+     Attributes:
+        .version is version of current event
+        .aid is fully qualified qb64 autonomic id
+        .sn is sequence number
+        .predig is qualified qb64 digest of previous event
+        .dig is qualified qb64 dige of current event
+        .ilk is str of current event type
+        .sith is int or list of current signing threshold
+        .keys is list of qb64 current verification keys
+        .nxt is qualified qb64 of next sith plus next signing keys
+        .toad is int threshold of accountable duplicity
+        .wits is list of qualified qb64 aids for witnesses
+        .data is list of configuration data mappings
+        .indices is int or list of signature indices of current event if any
+
+    Properties:
+
+
 
     """
     def __init__(self, kes=bytearray(), ked=None, sigs=None):
@@ -1472,28 +1488,6 @@ class Kever:
             ked is key event dict extracted from serialized event
             sigs is list of qualified qb64 signatures
 
-
-
-        Attributes:
-            .version is version of current event
-            .aid is fully qualified qb64 autonomic id
-            .sn is sequence number
-            .predig is qualified qb64 digest of previous event
-            .dig is qualified qb64 dige of current event
-            .ilk is str of current event type
-            .sith is int or list of current signing threshold
-            .keys is list of qb64 current verification keys
-            .nxt is qualified qb64 of next sith plus next signing keys
-            .toad is int threshold of accountable duplicity
-            .wits is list of qualified qb64 aids for witnesses
-            .data is list of configuration data mappings
-            .indices is int or list of signature indices of current event if any
-
-        Properties:
-
-
-        Note:
-          loads and jumps of json use str whereas cbor and msgpack use bytes
         """
         # initial state is vacuous
         self.version = None
@@ -1513,3 +1507,56 @@ class Kever:
 
         if not isinstance(kes, bytearray):
             kes = bytearray(raws)
+
+
+class Keger:
+    """
+    Keger is KERI key event generator class
+    Only supports current version VERSION
+
+    Has the following public attributes and properties:
+
+    Attributes:
+        .version is version of current event
+        .aid is fully qualified qb64 autonomic id
+        .sn is sequence number
+        .predig is qualified qb64 digest of previous event
+        .dig is qualified qb64 dige of current event
+        .ilk is str of current event type
+        .sith is int or list of current signing threshold
+        .keys is list of qb64 current verification keys
+        .nxt is qualified qb64 of next sith plus next signing keys
+        .toad is int threshold of accountable duplicity
+        .wits is list of qualified qb64 aids for witnesses
+        .data is list of configuration data mappings
+        .indices is int or list of signature indices of current event if any
+
+    Properties:
+
+
+
+    """
+    def __init__(self):
+        """
+        Extract and verify event and attached signatures from key event stream kes
+
+        Parameters:
+
+
+        """
+        # initial state is vacuous
+        self.version = None
+        self.aid = None
+        self.sn =  None
+        self.predig = None
+        self.dig = None
+        self.ilk = None
+        self.sith = None
+        self.keys = []
+        self.nxt = None
+        self.toad = None
+        self.wits = None
+        self.data = None
+        self.indices = None
+
+
