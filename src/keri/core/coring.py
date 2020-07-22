@@ -644,7 +644,15 @@ class Aider(CryMat):
         assign ._verify to verify derivation of aid  = .qb64
 
         """
-        super(Aider, self).__init__(raw=raw, code=code, **kwa)
+        try:
+            super(Aider, self).__init__(raw=raw, code=code, **kwa)
+        except EmptyMaterialError as ex:
+            if not ked:
+                raise  ex
+            verifier = self._derive(ked)  # use ked to derive aid
+            super(Aider, self).__init__(raw=verifier.raw,
+                                        code=verifier.code,
+                                        **kwa)
 
         if self.code == CryOne.Ed25519N:
             self._verify = self._ed25519n
@@ -658,10 +666,30 @@ class Aider(CryMat):
         """
         Returns Verifier derived from ked (key event dict) to use for .raw & .code
         """
-        if "keys" not in ked:
-            raise DerivationError("Missing 'keys' field in ked = {}.".format(ked))
-        keys = ked["keys"]
+        try:
+            keys = ked["keys"]
+            if len(keys) != 1:
+                raise DerivationError("Basic derivation needs 1 key got "
+                                      "{}".format(len(keys)))
+            verifier = Verifier(qb64=keys[0])
+        except Exception as ex:
+            raise DerivationError("Problem extracting public key. Got error"
+                                  " = {}".format(ex))
 
+        if verifier.code not in [CryOne.Ed25519N, CryOne.Ed25519]:
+            raise DerivationError("Invalid derivation code = {}"
+                                  "".format(verifier.code))
+
+        try:
+            if verifier.code == CryOne.Ed25519N and ked["next"]:
+                raise DerivationError("Non-empty next = {} for non-transferable"
+                                      " code = {}".format(ked["next"],
+                                                          verifier.code))
+        except Exception as ex:
+            raise DerivationError("Problem checking next. Got error"
+                                  " = {}".format(ex))
+
+        return verifier
 
     def verify(self, ked):
         """

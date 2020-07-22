@@ -15,7 +15,7 @@ from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage
-from keri.kering import ValidationError, EmptyMaterialError
+from keri.kering import ValidationError, EmptyMaterialError, DerivationError
 from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
@@ -852,24 +852,42 @@ def test_aider():
     assert len(aider.raw) == CryOneRawSizes[aider.code]
     assert len(aider.qb64) == CryOneSizes[aider.code]
 
-    iked = dict(keys=[aider.qb64], next="")
-    assert aider.verify(ked=iked) == True
+    ked = dict(keys=[aider.qb64], next="")
+    assert aider.verify(ked=ked) == True
 
-    iked = dict(keys=[aider.qb64], next="ABC")
-    assert aider.verify(ked=iked) == False
+    ked = dict(keys=[aider.qb64], next="ABC")
+    assert aider.verify(ked=ked) == False
 
     aider = Aider(raw=verkey, code=CryOne.Ed25519)  # defaults provide Ed25519N aider
     assert aider.code == CryOne.Ed25519
     assert len(aider.raw) == CryOneRawSizes[aider.code]
     assert len(aider.qb64) == CryOneSizes[aider.code]
 
-    iked = dict(keys=[aider.qb64])
-    assert aider.verify(ked=iked) == True
+    ked = dict(keys=[aider.qb64])
+    assert aider.verify(ked=ked) == True
 
     verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
     aider = Aider(raw=verifier.raw)
     assert aider.code == CryOne.Ed25519N
-    assert aider.verify(ked=iked) == False
+    assert aider.verify(ked=ked) == False
+
+    # derive from ked
+    ked = dict(keys=[verifier.qb64], next="")
+    aider = Aider(ked=ked)
+    assert aider.qb64 == verifier.qb64
+    assert aider.verify(ked=ked) == True
+
+    verifier = Verifier(raw=verkey, code=CryOne.Ed25519N)
+    ked = dict(keys=[verifier.qb64], next="")
+    aider = Aider(ked=ked)
+    assert aider.qb64 == verifier.qb64
+    assert aider.verify(ked=ked) == True
+
+    ked = dict(keys=[verifier.qb64], next="ABCD")
+    with pytest.raises(DerivationError):
+        aider = Aider(ked=ked)
+
+
 
     """ Done Test """
 
@@ -929,8 +947,8 @@ def test_process():
 
     del msgb0[:rser0.size]  # strip off event from front
 
-    # extract attached sigs
-    if "sigs" not in rser0.ked or not rser0.ked["sigs"]: # no info about attached sigs
+    # extract attached sigs if any
+    if "sigs" not in rser0.ked or not rser0.ked["sigs"]:  # no info on attached sigs
         assert False
 
     else:
@@ -1117,4 +1135,4 @@ def test_process_manual():
     """ Done Test """
 
 if __name__ == "__main__":
-    test_process()
+    test_aider()
