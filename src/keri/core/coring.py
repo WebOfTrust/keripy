@@ -659,7 +659,7 @@ class Aider(CryMat):
         elif self.code == CryOne.Ed25519:
             self._verify = self._ed25519
         else:
-            raise ValueError("Unsupported code = {} for airder.".format(self.code))
+            raise ValueError("Unsupported code = {} for aider.".format(self.code))
 
     @staticmethod
     def _derive(ked):

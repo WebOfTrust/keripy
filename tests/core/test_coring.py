@@ -847,6 +847,9 @@ def test_aider():
     seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
 
+    with pytest.raises(ValueError):
+        aider = Aider(raw=verkey, code=CryOne.Blake3_256)
+
     aider = Aider(raw=verkey)  # defaults provide Ed25519N aider
     assert aider.code == CryOne.Ed25519N
     assert len(aider.raw) == CryOneRawSizes[aider.code]
