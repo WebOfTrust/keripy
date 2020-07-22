@@ -885,7 +885,7 @@ def test_nexter():
     assert nexter.verify(ser=ser+b'ABCDEF') == False
     assert nexter.verify(sith=1, keys=keys)
 
-    ked = dict(sith=sith, keys=keys)
+    ked = dict(sith=sith, keys=keys)  #  subsequent event
     nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOne.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
@@ -955,18 +955,18 @@ def test_aider():
 
     """ Done Test """
 
-def test_process():
+def test_process_nontransferable():
     """
     Test process of generating and validating key event messages
     """
 
     # Ephemeral (Nontransferable) case
-    skip0 = Signer(transferable=False)  #  original signing keypair non transferable
-    assert skip0.code == CryOne.Ed25519_Seed
-    assert skip0.verifier.code == CryOne.Ed25519N
+    skp0 = Signer(transferable=False)  #  original signing keypair non transferable
+    assert skp0.code == CryOne.Ed25519_Seed
+    assert skp0.verifier.code == CryOne.Ed25519N
 
     # Derive AID by merely assigning verifier public key
-    aid0 = Aider(qb64=skip0.verifier.qb64)
+    aid0 = Aider(qb64=skp0.verifier.qb64)
     assert aid0.code == CryOne.Ed25519N
 
     # Ephemeral may be used without inception event
@@ -997,10 +997,10 @@ def test_process():
     tser0 = Serder(ked=ked0)
 
     # sign serialization
-    tsig0 = skip0.sign(tser0.raw, index=0)
+    tsig0 = skp0.sign(tser0.raw, index=0)
 
     # verify signature
-    assert skip0.verifier.verify(tsig0.raw, tser0.raw)
+    assert skp0.verifier.verify(tsig0.raw, tser0.raw)
 
     # create packet
     msgb0 = bytearray(tser0.raw + tsig0.qb64b)
@@ -1031,7 +1031,7 @@ def test_process():
                 assert rsig.index == 0
                 verifier = Verifier(qb64=keys[rsig.index])
                 assert verifier.qb64 == aid0.qb64
-                assert verifier.qb64 == skip0.verifier.qb64
+                assert verifier.qb64 == skp0.verifier.qb64
                 assert verifier.verify(rsig.raw, rser0.raw)
                 del msgb0[:len(rsig.qb64)]
 
@@ -1039,32 +1039,110 @@ def test_process():
     raid0 = Aider(qb64=rser0.ked["id"])
     assert raid0.verify(ked=rser0.ked)
 
+    """ Done Test """
+
+def test_process_transferable():
+    """
+    Test process of generating and validating key event messages
+    """
     # Transferable case
-    skip0 = Signer()  #  original signing keypair transferable default
-    assert skip0.code == CryOne.Ed25519_Seed
-    assert skip0.verifier.code == CryOne.Ed25519
+    # Setup inception key event dict
+    # create current key
+    sith = 1  #  one signer
+    skp0 = Signer()  #  original signing keypair transferable default
+    assert skp0.code == CryOne.Ed25519_Seed
+    assert skp0.verifier.code == CryOne.Ed25519
+    keys = [skp0.verifier.qb64]
 
-    # Derive AID by merely assigning verifier public key
-    aid0 = Aider(qb64=skip0.verifier.qb64)
-    assert aid0.code == CryOne.Ed25519
-
-    skip1 = Signer()  #  next signing keypair transferable default
-    assert skip1.code == CryOne.Ed25519_Seed
-    assert skip1.verifier.code == CryOne.Ed25519
-
+    # create next key
+    nxtsith = 1 #  one signer
+    skp1 = Signer()  #  next signing keypair transferable is default
+    assert skp1.code == CryOne.Ed25519_Seed
+    assert skp1.verifier.code == CryOne.Ed25519
+    nxtkeys = [skp1.verifier.qb64]
     # compute next digest
+    nexter = Nexter(sith=nxtsith, keys=nxtkeys)
+    nxt = nexter.qb64  # transferable so next is not empty
 
-
-    # Setup inception event
     sn = 0  #  inception event so 0
-    sith = 1 #  one signer
-    nxt = ""  # non-transferable so next is empty
     toad = 0  # no witnesses
     nsigs = 1  #  one attached signature unspecified index
 
+    ked0 = dict(vs=Versify(kind=Serials.json, size=0),
+                id="",  # qual base 64 prefix
+                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+                ilk=Ilks.icp,
+                sith="{:x}".format(sith), # hex string no leading zeros lowercase
+                keys=keys,  # list of signing keys each qual Base64
+                next=nxt,  # hash qual Base64
+                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+                wits=[],  # list of qual Base64 may be empty
+                data=[],  # list of config ordered mappings may be empty
+                sigs="{:x}".format(nsigs)  # single lowercase hex string
+               )
+
+
+    # Derive AID from ked
+    aid0 = Aider(ked=ked0)
+    assert aid0.code == CryOne.Ed25519
+
+    # update ked with id
+    ked0["id"] = aid0.qb64
+
+    # Serialize ked0
+    tser0 = Serder(ked=ked0)
+
+    # sign serialization
+    tsig0 = skp0.sign(tser0.raw, index=0)
+
+    # verify signature
+    assert skp0.verifier.verify(tsig0.raw, tser0.raw)
+
+    # create packet
+    msgb0 = bytearray(tser0.raw + tsig0.qb64b)
+
+    # deserialize packet
+    rser0 = Serder(raw=msgb0)
+    assert rser0.raw == tser0.raw
+
+    del msgb0[:rser0.size]  # strip off event from front
+
+    # extract attached sigs if any
+    if "sigs" not in rser0.ked or not rser0.ked["sigs"]:  # no info on attached sigs
+        assert False
+
+    else:
+        ridxs = rser0.ked["sigs"]  # exract signature indices
+        if isinstance(ridxs, list):
+            for idx in ridxs:
+                pass
+            assert False
+
+        else:
+            nrsigs = int(ridxs, 16)
+            assert nrsigs == 1
+            keys = rser0.ked["keys"]
+            for i in range(nrsigs): # verify each attached signature
+                rsig = SigMat(qb64=msgb0)
+                assert rsig.index == 0
+                verifier = Verifier(qb64=keys[rsig.index])
+                assert verifier.qb64 == aid0.qb64
+                assert verifier.qb64 == skp0.verifier.qb64
+                assert verifier.verify(rsig.raw, rser0.raw)
+                del msgb0[:len(rsig.qb64)]
+
+    # verify aid
+    raid0 = Aider(qb64=rser0.ked["id"])
+    assert raid0.verify(ked=rser0.ked)
+
+    #verify nxt digest from event is still valid
+    rnext1 = Nexter(qb64=rser0.ked["next"])
+    assert rnext1.verify(sith=nxtsith, keys=nxtkeys)
 
 
     """ Done Test """
+
+
 
 def test_process_manual():
     """
