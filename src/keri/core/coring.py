@@ -623,6 +623,92 @@ class Digester(CryMat):
         return(blake3.blake3(ser).digest() == dig)
 
 
+class Nexter(Digester):
+    """
+    Nexter is Digester subclass with support to create itself from
+    next sith and next keys
+
+    See Digester for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+
+    Methods:
+
+
+    """
+
+    def __init__(self, ser=b'', sith=None, keys=None, ked=None, **kwa):
+        """
+        Assign digest verification function to ._verify
+
+        See CryMat for inherited parameters
+
+        Parameters:
+           ser is bytes serialization from which raw is computed if not raw
+           sith is int threshorld or lowercase hex str no leading zeros
+           keys is list of keys each is qb64 public key str
+
+        """
+        try:
+            super(Digester, self).__init__(ser=ser, **kwa)
+        except EmptyMaterialError as ex:
+            if not (sith and keys) and not ked:
+                raise ex
+            ser = self._derive(sith=sith, keys=keys, ked=ked)
+            super(Digester, self).__init__(ser=ser, **kwa)
+
+
+    @staticmethod
+    def _derive(sith=None, keys=None, ked=None):
+        """
+        Returns serialization derived from sith, keys, or ked
+        """
+        if not (sith and keys):
+            try:
+                sith = ked["sith"]
+                keys = ked["keys"]
+            except Exception as ex:
+                raise DerivationError("Error extracting sith and keys from"
+                                      " ked = {}".format(ex))
+
+        if not keys:
+            raise DerivationError("Empty keys.")
+
+        if isinstance(sith, list):
+            # verify list expression against keys
+            # serialize list here
+            raise DerivationError("List form of sith = {} not yet supported".format(sith))
+        else:
+            if not isinstance(sith, (str)):
+                sith = "{:x}".format(sith)  # lowecase hex no leading zeros
+
+        nxts = [sith.encode("utf-8")]  # create list to concatenate for hashing
+        for key in keys:
+            nxts.append(key.encode("utf-8"))
+        ser = b''.join(nxts)
+
+        return ser
+
+    def verify(self, ser=b'', sith=None, keys=None, ked=None):
+        """
+        Returns True if digest of bytes serialization ser matches .raw
+        using .raw as reference digest for ._verify digest algorithm determined
+        by .code
+
+        If ser not provided then extract ser from either (sith, keys) or ked
+
+        Parameters:
+            ser is bytes serialization
+            sith is str lowercase hex
+        """
+        if not ser:
+            ser = self._derive(sith=sith, keys=keys, ked=ked)
+
+        return (self._verify(ser=ser, dig=self.raw))
+
+
 class Aider(CryMat):
     """
     Aider is CryMat subclass for autonomic identifier prefix using basic derivation
@@ -673,7 +759,7 @@ class Aider(CryMat):
                                       "{}".format(len(keys)))
             verifier = Verifier(qb64=keys[0])
         except Exception as ex:
-            raise DerivationError("Problem extracting public key. Got error"
+            raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
         if verifier.code not in [CryOne.Ed25519N, CryOne.Ed25519]:
@@ -686,8 +772,7 @@ class Aider(CryMat):
                                       " code = {}".format(ked["next"],
                                                           verifier.code))
         except Exception as ex:
-            raise DerivationError("Problem checking next. Got error"
-                                  " = {}".format(ex))
+            raise DerivationError("Error checking next = {}".format(ex))
 
         return verifier
 
