@@ -656,9 +656,11 @@ class Aider(CryMat):
     @staticmethod
     def _derive(ked):
         """
-        Returns Verifier derived from ked (key event dict)
+        Returns Verifier derived from ked (key event dict) to use for .raw & .code
         """
-
+        if "keys" not in ked:
+            raise DerivationError("Missing 'keys' field in ked = {}.".format(ked))
+        keys = ked["keys"]
 
 
     def verify(self, ked):
@@ -684,7 +686,7 @@ class Aider(CryMat):
         """
         try:
             keys = ked["keys"]
-            if len(keys) < 1:
+            if len(keys) != 1:
                 return False
 
             if keys[0] != aid:
@@ -711,7 +713,7 @@ class Aider(CryMat):
         """
         try:
             keys = ked["keys"]
-            if len(keys) < 1:
+            if len(keys) != 1:
                 return False
 
             if keys[0] != aid:
