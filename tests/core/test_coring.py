@@ -853,10 +853,10 @@ def test_aider():
     assert len(aider.qb64) == CryOneSizes[aider.code]
 
     iked = dict(keys=[aider.qb64], next="")
-    assert aider.verify(iked=iked) == True
+    assert aider.verify(ked=iked) == True
 
     iked = dict(keys=[aider.qb64], next="ABC")
-    assert aider.verify(iked=iked) == False
+    assert aider.verify(ked=iked) == False
 
     aider = Aider(raw=verkey, code=CryOne.Ed25519)  # defaults provide Ed25519N aider
     assert aider.code == CryOne.Ed25519
@@ -864,12 +864,12 @@ def test_aider():
     assert len(aider.qb64) == CryOneSizes[aider.code]
 
     iked = dict(keys=[aider.qb64])
-    assert aider.verify(iked=iked) == True
+    assert aider.verify(ked=iked) == True
 
     verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
     aider = Aider(raw=verifier.raw)
     assert aider.code == CryOne.Ed25519N
-    assert aider.verify(iked=iked) == False
+    assert aider.verify(ked=iked) == False
 
     """ Done Test """
 
@@ -909,7 +909,7 @@ def test_process():
                )
 
     # verify derivation of aid0 from ked0
-    assert aid0.verify(iked=ked0)
+    assert aid0.verify(ked=ked0)
 
     # Serialize ked0
     tser0 = Serder(ked=ked0)
@@ -955,7 +955,7 @@ def test_process():
 
     # verify aid
     raid0 = Aider(qb64=rser0.ked["id"])
-    assert raid0.verify(iked=rser0.ked)
+    assert raid0.verify(ked=rser0.ked)
 
     # Transferable case
     skip0 = Signer()  #  original signing keypair transferable default

@@ -654,7 +654,7 @@ class Aider(CryMat):
             raise ValueError("Unsupported code = {} for airder.".format(self.code))
 
 
-    def verify(self, iked):
+    def verify(self, ked):
         """
         Returns True if derivation from iked for .code matches .qb64,
                 False otherwise
@@ -662,11 +662,11 @@ class Aider(CryMat):
         Parameters:
             iked is inception key event dict
         """
-        return (self._verify(iked=iked, aid=self.qb64))
+        return (self._verify(ked=ked, aid=self.qb64))
 
 
     @staticmethod
-    def _ed25519n(iked, aid):
+    def _ed25519n(ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from inception iked dict
@@ -676,14 +676,14 @@ class Aider(CryMat):
             aid is Base64 fully qualified
         """
         try:
-            keys = iked["keys"]
+            keys = ked["keys"]
             if len(keys) < 1:
                 return False
 
             if keys[0] != aid:
                 return False
 
-            if iked["next"]:  # must be empty
+            if ked["next"]:  # must be empty
                 return False
 
         except Exception as ex:
@@ -693,7 +693,7 @@ class Aider(CryMat):
 
 
     @staticmethod
-    def _ed25519(iked, aid):
+    def _ed25519(ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from inception data dict
@@ -703,7 +703,7 @@ class Aider(CryMat):
             aid is Base64 fully qualified
         """
         try:
-            keys = iked["keys"]
+            keys = ked["keys"]
             if len(keys) < 1:
                 return False
 
