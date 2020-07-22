@@ -191,6 +191,12 @@ def test_crymat():
     assert crymat.code == CryOne.Ed25519N
     assert crymat.raw == verkey
 
+    crymat = CryMat(qb64=prefix.encode("utf-8"))  # test auto convert bytes to str
+    assert crymat.code == CryOne.Ed25519N
+    assert crymat.raw == verkey
+    assert crymat.qb64 == prefix
+    assert crymat.qb64b == prefix.encode("utf-8")
+
     # test wrong size of raw
     longverkey = verkey + bytes([10, 11, 12])
     crymat = CryMat(raw=longverkey)
@@ -301,6 +307,12 @@ def test_sigmat():
     shortqsig64 = qsig64[:-4]
     with pytest.raises(ValidationError):
         oksigmat = SigMat(qb64=shortqsig64)
+
+    sigmat = SigMat(qb64=qsig64.encode("utf-8"))  # test auto convert bytes to str
+    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.raw == sig
+    assert sigmat.qb64 == qsig64
+    assert sigmat.qb64b == qsig64.encode("utf-8")
 
     sigmat = SigMat(qb2=qbin)
     assert sigmat.raw == sig
@@ -865,9 +877,100 @@ def test_process():
     """
     Test process of generating and validating key event messages
     """
+
+    # Ephemeral (Nontransferable) case
     skip0 = Signer(transferable=False)  #  original signing keypair non transferable
     assert skip0.code == CryOne.Ed25519_Seed
     assert skip0.verifier.code == CryOne.Ed25519N
+
+    # Derive AID by merely assigning verifier public key
+    aid0 = Aider(qb64=skip0.verifier.qb64)
+    assert aid0.code == CryOne.Ed25519N
+
+    # Ephemeral may be used without inception event
+    # but when used with inception event must be compatible event
+    sn = 0  #  inception event so 0
+    sith = 1 #  one signer
+    nxt = ""  # non-transferable so next is empty
+    toad = 0  # no witnesses
+    nsigs = 1  #  one attached signature unspecified index
+
+    ked0 = dict(vs=Versify(kind=Serials.json, size=0),
+                id=aid0.qb64,  # qual base 64 prefix
+                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+                ilk=Ilks.icp,
+                sith="{:x}".format(sith), # hex string no leading zeros lowercase
+                keys=[aid0.qb64],  # list of signing keys each qual Base64
+                next=nxt,  # hash qual Base64
+                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+                wits=[],  # list of qual Base64 may be empty
+                data=[],  # list of config ordered mappings may be empty
+                sigs="{:x}".format(nsigs)  # single lowercase hex string
+               )
+
+    # verify derivation of aid0 from ked0
+    assert aid0.verify(iked=ked0)
+
+    # Serialize ked0
+    tser0 = Serder(ked=ked0)
+
+    # sign serialization
+    tsig0 = skip0.sign(tser0.raw, index=0)
+
+    # create packet
+    packet0 = tser0.raw + tsig0.qb64b
+
+    # deserialize packet
+    rser0 = Serder(raw=packet0)
+
+    # extract attached sigs
+    if "sigs" not in rser0.ked: # no info about attached sigs
+        assert False
+
+    rsigs = rser0.ked["sigs"]
+    if isinstance(rsigs, list):
+        nrsigs = len(rsigs)
+    else:
+        nrsigs = int(rsigs, 16)
+
+    assert nrsigs == 1
+
+    sigstuff = packet0[rser0.size:]
+    for i in range(nrsigs): # verify each attached signature
+        rsig = SigMat(qb64=sigstuff)
+        verifier = Verifier(qb64=rser0.ked["keys"][i])
+        assert verifier.qb64 == aid0.qb64
+        assert verifier.qb64 == skip0.verifier.qb64
+        assert verifier.verify(rsig.raw, rser0.raw)
+        sigstuff = sigstuff[len(rsig.qb64):]
+
+    # verify aid
+    raid0 = Aider(qb64=rser0.ked["id"])
+    assert raid0.verify(iked=rser0.ked)
+
+    # Transferable case
+    skip0 = Signer()  #  original signing keypair transferable default
+    assert skip0.code == CryOne.Ed25519_Seed
+    assert skip0.verifier.code == CryOne.Ed25519
+
+    # Derive AID by merely assigning verifier public key
+    aid0 = Aider(qb64=skip0.verifier.qb64)
+    assert aid0.code == CryOne.Ed25519
+
+    skip1 = Signer()  #  next signing keypair transferable default
+    assert skip1.code == CryOne.Ed25519_Seed
+    assert skip1.verifier.code == CryOne.Ed25519
+
+    # compute next digest
+
+
+    # Setup inception event
+    sn = 0  #  inception event so 0
+    sith = 1 #  one signer
+    nxt = ""  # non-transferable so next is empty
+    toad = 0  # no witnesses
+    nsigs = 1  #  one attached signature unspecified index
+
 
 
     """ Done Test """

@@ -263,6 +263,8 @@ class CryMat:
             self._raw = raw
 
         elif qb64:
+            if hasattr(qb64, "decode"):  # converts bytes like to str
+                qb64 = qb64.decode("utf-8")
             self._exfil(qb64)
 
         elif qb2:  # rewrite to use direct binary exfiltration
@@ -371,6 +373,16 @@ class CryMat:
         Assumes self.raw and self.code are correctly populated
         """
         return self._infil()
+
+
+    @property
+    def qb64b(self):
+        """
+        Property qb64b:
+        Returns Fully Qualified Base64 Version encoded as bytes
+        Assumes self.raw and self.code are correctly populated
+        """
+        return self.qb64.encode("utf-8")
 
 
     @property
@@ -920,6 +932,8 @@ class SigMat:
             self._raw = raw
 
         elif qb64:
+            if hasattr(qb64, "decode"):  # converts bytes like to str
+                qb64 = qb64.decode("utf-8")
             self._exfil(qb64)
 
         elif qb2:  # rewrite to use direct binary exfiltration
@@ -1053,6 +1067,16 @@ class SigMat:
         Assumes self.raw and self.code are correctly populated
         """
         return self._infil()
+
+
+    @property
+    def qb64b(self):
+        """
+        Property qb64b:
+        Returns Fully Qualified Base64 Version encoded as bytes
+        Assumes self.raw and self.code are correctly populated
+        """
+        return self.qb64.encode("utf-8")
 
 
     @property
