@@ -16,7 +16,7 @@ import msgpack
 import pysodium
 import blake3
 
-from ..kering import ValidationError, EmptyMaterialError, VersionError
+from ..kering import ValidationError, VersionError, EmptyMaterialError, DerivationError
 from ..kering import Versionage, Version
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
@@ -639,7 +639,7 @@ class Aider(CryMat):
 
     """
 
-    def __init__(self, raw=b'', code=CryOne.Ed25519N, **kwa):
+    def __init__(self, raw=b'', code=CryOne.Ed25519N, ked=None, **kwa):
         """
         assign ._verify to verify derivation of aid  = .qb64
 
@@ -652,6 +652,13 @@ class Aider(CryMat):
             self._verify = self._ed25519
         else:
             raise ValueError("Unsupported code = {} for airder.".format(self.code))
+
+    @staticmethod
+    def _derive(ked):
+        """
+        Returns Verifier derived from ked (key event dict)
+        """
+
 
 
     def verify(self, ked):
