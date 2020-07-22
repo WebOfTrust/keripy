@@ -704,7 +704,7 @@ def test_signer():
     """
     Test the support functionality for signer subclass of crymat
     """
-    signer = Signer()  # defaults provide Ed25519 signer
+    signer = Signer()  # defaults provide Ed25519 signer Ed25519 verifier
     assert signer.code == CryOne.Ed25519_Seed
     assert len(signer.raw) == CryOneRawSizes[signer.code]
     assert signer.verifier.code == CryOne.Ed25519
@@ -729,6 +729,31 @@ def test_signer():
     assert result == False
 
     assert crymat.raw == sigmat.raw
+
+    signer = Signer(transferable=False)  # Ed25519N verifier
+    assert signer.code == CryOne.Ed25519_Seed
+    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert signer.verifier.code == CryOne.Ed25519N
+    assert len(signer.verifier.raw) == CryOneRawSizes[signer.verifier.code]
+
+    #create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    crymat = signer.sign(ser)
+    assert crymat.code == CryTwo.Ed25519
+    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    result = signer.verifier.verify(crymat.raw, ser)
+    assert result == True
+
+    sigmat = signer.sign(ser, index=0)
+    assert sigmat.code == SigTwo.Ed25519
+    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.index == 0
+    result = signer.verifier.verify(sigmat.raw, ser)
+    assert result == True
+    result = signer.verifier.verify(sigmat.raw, ser + b'ABCDEFG')
+    assert result == False
+
 
     seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     signer = Signer(raw=seed, code=CryOne.Ed25519_Seed)
@@ -840,8 +865,9 @@ def test_process():
     """
     Test process of generating and validating key event messages
     """
-    signer = Signer()
-    assert signer.code == CryOne.Ed25519_Seed
+    skip0 = Signer(transferable=False)  #  original signing keypair non transferable
+    assert skip0.code == CryOne.Ed25519_Seed
+    assert skip0.verifier.code == CryOne.Ed25519N
 
 
     """ Done Test """
@@ -979,4 +1005,4 @@ def test_process_manual():
     """ Done Test """
 
 if __name__ == "__main__":
-    test_aider()
+    test_process()

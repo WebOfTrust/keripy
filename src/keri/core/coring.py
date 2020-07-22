@@ -467,9 +467,15 @@ class Signer(CryMat):
 
     """
 
-    def __init__(self,raw=b'', code=CryOne.Ed25519_Seed, **kwa):
+    def __init__(self,raw=b'', code=CryOne.Ed25519_Seed, transferable=True, **kwa):
         """
         Assign signing cipher suite function to ._sign
+
+        Parameters:  See CryMat for inherted parameters
+            raw is bytes crypto material seed or private key
+            code is derivation code
+            transferable is Boolean True means verifier code is transferable
+                                    False othersize non-transerable
 
         """
         try:
@@ -484,7 +490,9 @@ class Signer(CryMat):
         if self.code == CryOne.Ed25519_Seed:
             self._sign = self._ed25519
             verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
-            verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
+            verifier = Verifier(raw=verkey,
+                                code=CryOne.Ed25519 if transferable
+                                                    else CryOne.Ed25519N )
         else:
             raise ValueError("Unsupported signer code = {}.".format(self.code))
 
