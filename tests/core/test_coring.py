@@ -490,9 +490,10 @@ def test_serder():
     assert kind1 == Serials.json
     assert size1 == 65
     e1ss = e1s + b'extra attached at the end.'
-    ked1, knd1, siz1 = serder._inhale(e1ss)
+    ked1, knd1, vrs1, siz1 = serder._inhale(e1ss)
     assert ked1 == e1
     assert knd1 == kind1
+    assert vrs1 == vers1
     assert siz1 == size1
 
     raw1, knd1, ked1 = serder._exhale(ked=e1)
@@ -511,9 +512,10 @@ def test_serder():
     assert kind2 == Serials.mgpk
     assert size2 == 49
     e2ss = e2s + b'extra attached  at the end.'
-    ked2, knd2, siz2 = serder._inhale(e2ss)
+    ked2, knd2, vrs2, siz2 = serder._inhale(e2ss)
     assert ked2 == e2
     assert knd2 == kind2
+    assert vrs2 == vers2
     assert siz2 == size2
 
     raw2, knd2, ked2 = serder._exhale(ked=e2)
@@ -532,9 +534,10 @@ def test_serder():
     assert kind3 == Serials.cbor
     assert size3 == 49
     e3ss = e3s + b'extra attached  at the end.'
-    ked3, knd3, siz3 = serder._inhale(e3ss)
+    ked3, knd3, vrs3, siz3 = serder._inhale(e3ss)
     assert ked3 == e3
     assert knd3 == kind3
+    assert vrs3 == vers3
     assert siz3 == size3
 
     raw3, knd3, ked3 = serder._exhale(ked=e3)

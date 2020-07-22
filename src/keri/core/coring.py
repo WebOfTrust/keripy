@@ -1222,6 +1222,7 @@ class Serder:
         .raw is bytes of serialized event only
         .ked is key event dict
         .kind is serialization kind string value (see namedtuple coring.Serials)
+        .version is Versionage instance of event version
         .size is int of number of bytes in serialed event only
 
     """
@@ -1246,12 +1247,14 @@ class Serder:
           ._ked is key event dict
           ._kind is serialization kind string value (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+          ._version is Versionage instance of event version
           ._size is int of number of bytes in serialed event only
 
         Properties:
           .raw is bytes of serialized event only
           .ked is key event dict
           .kind is serialization kind string value (see namedtuple coring.Serials)
+          .version is Versionage instance of event version
           .size is int of number of bytes in serialed event only
 
 
@@ -1329,7 +1332,7 @@ class Serder:
         else:
             ked = None
 
-        return (ked, kind, size)
+        return (ked, kind, version, size)
 
 
     def _exhale(self, ked,  kind=None):
@@ -1392,10 +1395,11 @@ class Serder:
     @raw.setter
     def raw(self, raw):
         """ raw property setter """
-        ked, kind, size = self._inhale(raw=raw)
+        ked, kind, version, size = self._inhale(raw=raw)
         self._raw = bytes(raw[:size])  # crypto ops require bytes not bytearray
         self._ked = ked
         self._kind = kind
+        self._version = version
         self._size = size
 
     @property
@@ -1427,6 +1431,11 @@ class Serder:
         self._ked = ked
         self._kind = kind
         self._size = size
+
+    @property
+    def version(self):
+        """ version property getter"""
+        return self._version
 
     @property
     def size(self):
@@ -1462,16 +1471,16 @@ class Kever:
         .version is version of current event
         .aid is fully qualified qb64 autonomic id
         .sn is sequence number
-        .predig is qualified qb64 digest of previous event
-        .dig is qualified qb64 dige of current event
+        .dig is qualified qb64 digest of previous event
         .ilk is str of current event type
         .sith is int or list of current signing threshold
-        .keys is list of qb64 current verification keys
         .nxt is qualified qb64 of next sith plus next signing keys
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
         .data is list of configuration data mappings
         .indices is int or list of signature indices of current event if any
+        .serder is Serder instance of current packet
+        .verfers is list of Verifier instances of current signing keys
 
     Properties:
 
@@ -1484,7 +1493,7 @@ class Kever:
 
         Parameters:
             kes is bytearray of serialized event stream. May contain multiple sets
-                of serialized events with attached signatures.
+                of serialized events with attached signatures. Processing is
             ked is key event dict extracted from serialized event
             sigs is list of qualified qb64 signatures
 
@@ -1493,20 +1502,78 @@ class Kever:
         self.version = None
         self.aid = None
         self.sn =  None
-        self.predig = None
         self.dig = None
         self.ilk = None
         self.sith = None
-        self.keys = []
         self.nxt = None
         self.toad = None
         self.wits = None
         self.data = None
         self.indices = None
 
+        self.serder = None
+        self.verfers = None
 
-        if not isinstance(kes, bytearray):
-            kes = bytearray(raws)
+
+        if not isinstance(kes, bytearray):  # destructive processing
+            kes = bytearray(kes)
+
+    def process(kes):
+        """
+        Process events and signatures from key event stream
+
+        """
+        if not isinstance(kes, bytearray):  # destructive processing
+            kes = bytearray(kes)
+
+        # deserialize packet from kes
+        try:
+            srdr = Serder(raw=kes)
+        except Exception as ex:
+            raise ValidationError("Error while processing key event stream"
+                                  " = {}".format(ex))
+
+        version = srdr.version
+        ked = srdr.ked
+
+        if self.aid == None:  # vacuous KEL
+            if ked["ilk"] != Ilks.icp:
+                raise ValidationError("Expected ilk = {} got {} instead."
+                                      "".format(Ilks.icp, ked["ilk"]))
+
+        del kes[:srdr.size]  # strip off event from front
+
+        # extract attached sigs if any
+        if "sigs" not in rser0.ked or not rser0.ked["sigs"]:  # no info on attached sigs
+            assert False
+
+        else:
+            ridxs = rser0.ked["sigs"]  # exract signature indices
+            if isinstance(ridxs, list):
+                for idx in ridxs:
+                    pass
+                assert False
+
+            else:
+                nrsigs = int(ridxs, 16)
+                assert nrsigs == 1
+                keys = rser0.ked["keys"]
+                for i in range(nrsigs): # verify each attached signature
+                    rsig = SigMat(qb64=msgb0)
+                    assert rsig.index == 0
+                    verifier = Verifier(qb64=keys[rsig.index])
+                    assert verifier.qb64 == aid0.qb64
+                    assert verifier.qb64 == skp0.verifier.qb64
+                    assert verifier.verify(rsig.raw, rser0.raw)
+                    del msgb0[:len(rsig.qb64)]
+
+        # verify aid
+        raid0 = Aider(qb64=rser0.ked["id"])
+        assert raid0.verify(ked=rser0.ked)
+
+        #verify nxt digest from event is still valid
+        rnext1 = Nexter(qb64=rser0.ked["next"])
+        assert rnext1.verify(sith=nxtsith, keys=nxtkeys)
 
 
 class Keger:
@@ -1558,5 +1625,4 @@ class Keger:
         self.wits = None
         self.data = None
         self.indices = None
-
 
