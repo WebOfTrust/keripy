@@ -19,7 +19,7 @@ from keri.kering import ValidationError, EmptyMaterialError, DerivationError
 from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, Verifier, Signer, Digester, Aider
+from keri.core.coring import CryMat, Verifier, Signer, Digester, Nexter, Aider
 from keri.core.coring import SigSelect, SigTwo, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFour, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFive, SigFiveSizes, SigFiveRawSizes
@@ -800,7 +800,7 @@ def test_signer():
 
 def test_digester():
     """
-    Test the support functionality for digester subclass of crymat
+    Test the support functionality for Digester subclass of CryMat
     """
     with pytest.raises(EmptyMaterialError):
         digester = Digester()
@@ -837,6 +837,68 @@ def test_digester():
 
     """ Done Test """
 
+def test_nexter():
+    """
+    Test the support functionality for Nexter subclass of Digester
+    """
+    with pytest.raises(EmptyMaterialError):
+        nexter = Nexter()
+
+    #create something to digest and verify
+    verkey, sigkey = pysodium.crypto_sign_keypair()
+    verkey = (b'\xacr\xda\xc83~\x99r\xaf\xeb`\xc0\x8cR\xd7\xd7\xf69\xc8E\x1e\xd2\xf0='
+              b'`\xf7\xbf\x8a\x18\x8a`q')
+    verifier = Verifier(raw=verkey)
+    assert verifier.qb64 == 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
+    sith = "{:x}".format(1)
+    keys = [verifier.qb64]
+    ser = (sith + verifier.qb64).encode("utf-8")
+
+    nexter = Nexter(ser=ser)  # defaults provide Blake3_256 digester
+    assert nexter.code == CryOne.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.verify(ser=ser)
+    assert nexter.verify(ser=ser+b'ABCDEF') == False
+
+    with pytest.raises(ValueError):  # bad code
+        nexter = Nexter(ser=ser, code=CryOne.Ed25519)
+
+    nexter = Nexter(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
+    assert nexter.code == CryOne.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter._derive(sith=sith, keys=keys) == ser
+    assert nexter.verify(ser=ser)
+    assert nexter.verify(ser=ser+b'ABCDEF') == False
+    assert nexter.verify(sith=sith, keys=keys)
+
+    with pytest.raises(EmptyMaterialError):
+        nexter = Nexter(sith=sith)
+
+    with pytest.raises(EmptyMaterialError):
+        nexter = Nexter(keys=keys)
+
+    nexter = Nexter(sith=1, keys=keys)  # defaults provide Blake3_256 digester
+    assert nexter.code == CryOne.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter._derive(sith=sith, keys=keys) == ser
+    assert nexter.verify(ser=ser)
+    assert nexter.verify(ser=ser+b'ABCDEF') == False
+    assert nexter.verify(sith=1, keys=keys)
+
+    ked = dict(sith=sith, keys=keys)
+    nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
+    assert nexter.code == CryOne.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter._derive(ked=ked) == ser
+    assert nexter.verify(ser=ser)
+    assert nexter.verify(ser=ser+b'ABCDEF') == False
+    assert nexter.verify(ked=ked)
+
+
+
+    """ Done Test """
+
+
 def test_aider():
     """
     Test the support functionality for aider subclass of crymat
@@ -844,8 +906,7 @@ def test_aider():
     with pytest.raises(EmptyMaterialError):
         aider = Aider()
 
-    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
+    verkey,  sigkey = pysodium.crypto_sign_keypair()
 
     with pytest.raises(ValueError):
         aider = Aider(raw=verkey, code=CryOne.Blake3_256)
@@ -1138,4 +1199,4 @@ def test_process_manual():
     """ Done Test """
 
 if __name__ == "__main__":
-    test_aider()
+    test_nexter()

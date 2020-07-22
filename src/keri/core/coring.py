@@ -648,12 +648,12 @@ class Nexter(Digester):
 
         """
         try:
-            super(Digester, self).__init__(ser=ser, **kwa)
+            super(Nexter, self).__init__(ser=ser, **kwa)
         except EmptyMaterialError as ex:
             if not (sith and keys) and not ked:
                 raise ex
             ser = self._derive(sith=sith, keys=keys, ked=ked)
-            super(Digester, self).__init__(ser=ser, **kwa)
+            super(Nexter, self).__init__(ser=ser, **kwa)
 
 
     @staticmethod
