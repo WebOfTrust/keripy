@@ -29,7 +29,7 @@ from keri.core.coring import SigMat
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
-from keri.core.coring import Ilkage, Ilks, Corver
+from keri.core.coring import Ilkage, Ilks, Kever
 
 
 def test_cryderivationcodes():
@@ -91,13 +91,7 @@ def test_cryderivationcodes():
               '1AAA', '1AAB']:
         assert x in CrySizes
         assert x in CryRawSizes
-
-
-
-
-    """
-    Done Test
-    """
+    """Done Test"""
 
 def test_sigderivationcodes():
     """
@@ -142,11 +136,7 @@ def test_sigderivationcodes():
     for x in ['A', 'B', '0A']:
         assert x in SigSizes
         assert x in SigRawSizes
-
-
-    """
-    Done Test
-    """
+    """Done Test"""
 
 def test_crymat():
     """
@@ -339,8 +329,6 @@ def test_sigmat():
     assert sigmat.raw == sig
     assert sigmat.code == SigTwo.Ed25519
     assert sigmat.index == 5
-
-
     """ Done Test """
 
 
@@ -466,10 +454,7 @@ def test_serials():
 
     match = Rever.search(rots)
     assert match.group() == Vstrings.cbor.encode("utf-8")
-
-    """
-    Done Test
-    """
+    """Done Test"""
 
 def test_serder():
     """
@@ -646,10 +631,7 @@ def test_serder():
     assert evt2.kind == Serials.json
     knd, version, size = Deversify(evt2.ked['vs'])
     assert knd == Serials.json
-
-    """
-    Done Test
-    """
+    """Done Test """
 
 def test_ilks():
     """
@@ -708,8 +690,6 @@ def test_verifier():
 
     with pytest.raises(ValueError):
         verfer = Verifier(raw=verkey, code=CryOne.Blake3_256)
-
-
     """ Done Test """
 
 def test_signer():
@@ -795,7 +775,6 @@ def test_signer():
 
     with pytest.raises(ValueError):
         signer = Signer(code=CryOne.Ed25519N)
-
     """ Done Test """
 
 def test_digester():
@@ -834,7 +813,6 @@ def test_digester():
 
     with pytest.raises(ValueError):
         digester = Digester(ser=ser, code=CryOne.Ed25519)
-
     """ Done Test """
 
 def test_nexter():
@@ -893,9 +871,6 @@ def test_nexter():
     assert nexter.verify(ser=ser)
     assert nexter.verify(ser=ser+b'ABCDEF') == False
     assert nexter.verify(ked=ked)
-
-
-
     """ Done Test """
 
 
@@ -950,10 +925,15 @@ def test_aider():
     ked = dict(keys=[verifier.qb64], next="ABCD")
     with pytest.raises(DerivationError):
         aider = Aider(ked=ked)
-
-
-
     """ Done Test """
+
+def test_kever():
+    """
+    Test the support functionality for Kever class
+    """
+    kever = Kever()
+    """ Done Test """
+
 
 def test_process_nontransferable():
     """
@@ -1038,7 +1018,6 @@ def test_process_nontransferable():
     # verify aid
     raid0 = Aider(qb64=rser0.ked["id"])
     assert raid0.verify(ked=rser0.ked)
-
     """ Done Test """
 
 def test_process_transferable():
@@ -1138,8 +1117,6 @@ def test_process_transferable():
     #verify nxt digest from event is still valid
     rnext1 = Nexter(qb64=rser0.ked["next"])
     assert rnext1.verify(sith=nxtsith, keys=nxtkeys)
-
-
     """ Done Test """
 
 
@@ -1148,9 +1125,6 @@ def test_process_manual():
     """
     Test manual process of generating and validating inception key event message
     """
-    with pytest.raises(ValueError):
-        corver = Corver()
-
     # create qualified aid in basic format
     # workflow is start with seed and save seed. Seed in this case is 32 bytes
     # aidseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
@@ -1272,9 +1246,7 @@ def test_process_manual():
 
     result = pysodium.crypto_sign_verify_detached(rxsigmat.raw, rxsrdr.raw, rxvermat.raw)
     assert not result  # None if verifies successfully else raises ValueError
-
-
     """ Done Test """
 
 if __name__ == "__main__":
-    test_nexter()
+    test_kever()
