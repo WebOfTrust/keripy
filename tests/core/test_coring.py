@@ -29,7 +29,8 @@ from keri.core.coring import SigMat
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
-from keri.core.coring import Ilkage, Ilks, Kever
+from keri.core.coring import Ilkage, Ilks
+from keri.core.coring import Kever, Kevery, Keger
 
 
 def test_cryderivationcodes():
@@ -936,6 +937,14 @@ def test_kever():
     Key Event Verifier
     """
     kever = Kever()
+    """ Done Test """
+
+def test_kevery():
+    """
+    Test the support functionality for Kevery factory class
+    Key Event Verifier Factory
+    """
+    kevery = Kevery()
     """ Done Test """
 
 def test_keger():

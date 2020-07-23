@@ -1458,6 +1458,133 @@ class Serder:
         """
         return self.digmat.qb64
 
+Kevers = {}  # dict of existing Kevers indexed by .aid.qb64 of each Kever
+
+class Kevery:
+    """
+    Kevery is factory for Kever KERI key event verifier class
+    Only supports current version VERSION
+
+    Has the following public attributes and properties:
+
+     Attributes:
+
+
+    Properties:
+
+
+
+    """
+    def __init__(self, kes=bytearray(), ked=None, sigs=None):
+        """
+        Extract and verify event and attached signatures from key event stream kes
+
+        Parameters:
+            kes is bytearray of serialized event stream. May contain multiple sets
+                of serialized events with attached signatures. Processing is
+            ked is key event dict extracted from serialized event
+            sigs is list of qualified qb64 signatures
+
+        """
+        # initial state is vacuous
+
+        if not isinstance(kes, bytearray):  # destructive processing
+            kes = bytearray(kes)
+
+    def process(kes):
+        """
+        Process events and signatures from key event stream
+
+        """
+        if not isinstance(kes, bytearray):  # destructive processing
+            kes = bytearray(kes)
+
+        # deserialize packet from kes
+        try:
+            serder = Serder(raw=kes)
+        except Exception as ex:
+            raise ValidationError("Error while processing key event stream"
+                                  " = {}".format(ex))
+
+        version = serder.version
+        if version != Version:  # This is where to dispatch version switch
+            raise ValidationError("Unsupported version = {}, expected {}."
+                                  "".format(version, Version))
+
+        del kes[:srdr.size]  # strip off event from front of kes
+
+        ked = serder.ked
+        keys = ked["keys"]
+
+        # extract and verify attached sigs if any
+        sigs = []  # list of SigMat instances for attached signatures
+        indices = [] #  list of index offsets into keys
+        verifiers = [] # list of verifiers for keys
+
+        if "sigs" in ked and ked["sigs"]: # extract signature indices
+            if isinstance(ked["sigs"], str):
+                nsigs = int(indices, 16)
+                if nsigs < 1:
+                    raise ValidationError("Invalid number of attached sigs = {}."
+                                          " Must be > 1 if not empty.".format(nsigs))
+
+                for i in range(nsigs): # extract each attached signature
+                    # check here for type of attached signatures qb64 or qb2
+                    sig = SigMat(qb64=kes)  #  qb64
+                    sigs.append(sig)
+                    indices.append(sig.index)
+                    del kes[:len(sig.qb64)]
+
+            elif isinstance(indices, list):
+                # check here for type of attached signatures qb64 or qb2
+                for index in indices:
+                    sig = SigMat(qb64=kes)  #  qb64
+                    sigs.append(sig)
+                    del kes[:len(sig.qb64)]
+            else:
+                raise ValidationError("Invalid format of sigs indices = {}."
+                                      "".format(indices))
+
+        else:  # no info on attached sigs
+            pass
+            #  check flag if should parse rest of stream for attached sigs
+            #  or should parse for index block
+
+
+        # verify attached sigs
+        if not sigs:
+            raise ValidationError("Missing attached signature(s).")
+
+        for i, sig in enumerate(sigs):
+            index = indices[i]
+            if index != sig.index:
+                raise ValidationError("Mismatch of signature index = {} at {}"
+                                      "", format(sig.index, index))
+            if index >= len(keys):
+                raise ValidationError("Index too large = {}.".format(index))
+            verifier = Verifier(qb64=keys[index])
+            if not verifier.verify(sig.raw, serder.raw):
+                raise ValidationError("Unverifiable signature at index = {}"
+                                      "", format(index))
+            verifiers.append(verifier)
+
+        # extract aid
+        aid = Aider(qb64=ked["id"])
+
+        if self.aid == None:  # vacuous KEL expecting inception event
+            ilk = ked["ilk"]
+            if ilk != Ilks.icp:
+                raise ValidationError("Expected ilk = {} got {} instead."
+                                      "".format(Ilks.icp, ilk))
+
+            if not aid.verify(ked=ked):
+                raise ValidationError("Invalid aid = {}.".format(aid.qb64))
+            #create Kever and pass in extracted stuff
+
+        else:  # already processed inception event
+            # find Kever and pass in stuff
+            pass
+
 
 
 class Kever:
@@ -1480,22 +1607,19 @@ class Kever:
         .data is list of configuration data mappings
         .indices is int or list of signature indices of current event if any
         .serder is Serder instance of current packet
-        .verfers is list of Verifier instances of current signing keys
+        .verifiers is list of Verifier instances of current signing keys
 
     Properties:
 
 
 
     """
-    def __init__(self, kes=bytearray(), ked=None, sigs=None):
+    def __init__(self, serder=None, verifiers=None):
         """
         Extract and verify event and attached signatures from key event stream kes
 
         Parameters:
-            kes is bytearray of serialized event stream. May contain multiple sets
-                of serialized events with attached signatures. Processing is
-            ked is key event dict extracted from serialized event
-            sigs is list of qualified qb64 signatures
+
 
         """
         # initial state is vacuous
@@ -1512,11 +1636,7 @@ class Kever:
         self.indices = None
 
         self.serder = None
-        self.verfers = None
-
-
-        if not isinstance(kes, bytearray):  # destructive processing
-            kes = bytearray(kes)
+        self.verifiers = None
 
     def process(kes):
         """
@@ -1528,52 +1648,100 @@ class Kever:
 
         # deserialize packet from kes
         try:
-            srdr = Serder(raw=kes)
+            serder = Serder(raw=kes)
         except Exception as ex:
             raise ValidationError("Error while processing key event stream"
                                   " = {}".format(ex))
 
-        version = srdr.version
-        ked = srdr.ked
+        version = serder.version
+        if version != Version:  # This is where to dispatch version switch
+            raise ValidationError("Unsupported version = {}, expected {}."
+                                  "".format(version, Version))
 
-        if self.aid == None:  # vacuous KEL
-            if ked["ilk"] != Ilks.icp:
-                raise ValidationError("Expected ilk = {} got {} instead."
-                                      "".format(Ilks.icp, ked["ilk"]))
+        del kes[:srdr.size]  # strip off event from front of kes
 
-        del kes[:srdr.size]  # strip off event from front
+        ked = serder.ked
+        keys = ked["keys"]
 
-        # extract attached sigs if any
-        if "sigs" not in rser0.ked or not rser0.ked["sigs"]:  # no info on attached sigs
-            assert False
+        # extract and verify attached sigs if any
+        sigs = []  # list of SigMat instances for attached signatures
+        indices = []
+        if "sigs" in ked and ked["sigs"]: # extract signature indices
+            if isinstance(ked["sigs"], str):
+                nsigs = int(indices, 16)
+                if nsigs < 1:
+                    raise ValidationError("Invalid number of attached sigs = {}."
+                                          " Must be > 1 if not empty.".format(nsigs))
 
-        else:
-            ridxs = rser0.ked["sigs"]  # exract signature indices
-            if isinstance(ridxs, list):
-                for idx in ridxs:
-                    pass
-                assert False
+                for i in range(nsigs): # extract each attached signature
+                    # check here for type of attached signatures qb64 or qb2
+                    sig = SigMat(qb64=kes)  #  qb64
+                    sigs.append(sig)
+                    indices.append(sig.index)
+                    del kes[:len(sig.qb64)]
 
+            elif isinstance(indices, list):
+                # check here for type of attached signatures qb64 or qb2
+                for index in indices:
+                    sig = SigMat(qb64=kes)  #  qb64
+                    sigs.append(sig)
+                    del kes[:len(sig.qb64)]
             else:
-                nrsigs = int(ridxs, 16)
-                assert nrsigs == 1
-                keys = rser0.ked["keys"]
-                for i in range(nrsigs): # verify each attached signature
-                    rsig = SigMat(qb64=msgb0)
-                    assert rsig.index == 0
-                    verifier = Verifier(qb64=keys[rsig.index])
-                    assert verifier.qb64 == aid0.qb64
-                    assert verifier.qb64 == skp0.verifier.qb64
-                    assert verifier.verify(rsig.raw, rser0.raw)
-                    del msgb0[:len(rsig.qb64)]
+                raise ValidationError("Invalid format of sigs indices = {}."
+                                      "".format(indices))
 
-        # verify aid
-        raid0 = Aider(qb64=rser0.ked["id"])
-        assert raid0.verify(ked=rser0.ked)
+        else:  # no info on attached sigs
+            pass
+            #  check flag if should parse rest of stream for attached sigs
+            #  or should parse for index block
 
-        #verify nxt digest from event is still valid
-        rnext1 = Nexter(qb64=rser0.ked["next"])
-        assert rnext1.verify(sith=nxtsith, keys=nxtkeys)
+
+        # verify attached sigs
+        if not sigs:
+            raise ValidationError("Missing attached signature(s).")
+
+        for i, sig in enumerate(sigs):
+            index = indices[i]
+            if index != sig.index:
+                raise ValidationError("Mismatch of signature index = {} at {}"
+                                      "", format(sig.index, index))
+            if index >= len(keys):
+                raise ValidationError("Index too large = {}.".format(index))
+            verifier = Verifier(qb64=keys[index])
+            if not verifier.verify(sig.raw, serder.raw):
+                raise ValidationError("Unverifiable signature at index = {}"
+                                      "", format(index))
+
+        # extract aid
+        aid = Aider(qb64=ked["id"])
+
+        if self.aid == None:  # vacuous KEL expecting inception event
+            ilk = ked["ilk"]
+            if ilk != Ilks.icp:
+                raise ValidationError("Expected ilk = {} got {} instead."
+                                      "".format(Ilks.icp, ilk))
+
+            if not aid.verify(ked=ked):
+                raise ValidationError("Invalid aid = {}.".format(aid.qb64))
+            self.aid = aid
+
+        else:  # already processed inception event
+            if aid.qb64 != self.aid.qb64:
+                raise ValidationError()
+
+
+
+
+
+        #verify nxt digest from event is valid on rotation event
+        nxt = Nexter(qb64=ked["next"])
+        # if not nxt.verify(sith=nxtsith, keys=nxtkeys)
+
+        # update state with new event
+        self.version = version
+        self.aid = aid
+        self.ilk = ilk
+        self.serder = serder
 
 
 class Keger:
