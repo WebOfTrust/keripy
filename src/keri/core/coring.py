@@ -1458,7 +1458,9 @@ class Serder:
         """
         return self.digmat.qb64
 
-Kevers = {}  # dict of existing Kevers indexed by .aid.qb64 of each Kever
+Kevers = dict()  # dict of existing Kevers indexed by aid.qb64 of each Kever
+KELs = dict()  # dict of Key Event Logs = lists indexed by aid.qb64 of each Kever
+DELs = dict(aids=dict()) # dict of dict of dup events by aid.qb64 then by event dig
 
 class Kevery:
     """
@@ -1467,12 +1469,9 @@ class Kevery:
 
     Has the following public attributes and properties:
 
-     Attributes:
-
+    Attributes:
 
     Properties:
-
-
 
     """
     def __init__(self, kes=bytearray(), ked=None, sigs=None):
