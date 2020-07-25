@@ -939,12 +939,12 @@ def test_kever():
     kever = Kever()
     """ Done Test """
 
-def test_kevery():
+def test_skevery():
     """
     Test the support functionality for Kevery factory class
     Key Event Verifier Factory
     """
-    kevery = Skevery()
+    skevery = Skevery()
     """ Done Test """
 
 def test_keger():
