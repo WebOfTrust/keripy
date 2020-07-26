@@ -1631,11 +1631,8 @@ class Kevery:
         if aid not in KELs:  #  first seen event for aid
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures
-                # raises exception if problem
+                # raises exception if problem adds to KEL Kevers
                 kever = Kever(serder=serder, sigs=sigs)  # create kever from serder
-
-                KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
-                Kevers[aid][dig] = kever
 
             else:  # not inception so can't verify add to escrow
                 # log escrowed
@@ -1682,7 +1679,7 @@ class Kevery:
                                                                       kever.dig))
 
                     # verify signatures etc and update state if valid
-                    # raise exception if problem
+                    # raise exception if problem. adds to KELs
                     kever.update(serder=serder, sigs=sigs)
 
 
@@ -1777,6 +1774,8 @@ class Kever:
             if "trait" in d and d["trait"] == "establishOnly":
                 self.establishOnly = True
 
+        KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
+        Kevers[aid][dig] = kever
 
 
 
@@ -1865,16 +1864,19 @@ class Kever:
             self.wits = ked["wits"]
             self.data = ked["data"]
 
-            # update Kever and add to KELs
-            # Kever.update(verifiers, sn, dig)
+
             KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
+            if self.establishOnly:
+                raise ValidationError("Unexpected non-establishment event = {}."
+                                  "".format(serder))
             if not self.verify(serder=serder, sigs=sigs):
                 raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigs, serder))
 
+            # update state
             self.sn = sn
             self.dig = dig
             KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
