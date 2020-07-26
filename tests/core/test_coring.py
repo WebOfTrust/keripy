@@ -1020,7 +1020,7 @@ def test_process_nontransferable():
         assert False
 
     else:
-        ridxs = rser0.ked["sigs"]  # exract signature indices
+        ridxs = rser0.ked["sigs"]  # exract signature indexes
         if isinstance(ridxs, list):
             for idx in ridxs:
                 pass
@@ -1115,7 +1115,7 @@ def test_process_transferable():
         assert False
 
     else:
-        ridxs = rser0.ked["sigs"]  # exract signature indices
+        ridxs = rser0.ked["sigs"]  # exract signature indexes
         if isinstance(ridxs, list):
             for idx in ridxs:
                 pass
@@ -1264,9 +1264,9 @@ def test_process_manual():
     rxvermat = CryMat(qb64=rxverqb64)
     assert rxvermat.qb64 == rxaidmat.qb64  #  basic derivation same
 
-    indices = [ int(index, 16) for index in rxsrdr.ked["sigs"]]
-    assert indices == [0]
-    assert indices[0] == rxsigmat.index
+    indexes = [ int(index, 16) for index in rxsrdr.ked["sigs"]]
+    assert indexes == [0]
+    assert indexes[0] == rxsigmat.index
 
     result = pysodium.crypto_sign_verify_detached(rxsigmat.raw, rxsrdr.raw, rxvermat.raw)
     assert not result  # None if verifies successfully else raises ValueError

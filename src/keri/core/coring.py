@@ -1479,7 +1479,8 @@ Escrows = dict()
 
 class Kevery:
     """
-    Skesvery is factory for Stream Kever KERI key event verifier class
+    Kevery is Kever (KERI key event verifier) instance factory which are
+    extracted from a key event stream of event and attached signatures
 
     Only supports current version VERSION
 
@@ -1507,11 +1508,16 @@ class Kevery:
         while kes:
             try:
                 serder, sigs = self.extractOne(kes)
-            except ValidationError as  ex:
+            except Exception as  ex:
                 # log diagnostics errors etc
                 del kes[:]  # error extracting means bad key event stream
                 continue
-            result = self.processOne(serder, sigs)
+
+            try:
+                self.processOne(serder, sigs)
+            except Exception as  ex:
+                # log diagnostics errors etc
+                pass
 
     def extractOne(self, kes):
         """
@@ -1544,10 +1550,10 @@ class Kevery:
         ked = serder.ked
         keys = ked["keys"]
         sigs = []  # list of SigMat instances for attached signatures
-        if "sigs" in ked and ked["sigs"]: # extract signatures given indices
-            indices = ked["sigs"]
-            if isinstance(indices, str):
-                nsigs = int(indices, 16)
+        if "sigs" in ked and ked["sigs"]: # extract signatures given indexes
+            indexes = ked["sigs"]
+            if isinstance(indexes, str):
+                nsigs = int(indexes, 16)
                 if nsigs < 1:
                     raise ValidationError("Invalid number of attached sigs = {}."
                                               " Must be > 1 if not empty.".format(nsigs))
@@ -1562,12 +1568,12 @@ class Kevery:
                         raise ValidationError("Index = {} to large for keys."
                                               "".format(sig.index))
 
-            elif isinstance(indices, list):
-                if len(set(indices)) != len(indices):  # duplicate index(es)
-                    raise ValidationError("Duplicate indices in sigs = {}."
-                                              "".format(indices))
+            elif isinstance(indexes, list):
+                if len(set(indexes)) != len(indexes):  # duplicate index(es)
+                    raise ValidationError("Duplicate indexes in sigs = {}."
+                                              "".format(indexes))
 
-                for index in indices:
+                for index in indexes:
                     # check here for type of attached signatures qb64 or qb2
                     sig = SigMat(qb64=kes)  #  qb64
                     sigs.append(sig)
@@ -1583,8 +1589,8 @@ class Kevery:
                                                                         index))
 
             else:
-                raise ValidationError("Invalid format of sigs indices = {}."
-                                          "".format(indices))
+                raise ValidationError("Invalid format of sigs indexes = {}."
+                                          "".format(indexes))
 
         else:  # no info on attached sigs
             pass
@@ -1601,33 +1607,38 @@ class Kevery:
         Process one event with attached signatures
 
         """
-        # extract aid, sn, ilk to see how to process
-        aider = Aider(qb64=ked["id"])
-        aid = aider.qb64
-        ked = serder.kedkeys = ked["keys"]
-        sn = int(ked["sn"], 16)
-        ilk = ked["ilk"]
-        keys = key["keys"]
-        dig = serder.dig
+        # Verify serder.ked fields based on ked ilk and version.
+        # If missing fields then raise error.
 
-        # if establishment event use keys from event
-        # if non-establishment event use keys from existing Kever
+        # extract aid, sn, ilk to see how to process
+
+        dig = serder.dig
+        try:
+            aider = Aider(qb64=ked["id"])
+        except Exception as ex:
+            raise ValidationError("Invalid aid = {}.".format(ked["id"]))
+
+        aid = aider.qb64
+        ked = serder.ked
+        ilk = ked["ilk"]
+
+        try:
+            sn = int(ked["sn"], 16)
+        except Exception as ex:
+            raise ValidationError("Invalid sn = {}".format(ked["sn"]))
+
 
         if aid not in KELs:  #  first seen event for aid
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
-
                 try:
                     # kever init verifies basic inception stuff and signatures
-                    kever = Kever(serder=serder)  # create kever from serder
+                    kever = Kever(serder=serder, sigs=sigs)  # create kever from serder
                 except Exception as ex:
                     # log unverifiable
                     return None  # discard
 
-
-
                 KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
                 Kevers[aid][dig] = kever
-
 
             else:  # not inception so can't verify add to escrow
                 if aid not in Escrows:  #  add to Escrows
@@ -1641,17 +1652,12 @@ class Kevery:
                 # log duplicate
                 return None  # dicard
 
-
             if ilk == Ilks.icp:  # inception event so maybe duplicitous
-                # verify signatures here using keys from inception event
-                kever = Kever(serder=serder)  # create kever from serder
-                # this creates verifiers
-                if not kever.verify(serder=serder, sigs=sigs):
-                    # log unverifiable event
-                    return None  # discard
-
-                if not aid.verify(ked=ked):  # invalid aid
-                    # log invalid aid
+                try:
+                    # kever init verifies basic inception stuff and signatures
+                    kever = Kever(serder=serder, sigs=sigs)  # create kever from serder
+                except Exception as ex:
+                    # log unverifiable
                     return None  # discard
 
                 #  verified duplicitous event log it and add to DELS if first time
@@ -1664,6 +1670,8 @@ class Kevery:
                 kever = Kevers[aid]  # get existing kever for aid
                 # verify dig sn if prior  else escrow
 
+                # if rotation event use keys from event
+                # if interaction event use keys from existing Kever
                 if ilk == Ilks.rot:  # subsequent rotation event
                     # verify next from prior
                     # prior next valid so verify sigs using new keys from event
@@ -1790,7 +1798,7 @@ class Kever:
     def verify(self, sigs=None, serder=None, sith=None, verifiers=None):
         """
         Verify sigs against serder using sith and verifiers
-        Assumes that sigs already extracted correctly wrt indices
+        Assumes that sigs already extracted correctly wrt indexes
         If any of serder, sith, verifiers not provided then replace missing
            value with respective attribute .serder, .sith .verifiers instead
 
@@ -1849,7 +1857,7 @@ class Keger:
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
         .data is list of configuration data mappings
-        .indices is int or list of signature indices of current event if any
+        .indexes is int or list of signature indexes of current event if any
 
     Properties:
 
@@ -1877,5 +1885,5 @@ class Keger:
         self.toad = None
         self.wits = None
         self.data = None
-        self.indices = None
+        self.indexes = None
 
