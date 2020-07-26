@@ -1630,17 +1630,15 @@ class Kevery:
 
         if aid not in KELs:  #  first seen event for aid
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
-                try:
-                    # kever init verifies basic inception stuff and signatures
-                    kever = Kever(serder=serder, sigs=sigs)  # create kever from serder
-                except Exception as ex:
-                    # log unverifiable
-                    return None  # discard
+                # kever init verifies basic inception stuff and signatures
+                # raises exception if problem
+                kever = Kever(serder=serder, sigs=sigs)  # create kever from serder
 
                 KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
                 Kevers[aid][dig] = kever
 
             else:  # not inception so can't verify add to escrow
+                # log escrowed
                 if aid not in Escrows:  #  add to Escrows
                     Escrows[aid] = dict()
                 if dig not in Escrows[aid]:
@@ -1650,15 +1648,12 @@ class Kevery:
         else:  # already accepted inception event for aid
             if dig in KELs["aid"]:  #  duplicate event so dicard
                 # log duplicate
-                return None  # dicard
+                return  # discard
 
             if ilk == Ilks.icp:  # inception event so maybe duplicitous
-                try:
-                    # kever init verifies basic inception stuff and signatures
-                    kever = Kever(serder=serder, sigs=sigs)  # create kever from serder
-                except Exception as ex:
-                    # log unverifiable
-                    return None  # discard
+                # kever init verifies basic inception stuff and signatures
+                # raises exception if problem
+                kever = Kever(serder=serder, sigs=sigs)  # create kever from serder
 
                 #  verified duplicitous event log it and add to DELS if first time
                 if aid not in DELs:  #  add to DELS
@@ -1668,36 +1663,29 @@ class Kevery:
 
             else:
                 kever = Kevers[aid]  # get existing kever for aid
-                # verify dig sn if prior  else escrow
+                # if sn not subsequent to prior event  else escrow
+                if sn <= kever.sn:  # stale event
+                    # log stale event
+                    return  # discard
 
-                # if rotation event use keys from event
-                # if interaction event use keys from existing Kever
-                if ilk == Ilks.rot:  # subsequent rotation event
-                    # verify next from prior
-                    # prior next valid so verify sigs using new keys from event
+                if sn > kever.sn + 1:  # sn not in order
+                    #  log escrowed
+                    if aid not in Escrows:  #  add to Escrows
+                        Escrows[aid] = dict()
+                    if dig not in Escrows[aid]:
+                        Escrows[aid][dig] = Kevage(serder=serder, sigs=sigs)
 
-                    # this creates verifiers
+                else:  # sn == kever.sn + 1
+                    if dig != kever.dig:  # prior event dig not match
+                        raise ValidationError("Mismatch prior dig = {} with"
+                                              " current = {}.".format(dig,
+                                                                      kever.dig))
 
-                    if not kever.verify(serder=serder, sigs=sigs):
-                        # log unverifiable event
-                        return None  # discard
-
-                    # update Kever and add to KELs
-                    # Kever.update(verifiers, sn, dig)
-                    KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
-
-
-                elif ilk == Ilks.ixn:  # subsequent interaction event
-
-                    if not kever.verify(serder=serder, sigs=sigs):
-                        # log unverifiable event
-                        return None  # discard
+                    # verify signatures etc and update state if valid
+                    # raise exception if problem
+                    kever.update(serder=serder, sigs=sigs)
 
 
-
-                else:  # unsupported event ilk so discard
-                    # log unsupported event
-                    return None  # discard
 
 
 
@@ -1719,12 +1707,12 @@ class Kever:
         .sigs is list of SigMat instances of signatures
         .verifiers is list of Verifier instances of current signing keys
         .version is version of current event
-        .aid is fully qualified qb64 autonomic id
-        .sn is sequence number
+        .aider is aider instance
+        .sn is sequence number int
         .dig is qualified qb64 digest of event not prior event
         .ilk is str of current event type
         .sith is int or list of current signing threshold
-        .nxt is qualified qb64 of next sith and next signing keys
+        .nexter is qualified qb64 of next sith and next signing keys
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
         .data is list of configuration data mappings
@@ -1746,7 +1734,6 @@ class Kever:
             establishOnly is boolean trait to indicate establish only event
 
         """
-        # initial state is vacuous
         self.serder = serder
         self.verifiers = serder.verifiers  # converts keys to verifiers
         self.sigs = sigs
@@ -1771,17 +1758,15 @@ class Kever:
 
         self.sn = int(ked["sn"], 16)
         if self.sn != 0:
-            ValidationError("Invalid sn = {} for inception ked = {}."
+            raise ValidationError("Invalid sn = {} for inception ked = {}."
                                               "".format(self.sn, ked))
-
         self.dig = self.serder.dig
 
         self.ilk = ked["ilk"]
         if self.ilk != Ilks.icp:
-            ValidationError("Expected ilk = {} got {}."
+            raise ValidationError("Expected ilk = {} got {}."
                                               "".format(Ilks.icp, self.ilk))
-        nxt = ked["next"]
-        self.nxt = Nexter(qb64=nxt) if nxt else None  # check for empty
+        self.nexter = Nexter(qb64=ked["next"]) if nxt else None  # check for empty
         self.toad = int(ked["toad"], 16)
         self.wits = ked["wits"]
         self.data = ked["data"]
@@ -1828,11 +1813,76 @@ class Kever:
 
 
 
-    def update(self, serder):
+    def update(self, serder,  sigs):
         """
 
         """
-        pass
+        # if rotation event use keys from event
+        # if interaction event use keys from existing Kever
+        ked = serder.ked
+        ilk = ked["ilk"]
+
+        if ilk == Ilks.rot:  # subsequent rotation event
+            # verify next from prior
+            # also check derivation code of aid for non-transferable
+            #  check and
+
+            if self.nexter is None:   # empty so rotations not allowed
+                raise ValidationError("Attempted rotation for nontransferable"
+                                      " aid = {}".format(self.aider.qb64))
+
+            sith = ked["sith"]
+            if isinstance(sith, str):
+                sith =  int(ked.sith, 16)
+            else:
+                # fix this to support list sith
+                raise ValueError("Unsupported type for sith = {}".format(sith))
+
+            keys = ked["keys"]
+            if not self.nexter.verify(sith=sith, keys=keys):
+                raise ValidationError("Mismatch next digest = {} with rotation"
+                                      " sith = {}, keys = {}.".format(nexter.qb64))
+
+
+            # prior next valid so verify sigs using new verifier keys from event
+            if not self.verify(serder.serder,
+                               sigs=sigs,
+                               sith=sith,
+                               verifiers=serder.verifiers):
+                raise ValidationError("Failure verifying signatures = {} for {}"
+                                  "".format(sigs, serder))
+
+            # next and signatures verify so update state
+            self.sn = sn
+            self.dig = dig
+            self.sith = sith
+            self.verifiers = serder.verifiers
+            # verify nxt prior
+            nexter = Nexter(qb64=ked["next"]) if nxt else None  # check for empty
+            # update non transferable if None
+            self.nexter = nexter
+            self.toad = int(ked["toad"], 16)
+            self.wits = ked["wits"]
+            self.data = ked["data"]
+
+            # update Kever and add to KELs
+            # Kever.update(verifiers, sn, dig)
+            KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
+
+
+        elif ilk == Ilks.ixn:  # subsequent interaction event
+            if not self.verify(serder=serder, sigs=sigs):
+                raise ValidationError("Failure verifying signatures = {} for {}"
+                                  "".format(sigs, serder))
+
+            self.sn = sn
+            self.dig = dig
+            KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
+
+
+        else:  # unsupported event ilk so discard
+            raise ValidationError("Unsupported ilk = {}.".format(ilk))
+
 
 
 
