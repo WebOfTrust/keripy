@@ -369,7 +369,7 @@ def test_serials():
               toad = 0,
               wits = [],
               data = [],
-              sigs = [0]
+              idxs = [0]
              )
 
     rot = dict(vs = Vstrings.json,
@@ -384,7 +384,7 @@ def test_serials():
               cuts = [],
               adds = [],
               data = [],
-              sigs = [0]
+              idxs = [0]
              )
 
     icps = json.dumps(icp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
@@ -393,7 +393,7 @@ def test_serials():
                     b'","sn":"0001","ilk":"icp","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"'
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"data":[],"'
-                    b'sigs":[0]}')
+                    b'idxs":[0]}')
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.json.encode("utf-8")
@@ -404,7 +404,7 @@ def test_serials():
                     b'","sn":"0001","ilk":"rot","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"'
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"cuts":[],"adds":[],"'
-                    b'data":[],"sigs":[0]}')
+                    b'data":[],"idxs":[0]}')
 
     match = Rever.search(rots)
     assert match.group() == Vstrings.json.encode("utf-8")
@@ -416,7 +416,7 @@ def test_serials():
                     b'VPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwyZ'
                     b'-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH'
                     b'3ULvYAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
-                    b'CM\xa4toad\x00\xa4wits\x90\xa4data\x90\xa4sigs\x91\x00')
+                    b'CM\xa4toad\x00\xa4wits\x90\xa4data\x90\xa4idxs\x91\x00')
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.mgpk.encode("utf-8")
@@ -428,7 +428,7 @@ def test_serials():
                     b'VPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3rot\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwyZ'
                     b'-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH'
                     b'3ULvYAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
-                    b'CM\xa4toad\x00\xa4cuts\x90\xa4adds\x90\xa4data\x90\xa4sigs\x91\x00')
+                    b'CM\xa4toad\x00\xa4cuts\x90\xa4adds\x90\xa4data\x90\xa4idxs\x91\x00')
 
     match = Rever.search(rots)
     assert match.group() == Vstrings.mgpk.encode("utf-8")
@@ -439,7 +439,7 @@ def test_serials():
     assert icps == (b'\xacbvsqKERI10CBOR000000_bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMb'
                     b'snd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01d'
                     b'keys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZ'
-                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80ddata\x80dsigs\x81\x00')
+                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80ddata\x80didxs\x81\x00')
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.cbor.encode("utf-8")
@@ -450,7 +450,7 @@ def test_serials():
     assert rots == (b'\xadbvsqKERI10CBOR000000_bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMb'
                     b'snd0001cilkcrotcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01d'
                     b'keys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZ'
-                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dcuts\x80dadds\x80ddata\x80dsigs\x81'
+                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dcuts\x80dadds\x80ddata\x80didxs\x81'
                     b'\x00')
 
     match = Rever.search(rots)
@@ -991,7 +991,7 @@ def test_process_nontransferable():
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 data=[],  # list of config ordered mappings may be empty
-                sigs="{:x}".format(nsigs)  # single lowercase hex string
+                idxs="{:x}".format(nsigs)  # single lowercase hex string
                )
 
     # verify derivation of aid0 from ked0
@@ -1016,11 +1016,11 @@ def test_process_nontransferable():
     del msgb0[:rser0.size]  # strip off event from front
 
     # extract attached sigs if any
-    if "sigs" not in rser0.ked or not rser0.ked["sigs"]:  # no info on attached sigs
+    if "idxs" not in rser0.ked or not rser0.ked["idxs"]:  # no info on attached sigs
         assert False
 
     else:
-        ridxs = rser0.ked["sigs"]  # exract signature indexes
+        ridxs = rser0.ked["idxs"]  # exract signature indexes
         if isinstance(ridxs, list):
             for idx in ridxs:
                 pass
@@ -1081,7 +1081,7 @@ def test_process_transferable():
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 data=[],  # list of config ordered mappings may be empty
-                sigs="{:x}".format(nsigs)  # single lowercase hex string
+                idxs="{:x}".format(nsigs)  # single lowercase hex string
                )
 
 
@@ -1110,12 +1110,12 @@ def test_process_transferable():
 
     del msgb0[:rser0.size]  # strip off event from front
 
-    # extract attached sigs if any
-    if "sigs" not in rser0.ked or not rser0.ked["sigs"]:  # no info on attached sigs
+    # extract attached idxs if any
+    if "idxs" not in rser0.ked or not rser0.ked["idxs"]:  # no info on attached idxs
         assert False
 
     else:
-        ridxs = rser0.ked["sigs"]  # exract signature indexes
+        ridxs = rser0.ked["idxs"]  # exract signature indexes
         if isinstance(ridxs, list):
             for idx in ridxs:
                 pass
@@ -1212,7 +1212,7 @@ def test_process_manual():
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 data=[],  # list of config ordered mappings may be empty
-                sigs=["{:x}".format(index)]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
+                idxs=["{:x}".format(index)]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
                )
 
 
@@ -1220,13 +1220,13 @@ def test_process_manual():
     assert txsrdr.raw == (b'{"vs":"KERI10JSON000108_","id":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
                           b'","sn":"0","ilk":"icp","sith":"1","keys":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
                           b'yzuKsKJP50s"],"next":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","toad":"'
-                          b'0","wits":[],"data":[],"sigs":["0"]}')
+                          b'0","wits":[],"data":[],"idxs":["0"]}')
 
     assert txsrdr.size == 264
 
     txdig = blake3.blake3(txsrdr.raw).digest()
     txdigmat = CryMat(raw=txdig, code=CryOne.Blake3_256)
-    assert txdigmat.qb64 == 'EGt8ffYFN2qVZ_6n7mVElKUGayCHjCzsTllwxhyy1OBg'
+    assert txdigmat.qb64 == 'EzTKQVe4DVmx9rZBPg70sypOoEYf6QROSinSoFfIbrDM'
 
     assert txsrdr.dig == txdigmat.qb64
 
@@ -1237,7 +1237,7 @@ def test_process_manual():
     assert not result  # None if verifies successfully else raises ValueError
 
     txsigmat = SigMat(raw=sig0raw, code=SigTwo.Ed25519, index=index)
-    assert txsigmat.qb64 == 'AAMtdYrJ7xGyvMYYw2Km8SQd0rKJwPeB24Mebcw2bQk30tX1lk49krbChHy7xooq-DIKvf7FLoBvUdQ1mTqTRTCg'
+    assert txsigmat.qb64 == 'AA0eSN02MaVpKer6BEBiBgkK6PmprPinJsZFRr5CAd0XiViWlJrPy1oyitaIibULo2Zx8Ff2KRakHGyu7Ht3nBCg'
     assert len(txsigmat.qb64) == 88
     assert txsigmat.index == index
 
@@ -1264,7 +1264,7 @@ def test_process_manual():
     rxvermat = CryMat(qb64=rxverqb64)
     assert rxvermat.qb64 == rxaidmat.qb64  #  basic derivation same
 
-    indexes = [ int(index, 16) for index in rxsrdr.ked["sigs"]]
+    indexes = [ int(index, 16) for index in rxsrdr.ked["idxs"]]
     assert indexes == [0]
     assert indexes[0] == rxsigmat.index
 

@@ -1550,8 +1550,8 @@ class Kevery:
         ked = serder.ked
         keys = ked["keys"]
         sigs = []  # list of SigMat instances for attached signatures
-        if "sigs" in ked and ked["sigs"]: # extract signatures given indexes
-            indexes = ked["sigs"]
+        if "idxs" in ked and ked["idxs"]: # extract signatures given indexes
+            indexes = ked["idxs"]
             if isinstance(indexes, str):
                 nsigs = int(indexes, 16)
                 if nsigs < 1:
@@ -1589,7 +1589,7 @@ class Kevery:
                                                                         index))
 
             else:
-                raise ValidationError("Invalid format of sigs indexes = {}."
+                raise ValidationError("Invalid format of indexes = {}."
                                           "".format(indexes))
 
         else:  # no info on attached sigs
