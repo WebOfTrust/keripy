@@ -1909,7 +1909,7 @@ class Keger:
         .nxt is qualified qb64 of next sith plus next signing keys
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
-        .confis list of inception configuration data mappings
+        .conf is list of inception configuration data mappings
         .indexes is int or list of signature indexes of current event if any
 
     Properties:
