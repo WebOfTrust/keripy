@@ -368,7 +368,7 @@ def test_serials():
               next = 'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM',
               toad = 0,
               wits = [],
-              data = [],
+              conf = [],
               idxs = [0]
              )
 
@@ -392,7 +392,7 @@ def test_serials():
     assert icps == (b'{"vs":"KERI10JSON000000_","id":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"icp","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"'
-                    b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"data":[],"'
+                    b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"conf":[],"'
                     b'idxs":[0]}')
 
     match = Rever.search(icps)
@@ -416,7 +416,7 @@ def test_serials():
                     b'VPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwyZ'
                     b'-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH'
                     b'3ULvYAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
-                    b'CM\xa4toad\x00\xa4wits\x90\xa4data\x90\xa4idxs\x91\x00')
+                    b'CM\xa4toad\x00\xa4wits\x90\xa4conf\x90\xa4idxs\x91\x00')
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.mgpk.encode("utf-8")
@@ -439,7 +439,7 @@ def test_serials():
     assert icps == (b'\xacbvsqKERI10CBOR000000_bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMb'
                     b'snd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01d'
                     b'keys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZ'
-                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80ddata\x80didxs\x81\x00')
+                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dconf\x80didxs\x81\x00')
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.cbor.encode("utf-8")
@@ -990,7 +990,7 @@ def test_process_nontransferable():
                 next=nxt,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
-                data=[],  # list of config ordered mappings may be empty
+                conf=[],  # list of config ordered mappings may be empty
                 idxs="{:x}".format(nsigs)  # single lowercase hex string
                )
 
@@ -1080,7 +1080,7 @@ def test_process_transferable():
                 next=nxt,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
-                data=[],  # list of config ordered mappings may be empty
+                conf=[],  # list of config ordered mappings may be empty
                 idxs="{:x}".format(nsigs)  # single lowercase hex string
                )
 
@@ -1211,7 +1211,7 @@ def test_process_manual():
                 next=nxtdigmat.qb64,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
-                data=[],  # list of config ordered mappings may be empty
+                conf=[],  # list of config ordered mappings may be empty
                 idxs=["{:x}".format(index)]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
                )
 
@@ -1220,13 +1220,13 @@ def test_process_manual():
     assert txsrdr.raw == (b'{"vs":"KERI10JSON000108_","id":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
                           b'","sn":"0","ilk":"icp","sith":"1","keys":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
                           b'yzuKsKJP50s"],"next":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","toad":"'
-                          b'0","wits":[],"data":[],"idxs":["0"]}')
+                          b'0","wits":[],"conf":[],"idxs":["0"]}')
 
     assert txsrdr.size == 264
 
     txdig = blake3.blake3(txsrdr.raw).digest()
     txdigmat = CryMat(raw=txdig, code=CryOne.Blake3_256)
-    assert txdigmat.qb64 == 'EzTKQVe4DVmx9rZBPg70sypOoEYf6QROSinSoFfIbrDM'
+    assert txdigmat.qb64 == 'EPYPv3ouNLw45lAI1B40Io4KX935qfxcWdBrtA6-leFc'
 
     assert txsrdr.dig == txdigmat.qb64
 
@@ -1237,7 +1237,7 @@ def test_process_manual():
     assert not result  # None if verifies successfully else raises ValueError
 
     txsigmat = SigMat(raw=sig0raw, code=SigTwo.Ed25519, index=index)
-    assert txsigmat.qb64 == 'AA0eSN02MaVpKer6BEBiBgkK6PmprPinJsZFRr5CAd0XiViWlJrPy1oyitaIibULo2Zx8Ff2KRakHGyu7Ht3nBCg'
+    assert txsigmat.qb64 == 'AAxW5lxJxAmenWwfvgGeDgciKKT-7hP-jOZrHMVCAHgGlnpYX8dfzjppJvbC5s9GQWN4w_1IfTKcwWrU3C9KTYDA'
     assert len(txsigmat.qb64) == 88
     assert txsigmat.index == index
 

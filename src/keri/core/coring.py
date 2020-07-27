@@ -813,7 +813,8 @@ class Aider(CryMat):
     def _ed25519(ked, aid):
         """
         Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 aid from inception data dict
+        Verify derivation of fully qualified Base64 aid from
+        inception key event dict (ked)
 
         Parameters:
             iked is inception key event dict
@@ -1712,7 +1713,7 @@ class Kever:
         .nexter is qualified qb64 of next sith and next signing keys
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
-        .data is list of configuration data mappings
+        .conf is list of inception configuration data mappings
         .establishOnly is boolean
 
     Properties:
@@ -1766,11 +1767,11 @@ class Kever:
         self.nexter = Nexter(qb64=ked["next"]) if nxt else None  # check for empty
         self.toad = int(ked["toad"], 16)
         self.wits = ked["wits"]
-        self.data = ked["data"]
+        self.conf = ked["conf"]
 
         self.establishOnly = establishOnly if establishOnly is not None else self.EstablishOnly
         self.establishOnly = True if self.establishOnly else False  # ensure boolean
-        for d in self.data:
+        for d in self.conf:
             if "trait" in d and d["trait"] == "establishOnly":
                 self.establishOnly = True
 
@@ -1862,7 +1863,7 @@ class Kever:
             self.nexter = nexter
             self.toad = int(ked["toad"], 16)
             self.wits = ked["wits"]
-            self.data = ked["data"]
+            self.conf = ked["conf"]
 
 
             KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
@@ -1908,7 +1909,7 @@ class Keger:
         .nxt is qualified qb64 of next sith plus next signing keys
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
-        .data is list of configuration data mappings
+        .confis list of inception configuration data mappings
         .indexes is int or list of signature indexes of current event if any
 
     Properties:
@@ -1936,6 +1937,6 @@ class Keger:
         self.nxt = None
         self.toad = None
         self.wits = None
-        self.data = None
+        self.conf = None
         self.indexes = None
 
