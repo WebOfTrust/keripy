@@ -1340,8 +1340,11 @@ class Serder:
         """
         ked is key event dict
         kind is serialization if given else use one given in ked
-        Returns tuple of (raw, kind) where raw is serialized event as bytes of kind
-        and kind is serialzation kind
+        Returns tuple of (raw, kind, ked, version) where:
+            raw is serialized event as bytes of kind
+            kind is serialzation kind
+            ked is key event dict
+            version is Versionage instance
 
         Assumes only supports Version
         """
@@ -1386,7 +1389,7 @@ class Serder:
             raise ValueError("Malformed version string size = {}".format(vs))
         ked['vs'] = vs  #  update ked
 
-        return (raw, kind, ked)
+        return (raw, kind, ked, version)
 
     @property
     def raw(self):
@@ -1411,12 +1414,13 @@ class Serder:
     @ked.setter
     def ked(self, ked):
         """ ked property setter  assumes ._kind """
-        raw, kind, ked = self._exhale(ked=ked, kind=self._kind)
+        raw, kind, ked, version = self._exhale(ked=ked, kind=self._kind)
         size = len(raw)
         self._raw = raw[:size]
         self._ked = ked
         self._kind = kind
         self._size = size
+        self._version = version
 
     @property
     def kind(self):
@@ -1426,12 +1430,13 @@ class Serder:
     @kind.setter
     def kind(self, kind):
         """ kind property setter Assumes ._ked """
-        raw, kind, ked = self._exhale(ked=self._ked, kind=kind)
+        raw, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
         size = len(raw)
         self._raw = raw[:size]
         self._ked = ked
         self._kind = kind
         self._size = size
+        self._version = version
 
     @property
     def version(self):
@@ -1607,6 +1612,10 @@ class Kevery:
         """
         Process one event with attached signatures
 
+        Parameters:
+            serder is Serder instance of event
+            sigs is list of SigMat instances of attached signatures
+
         """
         # Verify serder.ked fields based on ked ilk and version.
         # If missing fields then raise error.
@@ -1738,7 +1747,7 @@ class Kever:
         ked = self.serder.ked
         sith = ked["sith"]
         if isinstance(sith, str):
-            self.sith =  int(ked.sith, 16)
+            self.sith =  int(sith, 16)
         else:
             # fix this to support list sith
             raise ValueError("Unsupported type for sith = {}".format(sith))
@@ -1750,9 +1759,9 @@ class Kever:
         self.version = self.serder.version  # version switch?
 
         self.aider = Aider(qb64=ked["id"])
-        if not aider.verify(ked=ked):  # invalid aid
+        if not self.aider.verify(ked=ked):  # invalid aid
             raise ValidationError("Invalid aid = {} for inception ked = {}."
-                                  "".format(aider.qb64, ked))
+                                  "".format(self.aider.qb64, ked))
 
         self.sn = int(ked["sn"], 16)
         if self.sn != 0:
@@ -1764,7 +1773,7 @@ class Kever:
         if self.ilk != Ilks.icp:
             raise ValidationError("Expected ilk = {} got {}."
                                               "".format(Ilks.icp, self.ilk))
-        self.nexter = Nexter(qb64=ked["next"]) if nxt else None  # check for empty
+        self.nexter = Nexter(qb64=ked["next"]) if ked["next"] else None  # check for empty
         self.toad = int(ked["toad"], 16)
         self.wits = ked["wits"]
         self.conf = ked["conf"]
@@ -1775,8 +1784,13 @@ class Kever:
             if "trait" in d and d["trait"] == "establishOnly":
                 self.establishOnly = True
 
-        KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
-        Kevers[aid][dig] = kever
+        aid = self.aider.qb64
+        if aid not in KELs:
+            KELs[aid] = dict()
+        KELs[aid][self.dig] = Kevage(serder=serder, sigs=sigs)
+        if aid not in Kevers:
+            Kevers[aid] = dict()
+        Kevers[aid][self.dig] = self
 
 
 
