@@ -1511,7 +1511,7 @@ class Serder:
     def verfers(self):
         """
         Returns list of Verifier instances as converted from .ked.keys
-        verifiers property getter
+        verfers property getter
         """
         return [Verfer(qb64=key) for key in self.ked["keys"]]
 

@@ -122,7 +122,7 @@ class Kever:
     Attributes:
         .serder is Serder instance of current packet
         .sigs is list of SigMat instances of signatures
-        .verifiers is list of Verifier instances of current signing keys
+        .verfers is list of Verfer instances for current set of signing keys
         .version is version of current event
         .aider is aider instance
         .sn is sequence number int
@@ -207,16 +207,16 @@ class Kever:
 
     def verify(self, sigs=None, serder=None, sith=None, verfers=None):
         """
-        Verify sigs against serder using sith and verifiers
+        Verify sigs against serder using sith and verfers
         Assumes that sigs already extracted correctly wrt indexes
-        If any of serder, sith, verifiers not provided then replace missing
-           value with respective attribute .serder, .sith .verifiers instead
+        If any of serder, sith, verfers not provided then replace missing
+           value with respective attribute .serder, .sith .verfers instead
 
         Parameters:
             sigs is list of SigMat instances
             serder is Serder instance
             sith is int threshold
-            verifiers is list of Verifier instances
+            verfers is list of Verfer instances
 
         """
         sigs = sigs if sigs is not None else self.sigs
