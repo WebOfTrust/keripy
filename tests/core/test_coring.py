@@ -334,6 +334,32 @@ def test_sigmat():
     """ Done Test """
 
 
+def test_sigter():
+    """
+    Test Sigter subclass of SigMat
+    """
+    with pytest.raises(EmptyMaterialError):
+        sigter = Sigter()
+
+    qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    sigter = SigMat(qb64=qsig64)
+    assert sigter.code == SigTwoDex.Ed25519
+    assert sigter.index == 0
+    assert sigter.qb64 == qsig64
+    assert sigter.verfer == None
+
+    verkey,  sigkey = pysodium.crypto_sign_keypair()
+    verfer = Verfer(raw=verkey)
+
+    sigter.verfer = verfer
+    assert  sigter.verfer == verfer
+
+    sigter = SigMat(qb64=qsig64, verfer=verfer)
+    assert  sigter.verfer == verfer
+    """ Done Test """
+
+
 def test_serials():
     """
     Test Serializations namedtuple instance Serials
@@ -673,7 +699,7 @@ def test_ilks():
     assert 'drt' in Ilks
 
 
-def test_verifier():
+def test_verfer():
     """
     Test the support functionality for verifier subclass of crymat
     """
