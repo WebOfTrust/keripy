@@ -347,9 +347,9 @@ class Kever:
         self.wits = ked["wits"]
         self.conf = ked["conf"]
 
+        # ensure boolean
         self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
                              else False)
-        # self.estOnly = True if self.estOnly else False  # ensure boolean
         for d in self.conf:
             if "trait" in d and d["trait"] == Traitdex.EstOnly:
                 self.estOnly = True
