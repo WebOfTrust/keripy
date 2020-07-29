@@ -1491,12 +1491,13 @@ class Serder:
         return self._size
 
     @property
-    def digmat(self):
+    def diger(self):
         """
-        Returns CryMat of digest of self.raw
-        digmat (digest material) property getter
+        Returns Diger of digest of self.raw
+        diger (digest material) property getter
         """
-        return (CryMat(raw=blake3.blake3(self.raw).digest(), code=CryOneDex.Blake3_256))
+        return (Diger(raw=blake3.blake3(self.raw).digest(),
+                       code=CryOneDex.Blake3_256))
 
     @property
     def dig(self):
@@ -1504,7 +1505,7 @@ class Serder:
         Returns qualified Base64 digest of self.raw
         dig (digest) property getter
         """
-        return self.digmat.qb64
+        return self.diger.qb64
 
     @property
     def verfers(self):

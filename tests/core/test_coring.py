@@ -584,13 +584,14 @@ def test_serder():
     assert evt1.raw == e1ss[:size1]
     assert evt1.version == vers1
 
-    # test digest properties .digmat and .dig
-    assert evt1.digmat.qb64 == evt1.dig
-    assert evt1.digmat.code == CryOneDex.Blake3_256
-    assert len(evt1.digmat.raw) == 32
+    # test digest properties .diger and .dig
+    assert evt1.diger.qb64 == evt1.dig
+    assert evt1.diger.code == CryOneDex.Blake3_256
+    assert len(evt1.diger.raw) == 32
     assert len(evt1.dig) == 44
     assert len(evt1.dig) == CryOneSizes[CryOneDex.Blake3_256]
     assert evt1.dig == 'EB_Qy67YQkcSWmCcZo_3RaoTUQwWGoggAwHlG_0rpmQo'
+    assert evt1.diger.verify(evt1.raw)
 
     evt1 = Serder(ked=ked1)
     assert evt1.kind == kind1
