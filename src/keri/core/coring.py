@@ -1205,6 +1205,49 @@ class SigMat:
         return decodeB64(self._infil().encode("utf-8"))
 
 
+class Sigter(SigMat):
+    """
+    Sigter is SigMat subclass with .verfer property of instance of Verfer that
+    provide associated signature verifier .
+
+
+    See SigMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .verfer is Verfer object instance
+
+    Methods:
+
+
+    """
+    def __init__(self, verfer=None, **kwa):
+        """
+        Assign verfer to ._verfer
+
+        Parameters:  See CryMat for inherted parameters
+            verfer if Verfer instance if any
+
+        """
+        super(Sigter, self).__init__(**kwa)
+
+        self._verfer = verfer
+
+    @property
+    def verfer(self):
+        """
+        Property verfer:
+        Returns Verfer instance
+        Assumes ._verfer is correctly assigned
+        """
+        return self._verfer
+
+    @verfer.setter
+    def verfer(self, verfer):
+        """ verfer property setter """
+        self._verfer = verfer
+
 """
 Need to add Serdery  as Serder factory that figures out what type of
 serialization and creates appropriate subclass
