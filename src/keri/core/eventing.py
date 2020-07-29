@@ -197,13 +197,22 @@ class Kever:
             if "trait" in d and d["trait"] == TraitDex.EstOnly:
                 self.estOnly = True
 
+
+
+        # update logs
+        kevage = Kevage(serder=serder, sigxers=sigxers)
         aid = self.aider.qb64
-        if aid not in KELDs:
-            KELDs[aid] = dict()
-        KELDs[aid][self.diger.qb64] = Kevage(serder=serder, sigxers=sigxers)
+        dig = self.diger.qb64
+
         if aid not in Kevers:
             Kevers[aid] = dict()
-        Kevers[aid][self.diger] = self
+        Kevers[aid][dig] = self
+        if aid not in KELs:
+            KELs[aid] = dict()
+        KELs[aid][self.sn] = kevage
+        if aid not in KELDs:
+            KELDs[aid] = dict()
+        KELDs[aid][dig] = kevage
 
 
     def update(self, serder,  sigxers):
@@ -267,8 +276,10 @@ class Kever:
             self.wits = ked["wits"]
             self.conf = ked["conf"]
 
-
-            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigxers=sigxers)
+            # update logs
+            kevage = Kevage(serder=serder, sigxers=sigxers)
+            KELs[aid][self.sn] = kevage
+            KELDs[aid][self.diger.qb64] = kevage
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -291,7 +302,11 @@ class Kever:
             # update state
             self.sn = sn
             self.diger = serder.diger
-            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigxers=sigxers)
+
+            # update logs
+            kevage = Kevage(serder=serder, sigxers=sigxers)
+            KELs[aid][self.sn] = kevage
+            KELDs[aid][self.diger.qb64] = kevage
 
 
         else:  # unsupported event ilk so discard
@@ -396,7 +411,7 @@ class Kevery:
             raise ValidationError("Invalid sn = {}".format(ked["sn"]))
         dig = serder.dig
 
-        if aid not in KELDs:  #  first seen event for aid
+        if aid not in Kevers:  #  first seen event for aid
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures
                 # raises exception if problem adds to KEL Kevers
