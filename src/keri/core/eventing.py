@@ -44,11 +44,11 @@ Kevage = namedtuple("Kevage", 'serder sigxers')  # Key Event tuple for KELS and 
 
 Kevers = dict()  # dict of existing Kevers indexed by aid.qb64 of each Kever
 
-KELs = dict()  # dict of dicts of events keyed by aid.qb64 then in order by event sn
-KELDs = dict()  # dict of dicts of events keyed by aid.qb64 then by event dig
-DELs = dict()  # dict of dicts of dup events keyed by aid.qb64 then by event dig
-
-Escrows = dict()
+KELs = dict()  # Generator KELs as dict of dicts of events keyed by aid.qb64 then in order by event sn
+KERLs = dict()  # Validator KERLs as dict of dicts of events keyed by aid.qb64 then in order by event sn
+KELDs = dict()  # Validator KELDs as dict of dicts of events keyed by aid.qb64 then by event dig
+DELs = dict()  # Validator DELs as dict of dicts of dup events keyed by aid.qb64 then by event dig
+Escrows = dict()  # Validator Escow as dict of dicts of events keyed by aid.qb64 then in order by event sn
 
 
 
@@ -227,9 +227,9 @@ class Kever:
         if aid not in Kevers:
             Kevers[aid] = dict()
         Kevers[aid][dig] = self
-        if aid not in KELs:
-            KELs[aid] = dict()
-        KELs[aid][self.sn] = kevage
+        if aid not in KERLs:
+            KERLs[aid] = dict()
+        KERLs[aid][self.sn] = kevage
         if aid not in KELDs:
             KELDs[aid] = dict()
         KELDs[aid][dig] = kevage
@@ -298,7 +298,7 @@ class Kever:
 
             # update logs
             kevage = Kevage(serder=serder, sigxers=sigxers)
-            KELs[aid][self.sn] = kevage
+            KERLs[aid][self.sn] = kevage
             KELDs[aid][self.diger.qb64] = kevage
 
 
@@ -325,7 +325,7 @@ class Kever:
 
             # update logs
             kevage = Kevage(serder=serder, sigxers=sigxers)
-            KELs[aid][self.sn] = kevage
+            KERLs[aid][self.sn] = kevage
             KELDs[aid][self.diger.qb64] = kevage
 
 
@@ -437,12 +437,12 @@ class Kevery:
                 # raises exception if problem adds to KEL Kevers
                 kever = Kever(serder=serder, sigxers=sigxers)  # create kever from serder
 
-            else:  # not inception so can't verify add to escrow
+            else:  # not inception so can't verify, add to escrow
                 # log escrowed
                 if aid not in Escrows:  #  add to Escrows
                     Escrows[aid] = dict()
-                if dig not in Escrows[aid]:
-                    Escrows[aid][dig] = Kevage(serder=serder, sigxers=sigxers)
+                if sn not in Escrows[aid]:
+                    Escrows[aid][sn] = Kevage(serder=serder, sigxers=sigxers)
 
 
         else:  # already accepted inception event for aid
@@ -472,8 +472,8 @@ class Kevery:
                     #  log escrowed
                     if aid not in Escrows:  #  add to Escrows
                         Escrows[aid] = dict()
-                    if dig not in Escrows[aid]:
-                        Escrows[aid][dig] = Kevage(serder=serder, sigxers=sigxers)
+                    if sn not in Escrows[aid]:
+                        Escrows[aid][sn] = Kevage(serder=serder, sigxers=sigxers)
 
                 else:  # sn == kever.sn + 1
                     if dig != kever.diger:  # prior event dig not match
