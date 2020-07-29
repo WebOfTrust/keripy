@@ -357,16 +357,23 @@ class Kevery:
 
         while kes:
             try:
-                self.processOne(kes)
+                serder, sigxers = self.extractOne(kes=kes)
+            except Exception as ex:
+                # log diagnostics errors etc
+                # error extracting means bad key event stream
+                del kes[:]  #  delete rest of stream
+                continue
+
+            try:
+                self.processOne(serder=serder, sigxers=sigxers)
             except Exception as  ex:
                 # log diagnostics errors etc
-                del kes[:]  # error extracting means bad key event stream
                 continue
 
 
-    def processOne(self, kes):
+    def processOne(self, serder, sigxers):
         """
-        Process one event with attached signatures from key event stream kes
+        Process one event serder with attached indexd signatures sigxers
 
         Parameters:
             kes is bytearray of serialized key event stream.
@@ -374,22 +381,7 @@ class Kevery:
                 attached signatures.
 
         """
-        # deserialize packet from kes
-        try:
-            serder = Serder(raw=kes)
-        except Exception as ex:
-            raise ValidationError("Error while processing key event stream"
-                                  " = {}".format(ex))
-
-        version = serder.version
-        if version != Version:  # This is where to dispatch version switch
-            raise VersionError("Unsupported version = {}, expected {}."
-                                  "".format(version, Version))
-
-        del kes[:srdr.size]  # strip off event from front of kes
-
-
-        # fetch ked ilk  aid, sn, dig to see how to finish extraction
+        # fetch ked ilk  aid, sn, dig to see how to process
         ked = serder.ked
         try:
             aider = Aider(qb64=ked["id"])
@@ -403,55 +395,6 @@ class Kevery:
         except Exception as ex:
             raise ValidationError("Invalid sn = {}".format(ked["sn"]))
         dig = serder.dig
-
-
-
-        # extract attached sigs as Sigxers
-        sigxers = []  # list of Sigxer instances for attached indexed signatures
-        if "idxs" in ked and ked["idxs"]: # extract signatures given indexes
-            indexes = ked["idxs"]
-            if isinstance(indexes, str):
-                nsigs = int(indexes, 16)
-                if nsigs < 1:
-                    raise ValidationError("Invalid number of attached sigs = {}."
-                                              " Must be > 1 if not empty.".format(nsigs))
-
-                for i in range(nsigs): # extract each attached signature
-                    # check here for type of attached signatures qb64 or qb2
-                    sigxer = Sigxer(qb64=kes)  #  qb64
-                    sigxers.append(sigxer)
-                    del kes[:len(sigxer.qb64)]  # strip off signature
-
-            elif isinstance(indexes, list):
-                if len(set(indexes)) != len(indexes):  # duplicate index(es)
-                    raise ValidationError("Duplicate indexes in sigs = {}."
-                                              "".format(indexes))
-
-                for index in indexes:
-                    # check here for type of attached signatures qb64 or qb2
-                    sigxer = SigMat(qb64=kes)  #  qb64
-                    sigxers.append(sigxer)
-                    del kes[:len(sigxer.qb64)]  # strip off signature
-
-                    if index != sigxer.index:
-                        raise ValidationError("Mismatching signature index = {}"
-                                              " with index = {}".format(sigxer.index,
-                                                                        index))
-            else:
-                raise ValidationError("Invalid format of indexes = {}."
-                                          "".format(indexes))
-
-        else:  # no info on attached sigs
-            pass
-            #  check flag if should parse rest of stream for attached sigs
-            #  or should parse for index block
-
-        if not sigxers:
-            raise ValidationError("Missing attached signature(s).")
-
-
-
-
 
         if aid not in KELDs:  #  first seen event for aid
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
@@ -533,34 +476,7 @@ class Kevery:
 
         del kes[:srdr.size]  # strip off event from front of kes
 
-        # extract attached sigs as Sigers if any
-        # protocol dependent if http may use http header instead of stream
-        # matching sigxers to keys only works if establishment event
-        # interaction events do not have keys but use prior keys of most recent
-        # establishment event
-
-        ked = serder.ked
-
-        # extract aid, sn, ilk to see how to finish extraction
-
-        dig = serder.dig
-        try:
-            aider = Aider(qb64=ked["id"])
-        except Exception as ex:
-            raise ValidationError("Invalid aid = {}.".format(ked["id"]))
-
-        aid = aider.qb64
-        ked = serder.ked
-        ilk = ked["ilk"]
-
-        try:
-            sn = int(ked["sn"], 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {}".format(ked["sn"]))
-
-
-        verfers = serder.verfers  # only for establishment events
-
+        # extract attached sigs as Sigxers
         sigxers = []  # list of Sigxer instances for attached indexed signatures
         if "idxs" in ked and ked["idxs"]: # extract signatures given indexes
             indexes = ked["idxs"]
@@ -576,11 +492,6 @@ class Kevery:
                     sigxers.append(sigxer)
                     del kes[:len(sigxer.qb64)]  # strip off signature
 
-                    if sigxer.index >= len(verfers):
-                        raise ValidationError("Index = {} to large for keys."
-                                              "".format(sigxer.index))
-                    sigxer.verfer = verfers[sigxer.index]  # assign verfer
-
             elif isinstance(indexes, list):
                 if len(set(indexes)) != len(indexes):  # duplicate index(es)
                     raise ValidationError("Duplicate indexes in sigs = {}."
@@ -592,16 +503,10 @@ class Kevery:
                     sigxers.append(sigxer)
                     del kes[:len(sigxer.qb64)]  # strip off signature
 
-                    if sigxer.index >= len(verfers):
-                        raise ValidationError("Index = {} to large for keys."
-                                              "".format(sigxer.index))
-
                     if index != sigxer.index:
                         raise ValidationError("Mismatching signature index = {}"
                                               " with index = {}".format(sigxer.index,
                                                                         index))
-                    sigxer.verfer = verfers[sigxer.index]  # assign verfer
-
             else:
                 raise ValidationError("Invalid format of indexes = {}."
                                           "".format(indexes))
