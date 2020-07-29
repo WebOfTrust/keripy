@@ -518,11 +518,11 @@ class Signer(CryMat):
 
     def sign(self, ser, index=None):
         """
-        Returns either CryMat or SigMat instance of signature
+        Returns either CryMat or Sigter instance of signature
         on bytes serialization ser
 
         If index is None return CryMat instance
-        Otherwise return Sigmat instance
+        Otherwise return Sigter instance
 
         Parameters:
             ser is bytes serialization
@@ -530,11 +530,11 @@ class Signer(CryMat):
         """
         return (self._sign(ser=ser,
                            seed=self.raw,
-                           key=self.verfer.raw,
+                           verfer=self.verfer,
                            index=index))
 
     @staticmethod
-    def _ed25519(ser, seed, key, index):
+    def _ed25519(ser, seed, verfer, index):
         """
         Returns signature
 
@@ -542,15 +542,17 @@ class Signer(CryMat):
         Parameters:
             ser is bytes serialization
             seed is bytes seed (private key)
-            key is bytes public key
+            verfer is Verfer instance. verfer.raw is public key
             index is index of offset into signers list or None
 
         """
-        sig = pysodium.crypto_sign_detached(ser, seed + key)
+        sig = pysodium.crypto_sign_detached(ser, seed + verfer.raw)
         if index is None:
             return CryMat(raw=sig, code=CryTwoDex.Ed25519)
         else:
-            return SigMat(raw=sig, code=SigTwoDex.Ed25519, index=index)
+            return Sigter(raw=sig, code=SigTwoDex.Ed25519,
+                          index=index,
+                          verfer=verfer)
 
 
 class Diger(CryMat):
