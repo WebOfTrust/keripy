@@ -40,7 +40,7 @@ class TraitCodex:
 
 TraitDex = TraitCodex()  # Make instance
 
-Kevage = namedtuple("Kevage", 'serder sigs')  # Key Event tuple for KELS and DELs
+Kevage = namedtuple("Kevage", 'serder sigters')  # Key Event tuple for KELS and DELs
 
 Kevers = dict()  # dict of existing Kevers indexed by aid.qb64 of each Kever
 
@@ -198,7 +198,7 @@ class Kever:
         aid = self.aider.qb64
         if aid not in KELs:
             KELs[aid] = dict()
-        KELs[aid][self.diger.qb64] = Kevage(serder=serder, sigs=sigs)
+        KELs[aid][self.diger.qb64] = Kevage(serder=serder, sigters=sigs)
         if aid not in Kevers:
             Kevers[aid] = dict()
         Kevers[aid][self.diger] = self
@@ -291,7 +291,7 @@ class Kever:
             self.conf = ked["conf"]
 
 
-            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigs=sigs)
+            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigters=sigs)
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -305,7 +305,7 @@ class Kever:
             # update state
             self.sn = sn
             self.diger = serder.diger
-            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigs=sigs)
+            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigters=sigs)
 
 
         else:  # unsupported event ilk so discard
@@ -482,7 +482,7 @@ class Kevery:
                 if aid not in Escrows:  #  add to Escrows
                     Escrows[aid] = dict()
                 if dig not in Escrows[aid]:
-                    Escrows[aid][dig] = Kevage(serder=serder, sigs=sigs)
+                    Escrows[aid][dig] = Kevage(serder=serder, sigters=sigs)
 
 
         else:  # already accepted inception event for aid
@@ -499,7 +499,7 @@ class Kevery:
                 if aid not in DELs:  #  add to DELS
                     DELs[aid] = dict()
                 if dig not in DELS[aid]:
-                    DELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
+                    DELS[aid][dig] = Kevage(serder=serder, sigters=sigs)
 
             else:
                 kever = Kevers[aid]  # get existing kever for aid
@@ -513,7 +513,7 @@ class Kevery:
                     if aid not in Escrows:  #  add to Escrows
                         Escrows[aid] = dict()
                     if dig not in Escrows[aid]:
-                        Escrows[aid][dig] = Kevage(serder=serder, sigs=sigs)
+                        Escrows[aid][dig] = Kevage(serder=serder, sigters=sigs)
 
                 else:  # sn == kever.sn + 1
                     if dig != kever.diger:  # prior event dig not match
