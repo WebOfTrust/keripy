@@ -24,7 +24,23 @@ from .coring import Ilks
 from .coring import Signer, Verifier, Digester, Nexter, Aider
 
 
-Kevage = namedtuple("Kelvage", 'serder sigs')  # Key Event tuple for KELS and DELs
+@dataclass(frozen=True)
+class TraitCodex:
+    """
+    TraitCodex is codex of inception configuration trait code strings
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    """
+    EstOnly:         str = 'EstOnly'  #  Only allow establishment events
+
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+Traitdex = TraitCodex()  # Make instance
+
+Kevage = namedtuple("Kevage", 'serder sigs')  # Key Event tuple for KELS and DELs
 
 Kevers = dict()  # dict of existing Kevers indexed by aid.qb64 of each Kever
 
@@ -258,7 +274,9 @@ class Kever:
     Has the following public attributes and properties:
 
     Class Attributes:
-        .EstablishOnly
+        .EstOnly is Boolean
+                True means allow only establishment events
+                False means allow all events
 
     Attributes:
         .serder is Serder instance of current packet
@@ -274,14 +292,14 @@ class Kever:
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
         .conf is list of inception configuration data mappings
-        .establishOnly is boolean
+        .estOnly is boolean
 
     Properties:
 
     """
-    EstablishOnly = False
+    EstOnly = False
 
-    def __init__(self, serder, sigs, establishOnly=None):
+    def __init__(self, serder, sigs, estOnly=None):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigs raises ValidationError if not
@@ -329,11 +347,12 @@ class Kever:
         self.wits = ked["wits"]
         self.conf = ked["conf"]
 
-        self.establishOnly = establishOnly if establishOnly is not None else self.EstablishOnly
-        self.establishOnly = True if self.establishOnly else False  # ensure boolean
+        self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
+                             else False)
+        # self.estOnly = True if self.estOnly else False  # ensure boolean
         for d in self.conf:
-            if "trait" in d and d["trait"] == "establishOnly":
-                self.establishOnly = True
+            if "trait" in d and d["trait"] == Traitdex.EstOnly:
+                self.estOnly = True
 
         aid = self.aider.qb64
         if aid not in KELs:
@@ -435,7 +454,7 @@ class Kever:
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
-            if self.establishOnly:
+            if self.estOnly:
                 raise ValidationError("Unexpected non-establishment event = {}."
                                   "".format(serder))
             if not self.verify(serder=serder, sigs=sigs):
