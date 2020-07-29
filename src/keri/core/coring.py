@@ -1560,6 +1560,12 @@ class Serder:
         Returns list of Verifier instances as converted from .ked.keys
         verfers property getter
         """
-        return [Verfer(qb64=key) for key in self.ked["keys"]]
+        if "keys" in self.ked:  # establishment event
+            keys = self.ked["keys"]
+        else:  # non-establishment event
+            keys =  []
+
+        return [Verfer(qb64=key) for key in keys]
+
 
 

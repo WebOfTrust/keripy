@@ -387,8 +387,9 @@ class Kevery:
         # protocol dependent if http may use http header instead of stream
 
         ked = serder.ked
-        keys = ked["keys"]
-        sigxers = []  # list of Sigxer instances for attached signatures
+        verfers = serder.verfers  # only for establishment events
+
+        sigxers = []  # list of Sigxer instances for attached indexed signatures
         if "idxs" in ked and ked["idxs"]: # extract signatures given indexes
             indexes = ked["idxs"]
             if isinstance(indexes, str):
@@ -399,13 +400,14 @@ class Kevery:
 
                 for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
-                    sig = SigMat(qb64=kes)  #  qb64
-                    sigxers.append(sig)
-                    del kes[:len(sig.qb64)]  # strip off signature
+                    sigxer = Sigxer(qb64=kes)  #  qb64
+                    sigxers.append(sigxer)
+                    del kes[:len(sigxer.qb64)]  # strip off signature
 
-                    if sig.index >= len(keys):
+                    if sigxer.index >= len(verfers):
                         raise ValidationError("Index = {} to large for keys."
-                                              "".format(sig.index))
+                                              "".format(sigxer.index))
+                    sigxer.verfer = verfers[sigxer.index]  # assign verfer
 
             elif isinstance(indexes, list):
                 if len(set(indexes)) != len(indexes):  # duplicate index(es)
@@ -414,18 +416,19 @@ class Kevery:
 
                 for index in indexes:
                     # check here for type of attached signatures qb64 or qb2
-                    sig = SigMat(qb64=kes)  #  qb64
-                    sigxers.append(sig)
-                    del kes[:len(sig.qb64)]  # strip off signature
+                    sigxer = SigMat(qb64=kes)  #  qb64
+                    sigxers.append(sigxer)
+                    del kes[:len(sigxer.qb64)]  # strip off signature
 
-                    if sig.index >= len(keys):
+                    if sigxer.index >= len(verfers):
                         raise ValidationError("Index = {} to large for keys."
-                                              "".format(sig.index))
+                                              "".format(sigxer.index))
 
-                    if index != sig.index:
+                    if index != sigxer.index:
                         raise ValidationError("Mismatching signature index = {}"
-                                              " with index = {}".format(sig.index,
+                                              " with index = {}".format(sigxer.index,
                                                                         index))
+                    sigxer.verfer = verfers[sigxer.index]  # assign verfer
 
             else:
                 raise ValidationError("Invalid format of indexes = {}."
