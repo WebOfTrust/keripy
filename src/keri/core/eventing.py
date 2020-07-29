@@ -121,7 +121,7 @@ class Kever:
 
     Attributes:
         .serder is Serder instance of current packet
-        .sigs is list of SigMat instances of signatures
+        .sigters is list of Sigter instances of signatures
         .verfers is list of Verfer instances for current set of signing keys
         .version is version of current event
         .aider is aider instance
@@ -140,7 +140,7 @@ class Kever:
     """
     EstOnly = False
 
-    def __init__(self, serder, sigs, estOnly=None):
+    def __init__(self, serder, sigters, estOnly=None):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigs raises ValidationError if not
@@ -153,7 +153,7 @@ class Kever:
         """
         self.serder = serder
         self.verfers = serder.verfers  # converts keys to verifiers
-        self.sigs = sigs
+        self.sigters = sigters
         ked = self.serder.ked
         sith = ked["sith"]
         if isinstance(sith, str):
@@ -164,7 +164,7 @@ class Kever:
 
         if not self.verify():
             raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigs, serder))
+                                  "".format(sigters, serder))
 
         self.version = self.serder.version  # version switch?
 
@@ -198,14 +198,14 @@ class Kever:
         aid = self.aider.qb64
         if aid not in KELs:
             KELs[aid] = dict()
-        KELs[aid][self.diger.qb64] = Kevage(serder=serder, sigters=sigs)
+        KELs[aid][self.diger.qb64] = Kevage(serder=serder, sigters=sigters)
         if aid not in Kevers:
             Kevers[aid] = dict()
         Kevers[aid][self.diger] = self
 
 
 
-    def verify(self, sigs=None, serder=None, sith=None, verfers=None):
+    def verify(self, sigters=None, serder=None, sith=None, verfers=None):
         """
         Verify sigs against serder using sith and verfers
         Assumes that sigs already extracted correctly wrt indexes
@@ -219,19 +219,19 @@ class Kever:
             verfers is list of Verfer instances
 
         """
-        sigs = sigs if sigs is not None else self.sigs
+        sigters = sigters if sigters is not None else self.sigters
         serder = serder if serder is not None else self.serder
         sith = sith if sith is not None else self.sith
         verfers = verfers if verfers is not None else self.verfers
 
-        for sig in sigs:
-            verfer = verfers[sig.index]
-            if not verfer.verify(sig.raw, serder.raw):
+        for sigter in sigters:
+            verfer = verfers[sigter.index]
+            if not verfer.verify(sigter.raw, serder.raw):
                 return False
 
         if not isinstance(sith, int):
             raise ValueError("Unsupported type for sith ={}".format(sith))
-        if len(sigs) < sith:  # not meet threshold fix for list sith
+        if len(sigters) < sith:  # not meet threshold fix for list sith
             return False
 
         return True
@@ -271,7 +271,7 @@ class Kever:
 
             # prior next valid so verify sigs using new verifier keys from event
             if not self.verify(serder.serder,
-                               sigs=sigs,
+                               sigters=sigs,
                                sith=sith,
                                verfers=serder.verfers):
                 raise ValidationError("Failure verifying signatures = {} for {}"
@@ -298,7 +298,7 @@ class Kever:
             if self.estOnly:
                 raise ValidationError("Unexpected non-establishment event = {}."
                                   "".format(serder))
-            if not self.verify(serder=serder, sigs=sigs):
+            if not self.verify(serder=serder, sigters=sigs):
                 raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigs, serder))
 
