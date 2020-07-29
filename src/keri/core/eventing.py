@@ -21,7 +21,7 @@ from ..kering import ValidationError, VersionError, EmptyMaterialError, Derivati
 from ..kering import Versionage, Version
 from .coring import Ilks
 
-from .coring import Signer, Verifier, Digester, Nexter, Aider
+from .coring import Signer, Verfer, Digester, Nexter, Aider
 
 
 @dataclass(frozen=True)
@@ -227,8 +227,8 @@ class Kever:
         verifiers = verifiers if verifiers is not None else self.verifiers
 
         for sig in sigs:
-            verifier = verifiers[sig.index]
-            if not verifier.verify(sig.raw, serder.raw):
+            verfer = verifiers[sig.index]
+            if not verfer.verify(sig.raw, serder.raw):
                 return False
 
         if not isinstance(sith, int):

@@ -14,7 +14,7 @@ from keri.kering import ValidationError, EmptyMaterialError, DerivationError
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, Verifier, Signer, Digester, Nexter, Aider
+from keri.core.coring import CryMat, Verfer, Signer, Digester, Nexter, Aider
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
@@ -50,15 +50,15 @@ def test_kever():
     sith = 1  #  one signer
     skp0 = Signer()  #  original signing keypair transferable default
     assert skp0.code == CryOneDex.Ed25519_Seed
-    assert skp0.verifier.code == CryOneDex.Ed25519
-    keys = [skp0.verifier.qb64]
+    assert skp0.verfer.code == CryOneDex.Ed25519
+    keys = [skp0.verfer.qb64]
 
     # create next key
     nxtsith = 1 #  one signer
     skp1 = Signer()  #  next signing keypair transferable is default
     assert skp1.code == CryOneDex.Ed25519_Seed
-    assert skp1.verifier.code == CryOneDex.Ed25519
-    nxtkeys = [skp1.verifier.qb64]
+    assert skp1.verfer.code == CryOneDex.Ed25519
+    nxtkeys = [skp1.verfer.qb64]
     # compute next digest
     nexter = Nexter(sith=nxtsith, keys=nxtkeys)
     nxt = nexter.qb64  # transferable so next is not empty
@@ -95,7 +95,7 @@ def test_kever():
     tsig0 = skp0.sign(tser0.raw, index=0)
 
     # verify signature
-    assert skp0.verifier.verify(tsig0.raw, tser0.raw)
+    assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
     kever = Kever(serder=tser0, sigs=[tsig0])
 
@@ -119,10 +119,10 @@ def test_process_nontransferable():
     # Ephemeral (Nontransferable) case
     skp0 = Signer(transferable=False)  #  original signing keypair non transferable
     assert skp0.code == CryOneDex.Ed25519_Seed
-    assert skp0.verifier.code == CryOneDex.Ed25519N
+    assert skp0.verfer.code == CryOneDex.Ed25519N
 
     # Derive AID by merely assigning verifier public key
-    aid0 = Aider(qb64=skp0.verifier.qb64)
+    aid0 = Aider(qb64=skp0.verfer.qb64)
     assert aid0.code == CryOneDex.Ed25519N
 
     # Ephemeral may be used without inception event
@@ -156,7 +156,7 @@ def test_process_nontransferable():
     tsig0 = skp0.sign(tser0.raw, index=0)
 
     # verify signature
-    assert skp0.verifier.verify(tsig0.raw, tser0.raw)
+    assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
     # create packet
     msgb0 = bytearray(tser0.raw + tsig0.qb64b)
@@ -185,10 +185,10 @@ def test_process_nontransferable():
             for i in range(nrsigs): # verify each attached signature
                 rsig = SigMat(qb64=msgb0)
                 assert rsig.index == 0
-                verifier = Verifier(qb64=keys[rsig.index])
-                assert verifier.qb64 == aid0.qb64
-                assert verifier.qb64 == skp0.verifier.qb64
-                assert verifier.verify(rsig.raw, rser0.raw)
+                verfer = Verfer(qb64=keys[rsig.index])
+                assert verfer.qb64 == aid0.qb64
+                assert verfer.qb64 == skp0.verfer.qb64
+                assert verfer.verify(rsig.raw, rser0.raw)
                 del msgb0[:len(rsig.qb64)]
 
     # verify aid
@@ -206,15 +206,15 @@ def test_process_transferable():
     sith = 1  #  one signer
     skp0 = Signer()  #  original signing keypair transferable default
     assert skp0.code == CryOneDex.Ed25519_Seed
-    assert skp0.verifier.code == CryOneDex.Ed25519
-    keys = [skp0.verifier.qb64]
+    assert skp0.verfer.code == CryOneDex.Ed25519
+    keys = [skp0.verfer.qb64]
 
     # create next key
     nxtsith = 1 #  one signer
     skp1 = Signer()  #  next signing keypair transferable is default
     assert skp1.code == CryOneDex.Ed25519_Seed
-    assert skp1.verifier.code == CryOneDex.Ed25519
-    nxtkeys = [skp1.verifier.qb64]
+    assert skp1.verfer.code == CryOneDex.Ed25519
+    nxtkeys = [skp1.verfer.qb64]
     # compute next digest
     nexter = Nexter(sith=nxtsith, keys=nxtkeys)
     nxt = nexter.qb64  # transferable so next is not empty
@@ -251,7 +251,7 @@ def test_process_transferable():
     tsig0 = skp0.sign(tser0.raw, index=0)
 
     # verify signature
-    assert skp0.verifier.verify(tsig0.raw, tser0.raw)
+    assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
     # create packet
     msgb0 = bytearray(tser0.raw + tsig0.qb64b)
@@ -280,10 +280,10 @@ def test_process_transferable():
             for i in range(nrsigs): # verify each attached signature
                 rsig = SigMat(qb64=msgb0)
                 assert rsig.index == 0
-                verifier = Verifier(qb64=keys[rsig.index])
-                assert verifier.qb64 == aid0.qb64
-                assert verifier.qb64 == skp0.verifier.qb64
-                assert verifier.verify(rsig.raw, rser0.raw)
+                verfer = Verfer(qb64=keys[rsig.index])
+                assert verfer.qb64 == aid0.qb64
+                assert verfer.qb64 == skp0.verfer.qb64
+                assert verfer.verify(rsig.raw, rser0.raw)
                 del msgb0[:len(rsig.qb64)]
 
     # verify aid

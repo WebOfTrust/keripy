@@ -397,9 +397,9 @@ class CryMat:
         return decodeB64(self._infil().encode("utf-8"))
 
 
-class Verifier(CryMat):
+class Verfer(CryMat):
     """
-    Verifier is CryMat subclass with method to verify signature of serialization
+    Verfer is CryMat subclass with method to verify signature of serialization
     using the .raw as verifier key and .code for signature cipher suite.
 
     See CryMat for inherited attributes and properties:
@@ -417,7 +417,7 @@ class Verifier(CryMat):
         Assign verification cipher suite function to ._verify
 
         """
-        super(Verifier, self).__init__(**kwa)
+        super(Verfer, self).__init__(**kwa)
 
         if self.code in [CryOneDex.Ed25519N, CryOneDex.Ed25519]:
             self._verify = self._ed25519
@@ -460,9 +460,8 @@ class Signer(CryMat):
     """
     Signer is CryMat subclass with method to create signature of serialization
     using the .raw as signing (private) key seed, .code as cipher suite for
-    signing and new property .verifier whose property verifier.raw
-    is public key for signing.
-    If not provided .verifier is generated from private key seed using .code
+    signing and new property .verfer whose property .raw is public key for signing.
+    If not provided .verfer is generated from private key seed using .code
     as cipher suite for creating key-pair.
 
 
@@ -471,7 +470,7 @@ class Signer(CryMat):
     Attributes:
 
     Properties:
-        .verifier is Verifier object instance
+        .verfer is Verfer object instance
 
     Methods:
         sign: create signature
@@ -500,22 +499,22 @@ class Signer(CryMat):
         if self.code == CryOneDex.Ed25519_Seed:
             self._sign = self._ed25519
             verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
-            verifier = Verifier(raw=verkey,
+            verfer = Verfer(raw=verkey,
                                 code=CryOneDex.Ed25519 if transferable
                                                     else CryOneDex.Ed25519N )
         else:
             raise ValueError("Unsupported signer code = {}.".format(self.code))
 
-        self._verifier = verifier
+        self._verfer = verfer
 
     @property
-    def verifier(self):
+    def verfer(self):
         """
-        Property verifier:
-        Returns Verifier instance
-        Assumes ._verifier is correctly assigned
+        Property verfer:
+        Returns Verfer instance
+        Assumes ._verfer is correctly assigned
         """
-        return self._verifier
+        return self._verfer
 
     def sign(self, ser, index=None):
         """
@@ -531,7 +530,7 @@ class Signer(CryMat):
         """
         return (self._sign(ser=ser,
                            seed=self.raw,
-                           key=self.verifier.raw,
+                           key=self.verfer.raw,
                            index=index))
 
     @staticmethod
@@ -730,9 +729,9 @@ class Aider(CryMat):
         except EmptyMaterialError as ex:
             if not ked:
                 raise  ex
-            verifier = self._derive(ked)  # use ked to derive aid
-            super(Aider, self).__init__(raw=verifier.raw,
-                                        code=verifier.code,
+            verfer = self._derive(ked)  # use ked to derive aid
+            super(Aider, self).__init__(raw=verfer.raw,
+                                        code=verfer.code,
                                         **kwa)
 
         if self.code == CryOneDex.Ed25519N:
@@ -752,24 +751,24 @@ class Aider(CryMat):
             if len(keys) != 1:
                 raise DerivationError("Basic derivation needs 1 key got "
                                       "{}".format(len(keys)))
-            verifier = Verifier(qb64=keys[0])
+            verfer = Verfer(qb64=keys[0])
         except Exception as ex:
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verifier.code not in [CryOneDex.Ed25519N, CryOneDex.Ed25519]:
+        if verfer.code not in [CryOneDex.Ed25519N, CryOneDex.Ed25519]:
             raise DerivationError("Invalid derivation code = {}"
-                                  "".format(verifier.code))
+                                  "".format(verfer.code))
 
         try:
-            if verifier.code == CryOneDex.Ed25519N and ked["next"]:
+            if verfer.code == CryOneDex.Ed25519N and ked["next"]:
                 raise DerivationError("Non-empty next = {} for non-transferable"
                                       " code = {}".format(ked["next"],
-                                                          verifier.code))
+                                                          verfer.code))
         except Exception as ex:
             raise DerivationError("Error checking next = {}".format(ex))
 
-        return verifier
+        return verfer
 
     def verify(self, ked):
         """
@@ -1470,6 +1469,6 @@ class Serder:
         Returns list of Verifier instances as converted from .ked.keys
         verifiers property getter
         """
-        return [Verifier(qb64=key) for key in self.ked["keys"]]
+        return [Verfer(qb64=key) for key in self.ked["keys"]]
 
 
