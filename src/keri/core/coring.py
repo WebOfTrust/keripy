@@ -518,11 +518,11 @@ class Signer(CryMat):
 
     def sign(self, ser, index=None):
         """
-        Returns either CryMat or Sigter instance of signature
+        Returns either CryMat or Sigxer instance of signature
         on bytes serialization ser
 
         If index is None return CryMat instance
-        Otherwise return Sigter instance
+        Otherwise return Sigxer instance
 
         Parameters:
             ser is bytes serialization
@@ -550,7 +550,7 @@ class Signer(CryMat):
         if index is None:
             return CryMat(raw=sig, code=CryTwoDex.Ed25519)
         else:
-            return Sigter(raw=sig, code=SigTwoDex.Ed25519,
+            return Sigxer(raw=sig, code=SigTwoDex.Ed25519,
                           index=index,
                           verfer=verfer)
 
@@ -1207,10 +1207,10 @@ class SigMat:
         return decodeB64(self._infil().encode("utf-8"))
 
 
-class Sigter(SigMat):
+class Sigxer(SigMat):
     """
-    Sigter is SigMat subclass with .verfer property of instance of Verfer that
-    provide associated signature verifier .
+    Sigxer is SigMat, indexed signature material, subclass with .verfer property
+    of instance of Verfer that provides associated signature verifier.
 
 
     See SigMat for inherited attributes and properties:
@@ -1232,7 +1232,7 @@ class Sigter(SigMat):
             verfer if Verfer instance if any
 
         """
-        super(Sigter, self).__init__(**kwa)
+        super(Sigxer, self).__init__(**kwa)
 
         self._verfer = verfer
 

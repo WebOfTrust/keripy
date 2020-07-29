@@ -26,7 +26,7 @@ from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
 from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat, Sigter
+from keri.core.coring import SigMat, Sigxer
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
@@ -334,29 +334,29 @@ def test_sigmat():
     """ Done Test """
 
 
-def test_sigter():
+def test_sigxer():
     """
-    Test Sigter subclass of Sigter
+    Test Sigxer subclass of Sigmat
     """
     with pytest.raises(EmptyMaterialError):
-        sigter = Sigter()
+        sigxer = Sigxer()
 
     qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    sigter = Sigter(qb64=qsig64)
-    assert sigter.code == SigTwoDex.Ed25519
-    assert sigter.index == 0
-    assert sigter.qb64 == qsig64
-    assert sigter.verfer == None
+    sigxer = Sigxer(qb64=qsig64)
+    assert sigxer.code == SigTwoDex.Ed25519
+    assert sigxer.index == 0
+    assert sigxer.qb64 == qsig64
+    assert sigxer.verfer == None
 
     verkey,  sigkey = pysodium.crypto_sign_keypair()
     verfer = Verfer(raw=verkey)
 
-    sigter.verfer = verfer
-    assert  sigter.verfer == verfer
+    sigxer.verfer = verfer
+    assert  sigxer.verfer == verfer
 
-    sigter = Sigter(qb64=qsig64, verfer=verfer)
-    assert  sigter.verfer == verfer
+    sigxer = Sigxer(qb64=qsig64, verfer=verfer)
+    assert  sigxer.verfer == verfer
     """ Done Test """
 
 

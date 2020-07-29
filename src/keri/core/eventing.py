@@ -40,7 +40,7 @@ class TraitCodex:
 
 TraitDex = TraitCodex()  # Make instance
 
-Kevage = namedtuple("Kevage", 'serder sigters')  # Key Event tuple for KELS and DELs
+Kevage = namedtuple("Kevage", 'serder sigxers')  # Key Event tuple for KELS and DELs
 
 Kevers = dict()  # dict of existing Kevers indexed by aid.qb64 of each Kever
 
@@ -121,7 +121,7 @@ class Kever:
 
     Attributes:
         .serder is Serder instance of current packet
-        .sigters is list of Sigter instances of signatures
+        .sigxers is list of Sigxer instances of indexed signatures
         .verfers is list of Verfer instances for current set of signing keys
         .version is version of current event
         .aider is aider instance
@@ -140,20 +140,20 @@ class Kever:
     """
     EstOnly = False
 
-    def __init__(self, serder, sigters, estOnly=None):
+    def __init__(self, serder, sigxers, estOnly=None):
         """
         Create incepting kever and state from inception serder
-        Verify incepting serder against sigters raises ValidationError if not
+        Verify incepting serder against sigxers raises ValidationError if not
 
         Parameters:
             serder is Serder instance of inception event
-            sigters is list of SigMat instances of signatures of event
+            sigxers is list of SigMat instances of signatures of event
             establishOnly is boolean trait to indicate establish only event
 
         """
         self.serder = serder
         self.verfers = serder.verfers  # converts keys to verifiers
-        self.sigters = sigters
+        self.sigxers = sigxers
         ked = self.serder.ked
         sith = ked["sith"]
         if isinstance(sith, str):
@@ -164,7 +164,7 @@ class Kever:
 
         if not self.verify():
             raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigters, serder))
+                                  "".format(sigxers, serder))
 
         self.version = self.serder.version  # version switch?
 
@@ -198,47 +198,47 @@ class Kever:
         aid = self.aider.qb64
         if aid not in KELs:
             KELs[aid] = dict()
-        KELs[aid][self.diger.qb64] = Kevage(serder=serder, sigters=sigters)
+        KELs[aid][self.diger.qb64] = Kevage(serder=serder, sigxers=sigxers)
         if aid not in Kevers:
             Kevers[aid] = dict()
         Kevers[aid][self.diger] = self
 
 
 
-    def verify(self, sigters=None, serder=None, sith=None, verfers=None):
+    def verify(self, sigxers=None, serder=None, sith=None, verfers=None):
         """
         Verify sigterss against serder using sith and verfers
-        Assumes that sigters already extracted correctly wrt indexes
+        Assumes that sigxers already extracted correctly wrt indexes
         If any of serder, sith, verfers not provided then replace missing
            value with respective attribute .serder, .sith .verfers instead
 
         Parameters:
-            sigters is list of Sigter instances
+            sigxers is list of Sigxer instances
             serder is Serder instance
             sith is int threshold
             verfers is list of Verfer instances
 
         """
-        sigters = sigters if sigters is not None else self.sigters
+        sigxers = sigxers if sigxers is not None else self.sigxers
         serder = serder if serder is not None else self.serder
         sith = sith if sith is not None else self.sith
         verfers = verfers if verfers is not None else self.verfers
 
-        for sigter in sigters:
-            verfer = verfers[sigter.index]
-            if not verfer.verify(sigter.raw, serder.raw):
+        for sigxer in sigxers:
+            verfer = verfers[sigxer.index]
+            if not verfer.verify(sigxer.raw, serder.raw):
                 return False
 
         if not isinstance(sith, int):
             raise ValueError("Unsupported type for sith ={}".format(sith))
-        if len(sigters) < sith:  # not meet threshold fix for list sith
+        if len(sigxers) < sith:  # not meet threshold fix for list sith
             return False
 
         return True
 
 
 
-    def update(self, serder,  sigters):
+    def update(self, serder,  sigxers):
         """
 
         """
@@ -271,11 +271,11 @@ class Kever:
 
             # prior next valid so verify sigterss using new verifier keys from event
             if not self.verify(serder.serder,
-                               sigters=sigters,
+                               sigxers=sigxers,
                                sith=sith,
                                verfers=serder.verfers):
                 raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigters, serder))
+                                  "".format(sigxers, serder))
 
             # next and signatures verify so update state
             self.sn = sn
@@ -291,21 +291,21 @@ class Kever:
             self.conf = ked["conf"]
 
 
-            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigters=sigters)
+            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigxers=sigxers)
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
             if self.estOnly:
                 raise ValidationError("Unexpected non-establishment event = {}."
                                   "".format(serder))
-            if not self.verify(serder=serder, sigters=sigters):
+            if not self.verify(serder=serder, sigxers=sigxers):
                 raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigters, serder))
+                                  "".format(sigxers, serder))
 
             # update state
             self.sn = sn
             self.diger = serder.diger
-            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigters=sigters)
+            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigxers=sigxers)
 
 
         else:  # unsupported event ilk so discard
@@ -346,14 +346,14 @@ class Kevery:
 
         while kes:
             try:
-                serder, sigters = self.extractOne(kes)
+                serder, sigxers = self.extractOne(kes)
             except Exception as  ex:
                 # log diagnostics errors etc
                 del kes[:]  # error extracting means bad key event stream
                 continue
 
             try:
-                self.processOne(serder, sigters)
+                self.processOne(serder, sigxers)
             except Exception as  ex:
                 # log diagnostics errors etc
                 pass
@@ -361,7 +361,7 @@ class Kevery:
     def extractOne(self, kes):
         """
         Extract one event with attached signatures from key event stream kes
-        Returns: (serder, sigters)
+        Returns: (serder, sigxers)
 
         Parameters:
             kes is bytearray of serialized key event stream.
@@ -388,7 +388,7 @@ class Kevery:
 
         ked = serder.ked
         keys = ked["keys"]
-        sigters = []  # list of Sigter instances for attached signatures
+        sigxers = []  # list of Sigxer instances for attached signatures
         if "idxs" in ked and ked["idxs"]: # extract signatures given indexes
             indexes = ked["idxs"]
             if isinstance(indexes, str):
@@ -400,7 +400,7 @@ class Kevery:
                 for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
                     sig = SigMat(qb64=kes)  #  qb64
-                    sigters.append(sig)
+                    sigxers.append(sig)
                     del kes[:len(sig.qb64)]  # strip off signature
 
                     if sig.index >= len(keys):
@@ -415,7 +415,7 @@ class Kevery:
                 for index in indexes:
                     # check here for type of attached signatures qb64 or qb2
                     sig = SigMat(qb64=kes)  #  qb64
-                    sigters.append(sig)
+                    sigxers.append(sig)
                     del kes[:len(sig.qb64)]  # strip off signature
 
                     if sig.index >= len(keys):
@@ -436,18 +436,18 @@ class Kevery:
             #  check flag if should parse rest of stream for attached sigs
             #  or should parse for index block
 
-        if not sigters:
+        if not sigxers:
             raise ValidationError("Missing attached signature(s).")
 
-        return (serder, sigters)
+        return (serder, sigxers)
 
-    def processOne(self, serder, sigters):
+    def processOne(self, serder, sigxers):
         """
         Process one event with attached signatures
 
         Parameters:
             serder is Serder instance of event
-            sigters is list of Sigter instances of attached signatures
+            sigxers is list of Sigxer instances of attached signatures
 
         """
         # Verify serder.ked fields based on ked ilk and version.
@@ -475,14 +475,14 @@ class Kevery:
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures
                 # raises exception if problem adds to KEL Kevers
-                kever = Kever(serder=serder, sigters=sigters)  # create kever from serder
+                kever = Kever(serder=serder, sigxers=sigxers)  # create kever from serder
 
             else:  # not inception so can't verify add to escrow
                 # log escrowed
                 if aid not in Escrows:  #  add to Escrows
                     Escrows[aid] = dict()
                 if dig not in Escrows[aid]:
-                    Escrows[aid][dig] = Kevage(serder=serder, sigters=sigters)
+                    Escrows[aid][dig] = Kevage(serder=serder, sigxers=sigxers)
 
 
         else:  # already accepted inception event for aid
@@ -493,13 +493,13 @@ class Kevery:
             if ilk == Ilks.icp:  # inception event so maybe duplicitous
                 # kever init verifies basic inception stuff and signatures
                 # raises exception if problem
-                kever = Kever(serder=serder, sigters=sigters)  # create kever from serder
+                kever = Kever(serder=serder, sigxers=sigxers)  # create kever from serder
 
                 #  verified duplicitous event log it and add to DELS if first time
                 if aid not in DELs:  #  add to DELS
                     DELs[aid] = dict()
                 if dig not in DELS[aid]:
-                    DELS[aid][dig] = Kevage(serder=serder, sigters=sigters)
+                    DELS[aid][dig] = Kevage(serder=serder, sigxers=sigxers)
 
             else:
                 kever = Kevers[aid]  # get existing kever for aid
@@ -513,7 +513,7 @@ class Kevery:
                     if aid not in Escrows:  #  add to Escrows
                         Escrows[aid] = dict()
                     if dig not in Escrows[aid]:
-                        Escrows[aid][dig] = Kevage(serder=serder, sigters=sigters)
+                        Escrows[aid][dig] = Kevage(serder=serder, sigxers=sigxers)
 
                 else:  # sn == kever.sn + 1
                     if dig != kever.diger:  # prior event dig not match
@@ -523,5 +523,5 @@ class Kevery:
 
                     # verify signatures etc and update state if valid
                     # raise exception if problem. adds to KELs
-                    kever.update(serder=serder, sigters=sigters)
+                    kever.update(serder=serder, sigxers=sigxers)
 

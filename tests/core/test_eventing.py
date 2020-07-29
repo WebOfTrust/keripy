@@ -97,7 +97,7 @@ def test_kever():
     # verify signature
     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
-    kever = Kever(serder=tser0, sigters=[tsig0])
+    kever = Kever(serder=tser0, sigxers=[tsig0])
 
 
     """ Done Test """
