@@ -154,7 +154,7 @@ class Kever:
 
         """
         self.serder = serder
-        self.verifiers = serder.verifiers  # converts keys to verifiers
+        self.verfers = serder.verfers  # converts keys to verifiers
         self.sigs = sigs
         ked = self.serder.ked
         sith = ked["sith"]
@@ -207,7 +207,7 @@ class Kever:
 
 
 
-    def verify(self, sigs=None, serder=None, sith=None, verifiers=None):
+    def verify(self, sigs=None, serder=None, sith=None, verfers=None):
         """
         Verify sigs against serder using sith and verifiers
         Assumes that sigs already extracted correctly wrt indexes
@@ -224,10 +224,10 @@ class Kever:
         sigs = sigs if sigs is not None else self.sigs
         serder = serder if serder is not None else self.serder
         sith = sith if sith is not None else self.sith
-        verifiers = verifiers if verifiers is not None else self.verifiers
+        verfers = verfers if verfers is not None else self.verfers
 
         for sig in sigs:
-            verfer = verifiers[sig.index]
+            verfer = verfers[sig.index]
             if not verfer.verify(sig.raw, serder.raw):
                 return False
 
@@ -275,7 +275,7 @@ class Kever:
             if not self.verify(serder.serder,
                                sigs=sigs,
                                sith=sith,
-                               verifiers=serder.verifiers):
+                               verfers=serder.verfers):
                 raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigs, serder))
 
@@ -283,7 +283,7 @@ class Kever:
             self.sn = sn
             self.dig = dig
             self.sith = sith
-            self.verifiers = serder.verifiers
+            self.verfers = serder.verfers
             # verify nxt prior
             nexter = Nexter(qb64=ked["next"]) if nxt else None  # check for empty
             # update non transferable if None

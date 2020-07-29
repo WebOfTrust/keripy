@@ -1464,7 +1464,7 @@ class Serder:
         return self.digmat.qb64
 
     @property
-    def verifiers(self):
+    def verfers(self):
         """
         Returns list of Verifier instances as converted from .ked.keys
         verifiers property getter
