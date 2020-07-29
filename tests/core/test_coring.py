@@ -234,6 +234,305 @@ def test_crymat():
     """ Done Test """
 
 
+def test_verfer():
+    """
+    Test the support functionality for verifier subclass of crymat
+    """
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
+
+    with pytest.raises(EmptyMaterialError):
+        verfer = Verfer()
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    assert verfer.raw == verkey
+    assert verfer.code == CryOneDex.Ed25519N
+
+    #create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
+    assert verfer.raw == verkey
+    assert verfer.code == CryOneDex.Ed25519
+
+    #create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
+
+    result = verfer.verify(sig, ser)
+    assert result == True
+
+    with pytest.raises(ValueError):
+        verfer = Verfer(raw=verkey, code=CryOneDex.Blake3_256)
+    """ Done Test """
+
+def test_siger():
+    """
+    Test Siger subclass of CryMat
+    """
+    with pytest.raises(EmptyMaterialError):
+        siger = Siger()
+
+    qsig64 = '0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    siger = Siger(qb64=qsig64)
+    assert siger.code == CryTwoDex.Ed25519
+    assert siger.qb64 == qsig64
+    assert siger.verfer == None
+
+    verkey,  sigkey = pysodium.crypto_sign_keypair()
+    verfer = Verfer(raw=verkey)
+
+    siger.verfer = verfer
+    assert  siger.verfer == verfer
+
+    siger = Siger(qb64=qsig64, verfer=verfer)
+    assert  siger.verfer == verfer
+    """ Done Test """
+
+
+def test_signer():
+    """
+    Test the support functionality for signer subclass of crymat
+    """
+    signer = Signer()  # defaults provide Ed25519 signer Ed25519 verfer
+    assert signer.code == CryOneDex.Ed25519_Seed
+    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert signer.verfer.code == CryOneDex.Ed25519
+    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
+
+    #create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    crymat = signer.sign(ser)
+    assert crymat.code == CryTwoDex.Ed25519
+    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    result = signer.verfer.verify(crymat.raw, ser)
+    assert result == True
+
+    sigmat = signer.sign(ser, index=0)
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.index == 0
+    result = signer.verfer.verify(sigmat.raw, ser)
+    assert result == True
+    result = signer.verfer.verify(sigmat.raw, ser + b'ABCDEFG')
+    assert result == False
+
+    assert crymat.raw == sigmat.raw
+
+    signer = Signer(transferable=False)  # Ed25519N verifier
+    assert signer.code == CryOneDex.Ed25519_Seed
+    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert signer.verfer.code == CryOneDex.Ed25519N
+    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
+
+    #create something to sign and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
+    crymat = signer.sign(ser)
+    assert crymat.code == CryTwoDex.Ed25519
+    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    result = signer.verfer.verify(crymat.raw, ser)
+    assert result == True
+
+    sigmat = signer.sign(ser, index=0)
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.index == 0
+    result = signer.verfer.verify(sigmat.raw, ser)
+    assert result == True
+    result = signer.verfer.verify(sigmat.raw, ser + b'ABCDEFG')
+    assert result == False
+
+
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    signer = Signer(raw=seed, code=CryOneDex.Ed25519_Seed)
+    assert signer.code == CryOneDex.Ed25519_Seed
+    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert signer.raw == seed
+    assert signer.verfer.code == CryOneDex.Ed25519
+    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
+
+    crymat = signer.sign(ser)
+    assert crymat.code == CryTwoDex.Ed25519
+    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    result = signer.verfer.verify(crymat.raw, ser)
+    assert result == True
+
+    sigmat = signer.sign(ser, index=1)
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.index == 1
+    result = signer.verfer.verify(sigmat.raw, ser)
+    assert result == True
+
+    assert crymat.raw == sigmat.raw
+
+    with pytest.raises(ValueError):
+        signer = Signer(raw=seed, code=CryOneDex.Ed25519N)
+
+    with pytest.raises(ValueError):
+        signer = Signer(code=CryOneDex.Ed25519N)
+    """ Done Test """
+
+def test_diger():
+    """
+    Test the support functionality for Diger subclass of CryMat
+    """
+    with pytest.raises(EmptyMaterialError):
+        diger = Diger()
+
+    #create something to digest and verify
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+    dig = blake3.blake3(ser).digest()
+
+    diger = Diger(raw=dig)  # defaults provide Blake3_256 digester
+    assert diger.code == CryOneDex.Blake3_256
+    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    result = diger.verify(ser=ser)
+    assert result == True
+    result = diger.verify(ser=ser+b'ABCDEF')
+    assert result == False
+
+    diger = Diger(raw=dig, code=CryOneDex.Blake3_256)
+    assert diger.code == CryOneDex.Blake3_256
+    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    result = diger.verify(ser=ser)
+    assert result == True
+
+    with pytest.raises(ValueError):
+        diger = Diger(raw=dig, code=CryOneDex.Ed25519)
+
+    diger = Diger(ser=ser)
+    assert diger.code == CryOneDex.Blake3_256
+    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    result = diger.verify(ser=ser)
+    assert result == True
+
+    with pytest.raises(ValueError):
+        diger = Diger(ser=ser, code=CryOneDex.Ed25519)
+    """ Done Test """
+
+def test_nexter():
+    """
+    Test the support functionality for Nexter subclass of Diger
+    """
+    with pytest.raises(EmptyMaterialError):
+        nexter = Nexter()
+
+    #create something to digest and verify
+    verkey, sigkey = pysodium.crypto_sign_keypair()
+    verkey = (b'\xacr\xda\xc83~\x99r\xaf\xeb`\xc0\x8cR\xd7\xd7\xf69\xc8E\x1e\xd2\xf0='
+              b'`\xf7\xbf\x8a\x18\x8a`q')
+    verfer = Verfer(raw=verkey)
+    assert verfer.qb64 == 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
+    sith = "{:x}".format(1)
+    keys = [verfer.qb64]
+    ser = (sith + verfer.qb64).encode("utf-8")
+
+    nexter = Nexter(ser=ser)  # defaults provide Blake3_256 digester
+    assert nexter.code == CryOneDex.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.verify(ser=ser)
+    assert nexter.verify(ser=ser+b'ABCDEF') == False
+
+    with pytest.raises(ValueError):  # bad code
+        nexter = Nexter(ser=ser, code=CryOneDex.Ed25519)
+
+    nexter = Nexter(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
+    assert nexter.code == CryOneDex.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter._derive(sith=sith, keys=keys) == ser
+    assert nexter.verify(ser=ser)
+    assert nexter.verify(ser=ser+b'ABCDEF') == False
+    assert nexter.verify(sith=sith, keys=keys)
+
+    with pytest.raises(EmptyMaterialError):
+        nexter = Nexter(sith=sith)
+
+    with pytest.raises(EmptyMaterialError):
+        nexter = Nexter(keys=keys)
+
+    nexter = Nexter(sith=1, keys=keys)  # defaults provide Blake3_256 digester
+    assert nexter.code == CryOneDex.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter._derive(sith=sith, keys=keys) == ser
+    assert nexter.verify(ser=ser)
+    assert nexter.verify(ser=ser+b'ABCDEF') == False
+    assert nexter.verify(sith=1, keys=keys)
+
+    ked = dict(sith=sith, keys=keys)  #  subsequent event
+    nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
+    assert nexter.code == CryOneDex.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter._derive(ked=ked) == ser
+    assert nexter.verify(ser=ser)
+    assert nexter.verify(ser=ser+b'ABCDEF') == False
+    assert nexter.verify(ked=ked)
+    """ Done Test """
+
+
+def test_aider():
+    """
+    Test the support functionality for aider subclass of crymat
+    """
+    with pytest.raises(EmptyMaterialError):
+        aider = Aider()
+
+    verkey,  sigkey = pysodium.crypto_sign_keypair()
+
+    with pytest.raises(ValueError):
+        aider = Aider(raw=verkey, code=CryOneDex.Blake3_256)
+
+    aider = Aider(raw=verkey)  # defaults provide Ed25519N aider
+    assert aider.code == CryOneDex.Ed25519N
+    assert len(aider.raw) == CryOneRawSizes[aider.code]
+    assert len(aider.qb64) == CryOneSizes[aider.code]
+
+    ked = dict(keys=[aider.qb64], next="")
+    assert aider.verify(ked=ked) == True
+
+    ked = dict(keys=[aider.qb64], next="ABC")
+    assert aider.verify(ked=ked) == False
+
+    aider = Aider(raw=verkey, code=CryOneDex.Ed25519)  # defaults provide Ed25519N aider
+    assert aider.code == CryOneDex.Ed25519
+    assert len(aider.raw) == CryOneRawSizes[aider.code]
+    assert len(aider.qb64) == CryOneSizes[aider.code]
+
+    ked = dict(keys=[aider.qb64])
+    assert aider.verify(ked=ked) == True
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
+    aider = Aider(raw=verfer.raw)
+    assert aider.code == CryOneDex.Ed25519N
+    assert aider.verify(ked=ked) == False
+
+    # derive from ked
+    ked = dict(keys=[verfer.qb64], next="")
+    aider = Aider(ked=ked)
+    assert aider.qb64 == verfer.qb64
+    assert aider.verify(ked=ked) == True
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    ked = dict(keys=[verfer.qb64], next="")
+    aider = Aider(ked=ked)
+    assert aider.qb64 == verfer.qb64
+    assert aider.verify(ked=ked) == True
+
+    ked = dict(keys=[verfer.qb64], next="ABCD")
+    with pytest.raises(DerivationError):
+        aider = Aider(ked=ked)
+    """ Done Test """
+
+
 def test_sigmat():
     """
     Test the support functionality for attached signature cryptographic material
@@ -679,324 +978,8 @@ def test_serder():
     assert knd == Serials.json
     """Done Test """
 
-def test_ilks():
-    """
-    Test Ilkage namedtuple instance Ilks
-    """
-    assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt')
 
-    assert isinstance(Ilks, Ilkage)
 
-    assert Ilks.icp == 'icp'
-    assert Ilks.rot == 'rot'
-    assert Ilks.ixn == 'ixn'
-    assert Ilks.dip == 'dip'
-    assert Ilks.drt == 'drt'
-
-    assert 'icp' in Ilks
-    assert 'rot' in Ilks
-    assert 'ixn' in Ilks
-    assert 'dip' in Ilks
-    assert 'drt' in Ilks
-
-
-def test_verfer():
-    """
-    Test the support functionality for verifier subclass of crymat
-    """
-    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    verkey, sigkey = pysodium.crypto_sign_seed_keypair(seed)
-
-    with pytest.raises(EmptyMaterialError):
-        verfer = Verfer()
-
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
-    assert verfer.raw == verkey
-    assert verfer.code == CryOneDex.Ed25519N
-
-    #create something to sign and verify
-    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-
-    sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
-
-    result = verfer.verify(sig, ser)
-    assert result == True
-
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
-    assert verfer.raw == verkey
-    assert verfer.code == CryOneDex.Ed25519
-
-    #create something to sign and verify
-    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-
-    sig = pysodium.crypto_sign_detached(ser, seed + verkey)  # sigkey = seed + verkey
-
-    result = verfer.verify(sig, ser)
-    assert result == True
-
-    with pytest.raises(ValueError):
-        verfer = Verfer(raw=verkey, code=CryOneDex.Blake3_256)
-    """ Done Test """
-
-def test_siger():
-    """
-    Test Siger subclass of CryMat
-    """
-    with pytest.raises(EmptyMaterialError):
-        siger = Siger()
-
-    qsig64 = '0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-
-    siger = Siger(qb64=qsig64)
-    assert siger.code == CryTwoDex.Ed25519
-    assert siger.qb64 == qsig64
-    assert siger.verfer == None
-
-    verkey,  sigkey = pysodium.crypto_sign_keypair()
-    verfer = Verfer(raw=verkey)
-
-    siger.verfer = verfer
-    assert  siger.verfer == verfer
-
-    siger = Siger(qb64=qsig64, verfer=verfer)
-    assert  siger.verfer == verfer
-    """ Done Test """
-
-
-def test_signer():
-    """
-    Test the support functionality for signer subclass of crymat
-    """
-    signer = Signer()  # defaults provide Ed25519 signer Ed25519 verfer
-    assert signer.code == CryOneDex.Ed25519_Seed
-    assert len(signer.raw) == CryOneRawSizes[signer.code]
-    assert signer.verfer.code == CryOneDex.Ed25519
-    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
-
-    #create something to sign and verify
-    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-
-    crymat = signer.sign(ser)
-    assert crymat.code == CryTwoDex.Ed25519
-    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
-    result = signer.verfer.verify(crymat.raw, ser)
-    assert result == True
-
-    sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
-    assert sigmat.index == 0
-    result = signer.verfer.verify(sigmat.raw, ser)
-    assert result == True
-    result = signer.verfer.verify(sigmat.raw, ser + b'ABCDEFG')
-    assert result == False
-
-    assert crymat.raw == sigmat.raw
-
-    signer = Signer(transferable=False)  # Ed25519N verifier
-    assert signer.code == CryOneDex.Ed25519_Seed
-    assert len(signer.raw) == CryOneRawSizes[signer.code]
-    assert signer.verfer.code == CryOneDex.Ed25519N
-    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
-
-    #create something to sign and verify
-    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-
-    crymat = signer.sign(ser)
-    assert crymat.code == CryTwoDex.Ed25519
-    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
-    result = signer.verfer.verify(crymat.raw, ser)
-    assert result == True
-
-    sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
-    assert sigmat.index == 0
-    result = signer.verfer.verify(sigmat.raw, ser)
-    assert result == True
-    result = signer.verfer.verify(sigmat.raw, ser + b'ABCDEFG')
-    assert result == False
-
-
-    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    signer = Signer(raw=seed, code=CryOneDex.Ed25519_Seed)
-    assert signer.code == CryOneDex.Ed25519_Seed
-    assert len(signer.raw) == CryOneRawSizes[signer.code]
-    assert signer.raw == seed
-    assert signer.verfer.code == CryOneDex.Ed25519
-    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
-
-    crymat = signer.sign(ser)
-    assert crymat.code == CryTwoDex.Ed25519
-    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
-    result = signer.verfer.verify(crymat.raw, ser)
-    assert result == True
-
-    sigmat = signer.sign(ser, index=1)
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
-    assert sigmat.index == 1
-    result = signer.verfer.verify(sigmat.raw, ser)
-    assert result == True
-
-    assert crymat.raw == sigmat.raw
-
-    with pytest.raises(ValueError):
-        signer = Signer(raw=seed, code=CryOneDex.Ed25519N)
-
-    with pytest.raises(ValueError):
-        signer = Signer(code=CryOneDex.Ed25519N)
-    """ Done Test """
-
-def test_digester():
-    """
-    Test the support functionality for Diger subclass of CryMat
-    """
-    with pytest.raises(EmptyMaterialError):
-        digester = Diger()
-
-    #create something to digest and verify
-    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
-    dig = blake3.blake3(ser).digest()
-
-    digester = Diger(raw=dig)  # defaults provide Blake3_256 digester
-    assert digester.code == CryOneDex.Blake3_256
-    assert len(digester.raw) == CryOneRawSizes[digester.code]
-    result = digester.verify(ser=ser)
-    assert result == True
-    result = digester.verify(ser=ser+b'ABCDEF')
-    assert result == False
-
-    digester = Diger(raw=dig, code=CryOneDex.Blake3_256)
-    assert digester.code == CryOneDex.Blake3_256
-    assert len(digester.raw) == CryOneRawSizes[digester.code]
-    result = digester.verify(ser=ser)
-    assert result == True
-
-    with pytest.raises(ValueError):
-        digester = Diger(raw=dig, code=CryOneDex.Ed25519)
-
-    digester = Diger(ser=ser)
-    assert digester.code == CryOneDex.Blake3_256
-    assert len(digester.raw) == CryOneRawSizes[digester.code]
-    result = digester.verify(ser=ser)
-    assert result == True
-
-    with pytest.raises(ValueError):
-        digester = Diger(ser=ser, code=CryOneDex.Ed25519)
-    """ Done Test """
-
-def test_nexter():
-    """
-    Test the support functionality for Nexter subclass of Diger
-    """
-    with pytest.raises(EmptyMaterialError):
-        nexter = Nexter()
-
-    #create something to digest and verify
-    verkey, sigkey = pysodium.crypto_sign_keypair()
-    verkey = (b'\xacr\xda\xc83~\x99r\xaf\xeb`\xc0\x8cR\xd7\xd7\xf69\xc8E\x1e\xd2\xf0='
-              b'`\xf7\xbf\x8a\x18\x8a`q')
-    verfer = Verfer(raw=verkey)
-    assert verfer.qb64 == 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
-    sith = "{:x}".format(1)
-    keys = [verfer.qb64]
-    ser = (sith + verfer.qb64).encode("utf-8")
-
-    nexter = Nexter(ser=ser)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.verify(ser=ser)
-    assert nexter.verify(ser=ser+b'ABCDEF') == False
-
-    with pytest.raises(ValueError):  # bad code
-        nexter = Nexter(ser=ser, code=CryOneDex.Ed25519)
-
-    nexter = Nexter(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter._derive(sith=sith, keys=keys) == ser
-    assert nexter.verify(ser=ser)
-    assert nexter.verify(ser=ser+b'ABCDEF') == False
-    assert nexter.verify(sith=sith, keys=keys)
-
-    with pytest.raises(EmptyMaterialError):
-        nexter = Nexter(sith=sith)
-
-    with pytest.raises(EmptyMaterialError):
-        nexter = Nexter(keys=keys)
-
-    nexter = Nexter(sith=1, keys=keys)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter._derive(sith=sith, keys=keys) == ser
-    assert nexter.verify(ser=ser)
-    assert nexter.verify(ser=ser+b'ABCDEF') == False
-    assert nexter.verify(sith=1, keys=keys)
-
-    ked = dict(sith=sith, keys=keys)  #  subsequent event
-    nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter._derive(ked=ked) == ser
-    assert nexter.verify(ser=ser)
-    assert nexter.verify(ser=ser+b'ABCDEF') == False
-    assert nexter.verify(ked=ked)
-    """ Done Test """
-
-
-def test_aider():
-    """
-    Test the support functionality for aider subclass of crymat
-    """
-    with pytest.raises(EmptyMaterialError):
-        aider = Aider()
-
-    verkey,  sigkey = pysodium.crypto_sign_keypair()
-
-    with pytest.raises(ValueError):
-        aider = Aider(raw=verkey, code=CryOneDex.Blake3_256)
-
-    aider = Aider(raw=verkey)  # defaults provide Ed25519N aider
-    assert aider.code == CryOneDex.Ed25519N
-    assert len(aider.raw) == CryOneRawSizes[aider.code]
-    assert len(aider.qb64) == CryOneSizes[aider.code]
-
-    ked = dict(keys=[aider.qb64], next="")
-    assert aider.verify(ked=ked) == True
-
-    ked = dict(keys=[aider.qb64], next="ABC")
-    assert aider.verify(ked=ked) == False
-
-    aider = Aider(raw=verkey, code=CryOneDex.Ed25519)  # defaults provide Ed25519N aider
-    assert aider.code == CryOneDex.Ed25519
-    assert len(aider.raw) == CryOneRawSizes[aider.code]
-    assert len(aider.qb64) == CryOneSizes[aider.code]
-
-    ked = dict(keys=[aider.qb64])
-    assert aider.verify(ked=ked) == True
-
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
-    aider = Aider(raw=verfer.raw)
-    assert aider.code == CryOneDex.Ed25519N
-    assert aider.verify(ked=ked) == False
-
-    # derive from ked
-    ked = dict(keys=[verfer.qb64], next="")
-    aider = Aider(ked=ked)
-    assert aider.qb64 == verfer.qb64
-    assert aider.verify(ked=ked) == True
-
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
-    ked = dict(keys=[verfer.qb64], next="")
-    aider = Aider(ked=ked)
-    assert aider.qb64 == verfer.qb64
-    assert aider.verify(ked=ked) == True
-
-    ked = dict(keys=[verfer.qb64], next="ABCD")
-    with pytest.raises(DerivationError):
-        aider = Aider(ked=ked)
-    """ Done Test """
 
 
 if __name__ == "__main__":

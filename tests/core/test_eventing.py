@@ -28,6 +28,28 @@ from keri.core.coring import Ilkage, Ilks
 
 from keri.core.eventing import Kever, Kevery, Keger
 
+
+def test_ilks():
+    """
+    Test Ilkage namedtuple instance Ilks
+    """
+    assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt')
+
+    assert isinstance(Ilks, Ilkage)
+
+    assert Ilks.icp == 'icp'
+    assert Ilks.rot == 'rot'
+    assert Ilks.ixn == 'ixn'
+    assert Ilks.dip == 'dip'
+    assert Ilks.drt == 'drt'
+
+    assert 'icp' in Ilks
+    assert 'rot' in Ilks
+    assert 'ixn' in Ilks
+    assert 'dip' in Ilks
+    assert 'drt' in Ilks
+
+
 def test_kevery():
     """
     Test the support functionality for Kevery factory class
