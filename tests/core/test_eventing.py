@@ -14,7 +14,7 @@ from keri.kering import ValidationError, EmptyMaterialError, DerivationError
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, Verfer, Signer, Digester, Nexter, Aider
+from keri.core.coring import CryMat, Verfer, Signer, Diger, Nexter, Aider
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes

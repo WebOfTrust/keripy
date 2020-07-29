@@ -20,7 +20,7 @@ from keri.kering import ValidationError, EmptyMaterialError, DerivationError
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, Verfer, Signer, Digester, Nexter, Aider
+from keri.core.coring import CryMat, Verfer, Signer, Diger, Nexter, Aider
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
@@ -824,16 +824,16 @@ def test_signer():
 
 def test_digester():
     """
-    Test the support functionality for Digester subclass of CryMat
+    Test the support functionality for Diger subclass of CryMat
     """
     with pytest.raises(EmptyMaterialError):
-        digester = Digester()
+        digester = Diger()
 
     #create something to digest and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
     dig = blake3.blake3(ser).digest()
 
-    digester = Digester(raw=dig)  # defaults provide Blake3_256 digester
+    digester = Diger(raw=dig)  # defaults provide Blake3_256 digester
     assert digester.code == CryOneDex.Blake3_256
     assert len(digester.raw) == CryOneRawSizes[digester.code]
     result = digester.verify(ser=ser)
@@ -841,28 +841,28 @@ def test_digester():
     result = digester.verify(ser=ser+b'ABCDEF')
     assert result == False
 
-    digester = Digester(raw=dig, code=CryOneDex.Blake3_256)
+    digester = Diger(raw=dig, code=CryOneDex.Blake3_256)
     assert digester.code == CryOneDex.Blake3_256
     assert len(digester.raw) == CryOneRawSizes[digester.code]
     result = digester.verify(ser=ser)
     assert result == True
 
     with pytest.raises(ValueError):
-        digester = Digester(raw=dig, code=CryOneDex.Ed25519)
+        digester = Diger(raw=dig, code=CryOneDex.Ed25519)
 
-    digester = Digester(ser=ser)
+    digester = Diger(ser=ser)
     assert digester.code == CryOneDex.Blake3_256
     assert len(digester.raw) == CryOneRawSizes[digester.code]
     result = digester.verify(ser=ser)
     assert result == True
 
     with pytest.raises(ValueError):
-        digester = Digester(ser=ser, code=CryOneDex.Ed25519)
+        digester = Diger(ser=ser, code=CryOneDex.Ed25519)
     """ Done Test """
 
 def test_nexter():
     """
-    Test the support functionality for Nexter subclass of Digester
+    Test the support functionality for Nexter subclass of Diger
     """
     with pytest.raises(EmptyMaterialError):
         nexter = Nexter()

@@ -553,9 +553,9 @@ class Signer(CryMat):
             return SigMat(raw=sig, code=SigTwoDex.Ed25519, index=index)
 
 
-class Digester(CryMat):
+class Diger(CryMat):
     """
-    Digester is CryMat subclass with method to verify digest of serialization
+    Diger is CryMat subclass with method to verify digest of serialization
     using  .raw as digest and .code for digest algorithm.
 
     See CryMat for inherited attributes and properties:
@@ -579,13 +579,13 @@ class Digester(CryMat):
 
         """
         try:
-            super(Digester, self).__init__(raw=raw, code=code, **kwa)
+            super(Diger, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
             if not ser:
                 raise ex
             if code == CryOneDex.Blake3_256:
                 dig = blake3.blake3(ser).digest()
-                super(Digester, self).__init__(raw=dig, code=code, **kwa)
+                super(Diger, self).__init__(raw=dig, code=code, **kwa)
             else:
                 raise ValueError("Unsupported code = {} for digester.".format(code))
 
@@ -619,12 +619,12 @@ class Digester(CryMat):
         return(blake3.blake3(ser).digest() == dig)
 
 
-class Nexter(Digester):
+class Nexter(Diger):
     """
-    Nexter is Digester subclass with support to create itself from
+    Nexter is Diger subclass with support to create itself from
     next sith and next keys
 
-    See Digester for inherited attributes and properties:
+    See Diger for inherited attributes and properties:
 
     Attributes:
 

@@ -21,7 +21,7 @@ from ..kering import ValidationError, VersionError, EmptyMaterialError, Derivati
 from ..kering import Versionage, Version
 from .coring import Ilks
 
-from .coring import Signer, Verfer, Digester, Nexter, Aider
+from .coring import Signer, Verfer, Diger, Nexter, Aider
 
 
 @dataclass(frozen=True)
