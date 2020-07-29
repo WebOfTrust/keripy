@@ -66,8 +66,7 @@ class Keger:
         .version is version of current event
         .aid is fully qualified qb64 autonomic id
         .sn is sequence number
-        .predig is qualified qb64 digest of previous event
-        .dig is qualified qb64 dige of current event
+        .diger is qualified qb64 dige of current event
         .ilk is str of current event type
         .sith is int or list of current signing threshold
         .keys is list of qb64 current verification keys
@@ -92,10 +91,9 @@ class Keger:
         """
         # initial state is vacuous
         self.version = None
-        self.aid = None
+        self.aider = None
         self.sn =  None
-        self.predig = None
-        self.dig = None
+        self.diger = None
         self.ilk = None
         self.sith = None
         self.keys = []
@@ -128,7 +126,7 @@ class Kever:
         .version is version of current event
         .aider is aider instance
         .sn is sequence number int
-        .dig is qualified qb64 digest of event not prior event
+        .diger is Diger instance with digest of event not prior event
         .ilk is str of current event type
         .sith is int or list of current signing threshold
         .nexter is qualified qb64 of next sith and next signing keys
@@ -179,7 +177,7 @@ class Kever:
         if self.sn != 0:
             raise ValidationError("Invalid sn = {} for inception ked = {}."
                                               "".format(self.sn, ked))
-        self.dig = self.serder.dig
+        self.diger = self.serder.diger
 
         self.ilk = ked["ilk"]
         if self.ilk != Ilks.icp:
@@ -200,10 +198,10 @@ class Kever:
         aid = self.aider.qb64
         if aid not in KELs:
             KELs[aid] = dict()
-        KELs[aid][self.dig] = Kevage(serder=serder, sigs=sigs)
+        KELs[aid][self.diger.qb64] = Kevage(serder=serder, sigs=sigs)
         if aid not in Kevers:
             Kevers[aid] = dict()
-        Kevers[aid][self.dig] = self
+        Kevers[aid][self.diger] = self
 
 
 
@@ -281,7 +279,7 @@ class Kever:
 
             # next and signatures verify so update state
             self.sn = sn
-            self.dig = dig
+            self.diger = serder.diger
             self.sith = sith
             self.verfers = serder.verfers
             # verify nxt prior
@@ -293,7 +291,7 @@ class Kever:
             self.conf = ked["conf"]
 
 
-            KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
+            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigs=sigs)
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -306,8 +304,8 @@ class Kever:
 
             # update state
             self.sn = sn
-            self.dig = dig
-            KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
+            self.diger = serder.diger
+            KELS[aid][self.diger.qb64] = Kevage(serder=serder, sigs=sigs)
 
 
         else:  # unsupported event ilk so discard
@@ -518,10 +516,10 @@ class Kevery:
                         Escrows[aid][dig] = Kevage(serder=serder, sigs=sigs)
 
                 else:  # sn == kever.sn + 1
-                    if dig != kever.dig:  # prior event dig not match
+                    if dig != kever.diger:  # prior event dig not match
                         raise ValidationError("Mismatch prior dig = {} with"
                                               " current = {}.".format(dig,
-                                                                      kever.dig))
+                                                                      kever.diger))
 
                     # verify signatures etc and update state if valid
                     # raise exception if problem. adds to KELs

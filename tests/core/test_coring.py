@@ -26,7 +26,7 @@ from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
 from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat
+from keri.core.coring import SigMat, Sigter
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
@@ -336,14 +336,14 @@ def test_sigmat():
 
 def test_sigter():
     """
-    Test Sigter subclass of SigMat
+    Test Sigter subclass of Sigter
     """
     with pytest.raises(EmptyMaterialError):
         sigter = Sigter()
 
     qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    sigter = SigMat(qb64=qsig64)
+    sigter = Sigter(qb64=qsig64)
     assert sigter.code == SigTwoDex.Ed25519
     assert sigter.index == 0
     assert sigter.qb64 == qsig64
@@ -355,7 +355,7 @@ def test_sigter():
     sigter.verfer = verfer
     assert  sigter.verfer == verfer
 
-    sigter = SigMat(qb64=qsig64, verfer=verfer)
+    sigter = Sigter(qb64=qsig64, verfer=verfer)
     assert  sigter.verfer == verfer
     """ Done Test """
 
