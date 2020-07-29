@@ -63,25 +63,43 @@ class Keger:
     Has the following public attributes and properties:
 
     Attributes:
-        .version is version of current event
-        .aid is fully qualified qb64 autonomic id
+        .signers is list of signers for current event as Signer
+            each Signer includes Verfer in .verfer
+
+        .version is version of current event as Version
+        .aider is autonomic ID as Aider
         .sn is sequence number
-        .diger is qualified qb64 dige of current event
+        .diger is digest of current event as Diger
         .ilk is str of current event type
         .sith is int or list of current signing threshold
-        .keys is list of qb64 current verification keys
-        .nxt is qualified qb64 of next sith plus next signing keys
-        .toad is int threshold of accountable duplicity
-        .wits is list of qualified qb64 aids for witnesses
+        .nexter is qualified next sith plus next verifier keys as Nexter
+        .toad is int  for threshold of accountable duplicity
+        .wits is list of initial witnesses as Verfers
+        .cuts is list of witnesses to cut (prune) as Verfers
+        .adds is list of witnesses to add (graft) as Verfers
         .conf is list of inception configuration data mappings
-        .indexes is int or list of signature indexes of current event if any
+        .data is seal data list for non inception events
+        .idxs is int or list of signature indexes of current event if any
 
     Properties:
 
-
-
     """
-    def __init__(self):
+
+    def __init__(self, signers=None,
+                       version=Version,
+                       aider=None,
+                       sn=0,
+                       ilk=Ilks.icp,
+                       sith=1,
+                       nexter=None,
+                       toad=1,
+                       wits=None,
+                       cuts=None,
+                       adds=None,
+                       conf=None,
+                       data=None,
+                       idxs=None
+                       ):
         """
         Extract and verify event and attached signatures from key event stream kes
 
@@ -89,19 +107,21 @@ class Keger:
 
 
         """
-        # initial state is vacuous
-        self.version = None
-        self.aider = None
-        self.sn =  None
+        self.signers = signers
+        self.version = version
+        self.aider = version
+        self.sn =  sn
         self.diger = None
-        self.ilk = None
-        self.sith = None
-        self.keys = []
-        self.nxt = None
-        self.toad = None
-        self.wits = None
-        self.conf = None
-        self.indexes = None
+        self.ilk = ilk
+        self.sith = sith
+        self.nexter = None
+        self.toad = toad
+        self.wits = wits
+        self.cuts = cuts
+        self.adds = adds
+        self.conf = conf
+        self.data = data
+        self.idxs = idxs
 
 
 class Kever:

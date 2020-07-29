@@ -49,13 +49,12 @@ def test_ilks():
     assert 'dip' in Ilks
     assert 'drt' in Ilks
 
-
-def test_kevery():
+def test_keger():
     """
-    Test the support functionality for Kevery factory class
-    Key Event Verifier Factory
+    Test the support functionality for Keger class
+    Key Event Generator
     """
-    kevery = Kevery()
+    keger = Keger()
     """ Done Test """
 
 def test_kever():
@@ -124,14 +123,14 @@ def test_kever():
 
     """ Done Test """
 
-def test_keger():
-    """
-    Test the support functionality for Keger class
-    Key Event Generator
-    """
-    keger = Keger()
-    """ Done Test """
 
+def test_kevery():
+    """
+    Test the support functionality for Kevery factory class
+    Key Event Verifier Factory
+    """
+    kevery = Kevery()
+    """ Done Test """
 
 def test_process_nontransferable():
     """
