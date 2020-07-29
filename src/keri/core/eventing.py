@@ -104,9 +104,6 @@ class Keger:
         self.indexes = None
 
 
-
-
-
 class Kever:
     """
     Kever is KERI key event verifier class
@@ -120,14 +117,13 @@ class Kever:
                 False means allow all events
 
     Attributes:
-        .serder is Serder instance of current packet
-        .verfers is list of Verfer instances for current set of signing keys
-        .version is version of current event
-        .aider is aider instance
+        .version is version of current event state
+        .aider is aider instance of current event state
         .sn is sequence number int
-        .diger is Diger instance with digest of event not prior event
+        .diger is Diger instance with digest of current event not prior event
         .ilk is str of current event type
         .sith is int or list of current signing threshold
+        .verfers is list of Verfer instances for current event state set of signing keys
         .nexter is qualified qb64 of next sith and next signing keys
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
@@ -153,10 +149,8 @@ class Kever:
 
         """
         # update state as we go because if invalid we fail to finish init
+        self.version =  serder.version  # version dispatch ?
         self.verfers = serder.verfers  # converts keys to verifiers
-
-        self.version =  serder.version  # version switch?
-
         # verify indexes of attached signatures against verifiers
         for sigxer in sigxers:
             if sigxer.index >= len(self.verfers):
@@ -175,8 +169,6 @@ class Kever:
         if not self.verify(sigxers=sigxers, serder=serder):
             raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigxers, serder))
-
-
 
         self.aider = Aider(qb64=ked["id"])
         if not self.aider.verify(ked=ked):  # invalid aid
