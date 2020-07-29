@@ -456,6 +456,48 @@ class Verfer(CryMat):
         return True
 
 
+class Siger(CryMat):
+    """
+    Siger is CryMat subclass holding a signature where .raw is signature and .code
+    is signature cipher suite.
+    Adds verfer property to hold Verfer instance of associated verifier public key
+    where .raw as verifier key and .code is signature cipher suite.
+
+    See CryMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+
+    Methods:
+
+
+    """
+    def __init__(self, verfer=None, **kwa):
+        """
+        Assign verfer to ._verfer attribute
+
+        """
+        super(Siger, self).__init__(**kwa)
+
+        self._verfer = verfer
+
+
+    @property
+    def verfer(self):
+        """
+        Property verfer:
+        Returns Verfer instance
+        Assumes ._verfer is correctly assigned
+        """
+        return self._verfer
+
+    @verfer.setter
+    def verfer(self, verfer):
+        """ verfer property setter """
+        self._verfer = verfer
+
+
 class Signer(CryMat):
     """
     Signer is CryMat subclass with method to create signature of serialization
@@ -518,15 +560,17 @@ class Signer(CryMat):
 
     def sign(self, ser, index=None):
         """
-        Returns either CryMat or Sigxer instance of signature
-        on bytes serialization ser
+        Returns either Siger or Sigxer (indexed) instance of cryptographic
+        signature material on bytes serialization ser
 
-        If index is None return CryMat instance
-        Otherwise return Sigxer instance
+        If index is None
+            return Siger instance
+        Else
+            return Sigxer instance
 
         Parameters:
             ser is bytes serialization
-            index is
+            index is int index of associated verifier key in event keys
         """
         return (self._sign(ser=ser,
                            seed=self.raw,
@@ -548,9 +592,10 @@ class Signer(CryMat):
         """
         sig = pysodium.crypto_sign_detached(ser, seed + verfer.raw)
         if index is None:
-            return CryMat(raw=sig, code=CryTwoDex.Ed25519)
+            return Siger(raw=sig, code=CryTwoDex.Ed25519, verfer=verfer)
         else:
-            return Sigxer(raw=sig, code=SigTwoDex.Ed25519,
+            return Sigxer(raw=sig,
+                          code=SigTwoDex.Ed25519,
                           index=index,
                           verfer=verfer)
 
