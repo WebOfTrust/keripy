@@ -38,7 +38,7 @@ class TraitCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-Traitdex = TraitCodex()  # Make instance
+TraitDex = TraitCodex()  # Make instance
 
 Kevage = namedtuple("Kevage", 'serder sigs')  # Key Event tuple for KELS and DELs
 
@@ -49,6 +49,274 @@ KELs = dict() # dict of dicts of ordered events keyed by aid.qb64 then by event 
 DELs = dict()  # dict of dicts of dup events keyed by aid.qb64 then by event dig
 
 Escrows = dict()
+
+
+
+
+
+
+class Keger:
+    """
+    Keger is KERI key event generator class
+    Only supports current version VERSION
+
+    Has the following public attributes and properties:
+
+    Attributes:
+        .version is version of current event
+        .aid is fully qualified qb64 autonomic id
+        .sn is sequence number
+        .predig is qualified qb64 digest of previous event
+        .dig is qualified qb64 dige of current event
+        .ilk is str of current event type
+        .sith is int or list of current signing threshold
+        .keys is list of qb64 current verification keys
+        .nxt is qualified qb64 of next sith plus next signing keys
+        .toad is int threshold of accountable duplicity
+        .wits is list of qualified qb64 aids for witnesses
+        .conf is list of inception configuration data mappings
+        .indexes is int or list of signature indexes of current event if any
+
+    Properties:
+
+
+
+    """
+    def __init__(self):
+        """
+        Extract and verify event and attached signatures from key event stream kes
+
+        Parameters:
+
+
+        """
+        # initial state is vacuous
+        self.version = None
+        self.aid = None
+        self.sn =  None
+        self.predig = None
+        self.dig = None
+        self.ilk = None
+        self.sith = None
+        self.keys = []
+        self.nxt = None
+        self.toad = None
+        self.wits = None
+        self.conf = None
+        self.indexes = None
+
+
+
+
+
+class Kever:
+    """
+    Kever is KERI key event verifier class
+    Only supports current version VERSION
+
+    Has the following public attributes and properties:
+
+    Class Attributes:
+        .EstOnly is Boolean
+                True means allow only establishment events
+                False means allow all events
+
+    Attributes:
+        .serder is Serder instance of current packet
+        .sigs is list of SigMat instances of signatures
+        .verifiers is list of Verifier instances of current signing keys
+        .version is version of current event
+        .aider is aider instance
+        .sn is sequence number int
+        .dig is qualified qb64 digest of event not prior event
+        .ilk is str of current event type
+        .sith is int or list of current signing threshold
+        .nexter is qualified qb64 of next sith and next signing keys
+        .toad is int threshold of accountable duplicity
+        .wits is list of qualified qb64 aids for witnesses
+        .conf is list of inception configuration data mappings
+        .estOnly is boolean
+
+    Properties:
+
+    """
+    EstOnly = False
+
+    def __init__(self, serder, sigs, estOnly=None):
+        """
+        Create incepting kever and state from inception serder
+        Verify incepting serder against sigs raises ValidationError if not
+
+        Parameters:
+            serder is Serder instance of inception event
+            sigs is list of SigMat instances of signatures of event
+            establishOnly is boolean trait to indicate establish only event
+
+        """
+        self.serder = serder
+        self.verifiers = serder.verifiers  # converts keys to verifiers
+        self.sigs = sigs
+        ked = self.serder.ked
+        sith = ked["sith"]
+        if isinstance(sith, str):
+            self.sith =  int(sith, 16)
+        else:
+            # fix this to support list sith
+            raise ValueError("Unsupported type for sith = {}".format(sith))
+
+        if not self.verify():
+            raise ValidationError("Failure verifying signatures = {} for {}"
+                                  "".format(sigs, serder))
+
+        self.version = self.serder.version  # version switch?
+
+        self.aider = Aider(qb64=ked["id"])
+        if not self.aider.verify(ked=ked):  # invalid aid
+            raise ValidationError("Invalid aid = {} for inception ked = {}."
+                                  "".format(self.aider.qb64, ked))
+
+        self.sn = int(ked["sn"], 16)
+        if self.sn != 0:
+            raise ValidationError("Invalid sn = {} for inception ked = {}."
+                                              "".format(self.sn, ked))
+        self.dig = self.serder.dig
+
+        self.ilk = ked["ilk"]
+        if self.ilk != Ilks.icp:
+            raise ValidationError("Expected ilk = {} got {}."
+                                              "".format(Ilks.icp, self.ilk))
+        self.nexter = Nexter(qb64=ked["next"]) if ked["next"] else None  # check for empty
+        self.toad = int(ked["toad"], 16)
+        self.wits = ked["wits"]
+        self.conf = ked["conf"]
+
+        # ensure boolean
+        self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
+                             else False)
+        for d in self.conf:
+            if "trait" in d and d["trait"] == TraitDex.EstOnly:
+                self.estOnly = True
+
+        aid = self.aider.qb64
+        if aid not in KELs:
+            KELs[aid] = dict()
+        KELs[aid][self.dig] = Kevage(serder=serder, sigs=sigs)
+        if aid not in Kevers:
+            Kevers[aid] = dict()
+        Kevers[aid][self.dig] = self
+
+
+
+    def verify(self, sigs=None, serder=None, sith=None, verifiers=None):
+        """
+        Verify sigs against serder using sith and verifiers
+        Assumes that sigs already extracted correctly wrt indexes
+        If any of serder, sith, verifiers not provided then replace missing
+           value with respective attribute .serder, .sith .verifiers instead
+
+        Parameters:
+            sigs is list of SigMat instances
+            serder is Serder instance
+            sith is int threshold
+            verifiers is list of Verifier instances
+
+        """
+        sigs = sigs if sigs is not None else self.sigs
+        serder = serder if serder is not None else self.serder
+        sith = sith if sith is not None else self.sith
+        verifiers = verifiers if verifiers is not None else self.verifiers
+
+        for sig in sigs:
+            verifier = verifiers[sig.index]
+            if not verifier.verify(sig.raw, serder.raw):
+                return False
+
+        if not isinstance(sith, int):
+            raise ValueError("Unsupported type for sith ={}".format(sith))
+        if len(sigs) < sith:  # not meet threshold fix for list sith
+            return False
+
+        return True
+
+
+
+    def update(self, serder,  sigs):
+        """
+
+        """
+        # if rotation event use keys from event
+        # if interaction event use keys from existing Kever
+        ked = serder.ked
+        ilk = ked["ilk"]
+
+        if ilk == Ilks.rot:  # subsequent rotation event
+            # verify next from prior
+            # also check derivation code of aid for non-transferable
+            #  check and
+
+            if self.nexter is None:   # empty so rotations not allowed
+                raise ValidationError("Attempted rotation for nontransferable"
+                                      " aid = {}".format(self.aider.qb64))
+
+            sith = ked["sith"]
+            if isinstance(sith, str):
+                sith =  int(ked.sith, 16)
+            else:
+                # fix this to support list sith
+                raise ValueError("Unsupported type for sith = {}".format(sith))
+
+            keys = ked["keys"]
+            if not self.nexter.verify(sith=sith, keys=keys):
+                raise ValidationError("Mismatch next digest = {} with rotation"
+                                      " sith = {}, keys = {}.".format(nexter.qb64))
+
+
+            # prior next valid so verify sigs using new verifier keys from event
+            if not self.verify(serder.serder,
+                               sigs=sigs,
+                               sith=sith,
+                               verifiers=serder.verifiers):
+                raise ValidationError("Failure verifying signatures = {} for {}"
+                                  "".format(sigs, serder))
+
+            # next and signatures verify so update state
+            self.sn = sn
+            self.dig = dig
+            self.sith = sith
+            self.verifiers = serder.verifiers
+            # verify nxt prior
+            nexter = Nexter(qb64=ked["next"]) if nxt else None  # check for empty
+            # update non transferable if None
+            self.nexter = nexter
+            self.toad = int(ked["toad"], 16)
+            self.wits = ked["wits"]
+            self.conf = ked["conf"]
+
+
+            KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
+
+
+        elif ilk == Ilks.ixn:  # subsequent interaction event
+            if self.estOnly:
+                raise ValidationError("Unexpected non-establishment event = {}."
+                                  "".format(serder))
+            if not self.verify(serder=serder, sigs=sigs):
+                raise ValidationError("Failure verifying signatures = {} for {}"
+                                  "".format(sigs, serder))
+
+            # update state
+            self.sn = sn
+            self.dig = dig
+            KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
+
+
+        else:  # unsupported event ilk so discard
+            raise ValidationError("Unsupported ilk = {}.".format(ilk))
+
+
+
+
+
 
 class Kevery:
     """
@@ -258,269 +526,4 @@ class Kevery:
                     # verify signatures etc and update state if valid
                     # raise exception if problem. adds to KELs
                     kever.update(serder=serder, sigs=sigs)
-
-
-
-
-
-
-
-
-class Kever:
-    """
-    Kever is KERI key event verifier class
-    Only supports current version VERSION
-
-    Has the following public attributes and properties:
-
-    Class Attributes:
-        .EstOnly is Boolean
-                True means allow only establishment events
-                False means allow all events
-
-    Attributes:
-        .serder is Serder instance of current packet
-        .sigs is list of SigMat instances of signatures
-        .verifiers is list of Verifier instances of current signing keys
-        .version is version of current event
-        .aider is aider instance
-        .sn is sequence number int
-        .dig is qualified qb64 digest of event not prior event
-        .ilk is str of current event type
-        .sith is int or list of current signing threshold
-        .nexter is qualified qb64 of next sith and next signing keys
-        .toad is int threshold of accountable duplicity
-        .wits is list of qualified qb64 aids for witnesses
-        .conf is list of inception configuration data mappings
-        .estOnly is boolean
-
-    Properties:
-
-    """
-    EstOnly = False
-
-    def __init__(self, serder, sigs, estOnly=None):
-        """
-        Create incepting kever and state from inception serder
-        Verify incepting serder against sigs raises ValidationError if not
-
-        Parameters:
-            serder is Serder instance of inception event
-            sigs is list of SigMat instances of signatures of event
-            establishOnly is boolean trait to indicate establish only event
-
-        """
-        self.serder = serder
-        self.verifiers = serder.verifiers  # converts keys to verifiers
-        self.sigs = sigs
-        ked = self.serder.ked
-        sith = ked["sith"]
-        if isinstance(sith, str):
-            self.sith =  int(sith, 16)
-        else:
-            # fix this to support list sith
-            raise ValueError("Unsupported type for sith = {}".format(sith))
-
-        if not self.verify():
-            raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigs, serder))
-
-        self.version = self.serder.version  # version switch?
-
-        self.aider = Aider(qb64=ked["id"])
-        if not self.aider.verify(ked=ked):  # invalid aid
-            raise ValidationError("Invalid aid = {} for inception ked = {}."
-                                  "".format(self.aider.qb64, ked))
-
-        self.sn = int(ked["sn"], 16)
-        if self.sn != 0:
-            raise ValidationError("Invalid sn = {} for inception ked = {}."
-                                              "".format(self.sn, ked))
-        self.dig = self.serder.dig
-
-        self.ilk = ked["ilk"]
-        if self.ilk != Ilks.icp:
-            raise ValidationError("Expected ilk = {} got {}."
-                                              "".format(Ilks.icp, self.ilk))
-        self.nexter = Nexter(qb64=ked["next"]) if ked["next"] else None  # check for empty
-        self.toad = int(ked["toad"], 16)
-        self.wits = ked["wits"]
-        self.conf = ked["conf"]
-
-        # ensure boolean
-        self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
-                             else False)
-        for d in self.conf:
-            if "trait" in d and d["trait"] == Traitdex.EstOnly:
-                self.estOnly = True
-
-        aid = self.aider.qb64
-        if aid not in KELs:
-            KELs[aid] = dict()
-        KELs[aid][self.dig] = Kevage(serder=serder, sigs=sigs)
-        if aid not in Kevers:
-            Kevers[aid] = dict()
-        Kevers[aid][self.dig] = self
-
-
-
-    def verify(self, sigs=None, serder=None, sith=None, verifiers=None):
-        """
-        Verify sigs against serder using sith and verifiers
-        Assumes that sigs already extracted correctly wrt indexes
-        If any of serder, sith, verifiers not provided then replace missing
-           value with respective attribute .serder, .sith .verifiers instead
-
-        Parameters:
-            sigs is list of SigMat instances
-            serder is Serder instance
-            sith is int threshold
-            verifiers is list of Verifier instances
-
-        """
-        sigs = sigs if sigs is not None else self.sigs
-        serder = serder if serder is not None else self.serder
-        sith = sith if sith is not None else self.sith
-        verifiers = verifiers if verifiers is not None else self.verifiers
-
-        for sig in sigs:
-            verifier = verifiers[sig.index]
-            if not verifier.verify(sig.raw, serder.raw):
-                return False
-
-        if not isinstance(sith, int):
-            raise ValueError("Unsupported type for sith ={}".format(sith))
-        if len(sigs) < sith:  # not meet threshold fix for list sith
-            return False
-
-        return True
-
-
-
-    def update(self, serder,  sigs):
-        """
-
-        """
-        # if rotation event use keys from event
-        # if interaction event use keys from existing Kever
-        ked = serder.ked
-        ilk = ked["ilk"]
-
-        if ilk == Ilks.rot:  # subsequent rotation event
-            # verify next from prior
-            # also check derivation code of aid for non-transferable
-            #  check and
-
-            if self.nexter is None:   # empty so rotations not allowed
-                raise ValidationError("Attempted rotation for nontransferable"
-                                      " aid = {}".format(self.aider.qb64))
-
-            sith = ked["sith"]
-            if isinstance(sith, str):
-                sith =  int(ked.sith, 16)
-            else:
-                # fix this to support list sith
-                raise ValueError("Unsupported type for sith = {}".format(sith))
-
-            keys = ked["keys"]
-            if not self.nexter.verify(sith=sith, keys=keys):
-                raise ValidationError("Mismatch next digest = {} with rotation"
-                                      " sith = {}, keys = {}.".format(nexter.qb64))
-
-
-            # prior next valid so verify sigs using new verifier keys from event
-            if not self.verify(serder.serder,
-                               sigs=sigs,
-                               sith=sith,
-                               verifiers=serder.verifiers):
-                raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigs, serder))
-
-            # next and signatures verify so update state
-            self.sn = sn
-            self.dig = dig
-            self.sith = sith
-            self.verifiers = serder.verifiers
-            # verify nxt prior
-            nexter = Nexter(qb64=ked["next"]) if nxt else None  # check for empty
-            # update non transferable if None
-            self.nexter = nexter
-            self.toad = int(ked["toad"], 16)
-            self.wits = ked["wits"]
-            self.conf = ked["conf"]
-
-
-            KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
-
-
-        elif ilk == Ilks.ixn:  # subsequent interaction event
-            if self.estOnly:
-                raise ValidationError("Unexpected non-establishment event = {}."
-                                  "".format(serder))
-            if not self.verify(serder=serder, sigs=sigs):
-                raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigs, serder))
-
-            # update state
-            self.sn = sn
-            self.dig = dig
-            KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
-
-
-        else:  # unsupported event ilk so discard
-            raise ValidationError("Unsupported ilk = {}.".format(ilk))
-
-
-
-
-
-class Keger:
-    """
-    Keger is KERI key event generator class
-    Only supports current version VERSION
-
-    Has the following public attributes and properties:
-
-    Attributes:
-        .version is version of current event
-        .aid is fully qualified qb64 autonomic id
-        .sn is sequence number
-        .predig is qualified qb64 digest of previous event
-        .dig is qualified qb64 dige of current event
-        .ilk is str of current event type
-        .sith is int or list of current signing threshold
-        .keys is list of qb64 current verification keys
-        .nxt is qualified qb64 of next sith plus next signing keys
-        .toad is int threshold of accountable duplicity
-        .wits is list of qualified qb64 aids for witnesses
-        .conf is list of inception configuration data mappings
-        .indexes is int or list of signature indexes of current event if any
-
-    Properties:
-
-
-
-    """
-    def __init__(self):
-        """
-        Extract and verify event and attached signatures from key event stream kes
-
-        Parameters:
-
-
-        """
-        # initial state is vacuous
-        self.version = None
-        self.aid = None
-        self.sn =  None
-        self.predig = None
-        self.dig = None
-        self.ilk = None
-        self.sith = None
-        self.keys = []
-        self.nxt = None
-        self.toad = None
-        self.wits = None
-        self.conf = None
-        self.indexes = None
 
