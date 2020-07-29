@@ -17,13 +17,13 @@ from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage
 from keri.kering import ValidationError, EmptyMaterialError, DerivationError
-from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour
+from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import CryMat, Verifier, Signer, Digester, Nexter, Aider
-from keri.core.coring import SigSelect, SigTwo, SigTwoSizes, SigTwoRawSizes
-from keri.core.coring import SigFour, SigFourSizes, SigFourRawSizes
-from keri.core.coring import SigFive, SigFiveSizes, SigFiveRawSizes
+from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
+from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
+from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
 from keri.core.coring import IntToB64, B64ToInt
 from keri.core.coring import SigMat
@@ -38,53 +38,53 @@ def test_cryderivationcodes():
     """
     Test the support functionality for derivation codes
     """
-    assert CrySelect.two == '0'
+    assert CrySelDex.two == '0'
 
-    assert 'A' not in CrySelect
+    assert 'A' not in CrySelDex
 
     for x in ['0']:
-        assert x in CrySelect
+        assert x in CrySelDex
 
-    assert CryOne.Ed25519_Seed == 'A'
-    assert CryOne.Ed25519N == 'B'
-    assert CryOne.X25519 == 'C'
-    assert CryOne.Ed25519 == 'D'
-    assert CryOne.Blake3_256 == 'E'
-    assert CryOne.Blake2b_256 == 'F'
-    assert CryOne.Blake2s_256 == 'G'
-    assert CryOne.SHA3_256 == 'H'
-    assert CryOne.SHA2_256 == 'I'
-    assert CryOne.ECDSA_secp256k1_Seed == 'J'
-    assert CryOne.Ed448_Seed == 'K'
-    assert CryOne.X448 == 'L'
+    assert CryOneDex.Ed25519_Seed == 'A'
+    assert CryOneDex.Ed25519N == 'B'
+    assert CryOneDex.X25519 == 'C'
+    assert CryOneDex.Ed25519 == 'D'
+    assert CryOneDex.Blake3_256 == 'E'
+    assert CryOneDex.Blake2b_256 == 'F'
+    assert CryOneDex.Blake2s_256 == 'G'
+    assert CryOneDex.SHA3_256 == 'H'
+    assert CryOneDex.SHA2_256 == 'I'
+    assert CryOneDex.ECDSA_secp256k1_Seed == 'J'
+    assert CryOneDex.Ed448_Seed == 'K'
+    assert CryOneDex.X448 == 'L'
 
-    assert '0' not in CryOne
+    assert '0' not in CryOneDex
 
     for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',  'L']:
-        assert x in CryOne
+        assert x in CryOneDex
         assert x in CryOneSizes
         assert x in CryOneRawSizes
 
-    assert CryTwo.Seed_128 == '0A'
-    assert CryTwo.Ed25519 == '0B'
-    assert CryTwo.ECDSA_256k1 == '0C'
+    assert CryTwoDex.Seed_128 == '0A'
+    assert CryTwoDex.Ed25519 == '0B'
+    assert CryTwoDex.ECDSA_256k1 == '0C'
 
-    assert 'A' not in CryTwo
+    assert 'A' not in CryTwoDex
 
     for x in ['0A', '0B']:
-        assert x in CryTwo
+        assert x in CryTwoDex
         assert x in CryTwoSizes
         assert x in CryTwoRawSizes
 
-    assert CryFour.ECDSA_256k1N == '1AAA'
-    assert CryFour.ECDSA_256k1 == '1AAB'
+    assert CryFourDex.ECDSA_256k1N == '1AAA'
+    assert CryFourDex.ECDSA_256k1 == '1AAB'
 
-    assert '0' not in CryFour
-    assert 'A' not in CryFour
-    assert '0A' not in CryFour
+    assert '0' not in CryFourDex
+    assert 'A' not in CryFourDex
+    assert '0A' not in CryFourDex
 
     for x in ['1AAA', '1AAB']:
-        assert x in CryFour
+        assert x in CryFourDex
         assert x in CryFourSizes
         assert x in CryFourRawSizes
 
@@ -99,38 +99,38 @@ def test_sigderivationcodes():
     """
     Test the support functionality for derivation codes
     """
-    assert SigSelect.four == '0'
+    assert SigSelDex.four == '0'
 
-    assert 'A' not in SigSelect
+    assert 'A' not in SigSelDex
 
     for x in ['0', '1', '2']:
-        assert x in SigSelect
+        assert x in SigSelDex
 
-    assert SigTwo.Ed25519 == 'A'
-    assert SigTwo.ECDSA_256k1 == 'B'
+    assert SigTwoDex.Ed25519 == 'A'
+    assert SigTwoDex.ECDSA_256k1 == 'B'
 
-    assert '0' not in SigTwo
+    assert '0' not in SigTwoDex
 
     for x in ['A', 'B']:
-        assert x in SigTwo
+        assert x in SigTwoDex
         assert x in SigTwoSizes
         assert x in SigTwoRawSizes
 
-    assert SigFour.Ed448 == '0A'
+    assert SigFourDex.Ed448 == '0A'
 
-    assert 'A' not in SigFour
+    assert 'A' not in SigFourDex
 
     for x in ['0A']:
-        assert x in SigFour
+        assert x in SigFourDex
         assert x in SigFourSizes
         assert x in SigFourRawSizes
 
-    assert '0' not in SigFive
-    assert 'A' not in SigFive
-    assert '0A' not in SigFive
+    assert '0' not in SigFiveDex
+    assert 'A' not in SigFiveDex
+    assert '0A' not in SigFiveDex
 
     for x in []:
-        assert x in SigFive
+        assert x in SigFiveDex
         assert x in SigFiveSizes
         assert x in SigFiveRawSizes
 
@@ -155,7 +155,7 @@ def test_crymat():
 
     crymat = CryMat(raw=verkey)
     assert crymat.raw == verkey
-    assert crymat.code == CryOne.Ed25519N
+    assert crymat.code == CryOneDex.Ed25519N
     assert crymat.qb64 == prefix
     assert crymat.qb2 == prebin
 
@@ -163,11 +163,11 @@ def test_crymat():
     assert crymat.qb2 == decodeB64(crymat.qb64.encode("utf-8"))
 
     crymat._exfil(prefix)
-    assert crymat.code == CryOne.Ed25519N
+    assert crymat.code == CryOneDex.Ed25519N
     assert crymat.raw == verkey
 
     crymat = CryMat(qb64=prefix)
-    assert crymat.code == CryOne.Ed25519N
+    assert crymat.code == CryOneDex.Ed25519N
     assert crymat.raw == verkey
 
     # test wrong size of qb64
@@ -180,11 +180,11 @@ def test_crymat():
         okcrymat = CryMat(qb64=shortprefix)
 
     crymat = CryMat(qb2=prebin)
-    assert crymat.code == CryOne.Ed25519N
+    assert crymat.code == CryOneDex.Ed25519N
     assert crymat.raw == verkey
 
     crymat = CryMat(qb64=prefix.encode("utf-8"))  # test auto convert bytes to str
-    assert crymat.code == CryOne.Ed25519N
+    assert crymat.code == CryOneDex.Ed25519N
     assert crymat.raw == verkey
     assert crymat.qb64 == prefix
     assert crymat.qb64b == prefix.encode("utf-8")
@@ -200,7 +200,7 @@ def test_crymat():
     # test prefix on full identifier
     full = prefix + ":mystuff/mypath/toresource?query=what#fragment"
     crymat = CryMat(qb64=full)
-    assert crymat.code == CryOne.Ed25519N
+    assert crymat.code == CryOneDex.Ed25519N
     assert crymat.raw == verkey
     assert crymat.qb64 == prefix
     assert crymat.qb2 == prebin
@@ -217,19 +217,19 @@ def test_crymat():
             b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
             b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
 
-    crymat = CryMat(raw=sig, code=CryTwo.Ed25519)
+    crymat = CryMat(raw=sig, code=CryTwoDex.Ed25519)
     assert crymat.raw == sig
-    assert crymat.code == CryTwo.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519
     assert crymat.qb64 == qsig64
     assert crymat.qb2 == qbin
 
     crymat = CryMat(qb64=qsig64)
     assert crymat.raw == sig
-    assert crymat.code == CryTwo.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519
 
     crymat = CryMat(qb2=qbin)
     assert crymat.raw == sig
-    assert crymat.code == CryTwo.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519
 
     """ Done Test """
 
@@ -241,11 +241,11 @@ def test_sigmat():
     with pytest.raises(EmptyMaterialError):
         sigmet = SigMat()
 
-    assert SigTwo.Ed25519 ==  'A'  # Ed25519 signature.
-    assert SigTwo.ECDSA_256k1 == 'B'  # ECDSA secp256k1 signature.
+    assert SigTwoDex.Ed25519 ==  'A'  # Ed25519 signature.
+    assert SigTwoDex.ECDSA_256k1 == 'B'  # ECDSA secp256k1 signature.
 
-    assert SigTwoSizes[SigTwo.Ed25519] == 88
-    assert SigTwoSizes[SigTwo.ECDSA_256k1] == 88
+    assert SigTwoSizes[SigTwoDex.Ed25519] == 88
+    assert SigTwoSizes[SigTwoDex.ECDSA_256k1] == 88
 
     cs = IntToB64(80)
     assert cs ==  "BQ"
@@ -273,7 +273,7 @@ def test_sigmat():
 
     sigmat = SigMat(raw=sig)
     assert sigmat.raw == sig
-    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.code == SigTwoDex.Ed25519
     assert sigmat.index == 0
     assert sigmat.qb64 == qsig64
     assert sigmat.qb2 == qbin
@@ -288,7 +288,7 @@ def test_sigmat():
 
     sigmat = SigMat(qb64=qsig64)
     assert sigmat.raw == sig
-    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.code == SigTwoDex.Ed25519
     assert sigmat.index == 0
 
     # test wrong size of qb64
@@ -301,19 +301,19 @@ def test_sigmat():
         oksigmat = SigMat(qb64=shortqsig64)
 
     sigmat = SigMat(qb64=qsig64.encode("utf-8"))  # test auto convert bytes to str
-    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.code == SigTwoDex.Ed25519
     assert sigmat.raw == sig
     assert sigmat.qb64 == qsig64
     assert sigmat.qb64b == qsig64.encode("utf-8")
 
     sigmat = SigMat(qb2=qbin)
     assert sigmat.raw == sig
-    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.code == SigTwoDex.Ed25519
     assert sigmat.index == 0
 
-    sigmat = SigMat(raw=sig, code=SigTwo.Ed25519, index=5)
+    sigmat = SigMat(raw=sig, code=SigTwoDex.Ed25519, index=5)
     assert sigmat.raw == sig
-    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.code == SigTwoDex.Ed25519
     assert sigmat.index == 5
     qsig64 = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
     assert sigmat.qb64 == qsig64
@@ -324,12 +324,12 @@ def test_sigmat():
 
     sigmat = SigMat(qb64=qsig64)
     assert sigmat.raw == sig
-    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.code == SigTwoDex.Ed25519
     assert sigmat.index == 5
 
     sigmat = SigMat(qb2=qbin)
     assert sigmat.raw == sig
-    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.code == SigTwoDex.Ed25519
     assert sigmat.index == 5
     """ Done Test """
 
@@ -560,10 +560,10 @@ def test_serder():
 
     # test digest properties .digmat and .dig
     assert evt1.digmat.qb64 == evt1.dig
-    assert evt1.digmat.code == CryOne.Blake3_256
+    assert evt1.digmat.code == CryOneDex.Blake3_256
     assert len(evt1.digmat.raw) == 32
     assert len(evt1.dig) == 44
-    assert len(evt1.dig) == CryOneSizes[CryOne.Blake3_256]
+    assert len(evt1.dig) == CryOneSizes[CryOneDex.Blake3_256]
     assert evt1.dig == 'EB_Qy67YQkcSWmCcZo_3RaoTUQwWGoggAwHlG_0rpmQo'
 
     evt1 = Serder(ked=ked1)
@@ -683,9 +683,9 @@ def test_verifier():
     with pytest.raises(EmptyMaterialError):
         verfer = Verifier()
 
-    verfer = Verifier(raw=verkey, code=CryOne.Ed25519N)
+    verfer = Verifier(raw=verkey, code=CryOneDex.Ed25519N)
     assert verfer.raw == verkey
-    assert verfer.code == CryOne.Ed25519N
+    assert verfer.code == CryOneDex.Ed25519N
 
     #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -695,9 +695,9 @@ def test_verifier():
     result = verfer.verify(sig, ser)
     assert result == True
 
-    verfer = Verifier(raw=verkey, code=CryOne.Ed25519)
+    verfer = Verifier(raw=verkey, code=CryOneDex.Ed25519)
     assert verfer.raw == verkey
-    assert verfer.code == CryOne.Ed25519
+    assert verfer.code == CryOneDex.Ed25519
 
     #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -708,7 +708,7 @@ def test_verifier():
     assert result == True
 
     with pytest.raises(ValueError):
-        verfer = Verifier(raw=verkey, code=CryOne.Blake3_256)
+        verfer = Verifier(raw=verkey, code=CryOneDex.Blake3_256)
     """ Done Test """
 
 def test_signer():
@@ -716,22 +716,22 @@ def test_signer():
     Test the support functionality for signer subclass of crymat
     """
     signer = Signer()  # defaults provide Ed25519 signer Ed25519 verifier
-    assert signer.code == CryOne.Ed25519_Seed
+    assert signer.code == CryOneDex.Ed25519_Seed
     assert len(signer.raw) == CryOneRawSizes[signer.code]
-    assert signer.verifier.code == CryOne.Ed25519
+    assert signer.verifier.code == CryOneDex.Ed25519
     assert len(signer.verifier.raw) == CryOneRawSizes[signer.verifier.code]
 
     #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     crymat = signer.sign(ser)
-    assert crymat.code == CryTwo.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519
     assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
     result = signer.verifier.verify(crymat.raw, ser)
     assert result == True
 
     sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.code == SigTwoDex.Ed25519
     assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
     assert sigmat.index == 0
     result = signer.verifier.verify(sigmat.raw, ser)
@@ -742,22 +742,22 @@ def test_signer():
     assert crymat.raw == sigmat.raw
 
     signer = Signer(transferable=False)  # Ed25519N verifier
-    assert signer.code == CryOne.Ed25519_Seed
+    assert signer.code == CryOneDex.Ed25519_Seed
     assert len(signer.raw) == CryOneRawSizes[signer.code]
-    assert signer.verifier.code == CryOne.Ed25519N
+    assert signer.verifier.code == CryOneDex.Ed25519N
     assert len(signer.verifier.raw) == CryOneRawSizes[signer.verifier.code]
 
     #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     crymat = signer.sign(ser)
-    assert crymat.code == CryTwo.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519
     assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
     result = signer.verifier.verify(crymat.raw, ser)
     assert result == True
 
     sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.code == SigTwoDex.Ed25519
     assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
     assert sigmat.index == 0
     result = signer.verifier.verify(sigmat.raw, ser)
@@ -767,21 +767,21 @@ def test_signer():
 
 
     seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    signer = Signer(raw=seed, code=CryOne.Ed25519_Seed)
-    assert signer.code == CryOne.Ed25519_Seed
+    signer = Signer(raw=seed, code=CryOneDex.Ed25519_Seed)
+    assert signer.code == CryOneDex.Ed25519_Seed
     assert len(signer.raw) == CryOneRawSizes[signer.code]
     assert signer.raw == seed
-    assert signer.verifier.code == CryOne.Ed25519
+    assert signer.verifier.code == CryOneDex.Ed25519
     assert len(signer.verifier.raw) == CryOneRawSizes[signer.verifier.code]
 
     crymat = signer.sign(ser)
-    assert crymat.code == CryTwo.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519
     assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
     result = signer.verifier.verify(crymat.raw, ser)
     assert result == True
 
     sigmat = signer.sign(ser, index=1)
-    assert sigmat.code == SigTwo.Ed25519
+    assert sigmat.code == SigTwoDex.Ed25519
     assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
     assert sigmat.index == 1
     result = signer.verifier.verify(sigmat.raw, ser)
@@ -790,10 +790,10 @@ def test_signer():
     assert crymat.raw == sigmat.raw
 
     with pytest.raises(ValueError):
-        signer = Signer(raw=seed, code=CryOne.Ed25519N)
+        signer = Signer(raw=seed, code=CryOneDex.Ed25519N)
 
     with pytest.raises(ValueError):
-        signer = Signer(code=CryOne.Ed25519N)
+        signer = Signer(code=CryOneDex.Ed25519N)
     """ Done Test """
 
 def test_digester():
@@ -808,30 +808,30 @@ def test_digester():
     dig = blake3.blake3(ser).digest()
 
     digester = Digester(raw=dig)  # defaults provide Blake3_256 digester
-    assert digester.code == CryOne.Blake3_256
+    assert digester.code == CryOneDex.Blake3_256
     assert len(digester.raw) == CryOneRawSizes[digester.code]
     result = digester.verify(ser=ser)
     assert result == True
     result = digester.verify(ser=ser+b'ABCDEF')
     assert result == False
 
-    digester = Digester(raw=dig, code=CryOne.Blake3_256)
-    assert digester.code == CryOne.Blake3_256
+    digester = Digester(raw=dig, code=CryOneDex.Blake3_256)
+    assert digester.code == CryOneDex.Blake3_256
     assert len(digester.raw) == CryOneRawSizes[digester.code]
     result = digester.verify(ser=ser)
     assert result == True
 
     with pytest.raises(ValueError):
-        digester = Digester(raw=dig, code=CryOne.Ed25519)
+        digester = Digester(raw=dig, code=CryOneDex.Ed25519)
 
     digester = Digester(ser=ser)
-    assert digester.code == CryOne.Blake3_256
+    assert digester.code == CryOneDex.Blake3_256
     assert len(digester.raw) == CryOneRawSizes[digester.code]
     result = digester.verify(ser=ser)
     assert result == True
 
     with pytest.raises(ValueError):
-        digester = Digester(ser=ser, code=CryOne.Ed25519)
+        digester = Digester(ser=ser, code=CryOneDex.Ed25519)
     """ Done Test """
 
 def test_nexter():
@@ -852,16 +852,16 @@ def test_nexter():
     ser = (sith + verifier.qb64).encode("utf-8")
 
     nexter = Nexter(ser=ser)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOne.Blake3_256
+    assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter.verify(ser=ser)
     assert nexter.verify(ser=ser+b'ABCDEF') == False
 
     with pytest.raises(ValueError):  # bad code
-        nexter = Nexter(ser=ser, code=CryOne.Ed25519)
+        nexter = Nexter(ser=ser, code=CryOneDex.Ed25519)
 
     nexter = Nexter(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOne.Blake3_256
+    assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter._derive(sith=sith, keys=keys) == ser
     assert nexter.verify(ser=ser)
@@ -875,7 +875,7 @@ def test_nexter():
         nexter = Nexter(keys=keys)
 
     nexter = Nexter(sith=1, keys=keys)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOne.Blake3_256
+    assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter._derive(sith=sith, keys=keys) == ser
     assert nexter.verify(ser=ser)
@@ -884,7 +884,7 @@ def test_nexter():
 
     ked = dict(sith=sith, keys=keys)  #  subsequent event
     nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOne.Blake3_256
+    assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter._derive(ked=ked) == ser
     assert nexter.verify(ser=ser)
@@ -903,10 +903,10 @@ def test_aider():
     verkey,  sigkey = pysodium.crypto_sign_keypair()
 
     with pytest.raises(ValueError):
-        aider = Aider(raw=verkey, code=CryOne.Blake3_256)
+        aider = Aider(raw=verkey, code=CryOneDex.Blake3_256)
 
     aider = Aider(raw=verkey)  # defaults provide Ed25519N aider
-    assert aider.code == CryOne.Ed25519N
+    assert aider.code == CryOneDex.Ed25519N
     assert len(aider.raw) == CryOneRawSizes[aider.code]
     assert len(aider.qb64) == CryOneSizes[aider.code]
 
@@ -916,17 +916,17 @@ def test_aider():
     ked = dict(keys=[aider.qb64], next="ABC")
     assert aider.verify(ked=ked) == False
 
-    aider = Aider(raw=verkey, code=CryOne.Ed25519)  # defaults provide Ed25519N aider
-    assert aider.code == CryOne.Ed25519
+    aider = Aider(raw=verkey, code=CryOneDex.Ed25519)  # defaults provide Ed25519N aider
+    assert aider.code == CryOneDex.Ed25519
     assert len(aider.raw) == CryOneRawSizes[aider.code]
     assert len(aider.qb64) == CryOneSizes[aider.code]
 
     ked = dict(keys=[aider.qb64])
     assert aider.verify(ked=ked) == True
 
-    verifier = Verifier(raw=verkey, code=CryOne.Ed25519)
+    verifier = Verifier(raw=verkey, code=CryOneDex.Ed25519)
     aider = Aider(raw=verifier.raw)
-    assert aider.code == CryOne.Ed25519N
+    assert aider.code == CryOneDex.Ed25519N
     assert aider.verify(ked=ked) == False
 
     # derive from ked
@@ -935,7 +935,7 @@ def test_aider():
     assert aider.qb64 == verifier.qb64
     assert aider.verify(ked=ked) == True
 
-    verifier = Verifier(raw=verkey, code=CryOne.Ed25519N)
+    verifier = Verifier(raw=verkey, code=CryOneDex.Ed25519N)
     ked = dict(keys=[verifier.qb64], next="")
     aider = Aider(ked=ked)
     assert aider.qb64 == verifier.qb64

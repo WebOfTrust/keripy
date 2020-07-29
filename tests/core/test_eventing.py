@@ -11,13 +11,13 @@ import blake3
 from keri.kering import Version
 from keri.kering import ValidationError, EmptyMaterialError, DerivationError
 
-from keri.core.coring import CrySelect, CryOne, CryTwo, CryFour
+from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import CryMat, Verifier, Signer, Digester, Nexter, Aider
-from keri.core.coring import SigSelect, SigTwo, SigTwoSizes, SigTwoRawSizes
-from keri.core.coring import SigFour, SigFourSizes, SigFourRawSizes
-from keri.core.coring import SigFive, SigFiveSizes, SigFiveRawSizes
+from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
+from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
+from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
 from keri.core.coring import IntToB64, B64ToInt
 from keri.core.coring import SigMat
@@ -49,15 +49,15 @@ def test_kever():
     # create current key
     sith = 1  #  one signer
     skp0 = Signer()  #  original signing keypair transferable default
-    assert skp0.code == CryOne.Ed25519_Seed
-    assert skp0.verifier.code == CryOne.Ed25519
+    assert skp0.code == CryOneDex.Ed25519_Seed
+    assert skp0.verifier.code == CryOneDex.Ed25519
     keys = [skp0.verifier.qb64]
 
     # create next key
     nxtsith = 1 #  one signer
     skp1 = Signer()  #  next signing keypair transferable is default
-    assert skp1.code == CryOne.Ed25519_Seed
-    assert skp1.verifier.code == CryOne.Ed25519
+    assert skp1.code == CryOneDex.Ed25519_Seed
+    assert skp1.verifier.code == CryOneDex.Ed25519
     nxtkeys = [skp1.verifier.qb64]
     # compute next digest
     nexter = Nexter(sith=nxtsith, keys=nxtkeys)
@@ -83,7 +83,7 @@ def test_kever():
 
     # Derive AID from ked
     aid0 = Aider(ked=ked0)
-    assert aid0.code == CryOne.Ed25519
+    assert aid0.code == CryOneDex.Ed25519
 
     # update ked with id
     ked0["id"] = aid0.qb64
@@ -118,12 +118,12 @@ def test_process_nontransferable():
 
     # Ephemeral (Nontransferable) case
     skp0 = Signer(transferable=False)  #  original signing keypair non transferable
-    assert skp0.code == CryOne.Ed25519_Seed
-    assert skp0.verifier.code == CryOne.Ed25519N
+    assert skp0.code == CryOneDex.Ed25519_Seed
+    assert skp0.verifier.code == CryOneDex.Ed25519N
 
     # Derive AID by merely assigning verifier public key
     aid0 = Aider(qb64=skp0.verifier.qb64)
-    assert aid0.code == CryOne.Ed25519N
+    assert aid0.code == CryOneDex.Ed25519N
 
     # Ephemeral may be used without inception event
     # but when used with inception event must be compatible event
@@ -205,15 +205,15 @@ def test_process_transferable():
     # create current key
     sith = 1  #  one signer
     skp0 = Signer()  #  original signing keypair transferable default
-    assert skp0.code == CryOne.Ed25519_Seed
-    assert skp0.verifier.code == CryOne.Ed25519
+    assert skp0.code == CryOneDex.Ed25519_Seed
+    assert skp0.verifier.code == CryOneDex.Ed25519
     keys = [skp0.verifier.qb64]
 
     # create next key
     nxtsith = 1 #  one signer
     skp1 = Signer()  #  next signing keypair transferable is default
-    assert skp1.code == CryOne.Ed25519_Seed
-    assert skp1.verifier.code == CryOne.Ed25519
+    assert skp1.code == CryOneDex.Ed25519_Seed
+    assert skp1.verifier.code == CryOneDex.Ed25519
     nxtkeys = [skp1.verifier.qb64]
     # compute next digest
     nexter = Nexter(sith=nxtsith, keys=nxtkeys)
@@ -239,7 +239,7 @@ def test_process_transferable():
 
     # Derive AID from ked
     aid0 = Aider(ked=ked0)
-    assert aid0.code == CryOne.Ed25519
+    assert aid0.code == CryOneDex.Ed25519
 
     # update ked with id
     ked0["id"] = aid0.qb64
@@ -315,7 +315,7 @@ def test_process_manual():
     assert len(verkey) == 32
 
     # create qualified aid in basic format
-    aidmat = CryMat(raw=verkey, code=CryOne.Ed25519)
+    aidmat = CryMat(raw=verkey, code=CryOneDex.Ed25519)
     assert aidmat.qb64 == 'Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
 
     # create qualified next public key in basic format
@@ -331,7 +331,7 @@ def test_process_manual():
     assert len(verkey) == 32
 
     # create qualified nxt key in basic format
-    nxtkeymat = CryMat(raw=verkey, code=CryOne.Ed25519)
+    nxtkeymat = CryMat(raw=verkey, code=CryOneDex.Ed25519)
     assert nxtkeymat.qb64 == 'D9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
 
     # create next hash
@@ -345,7 +345,7 @@ def test_process_manual():
     nxtdig = blake3.blake3(nxtsraw).digest()
     assert nxtdig == b'\xdeWy\xd3=\xcb`\xce\xe9\x99\x0cF\xdd\xb2C6\x03\xa7F\rS\xd6\xfem\x99\x89\xac`<\xaa\x88\xd2'
 
-    nxtdigmat = CryMat(raw=nxtdig, code=CryOne.Blake3_256)
+    nxtdigmat = CryMat(raw=nxtdig, code=CryOneDex.Blake3_256)
     assert nxtdigmat.qb64 == 'E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI'
 
     sn =  0
@@ -377,7 +377,7 @@ def test_process_manual():
     assert txsrdr.size == 264
 
     txdig = blake3.blake3(txsrdr.raw).digest()
-    txdigmat = CryMat(raw=txdig, code=CryOne.Blake3_256)
+    txdigmat = CryMat(raw=txdig, code=CryOneDex.Blake3_256)
     assert txdigmat.qb64 == 'EPYPv3ouNLw45lAI1B40Io4KX935qfxcWdBrtA6-leFc'
 
     assert txsrdr.dig == txdigmat.qb64
@@ -388,7 +388,7 @@ def test_process_manual():
     result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
     assert not result  # None if verifies successfully else raises ValueError
 
-    txsigmat = SigMat(raw=sig0raw, code=SigTwo.Ed25519, index=index)
+    txsigmat = SigMat(raw=sig0raw, code=SigTwoDex.Ed25519, index=index)
     assert txsigmat.qb64 == 'AAxW5lxJxAmenWwfvgGeDgciKKT-7hP-jOZrHMVCAHgGlnpYX8dfzjppJvbC5s9GQWN4w_1IfTKcwWrU3C9KTYDA'
     assert len(txsigmat.qb64) == 88
     assert txsigmat.index == index
@@ -410,7 +410,7 @@ def test_process_manual():
     rxaidqb64 = rxsrdr.ked["id"]
     rxaidmat = CryMat(qb64=rxaidqb64)
     assert rxaidmat.qb64 == aidmat.qb64
-    assert rxaidmat.code == CryOne.Ed25519
+    assert rxaidmat.code == CryOneDex.Ed25519
 
     rxverqb64 = rxsrdr.ked["keys"][index]
     rxvermat = CryMat(qb64=rxverqb64)

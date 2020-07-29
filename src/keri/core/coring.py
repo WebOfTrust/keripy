@@ -95,7 +95,7 @@ class CrySelectCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-CrySelect = CrySelectCodex()  # Make instance
+CrySelDex = CrySelectCodex()  # Make instance
 
 @dataclass(frozen=True)
 class CryOneCodex:
@@ -123,7 +123,7 @@ class CryOneCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-CryOne = CryOneCodex()  # Make instance
+CryOneDex = CryOneCodex()  # Make instance
 
 # Mapping of Code to Size
 CryOneSizes = {
@@ -155,7 +155,7 @@ class CryTwoCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-CryTwo = CryTwoCodex()  #  Make instance
+CryTwoDex = CryTwoCodex()  #  Make instance
 
 # Mapping of Code to Size
 CryTwoSizes = {
@@ -185,7 +185,7 @@ class CryFourCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-CryFour = CryFourCodex()  #  Make instance
+CryFourDex = CryFourCodex()  #  Make instance
 
 # Mapping of Code to Size
 CryFourSizes = {
@@ -228,7 +228,7 @@ class CryMat:
 
     """
 
-    def __init__(self, raw=b'', qb64='', qb2='', code=CryOne.Ed25519N):
+    def __init__(self, raw=b'', qb64='', qb2='', code=CryOneDex.Ed25519N):
         """
         Validate as fully qualified
         Parameters:
@@ -246,9 +246,9 @@ class CryMat:
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
             pad = self._pad(raw)
-            if (not ( (pad == 1 and (code in CryOne)) or  # One or Five or Nine
-                      (pad == 2 and (code in CryTwo)) or  # Two or Six or Ten
-                      (pad == 0 and (code in CryFour)) )):  #  Four or Eight
+            if (not ( (pad == 1 and (code in CryOneDex)) or  # One or Five or Nine
+                      (pad == 2 and (code in CryTwoDex)) or  # Two or Six or Ten
+                      (pad == 0 and (code in CryFourDex)) )):  #  Four or Eight
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
 
@@ -335,13 +335,13 @@ class CryMat:
         # need to map code to length so can only consume proper number of chars
         #  from front of qb64 so can use with full identifiers not just id prefixes
 
-        if code in CryOne:  # One Char code
+        if code in CryOneDex:  # One Char code
             qb64 = qb64[:CryOneSizes[code]]  # strip of identifier after prefix
 
-        elif code == CrySelect.two: # first char of two char code
+        elif code == CrySelDex.two: # first char of two char code
             pre += 1
             code = qb64[pre-2:pre]  #  get full code
-            if code not in CryTwo:
+            if code not in CryTwoDex:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:CryTwoSizes[code]]  # strip of identifier after prefix
 
@@ -419,7 +419,7 @@ class Verifier(CryMat):
         """
         super(Verifier, self).__init__(**kwa)
 
-        if self.code in [CryOne.Ed25519N, CryOne.Ed25519]:
+        if self.code in [CryOneDex.Ed25519N, CryOneDex.Ed25519]:
             self._verify = self._ed25519
         else:
             raise ValueError("Unsupported code = {} for verifier.".format(self.code))
@@ -477,7 +477,7 @@ class Signer(CryMat):
         sign: create signature
 
     """
-    def __init__(self,raw=b'', code=CryOne.Ed25519_Seed, transferable=True, **kwa):
+    def __init__(self,raw=b'', code=CryOneDex.Ed25519_Seed, transferable=True, **kwa):
         """
         Assign signing cipher suite function to ._sign
 
@@ -491,18 +491,18 @@ class Signer(CryMat):
         try:
             super(Signer, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
-            if code == CryOne.Ed25519_Seed:
+            if code == CryOneDex.Ed25519_Seed:
                 raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
                 super(Signer, self).__init__(raw=raw, code=code, **kwa)
             else:
                 raise ValueError("Unsupported signer code = {}.".format(code))
 
-        if self.code == CryOne.Ed25519_Seed:
+        if self.code == CryOneDex.Ed25519_Seed:
             self._sign = self._ed25519
             verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
             verifier = Verifier(raw=verkey,
-                                code=CryOne.Ed25519 if transferable
-                                                    else CryOne.Ed25519N )
+                                code=CryOneDex.Ed25519 if transferable
+                                                    else CryOneDex.Ed25519N )
         else:
             raise ValueError("Unsupported signer code = {}.".format(self.code))
 
@@ -549,9 +549,9 @@ class Signer(CryMat):
         """
         sig = pysodium.crypto_sign_detached(ser, seed + key)
         if index is None:
-            return CryMat(raw=sig, code=CryTwo.Ed25519)
+            return CryMat(raw=sig, code=CryTwoDex.Ed25519)
         else:
-            return SigMat(raw=sig, code=SigTwo.Ed25519, index=index)
+            return SigMat(raw=sig, code=SigTwoDex.Ed25519, index=index)
 
 
 class Digester(CryMat):
@@ -569,7 +569,7 @@ class Digester(CryMat):
         verify: verifies signature
 
     """
-    def __init__(self, raw=b'', ser=b'', code=CryOne.Blake3_256, **kwa):
+    def __init__(self, raw=b'', ser=b'', code=CryOneDex.Blake3_256, **kwa):
         """
         Assign digest verification function to ._verify
 
@@ -584,13 +584,13 @@ class Digester(CryMat):
         except EmptyMaterialError as ex:
             if not ser:
                 raise ex
-            if code == CryOne.Blake3_256:
+            if code == CryOneDex.Blake3_256:
                 dig = blake3.blake3(ser).digest()
                 super(Digester, self).__init__(raw=dig, code=code, **kwa)
             else:
                 raise ValueError("Unsupported code = {} for digester.".format(code))
 
-        if self.code == CryOne.Blake3_256:
+        if self.code == CryOneDex.Blake3_256:
             self._verify = self._blake3_256
         else:
             raise ValueError("Unsupported code = {} for digester.".format(self.code))
@@ -720,7 +720,7 @@ class Aider(CryMat):
         verify():  Verifies derivation of aid
 
     """
-    def __init__(self, raw=b'', code=CryOne.Ed25519N, ked=None, **kwa):
+    def __init__(self, raw=b'', code=CryOneDex.Ed25519N, ked=None, **kwa):
         """
         assign ._verify to verify derivation of aid  = .qb64
 
@@ -735,9 +735,9 @@ class Aider(CryMat):
                                         code=verifier.code,
                                         **kwa)
 
-        if self.code == CryOne.Ed25519N:
+        if self.code == CryOneDex.Ed25519N:
             self._verify = self._ed25519n
-        elif self.code == CryOne.Ed25519:
+        elif self.code == CryOneDex.Ed25519:
             self._verify = self._ed25519
         else:
             raise ValueError("Unsupported code = {} for aider.".format(self.code))
@@ -757,12 +757,12 @@ class Aider(CryMat):
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verifier.code not in [CryOne.Ed25519N, CryOne.Ed25519]:
+        if verifier.code not in [CryOneDex.Ed25519N, CryOneDex.Ed25519]:
             raise DerivationError("Invalid derivation code = {}"
                                   "".format(verifier.code))
 
         try:
-            if verifier.code == CryOne.Ed25519N and ked["next"]:
+            if verifier.code == CryOneDex.Ed25519N and ked["next"]:
                 raise DerivationError("Non-empty next = {} for non-transferable"
                                       " code = {}".format(ked["next"],
                                                           verifier.code))
@@ -882,7 +882,7 @@ class SigSelectCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-SigSelect = SigSelectCodex()  # Make instance
+SigSelDex = SigSelectCodex()  # Make instance
 
 
 @dataclass(frozen=True)
@@ -905,7 +905,7 @@ class SigTwoCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-SigTwo = SigTwoCodex()  #  Make instance
+SigTwoDex = SigTwoCodex()  #  Make instance
 
 # Mapping of Code to Size
 SigTwoSizes = {
@@ -939,7 +939,7 @@ class SigFourCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-SigFour = SigFourCodex()  #  Make instance
+SigFourDex = SigFourCodex()  #  Make instance
 
 # Mapping of Code to Size
 SigFourSizes = {
@@ -969,7 +969,7 @@ class SigFiveCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-SigFive = SigFiveCodex()  #  Make instance
+SigFiveDex = SigFiveCodex()  #  Make instance
 
 # Mapping of Code to Size
 SigFiveSizes = {}
@@ -1004,7 +1004,7 @@ class SigMat:
         .qb64 str in Base64 with derivation code and signature crypto material
         .qb2  bytes in binary with derivation code and signature crypto material
     """
-    def __init__(self, raw=b'', qb64='', qb2='', code=SigTwo.Ed25519, index=0):
+    def __init__(self, raw=b'', qb64='', qb2='', code=SigTwoDex.Ed25519, index=0):
         """
         Validate as fully qualified
         Parameters:
@@ -1023,15 +1023,15 @@ class SigMat:
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
             pad = self._pad(raw)
-            if (not ( (pad == 2 and (code in SigTwo)) or  # Two or Six or Ten
-                      (pad == 0 and (code in SigFour)) or  #  Four or Eight
-                      (pad == 1 and (code in SigFive)) )):   # Five or Nine
+            if (not ( (pad == 2 and (code in SigTwoDex)) or  # Two or Six or Ten
+                      (pad == 0 and (code in SigFourDex)) or  #  Four or Eight
+                      (pad == 1 and (code in SigFiveDex)) )):   # Five or Nine
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
 
-            if ( (code in SigTwo and ((index < 0) or (index > SIGTWOMAX)) ) or
-                 (code in SigFour and ((index < 0) or (index > SIGFOURMAX)) ) or
-                 (code in SigFive and ((index < 0) or (index > SIGFIVEMAX)) ) ):
+            if ( (code in SigTwoDex and ((index < 0) or (index > SIGTWOMAX)) ) or
+                 (code in SigFourDex and ((index < 0) or (index > SIGFOURMAX)) ) or
+                 (code in SigFiveDex and ((index < 0) or (index > SIGFIVEMAX)) ) ):
 
                 raise ValidationError("Invalid index={} for code={}.".format(index, code))
 
@@ -1111,10 +1111,10 @@ class SigMat:
         """
         pad = self.pad
         # valid pad for code length
-        if self._code in SigTwo:  # 2 char = code + index
+        if self._code in SigTwoDex:  # 2 char = code + index
             full = "{}{}".format(self._code, B64ChrByIdx[self._index])
 
-        elif self._code == SigSelect.four: # 4 char = code + index
+        elif self._code == SigSelDex.four: # 4 char = code + index
             pass
 
         else:
@@ -1138,15 +1138,15 @@ class SigMat:
         # need to map code to length so can only consume proper number of chars
         #  from front of qb64 so can use with full identifiers not just id prefixes
 
-        if code in SigTwo:  # 2 char = 1 code + 1 index
+        if code in SigTwoDex:  # 2 char = 1 code + 1 index
             qb64 = qb64[:SigTwoSizes[code]]  # strip of exact len identifier after prefix
             pre += 1
             index = B64IdxByChr[qb64[pre-1:pre]]
 
-        elif code == SigSelect.four:  #  '0'
+        elif code == SigSelDex.four:  #  '0'
             pre += 1
             code = qb64[pre-2:pre]
-            if code not in SigFour:  # 4 char = 2 code + 2 index
+            if code not in SigFourDex:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:SigFourSizes[code]]  # strip of exact len identifier after prefix
             pre += 2
@@ -1454,7 +1454,7 @@ class Serder:
         Returns CryMat of digest of self.raw
         digmat (digest material) property getter
         """
-        return (CryMat(raw=blake3.blake3(self.raw).digest(), code=CryOne.Blake3_256))
+        return (CryMat(raw=blake3.blake3(self.raw).digest(), code=CryOneDex.Blake3_256))
 
     @property
     def dig(self):
