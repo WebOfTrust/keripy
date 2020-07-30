@@ -19,8 +19,9 @@ import blake3
 
 from ..kering import ValidationError, VersionError, EmptyMaterialError, DerivationError
 from ..kering import Versionage, Version
-from .coring import Ilks
+from ..help.helping import mdict
 
+from .coring import Ilks
 from .coring import Signer, Verfer, Diger, Nexter, Aider
 
 
@@ -46,13 +47,10 @@ Kevers = dict()  # dict of existing Kevers indexed by aid.qb64 of each Kever
 
 KELs = dict()  # Generator KELs as dict of dicts of events keyed by aid.qb64 then in order by event sn
 KERLs = dict()  # Validator KERLs as dict of dicts of events keyed by aid.qb64 then in order by event sn
+                # mdict keys must be subclass of str
 KELDs = dict()  # Validator KELDs as dict of dicts of events keyed by aid.qb64 then by event dig
 DELs = dict()  # Validator DELs as dict of dicts of dup events keyed by aid.qb64 then by event dig
 Escrows = dict()  # Validator Escow as dict of dicts of events keyed by aid.qb64 then in order by event sn
-
-
-
-
 
 
 class Keger:
@@ -228,8 +226,8 @@ class Kever:
             Kevers[aid] = dict()
         Kevers[aid][dig] = self
         if aid not in KERLs:
-            KERLs[aid] = dict()
-        KERLs[aid][self.sn] = kevage
+            KERLs[aid] = mdict()  # supports recover forks by sn
+        KERLs[aid].add(ked["sn"], kevage)  # multiple values each sn hex str
         if aid not in KELDs:
             KELDs[aid] = dict()
         KELDs[aid][dig] = kevage
@@ -285,7 +283,7 @@ class Kever:
             # next and signatures verify so update state
             self.verfers = verfers
             self.sith = sith
-            self.sn = sn
+            self.sn = int(ked["sn"], 16)
             self.diger = serder.diger
 
             # update .nexter
@@ -298,7 +296,7 @@ class Kever:
 
             # update logs
             kevage = Kevage(serder=serder, sigxers=sigxers)
-            KERLs[aid][self.sn] = kevage
+            KERLs[aid].add(ked["sn"], kevage)  # multiple values each sn hex str
             KELDs[aid][self.diger.qb64] = kevage
 
 
@@ -320,12 +318,12 @@ class Kever:
                                   "".format(sigxers, serder))
 
             # update state
-            self.sn = sn
+            self.sn = int(ked["sn"], 16)
             self.diger = serder.diger
 
             # update logs
             kevage = Kevage(serder=serder, sigxers=sigxers)
-            KERLs[aid][self.sn] = kevage
+            KERLs[aid].add(ked["sn"], kevage)  # multiple values each sn hex str
             KELDs[aid][self.diger.qb64] = kevage
 
 
@@ -440,9 +438,9 @@ class Kevery:
             else:  # not inception so can't verify, add to escrow
                 # log escrowed
                 if aid not in Escrows:  #  add to Escrows
-                    Escrows[aid] = dict()
+                    Escrows[aid] = mdict()  # multiple values by sn
                 if sn not in Escrows[aid]:
-                    Escrows[aid][sn] = Kevage(serder=serder, sigxers=sigxers)
+                    Escrows[aid].add(sn, Kevage(serder=serder, sigxers=sigxers))
 
 
         else:  # already accepted inception event for aid
@@ -471,9 +469,9 @@ class Kevery:
                 if sn > kever.sn + 1:  # sn not in order
                     #  log escrowed
                     if aid not in Escrows:  #  add to Escrows
-                        Escrows[aid] = dict()
+                        Escrows[aid] = mdict()  # multiple values by sn
                     if sn not in Escrows[aid]:
-                        Escrows[aid][sn] = Kevage(serder=serder, sigxers=sigxers)
+                        Escrows[aid].add(sn, Kevage(serder=serder, sigxers=sigxers))
 
                 else:  # sn == kever.sn + 1
                     if dig != kever.diger:  # prior event dig not match

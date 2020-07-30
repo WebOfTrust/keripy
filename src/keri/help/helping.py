@@ -94,7 +94,7 @@ class mdict(MultiDict):
     Associated with each key is a valuelist i.e. a list of values for that key.
     Extends  MultiDict
     https://multidict.readthedocs.io/en/stable/
-
+    MultiDict keys must be subclass of str no ints allowed
     In MultiDict:
         .add(key,value)  appends value to the valuelist at key
 
