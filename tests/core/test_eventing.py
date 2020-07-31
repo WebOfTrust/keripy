@@ -26,7 +26,7 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import Kever, Kevery, Keger
+from keri.core.eventing import incept, Kever, Kevery
 
 
 def test_ilks():
@@ -49,12 +49,27 @@ def test_ilks():
     assert 'dip' in Ilks
     assert 'drt' in Ilks
 
-def test_keger():
+def test_keyeventfuncs():
     """
-    Test the support functionality for Keger class
-    Key Event Generator
+    Test the support functionality for key event generation functionss
+    Inception Key Event Generator
     """
-    keger = Keger()
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR'
+            b'\xc9\xbd\x04\x9d\x85)~\x93')
+
+    signer = Signer(raw=seed)  #  original signing keypair transferable default
+    keys = [signer.verfer.qb64]
+
+    serder = incept(keys=keys)  #  default
+
+    assert serder.ked["id"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","id":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                          b'","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ'
+                          b'-Wk1x4ejhcc"],"next":"","toad":"1","wits":[],"conf":[]}')
+
+
+
     """ Done Test """
 
 def test_kever():
@@ -447,4 +462,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-        test_kever()
+        test_keyeventfuncs()

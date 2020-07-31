@@ -21,8 +21,8 @@ from ..kering import ValidationError, VersionError, EmptyMaterialError, Derivati
 from ..kering import Versionage, Version
 from ..help.helping import mdict
 
-from .coring import Ilks
-from .coring import Signer, Verfer, Diger, Nexter, Aider
+from .coring import Versify, Serials, Ilks, CryOneDex
+from .coring import Signer, Verfer, Diger, Nexter, Aider, Serder
 
 
 @dataclass(frozen=True)
@@ -53,74 +53,129 @@ DELs = dict()  # Validator DELs as dict of dicts of dup events keyed by aid.qb64
 Escrows = dict()  # Validator Escow as dict of dicts of events keyed by aid.qb64 then in order by event sn
 
 
-class Keger:
-    """
-    Keger is KERI key event generator class
-    Only supports current version VERSION
-
-    Has the following public attributes and properties:
-
-    Attributes:
-        .signers is list of signers for current event as Signer
-            each Signer includes Verfer in .verfer
-
-        .version is version of current event as Version
-        .aider is autonomic ID as Aider
-        .sn is sequence number
-        .diger is digest of current event as Diger
-        .ilk is str of current event type
-        .sith is int or list of current signing threshold
-        .nexter is qualified next sith plus next verifier keys as Nexter
-        .toad is int  for threshold of accountable duplicity
-        .wits is list of initial witnesses as Verfers
-        .cuts is list of witnesses to cut (prune) as Verfers
-        .adds is list of witnesses to add (graft) as Verfers
-        .conf is list of inception configuration data mappings
-        .data is seal data list for non inception events
-        .idxs is int or list of signature indexes of current event if any
-
-    Properties:
+def incept( keys,
+            version=Version,
+            kind=Serials.json,
+            code=CryOneDex.Ed25519,
+            sith=1,
+            nxt="",
+            toad=1,
+            wits=None,
+            conf=None,
+            idxs=None
+          ):
 
     """
+    Returns serder of inception event.
+    Utility function to automate creation of inception events.
 
-    def __init__(self, signers=None,
-                       version=Version,
-                       aider=None,
-                       sn=0,
-                       ilk=Ilks.icp,
-                       sith=1,
-                       nexter=None,
-                       toad=1,
-                       wits=None,
-                       cuts=None,
-                       adds=None,
-                       conf=None,
-                       data=None,
-                       idxs=None
-                       ):
-        """
-        Extract and verify event and attached signatures from key event stream kes
-
-        Parameters:
+     Parameters:
+        keys,
+        version
+        kind
+        code
+        sith
+        nxt
+        toad
+        wits
+        conf
+        idxs
 
 
-        """
-        self.signers = signers
-        self.version = version
-        self.aider = version
-        self.sn =  sn
-        self.diger = None
-        self.ilk = ilk
-        self.sith = sith
-        self.nexter = None
-        self.toad = toad
-        self.wits = wits
-        self.cuts = cuts
-        self.adds = adds
-        self.conf = conf
-        self.data = data
-        self.idxs = idxs
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    sn = 0
+    ilk = Ilks.icp
 
+    wits = wits if wits is not None else []
+    conf = conf if conf is not None else []
+
+    ked = dict(vs=vs,  # version string
+               id="",  # ab64 prefix
+               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,
+               sith="{:x}".format(sith), # hex string no leading zeros lowercase
+               keys=keys,  # list of qb64
+               next=nxt,  # hash qual Base64
+               toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+               wits=wits,  # list of qb64 may be empty
+               conf=conf,  # list of config ordered mappings may be empty
+               )
+
+    if idxs is not None:  # add idxs element to ked
+        if isinstance(idxs, int):
+            idxs="{:x}".format(nsigs)  # single lowercase hex string
+        ked["idxs"] = idxs  # update ked with idxs field
+
+
+    aider = Aider(code=code, ked=ked)  # Derive AID from ked per code
+    ked["id"] = aider.qb64  # update id element in ked with aid qb64
+
+    return Serder(ked=ked)  # return serialized ked
+
+def rotate( aid,
+            keys,
+            dig,
+            version=Version,
+            kind=Serials.json,
+            sn=1,
+            sith=1,
+            nxt="",
+            toad=1,
+            cuts=None,
+            adds=None,
+            data=None,
+            idxs=None
+          ):
+
+    """
+    Returns serder of inception event.
+    Utility function to automate creation of inception events.
+
+     Parameters:
+        aid
+        keys
+        dig
+        version
+        kind
+        sith
+        nxt
+        toad
+        cuts
+        adds
+        data
+        idxs
+
+
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.rot
+
+    cuts = cuts if cuts is not None else []
+    adds = adds if adds is not None else []
+    data = data if data is not None else []
+
+    ked = dict(vs=vs,  # version string
+               id=aid,  # ab64 prefix
+               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,
+               dig=dig,
+               sith="{:x}".format(sith), # hex string no leading zeros lowercase
+               keys=keys,  # list of qb64
+               next=nxt,  # hash qual Base64
+               toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+               cuts=cuts,  # list of qb64 may be empty
+               adds=adds,  # list of qb64 may be empty
+               data=data,  # list of seals
+
+               )
+
+    if idxs is not None:  # add idxs element to ked
+        if isinstance(idxs, int):
+            idxs="{:x}".format(nsigs)  # single lowercase hex string
+        ked["idxs"] = idxs  # update ked with idxs field
+
+    return Serder(ked=ked)  # return serialized ked
 
 class Kever:
     """
