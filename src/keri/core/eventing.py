@@ -202,21 +202,24 @@ def rotate( aid,
     if len(cutset) != len(cuts):
         raise ValueError("Invalid cuts = {}, has duplicates.".format(cuts))
 
-    if (witset & cutset) != cutset:  #  some cuts not in wits
-        raise ValueError("Invalid cuts = {}, not all members in wits.".format(cuts))
+    #if (witset & cutset) != cutset:  #  some cuts not in wits
+        #raise ValueError("Invalid cuts = {}, not all members in wits.".format(cuts))
 
     adds = adds if adds is not None else []
     addset = oset(adds)
     if len(addset) != len(adds):
         raise ValueError("Invalid adds = {}, has duplicates.".format(adds))
 
-    if cutset & addset:  # non empty intersection
-        raise ValueError("Intersecting cuts = {} and  adds = {}.".format(cuts, adds))
+    #if cutset & addset:  # non empty intersection
+        #raise ValueError("Intersecting cuts = {} and  adds = {}.".format(cuts, adds))
 
-    if witset & addset:  # non empty intersection
-        raise ValueError("Intersecting wits = {} and  adds = {}.".format(wits, adds))
+    #if witset & addset:  # non empty intersection
+        #raise ValueError("Intersecting wits = {} and  adds = {}.".format(wits, adds))
 
     newitset = (witset - cutset) | addset
+    if len(newitset) != (len(wits) - len(cuts) + len(adds)):
+        raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
+                         "and adds = {}.".format(wits, cuts, adds))
 
     if toad is None:
         if not newitset:
