@@ -496,10 +496,10 @@ def test_aider():
     assert len(aider.raw) == CryOneRawSizes[aider.code]
     assert len(aider.qb64) == CryOneSizes[aider.code]
 
-    ked = dict(keys=[aider.qb64], next="")
+    ked = dict(keys=[aider.qb64], nxt="")
     assert aider.verify(ked=ked) == True
 
-    ked = dict(keys=[aider.qb64], next="ABC")
+    ked = dict(keys=[aider.qb64], nxt="ABC")
     assert aider.verify(ked=ked) == False
 
     aider = Aider(raw=verkey, code=CryOneDex.Ed25519)  # defaults provide Ed25519N aider
@@ -516,18 +516,18 @@ def test_aider():
     assert aider.verify(ked=ked) == False
 
     # derive from ked
-    ked = dict(keys=[verfer.qb64], next="")
+    ked = dict(keys=[verfer.qb64], nxt="")
     aider = Aider(ked=ked)
     assert aider.qb64 == verfer.qb64
     assert aider.verify(ked=ked) == True
 
     verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
-    ked = dict(keys=[verfer.qb64], next="")
+    ked = dict(keys=[verfer.qb64], nxt="")
     aider = Aider(ked=ked)
     assert aider.qb64 == verfer.qb64
     assert aider.verify(ked=ked) == True
 
-    ked = dict(keys=[verfer.qb64], next="ABCD")
+    ked = dict(keys=[verfer.qb64], nxt="ABCD")
     with pytest.raises(DerivationError):
         aider = Aider(ked=ked)
     """ Done Test """
@@ -685,13 +685,13 @@ def test_serials():
 
 
     icp = dict(vs = Vstrings.json,
-              id = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
+              aid = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
               sn = '0001',
               ilk = 'icp',
               dig = 'DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS',
               sith = 1,
               keys = ['AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'],
-              next = 'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM',
+              nxt = 'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM',
               toad = 0,
               wits = [],
               conf = [],
@@ -699,13 +699,13 @@ def test_serials():
              )
 
     rot = dict(vs = Vstrings.json,
-              id = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
+              aid = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
               sn = '0001',
               ilk = 'rot',
               dig = 'DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS',
               sith = 1,
               keys = ['AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'],
-              next = 'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM',
+              nxt = 'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM',
               toad = 0,
               cuts = [],
               adds = [],
@@ -715,9 +715,9 @@ def test_serials():
 
     icps = json.dumps(icp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert len(icps) == 314
-    assert icps == (b'{"vs":"KERI10JSON000000_","id":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    assert icps == (b'{"vs":"KERI10JSON000000_","aid":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"icp","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
-                    b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"'
+                    b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"nxt":"'
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"conf":[],"'
                     b'idxs":[0]}')
 
@@ -726,9 +726,9 @@ def test_serials():
 
     rots = json.dumps(rot, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert len(rots) == 324
-    assert rots == (b'{"vs":"KERI10JSON000000_","id":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    assert rots == (b'{"vs":"KERI10JSON000000_","aid":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"rot","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
-                    b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"next":"'
+                    b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"nxt":"'
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"cuts":[],"adds":[],"'
                     b'data":[],"idxs":[0]}')
 
@@ -738,10 +738,10 @@ def test_serials():
     icp["vs"] = Vstrings.mgpk
     icps = msgpack.dumps(icp)
     assert len(icps) == 271
-    assert icps == (b'\x8c\xa2vs\xb1KERI10MGPK000000_\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS'
-                    b'VPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwyZ'
-                    b'-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH'
-                    b'3ULvYAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
+    assert icps == (b'\x8c\xa2vs\xb1KERI10MGPK000000_\xa3aid\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
+                    b'SVPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwy'
+                    b'Z-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZ'
+                    b'H3ULvYAfSVPzhzS6b5CM\xa3nxt\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
                     b'CM\xa4toad\x00\xa4wits\x90\xa4conf\x90\xa4idxs\x91\x00')
 
     match = Rever.search(icps)
@@ -750,11 +750,12 @@ def test_serials():
     rot["vs"] = Vstrings.mgpk
     rots = msgpack.dumps(rot)
     assert len(rots) == 277
-    assert rots == (b'\x8d\xa2vs\xb1KERI10MGPK000000_\xa2id\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS'
-                    b'VPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3rot\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwyZ'
-                    b'-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH'
-                    b'3ULvYAfSVPzhzS6b5CM\xa4next\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
+    assert rots == (b'\x8d\xa2vs\xb1KERI10MGPK000000_\xa3aid\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
+                    b'SVPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3rot\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwy'
+                    b'Z-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZ'
+                    b'H3ULvYAfSVPzhzS6b5CM\xa3nxt\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
                     b'CM\xa4toad\x00\xa4cuts\x90\xa4adds\x90\xa4data\x90\xa4idxs\x91\x00')
+
 
     match = Rever.search(rots)
     assert match.group() == Vstrings.mgpk.encode("utf-8")
@@ -762,9 +763,9 @@ def test_serials():
     icp["vs"] = Vstrings.cbor
     icps = cbor.dumps(icp)
     assert len(icps) == 271
-    assert icps == (b'\xacbvsqKERI10CBOR000000_bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMb'
-                    b'snd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01d'
-                    b'keys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZ'
+    assert icps == (b'\xacbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+                    b'bsnd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
+                    b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dconf\x80didxs\x81\x00')
 
     match = Rever.search(icps)
@@ -773,9 +774,9 @@ def test_serials():
     rot["vs"] = Vstrings.cbor
     rots = cbor.dumps(rot)
     assert len(rots) == 277
-    assert rots == (b'\xadbvsqKERI10CBOR000000_bidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMb'
-                    b'snd0001cilkcrotcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01d'
-                    b'keys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMdnextx,DZ-i0d8JZAoTNZ'
+    assert rots == (b'\xadbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+                    b'bsnd0001cilkcrotcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
+                    b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dcuts\x80dadds\x80ddata\x80didxs\x81'
                     b'\x00')
 
@@ -805,17 +806,17 @@ def test_serder():
         serder = Serder()
 
 
-    e1 = dict(vs=Vstrings.json, id="ABCDEFG", sn="0001", ilk="rot")
+    e1 = dict(vs=Vstrings.json, aid="ABCDEFG", sn="0001", ilk="rot")
     serder = Serder(ked=e1)
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     vs = Versify(kind=Serials.json, size=len(e1s))  # use real length
-    assert vs == 'KERI10JSON000041_'
+    assert vs == 'KERI10JSON000042_'
     e1["vs"] = vs  # has real length
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     kind1, vers1, size1 = serder._sniff(e1s)
     assert kind1 == Serials.json
-    assert size1 == 65
+    assert size1 == 66
     e1ss = e1s + b'extra attached at the end.'
     ked1, knd1, vrs1, siz1 = serder._inhale(e1ss)
     assert ked1 == e1
@@ -833,12 +834,12 @@ def test_serder():
     e2["vs"] = Vstrings.mgpk
     e2s = msgpack.dumps(e2)
     vs = Versify(kind=Serials.mgpk, size=len(e2s))  # use real length
-    assert vs == 'KERI10MGPK000031_'
+    assert vs == 'KERI10MGPK000032_'
     e2["vs"] = vs  # has real length
     e2s = msgpack.dumps(e2)
     kind2, vers2, size2 = serder._sniff(e2s)
     assert kind2 == Serials.mgpk
-    assert size2 == 49
+    assert size2 == 50
     e2ss = e2s + b'extra attached  at the end.'
     ked2, knd2, vrs2, siz2 = serder._inhale(e2ss)
     assert ked2 == e2
@@ -856,12 +857,12 @@ def test_serder():
     e3["vs"] = Vstrings.cbor
     e3s = cbor.dumps(e3)
     vs = Versify(kind=Serials.cbor, size=len(e3s))  # use real length
-    assert vs == 'KERI10CBOR000031_'
+    assert vs == 'KERI10CBOR000032_'
     e3["vs"] = vs  # has real length
     e3s = cbor.dumps(e3)
     kind3, vers3, size3 = serder._sniff(e3s)
     assert kind3 == Serials.cbor
-    assert size3 == 49
+    assert size3 == 50
     e3ss = e3s + b'extra attached  at the end.'
     ked3, knd3, vrs3, siz3 = serder._inhale(e3ss)
     assert ked3 == e3
@@ -889,7 +890,7 @@ def test_serder():
     assert len(evt1.diger.raw) == 32
     assert len(evt1.dig) == 44
     assert len(evt1.dig) == CryOneSizes[CryOneDex.Blake3_256]
-    assert evt1.dig == 'EB_Qy67YQkcSWmCcZo_3RaoTUQwWGoggAwHlG_0rpmQo'
+    assert evt1.dig == 'EWRKo-8KjGqPxHBsd77LfTy5sHBkfql6NOwl0-8VoI3U'
     assert evt1.diger.verify(evt1.raw)
 
     evt1 = Serder(ked=ked1)

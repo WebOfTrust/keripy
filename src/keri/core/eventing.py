@@ -88,19 +88,19 @@ def incept( keys,
     ilk = Ilks.icp
 
     if nxt and code in [CryOneDex.Ed25519N]:  # non-empy nxt for ephemeral
-        raise ValueError("Non-empty next digest = {} for ephemeral aid code"
+        raise ValueError("Non-empty nxt digest = {} for ephemeral aid code"
                          " = {}.".format(nxt, code))
 
     wits = wits if wits is not None else []
     conf = conf if conf is not None else []
 
     ked = dict(vs=vs,  # version string
-               id="",  # ab64 prefix
+               aid="",  # ab64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=ilk,
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
                keys=keys,  # list of qb64
-               next=nxt,  # hash qual Base64
+               nxt=nxt,  # hash qual Base64
                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                wits=wits,  # list of qb64 may be empty
                conf=conf,  # list of config ordered mappings may be empty
@@ -113,7 +113,7 @@ def incept( keys,
 
 
     aider = Aider(code=code, ked=ked)  # Derive AID from ked per code
-    ked["id"] = aider.qb64  # update id element in ked with aid qb64
+    ked["aid"] = aider.qb64  # update aid element in ked with aid qb64
 
     return Serder(ked=ked)  # return serialized ked
 
@@ -160,13 +160,13 @@ def rotate( aid,
     data = data if data is not None else []
 
     ked = dict(vs=vs,  # version string
-               id=aid,  # ab64 prefix
+               aid=aid,  # ab64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=ilk,
                dig=dig,
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
                keys=keys,  # list of qb64
-               next=nxt,  # hash qual Base64
+               nxt=nxt,  # hash qual Base64
                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                cuts=cuts,  # list of qb64 may be empty
                adds=adds,  # list of qb64 may be empty
@@ -247,7 +247,7 @@ class Kever:
             raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigxers, serder))
 
-        self.aider = Aider(qb64=ked["id"])
+        self.aider = Aider(qb64=ked["aid"])
         if not self.aider.verify(ked=ked):  # invalid aid
             raise ValidationError("Invalid aid = {} for inception ked = {}."
                                   "".format(self.aider.qb64, ked))
@@ -262,7 +262,7 @@ class Kever:
         if self.ilk != Ilks.icp:
             raise ValidationError("Expected ilk = {} got {}."
                                               "".format(Ilks.icp, self.ilk))
-        self.nexter = Nexter(qb64=ked["next"]) if ked["next"] else None  # check for empty
+        self.nexter = Nexter(qb64=ked["nxt"]) if ked["nxt"] else None  # check for empty
         self.toad = int(ked["toad"], 16)
         self.wits = ked["wits"]
         self.conf = ked["conf"]
@@ -304,7 +304,7 @@ class Kever:
         ilk = ked["ilk"]
 
         if ilk == Ilks.rot:  # subsequent rotation event
-            # verify next from prior
+            # verify nxt from prior
             # also check derivation code of aid for non-transferable
             #  check and
 
@@ -321,11 +321,11 @@ class Kever:
 
             keys = ked["keys"]
             if not self.nexter.verify(sith=sith, keys=keys):
-                raise ValidationError("Mismatch next digest = {} with rotation"
+                raise ValidationError("Mismatch nxt digest = {} with rotation"
                                       " sith = {}, keys = {}.".format(nexter.qb64))
 
 
-            # prior next valid so verify sigxers using new verifier keys from event
+            # prior nxt valid so verify sigxers using new verifier keys from event
             verfers = serder.verfers  # only for establishment events
 
             # verify indexes of attached signatures against verifiers
@@ -339,14 +339,14 @@ class Kever:
                 raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigxers, serder))
 
-            # next and signatures verify so update state
+            # nxt and signatures verify so update state
             self.verfers = verfers
             self.sith = sith
             self.sn = int(ked["sn"], 16)
             self.diger = serder.diger
 
             # update .nexter
-            nexter = Nexter(qb64=ked["next"]) if nxt else None  # check for empty
+            nexter = Nexter(qb64=ked["nxt"]) if nxt else None  # check for empty
             # update nontransferable  if None
             self.nexter = nexter
             self.toad = int(ked["toad"], 16)
@@ -476,9 +476,9 @@ class Kevery:
         # fetch ked ilk  aid, sn, dig to see how to process
         ked = serder.ked
         try:
-            aider = Aider(qb64=ked["id"])
+            aider = Aider(qb64=ked["aid"])
         except Exception as ex:
-            raise ValidationError("Invalid aid = {}.".format(ked["id"]))
+            raise ValidationError("Invalid aid = {}.".format(ked["aid"]))
         aid = aider.qb64
         ked = serder.ked
         ilk = ked["ilk"]

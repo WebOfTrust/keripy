@@ -64,10 +64,10 @@ def test_keyeventfuncs():
     assert signer0.verfer.code == CryOneDex.Ed25519N
     keys0 = [signer0.verfer.qb64]
     serder = incept(keys=keys0)  #  default
-    assert serder.ked["id"] == 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","id":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.ked["aid"] == 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","aid":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                           b'","sn":"0","ilk":"icp","sith":"1","keys":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ'
-                          b'-Wk1x4ejhcc"],"next":"","toad":"1","wits":[],"conf":[]}')
+                          b'-Wk1x4ejhcc"],"nxt":"","toad":"1","wits":[],"conf":[]}')
 
 
     # Transferable Case
@@ -76,10 +76,10 @@ def test_keyeventfuncs():
     assert signer0.verfer.code == CryOneDex.Ed25519
     keys0 = [signer0.verfer.qb64]
     serder = incept(keys=keys0)  #  default
-    assert serder.ked["id"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","id":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.ked["aid"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                           b'","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ'
-                          b'-Wk1x4ejhcc"],"next":"","toad":"1","wits":[],"conf":[]}')
+                          b'-Wk1x4ejhcc"],"nxt":"","toad":"1","wits":[],"conf":[]}')
 
 
     # create next key
@@ -87,7 +87,7 @@ def test_keyeventfuncs():
     assert signer1.code == CryOneDex.Ed25519_Seed
     assert signer1.verfer.code == CryOneDex.Ed25519
     keys1 = [signer1.verfer.qb64]
-    # compute next digest
+    # compute nxt digest
     sith1 = 1
     nexter1 = Nexter(sith=sith1, keys=keys1)
     nxt = nexter1.qb64  # transferable so nxt is not empty
@@ -117,21 +117,21 @@ def test_kever():
     assert skp1.code == CryOneDex.Ed25519_Seed
     assert skp1.verfer.code == CryOneDex.Ed25519
     nxtkeys = [skp1.verfer.qb64]
-    # compute next digest
+    # compute nxt digest
     nexter = Nexter(sith=nxtsith, keys=nxtkeys)
-    nxt = nexter.qb64  # transferable so next is not empty
+    nxt = nexter.qb64  # transferable so nxt is not empty
 
     sn = 0  #  inception event so 0
     toad = 0  # no witnesses
     nsigs = 1  #  one attached signature unspecified index
 
     ked0 = dict(vs=Versify(kind=Serials.json, size=0),
-                id="",  # qual base 64 prefix
+                aid="",  # qual base 64 prefix
                 sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                 ilk=Ilks.icp,
                 sith="{:x}".format(sith), # hex string no leading zeros lowercase
                 keys=keys,  # list of signing keys each qual Base64
-                next=nxt,  # hash qual Base64
+                nxt=nxt,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 conf=[],  # list of config ordered mappings may be empty
@@ -143,8 +143,8 @@ def test_kever():
     aid0 = Aider(ked=ked0)
     assert aid0.code == CryOneDex.Ed25519
 
-    # update ked with id
-    ked0["id"] = aid0.qb64
+    # update ked with aid
+    ked0["aid"] = aid0.qb64
 
     # Serialize ked0
     tser0 = Serder(ked=ked0)
@@ -187,17 +187,17 @@ def test_process_nontransferable():
     # but when used with inception event must be compatible event
     sn = 0  #  inception event so 0
     sith = 1 #  one signer
-    nxt = ""  # non-transferable so next is empty
+    nxt = ""  # non-transferable so nxt is empty
     toad = 0  # no witnesses
     nsigs = 1  #  one attached signature unspecified index
 
     ked0 = dict(vs=Versify(kind=Serials.json, size=0),
-                id=aid0.qb64,  # qual base 64 prefix
+                aid=aid0.qb64,  # qual base 64 prefix
                 sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                 ilk=Ilks.icp,
                 sith="{:x}".format(sith), # hex string no leading zeros lowercase
                 keys=[aid0.qb64],  # list of signing keys each qual Base64
-                next=nxt,  # hash qual Base64
+                nxt=nxt,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 conf=[],  # list of config ordered mappings may be empty
@@ -250,7 +250,7 @@ def test_process_nontransferable():
                 del msgb0[:len(rsig.qb64)]
 
     # verify aid
-    raid0 = Aider(qb64=rser0.ked["id"])
+    raid0 = Aider(qb64=rser0.ked["aid"])
     assert raid0.verify(ked=rser0.ked)
     """ Done Test """
 
@@ -273,7 +273,7 @@ def test_process_transferable():
     assert skp1.code == CryOneDex.Ed25519_Seed
     assert skp1.verfer.code == CryOneDex.Ed25519
     nxtkeys = [skp1.verfer.qb64]
-    # compute next digest
+    # compute nxt digest
     nexter = Nexter(sith=nxtsith, keys=nxtkeys)
     nxt = nexter.qb64  # transferable so next is not empty
 
@@ -282,12 +282,12 @@ def test_process_transferable():
     nsigs = 1  #  one attached signature unspecified index
 
     ked0 = dict(vs=Versify(kind=Serials.json, size=0),
-                id="",  # qual base 64 prefix
+                aid="",  # qual base 64 prefix
                 sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                 ilk=Ilks.icp,
                 sith="{:x}".format(sith), # hex string no leading zeros lowercase
                 keys=keys,  # list of signing keys each qual Base64
-                next=nxt,  # hash qual Base64
+                nxt=nxt,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 conf=[],  # list of config ordered mappings may be empty
@@ -299,8 +299,8 @@ def test_process_transferable():
     aid0 = Aider(ked=ked0)
     assert aid0.code == CryOneDex.Ed25519
 
-    # update ked with id
-    ked0["id"] = aid0.qb64
+    # update ked with aid
+    ked0["aid"] = aid0.qb64
 
     # Serialize ked0
     tser0 = Serder(ked=ked0)
@@ -345,12 +345,12 @@ def test_process_transferable():
                 del msgb0[:len(rsig.qb64)]
 
     # verify aid
-    raid0 = Aider(qb64=rser0.ked["id"])
+    raid0 = Aider(qb64=rser0.ked["aid"])
     assert raid0.verify(ked=rser0.ked)
 
     #verify nxt digest from event is still valid
-    rnext1 = Nexter(qb64=rser0.ked["next"])
-    assert rnext1.verify(sith=nxtsith, keys=nxtkeys)
+    rnxt1 = Nexter(qb64=rser0.ked["nxt"])
+    assert rnxt1.verify(sith=nxtsith, keys=nxtkeys)
     """ Done Test """
 
 
@@ -392,7 +392,7 @@ def test_process_manual():
     nxtkeymat = CryMat(raw=verkey, code=CryOneDex.Ed25519)
     assert nxtkeymat.qb64 == 'D9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
 
-    # create next hash
+    # create nxt digest
     nxtsith =  "{:x}".format(1)  # lowecase hex no leading zeros
     assert nxtsith == "1"
     nxts = []  # create list to concatenate for hashing
@@ -413,12 +413,12 @@ def test_process_manual():
 
     #create key event dict
     ked0 = dict(vs=Versify(kind=Serials.json, size=0),
-                id=aidmat.qb64,  # qual base 64 prefix
+                aid=aidmat.qb64,  # qual base 64 prefix
                 sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                 ilk=Ilks.icp,
                 sith="{:x}".format(sith), # hex string no leading zeros lowercase
                 keys=[aidmat.qb64],  # list of signing keys each qual Base64
-                next=nxtdigmat.qb64,  # hash qual Base64
+                nxt=nxtdigmat.qb64,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 conf=[],  # list of config ordered mappings may be empty
@@ -427,16 +427,16 @@ def test_process_manual():
 
 
     txsrdr = Serder(ked=ked0, kind=Serials.json)
-    assert txsrdr.raw == (b'{"vs":"KERI10JSON000108_","id":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
+    assert txsrdr.raw == (b'{"vs":"KERI10JSON000108_","aid":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
                           b'","sn":"0","ilk":"icp","sith":"1","keys":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
-                          b'yzuKsKJP50s"],"next":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","toad":"'
+                          b'yzuKsKJP50s"],"nxt":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","toad":"'
                           b'0","wits":[],"conf":[],"idxs":["0"]}')
 
     assert txsrdr.size == 264
 
     txdig = blake3.blake3(txsrdr.raw).digest()
     txdigmat = CryMat(raw=txdig, code=CryOneDex.Blake3_256)
-    assert txdigmat.qb64 == 'EPYPv3ouNLw45lAI1B40Io4KX935qfxcWdBrtA6-leFc'
+    assert txdigmat.qb64 == 'Eh69Qku_qIKt4tcOfIefSvyXTpWEs-Bin4V1sxTje_VU'
 
     assert txsrdr.dig == txdigmat.qb64
 
@@ -447,7 +447,7 @@ def test_process_manual():
     assert not result  # None if verifies successfully else raises ValueError
 
     txsigmat = SigMat(raw=sig0raw, code=SigTwoDex.Ed25519, index=index)
-    assert txsigmat.qb64 == 'AAxW5lxJxAmenWwfvgGeDgciKKT-7hP-jOZrHMVCAHgGlnpYX8dfzjppJvbC5s9GQWN4w_1IfTKcwWrU3C9KTYDA'
+    assert txsigmat.qb64 == 'AA8DciPka46avTOWGY-b5uHYOqr_bYLHolXreiymCFA0JbW9V_Uv88Y7EP0x_O4s0nLCE2BIxWfWUxFqB7xwwRAw'
     assert len(txsigmat.qb64) == 88
     assert txsigmat.index == index
 
@@ -465,7 +465,7 @@ def test_process_manual():
     rxsigmat = SigMat(qb64=rxsigqb64)
     assert rxsigmat.index == index
 
-    rxaidqb64 = rxsrdr.ked["id"]
+    rxaidqb64 = rxsrdr.ked["aid"]
     rxaidmat = CryMat(qb64=rxaidqb64)
     assert rxaidmat.qb64 == aidmat.qb64
     assert rxaidmat.code == CryOneDex.Ed25519

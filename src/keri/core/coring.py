@@ -333,7 +333,7 @@ class CryMat:
         code = qb64[:pre]
 
         # need to map code to length so can only consume proper number of chars
-        #  from front of qb64 so can use with full identifiers not just id prefixes
+        #  from front of qb64 so can use with full identifiers not just aid prefixes
 
         if code in CryOneDex:  # One Char code
             qb64 = qb64[:CryOneSizes[code]]  # strip of identifier after prefix
@@ -808,12 +808,12 @@ class Aider(CryMat):
                                   "".format(verfer.code))
 
         try:
-            if verfer.code == CryOneDex.Ed25519N and ked["next"]:
-                raise DerivationError("Non-empty next = {} for non-transferable"
-                                      " code = {}".format(ked["next"],
+            if verfer.code == CryOneDex.Ed25519N and ked["nxt"]:
+                raise DerivationError("Non-empty nxt = {} for non-transferable"
+                                      " code = {}".format(ked["nxt"],
                                                           verfer.code))
         except Exception as ex:
-            raise DerivationError("Error checking next = {}".format(ex))
+            raise DerivationError("Error checking nxt = {}".format(ex))
 
         return verfer
 
@@ -846,7 +846,7 @@ class Aider(CryMat):
             if keys[0] != aid:
                 return False
 
-            if ked["next"]:  # must be empty
+            if ked["nxt"]:  # must be empty
                 return False
 
         except Exception as ex:
@@ -1182,7 +1182,7 @@ class SigMat:
         index = 0
 
         # need to map code to length so can only consume proper number of chars
-        #  from front of qb64 so can use with full identifiers not just id prefixes
+        #  from front of qb64 so can use with full identifiers not just aid prefixes
 
         if code in SigTwoDex:  # 2 char = 1 code + 1 index
             qb64 = qb64[:SigTwoSizes[code]]  # strip of exact len identifier after prefix
@@ -1389,7 +1389,7 @@ class Serder:
 
         Parameters:
           raw is bytes of serialized event
-          kind id str of raw serialization kind (see namedtuple Serials)
+          kind is str of raw serialization kind (see namedtuple Serials)
           size is int size of raw to be deserialized
 
         Note:
