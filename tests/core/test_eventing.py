@@ -7,6 +7,7 @@ import pytest
 
 import pysodium
 import blake3
+from math import ceil
 
 from keri.kering import Version
 from keri.kering import ValidationError, EmptyMaterialError, DerivationError
@@ -27,7 +28,7 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import incept, Kever, Kevery
+from keri.core.eventing import incept, rotate, Kever, Kevery
 
 
 def test_ilks():
@@ -52,14 +53,14 @@ def test_ilks():
 
 def test_keyeventfuncs():
     """
-    Test the support functionality for key event generation functionss
-    Inception Key Event Generator
+    Test the support functionality for key event generation functions
+
     """
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR'
             b'\xc9\xbd\x04\x9d\x85)~\x93')
 
-    # Non-transferable (ephemeral) case
+    # Inception: Non-transferable (ephemeral) case
     signer0 = Signer(raw=seed, transferable=False)  #  original signing keypair non transferable
     assert signer0.code == CryOneDex.Ed25519_Seed
     assert signer0.verfer.code == CryOneDex.Ed25519N
@@ -67,14 +68,15 @@ def test_keyeventfuncs():
     serder = incept(keys=keys0)  #  default
     assert serder.ked["aid"] == 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     assert serder.ked["nxt"] == ""
-    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","aid":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-                          b'","sn":"0","ilk":"icp","sith":"1","keys":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ'
-                          b'-Wk1x4ejhcc"],"nxt":"","toad":"1","wits":[],"conf":[]}')
+    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","aid":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                          b'c","sn":"0","ilk":"icp","sith":"1","keys":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
+                          b'Z-Wk1x4ejhcc"],"nxt":"","toad":"0","wits":[],"cnfg":[]}')
+
 
     with pytest.raises(DerivationError):
         serder = incept(keys=keys0, nxt="ABCDE")  # non-empty nxt wtih non-transferable code
 
-    # Transferable Case but abandoned in incept
+    # Inception: Transferable Case but abandoned in incept so equivalent
     signer0 = Signer(raw=seed)  #  original signing keypair transferable default
     assert signer0.code == CryOneDex.Ed25519_Seed
     assert signer0.verfer.code == CryOneDex.Ed25519
@@ -82,86 +84,62 @@ def test_keyeventfuncs():
     serder = incept(keys=keys0)  #  default is nxt is empty so abandoned
     assert serder.ked["aid"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     assert serder.ked["nxt"] == ""
-    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-                          b'","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ'
-                          b'-Wk1x4ejhcc"],"nxt":"","toad":"1","wits":[],"conf":[]}')
+    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                          b'c","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
+                          b'Z-Wk1x4ejhcc"],"nxt":"","toad":"0","wits":[],"cnfg":[]}')
 
 
-    # Transferable not abandoned i.e. next not empty
+    # Inception: Transferable not abandoned i.e. next not empty
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    seed = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
             b'\x98Y\xdd\xe8')
-    signer1 = Signer(raw=seed)  #  next signing keypair transferable is default
+    signer1 = Signer(raw=seed1)  #  next signing keypair transferable is default
     assert signer1.code == CryOneDex.Ed25519_Seed
     assert signer1.verfer.code == CryOneDex.Ed25519
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    sith1 = 1
-    nexter1 = Nexter(sith=sith1, keys=keys1)
-    nxt = nexter1.qb64  # transferable so nxt is not empty
-    assert nxt == 'ERoAnIgbnFekiKsGwQFaPub2lnB6GU4I80702IKn4aPs'
-    serder = incept(keys=keys0, nxt=nxt)  #  default is nxt is empty so abandoned
-    assert serder.ked["aid"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-    assert serder.ked["nxt"] == nxt
-    assert serder.raw == (b'{"vs":"KERI10JSON0000fb_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                          b'c","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
-                          b'Z-Wk1x4ejhcc"],"nxt":"ERoAnIgbnFekiKsGwQFaPub2lnB6GU4I80702IKn4aPs","toad":"'
-                          b'1","wits":[],"conf":[]}')
+    nexter1 = Nexter(keys=keys1)  # dfault sith is 1
+    assert nexter1.sith == '1'  # default from keys
+    nxt1 = nexter1.qb64  # transferable so nxt is not empty
+    assert nxt1 == 'ERoAnIgbnFekiKsGwQFaPub2lnB6GU4I80702IKn4aPs'
+    serder0 = incept(keys=keys0, nxt=nxt1)  #  default is nxt is empty so abandoned
+    aid = serder0.ked["aid"]
+    assert serder0.ked["aid"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder0.ked["nxt"] == nxt1
+    assert serder0.raw == (b'{"vs":"KERI10JSON0000fb_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                           b'c","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
+                           b'Z-Wk1x4ejhcc"],"nxt":"ERoAnIgbnFekiKsGwQFaPub2lnB6GU4I80702IKn4aPs","toad":"'
+                           b'0","wits":[],"cnfg":[]}')
+    assert serder0.dig == 'Ec1jq8Lj3vwpmbfN4t6rrtSY7XpLdtz8oQwtVLt8Rj7M'
 
 
-
-    # manual process to generate a list of secrets
-    # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    # root = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    #root = '0AZxWJGkCkpDcHuVG4GM1KVw'
-    #rooter = CryMat(qb64=root)
-    #assert rooter.qb64 == root
-    #assert rooter.code == CryTwoDex.Seed_128
-    #signers = generateSigners(root=rooter.raw, count=8, transferable=True)
-    #secrets = [signer.qb64 for signer in signers]
-    #secrets =generateSecrets(root=rooter.raw, count=8, transferable=True)
-
-    # Test sequence of events given set of secrets
-    secrets = [
-                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-                ]
-
-    #  create signers
-    signers = [Signer(qb64=secret) for secret in secrets]  # faster
-    assert [signer.qb64 for signer in signers] == secrets
-
-    pubkeys = [signer.verfer.qb64 for  signer in  signers]
-    assert pubkeys == [
-                        'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA',
-                        'DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI',
-                        'DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8',
-                        'DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ',
-                        'D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU',
-                        'D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM',
-                        'DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4',
-                        'DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg'
-                     ]
-
-    # Inception Transferable (nxt digest not empty)
-    keys0 = [signers[0].verfer.qb64]
+    # Rotation: Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+            b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signer2 = Signer(raw=seed2)  #  next signing keypair transferable is default
+    assert signer2.code == CryOneDex.Ed25519_Seed
+    assert signer2.verfer.code == CryOneDex.Ed25519
+    keys2 = [signer2.verfer.qb64]
     # compute nxt digest
-    keys1 = [signers[1].verfer.qb64]
-    sith1 = 1
-    nexter1 = Nexter(sith=sith1, keys=keys1)
-    nxt = nexter1.qb64  # transferable so nxt is not empty
-    assert nxt == 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
-    serder = incept(keys=keys0, nxt=nxt)  #  default is nxt is empty so abandoned
-    assert serder.ked["aid"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    assert serder.ked["nxt"] == nxt
+    nexter2 = Nexter(keys=keys2)
+    assert nexter2.sith == '1'  # default from keys
+    nxt2 = nexter2.qb64  # transferable so nxt is not empty
+    assert nxt2 == 'ECeM2JsaL9-ljwnIlsEYoPUJCv8zWcIeWmPSl2G14OP0'
+    serder1 = rotate(aid=aid, keys=keys1, dig=serder0.dig, nxt=nxt2)  #  default is nxt is empty so abandoned
+    assert serder1.ked["aid"] == aid
+    assert serder1.ked["nxt"] == nxt2
+    assert serder1.ked["dig"] == serder0.dig
+    assert serder1.raw == (b'{"vs":"KERI10JSON00013a_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                           b'c","sn":"1","ilk":"rot","dig":"Ec1jq8Lj3vwpmbfN4t6rrtSY7XpLdtz8oQwtVLt8Rj7M"'
+                           b',"sith":"1","keys":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRiaf9FdA_-_49A"],"nxt":"E'
+                           b'CeM2JsaL9-ljwnIlsEYoPUJCv8zWcIeWmPSl2G14OP0","toad":"0","cuts":[],"adds":[],'
+                           b'"data":[]}')
+
 
     """ Done Test """
+
+
 
 def test_kever():
     """
@@ -203,7 +181,7 @@ def test_kever():
                 nxt=nxt,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
-                conf=[],  # list of config ordered mappings may be empty
+                cnfg=[],  # list of config ordered mappings may be empty
                 idxs="{:x}".format(nsigs)  # single lowercase hex string
                )
 
@@ -226,6 +204,80 @@ def test_kever():
 
     kever = Kever(serder=tser0, sigxers=[tsig0])
 
+
+    """ Done Test """
+
+
+def test_keyeventsequence():
+    """
+    Test generation of a sequence of key events
+
+    """
+    # manual process to generate a list of secrets
+    # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    # root = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    #root = '0AZxWJGkCkpDcHuVG4GM1KVw'
+    #rooter = CryMat(qb64=root)
+    #assert rooter.qb64 == root
+    #assert rooter.code == CryTwoDex.Seed_128
+    #signers = generateSigners(root=rooter.raw, count=8, transferable=True)
+    #secrets = [signer.qb64 for signer in signers]
+    #secrets =generateSecrets(root=rooter.raw, count=8, transferable=True)
+
+    # Test sequence of events given set of secrets
+    secrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
+
+    #  create signers
+    signers = [Signer(qb64=secret) for secret in secrets]  # faster
+    assert [signer.qb64 for signer in signers] == secrets
+
+    pubkeys = [signer.verfer.qb64 for  signer in  signers]
+    assert pubkeys == [
+                        'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA',
+                        'DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI',
+                        'DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8',
+                        'DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ',
+                        'D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU',
+                        'D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM',
+                        'DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4',
+                        'DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg'
+                     ]
+
+    # Event 0  Inception Transferable (nxt digest not empty)
+    keys0 = [signers[0].verfer.qb64]
+    # compute nxt digest from keys1
+    keys1 = [signers[1].verfer.qb64]
+    nexter1 = Nexter(keys=keys1)
+    assert nexter1.sith == '1'
+    nxt1 = nexter1.qb64  # transferable so nxt is not empty
+    assert nxt1 == 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+
+    serder0 = incept(keys=keys0, nxt=nxt1)
+    assert serder0.ked["aid"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    assert serder0.ked["sith"] == '1'
+    assert serder0.ked["nxt"] == nxt1
+
+
+    # Event 1 Rotation Transferable
+    # compute nxt digest from keys2
+    keys2 = [signers[2].verfer.qb64]
+    nexter2 = Nexter(keys=keys2)
+    assert nexter2.sith == '1'
+    nxt2 = nexter2.qb64  # transferable so nxt is not empty
+    assert nxt2 == 'EoWDoTGQZ6lJ19LsaV4g42k5gccsB_-ttYHOft6kuYZk'
+
+    #serder1 = rotate(keys=keys1, nxt=nxt2)
+    #assert serder1.ked["aid"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    #assert serder1.ked["nxt"] == nxt2
 
     """ Done Test """
 
@@ -269,7 +321,7 @@ def test_process_nontransferable():
                 nxt=nxt,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
-                conf=[],  # list of config ordered mappings may be empty
+                cnfg=[],  # list of config ordered mappings may be empty
                 idxs="{:x}".format(nsigs)  # single lowercase hex string
                )
 
@@ -359,7 +411,7 @@ def test_process_transferable():
                 nxt=nxt,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
-                conf=[],  # list of config ordered mappings may be empty
+                cnfg=[],  # list of config ordered mappings may be empty
                 idxs="{:x}".format(nsigs)  # single lowercase hex string
                )
 
@@ -490,7 +542,7 @@ def test_process_manual():
                 nxt=nxtdigmat.qb64,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
-                conf=[],  # list of config ordered mappings may be empty
+                cnfg=[],  # list of config ordered mappings may be empty
                 idxs=["{:x}".format(index)]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
                )
 
@@ -499,13 +551,13 @@ def test_process_manual():
     assert txsrdr.raw == (b'{"vs":"KERI10JSON000108_","aid":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
                           b'","sn":"0","ilk":"icp","sith":"1","keys":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
                           b'yzuKsKJP50s"],"nxt":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","toad":"'
-                          b'0","wits":[],"conf":[],"idxs":["0"]}')
+                          b'0","wits":[],"cnfg":[],"idxs":["0"]}')
 
     assert txsrdr.size == 264
 
     txdig = blake3.blake3(txsrdr.raw).digest()
     txdigmat = CryMat(raw=txdig, code=CryOneDex.Blake3_256)
-    assert txdigmat.qb64 == 'Eh69Qku_qIKt4tcOfIefSvyXTpWEs-Bin4V1sxTje_VU'
+    assert txdigmat.qb64 == 'ErN5rbHXT5Nqt6B4rnwQhXzzZS67trqLaADghoHYQlfM'
 
     assert txsrdr.dig == txdigmat.qb64
 
@@ -516,7 +568,7 @@ def test_process_manual():
     assert not result  # None if verifies successfully else raises ValueError
 
     txsigmat = SigMat(raw=sig0raw, code=SigTwoDex.Ed25519, index=index)
-    assert txsigmat.qb64 == 'AA8DciPka46avTOWGY-b5uHYOqr_bYLHolXreiymCFA0JbW9V_Uv88Y7EP0x_O4s0nLCE2BIxWfWUxFqB7xwwRAw'
+    assert txsigmat.qb64 == 'AAQ29m1nz43THJK99M6coPmJ7rwRvHsje4HKARYLRXfDGufqy6FpkdlxSs5-uDvqP5XEuU-p9dvzFKqn9kD7hIDA'
     assert len(txsigmat.qb64) == 88
     assert txsigmat.index == index
 
@@ -553,4 +605,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-        test_keyeventfuncs()
+    test_keyeventfuncs()

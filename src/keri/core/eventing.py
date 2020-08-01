@@ -11,11 +11,14 @@ from dataclasses import dataclass, astuple
 from collections import namedtuple
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
+from math import ceil
 
 import cbor2 as cbor
 import msgpack
 import pysodium
 import blake3
+
+from orderedset import OrderedSet as oset
 
 from ..kering import ValidationError, VersionError, EmptyMaterialError, DerivationError
 from ..kering import Versionage, Version
@@ -56,11 +59,11 @@ Escrows = dict()  # Validator Escow as dict of dicts of events keyed by aid.qb64
 def incept( keys,
             version=Version,
             kind=Serials.json,
-            sith=1,
+            sith=None,
             nxt="",
-            toad=1,
+            toad=None,
             wits=None,
-            conf=None,
+            cnfg=None,
             idxs=None
           ):
 
@@ -76,7 +79,7 @@ def incept( keys,
         nxt
         toad
         wits
-        conf
+        cnfg
         idxs
 
 
@@ -85,10 +88,33 @@ def incept( keys,
     sn = 0
     ilk = Ilks.icp
 
+    if sith is None:
+        sith = max(1, ceil(len(keys) / 2))
 
+    if isinstance(sith, int):
+        if sith < 1 or sith > len(keys):  # out of bounds sith
+            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+    else:  # list sith not yet supported
+        raise ValueError("invalid sith = {}.".format(sith))
 
     wits = wits if wits is not None else []
-    conf = conf if conf is not None else []
+    if len(oset(wits)) != len(wits):
+        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+
+    if toad is None:
+        if not wits:
+            toad = 0
+        else:
+            toad = max(1, ceil(len(wits) / 2))
+
+    if wits:
+        if toad < 1 or toad > len(wits):  # out of bounds toad
+            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+    else:
+        if toad != 0:  # invalid toad
+            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+
+    cnfg = cnfg if cnfg is not None else []
 
     ked = dict(vs=vs,  # version string
                aid="",  # ab64 prefix
@@ -99,7 +125,7 @@ def incept( keys,
                nxt=nxt,  # hash qual Base64
                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                wits=wits,  # list of qb64 may be empty
-               conf=conf,  # list of config ordered mappings may be empty
+               cnfg=cnfg,  # list of config ordered mappings may be empty
                )
 
     if idxs is not None:  # add idxs element to ked
@@ -120,9 +146,10 @@ def rotate( aid,
             version=Version,
             kind=Serials.json,
             sn=1,
-            sith=1,
+            sith=None,
             nxt="",
-            toad=1,
+            toad=None,
+            wits=None, # prior existing wits
             cuts=None,
             adds=None,
             data=None,
@@ -139,6 +166,7 @@ def rotate( aid,
         dig
         version
         kind
+        sn
         sith
         nxt
         toad
@@ -152,8 +180,60 @@ def rotate( aid,
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.rot
 
+    if sn < 1:
+        raise ValueError("Invalid sn = {} for rot.".format(sn))
+
+    if sith is None:
+        sith = max(1, ceil(len(keys) / 2))
+
+    if isinstance(sith, int):
+        if sith < 1 or sith > len(keys):  # out of bounds sith
+            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+    else:  # list sith not yet supported
+        raise ValueError("invalid sith = {}.".format(sith))
+
+    wits = wits if wits is not None else []
+    witset = oset(wits)
+    if len(witset) != len(wits):
+        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+
     cuts = cuts if cuts is not None else []
+    cutset = oset(cuts)
+    if len(cutset) != len(cuts):
+        raise ValueError("Invalid cuts = {}, has duplicates.".format(cuts))
+
+    if (witset & cutset) != cutset:  #  some cuts not in wits
+        raise ValueError("Invalid cuts = {}, not all members in wits.".format(cuts))
+
     adds = adds if adds is not None else []
+    addset = oset(adds)
+    if len(addset) != len(adds):
+        raise ValueError("Invalid adds = {}, has duplicates.".format(adds))
+
+    if cutset & addset:  # non empty intersection
+        raise ValueError("Intersecting cuts = {} and  adds = {}.".format(cuts, adds))
+
+    if witset & addset:  # non empty intersection
+        raise ValueError("Intersecting wits = {} and  adds = {}.".format(wits, adds))
+
+    newitset = (witset - cutset) | addset
+
+    if toad is None:
+        if not newitset:
+            toad = 0
+        else:
+            toad = max(1, ceil(len(newitset) / 2))
+
+    if newitset:
+        if toad < 1 or toad > len(newitset):  # out of bounds toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(newitset)))
+    else:
+        if toad != 0:  # invalid toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(newitset)))
+
+
     data = data if data is not None else []
 
     ked = dict(vs=vs,  # version string
@@ -201,7 +281,7 @@ class Kever:
         .nexter is qualified qb64 of next sith and next signing keys
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
-        .conf is list of inception configuration data mappings
+        .cnfg is list of inception configuration data mappings
         .estOnly is boolean
 
     Properties:
@@ -262,12 +342,12 @@ class Kever:
         self.nexter = Nexter(qb64=ked["nxt"]) if ked["nxt"] else None  # check for empty
         self.toad = int(ked["toad"], 16)
         self.wits = ked["wits"]
-        self.conf = ked["conf"]
+        self.cnfg = ked["cnfg"]
 
         # ensure boolean
         self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
                              else False)
-        for d in self.conf:
+        for d in self.cnfg:
             if "trait" in d and d["trait"] == TraitDex.EstOnly:
                 self.estOnly = True
 
@@ -348,7 +428,7 @@ class Kever:
             self.nexter = nexter
             self.toad = int(ked["toad"], 16)
             self.wits = ked["wits"]
-            self.conf = ked["conf"]
+            self.cnfg = ked["cnfg"]
 
             # update logs
             kevage = Kevage(serder=serder, sigxers=sigxers)

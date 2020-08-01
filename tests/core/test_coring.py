@@ -745,7 +745,7 @@ def test_serials():
               nxt = 'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM',
               toad = 0,
               wits = [],
-              conf = [],
+              cnfg = [],
               idxs = [0]
              )
 
@@ -769,7 +769,7 @@ def test_serials():
     assert icps == (b'{"vs":"KERI10JSON000000_","aid":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"icp","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"nxt":"'
-                    b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"conf":[],"'
+                    b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"cnfg":[],"'
                     b'idxs":[0]}')
 
     match = Rever.search(icps)
@@ -793,7 +793,7 @@ def test_serials():
                     b'SVPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwy'
                     b'Z-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZ'
                     b'H3ULvYAfSVPzhzS6b5CM\xa3nxt\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
-                    b'CM\xa4toad\x00\xa4wits\x90\xa4conf\x90\xa4idxs\x91\x00')
+                    b'CM\xa4toad\x00\xa4wits\x90\xa4cnfg\x90\xa4idxs\x91\x00')
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.mgpk.encode("utf-8")
@@ -817,7 +817,7 @@ def test_serials():
     assert icps == (b'\xacbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'bsnd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
                     b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
-                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dconf\x80didxs\x81\x00')
+                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dcnfg\x80didxs\x81\x00')
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.cbor.encode("utf-8")
