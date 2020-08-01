@@ -65,25 +65,32 @@ def test_keyeventfuncs():
     keys0 = [signer0.verfer.qb64]
     serder = incept(keys=keys0)  #  default
     assert serder.ked["aid"] == 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.ked["nxt"] == ""
     assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","aid":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                           b'","sn":"0","ilk":"icp","sith":"1","keys":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ'
                           b'-Wk1x4ejhcc"],"nxt":"","toad":"1","wits":[],"conf":[]}')
 
+    with pytest.raises(DerivationError):
+        serder = incept(keys=keys0, nxt="ABCDE")  # non-empty nxt wtih non-transferable code
 
-    # Transferable Case
+    # Transferable Case but abandoned in incept
     signer0 = Signer(raw=seed)  #  original signing keypair transferable default
     assert signer0.code == CryOneDex.Ed25519_Seed
     assert signer0.verfer.code == CryOneDex.Ed25519
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  #  default
+    serder = incept(keys=keys0)  #  default is nxt is empty so abandoned
     assert serder.ked["aid"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.ked["nxt"] == ""
     assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                           b'","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ'
                           b'-Wk1x4ejhcc"],"nxt":"","toad":"1","wits":[],"conf":[]}')
 
 
-    # create next key
-    signer1 = Signer()  #  next signing keypair transferable is default
+    # Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+            b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed)  #  next signing keypair transferable is default
     assert signer1.code == CryOneDex.Ed25519_Seed
     assert signer1.verfer.code == CryOneDex.Ed25519
     keys1 = [signer1.verfer.qb64]
@@ -91,6 +98,14 @@ def test_keyeventfuncs():
     sith1 = 1
     nexter1 = Nexter(sith=sith1, keys=keys1)
     nxt = nexter1.qb64  # transferable so nxt is not empty
+    assert nxt == 'ERoAnIgbnFekiKsGwQFaPub2lnB6GU4I80702IKn4aPs'
+    serder = incept(keys=keys0, nxt=nxt)  #  default is nxt is empty so abandoned
+    assert serder.ked["aid"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.ked["nxt"] == nxt
+    assert serder.raw == (b'{"vs":"KERI10JSON0000fb_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                          b'c","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
+                          b'Z-Wk1x4ejhcc"],"nxt":"ERoAnIgbnFekiKsGwQFaPub2lnB6GU4I80702IKn4aPs","toad":"'
+                          b'1","wits":[],"conf":[]}')
 
     """ Done Test """
 

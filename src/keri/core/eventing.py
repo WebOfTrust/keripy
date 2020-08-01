@@ -56,7 +56,6 @@ Escrows = dict()  # Validator Escow as dict of dicts of events keyed by aid.qb64
 def incept( keys,
             version=Version,
             kind=Serials.json,
-            code=CryOneDex.Ed25519,
             sith=1,
             nxt="",
             toad=1,
@@ -73,7 +72,6 @@ def incept( keys,
         keys,
         version
         kind
-        code
         sith
         nxt
         toad
@@ -87,9 +85,7 @@ def incept( keys,
     sn = 0
     ilk = Ilks.icp
 
-    if nxt and code in [CryOneDex.Ed25519N]:  # non-empy nxt for ephemeral
-        raise ValueError("Non-empty nxt digest = {} for ephemeral aid code"
-                         " = {}.".format(nxt, code))
+
 
     wits = wits if wits is not None else []
     conf = conf if conf is not None else []
@@ -111,9 +107,10 @@ def incept( keys,
             idxs="{:x}".format(nsigs)  # single lowercase hex string
         ked["idxs"] = idxs  # update ked with idxs field
 
-
-    aider = Aider(code=code, ked=ked)  # Derive AID from ked per code
+    # raises derivation error if non-empty nxt but ephemeral code
+    aider = Aider(ked=ked)  # Derive AID from ked
     ked["aid"] = aider.qb64  # update aid element in ked with aid qb64
+
 
     return Serder(ked=ked)  # return serialized ked
 
