@@ -459,7 +459,7 @@ def test_nexter():
         nexter = Nexter()
 
     #create something to digest and verify
-    verkey, sigkey = pysodium.crypto_sign_keypair()
+    # verkey, sigkey = pysodium.crypto_sign_keypair()
     verkey = (b'\xacr\xda\xc83~\x99r\xaf\xeb`\xc0\x8cR\xd7\xd7\xf69\xc8E\x1e\xd2\xf0='
               b'`\xf7\xbf\x8a\x18\x8a`q')
     verfer = Verfer(raw=verkey)
@@ -470,6 +470,9 @@ def test_nexter():
 
     nexter = Nexter(ser=ser)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
+    assert nexter.qb64 == 'EEV6odWqE1wICGXtkKpOjDxPOWSrF4UAENqYT06C0ECU'
+    assert nexter.sith == None  # not used by nexter for its  digest
+    assert nexter.keys == None  # not used by nexter for its  digest
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter.verify(ser=ser)
     assert nexter.verify(ser=ser+b'ABCDEF') == False
@@ -480,7 +483,12 @@ def test_nexter():
     nexter = Nexter(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter._derive(sith=sith, keys=keys) == ser
+    assert nexter.sith == sith
+    assert nexter.keys == keys
+    nxtser, nxtsith, nxtkeys = nexter._derive(sith=sith, keys=keys)
+    assert nxtser == ser
+    assert nxtsith == sith
+    assert nxtkeys == keys
     assert nexter.verify(ser=ser)
     assert nexter.verify(ser=ser+b'ABCDEF') == False
     assert nexter.verify(sith=sith, keys=keys)
@@ -488,13 +496,20 @@ def test_nexter():
     with pytest.raises(EmptyMaterialError):
         nexter = Nexter(sith=sith)
 
-    with pytest.raises(EmptyMaterialError):
-        nexter = Nexter(keys=keys)
+    nexter = Nexter(keys=keys)  # compute sith from keys
+    assert nexter.keys == keys
+    assert nexter.sith == sith
+
 
     nexter = Nexter(sith=1, keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter._derive(sith=sith, keys=keys) == ser
+    assert nexter.sith == sith
+    assert nexter.keys == keys
+    nxtser, nxtsith, nxtkeys = nexter._derive(sith=sith, keys=keys)
+    assert nxtser == ser
+    assert nxtsith == sith
+    assert nxtkeys == keys
     assert nexter.verify(ser=ser)
     assert nexter.verify(ser=ser+b'ABCDEF') == False
     assert nexter.verify(sith=1, keys=keys)
@@ -503,7 +518,12 @@ def test_nexter():
     nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter._derive(ked=ked) == ser
+    assert nexter.sith == sith
+    assert nexter.keys == keys
+    nxtser, nxtsith, nxtkeys = nexter._derive(sith=sith, keys=keys)
+    assert nxtser == ser
+    assert nxtsith == sith
+    assert nxtkeys == keys
     assert nexter.verify(ser=ser)
     assert nexter.verify(ser=ser+b'ABCDEF') == False
     assert nexter.verify(ked=ked)
@@ -1015,4 +1035,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_generatesigners()
+    test_nexter()

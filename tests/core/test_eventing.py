@@ -109,7 +109,7 @@ def test_keyeventfuncs():
                           b'1","wits":[],"conf":[]}')
 
 
-    # Test sequence of events
+
     # manual process to generate a list of secrets
     # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     # root = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
@@ -120,6 +120,8 @@ def test_keyeventfuncs():
     #signers = generateSigners(root=rooter.raw, count=8, transferable=True)
     #secrets = [signer.qb64 for signer in signers]
     #secrets =generateSecrets(root=rooter.raw, count=8, transferable=True)
+
+    # Test sequence of events given set of secrets
     secrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
                 'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
@@ -131,6 +133,7 @@ def test_keyeventfuncs():
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
+    #  create signers
     signers = [Signer(qb64=secret) for secret in secrets]  # faster
     assert [signer.qb64 for signer in signers] == secrets
 
@@ -145,6 +148,18 @@ def test_keyeventfuncs():
                         'DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4',
                         'DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg'
                      ]
+
+    # Inception Transferable (nxt digest not empty)
+    keys0 = [signers[0].verfer.qb64]
+    # compute nxt digest
+    keys1 = [signers[1].verfer.qb64]
+    sith1 = 1
+    nexter1 = Nexter(sith=sith1, keys=keys1)
+    nxt = nexter1.qb64  # transferable so nxt is not empty
+    assert nxt == 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    serder = incept(keys=keys0, nxt=nxt)  #  default is nxt is empty so abandoned
+    assert serder.ked["aid"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    assert serder.ked["nxt"] == nxt
 
     """ Done Test """
 
