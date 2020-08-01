@@ -58,17 +58,39 @@ def test_keyeventfuncs():
     seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR'
             b'\xc9\xbd\x04\x9d\x85)~\x93')
 
-    signer = Signer(raw=seed)  #  original signing keypair transferable default
-    keys = [signer.verfer.qb64]
+    # Non-transferable (ephemeral) case
+    signer0 = Signer(raw=seed, transferable=False)  #  original signing keypair non transferable
+    assert signer0.code == CryOneDex.Ed25519_Seed
+    assert signer0.verfer.code == CryOneDex.Ed25519N
+    keys0 = [signer0.verfer.qb64]
+    serder = incept(keys=keys0)  #  default
+    assert serder.ked["id"] == 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","id":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                          b'","sn":"0","ilk":"icp","sith":"1","keys":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ'
+                          b'-Wk1x4ejhcc"],"next":"","toad":"1","wits":[],"conf":[]}')
 
-    serder = incept(keys=keys)  #  default
 
+    # Transferable Case
+    signer0 = Signer(raw=seed)  #  original signing keypair transferable default
+    assert signer0.code == CryOneDex.Ed25519_Seed
+    assert signer0.verfer.code == CryOneDex.Ed25519
+    keys0 = [signer0.verfer.qb64]
+    serder = incept(keys=keys0)  #  default
     assert serder.ked["id"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","id":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                           b'","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ'
                           b'-Wk1x4ejhcc"],"next":"","toad":"1","wits":[],"conf":[]}')
 
 
+    # create next key
+    signer1 = Signer()  #  next signing keypair transferable is default
+    assert signer1.code == CryOneDex.Ed25519_Seed
+    assert signer1.verfer.code == CryOneDex.Ed25519
+    keys1 = [signer1.verfer.qb64]
+    # compute next digest
+    sith1 = 1
+    nexter1 = Nexter(sith=sith1, keys=keys1)
+    nxt = nexter1.qb64  # transferable so nxt is not empty
 
     """ Done Test """
 

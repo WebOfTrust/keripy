@@ -87,6 +87,10 @@ def incept( keys,
     sn = 0
     ilk = Ilks.icp
 
+    if nxt and code in [CryOneDex.Ed25519N]:  # non-empy nxt for ephemeral
+        raise ValueError("Non-empty next digest = {} for ephemeral aid code"
+                         " = {}.".format(nxt, code))
+
     wits = wits if wits is not None else []
     conf = conf if conf is not None else []
 
