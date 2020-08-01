@@ -21,6 +21,7 @@ from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import CryMat, Verfer, Siger, Signer, Diger, Nexter, Aider
+from keri.core.coring import generateSigners
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
@@ -381,6 +382,32 @@ def test_signer():
     with pytest.raises(ValueError):
         signer = Signer(code=CryOneDex.Ed25519N)
     """ Done Test """
+
+def test_generatesigners():
+    """
+    Test the support function genSigners
+
+    """
+    signers = generateSigners(count=2, transferable=False)
+    assert len(signers) == 2
+    for signer in signers:
+        assert signer.verfer.code == CryOneDex.Ed25519N
+
+    # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    root = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    assert len(root) == 16
+    signers = generateSigners(root=root, count=4)  # default is transferable
+    assert len(signers) == 4
+    for signer in signers:
+        assert signer.code == CryOneDex.Ed25519_Seed
+        assert signer.verfer.code == CryOneDex.Ed25519
+
+    sigkeys = [signer.qb64 for signer in signers]
+    assert sigkeys == ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                       'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                       'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                       'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8']
+    """ End Test """
 
 def test_diger():
     """
@@ -984,4 +1011,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_aider()
+    test_generatesigners()

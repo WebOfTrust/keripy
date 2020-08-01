@@ -599,6 +599,36 @@ class Signer(CryMat):
                           index=index,
                           verfer=verfer)
 
+def generateSigners(root=None, count=8, transferable=True):
+    """
+    Returns list of Signers for Ed25519
+
+    Parameters:
+        root is bytes 16 byte long root key (salt/seed) from which seeds for Signers
+            in list are derived
+            random root created if not provided
+        count is number of signers in list
+        transferable is boolean true means verfers codes are transferable
+                                non-transferable otherwise
+    """
+    if not root:
+        root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+
+    signers = []
+    for i in range(count):
+        path = "{:x}".format(i)
+        # algorithm default is argon2id
+        seed = pysodium.crypto_pwhash(outlen=32,
+                                      passwd=path,
+                                      salt=root,
+                                      opslimit=pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+                                      memlimit=pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
+                                      alg=pysodium.crypto_pwhash_ALG_DEFAULT)
+
+        signers.append(Signer(raw=seed, transferable=transferable))
+
+    return signers
+
 
 class Diger(CryMat):
     """
