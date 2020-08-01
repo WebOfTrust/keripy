@@ -95,7 +95,7 @@ class CrySelectCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-CrySelect = CrySelectCodex()  # Make instance
+CrySelDex = CrySelectCodex()  # Make instance
 
 @dataclass(frozen=True)
 class CryOneCodex:
@@ -123,7 +123,7 @@ class CryOneCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-CryOne = CryOneCodex()  # Make instance
+CryOneDex = CryOneCodex()  # Make instance
 
 # Mapping of Code to Size
 CryOneSizes = {
@@ -155,7 +155,7 @@ class CryTwoCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-CryTwo = CryTwoCodex()  #  Make instance
+CryTwoDex = CryTwoCodex()  #  Make instance
 
 # Mapping of Code to Size
 CryTwoSizes = {
@@ -185,7 +185,7 @@ class CryFourCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-CryFour = CryFourCodex()  #  Make instance
+CryFourDex = CryFourCodex()  #  Make instance
 
 # Mapping of Code to Size
 CryFourSizes = {
@@ -228,7 +228,7 @@ class CryMat:
 
     """
 
-    def __init__(self, raw=b'', qb64='', qb2='', code=CryOne.Ed25519N):
+    def __init__(self, raw=b'', qb64='', qb2='', code=CryOneDex.Ed25519N):
         """
         Validate as fully qualified
         Parameters:
@@ -246,9 +246,9 @@ class CryMat:
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
             pad = self._pad(raw)
-            if (not ( (pad == 1 and (code in CryOne)) or  # One or Five or Nine
-                      (pad == 2 and (code in CryTwo)) or  # Two or Six or Ten
-                      (pad == 0 and (code in CryFour)) )):  #  Four or Eight
+            if (not ( (pad == 1 and (code in CryOneDex)) or  # One or Five or Nine
+                      (pad == 2 and (code in CryTwoDex)) or  # Two or Six or Ten
+                      (pad == 0 and (code in CryFourDex)) )):  #  Four or Eight
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
 
@@ -333,15 +333,15 @@ class CryMat:
         code = qb64[:pre]
 
         # need to map code to length so can only consume proper number of chars
-        #  from front of qb64 so can use with full identifiers not just id prefixes
+        #  from front of qb64 so can use with full identifiers not just aid prefixes
 
-        if code in CryOne:  # One Char code
+        if code in CryOneDex:  # One Char code
             qb64 = qb64[:CryOneSizes[code]]  # strip of identifier after prefix
 
-        elif code == CrySelect.two: # first char of two char code
+        elif code == CrySelDex.two: # first char of two char code
             pre += 1
             code = qb64[pre-2:pre]  #  get full code
-            if code not in CryTwo:
+            if code not in CryTwoDex:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:CryTwoSizes[code]]  # strip of identifier after prefix
 
@@ -397,9 +397,9 @@ class CryMat:
         return decodeB64(self._infil().encode("utf-8"))
 
 
-class Verifier(CryMat):
+class Verfer(CryMat):
     """
-    Verifier is CryMat subclass with method to verify signature of serialization
+    Verfer is CryMat subclass with method to verify signature of serialization
     using the .raw as verifier key and .code for signature cipher suite.
 
     See CryMat for inherited attributes and properties:
@@ -417,9 +417,9 @@ class Verifier(CryMat):
         Assign verification cipher suite function to ._verify
 
         """
-        super(Verifier, self).__init__(**kwa)
+        super(Verfer, self).__init__(**kwa)
 
-        if self.code in [CryOne.Ed25519N, CryOne.Ed25519]:
+        if self.code in [CryOneDex.Ed25519N, CryOneDex.Ed25519]:
             self._verify = self._ed25519
         else:
             raise ValueError("Unsupported code = {} for verifier.".format(self.code))
@@ -456,13 +456,54 @@ class Verifier(CryMat):
         return True
 
 
+class Siger(CryMat):
+    """
+    Siger is CryMat subclass holding a signature where .raw is signature and .code
+    is signature cipher suite.
+    Adds verfer property to hold Verfer instance of associated verifier public key
+    where .raw as verifier key and .code is signature cipher suite.
+
+    See CryMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+
+    Methods:
+
+
+    """
+    def __init__(self, verfer=None, **kwa):
+        """
+        Assign verfer to ._verfer attribute
+
+        """
+        super(Siger, self).__init__(**kwa)
+
+        self._verfer = verfer
+
+
+    @property
+    def verfer(self):
+        """
+        Property verfer:
+        Returns Verfer instance
+        Assumes ._verfer is correctly assigned
+        """
+        return self._verfer
+
+    @verfer.setter
+    def verfer(self, verfer):
+        """ verfer property setter """
+        self._verfer = verfer
+
+
 class Signer(CryMat):
     """
     Signer is CryMat subclass with method to create signature of serialization
     using the .raw as signing (private) key seed, .code as cipher suite for
-    signing and new property .verifier whose property verifier.raw
-    is public key for signing.
-    If not provided .verifier is generated from private key seed using .code
+    signing and new property .verfer whose property .raw is public key for signing.
+    If not provided .verfer is generated from private key seed using .code
     as cipher suite for creating key-pair.
 
 
@@ -471,13 +512,13 @@ class Signer(CryMat):
     Attributes:
 
     Properties:
-        .verifier is Verifier object instance
+        .verfer is Verfer object instance
 
     Methods:
         sign: create signature
 
     """
-    def __init__(self,raw=b'', code=CryOne.Ed25519_Seed, transferable=True, **kwa):
+    def __init__(self,raw=b'', code=CryOneDex.Ed25519_Seed, transferable=True, **kwa):
         """
         Assign signing cipher suite function to ._sign
 
@@ -491,51 +532,53 @@ class Signer(CryMat):
         try:
             super(Signer, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
-            if code == CryOne.Ed25519_Seed:
+            if code == CryOneDex.Ed25519_Seed:
                 raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
                 super(Signer, self).__init__(raw=raw, code=code, **kwa)
             else:
                 raise ValueError("Unsupported signer code = {}.".format(code))
 
-        if self.code == CryOne.Ed25519_Seed:
+        if self.code == CryOneDex.Ed25519_Seed:
             self._sign = self._ed25519
             verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
-            verifier = Verifier(raw=verkey,
-                                code=CryOne.Ed25519 if transferable
-                                                    else CryOne.Ed25519N )
+            verfer = Verfer(raw=verkey,
+                                code=CryOneDex.Ed25519 if transferable
+                                                    else CryOneDex.Ed25519N )
         else:
             raise ValueError("Unsupported signer code = {}.".format(self.code))
 
-        self._verifier = verifier
+        self._verfer = verfer
 
     @property
-    def verifier(self):
+    def verfer(self):
         """
-        Property verifier:
-        Returns Verifier instance
-        Assumes ._verifier is correctly assigned
+        Property verfer:
+        Returns Verfer instance
+        Assumes ._verfer is correctly assigned
         """
-        return self._verifier
+        return self._verfer
 
     def sign(self, ser, index=None):
         """
-        Returns either CryMat or SigMat instance of signature
-        on bytes serialization ser
+        Returns either Siger or Sigxer (indexed) instance of cryptographic
+        signature material on bytes serialization ser
 
-        If index is None return CryMat instance
-        Otherwise return Sigmat instance
+        If index is None
+            return Siger instance
+        Else
+            return Sigxer instance
 
         Parameters:
             ser is bytes serialization
-            index is
+            index is int index of associated verifier key in event keys
         """
         return (self._sign(ser=ser,
                            seed=self.raw,
-                           key=self.verifier.raw,
+                           verfer=self.verfer,
                            index=index))
 
     @staticmethod
-    def _ed25519(ser, seed, key, index):
+    def _ed25519(ser, seed, verfer, index):
         """
         Returns signature
 
@@ -543,20 +586,23 @@ class Signer(CryMat):
         Parameters:
             ser is bytes serialization
             seed is bytes seed (private key)
-            key is bytes public key
+            verfer is Verfer instance. verfer.raw is public key
             index is index of offset into signers list or None
 
         """
-        sig = pysodium.crypto_sign_detached(ser, seed + key)
+        sig = pysodium.crypto_sign_detached(ser, seed + verfer.raw)
         if index is None:
-            return CryMat(raw=sig, code=CryTwo.Ed25519)
+            return Siger(raw=sig, code=CryTwoDex.Ed25519, verfer=verfer)
         else:
-            return SigMat(raw=sig, code=SigTwo.Ed25519, index=index)
+            return Sigxer(raw=sig,
+                          code=SigTwoDex.Ed25519,
+                          index=index,
+                          verfer=verfer)
 
 
-class Digester(CryMat):
+class Diger(CryMat):
     """
-    Digester is CryMat subclass with method to verify digest of serialization
+    Diger is CryMat subclass with method to verify digest of serialization
     using  .raw as digest and .code for digest algorithm.
 
     See CryMat for inherited attributes and properties:
@@ -569,7 +615,7 @@ class Digester(CryMat):
         verify: verifies signature
 
     """
-    def __init__(self, raw=b'', ser=b'', code=CryOne.Blake3_256, **kwa):
+    def __init__(self, raw=b'', ser=b'', code=CryOneDex.Blake3_256, **kwa):
         """
         Assign digest verification function to ._verify
 
@@ -580,17 +626,17 @@ class Digester(CryMat):
 
         """
         try:
-            super(Digester, self).__init__(raw=raw, code=code, **kwa)
+            super(Diger, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
             if not ser:
                 raise ex
-            if code == CryOne.Blake3_256:
+            if code == CryOneDex.Blake3_256:
                 dig = blake3.blake3(ser).digest()
-                super(Digester, self).__init__(raw=dig, code=code, **kwa)
+                super(Diger, self).__init__(raw=dig, code=code, **kwa)
             else:
                 raise ValueError("Unsupported code = {} for digester.".format(code))
 
-        if self.code == CryOne.Blake3_256:
+        if self.code == CryOneDex.Blake3_256:
             self._verify = self._blake3_256
         else:
             raise ValueError("Unsupported code = {} for digester.".format(self.code))
@@ -620,12 +666,12 @@ class Digester(CryMat):
         return(blake3.blake3(ser).digest() == dig)
 
 
-class Nexter(Digester):
+class Nexter(Diger):
     """
-    Nexter is Digester subclass with support to create itself from
+    Nexter is Diger subclass with support to create itself from
     next sith and next keys
 
-    See Digester for inherited attributes and properties:
+    See Diger for inherited attributes and properties:
 
     Attributes:
 
@@ -720,7 +766,7 @@ class Aider(CryMat):
         verify():  Verifies derivation of aid
 
     """
-    def __init__(self, raw=b'', code=CryOne.Ed25519N, ked=None, **kwa):
+    def __init__(self, raw=b'', code=CryOneDex.Ed25519N, ked=None, **kwa):
         """
         assign ._verify to verify derivation of aid  = .qb64
 
@@ -730,14 +776,14 @@ class Aider(CryMat):
         except EmptyMaterialError as ex:
             if not ked:
                 raise  ex
-            verifier = self._derive(ked)  # use ked to derive aid
-            super(Aider, self).__init__(raw=verifier.raw,
-                                        code=verifier.code,
+            verfer = self._derive(ked)  # use ked to derive aid
+            super(Aider, self).__init__(raw=verfer.raw,
+                                        code=verfer.code,
                                         **kwa)
 
-        if self.code == CryOne.Ed25519N:
+        if self.code == CryOneDex.Ed25519N:
             self._verify = self._ed25519n
-        elif self.code == CryOne.Ed25519:
+        elif self.code == CryOneDex.Ed25519:
             self._verify = self._ed25519
         else:
             raise ValueError("Unsupported code = {} for aider.".format(self.code))
@@ -752,24 +798,24 @@ class Aider(CryMat):
             if len(keys) != 1:
                 raise DerivationError("Basic derivation needs 1 key got "
                                       "{}".format(len(keys)))
-            verifier = Verifier(qb64=keys[0])
+            verfer = Verfer(qb64=keys[0])
         except Exception as ex:
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verifier.code not in [CryOne.Ed25519N, CryOne.Ed25519]:
+        if verfer.code not in [CryOneDex.Ed25519N, CryOneDex.Ed25519]:
             raise DerivationError("Invalid derivation code = {}"
-                                  "".format(verifier.code))
+                                  "".format(verfer.code))
 
         try:
-            if verifier.code == CryOne.Ed25519N and ked["next"]:
-                raise DerivationError("Non-empty next = {} for non-transferable"
-                                      " code = {}".format(ked["next"],
-                                                          verifier.code))
+            if verfer.code == CryOneDex.Ed25519N and ked["nxt"]:
+                raise DerivationError("Non-empty nxt = {} for non-transferable"
+                                      " code = {}".format(ked["nxt"],
+                                                          verfer.code))
         except Exception as ex:
-            raise DerivationError("Error checking next = {}".format(ex))
+            raise DerivationError("Error checking nxt = {}".format(ex))
 
-        return verifier
+        return verfer
 
     def verify(self, ked):
         """
@@ -800,7 +846,7 @@ class Aider(CryMat):
             if keys[0] != aid:
                 return False
 
-            if ked["next"]:  # must be empty
+            if ked["nxt"]:  # must be empty
                 return False
 
         except Exception as ex:
@@ -882,7 +928,7 @@ class SigSelectCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-SigSelect = SigSelectCodex()  # Make instance
+SigSelDex = SigSelectCodex()  # Make instance
 
 
 @dataclass(frozen=True)
@@ -905,7 +951,7 @@ class SigTwoCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-SigTwo = SigTwoCodex()  #  Make instance
+SigTwoDex = SigTwoCodex()  #  Make instance
 
 # Mapping of Code to Size
 SigTwoSizes = {
@@ -939,7 +985,7 @@ class SigFourCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-SigFour = SigFourCodex()  #  Make instance
+SigFourDex = SigFourCodex()  #  Make instance
 
 # Mapping of Code to Size
 SigFourSizes = {
@@ -969,7 +1015,7 @@ class SigFiveCodex:
     def __iter__(self):
         return iter(astuple(self))
 
-SigFive = SigFiveCodex()  #  Make instance
+SigFiveDex = SigFiveCodex()  #  Make instance
 
 # Mapping of Code to Size
 SigFiveSizes = {}
@@ -1004,7 +1050,7 @@ class SigMat:
         .qb64 str in Base64 with derivation code and signature crypto material
         .qb2  bytes in binary with derivation code and signature crypto material
     """
-    def __init__(self, raw=b'', qb64='', qb2='', code=SigTwo.Ed25519, index=0):
+    def __init__(self, raw=b'', qb64='', qb2='', code=SigTwoDex.Ed25519, index=0):
         """
         Validate as fully qualified
         Parameters:
@@ -1023,15 +1069,15 @@ class SigMat:
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
             pad = self._pad(raw)
-            if (not ( (pad == 2 and (code in SigTwo)) or  # Two or Six or Ten
-                      (pad == 0 and (code in SigFour)) or  #  Four or Eight
-                      (pad == 1 and (code in SigFive)) )):   # Five or Nine
+            if (not ( (pad == 2 and (code in SigTwoDex)) or  # Two or Six or Ten
+                      (pad == 0 and (code in SigFourDex)) or  #  Four or Eight
+                      (pad == 1 and (code in SigFiveDex)) )):   # Five or Nine
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
 
-            if ( (code in SigTwo and ((index < 0) or (index > SIGTWOMAX)) ) or
-                 (code in SigFour and ((index < 0) or (index > SIGFOURMAX)) ) or
-                 (code in SigFive and ((index < 0) or (index > SIGFIVEMAX)) ) ):
+            if ( (code in SigTwoDex and ((index < 0) or (index > SIGTWOMAX)) ) or
+                 (code in SigFourDex and ((index < 0) or (index > SIGFOURMAX)) ) or
+                 (code in SigFiveDex and ((index < 0) or (index > SIGFIVEMAX)) ) ):
 
                 raise ValidationError("Invalid index={} for code={}.".format(index, code))
 
@@ -1111,10 +1157,10 @@ class SigMat:
         """
         pad = self.pad
         # valid pad for code length
-        if self._code in SigTwo:  # 2 char = code + index
+        if self._code in SigTwoDex:  # 2 char = code + index
             full = "{}{}".format(self._code, B64ChrByIdx[self._index])
 
-        elif self._code == SigSelect.four: # 4 char = code + index
+        elif self._code == SigSelDex.four: # 4 char = code + index
             pass
 
         else:
@@ -1136,17 +1182,17 @@ class SigMat:
         index = 0
 
         # need to map code to length so can only consume proper number of chars
-        #  from front of qb64 so can use with full identifiers not just id prefixes
+        #  from front of qb64 so can use with full identifiers not just aid prefixes
 
-        if code in SigTwo:  # 2 char = 1 code + 1 index
+        if code in SigTwoDex:  # 2 char = 1 code + 1 index
             qb64 = qb64[:SigTwoSizes[code]]  # strip of exact len identifier after prefix
             pre += 1
             index = B64IdxByChr[qb64[pre-1:pre]]
 
-        elif code == SigSelect.four:  #  '0'
+        elif code == SigSelDex.four:  #  '0'
             pre += 1
             code = qb64[pre-2:pre]
-            if code not in SigFour:  # 4 char = 2 code + 2 index
+            if code not in SigFourDex:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:SigFourSizes[code]]  # strip of exact len identifier after prefix
             pre += 2
@@ -1205,6 +1251,49 @@ class SigMat:
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil().encode("utf-8"))
 
+
+class Sigxer(SigMat):
+    """
+    Sigxer is SigMat, indexed signature material, subclass with .verfer property
+    of instance of Verfer that provides associated signature verifier.
+
+
+    See SigMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .verfer is Verfer object instance
+
+    Methods:
+
+
+    """
+    def __init__(self, verfer=None, **kwa):
+        """
+        Assign verfer to ._verfer
+
+        Parameters:  See CryMat for inherted parameters
+            verfer if Verfer instance if any
+
+        """
+        super(Sigxer, self).__init__(**kwa)
+
+        self._verfer = verfer
+
+    @property
+    def verfer(self):
+        """
+        Property verfer:
+        Returns Verfer instance
+        Assumes ._verfer is correctly assigned
+        """
+        return self._verfer
+
+    @verfer.setter
+    def verfer(self, verfer):
+        """ verfer property setter """
+        self._verfer = verfer
 
 """
 Need to add Serdery  as Serder factory that figures out what type of
@@ -1300,7 +1389,7 @@ class Serder:
 
         Parameters:
           raw is bytes of serialized event
-          kind id str of raw serialization kind (see namedtuple Serials)
+          kind is str of raw serialization kind (see namedtuple Serials)
           size is int size of raw to be deserialized
 
         Note:
@@ -1340,8 +1429,11 @@ class Serder:
         """
         ked is key event dict
         kind is serialization if given else use one given in ked
-        Returns tuple of (raw, kind) where raw is serialized event as bytes of kind
-        and kind is serialzation kind
+        Returns tuple of (raw, kind, ked, version) where:
+            raw is serialized event as bytes of kind
+            kind is serialzation kind
+            ked is key event dict
+            version is Versionage instance
 
         Assumes only supports Version
         """
@@ -1386,7 +1478,7 @@ class Serder:
             raise ValueError("Malformed version string size = {}".format(vs))
         ked['vs'] = vs  #  update ked
 
-        return (raw, kind, ked)
+        return (raw, kind, ked, version)
 
     @property
     def raw(self):
@@ -1411,12 +1503,13 @@ class Serder:
     @ked.setter
     def ked(self, ked):
         """ ked property setter  assumes ._kind """
-        raw, kind, ked = self._exhale(ked=ked, kind=self._kind)
+        raw, kind, ked, version = self._exhale(ked=ked, kind=self._kind)
         size = len(raw)
         self._raw = raw[:size]
         self._ked = ked
         self._kind = kind
         self._size = size
+        self._version = version
 
     @property
     def kind(self):
@@ -1426,12 +1519,13 @@ class Serder:
     @kind.setter
     def kind(self, kind):
         """ kind property setter Assumes ._ked """
-        raw, kind, ked = self._exhale(ked=self._ked, kind=kind)
+        raw, kind, ked, version = self._exhale(ked=self._ked, kind=kind)
         size = len(raw)
         self._raw = raw[:size]
         self._ked = ked
         self._kind = kind
         self._size = size
+        self._version = version
 
     @property
     def version(self):
@@ -1444,12 +1538,13 @@ class Serder:
         return self._size
 
     @property
-    def digmat(self):
+    def diger(self):
         """
-        Returns CryMat of digest of self.raw
-        digmat (digest material) property getter
+        Returns Diger of digest of self.raw
+        diger (digest material) property getter
         """
-        return (CryMat(raw=blake3.blake3(self.raw).digest(), code=CryOne.Blake3_256))
+        return (Diger(raw=blake3.blake3(self.raw).digest(),
+                       code=CryOneDex.Blake3_256))
 
     @property
     def dig(self):
@@ -1457,486 +1552,20 @@ class Serder:
         Returns qualified Base64 digest of self.raw
         dig (digest) property getter
         """
-        return self.digmat.qb64
+        return self.diger.qb64
 
     @property
-    def verifiers(self):
+    def verfers(self):
         """
         Returns list of Verifier instances as converted from .ked.keys
-        verifiers property getter
+        verfers property getter
         """
-        return [Verifier(qb64=key) for key in self.ked["keys"]]
+        if "keys" in self.ked:  # establishment event
+            keys = self.ked["keys"]
+        else:  # non-establishment event
+            keys =  []
 
+        return [Verfer(qb64=key) for key in keys]
 
-Kevage = namedtuple("Kelvage", 'serder sigs')  # Key Event tuple for KELS and DELs
 
-Kevers = dict()  # dict of existing Kevers indexed by aid.qb64 of each Kever
-
-KELs = dict() # dict of dicts of ordered events keyed by aid.qb64 then by event dig
-
-DELs = dict()  # dict of dicts of dup events keyed by aid.qb64 then by event dig
-
-Escrows = dict()
-
-class Kevery:
-    """
-    Kevery is Kever (KERI key event verifier) instance factory which are
-    extracted from a key event stream of event and attached signatures
-
-    Only supports current version VERSION
-
-    Has the following public attributes and properties:
-
-    Attributes:
-
-    Properties:
-
-    """
-    def __init__(self):
-        """
-        Set up event stream
-
-        """
-
-
-    def processAll(self, kes):
-        """
-
-        """
-        if not isinstance(kes, bytearray):  # destructive processing
-            kes = bytearray(kes)
-
-        while kes:
-            try:
-                serder, sigs = self.extractOne(kes)
-            except Exception as  ex:
-                # log diagnostics errors etc
-                del kes[:]  # error extracting means bad key event stream
-                continue
-
-            try:
-                self.processOne(serder, sigs)
-            except Exception as  ex:
-                # log diagnostics errors etc
-                pass
-
-    def extractOne(self, kes):
-        """
-        Extract one event with attached signatures from key event stream kes
-        Returns: (serder, sigs)
-
-        Parameters:
-            kes is bytearray of serialized key event stream.
-                May contain one or more sets each of a serialized event with
-                attached signatures.
-
-        """
-        # deserialize packet from kes
-        try:
-            serder = Serder(raw=kes)
-        except Exception as ex:
-            raise ValidationError("Error while processing key event stream"
-                                  " = {}".format(ex))
-
-        version = serder.version
-        if version != Version:  # This is where to dispatch version switch
-            raise VersionError("Unsupported version = {}, expected {}."
-                                  "".format(version, Version))
-
-        del kes[:srdr.size]  # strip off event from front of kes
-
-        # extract attached sigs if any
-        # protocol dependent if http may use http header instead of stream
-
-        ked = serder.ked
-        keys = ked["keys"]
-        sigs = []  # list of SigMat instances for attached signatures
-        if "idxs" in ked and ked["idxs"]: # extract signatures given indexes
-            indexes = ked["idxs"]
-            if isinstance(indexes, str):
-                nsigs = int(indexes, 16)
-                if nsigs < 1:
-                    raise ValidationError("Invalid number of attached sigs = {}."
-                                              " Must be > 1 if not empty.".format(nsigs))
-
-                for i in range(nsigs): # extract each attached signature
-                    # check here for type of attached signatures qb64 or qb2
-                    sig = SigMat(qb64=kes)  #  qb64
-                    sigs.append(sig)
-                    del kes[:len(sig.qb64)]  # strip off signature
-
-                    if sig.index >= len(keys):
-                        raise ValidationError("Index = {} to large for keys."
-                                              "".format(sig.index))
-
-            elif isinstance(indexes, list):
-                if len(set(indexes)) != len(indexes):  # duplicate index(es)
-                    raise ValidationError("Duplicate indexes in sigs = {}."
-                                              "".format(indexes))
-
-                for index in indexes:
-                    # check here for type of attached signatures qb64 or qb2
-                    sig = SigMat(qb64=kes)  #  qb64
-                    sigs.append(sig)
-                    del kes[:len(sig.qb64)]  # strip off signature
-
-                    if sig.index >= len(keys):
-                        raise ValidationError("Index = {} to large for keys."
-                                              "".format(sig.index))
-
-                    if index != sig.index:
-                        raise ValidationError("Mismatching signature index = {}"
-                                              " with index = {}".format(sig.index,
-                                                                        index))
-
-            else:
-                raise ValidationError("Invalid format of indexes = {}."
-                                          "".format(indexes))
-
-        else:  # no info on attached sigs
-            pass
-            #  check flag if should parse rest of stream for attached sigs
-            #  or should parse for index block
-
-        if not sigs:
-            raise ValidationError("Missing attached signature(s).")
-
-        return (serder, sigs)
-
-    def processOne(self, serder, sigs):
-        """
-        Process one event with attached signatures
-
-        """
-        # Verify serder.ked fields based on ked ilk and version.
-        # If missing fields then raise error.
-
-        # extract aid, sn, ilk to see how to process
-
-        dig = serder.dig
-        try:
-            aider = Aider(qb64=ked["id"])
-        except Exception as ex:
-            raise ValidationError("Invalid aid = {}.".format(ked["id"]))
-
-        aid = aider.qb64
-        ked = serder.ked
-        ilk = ked["ilk"]
-
-        try:
-            sn = int(ked["sn"], 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {}".format(ked["sn"]))
-
-
-        if aid not in KELs:  #  first seen event for aid
-            if ilk == Ilks.icp:  # first seen and inception so verify event keys
-                # kever init verifies basic inception stuff and signatures
-                # raises exception if problem adds to KEL Kevers
-                kever = Kever(serder=serder, sigs=sigs)  # create kever from serder
-
-            else:  # not inception so can't verify add to escrow
-                # log escrowed
-                if aid not in Escrows:  #  add to Escrows
-                    Escrows[aid] = dict()
-                if dig not in Escrows[aid]:
-                    Escrows[aid][dig] = Kevage(serder=serder, sigs=sigs)
-
-
-        else:  # already accepted inception event for aid
-            if dig in KELs["aid"]:  #  duplicate event so dicard
-                # log duplicate
-                return  # discard
-
-            if ilk == Ilks.icp:  # inception event so maybe duplicitous
-                # kever init verifies basic inception stuff and signatures
-                # raises exception if problem
-                kever = Kever(serder=serder, sigs=sigs)  # create kever from serder
-
-                #  verified duplicitous event log it and add to DELS if first time
-                if aid not in DELs:  #  add to DELS
-                    DELs[aid] = dict()
-                if dig not in DELS[aid]:
-                    DELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
-
-            else:
-                kever = Kevers[aid]  # get existing kever for aid
-                # if sn not subsequent to prior event  else escrow
-                if sn <= kever.sn:  # stale event
-                    # log stale event
-                    return  # discard
-
-                if sn > kever.sn + 1:  # sn not in order
-                    #  log escrowed
-                    if aid not in Escrows:  #  add to Escrows
-                        Escrows[aid] = dict()
-                    if dig not in Escrows[aid]:
-                        Escrows[aid][dig] = Kevage(serder=serder, sigs=sigs)
-
-                else:  # sn == kever.sn + 1
-                    if dig != kever.dig:  # prior event dig not match
-                        raise ValidationError("Mismatch prior dig = {} with"
-                                              " current = {}.".format(dig,
-                                                                      kever.dig))
-
-                    # verify signatures etc and update state if valid
-                    # raise exception if problem. adds to KELs
-                    kever.update(serder=serder, sigs=sigs)
-
-
-
-
-
-
-
-
-class Kever:
-    """
-    Kever is KERI key event verifier class
-    Only supports current version VERSION
-
-    Has the following public attributes and properties:
-
-    Class Attributes:
-        .EstablishOnly
-
-    Attributes:
-        .serder is Serder instance of current packet
-        .sigs is list of SigMat instances of signatures
-        .verifiers is list of Verifier instances of current signing keys
-        .version is version of current event
-        .aider is aider instance
-        .sn is sequence number int
-        .dig is qualified qb64 digest of event not prior event
-        .ilk is str of current event type
-        .sith is int or list of current signing threshold
-        .nexter is qualified qb64 of next sith and next signing keys
-        .toad is int threshold of accountable duplicity
-        .wits is list of qualified qb64 aids for witnesses
-        .conf is list of inception configuration data mappings
-        .establishOnly is boolean
-
-    Properties:
-
-    """
-    EstablishOnly = False
-
-    def __init__(self, serder, sigs, establishOnly=None):
-        """
-        Create incepting kever and state from inception serder
-        Verify incepting serder against sigs raises ValidationError if not
-
-        Parameters:
-            serder is Serder instance of inception event
-            sigs is list of SigMat instances of signatures of event
-            establishOnly is boolean trait to indicate establish only event
-
-        """
-        self.serder = serder
-        self.verifiers = serder.verifiers  # converts keys to verifiers
-        self.sigs = sigs
-        ked = self.serder.ked
-        sith = ked["sith"]
-        if isinstance(sith, str):
-            self.sith =  int(ked.sith, 16)
-        else:
-            # fix this to support list sith
-            raise ValueError("Unsupported type for sith = {}".format(sith))
-
-        if not self.verify():
-            raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigs, serder))
-
-        self.version = self.serder.version  # version switch?
-
-        self.aider = Aider(qb64=ked["id"])
-        if not aider.verify(ked=ked):  # invalid aid
-            raise ValidationError("Invalid aid = {} for inception ked = {}."
-                                  "".format(aider.qb64, ked))
-
-        self.sn = int(ked["sn"], 16)
-        if self.sn != 0:
-            raise ValidationError("Invalid sn = {} for inception ked = {}."
-                                              "".format(self.sn, ked))
-        self.dig = self.serder.dig
-
-        self.ilk = ked["ilk"]
-        if self.ilk != Ilks.icp:
-            raise ValidationError("Expected ilk = {} got {}."
-                                              "".format(Ilks.icp, self.ilk))
-        self.nexter = Nexter(qb64=ked["next"]) if nxt else None  # check for empty
-        self.toad = int(ked["toad"], 16)
-        self.wits = ked["wits"]
-        self.conf = ked["conf"]
-
-        self.establishOnly = establishOnly if establishOnly is not None else self.EstablishOnly
-        self.establishOnly = True if self.establishOnly else False  # ensure boolean
-        for d in self.conf:
-            if "trait" in d and d["trait"] == "establishOnly":
-                self.establishOnly = True
-
-        KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
-        Kevers[aid][dig] = kever
-
-
-
-    def verify(self, sigs=None, serder=None, sith=None, verifiers=None):
-        """
-        Verify sigs against serder using sith and verifiers
-        Assumes that sigs already extracted correctly wrt indexes
-        If any of serder, sith, verifiers not provided then replace missing
-           value with respective attribute .serder, .sith .verifiers instead
-
-        Parameters:
-            sigs is list of SigMat instances
-            serder is Serder instance
-            sith is int threshold
-            verifiers is list of Verifier instances
-
-        """
-        sigs = sigs if sigs is not None else self.sigs
-        serder = serder if serder is not None else self.serder
-        sith = sith if sith is not None else self.sith
-        verifiers = verifiers if verifiers is not None else self.verifiers
-
-        for sig in sigs:
-            verifier = verifiers[sig.index]
-            if not verifier.verify(sig.raw, serder.raw):
-                return False
-
-        if not isinstance(sith, int):
-            raise ValueError("Unsupported type for sith ={}".format(sith))
-        if len(sigs) < sith:  # not meet threshold fix for list sith
-            return False
-
-        return True
-
-
-
-    def update(self, serder,  sigs):
-        """
-
-        """
-        # if rotation event use keys from event
-        # if interaction event use keys from existing Kever
-        ked = serder.ked
-        ilk = ked["ilk"]
-
-        if ilk == Ilks.rot:  # subsequent rotation event
-            # verify next from prior
-            # also check derivation code of aid for non-transferable
-            #  check and
-
-            if self.nexter is None:   # empty so rotations not allowed
-                raise ValidationError("Attempted rotation for nontransferable"
-                                      " aid = {}".format(self.aider.qb64))
-
-            sith = ked["sith"]
-            if isinstance(sith, str):
-                sith =  int(ked.sith, 16)
-            else:
-                # fix this to support list sith
-                raise ValueError("Unsupported type for sith = {}".format(sith))
-
-            keys = ked["keys"]
-            if not self.nexter.verify(sith=sith, keys=keys):
-                raise ValidationError("Mismatch next digest = {} with rotation"
-                                      " sith = {}, keys = {}.".format(nexter.qb64))
-
-
-            # prior next valid so verify sigs using new verifier keys from event
-            if not self.verify(serder.serder,
-                               sigs=sigs,
-                               sith=sith,
-                               verifiers=serder.verifiers):
-                raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigs, serder))
-
-            # next and signatures verify so update state
-            self.sn = sn
-            self.dig = dig
-            self.sith = sith
-            self.verifiers = serder.verifiers
-            # verify nxt prior
-            nexter = Nexter(qb64=ked["next"]) if nxt else None  # check for empty
-            # update non transferable if None
-            self.nexter = nexter
-            self.toad = int(ked["toad"], 16)
-            self.wits = ked["wits"]
-            self.conf = ked["conf"]
-
-
-            KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
-
-
-        elif ilk == Ilks.ixn:  # subsequent interaction event
-            if self.establishOnly:
-                raise ValidationError("Unexpected non-establishment event = {}."
-                                  "".format(serder))
-            if not self.verify(serder=serder, sigs=sigs):
-                raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigs, serder))
-
-            # update state
-            self.sn = sn
-            self.dig = dig
-            KELS[aid][dig] = Kevage(serder=serder, sigs=sigs)
-
-
-        else:  # unsupported event ilk so discard
-            raise ValidationError("Unsupported ilk = {}.".format(ilk))
-
-
-
-
-
-class Keger:
-    """
-    Keger is KERI key event generator class
-    Only supports current version VERSION
-
-    Has the following public attributes and properties:
-
-    Attributes:
-        .version is version of current event
-        .aid is fully qualified qb64 autonomic id
-        .sn is sequence number
-        .predig is qualified qb64 digest of previous event
-        .dig is qualified qb64 dige of current event
-        .ilk is str of current event type
-        .sith is int or list of current signing threshold
-        .keys is list of qb64 current verification keys
-        .nxt is qualified qb64 of next sith plus next signing keys
-        .toad is int threshold of accountable duplicity
-        .wits is list of qualified qb64 aids for witnesses
-        .conf is list of inception configuration data mappings
-        .indexes is int or list of signature indexes of current event if any
-
-    Properties:
-
-
-
-    """
-    def __init__(self):
-        """
-        Extract and verify event and attached signatures from key event stream kes
-
-        Parameters:
-
-
-        """
-        # initial state is vacuous
-        self.version = None
-        self.aid = None
-        self.sn =  None
-        self.predig = None
-        self.dig = None
-        self.ilk = None
-        self.sith = None
-        self.keys = []
-        self.nxt = None
-        self.toad = None
-        self.wits = None
-        self.conf = None
-        self.indexes = None
 
