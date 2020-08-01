@@ -21,7 +21,7 @@ from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import CryMat, Verfer, Siger, Signer, Diger, Nexter, Aider
-from keri.core.coring import generateSigners
+from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
@@ -407,6 +407,10 @@ def test_generatesigners():
                        'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
                        'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
                        'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8']
+
+    secrets = generateSecrets(root=root, count=4)
+    assert secrets == sigkeys
+
     """ End Test """
 
 def test_diger():

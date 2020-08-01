@@ -15,6 +15,7 @@ from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import CryMat, Verfer, Signer, Diger, Nexter, Aider
+from keri.core.coring import generateSigners
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
@@ -106,6 +107,44 @@ def test_keyeventfuncs():
                           b'c","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
                           b'Z-Wk1x4ejhcc"],"nxt":"ERoAnIgbnFekiKsGwQFaPub2lnB6GU4I80702IKn4aPs","toad":"'
                           b'1","wits":[],"conf":[]}')
+
+
+    # Test sequence of events
+    # manual process to generate a list of secrets
+    # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    # root = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    #root = '0AZxWJGkCkpDcHuVG4GM1KVw'
+    #rooter = CryMat(qb64=root)
+    #assert rooter.qb64 == root
+    #assert rooter.code == CryTwoDex.Seed_128
+    #signers = generateSigners(root=rooter.raw, count=8, transferable=True)
+    #secrets = [signer.qb64 for signer in signers]
+    #secrets =generateSecrets(root=rooter.raw, count=8, transferable=True)
+    secrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
+
+    signers = [Signer(qb64=secret) for secret in secrets]  # faster
+    assert [signer.qb64 for signer in signers] == secrets
+
+    pubkeys = [signer.verfer.qb64 for  signer in  signers]
+    assert pubkeys == [
+                        'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA',
+                        'DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI',
+                        'DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8',
+                        'DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ',
+                        'D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU',
+                        'D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM',
+                        'DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4',
+                        'DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg'
+                     ]
 
     """ Done Test """
 

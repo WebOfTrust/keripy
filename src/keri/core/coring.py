@@ -599,6 +599,8 @@ class Signer(CryMat):
                           index=index,
                           verfer=verfer)
 
+
+
 def generateSigners(root=None, count=8, transferable=True):
     """
     Returns list of Signers for Ed25519
@@ -628,6 +630,22 @@ def generateSigners(root=None, count=8, transferable=True):
         signers.append(Signer(raw=seed, transferable=transferable))
 
     return signers
+
+def generateSecrets(root=None, count=8, transferable=True):
+    """
+    Returns list of fully qualified Base64 secret seeds for Ed25519
+
+    Parameters:
+        root is bytes 16 byte long root key (salt/seed) from which seeds for Signers
+            in list are derived
+            random root created if not provided
+        count is number of signers in list
+        transferable is boolean true means verfers codes are transferable
+                                non-transferable otherwise
+    """
+    signers = generateSigners(root=root, count=count, transferable=transferable)
+
+    return [signer.qb64 for signer in signers]  #  fetch the qb64
 
 
 class Diger(CryMat):
