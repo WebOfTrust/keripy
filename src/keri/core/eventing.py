@@ -865,14 +865,33 @@ class Kevery:
                 # log diagnostics errors etc
                 continue
 
-    def duplicity(self):
+    def duplicity(self, serder, sigers):
         """
         Processes potential duplicitous events in PDELs
 
         Handles duplicity detection and logging if duplicitous
 
+        Placeholder here for logic need to move
+
         """
-        return
+
+        # fetch ked ilk  aid, sn, dig to see how to process
+        ked = serder.ked
+        try:  # see if aid in event validates
+            aider = Aider(qb64=ked["aid"])
+        except Exception as ex:
+            raise ValidationError("Invalid aid = {}.".format(ked["aid"]))
+        aid = aider.qb64
+        ked = serder.ked
+        ilk = ked["ilk"]
+        try:
+            sn = int(ked["sn"], 16)
+        except Exception as ex:
+            raise ValidationError("Invalid sn = {}".format(ked["sn"]))
+        dig = serder.dig
+
+        if dig in KEDLs["aid"]:
+            return
 
         if ilk == Ilks.icp:  # inception event so maybe duplicitous
             # Using Kever for cheap duplicity detection of inception events
@@ -885,3 +904,6 @@ class Kevery:
                 DELs[aid] = dict()
             if dig not in DELS[aid]:
                 DELS[aid][dig] = LogEntry(serder=serder, sigers=sigers)
+
+        else:
+            pass
