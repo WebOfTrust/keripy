@@ -684,29 +684,29 @@ def test_sigmat():
     """ Done Test """
 
 
-def test_sigxer():
+def test_siger():
     """
     Test Siger subclass of Sigmat
     """
     with pytest.raises(EmptyMaterialError):
-        sigxer = Siger()
+        siger = Siger()
 
     qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    sigxer = Siger(qb64=qsig64)
-    assert sigxer.code == SigTwoDex.Ed25519
-    assert sigxer.index == 0
-    assert sigxer.qb64 == qsig64
-    assert sigxer.verfer == None
+    siger = Siger(qb64=qsig64)
+    assert siger.code == SigTwoDex.Ed25519
+    assert siger.index == 0
+    assert siger.qb64 == qsig64
+    assert siger.verfer == None
 
     verkey,  sigkey = pysodium.crypto_sign_keypair()
     verfer = Verfer(raw=verkey)
 
-    sigxer.verfer = verfer
-    assert  sigxer.verfer == verfer
+    siger.verfer = verfer
+    assert  siger.verfer == verfer
 
-    sigxer = Siger(qb64=qsig64, verfer=verfer)
-    assert  sigxer.verfer == verfer
+    siger = Siger(qb64=qsig64, verfer=verfer)
+    assert  siger.verfer == verfer
     """ Done Test """
 
 
