@@ -333,7 +333,9 @@ class Kever:
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
         .cnfg is list of inception configuration data mappings
+        .data is list of current seals
         .estOnly is boolean
+        .nonTrans is boolean
 
     Properties:
 
@@ -386,23 +388,27 @@ class Kever:
                                               "".format(self.sn, ked))
         self.diger =  serder.diger
 
-        self.ilk = ked["ilk"]
-        if self.ilk != Ilks.icp:
+        ilk = ked["ilk"]
+        if ilk != Ilks.icp:
             raise ValidationError("Expected ilk = {} got {}."
-                                              "".format(Ilks.icp, self.ilk))
-        self.nexter = Nexter(qb64=ked["nxt"]) if ked["nxt"] else None  # check for empty
+                                              "".format(Ilks.icp, ilk))
+        self.ilk = ilk
+
+        nxt = ked["nxt"]
+        self.nexter = Nexter(qb64=nxt) if nxt else None
+        self.nonTrans = True if self.nexter is None else False
+
         self.toad = int(ked["toad"], 16)
         self.wits = ked["wits"]
         self.cnfg = ked["cnfg"]
+        self.data = None
 
         # ensure boolean
         self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
                              else False)
         for d in self.cnfg:
             if "trait" in d and d["trait"] == TraitDex.EstOnly:
-                self.estOnly = True
-
-
+                self.estOnly = Tru
 
         # update logs
         kevage = Kevage(serder=serder, sigxers=sigxers)
@@ -442,7 +448,7 @@ class Kever:
 
             sith = ked["sith"]
             if isinstance(sith, str):
-                sith =  int(ked.sith, 16)
+                sith = int(sith, 16)
             else:
                 # fix this to support list sith
                 raise ValueError("Unsupported type for sith = {}".format(sith))
@@ -468,21 +474,29 @@ class Kever:
                                   "".format(sigxers, serder))
 
             # nxt and signatures verify so update state
-            self.verfers = verfers
-            self.sith = sith
             self.sn = int(ked["sn"], 16)
             self.diger = serder.diger
-
+            self.ilk = ilk
+            self.sith = sith
+            self.verfers = verfers
             # update .nexter
-            nexter = Nexter(qb64=ked["nxt"]) if nxt else None  # check for empty
-            # update nontransferable  if None
-            self.nexter = nexter
+            nxt = ked["nxt"]
+            self.nexter = Nexter(qb64=nxt) if nxt else None  # check for empty
+            if self.nexter is None:
+                self.nonTrans = True
+
             self.toad = int(ked["toad"], 16)
-            self.wits = ked["wits"]
-            self.cnfg = ked["cnfg"]
+
+            # compute wits from cuts and adds use set
+            # verify set math
+            # self.wits = ked["wits"]
+
+            self.data = ked["data"]
 
             # update logs
             kevage = Kevage(serder=serder, sigxers=sigxers)
+            aid = self.aider.qb64
+            dig = self.diger.qb64
             KERLs[aid].add(ked["sn"], kevage)  # multiple values each sn hex str
             KELDs[aid][self.diger.qb64] = kevage
 
@@ -507,9 +521,12 @@ class Kever:
             # update state
             self.sn = int(ked["sn"], 16)
             self.diger = serder.diger
+            self.ilk = ilk
 
             # update logs
             kevage = Kevage(serder=serder, sigxers=sigxers)
+            aid = self.aider.qb64
+            dig = self.diger.qb64
             KERLs[aid].add(ked["sn"], kevage)  # multiple values each sn hex str
             KELDs[aid][self.diger.qb64] = kevage
 
