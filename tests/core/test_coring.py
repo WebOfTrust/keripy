@@ -27,7 +27,7 @@ from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
 from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat, Sigxer
+from keri.core.coring import SigMat, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
@@ -686,14 +686,14 @@ def test_sigmat():
 
 def test_sigxer():
     """
-    Test Sigxer subclass of Sigmat
+    Test Siger subclass of Sigmat
     """
     with pytest.raises(EmptyMaterialError):
-        sigxer = Sigxer()
+        sigxer = Siger()
 
     qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    sigxer = Sigxer(qb64=qsig64)
+    sigxer = Siger(qb64=qsig64)
     assert sigxer.code == SigTwoDex.Ed25519
     assert sigxer.index == 0
     assert sigxer.qb64 == qsig64
@@ -705,7 +705,7 @@ def test_sigxer():
     sigxer.verfer = verfer
     assert  sigxer.verfer == verfer
 
-    sigxer = Sigxer(qb64=qsig64, verfer=verfer)
+    sigxer = Siger(qb64=qsig64, verfer=verfer)
     assert  sigxer.verfer == verfer
     """ Done Test """
 

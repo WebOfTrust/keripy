@@ -642,7 +642,7 @@ class Kever:
         If sith not provided then use .sith instead
 
         Parameters:
-            sigxers is list of Sigxer instances
+            sigxers is list of Siger instances
             serder is Serder instance
             sith is int threshold
 
@@ -711,7 +711,7 @@ class Kevery:
         del kes[:srdr.size]  # strip off event from front of kes
 
         # extract attached sigs as Sigxers
-        sigxers = []  # list of Sigxer instances for attached indexed signatures
+        sigxers = []  # list of Siger instances for attached indexed signatures
         if "idxs" in ked and ked["idxs"]: # extract signatures given indexes
             indexes = ked["idxs"]
             if isinstance(indexes, str):
@@ -722,7 +722,7 @@ class Kevery:
 
                 for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
-                    sigxer = Sigxer(qb64=kes)  #  qb64
+                    sigxer = Siger(qb64=kes)  #  qb64
                     sigxers.append(sigxer)
                     del kes[:len(sigxer.qb64)]  # strip off signature
 

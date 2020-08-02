@@ -596,7 +596,7 @@ class Signer(CryMat):
         if index is None:
             return Sigver(raw=sig, code=CryTwoDex.Ed25519, verfer=verfer)
         else:
-            return Sigxer(raw=sig,
+            return Siger(raw=sig,
                           code=SigTwoDex.Ed25519,
                           index=index,
                           verfer=verfer)
@@ -1336,9 +1336,9 @@ class SigMat:
         return decodeB64(self._infil().encode("utf-8"))
 
 
-class Sigxer(SigMat):
+class Siger(SigMat):
     """
-    Sigxer is subclass of SigMat, indexed signature material,
+    Siger is subclass of SigMat, indexed signature material,
     Adds .verfer property which is instance of Verfer that provides
           associated signature verifier.
 
@@ -1361,7 +1361,7 @@ class Sigxer(SigMat):
             verfer if Verfer instance if any
 
         """
-        super(Sigxer, self).__init__(**kwa)
+        super(Siger, self).__init__(**kwa)
 
         self._verfer = verfer
 
