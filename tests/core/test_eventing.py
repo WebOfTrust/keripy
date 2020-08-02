@@ -312,6 +312,38 @@ def test_keyeventsequence():
     assert serder3.ked["sn"] == '3'
     assert serder3.ked["dig"] == serder2.dig
 
+    # Event 4 Interaction
+    serder4 = interact(aid=aid, dig=serder3.dig, sn=4)
+    assert serder4.ked["aid"] == aid
+    assert serder4.ked["sn"] == '4'
+    assert serder4.ked["dig"] == serder3.dig
+
+    # Event 5 Rotation Transferable
+    # compute nxt digest from keys4
+    keys4 = [signers[4].verfer.qb64]
+    nexter4 = Nexter(keys=keys4)
+    nxt4 = nexter4.qb64  # transferable so nxt is not empty
+    serder5 = rotate(aid=aid, keys=keys3, dig=serder4.dig, nxt=nxt4, sn=5)
+    assert serder5.ked["aid"] == aid
+    assert serder5.ked["sn"] == '5'
+    assert serder5.ked["keys"] == keys3
+    assert serder5.ked["nxt"] == nxt4
+    assert serder5.ked["dig"] == serder4.dig
+
+    # Event 6 Interaction
+    serder6 = interact(aid=aid, dig=serder5.dig, sn=6)
+    assert serder6.ked["aid"] == aid
+    assert serder6.ked["sn"] == '6'
+    assert serder6.ked["dig"] == serder5.dig
+
+    # Event 7 Rotation to null NonTransferable Abandon
+    nxt5 = ""  # nxt digest is empty
+    serder7 = rotate(aid=aid, keys=keys4, dig=serder6.dig, nxt=nxt5, sn=7)
+    assert serder7.ked["aid"] == aid
+    assert serder7.ked["sn"] == '7'
+    assert serder7.ked["keys"] == keys4
+    assert serder7.ked["nxt"] == nxt5
+    assert serder7.ked["dig"] == serder6.dig
 
 
     """ Done Test """
