@@ -65,7 +65,7 @@ def test_keyeventfuncs():
     assert signer0.code == CryOneDex.Ed25519_Seed
     assert signer0.verfer.code == CryOneDex.Ed25519N
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  #  default
+    serder = incept(keys=keys0)  #  default nxt is empty so abandoned
     assert serder.ked["aid"] == 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     assert serder.ked["nxt"] == ""
     assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","aid":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
@@ -81,7 +81,7 @@ def test_keyeventfuncs():
     assert signer0.code == CryOneDex.Ed25519_Seed
     assert signer0.verfer.code == CryOneDex.Ed25519
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  #  default is nxt is empty so abandoned
+    serder = incept(keys=keys0)  #  default nxt is empty so abandoned
     assert serder.ked["aid"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     assert serder.ked["nxt"] == ""
     assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
@@ -102,7 +102,7 @@ def test_keyeventfuncs():
     assert nexter1.sith == '1'  # default from keys
     nxt1 = nexter1.qb64  # transferable so nxt is not empty
     assert nxt1 == 'ERoAnIgbnFekiKsGwQFaPub2lnB6GU4I80702IKn4aPs'
-    serder0 = incept(keys=keys0, nxt=nxt1)  #  default is nxt is empty so abandoned
+    serder0 = incept(keys=keys0, nxt=nxt1)
     aid = serder0.ked["aid"]
     assert serder0.ked["aid"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     assert serder0.ked["nxt"] == nxt1
@@ -126,7 +126,7 @@ def test_keyeventfuncs():
     assert nexter2.sith == '1'  # default from keys
     nxt2 = nexter2.qb64  # transferable so nxt is not empty
     assert nxt2 == 'ECeM2JsaL9-ljwnIlsEYoPUJCv8zWcIeWmPSl2G14OP0'
-    serder1 = rotate(aid=aid, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)  #  default is nxt is empty so abandoned
+    serder1 = rotate(aid=aid, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
     assert serder1.ked["aid"] == aid
     assert serder1.ked["nxt"] == nxt2
     assert serder1.ked["dig"] == serder0.dig
@@ -260,12 +260,14 @@ def test_keyeventsequence():
     assert nexter1.sith == '1'
     nxt1 = nexter1.qb64  # transferable so nxt is not empty
     assert nxt1 == 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
-
     serder0 = incept(keys=keys0, nxt=nxt1)
+    aid = serder0.ked["aid"]
     assert serder0.ked["aid"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    assert serder0.ked["sn"] == '0'
     assert serder0.ked["sith"] == '1'
+    assert serder0.ked["keys"] == keys0
     assert serder0.ked["nxt"] == nxt1
-
+    assert serder0.dig == 'EyH1dHvVcntw1w-sQoIwrSN7DA0hfS8yQhz0H7u-gsmc'
 
     # Event 1 Rotation Transferable
     # compute nxt digest from keys2
@@ -274,10 +276,26 @@ def test_keyeventsequence():
     assert nexter2.sith == '1'
     nxt2 = nexter2.qb64  # transferable so nxt is not empty
     assert nxt2 == 'EoWDoTGQZ6lJ19LsaV4g42k5gccsB_-ttYHOft6kuYZk'
+    serder1 = rotate(aid=aid, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
+    assert serder1.ked["aid"] == aid
+    assert serder1.ked["sn"] == '1'
+    assert serder1.ked["keys"] == keys1
+    assert serder1.ked["nxt"] == nxt2
+    assert serder1.ked["dig"] == serder0.dig
 
-    #serder1 = rotate(keys=keys1, nxt=nxt2)
-    #assert serder1.ked["aid"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    #assert serder1.ked["nxt"] == nxt2
+    # Event 2 Rotation Transferable
+    # compute nxt digest from keys3
+    keys3 = [signers[3].verfer.qb64]
+    nexter3 = Nexter(keys=keys3)
+    nxt3 = nexter3.qb64  # transferable so nxt is not empty
+    serder2 = rotate(aid=aid, keys=keys2, dig=serder1.dig, nxt=nxt3, sn=2)
+    assert serder2.ked["aid"] == aid
+    assert serder2.ked["sn"] == '2'
+    assert serder2.ked["keys"] == keys2
+    assert serder2.ked["nxt"] == nxt3
+    assert serder2.ked["dig"] == serder1.dig
+
+    # Event 3 Interaction
 
     """ Done Test """
 
@@ -605,4 +623,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_keyeventfuncs()
+    test_keyeventsequence()
