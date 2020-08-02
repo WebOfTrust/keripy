@@ -47,16 +47,24 @@ TraitDex = TraitCodex()  # Make instance
 LogEntry = namedtuple("LogEntry", 'serder sigers')  # LogEntry for KELS KERLS DELS etc
 Location = namedtuple("Location", 'sn dig')  # Location of key event
 
-Kevers = dict()  # dict of existing Kevers indexed by aid.qb64 of each Kever
+Kevers = dict()  # dict of existing Kevers indexed by aid (qb64) of each Kever
 
-KELs = dict()  # Generator KELs as dict of dicts of events keyed by aid.qb64 then in order by event sn
-KERLs = dict()  # Validator KERLs as dict of dicts of events keyed by aid.qb64 then in order by event sn
-                # mdict keys must be subclass of str
+# Generator KELs as dict of dicts of events keyed by aid (qb64) then in order by event sn str
+KELs = dict()
+# Validator KERLs as dict of dicts of events keyed by aid (qb64) then in order by event sn str
+# mdict keys must be subclass of str
+KERLs = dict()
 # Key Event Digest Log
-KEDLs = dict()  # Validator KELDs as dict of dicts of events keyed by aid.qb64 then by event dig
-DELs = dict()  # Validator DELs as dict of dicts of dup events keyed by aid.qb64 then by event dig
-
-Escrows = dict()  # Validator Escow as dict of dicts of events keyed by aid.qb64 then in order by event sn
+# Validator KELDs as dict of dicts of events keyed by aid  then by event dig (qb64)
+KEDLs = dict()
+# Validator Escows as dict of dicts of events keyed by aid (qb64) then in order by event sn str
+Escrows = dict()
+# Potential Duplicitous Event Log
+# Validator PDELs as dict of dicts of dup events keyed by aid (qb64) then by event dig (qb64)
+PDELs = dict()
+# Verified Duplicitous Event Log
+# Validator DELs as dict of dicts of dup events keyed by aid  (qb64) then by event dig (qb64)
+DELs = dict()
 
 
 def incept( keys,
@@ -474,7 +482,9 @@ class Kever:
                 raise ValidationError("Out of order event sn = {} expecting"
                                       " = {}.".format(sn, self.sn+1))
 
-            elif sn <= self.sn:  # stale or recovery
+            elif sn <= self.sn:  #  stale or recovery
+                #  stale events could be duplicitous
+                #  duplicity detection should happend before .update called
                 if sn <= self.lastEst.sn :  # stale
                     raise ValidationError("Stale event sn = {} expecting"
                                           " = {}.".format(sn, self.sn+1))
@@ -771,7 +781,7 @@ class Kevery:
         """
         # fetch ked ilk  aid, sn, dig to see how to process
         ked = serder.ked
-        try:
+        try:  # see if aid in event validates
             aider = Aider(qb64=ked["aid"])
         except Exception as ex:
             raise ValidationError("Invalid aid = {}.".format(ked["aid"]))
@@ -804,34 +814,33 @@ class Kevery:
                 return  # discard
 
             if ilk == Ilks.icp:  # inception event so maybe duplicitous
-                # kever init verifies basic inception stuff and signatures
-                # raises exception if problem
-                kever = Kever(serder=serder, sigers=sigers)  # create kever from serder
+                if aid not in PDELs:  #  add to PDELs
+                    PDELs[aid] = dict()
+                if dig not in PDELS[aid]:
+                    PDELs[aid][dig] = LogEntry(serder=serder, sigers=sigers)
 
-                #  verified duplicitous event log it and add to DELS if first time
-                if aid not in DELs:  #  add to DELS
-                    DELs[aid] = dict()
-                if dig not in DELS[aid]:
-                    DELS[aid][dig] = LogEntry(serder=serder, sigers=sigers)
-
-            else:  # establishment event rot
+            else:  # rot or ixn, so sn matters
                 kever = Kevers[aid]  # get existing kever for aid
+                sno = kever.sn + 1  # proper sn of new inorder event
 
-                if sn > kever.sn + 1:  # sn not in order
+                if sn > sno:  # sn later than sno so out of order escrow
                     #  log escrowed
                     if aid not in Escrows:  #  add to Escrows
                         Escrows[aid] = mdict()  # multiple values by sn
                     if sn not in Escrows[aid]:
                         Escrows[aid].add(sn, LogEntry(serder=serder, sigers=sigers))
 
-                else:  # sn <= kever.sn + 1
-                    if sn <= kever.sn and sn <= kever.lastEst.sn :  # stale
-                            # log stale event
-                            return  # discard
-                    else: # either recovery est event or new est event
-                        # verify signatures etc and update state if valid
-                        # raise exception if problem. adds to KELs
-                        kever.update(serder=serder, sigers=sigers)
+                elif ((sn == sno) or  # new inorder event
+                      (ilk == Ilks.rot and kever.lastEst.sn < sn <= sno )):  # recovery
+                    # verify signatures etc and update state if valid
+                    # raise exception if problem. adds to KELs
+                    kever.update(serder=serder, sigers=sigers)
+
+                else:  # maybe duplicitous
+                    if aid not in PDELs:  #  add to PDELs
+                        PDELs[aid] = dict()
+                    if dig not in PDELS[aid]:
+                        PDELs[aid][dig] = LogEntry(serder=serder, sigers=sigers)
 
 
     def processAll(self, kes):
@@ -856,3 +865,45 @@ class Kevery:
                 # log diagnostics errors etc
                 continue
 
+    def duplicity(self, serder, sigers):
+        """
+        Processes potential duplicitous events in PDELs
+
+        Handles duplicity detection and logging if duplicitous
+
+        Placeholder here for logic need to move
+
+        """
+
+        # fetch ked ilk  aid, sn, dig to see how to process
+        ked = serder.ked
+        try:  # see if aid in event validates
+            aider = Aider(qb64=ked["aid"])
+        except Exception as ex:
+            raise ValidationError("Invalid aid = {}.".format(ked["aid"]))
+        aid = aider.qb64
+        ked = serder.ked
+        ilk = ked["ilk"]
+        try:
+            sn = int(ked["sn"], 16)
+        except Exception as ex:
+            raise ValidationError("Invalid sn = {}".format(ked["sn"]))
+        dig = serder.dig
+
+        if dig in KEDLs["aid"]:
+            return
+
+        if ilk == Ilks.icp:  # inception event so maybe duplicitous
+            # Using Kever for cheap duplicity detection of inception events
+            # kever init verifies basic inception stuff and signatures
+            # raises exception if problem.
+            kever = Kever(serder=serder, sigers=sigers)  # create kever from serder
+            # No exception above so verified duplicitous event
+            # log it and add to DELS if first time
+            if aid not in DELs:  #  add to DELS
+                DELs[aid] = dict()
+            if dig not in DELS[aid]:
+                DELS[aid][dig] = LogEntry(serder=serder, sigers=sigers)
+
+        else:
+            pass
