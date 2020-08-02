@@ -21,6 +21,7 @@ from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import CryMat, Verfer, Siger, Signer, Diger, Nexter, Aider
+from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
@@ -382,6 +383,36 @@ def test_signer():
         signer = Signer(code=CryOneDex.Ed25519N)
     """ Done Test """
 
+def test_generatesigners():
+    """
+    Test the support function genSigners
+
+    """
+    signers = generateSigners(count=2, transferable=False)
+    assert len(signers) == 2
+    for signer in signers:
+        assert signer.verfer.code == CryOneDex.Ed25519N
+
+    # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    root = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+    assert len(root) == 16
+    signers = generateSigners(root=root, count=4)  # default is transferable
+    assert len(signers) == 4
+    for signer in signers:
+        assert signer.code == CryOneDex.Ed25519_Seed
+        assert signer.verfer.code == CryOneDex.Ed25519
+
+    sigkeys = [signer.qb64 for signer in signers]
+    assert sigkeys == ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                       'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                       'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                       'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8']
+
+    secrets = generateSecrets(root=root, count=4)
+    assert secrets == sigkeys
+
+    """ End Test """
+
 def test_diger():
     """
     Test the support functionality for Diger subclass of CryMat
@@ -428,7 +459,7 @@ def test_nexter():
         nexter = Nexter()
 
     #create something to digest and verify
-    verkey, sigkey = pysodium.crypto_sign_keypair()
+    # verkey, sigkey = pysodium.crypto_sign_keypair()
     verkey = (b'\xacr\xda\xc83~\x99r\xaf\xeb`\xc0\x8cR\xd7\xd7\xf69\xc8E\x1e\xd2\xf0='
               b'`\xf7\xbf\x8a\x18\x8a`q')
     verfer = Verfer(raw=verkey)
@@ -439,6 +470,9 @@ def test_nexter():
 
     nexter = Nexter(ser=ser)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
+    assert nexter.qb64 == 'EEV6odWqE1wICGXtkKpOjDxPOWSrF4UAENqYT06C0ECU'
+    assert nexter.sith == None  # not used by nexter for its  digest
+    assert nexter.keys == None  # not used by nexter for its  digest
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter.verify(ser=ser)
     assert nexter.verify(ser=ser+b'ABCDEF') == False
@@ -449,7 +483,12 @@ def test_nexter():
     nexter = Nexter(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter._derive(sith=sith, keys=keys) == ser
+    assert nexter.sith == sith
+    assert nexter.keys == keys
+    nxtser, nxtsith, nxtkeys = nexter._derive(sith=sith, keys=keys)
+    assert nxtser == ser
+    assert nxtsith == sith
+    assert nxtkeys == keys
     assert nexter.verify(ser=ser)
     assert nexter.verify(ser=ser+b'ABCDEF') == False
     assert nexter.verify(sith=sith, keys=keys)
@@ -457,13 +496,20 @@ def test_nexter():
     with pytest.raises(EmptyMaterialError):
         nexter = Nexter(sith=sith)
 
-    with pytest.raises(EmptyMaterialError):
-        nexter = Nexter(keys=keys)
+    nexter = Nexter(keys=keys)  # compute sith from keys
+    assert nexter.keys == keys
+    assert nexter.sith == sith
+
 
     nexter = Nexter(sith=1, keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter._derive(sith=sith, keys=keys) == ser
+    assert nexter.sith == sith
+    assert nexter.keys == keys
+    nxtser, nxtsith, nxtkeys = nexter._derive(sith=sith, keys=keys)
+    assert nxtser == ser
+    assert nxtsith == sith
+    assert nxtkeys == keys
     assert nexter.verify(ser=ser)
     assert nexter.verify(ser=ser+b'ABCDEF') == False
     assert nexter.verify(sith=1, keys=keys)
@@ -472,7 +518,12 @@ def test_nexter():
     nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter._derive(ked=ked) == ser
+    assert nexter.sith == sith
+    assert nexter.keys == keys
+    nxtser, nxtsith, nxtkeys = nexter._derive(sith=sith, keys=keys)
+    assert nxtser == ser
+    assert nxtsith == sith
+    assert nxtkeys == keys
     assert nexter.verify(ser=ser)
     assert nexter.verify(ser=ser+b'ABCDEF') == False
     assert nexter.verify(ked=ked)
@@ -694,7 +745,7 @@ def test_serials():
               nxt = 'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM',
               toad = 0,
               wits = [],
-              conf = [],
+              cnfg = [],
               idxs = [0]
              )
 
@@ -718,7 +769,7 @@ def test_serials():
     assert icps == (b'{"vs":"KERI10JSON000000_","aid":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"icp","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"nxt":"'
-                    b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"conf":[],"'
+                    b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"cnfg":[],"'
                     b'idxs":[0]}')
 
     match = Rever.search(icps)
@@ -742,7 +793,7 @@ def test_serials():
                     b'SVPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwy'
                     b'Z-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZ'
                     b'H3ULvYAfSVPzhzS6b5CM\xa3nxt\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
-                    b'CM\xa4toad\x00\xa4wits\x90\xa4conf\x90\xa4idxs\x91\x00')
+                    b'CM\xa4toad\x00\xa4wits\x90\xa4cnfg\x90\xa4idxs\x91\x00')
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.mgpk.encode("utf-8")
@@ -766,7 +817,7 @@ def test_serials():
     assert icps == (b'\xacbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'bsnd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
                     b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
-                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dconf\x80didxs\x81\x00')
+                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dcnfg\x80didxs\x81\x00')
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.cbor.encode("utf-8")
@@ -984,4 +1035,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_aider()
+    test_nexter()

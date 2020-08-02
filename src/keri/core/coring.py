@@ -5,11 +5,13 @@ keri.core.coring module
 """
 import re
 import json
+import copy
 
 from dataclasses import dataclass, astuple
 from collections import namedtuple
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
+from math import ceil
 
 import cbor2 as cbor
 import msgpack
@@ -600,6 +602,54 @@ class Signer(CryMat):
                           verfer=verfer)
 
 
+
+def generateSigners(root=None, count=8, transferable=True):
+    """
+    Returns list of Signers for Ed25519
+
+    Parameters:
+        root is bytes 16 byte long root key (salt/seed) from which seeds for Signers
+            in list are derived
+            random root created if not provided
+        count is number of signers in list
+        transferable is boolean true means verfers codes are transferable
+                                non-transferable otherwise
+    """
+    if not root:
+        root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+
+    signers = []
+    for i in range(count):
+        path = "{:x}".format(i)
+        # algorithm default is argon2id
+        seed = pysodium.crypto_pwhash(outlen=32,
+                                      passwd=path,
+                                      salt=root,
+                                      opslimit=pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+                                      memlimit=pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
+                                      alg=pysodium.crypto_pwhash_ALG_DEFAULT)
+
+        signers.append(Signer(raw=seed, transferable=transferable))
+
+    return signers
+
+def generateSecrets(root=None, count=8, transferable=True):
+    """
+    Returns list of fully qualified Base64 secret seeds for Ed25519
+
+    Parameters:
+        root is bytes 16 byte long root key (salt/seed) from which seeds for Signers
+            in list are derived
+            random root created if not provided
+        count is number of signers in list
+        transferable is boolean true means verfers codes are transferable
+                                non-transferable otherwise
+    """
+    signers = generateSigners(root=root, count=count, transferable=transferable)
+
+    return [signer.qb64 for signer in signers]  #  fetch the qb64
+
+
 class Diger(CryMat):
     """
     Diger is CryMat subclass with method to verify digest of serialization
@@ -676,6 +726,8 @@ class Nexter(Diger):
     Attributes:
 
     Properties:
+        .sith return copy of sith used to create digest. None otherwise.
+        .keys returns copy of keys used to create digest. None otherwise.
 
     Methods:
 
@@ -689,49 +741,81 @@ class Nexter(Diger):
 
         Parameters:
            ser is bytes serialization from which raw is computed if not raw
-           sith is int threshorld or lowercase hex str no leading zeros
+           sith is int threshold or lowercase hex str no leading zeros
            keys is list of keys each is qb64 public key str
+
+           Raises error if not any of raw, ser, keys, ked
+
+           if not raw and not ser
+               If keys not provided
+                  get keys from ked
+
+           If sith not provided
+               get sith from ked
+               but if not ked then compute sith as simple majority of keys
 
         """
         try:
             super(Nexter, self).__init__(ser=ser, **kwa)
         except EmptyMaterialError as ex:
-            if not (sith and keys) and not ked:
+            if not keys and not ked:
                 raise ex
-            ser = self._derive(sith=sith, keys=keys, ked=ked)
+            ser, sith, keys = self._derive(sith=sith, keys=keys, ked=ked)
             super(Nexter, self).__init__(ser=ser, **kwa)
 
+        self._sith = copy.deepcopy(sith) if sith is not None else None
+        self._keys = copy.deepcopy(keys) if keys is not None else None
+
+    @property
+    def sith(self):
+        """ Property ._sith getter """
+        return self._sith
+
+    @property
+    def keys(self):
+        """ Property ._keys getter """
+        return self._keys
 
     @staticmethod
     def _derive(sith=None, keys=None, ked=None):
         """
         Returns serialization derived from sith, keys, or ked
         """
-        if not (sith and keys):
+        if not keys:
             try:
-                sith = ked["sith"]
                 keys = ked["keys"]
-            except Exception as ex:
-                raise DerivationError("Error extracting sith and keys from"
+            except KeyError as ex:
+                raise DerivationError("Error extracting keys from"
                                       " ked = {}".format(ex))
 
-        if not keys:
+        if not keys:  # empty keys
             raise DerivationError("Empty keys.")
+
+        if sith is None:
+            try:
+                sith = ked["sith"]
+            except Exception as ex:
+                sith = max(1, ceil(len(keys) / 2))  # default simple majority
 
         if isinstance(sith, list):
             # verify list expression against keys
             # serialize list here
             raise DerivationError("List form of sith = {} not yet supported".format(sith))
+
         else:
-            if not isinstance(sith, (str)):
-                sith = "{:x}".format(sith)  # lowecase hex no leading zeros
+            try:
+                sith = int(sith, 16)  # convert to int
+            except TypeError as ex:  #  already int
+                pass
+            sith = max(1, sith)  # ensure sith at least 1
+            sith = "{:x}".format(sith)  # convert back to lowercase hex no leading zeros
 
         nxts = [sith.encode("utf-8")]  # create list to concatenate for hashing
         for key in keys:
             nxts.append(key.encode("utf-8"))
         ser = b''.join(nxts)
 
-        return ser
+        return (ser, sith, keys)
 
     def verify(self, ser=b'', sith=None, keys=None, ked=None):
         """
@@ -746,7 +830,7 @@ class Nexter(Diger):
             sith is str lowercase hex
         """
         if not ser:
-            ser = self._derive(sith=sith, keys=keys, ked=ked)
+            ser, sith, keys = self._derive(sith=sith, keys=keys, ked=ked)
 
         return (self._verify(ser=ser, dig=self.raw))
 

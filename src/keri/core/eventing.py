@@ -11,11 +11,14 @@ from dataclasses import dataclass, astuple
 from collections import namedtuple
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
+from math import ceil
 
 import cbor2 as cbor
 import msgpack
 import pysodium
 import blake3
+
+from orderedset import OrderedSet as oset
 
 from ..kering import ValidationError, VersionError, EmptyMaterialError, DerivationError
 from ..kering import Versionage, Version
@@ -56,12 +59,11 @@ Escrows = dict()  # Validator Escow as dict of dicts of events keyed by aid.qb64
 def incept( keys,
             version=Version,
             kind=Serials.json,
-            code=CryOneDex.Ed25519,
-            sith=1,
+            sith=None,
             nxt="",
-            toad=1,
+            toad=None,
             wits=None,
-            conf=None,
+            cnfg=None,
             idxs=None
           ):
 
@@ -73,12 +75,11 @@ def incept( keys,
         keys,
         version
         kind
-        code
         sith
         nxt
         toad
         wits
-        conf
+        cnfg
         idxs
 
 
@@ -87,12 +88,33 @@ def incept( keys,
     sn = 0
     ilk = Ilks.icp
 
-    if nxt and code in [CryOneDex.Ed25519N]:  # non-empy nxt for ephemeral
-        raise ValueError("Non-empty nxt digest = {} for ephemeral aid code"
-                         " = {}.".format(nxt, code))
+    if sith is None:
+        sith = max(1, ceil(len(keys) / 2))
+
+    if isinstance(sith, int):
+        if sith < 1 or sith > len(keys):  # out of bounds sith
+            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+    else:  # list sith not yet supported
+        raise ValueError("invalid sith = {}.".format(sith))
 
     wits = wits if wits is not None else []
-    conf = conf if conf is not None else []
+    if len(oset(wits)) != len(wits):
+        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+
+    if toad is None:
+        if not wits:
+            toad = 0
+        else:
+            toad = max(1, ceil(len(wits) / 2))
+
+    if wits:
+        if toad < 1 or toad > len(wits):  # out of bounds toad
+            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+    else:
+        if toad != 0:  # invalid toad
+            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+
+    cnfg = cnfg if cnfg is not None else []
 
     ked = dict(vs=vs,  # version string
                aid="",  # ab64 prefix
@@ -103,7 +125,7 @@ def incept( keys,
                nxt=nxt,  # hash qual Base64
                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                wits=wits,  # list of qb64 may be empty
-               conf=conf,  # list of config ordered mappings may be empty
+               cnfg=cnfg,  # list of config ordered mappings may be empty
                )
 
     if idxs is not None:  # add idxs element to ked
@@ -111,11 +133,12 @@ def incept( keys,
             idxs="{:x}".format(nsigs)  # single lowercase hex string
         ked["idxs"] = idxs  # update ked with idxs field
 
-
-    aider = Aider(code=code, ked=ked)  # Derive AID from ked per code
+    # raises derivation error if non-empty nxt but ephemeral code
+    aider = Aider(ked=ked)  # Derive AID from ked
     ked["aid"] = aider.qb64  # update aid element in ked with aid qb64
 
     return Serder(ked=ked)  # return serialized ked
+
 
 def rotate( aid,
             keys,
@@ -123,9 +146,10 @@ def rotate( aid,
             version=Version,
             kind=Serials.json,
             sn=1,
-            sith=1,
+            sith=None,
             nxt="",
-            toad=1,
+            toad=None,
+            wits=None, # prior existing wits
             cuts=None,
             adds=None,
             data=None,
@@ -133,8 +157,8 @@ def rotate( aid,
           ):
 
     """
-    Returns serder of inception event.
-    Utility function to automate creation of inception events.
+    Returns serder of rotation event.
+    Utility function to automate creation of rotation events.
 
      Parameters:
         aid
@@ -142,6 +166,7 @@ def rotate( aid,
         dig
         version
         kind
+        sn
         sith
         nxt
         toad
@@ -155,8 +180,64 @@ def rotate( aid,
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.rot
 
+    if sn < 1:
+        raise ValueError("Invalid sn = {} for rot.".format(sn))
+
+    if sith is None:
+        sith = max(1, ceil(len(keys) / 2))
+
+    if isinstance(sith, int):
+        if sith < 1 or sith > len(keys):  # out of bounds sith
+            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+    else:  # list sith not yet supported
+        raise ValueError("invalid sith = {}.".format(sith))
+
+    wits = wits if wits is not None else []
+    witset = oset(wits)
+    if len(witset) != len(wits):
+        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+
     cuts = cuts if cuts is not None else []
+    cutset = oset(cuts)
+    if len(cutset) != len(cuts):
+        raise ValueError("Invalid cuts = {}, has duplicates.".format(cuts))
+
+    if (witset & cutset) != cutset:  #  some cuts not in wits
+        raise ValueError("Invalid cuts = {}, not all members in wits.".format(cuts))
+
     adds = adds if adds is not None else []
+    addset = oset(adds)
+    if len(addset) != len(adds):
+        raise ValueError("Invalid adds = {}, has duplicates.".format(adds))
+
+    if cutset & addset:  # non empty intersection
+        raise ValueError("Intersecting cuts = {} and  adds = {}.".format(cuts, adds))
+
+    if witset & addset:  # non empty intersection
+        raise ValueError("Intersecting wits = {} and  adds = {}.".format(wits, adds))
+
+    newitset = (witset - cutset) | addset
+
+    if len(newitset) != (len(wits) - len(cuts) + len(adds)):  # redundant?
+        raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
+                         "and adds = {}.".format(wits, cuts, adds))
+
+    if toad is None:
+        if not newitset:
+            toad = 0
+        else:
+            toad = max(1, ceil(len(newitset) / 2))
+
+    if newitset:
+        if toad < 1 or toad > len(newitset):  # out of bounds toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(newitset)))
+    else:
+        if toad != 0:  # invalid toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(newitset)))
+
+
     data = data if data is not None else []
 
     ked = dict(vs=vs,  # version string
@@ -171,7 +252,54 @@ def rotate( aid,
                cuts=cuts,  # list of qb64 may be empty
                adds=adds,  # list of qb64 may be empty
                data=data,  # list of seals
+               )
 
+    if idxs is not None:  # add idxs element to ked
+        if isinstance(idxs, int):
+            idxs="{:x}".format(nsigs)  # single lowercase hex string
+        ked["idxs"] = idxs  # update ked with idxs field
+
+    return Serder(ked=ked)  # return serialized ked
+
+
+def interact( aid,
+              dig,
+              version=Version,
+              kind=Serials.json,
+              sn=1,
+              data=None,
+              idxs=None
+          ):
+
+    """
+    Returns serder of interaction event.
+    Utility function to automate creation of interaction events.
+
+     Parameters:
+        aid
+        dig
+        version
+        kind
+        sn
+        data
+        idxs
+
+
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.ixn
+
+    if sn < 1:
+        raise ValueError("Invalid sn = {} for ixn.".format(sn))
+
+    data = data if data is not None else []
+
+    ked = dict(vs=vs,  # version string
+               aid=aid,  # ab64 prefix
+               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,
+               dig=dig,
+               data=data,  # list of seals
                )
 
     if idxs is not None:  # add idxs element to ked
@@ -204,8 +332,10 @@ class Kever:
         .nexter is qualified qb64 of next sith and next signing keys
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
-        .conf is list of inception configuration data mappings
+        .cnfg is list of inception configuration data mappings
+        .data is list of current seals
         .estOnly is boolean
+        .nonTrans is boolean
 
     Properties:
 
@@ -238,10 +368,14 @@ class Kever:
         ked = serder.ked
         sith = ked["sith"]
         if isinstance(sith, str):
-            self.sith =  int(sith, 16)
+            self.sith = int(sith, 16)
+            if self.sith < 1 or self.sith > len(self.verfers):  # out of bounds sith
+                raise ValueError("Invalid sith = {} for keys = {}".format(sith,
+                                      [verfer.qb64 for verfer in self.verfers]))
         else:
             # fix this to support list sith
             raise ValueError("Unsupported type for sith = {}".format(sith))
+
 
         if not self.verify(sigxers=sigxers, serder=serder):
             raise ValidationError("Failure verifying signatures = {} for {}"
@@ -258,23 +392,40 @@ class Kever:
                                               "".format(self.sn, ked))
         self.diger =  serder.diger
 
-        self.ilk = ked["ilk"]
-        if self.ilk != Ilks.icp:
+        ilk = ked["ilk"]
+        if ilk != Ilks.icp:
             raise ValidationError("Expected ilk = {} got {}."
-                                              "".format(Ilks.icp, self.ilk))
-        self.nexter = Nexter(qb64=ked["nxt"]) if ked["nxt"] else None  # check for empty
-        self.toad = int(ked["toad"], 16)
-        self.wits = ked["wits"]
-        self.conf = ked["conf"]
+                                              "".format(Ilks.icp, ilk))
+        self.ilk = ilk
+
+        nxt = ked["nxt"]
+        self.nexter = Nexter(qb64=nxt) if nxt else None
+        self.nonTrans = True if self.nexter is None else False
+
+
+        wits = ked["wits"]
+        if len(oset(wits)) != len(wits):
+            raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+        self.wits = wits
+
+        toad = int(ked["toad"], 16)
+        if wits:
+            if toad < 1 or toad > len(wits):  # out of bounds toad
+                raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+        else:
+            if toad != 0:  # invalid toad
+                raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+        self.toad = toad
+
+        self.cnfg = ked["cnfg"]
+        self.data = None
 
         # ensure boolean
         self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
                              else False)
-        for d in self.conf:
+        for d in self.cnfg:
             if "trait" in d and d["trait"] == TraitDex.EstOnly:
                 self.estOnly = True
-
-
 
         # update logs
         kevage = Kevage(serder=serder, sigxers=sigxers)
@@ -298,6 +449,10 @@ class Kever:
         signatures sigxers and update state
 
         """
+        if self.nonTrans:  # nonTransferable so no events after inception allowed
+            raise ValidationError("Unexpected event = {} in nontransferable "
+                                  " state.".format(serder))
+
         # if rotation event use keys from event
         # if interaction event use keys from existing Kever
         ked = serder.ked
@@ -312,9 +467,14 @@ class Kever:
                 raise ValidationError("Attempted rotation for nontransferable"
                                       " aid = {}".format(self.aider.qb64))
 
+            verfers = serder.verfers  # only for establishment events
+
             sith = ked["sith"]
             if isinstance(sith, str):
-                sith =  int(ked.sith, 16)
+                sith = int(sith, 16)
+                if sith < 1 or sith > len(self.verfers):  # out of bounds sith
+                    raise ValueError("Invalid sith = {} for keys = {}".format(sith,
+                                          [verfer.qb64 for verfer in verfers]))
             else:
                 # fix this to support list sith
                 raise ValueError("Unsupported type for sith = {}".format(sith))
@@ -324,10 +484,7 @@ class Kever:
                 raise ValidationError("Mismatch nxt digest = {} with rotation"
                                       " sith = {}, keys = {}.".format(nexter.qb64))
 
-
             # prior nxt valid so verify sigxers using new verifier keys from event
-            verfers = serder.verfers  # only for establishment events
-
             # verify indexes of attached signatures against verifiers
             for sigxer in sigxers:
                 if sigxer.index >= len(verfers):
@@ -339,22 +496,64 @@ class Kever:
                 raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigxers, serder))
 
+            # compute wits from cuts and adds use set
+            # verify set math
+            witset = oset(self.wits)
+            cuts = ked["cuts"]
+            cutset = oset(cuts)
+            if len(cutset) != len(cuts):
+                raise ValueError("Invalid cuts = {}, has duplicates.".format(cuts))
+
+            if (witset & cutset) != cutset:  #  some cuts not in wits
+                raise ValueError("Invalid cuts = {}, not all members in wits.".format(cuts))
+
+
+            adds = ked["adds"]
+            addset = oset(adds)
+            if len(addset) != len(adds):
+                raise ValueError("Invalid adds = {}, has duplicates.".format(adds))
+
+            if cutset & addset:  # non empty intersection
+                raise ValueError("Intersecting cuts = {} and  adds = {}.".format(cuts, adds))
+
+            if witset & addset:  # non empty intersection
+                raise ValueError("Intersecting wits = {} and  adds = {}.".format(self.wits, adds))
+
+            wits = list((witset - cutset) | addset)
+
+            if len(wits) != (len(self.wits) - len(cuts) + len(adds)):  # redundant?
+                raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
+                                 "and adds = {}.".format(self.wits, cuts, adds))
+
+            toad = int(ked["toad"], 16)
+            if wits:
+                if toad < 1 or toad > len(wits):  # out of bounds toad
+                    raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+            else:
+                if toad != 0:  # invalid toad
+                    raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+
+
             # nxt and signatures verify so update state
-            self.verfers = verfers
-            self.sith = sith
             self.sn = int(ked["sn"], 16)
             self.diger = serder.diger
-
+            self.ilk = ilk
+            self.sith = sith
+            self.verfers = verfers
             # update .nexter
-            nexter = Nexter(qb64=ked["nxt"]) if nxt else None  # check for empty
-            # update nontransferable  if None
-            self.nexter = nexter
-            self.toad = int(ked["toad"], 16)
-            self.wits = ked["wits"]
-            self.conf = ked["conf"]
+            nxt = ked["nxt"]
+            self.nexter = Nexter(qb64=nxt) if nxt else None  # check for empty
+            if self.nexter is None:
+                self.nonTrans = True
+
+            self.toad = toad
+            self.wits = wits
+            self.data = ked["data"]
 
             # update logs
             kevage = Kevage(serder=serder, sigxers=sigxers)
+            aid = self.aider.qb64
+            dig = self.diger.qb64
             KERLs[aid].add(ked["sn"], kevage)  # multiple values each sn hex str
             KELDs[aid][self.diger.qb64] = kevage
 
@@ -379,9 +578,12 @@ class Kever:
             # update state
             self.sn = int(ked["sn"], 16)
             self.diger = serder.diger
+            self.ilk = ilk
 
             # update logs
             kevage = Kevage(serder=serder, sigxers=sigxers)
+            aid = self.aider.qb64
+            dig = self.diger.qb64
             KERLs[aid].add(ked["sn"], kevage)  # multiple values each sn hex str
             KELDs[aid][self.diger.qb64] = kevage
 
