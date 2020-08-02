@@ -44,7 +44,8 @@ class TraitCodex:
 
 TraitDex = TraitCodex()  # Make instance
 
-Kevage = namedtuple("Kevage", 'serder sigxers')  # Key Event tuple for KELS and DELs
+LogEntry = namedtuple("LogEntry", 'serder sigxers')  # LogEntry for KELS KERLS DELS etc
+Location = namedtuple("Location", 'sn dig')  # Location of key event
 
 Kevers = dict()  # dict of existing Kevers indexed by aid.qb64 of each Kever
 
@@ -427,20 +428,23 @@ class Kever:
             if "trait" in d and d["trait"] == TraitDex.EstOnly:
                 self.estOnly = True
 
-        # update logs
-        kevage = Kevage(serder=serder, sigxers=sigxers)
         aid = self.aider.qb64
         dig = self.diger.qb64
 
+        # need this to recognize recovery events
+        self.lastEst = Location(sn=self.sn, dig=dig)  # last establishment event location
+
+        # update logs
+        entry = LogEntry(serder=serder, sigxers=sigxers)
         if aid not in Kevers:
             Kevers[aid] = dict()
         Kevers[aid][dig] = self
         if aid not in KERLs:
             KERLs[aid] = mdict()  # supports recover forks by sn
-        KERLs[aid].add(ked["sn"], kevage)  # multiple values each sn hex str
+        KERLs[aid].add(ked["sn"], entry)  # multiple values each sn hex str
         if aid not in KELDs:
             KELDs[aid] = dict()
-        KELDs[aid][dig] = kevage
+        KELDs[aid][dig] = entry
 
 
     def update(self, serder,  sigxers):
@@ -558,12 +562,17 @@ class Kever:
             self.wits = wits
             self.data = ked["data"]
 
-            # update logs
-            kevage = Kevage(serder=serder, sigxers=sigxers)
             aid = self.aider.qb64
             dig = self.diger.qb64
-            KERLs[aid].add(ked["sn"], kevage)  # multiple values each sn hex str
-            KELDs[aid][self.diger.qb64] = kevage
+
+            # need this to recognize recovery events
+            self.lastEst = Location(sn=self.sn, dig=dig)  # last establishment event location
+
+            # update logs
+            entry = LogEntry(serder=serder, sigxers=sigxers)
+
+            KERLs[aid].add(ked["sn"], entry)  # multiple values each sn hex str
+            KELDs[aid][self.diger.qb64] = entry
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -589,12 +598,14 @@ class Kever:
             self.diger = serder.diger
             self.ilk = ilk
 
-            # update logs
-            kevage = Kevage(serder=serder, sigxers=sigxers)
             aid = self.aider.qb64
             dig = self.diger.qb64
-            KERLs[aid].add(ked["sn"], kevage)  # multiple values each sn hex str
-            KELDs[aid][self.diger.qb64] = kevage
+
+            # update logs
+            entry = LogEntry(serder=serder, sigxers=sigxers)
+
+            KERLs[aid].add(ked["sn"], entry)  # multiple values each sn hex str
+            KELDs[aid][self.diger.qb64] = entry
 
 
         else:  # unsupported event ilk so discard
@@ -710,7 +721,7 @@ class Kevery:
                 if aid not in Escrows:  #  add to Escrows
                     Escrows[aid] = mdict()  # multiple values by sn
                 if sn not in Escrows[aid]:
-                    Escrows[aid].add(sn, Kevage(serder=serder, sigxers=sigxers))
+                    Escrows[aid].add(sn, LogEntry(serder=serder, sigxers=sigxers))
 
 
         else:  # already accepted inception event for aid
@@ -727,7 +738,7 @@ class Kevery:
                 if aid not in DELs:  #  add to DELS
                     DELs[aid] = dict()
                 if dig not in DELS[aid]:
-                    DELS[aid][dig] = Kevage(serder=serder, sigxers=sigxers)
+                    DELS[aid][dig] = LogEntry(serder=serder, sigxers=sigxers)
 
             else:
                 kever = Kevers[aid]  # get existing kever for aid
@@ -741,7 +752,7 @@ class Kevery:
                     if aid not in Escrows:  #  add to Escrows
                         Escrows[aid] = mdict()  # multiple values by sn
                     if sn not in Escrows[aid]:
-                        Escrows[aid].add(sn, Kevage(serder=serder, sigxers=sigxers))
+                        Escrows[aid].add(sn, LogEntry(serder=serder, sigxers=sigxers))
 
                 else:  # sn == kever.sn + 1
                     # verify signatures etc and update state if valid
