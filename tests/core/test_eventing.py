@@ -126,7 +126,7 @@ def test_keyeventfuncs():
     assert nexter2.sith == '1'  # default from keys
     nxt2 = nexter2.qb64  # transferable so nxt is not empty
     assert nxt2 == 'ECeM2JsaL9-ljwnIlsEYoPUJCv8zWcIeWmPSl2G14OP0'
-    serder1 = rotate(aid=aid, keys=keys1, dig=serder0.dig, nxt=nxt2)  #  default is nxt is empty so abandoned
+    serder1 = rotate(aid=aid, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)  #  default is nxt is empty so abandoned
     assert serder1.ked["aid"] == aid
     assert serder1.ked["nxt"] == nxt2
     assert serder1.ked["dig"] == serder0.dig
