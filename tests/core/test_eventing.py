@@ -213,7 +213,7 @@ def test_kever():
     # verify signature
     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
-    kever = Kever(serder=tser0, sigxers=[tsig0])
+    kever = Kever(serder=tser0, sigers=[tsig0])
 
 
     """ Done Test """
@@ -284,7 +284,7 @@ def test_keyeventsequence_0():
     sig0 = signers[0].sign(serder0.raw, index=0)
     assert signers[0].verfer.verify(sig0.raw, serder0.raw)
     # create key event verifier state
-    kever = Kever(serder=serder0, sigxers=[sig0])
+    kever = Kever(serder=serder0, sigers=[sig0])
     assert kever.aider.qb64 == aid
     assert kever.sn == 0
     assert kever.diger.qb64 == serder0.dig
@@ -314,7 +314,7 @@ def test_keyeventsequence_0():
     sig1 = signers[1].sign(serder1.raw, index=0)
     assert signers[1].verfer.verify(sig1.raw, serder1.raw)
     # update key event verifier state
-    kever.update(serder=serder1, sigxers=[sig1])
+    kever.update(serder=serder1, sigers=[sig1])
     assert kever.aider.qb64 == aid
     assert kever.sn == 1
     assert kever.diger.qb64 == serder1.dig
@@ -338,7 +338,7 @@ def test_keyeventsequence_0():
     sig2 = signers[2].sign(serder2.raw, index=0)
     assert signers[2].verfer.verify(sig2.raw, serder2.raw)
     # update key event verifier state
-    kever.update(serder=serder2, sigxers=[sig2])
+    kever.update(serder=serder2, sigers=[sig2])
     assert kever.aider.qb64 == aid
     assert kever.sn == 2
     assert kever.diger.qb64 == serder2.dig
@@ -356,7 +356,7 @@ def test_keyeventsequence_0():
     sig3 = signers[2].sign(serder3.raw, index=0)
     assert signers[2].verfer.verify(sig3.raw, serder3.raw)
     # update key event verifier state
-    kever.update(serder=serder3, sigxers=[sig3])
+    kever.update(serder=serder3, sigers=[sig3])
     assert kever.aider.qb64 == aid
     assert kever.sn == 3
     assert kever.diger.qb64 == serder3.dig
@@ -374,7 +374,7 @@ def test_keyeventsequence_0():
     sig4 = signers[2].sign(serder4.raw, index=0)
     assert signers[2].verfer.verify(sig4.raw, serder4.raw)
     # update key event verifier state
-    kever.update(serder=serder4, sigxers=[sig4])
+    kever.update(serder=serder4, sigers=[sig4])
     assert kever.aider.qb64 == aid
     assert kever.sn == 4
     assert kever.diger.qb64 == serder4.dig
@@ -398,7 +398,7 @@ def test_keyeventsequence_0():
     sig5 = signers[3].sign(serder5.raw, index=0)
     assert signers[3].verfer.verify(sig5.raw, serder5.raw)
     # update key event verifier state
-    kever.update(serder=serder5, sigxers=[sig5])
+    kever.update(serder=serder5, sigers=[sig5])
     assert kever.aider.qb64 == aid
     assert kever.sn == 5
     assert kever.diger.qb64 == serder5.dig
@@ -416,7 +416,7 @@ def test_keyeventsequence_0():
     sig6 = signers[3].sign(serder6.raw, index=0)
     assert signers[3].verfer.verify(sig6.raw, serder6.raw)
     # update key event verifier state
-    kever.update(serder=serder6, sigxers=[sig6])
+    kever.update(serder=serder6, sigers=[sig6])
     assert kever.aider.qb64 == aid
     assert kever.sn == 6
     assert kever.diger.qb64 == serder6.dig
@@ -437,7 +437,7 @@ def test_keyeventsequence_0():
     sig7 = signers[4].sign(serder7.raw, index=0)
     assert signers[4].verfer.verify(sig7.raw, serder7.raw)
     # update key event verifier state
-    kever.update(serder=serder7, sigxers=[sig7])
+    kever.update(serder=serder7, sigers=[sig7])
     assert kever.aider.qb64 == aid
     assert kever.sn == 7
     assert kever.diger.qb64 == serder7.dig
@@ -457,7 +457,7 @@ def test_keyeventsequence_0():
     assert signers[4].verfer.verify(sig8.raw, serder8.raw)
     # update key event verifier state
     with pytest.raises(ValidationError):  # nontransferable so reject update
-        kever.update(serder=serder8, sigxers=[sig8])
+        kever.update(serder=serder8, sigers=[sig8])
 
     # Event 8 Rotation
     keys5 = [signers[5].verfer.qb64]
@@ -473,7 +473,7 @@ def test_keyeventsequence_0():
     assert signers[4].verfer.verify(sig8.raw, serder8.raw)
     # update key event verifier state
     with pytest.raises(ValidationError):  # nontransferable so reject update
-        kever.update(serder=serder8, sigxers=[sig8])
+        kever.update(serder=serder8, sigers=[sig8])
 
     """ Done Test """
 
@@ -532,7 +532,7 @@ def test_keyeventsequence_1():
     sig0 = signers[0].sign(serder0.raw, index=0)
     assert signers[0].verfer.verify(sig0.raw, serder0.raw)
     # create key event verifier state
-    kever = Kever(serder=serder0, sigxers=[sig0])
+    kever = Kever(serder=serder0, sigers=[sig0])
     assert kever.aider.qb64 == aid
     assert kever.sn == 0
     assert kever.diger.qb64 == serder0.dig
@@ -553,7 +553,7 @@ def test_keyeventsequence_1():
     assert signers[0].verfer.verify(sig1.raw, serder1.raw)
     # update key event verifier state
     with pytest.raises(ValidationError):  # attempt ixn with estOnly
-        kever.update(serder=serder1, sigxers=[sig1])
+        kever.update(serder=serder1, sigers=[sig1])
 
 
     # Event 1 Rotation Transferable
@@ -575,7 +575,7 @@ def test_keyeventsequence_1():
     sig1 = signers[1].sign(serder1.raw, index=0)
     assert signers[1].verfer.verify(sig1.raw, serder1.raw)
     # update key event verifier state
-    kever.update(serder=serder1, sigxers=[sig1])
+    kever.update(serder=serder1, sigers=[sig1])
     assert kever.aider.qb64 == aid
     assert kever.sn == 1
     assert kever.diger.qb64 == serder1.dig
