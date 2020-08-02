@@ -432,6 +432,9 @@ class Kever:
         signatures sigxers and update state
 
         """
+        if self.nonTrans:  # nonTransferable so no events after inception allowed
+            raise ValidationError("Attept to add event in nontransferable state.")
+
         # if rotation event use keys from event
         # if interaction event use keys from existing Kever
         ked = serder.ked

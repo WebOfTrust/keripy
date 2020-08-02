@@ -455,9 +455,24 @@ def test_keyeventsequence():
     sig8 = signers[4].sign(serder8.raw, index=0)
     assert signers[4].verfer.verify(sig8.raw, serder8.raw)
     # update key event verifier state
-    kever.update(serder=serder8, sigxers=[sig8])
+    with pytest.raises(ValidationError):  # nontransferable so reject update
+        kever.update(serder=serder8, sigxers=[sig8])
 
+    # Event 8 Rotation
+    keys5 = [signers[5].verfer.qb64]
+    nexter5 = Nexter(keys=keys5)
+    nxt5 = nexter4.qb64  # transferable so nxt is not empty
+    serder8 = rotate(aid=aid, keys=keys5, dig=serder7.dig, nxt=nxt5, sn=8)
+    assert serder8.ked["aid"] == aid
+    assert serder8.ked["sn"] == '8'
+    assert serder8.ked["dig"] == serder7.dig
 
+    # sign serialization and verify signature
+    sig8 = signers[4].sign(serder8.raw, index=0)
+    assert signers[4].verfer.verify(sig8.raw, serder8.raw)
+    # update key event verifier state
+    with pytest.raises(ValidationError):  # nontransferable so reject update
+        kever.update(serder=serder8, sigxers=[sig8])
 
 
     """ Done Test """
