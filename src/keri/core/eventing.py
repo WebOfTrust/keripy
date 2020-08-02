@@ -481,7 +481,7 @@ class Kever:
 
                 else:  # recovery event
                     # fetch prior event at sn from log
-                    entry = KERLs[aid].nabone(ked["sn"])  #  latest entry
+                    entry = KERLs[aid].nabone(ked["sn"])  # LogEntry
                     if dig != entry.serder.dig:  # priorevent dig not match
                         raise ValidationError("Mismatch event dig = {} with"
                                               " logged dig = {}.".format(dig, entry.serder.dig))
