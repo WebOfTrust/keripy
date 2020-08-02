@@ -20,7 +20,7 @@ from keri.kering import ValidationError, EmptyMaterialError, DerivationError
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, Verfer, Siger, Signer, Diger, Nexter, Aider
+from keri.core.coring import CryMat, Verfer, Sigver, Signer, Diger, Nexter, Aider
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
@@ -273,28 +273,28 @@ def test_verfer():
         verfer = Verfer(raw=verkey, code=CryOneDex.Blake3_256)
     """ Done Test """
 
-def test_siger():
+def test_sigver():
     """
-    Test Siger subclass of CryMat
+    Test Sigver subclass of CryMat
     """
     with pytest.raises(EmptyMaterialError):
-        siger = Siger()
+        sigver = Sigver()
 
     qsig64 = '0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    siger = Siger(qb64=qsig64)
-    assert siger.code == CryTwoDex.Ed25519
-    assert siger.qb64 == qsig64
-    assert siger.verfer == None
+    sigver = Sigver(qb64=qsig64)
+    assert sigver.code == CryTwoDex.Ed25519
+    assert sigver.qb64 == qsig64
+    assert sigver.verfer == None
 
     verkey,  sigkey = pysodium.crypto_sign_keypair()
     verfer = Verfer(raw=verkey)
 
-    siger.verfer = verfer
-    assert  siger.verfer == verfer
+    sigver.verfer = verfer
+    assert  sigver.verfer == verfer
 
-    siger = Siger(qb64=qsig64, verfer=verfer)
-    assert  siger.verfer == verfer
+    sigver = Sigver(qb64=qsig64, verfer=verfer)
+    assert  sigver.verfer == verfer
     """ Done Test """
 
 

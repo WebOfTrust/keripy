@@ -458,12 +458,12 @@ class Verfer(CryMat):
         return True
 
 
-class Siger(CryMat):
+class Sigver(CryMat):
     """
-    Siger is CryMat subclass holding a signature where .raw is signature and .code
-    is signature cipher suite.
-    Adds verfer property to hold Verfer instance of associated verifier public key
-    where .raw as verifier key and .code is signature cipher suite.
+    Sigver is CryMat subclass holding a signature with verfer property.
+        From CryMat .raw is signature and .code is signature cipher suite
+    Adds .verfer property to hold Verfer instance of associated verifier public key
+        Verfer's .raw as verifier key and .code is verifier cipher suite.
 
     See CryMat for inherited attributes and properties:
 
@@ -480,7 +480,7 @@ class Siger(CryMat):
         Assign verfer to ._verfer attribute
 
         """
-        super(Siger, self).__init__(**kwa)
+        super(Sigver, self).__init__(**kwa)
 
         self._verfer = verfer
 
@@ -594,7 +594,7 @@ class Signer(CryMat):
         """
         sig = pysodium.crypto_sign_detached(ser, seed + verfer.raw)
         if index is None:
-            return Siger(raw=sig, code=CryTwoDex.Ed25519, verfer=verfer)
+            return Sigver(raw=sig, code=CryTwoDex.Ed25519, verfer=verfer)
         else:
             return Sigxer(raw=sig,
                           code=SigTwoDex.Ed25519,
@@ -1338,7 +1338,7 @@ class SigMat:
 
 class Sigxer(SigMat):
     """
-    Sigxer is SigMat, indexed signature material, subclass with .verfer property
+    Sigxer is subclass of SigMat, indexed signature material, subclass with .verfer property
     of instance of Verfer that provides associated signature verifier.
 
 
