@@ -390,7 +390,7 @@ class Kever:
         if self.sn != 0:
             raise ValidationError("Invalid sn = {} for inception ked = {}."
                                               "".format(self.sn, ked))
-        self.diger =  serder.diger
+        self.diger = serder.diger
 
         ilk = ked["ilk"]
         if ilk != Ilks.icp:
@@ -453,9 +453,16 @@ class Kever:
             raise ValidationError("Unexpected event = {} in nontransferable "
                                   " state.".format(serder))
 
-        # if rotation event use keys from event
-        # if interaction event use keys from existing Kever
         ked = serder.ked
+        sn = int(ked["sn"], 16)
+
+        if not sn == (self.sn + 1):  # sn not in order
+            raise ValidationError("Invalid sn = {} expecting = {}.".format(sn, self.sn+1))
+
+        dig = ked["dig"]
+        if dig != self.diger.qb64:  # prior event dig not match
+            raise ValidationError("Mismatch event dig = {} with"
+                                  " state dig = {}.".format(dig, self.dig.qb64))
         ilk = ked["ilk"]
 
         if ilk == Ilks.rot:  # subsequent rotation event
@@ -485,6 +492,7 @@ class Kever:
                                       " sith = {}, keys = {}.".format(nexter.qb64))
 
             # prior nxt valid so verify sigxers using new verifier keys from event
+            # rotation event use keys from event
             # verify indexes of attached signatures against verifiers
             for sigxer in sigxers:
                 if sigxer.index >= len(verfers):
@@ -535,7 +543,7 @@ class Kever:
 
 
             # nxt and signatures verify so update state
-            self.sn = int(ked["sn"], 16)
+            self.sn = sn
             self.diger = serder.diger
             self.ilk = ilk
             self.sith = sith
@@ -563,6 +571,7 @@ class Kever:
                 raise ValidationError("Unexpected non-establishment event = {}."
                                   "".format(serder))
 
+            # interaction event use keys from existing Kever
             # use prior .verfers
             # verify indexes of attached signatures against verifiers
             for sigxer in sigxers:
@@ -576,7 +585,7 @@ class Kever:
                                   "".format(sigxers, serder))
 
             # update state
-            self.sn = int(ked["sn"], 16)
+            self.sn = sn
             self.diger = serder.diger
             self.ilk = ilk
 
@@ -735,11 +744,6 @@ class Kevery:
                         Escrows[aid].add(sn, Kevage(serder=serder, sigxers=sigxers))
 
                 else:  # sn == kever.sn + 1
-                    if dig != kever.diger:  # prior event dig not match
-                        raise ValidationError("Mismatch prior dig = {} with"
-                                              " current = {}.".format(dig,
-                                                                      kever.diger))
-
                     # verify signatures etc and update state if valid
                     # raise exception if problem. adds to KELs
                     kever.update(serder=serder, sigxers=sigxers)
