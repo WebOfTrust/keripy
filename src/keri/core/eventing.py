@@ -368,10 +368,14 @@ class Kever:
         ked = serder.ked
         sith = ked["sith"]
         if isinstance(sith, str):
-            self.sith =  int(sith, 16)
+            self.sith = int(sith, 16)
+            if self.sith < 1 or self.sith > len(self.verfers):  # out of bounds sith
+                raise ValueError("Invalid sith = {} for keys = {}".format(sith,
+                                      [verfer.qb64 for verfer in self.verfers]))
         else:
             # fix this to support list sith
             raise ValueError("Unsupported type for sith = {}".format(sith))
+
 
         if not self.verify(sigxers=sigxers, serder=serder):
             raise ValidationError("Failure verifying signatures = {} for {}"
@@ -398,8 +402,21 @@ class Kever:
         self.nexter = Nexter(qb64=nxt) if nxt else None
         self.nonTrans = True if self.nexter is None else False
 
-        self.toad = int(ked["toad"], 16)
-        self.wits = ked["wits"]
+
+        wits = ked["wits"]
+        if len(oset(wits)) != len(wits):
+            raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+        self.wits = wits
+
+        toad = int(ked["toad"], 16)
+        if wits:
+            if toad < 1 or toad > len(wits):  # out of bounds toad
+                raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+        else:
+            if toad != 0:  # invalid toad
+                raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+        self.toad = toad
+
         self.cnfg = ked["cnfg"]
         self.data = None
 
@@ -449,9 +466,14 @@ class Kever:
                 raise ValidationError("Attempted rotation for nontransferable"
                                       " aid = {}".format(self.aider.qb64))
 
+            verfers = serder.verfers  # only for establishment events
+
             sith = ked["sith"]
             if isinstance(sith, str):
                 sith = int(sith, 16)
+                if sith < 1 or sith > len(self.verfers):  # out of bounds sith
+                    raise ValueError("Invalid sith = {} for keys = {}".format(sith,
+                                          [verfer.qb64 for verfer in verfers]))
             else:
                 # fix this to support list sith
                 raise ValueError("Unsupported type for sith = {}".format(sith))
@@ -461,10 +483,7 @@ class Kever:
                 raise ValidationError("Mismatch nxt digest = {} with rotation"
                                       " sith = {}, keys = {}.".format(nexter.qb64))
 
-
             # prior nxt valid so verify sigxers using new verifier keys from event
-            verfers = serder.verfers  # only for establishment events
-
             # verify indexes of attached signatures against verifiers
             for sigxer in sigxers:
                 if sigxer.index >= len(verfers):
@@ -475,6 +494,44 @@ class Kever:
             if not self.verify(sigxers=sigxers, serder=serder, sith=sith):
                 raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigxers, serder))
+
+            # compute wits from cuts and adds use set
+            # verify set math
+            witset = oset(self.wits)
+            cuts = ked["cuts"]
+            cutset = oset(cuts)
+            if len(cutset) != len(cuts):
+                raise ValueError("Invalid cuts = {}, has duplicates.".format(cuts))
+
+            if (witset & cutset) != cutset:  #  some cuts not in wits
+                raise ValueError("Invalid cuts = {}, not all members in wits.".format(cuts))
+
+
+            adds = ked["adds"]
+            addset = oset(adds)
+            if len(addset) != len(adds):
+                raise ValueError("Invalid adds = {}, has duplicates.".format(adds))
+
+            if cutset & addset:  # non empty intersection
+                raise ValueError("Intersecting cuts = {} and  adds = {}.".format(cuts, adds))
+
+            if witset & addset:  # non empty intersection
+                raise ValueError("Intersecting wits = {} and  adds = {}.".format(self.wits, adds))
+
+            wits = list((witset - cutset) | addset)
+
+            if len(wits) != (len(self.wits) - len(cuts) + len(adds)):  # redundant?
+                raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
+                                 "and adds = {}.".format(self.wits, cuts, adds))
+
+            toad = int(ked["toad"], 16)
+            if wits:
+                if toad < 1 or toad > len(wits):  # out of bounds toad
+                    raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+            else:
+                if toad != 0:  # invalid toad
+                    raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+
 
             # nxt and signatures verify so update state
             self.sn = int(ked["sn"], 16)
@@ -488,12 +545,8 @@ class Kever:
             if self.nexter is None:
                 self.nonTrans = True
 
-            self.toad = int(ked["toad"], 16)
-
-            # compute wits from cuts and adds use set
-            # verify set math
-            # self.wits = ked["wits"]
-
+            self.toad = toad
+            self.wits = wits
             self.data = ked["data"]
 
             # update logs
