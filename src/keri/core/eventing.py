@@ -691,14 +691,15 @@ class Kevery:
     Properties:
 
     """
-    def __init__(self):
+    def __init__(self, exhaustive=True):
         """
         Set up event stream
 
         """
+        self.exhaustive = True if exhaustive else False  # extract until end-of-stream
 
 
-    def extractOne(self, kes):
+    def extractOne(self, kes, framed=True):
         """
         Extract one event with attached signatures from key event stream kes
         Returns: (serder, sigers)
@@ -707,6 +708,10 @@ class Kevery:
             kes is bytearray of serialized key event stream.
                 May contain one or more sets each of a serialized event with
                 attached signatures.
+
+            framed is Boolean, If True and no idxs in serder then extract signatures
+                until end-of-stream. This is useful for framed packets with
+                one event and one set of attached signatures per invocation.
 
         """
         # deserialize packet from kes
@@ -735,7 +740,7 @@ class Kevery:
 
                 for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
-                    siger = Siger(qb64=kes)  #  qb64
+                    siger = Siger(qb64=kes)  # qb64
                     sigers.append(siger)
                     del kes[:len(siger.qb64)]  # strip off signature
 
@@ -746,7 +751,7 @@ class Kevery:
 
                 for index in indexes:
                     # check here for type of attached signatures qb64 or qb2
-                    siger = SigMat(qb64=kes)  #  qb64
+                    siger = Siger(qb64=kes)  # qb64
                     sigers.append(siger)
                     del kes[:len(siger.qb64)]  # strip off signature
 
@@ -759,9 +764,13 @@ class Kevery:
                                           "".format(indexes))
 
         else:  # no info on attached sigs
-            pass
-            #  check flag if should parse rest of stream for attached sigs
-            #  or should parse for index block
+            #  add ability to parse for index block
+            if framed:  # parse for signatures until end-of-stream
+                while kes:
+                    # check here for type of attached signatures qb64 or qb2
+                    siger = Siger(qb64=kes)  # qb64
+                    sigers.append(siger)
+                    del kes[:len(siger.qb64)]  # strip off signature
 
         if not sigers:
             raise ValidationError("Missing attached signature(s).")
