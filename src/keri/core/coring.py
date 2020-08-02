@@ -562,13 +562,13 @@ class Signer(CryMat):
 
     def sign(self, ser, index=None):
         """
-        Returns either Siger or Sigxer (indexed) instance of cryptographic
+        Returns either Sigver or Siger (indexed) instance of cryptographic
         signature material on bytes serialization ser
 
         If index is None
-            return Siger instance
+            return Sigver instance
         Else
-            return Sigxer instance
+            return Siger instance
 
         Parameters:
             ser is bytes serialization
@@ -1338,9 +1338,9 @@ class SigMat:
 
 class Sigxer(SigMat):
     """
-    Sigxer is subclass of SigMat, indexed signature material, subclass with .verfer property
-    of instance of Verfer that provides associated signature verifier.
-
+    Sigxer is subclass of SigMat, indexed signature material,
+    Adds .verfer property which is instance of Verfer that provides
+          associated signature verifier.
 
     See SigMat for inherited attributes and properties:
 
