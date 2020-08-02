@@ -479,12 +479,15 @@ class Kever:
                     raise ValidationError("Stale event sn = {} expecting"
                                           " = {}.".format(sn, self.sn+1))
 
-                else:  # recovery event
-                    # fetch prior event at sn from log
-                    entry = KERLs[aid].nabone(ked["sn"])  #  latest entry
-                    if dig != entry.serder.dig:  # priorevent dig not match
-                        raise ValidationError("Mismatch event dig = {} with"
-                                              " logged dig = {}.".format(dig, entry.serder.dig))
+                else:  # sn > self.lastEst.sn  recovery event
+                    # fetch last entry of prior events at prior sn = sn -1
+                    entry = KERLs[aid].nabone("{:x}".format(sn - 1))
+                    if dig == entry.serder.dig:
+                        raise ValidationError("Mismatch event dig = {} with dig "
+                                              "= {} at event sn = {}."
+                                              "".format(dig,
+                                                        entry.serder.dig,
+                                                        psn))
 
             else:  # sn == self.sn +1   new event
                 if dig != self.diger.qb64:  # prior event dig not match
