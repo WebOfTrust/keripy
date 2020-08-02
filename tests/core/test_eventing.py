@@ -28,7 +28,7 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import incept, rotate, Kever, Kevery
+from keri.core.eventing import incept, rotate, interact, Kever, Kevery
 
 
 def test_ilks():
@@ -105,6 +105,7 @@ def test_keyeventfuncs():
     serder0 = incept(keys=keys0, nxt=nxt1)
     aid = serder0.ked["aid"]
     assert serder0.ked["aid"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder0.ked["sn"] == '0'
     assert serder0.ked["nxt"] == nxt1
     assert serder0.raw == (b'{"vs":"KERI10JSON0000fb_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
                            b'c","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
@@ -128,6 +129,7 @@ def test_keyeventfuncs():
     assert nxt2 == 'ECeM2JsaL9-ljwnIlsEYoPUJCv8zWcIeWmPSl2G14OP0'
     serder1 = rotate(aid=aid, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
     assert serder1.ked["aid"] == aid
+    assert serder1.ked["sn"] == '1'
     assert serder1.ked["nxt"] == nxt2
     assert serder1.ked["dig"] == serder0.dig
     assert serder1.raw == (b'{"vs":"KERI10JSON00013a_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
@@ -135,6 +137,15 @@ def test_keyeventfuncs():
                            b',"sith":"1","keys":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRiaf9FdA_-_49A"],"nxt":"E'
                            b'CeM2JsaL9-ljwnIlsEYoPUJCv8zWcIeWmPSl2G14OP0","toad":"0","cuts":[],"adds":[],'
                            b'"data":[]}')
+
+    # Interaction:
+    serder2 = interact(aid=aid, dig=serder1.dig, sn=2)
+    assert serder2.ked["aid"] == aid
+    assert serder2.ked["sn"] == '2'
+    assert serder2.ked["dig"] == serder1.dig
+    assert serder2.raw == (b'{"vs":"KERI10JSON0000a3_","aid":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                           b'c","sn":"2","ilk":"ixn","dig":"E6uPKdq0fuah7wctnRX26SjHCkM_tZ_vUQ59UtrSEeuY"'
+                           b',"data":[]}')
 
 
     """ Done Test """
@@ -296,6 +307,12 @@ def test_keyeventsequence():
     assert serder2.ked["dig"] == serder1.dig
 
     # Event 3 Interaction
+    serder3 = interact(aid=aid, dig=serder2.dig, sn=3)
+    assert serder3.ked["aid"] == aid
+    assert serder3.ked["sn"] == '3'
+    assert serder3.ked["dig"] == serder2.dig
+
+
 
     """ Done Test """
 

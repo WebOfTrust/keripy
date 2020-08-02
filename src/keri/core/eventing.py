@@ -137,8 +137,8 @@ def incept( keys,
     aider = Aider(ked=ked)  # Derive AID from ked
     ked["aid"] = aider.qb64  # update aid element in ked with aid qb64
 
-
     return Serder(ked=ked)  # return serialized ked
+
 
 def rotate( aid,
             keys,
@@ -157,8 +157,8 @@ def rotate( aid,
           ):
 
     """
-    Returns serder of inception event.
-    Utility function to automate creation of inception events.
+    Returns serder of rotation event.
+    Utility function to automate creation of rotation events.
 
      Parameters:
         aid
@@ -252,7 +252,54 @@ def rotate( aid,
                cuts=cuts,  # list of qb64 may be empty
                adds=adds,  # list of qb64 may be empty
                data=data,  # list of seals
+               )
 
+    if idxs is not None:  # add idxs element to ked
+        if isinstance(idxs, int):
+            idxs="{:x}".format(nsigs)  # single lowercase hex string
+        ked["idxs"] = idxs  # update ked with idxs field
+
+    return Serder(ked=ked)  # return serialized ked
+
+
+def interact( aid,
+              dig,
+              version=Version,
+              kind=Serials.json,
+              sn=1,
+              data=None,
+              idxs=None
+          ):
+
+    """
+    Returns serder of interaction event.
+    Utility function to automate creation of interaction events.
+
+     Parameters:
+        aid
+        dig
+        version
+        kind
+        sn
+        data
+        idxs
+
+
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.ixn
+
+    if sn < 1:
+        raise ValueError("Invalid sn = {} for ixn.".format(sn))
+
+    data = data if data is not None else []
+
+    ked = dict(vs=vs,  # version string
+               aid=aid,  # ab64 prefix
+               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,
+               dig=dig,
+               data=data,  # list of seals
                )
 
     if idxs is not None:  # add idxs element to ked
