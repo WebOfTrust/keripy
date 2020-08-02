@@ -425,7 +425,7 @@ class Kever:
                              else False)
         for d in self.cnfg:
             if "trait" in d and d["trait"] == TraitDex.EstOnly:
-                self.estOnly = Tru
+                self.estOnly = True
 
         # update logs
         kevage = Kevage(serder=serder, sigxers=sigxers)
@@ -450,7 +450,8 @@ class Kever:
 
         """
         if self.nonTrans:  # nonTransferable so no events after inception allowed
-            raise ValidationError("Attept to add event in nontransferable state.")
+            raise ValidationError("Unexpected event = {} in nontransferable "
+                                  " state.".format(serder))
 
         # if rotation event use keys from event
         # if interaction event use keys from existing Kever

@@ -28,7 +28,7 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import incept, rotate, interact, Kever, Kevery
+from keri.core.eventing import TraitDex, incept, rotate, interact, Kever, Kevery
 
 
 def test_ilks():
@@ -219,7 +219,7 @@ def test_kever():
     """ Done Test """
 
 
-def test_keyeventsequence():
+def test_keyeventsequence_0():
     """
     Test generation of a sequence of key events
 
@@ -292,7 +292,8 @@ def test_keyeventsequence():
     assert kever.sith == 1
     assert [verfer.qb64 for verfer in kever.verfers] == keys0
     assert kever.nexter.qb64 == nxt1
-
+    assert kever.estOnly == False
+    assert kever.nonTrans == False
 
     # Event 1 Rotation Transferable
     # compute nxt digest from keys2
@@ -474,9 +475,115 @@ def test_keyeventsequence():
     with pytest.raises(ValidationError):  # nontransferable so reject update
         kever.update(serder=serder8, sigxers=[sig8])
 
-
     """ Done Test """
 
+def test_keyeventsequence_1():
+    """
+    Test generation of a sequence of key events
+    Establishment only
+    """
+
+    # Test sequence of events given set of secrets
+    secrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
+
+    #  create signers
+    signers = [Signer(qb64=secret) for secret in secrets]  # faster
+    assert [signer.qb64 for signer in signers] == secrets
+
+    pubkeys = [signer.verfer.qb64 for  signer in  signers]
+    assert pubkeys == [
+                        'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA',
+                        'DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI',
+                        'DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8',
+                        'DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ',
+                        'D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU',
+                        'D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM',
+                        'DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4',
+                        'DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg'
+                     ]
+
+    # New Sequence establishment only
+
+    # Event 0  Inception Transferable (nxt digest not empty)
+    keys0 = [signers[0].verfer.qb64]
+    # compute nxt digest from keys1
+    keys1 = [signers[1].verfer.qb64]
+    nexter1 = Nexter(keys=keys1)
+    nxt1 = nexter1.qb64  # transferable so nxt is not empty
+    cnfg = [dict(trait=TraitDex.EstOnly)]
+    serder0 = incept(keys=keys0, nxt=nxt1, cnfg=cnfg)
+    aid = serder0.ked["aid"]
+    assert serder0.ked["aid"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    assert serder0.ked["sn"] == '0'
+    assert serder0.ked["sith"] == '1'
+    assert serder0.ked["keys"] == keys0
+    assert serder0.ked["nxt"] == nxt1
+    assert serder0.ked["cnfg"] == cnfg
+    # sign serialization and verify signature
+    sig0 = signers[0].sign(serder0.raw, index=0)
+    assert signers[0].verfer.verify(sig0.raw, serder0.raw)
+    # create key event verifier state
+    kever = Kever(serder=serder0, sigxers=[sig0])
+    assert kever.aider.qb64 == aid
+    assert kever.sn == 0
+    assert kever.diger.qb64 == serder0.dig
+    assert kever.ilk == Ilks.icp
+    assert kever.sith == 1
+    assert [verfer.qb64 for verfer in kever.verfers] == keys0
+    assert kever.nexter.qb64 == nxt1
+    assert kever.estOnly == True
+    assert kever.nonTrans == False
+
+    # Event 1 Interaction
+    serder1 = interact(aid=aid, dig=serder0.dig, sn=1)
+    assert serder1.ked["aid"] == aid
+    assert serder1.ked["sn"] == '1'
+    assert serder1.ked["dig"] == serder0.dig
+    # sign serialization and verify signature
+    sig1 = signers[0].sign(serder1.raw, index=0)
+    assert signers[0].verfer.verify(sig1.raw, serder1.raw)
+    # update key event verifier state
+    with pytest.raises(ValidationError):  # attempt ixn with estOnly
+        kever.update(serder=serder1, sigxers=[sig1])
+
+
+    # Event 1 Rotation Transferable
+    # compute nxt digest from keys2
+    keys2 = [signers[2].verfer.qb64]
+    nexter2 = Nexter(keys=keys2)
+    assert nexter2.sith == '1'
+    nxt2 = nexter2.qb64  # transferable so nxt is not empty
+    assert nxt2 == 'EoWDoTGQZ6lJ19LsaV4g42k5gccsB_-ttYHOft6kuYZk'
+    serder1 = rotate(aid=aid, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
+    assert serder1.ked["aid"] == aid
+    assert serder1.ked["sn"] == '1'
+    assert serder1.ked["sith"] == '1'
+    assert serder1.ked["keys"] == keys1
+    assert serder1.ked["nxt"] == nxt2
+    assert serder1.ked["dig"] == serder0.dig
+
+    # sign serialization and verify signature
+    sig1 = signers[1].sign(serder1.raw, index=0)
+    assert signers[1].verfer.verify(sig1.raw, serder1.raw)
+    # update key event verifier state
+    kever.update(serder=serder1, sigxers=[sig1])
+    assert kever.aider.qb64 == aid
+    assert kever.sn == 1
+    assert kever.diger.qb64 == serder1.dig
+    assert kever.ilk == Ilks.rot
+    assert [verfer.qb64 for verfer in kever.verfers] == keys1
+    assert kever.nexter.qb64 == nxt2
+
+    """ Done Test """
 
 def test_kevery():
     """
@@ -801,4 +908,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_keyeventsequence()
+    test_keyeventsequence_1()
