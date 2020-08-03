@@ -1203,6 +1203,7 @@ class SigMat:
     Properties:
         .code  str derivation code of cipher suite for signature
         .index int zero based offset into signing key list
+               or if from SigCntDex then its count of attached signatures
         .raw   bytes crypto material only without code
         .pad  int number of pad chars given .raw
         .qb64 str in Base64 with derivation code and signature crypto material
@@ -1217,6 +1218,7 @@ class SigMat:
             qb2 is bytes of fully qualified crypto material
             code is str of derivation code cipher suite
             index is int of offset index into current signing key list
+                   or if from SigCntDex then its count of attached signatures
 
         When raw provided then validate that code is correct for length of raw
             and assign .raw .code and .index
@@ -1353,6 +1355,15 @@ class SigMat:
             pre += 2
             index = B64ToInt(qb64[pre-2:pre])
 
+        elif code == SigSelDex.dash:  #  '-'
+            pre += 1
+            code = qb64[pre-2:pre]
+            if code not in SigCntDex:  # 4 char = 2 code + 2 index
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+            qb64 = qb64[:SigCntSizes[code]]  # strip of exact len identifier after prefix
+            pre += 2
+            index = B64ToInt(qb64[pre-2:pre])
+
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
 
@@ -1405,6 +1416,60 @@ class SigMat:
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil().encode("utf-8"))
+
+
+class SigCounter(SigMat):
+    """
+    SigCounter is subclass of SigMat, indexed signature material,
+    That provides count of following number of attached signatures.
+    Useful when parsing attached signatures from stream where SigCounter
+    instance qb64 is inserted after Serder of event and before attached signatures.
+
+    Changes default initialization code = SigCntDex.Base64
+    Raises error on init if code not in SigCntDex
+
+    See SigMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .count is int count of attached signatures (same as .index)
+
+    Methods:
+
+
+    """
+    def __init__(self, raw=None, code=SigCntDex.Base64, index=None, count=None, **kwa):
+        """
+        Assign verfer to ._verfer
+
+        Parameters:  See CryMat for inherted parameters
+            count is int number of attached sigantures same as index
+
+        """
+        raw = b'' if raw is not None else raw  # force raw to be empty
+
+        # accept either index or count to init index
+        if count is not None:
+            index = count
+        if index is None:
+            index =  0
+
+        # force raw empty
+        super(SigCounter, self).__init__(raw=raw, code=code, index=index, **kwa)
+
+        if self.code not in SigCntDex:
+            raise ValidationError("Invalid code = {} for SigCounter."
+                                  "".format(self.code))
+
+    @property
+    def count(self):
+        """
+        Property counter:
+        Returns .index as count
+        Assumes ._index is correctly assigned
+        """
+        return self.index
 
 
 class Siger(SigMat):

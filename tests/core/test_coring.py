@@ -29,7 +29,7 @@ from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
 from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat, Siger
+from keri.core.coring import SigMat, SigCounter, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
@@ -644,6 +644,13 @@ def test_sigmat():
     assert sigmat.qb64 == qsc
     assert sigmat.qb2 == b'\xf8\x00\x00'
 
+    sigmat = SigMat(qb64=qsc)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb2 == b'\xf8\x00\x00'
+
     idx = 5
     qsc = SigCntDex.Base64 + IntToB64(idx, l=2)
     assert qsc == '-AAF'
@@ -734,6 +741,60 @@ def test_sigmat():
     assert sigmat.raw == sig
     assert sigmat.code == SigTwoDex.Ed25519
     assert sigmat.index == 5
+    """ Done Test """
+
+def test_sigcounter():
+    """
+    Test SigCounter subclass of Sigmat
+    """
+    with pytest.raises(EmptyMaterialError):
+        counter = SigCounter()
+
+    qsc = SigCntDex.Base64 + IntToB64(0, l=2)
+    assert qsc == '-AAA'
+
+    counter = SigCounter(raw=b'')
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == 0
+    assert counter.count == 0
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x00'
+
+    counter = SigCounter(qb64=qsc)
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == 0
+    assert counter.count == 0
+    assert counter.qb64 == '-AAA'
+    assert counter.qb2 == b'\xf8\x00\x00'
+
+    counter = SigCounter(raw=b'', count=0)
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == 0
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x00'
+
+    cnt = 5
+    qsc = SigCntDex.Base64 + IntToB64(cnt, l=2)
+    assert qsc == '-AAF'
+    counter = SigCounter(raw=b'', count=cnt)
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x05'
+
+    counter = SigCounter(qb64=qsc)
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == cnt
+    assert counter.count == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x05'
+
+
     """ Done Test """
 
 
@@ -1088,4 +1149,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_sigmat()
+    test_sigcounter()
