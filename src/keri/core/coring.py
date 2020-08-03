@@ -1031,6 +1031,7 @@ class SigCntCodex:
     count (number) of attached signatures following an event .
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    .raw is empty
 
     Note binary length of everything in SigCntCodex results in 0 Base64 pad bytes.
 
@@ -1039,7 +1040,7 @@ class SigCntCodex:
     Only provide first two characters here
     """
     Base64: str =  '-A'  # Fully Qualified Base64 Format Signatures.
-    Base64: str =  '-B'  # Fully Qualified Base2 Format Signatures.
+    Base2:  str =  '-B'  # Fully Qualified Base2 Format Signatures.
 
     def __iter__(self):
         return iter(astuple(self))

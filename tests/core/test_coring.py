@@ -22,7 +22,9 @@ from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRaw
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import CryMat, Verfer, Sigver, Signer, Diger, Nexter, Aider
 from keri.core.coring import generateSigners,  generateSecrets
-from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
+from keri.core.coring import SigSelDex
+from keri.core.coring import SigCntDex, SigCntSizes, SigCntRawSizes
+from keri.core.coring import SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
@@ -632,6 +634,27 @@ def test_sigmat():
     i = B64ToInt(cs)
     assert i == 6011
 
+    # Test attached signature code (empty raw)
+    qsc = SigCntDex.Base64 + IntToB64(0, l=2)
+    assert qsc == '-AAA'
+    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=0)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb2 == b'\xf8\x00\x00'
+
+    idx = 5
+    qsc = SigCntDex.Base64 + IntToB64(idx, l=2)
+    assert qsc == '-AAF'
+    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=idx)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 5
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb2 == b'\xf8\x00\x05'
+
+    # Test signatures
     sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
            b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
            b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
