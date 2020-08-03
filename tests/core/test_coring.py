@@ -22,12 +22,14 @@ from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRaw
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import CryMat, Verfer, Sigver, Signer, Diger, Nexter, Aider
 from keri.core.coring import generateSigners,  generateSecrets
-from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
+from keri.core.coring import SigSelDex
+from keri.core.coring import SigCntDex, SigCntSizes, SigCntRawSizes
+from keri.core.coring import SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
 from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat, Siger
+from keri.core.coring import SigMat, SigCounter, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
@@ -597,11 +599,69 @@ def test_sigmat():
     assert SigTwoSizes[SigTwoDex.Ed25519] == 88
     assert SigTwoSizes[SigTwoDex.ECDSA_256k1] == 88
 
-    cs = IntToB64(80)
-    assert cs ==  "BQ"
+    cs = IntToB64(0)
+    assert cs == "A"
     i = B64ToInt(cs)
-    assert i ==  80
+    assert i == 0
 
+    cs = IntToB64(27)
+    assert cs == "b"
+    i = B64ToInt(cs)
+    assert i == 27
+
+    cs = IntToB64(27, l=2)
+    assert cs == "Ab"
+    i = B64ToInt(cs)
+    assert i == 27
+
+    cs = IntToB64(80)
+    assert cs == "BQ"
+    i = B64ToInt(cs)
+    assert i == 80
+
+    cs = IntToB64(4095)
+    assert cs == '__'
+    i = B64ToInt(cs)
+    assert i == 4095
+
+    cs = IntToB64(4096)
+    assert cs == 'BAA'
+    i = B64ToInt(cs)
+    assert i == 4096
+
+    cs = IntToB64(6011)
+    assert cs == "Bd7"
+    i = B64ToInt(cs)
+    assert i == 6011
+
+    # Test attached signature code (empty raw)
+    qsc = SigCntDex.Base64 + IntToB64(0, l=2)
+    assert qsc == '-AAA'
+    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=0)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb2 == b'\xf8\x00\x00'
+
+    sigmat = SigMat(qb64=qsc)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb2 == b'\xf8\x00\x00'
+
+    idx = 5
+    qsc = SigCntDex.Base64 + IntToB64(idx, l=2)
+    assert qsc == '-AAF'
+    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=idx)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 5
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb2 == b'\xf8\x00\x05'
+
+    # Test signatures
     sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
            b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
            b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
@@ -683,6 +743,60 @@ def test_sigmat():
     assert sigmat.index == 5
     """ Done Test """
 
+def test_sigcounter():
+    """
+    Test SigCounter subclass of Sigmat
+    """
+    with pytest.raises(EmptyMaterialError):
+        counter = SigCounter()
+
+    qsc = SigCntDex.Base64 + IntToB64(0, l=2)
+    assert qsc == '-AAA'
+
+    counter = SigCounter(raw=b'')
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == 0
+    assert counter.count == 0
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x00'
+
+    counter = SigCounter(qb64=qsc)
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == 0
+    assert counter.count == 0
+    assert counter.qb64 == '-AAA'
+    assert counter.qb2 == b'\xf8\x00\x00'
+
+    counter = SigCounter(raw=b'', count=0)
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == 0
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x00'
+
+    cnt = 5
+    qsc = SigCntDex.Base64 + IntToB64(cnt, l=2)
+    assert qsc == '-AAF'
+    counter = SigCounter(raw=b'', count=cnt)
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x05'
+
+    counter = SigCounter(qb64=qsc)
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == cnt
+    assert counter.count == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x05'
+
+
+    """ Done Test """
+
 
 def test_siger():
     """
@@ -746,7 +860,6 @@ def test_serials():
               toad = 0,
               wits = [],
               cnfg = [],
-              idxs = [0]
              )
 
     rot = dict(vs = Vstrings.json,
@@ -761,51 +874,51 @@ def test_serials():
               cuts = [],
               adds = [],
               data = [],
-              idxs = [0]
              )
 
     icps = json.dumps(icp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert len(icps) == 314
+    assert len(icps) == 303
     assert icps == (b'{"vs":"KERI10JSON000000_","aid":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"icp","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"nxt":"'
-                    b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"cnfg":[],"'
-                    b'idxs":[0]}')
+                    b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"cnfg":[]}')
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.json.encode("utf-8")
 
     rots = json.dumps(rot, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert len(rots) == 324
+    assert len(rots) == 313
     assert rots == (b'{"vs":"KERI10JSON000000_","aid":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"rot","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"nxt":"'
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"cuts":[],"adds":[],"'
-                    b'data":[],"idxs":[0]}')
+                    b'data":[]}')
 
     match = Rever.search(rots)
     assert match.group() == Vstrings.json.encode("utf-8")
 
     icp["vs"] = Vstrings.mgpk
     icps = msgpack.dumps(icp)
-    assert len(icps) == 271
-    assert icps == (b'\x8c\xa2vs\xb1KERI10MGPK000000_\xa3aid\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
+    assert len(icps) == 264
+    assert icps == (b'\x8b\xa2vs\xb1KERI10MGPK000000_\xa3aid\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'SVPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwy'
                     b'Z-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZ'
                     b'H3ULvYAfSVPzhzS6b5CM\xa3nxt\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
-                    b'CM\xa4toad\x00\xa4wits\x90\xa4cnfg\x90\xa4idxs\x91\x00')
+                    b'CM\xa4toad\x00\xa4wits\x90\xa4cnfg\x90')
+
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.mgpk.encode("utf-8")
 
     rot["vs"] = Vstrings.mgpk
     rots = msgpack.dumps(rot)
-    assert len(rots) == 277
-    assert rots == (b'\x8d\xa2vs\xb1KERI10MGPK000000_\xa3aid\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
+    assert len(rots) == 270
+    assert rots == (b'\x8c\xa2vs\xb1KERI10MGPK000000_\xa3aid\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'SVPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3rot\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwy'
                     b'Z-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZ'
                     b'H3ULvYAfSVPzhzS6b5CM\xa3nxt\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
-                    b'CM\xa4toad\x00\xa4cuts\x90\xa4adds\x90\xa4data\x90\xa4idxs\x91\x00')
+                    b'CM\xa4toad\x00\xa4cuts\x90\xa4adds\x90\xa4data\x90')
+
 
 
     match = Rever.search(rots)
@@ -813,23 +926,23 @@ def test_serials():
 
     icp["vs"] = Vstrings.cbor
     icps = cbor.dumps(icp)
-    assert len(icps) == 271
-    assert icps == (b'\xacbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
-                    b'bsnd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
-                    b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
-                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dcnfg\x80didxs\x81\x00')
+    assert len(icps) == 264
+    assert icps == (b'\xabbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+                     b'bsnd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
+                     b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
+                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dcnfg\x80')
+
 
     match = Rever.search(icps)
     assert match.group() == Vstrings.cbor.encode("utf-8")
 
     rot["vs"] = Vstrings.cbor
     rots = cbor.dumps(rot)
-    assert len(rots) == 277
-    assert rots == (b'\xadbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    assert len(rots) == 270
+    assert rots == (b'\xacbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'bsnd0001cilkcrotcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
                     b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
-                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dcuts\x80dadds\x80ddata\x80didxs\x81'
-                    b'\x00')
+                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dcuts\x80dadds\x80ddata\x80')
 
     match = Rever.search(rots)
     assert match.group() == Vstrings.cbor.encode("utf-8")
@@ -1035,4 +1148,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_nexter()
+    test_sigcounter()

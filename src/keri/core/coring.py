@@ -8,7 +8,7 @@ import json
 import copy
 
 from dataclasses import dataclass, astuple
-from collections import namedtuple
+from collections import namedtuple, deque
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from math import ceil
@@ -968,7 +968,7 @@ BASE64_PAD = '='
 
 # Mappings between Base64 Encode Index and Decode Characters
 #  B64ChrByIdx is dict where each key is a B64 index and each value is the B64 char
-#  B64IdxByChr is dict where each key is a B64 chars and each values is the B64 indexe
+#  B64IdxByChr is dict where each key is a B64 chars and each value is the B64 index
 # Map Base64 index to char
 B64ChrByIdx = dict((index, char) for index,  char in enumerate([chr(x) for x in range(65, 91)]))
 B64ChrByIdx.update([(index + 26, char) for index,  char in enumerate([chr(x) for x in range(97, 123)])])
@@ -978,24 +978,31 @@ B64ChrByIdx[63] = '_'
 
 B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}  # map char to Base64 index
 
-def IntToB64(i):
+def IntToB64(i, l=1):
     """
-    Returns conversion of int i to 2 digit Base64 str
-    0 <= 1 <= 4095
-    """
-    if i < 0 or i >  4095:
-        raise ValueError("Invalid int = {}".format(i))
+    Returns conversion of int i to Base64 str
 
-    return "{}{}".format(B64ChrByIdx[i // 64], B64ChrByIdx[i % 64])
+    l is min number of b64 digits padded with Base4 zeros "A"
+    """
+    d = deque()  # deque of characters base64
+    d.appendleft(B64ChrByIdx[i % 64])
+    i = i // 64
+    while i:
+        d.appendleft(B64ChrByIdx[i % 64])
+        i = i // 64
+    for j in range(l - len(d)):  # range(x)  x <= 0 means do not iterate
+        d.appendleft("A")
+    return ( "".join(d))
 
 def B64ToInt(cs):
     """
-    Returns conversion of 2 digit Base64 str cs to int
-    """
-    if len(cs) > 2:
-        raise ValueError("Invalid cs = {}".format(cs))
+    Returns conversion of Base64 str cs to int
 
-    return (B64IdxByChr[cs[0]] * 64 + B64IdxByChr[cs[1]])
+    """
+    i = 0
+    for e, c in enumerate(reversed(cs)):
+        i += B64IdxByChr[c] * 64 ** e
+    return i
 
 
 @dataclass(frozen=True)
@@ -1007,12 +1014,59 @@ class SigSelectCodex:
     """
     four: str = '0'  # use four character table.
     five: str = '1'  # use five character table.
-    six:  str = '2'  # use siz character table.
+    six:  str = '2'  # use six character table.
+    dash: str = '-'  # use signature count table
 
     def __iter__(self):
         return iter(astuple(self))
 
 SigSelDex = SigSelectCodex()  # Make instance
+
+
+
+@dataclass(frozen=True)
+class SigCntCodex:
+    """
+    SigCntCodex codex of four character length derivation codes that indicate
+    count (number) of attached signatures following an event .
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    .raw is empty
+
+    Note binary length of everything in SigCntCodex results in 0 Base64 pad bytes.
+
+    First two code characters select format of attached signatures
+    Next two code charaters select count total of attached signatures to an event
+    Only provide first two characters here
+    """
+    Base64: str =  '-A'  # Fully Qualified Base64 Format Signatures.
+    Base2:  str =  '-B'  # Fully Qualified Base2 Format Signatures.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+SigCntDex = SigCntCodex()  #  Make instance
+
+# Mapping of Code to Size
+# Total size  qb64
+SigCntSizes = {
+                "-A": 4,
+                "-B": 4,
+              }
+
+# size of index portion of code qb64
+SigCntIdxSizes = {
+                   "-A": 2,
+                   "-B": 2,
+                 }
+
+# total size of raw unqualified
+SigCntRawSizes = {
+                   "-A": 0,
+                   "-B": 0,
+                 }
+
+SIGCNTMAX = 4095  # maximum count value given two base 64 digits
 
 
 @dataclass(frozen=True)
@@ -1042,6 +1096,12 @@ SigTwoSizes = {
                 "A": 88,
                 "B": 88,
               }
+
+# size of index portion of code qb64
+SigTwoIdxSizes = {
+                   "A": 1,
+                   "B": 1,
+                 }
 
 SigTwoRawSizes = {
                 "A": 64,
@@ -1076,6 +1136,11 @@ SigFourSizes = {
                 "0A": 156,
                }
 
+# size of index portion of code qb64
+SigFourIdxSizes = {
+                   "0A": 2,
+                 }
+
 SigFourRawSizes = {
                 "0A": 114,
                }
@@ -1101,18 +1166,27 @@ class SigFiveCodex:
 
 SigFiveDex = SigFiveCodex()  #  Make instance
 
+
 # Mapping of Code to Size
 SigFiveSizes = {}
+SigFiveIdxSizes = {}
 SigFiveRawSizes = {}
 
 SIGFIVEMAX = 4095  # maximum index value given two base 64 digits
 
 # all sizes in one dict
-SigSizes = dict(SigTwoSizes)
+SigSizes = dict(SigCntSizes)
+SigSizes.update(SigTwoSizes)
 SigSizes.update(SigFourSizes)
 SigSizes.update(SigFiveSizes)
 
-SigRawSizes = dict(SigTwoRawSizes)
+SigIdxSizes = dict(SigCntIdxSizes)
+SigIdxSizes.update(SigTwoIdxSizes)
+SigIdxSizes.update(SigFourIdxSizes)
+SigIdxSizes.update(SigFiveIdxSizes)
+
+SigRawSizes = dict(SigCntRawSizes)
+SigRawSizes.update(SigTwoRawSizes)
 SigRawSizes.update(SigFourRawSizes)
 SigRawSizes.update(SigFiveRawSizes)
 
@@ -1129,12 +1203,13 @@ class SigMat:
     Properties:
         .code  str derivation code of cipher suite for signature
         .index int zero based offset into signing key list
+               or if from SigCntDex then its count of attached signatures
         .raw   bytes crypto material only without code
         .pad  int number of pad chars given .raw
         .qb64 str in Base64 with derivation code and signature crypto material
         .qb2  bytes in binary with derivation code and signature crypto material
     """
-    def __init__(self, raw=b'', qb64='', qb2='', code=SigTwoDex.Ed25519, index=0):
+    def __init__(self, raw=None, qb64=None, qb2=None, code=SigTwoDex.Ed25519, index=0):
         """
         Validate as fully qualified
         Parameters:
@@ -1143,23 +1218,26 @@ class SigMat:
             qb2 is bytes of fully qualified crypto material
             code is str of derivation code cipher suite
             index is int of offset index into current signing key list
+                   or if from SigCntDex then its count of attached signatures
 
         When raw provided then validate that code is correct for length of raw
             and assign .raw .code and .index
-        Else when qb64 pr qb2 provided extract and assign .raw and .code
+        Else when either qb64 or qb2 provided then extract and assign .raw and .code
 
         """
-        if raw:  #  raw provided
+        if raw is not None:  #  raw provided
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
             pad = self._pad(raw)
             if (not ( (pad == 2 and (code in SigTwoDex)) or  # Two or Six or Ten
-                      (pad == 0 and (code in SigFourDex)) or  #  Four or Eight
+                      (pad == 0 and (code in SigCntDex)) or  # Cnt (Count)
+                      (pad == 0 and (code in SigFourDex)) or  # Four or Eight
                       (pad == 1 and (code in SigFiveDex)) )):   # Five or Nine
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
 
             if ( (code in SigTwoDex and ((index < 0) or (index > SIGTWOMAX)) ) or
+                 (code in SigCntDex and ((index < 0) or (index > SIGFOURMAX)) ) or
                  (code in SigFourDex and ((index < 0) or (index > SIGFOURMAX)) ) or
                  (code in SigFiveDex and ((index < 0) or (index > SIGFIVEMAX)) ) ):
 
@@ -1176,12 +1254,12 @@ class SigMat:
             self._index = index
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
-        elif qb64:
+        elif qb64 is not None:
             if hasattr(qb64, "decode"):  # converts bytes like to str
                 qb64 = qb64.decode("utf-8")
             self._exfil(qb64)
 
-        elif qb2:  # rewrite to use direct binary exfiltration
+        elif qb2 is not None:  # rewrite to use direct binary exfiltration
             self._exfil(encodeB64(qb2).decode("utf-8"))
 
         else:
@@ -1239,17 +1317,12 @@ class SigMat:
         Returns fully qualified attached sig base64 computed from
         self.raw, self.code and self.index.
         """
+        l = SigIdxSizes[self._code]  # index length b64 characters
+        # full is pre code + index
+        full =  "{}{}".format(self._code, IntToB64(self._index, l=l))
+
         pad = self.pad
         # valid pad for code length
-        if self._code in SigTwoDex:  # 2 char = code + index
-            full = "{}{}".format(self._code, B64ChrByIdx[self._index])
-
-        elif self._code == SigSelDex.four: # 4 char = code + index
-            pass
-
-        else:
-            raise ValueError("Unrecognized code = {}".format(self._code))
-
         if len(full) % 4 != pad:  # pad is not remainder of len(code) % 4
             raise ValidationError("Invalid code + index = {} for converted raw pad = {}."
                                   .format(full, self.pad))
@@ -1279,6 +1352,15 @@ class SigMat:
             if code not in SigFourDex:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:SigFourSizes[code]]  # strip of exact len identifier after prefix
+            pre += 2
+            index = B64ToInt(qb64[pre-2:pre])
+
+        elif code == SigSelDex.dash:  #  '-'
+            pre += 1
+            code = qb64[pre-2:pre]
+            if code not in SigCntDex:  # 4 char = 2 code + 2 index
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+            qb64 = qb64[:SigCntSizes[code]]  # strip of exact len identifier after prefix
             pre += 2
             index = B64ToInt(qb64[pre-2:pre])
 
@@ -1334,6 +1416,60 @@ class SigMat:
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil().encode("utf-8"))
+
+
+class SigCounter(SigMat):
+    """
+    SigCounter is subclass of SigMat, indexed signature material,
+    That provides count of following number of attached signatures.
+    Useful when parsing attached signatures from stream where SigCounter
+    instance qb64 is inserted after Serder of event and before attached signatures.
+
+    Changes default initialization code = SigCntDex.Base64
+    Raises error on init if code not in SigCntDex
+
+    See SigMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .count is int count of attached signatures (same as .index)
+
+    Methods:
+
+
+    """
+    def __init__(self, raw=None, code=SigCntDex.Base64, index=None, count=None, **kwa):
+        """
+        Assign verfer to ._verfer
+
+        Parameters:  See CryMat for inherted parameters
+            count is int number of attached sigantures same as index
+
+        """
+        raw = b'' if raw is not None else raw  # force raw to be empty
+
+        # accept either index or count to init index
+        if count is not None:
+            index = count
+        if index is None:
+            index =  0
+
+        # force raw empty
+        super(SigCounter, self).__init__(raw=raw, code=code, index=index, **kwa)
+
+        if self.code not in SigCntDex:
+            raise ValidationError("Invalid code = {} for SigCounter."
+                                  "".format(self.code))
+
+    @property
+    def count(self):
+        """
+        Property counter:
+        Returns .index as count
+        Assumes ._index is correctly assigned
+        """
+        return self.index
 
 
 class Siger(SigMat):

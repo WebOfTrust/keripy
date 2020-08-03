@@ -75,7 +75,6 @@ def incept( keys,
             toad=None,
             wits=None,
             cnfg=None,
-            idxs=None
           ):
 
     """
@@ -91,9 +90,6 @@ def incept( keys,
         toad
         wits
         cnfg
-        idxs
-
-
     """
     vs = Versify(version=version, kind=kind, size=0)
     sn = 0
@@ -139,11 +135,6 @@ def incept( keys,
                cnfg=cnfg,  # list of config ordered mappings may be empty
                )
 
-    if idxs is not None:  # add idxs element to ked
-        if isinstance(idxs, int):
-            idxs="{:x}".format(nsigs)  # single lowercase hex string
-        ked["idxs"] = idxs  # update ked with idxs field
-
     # raises derivation error if non-empty nxt but ephemeral code
     aider = Aider(ked=ked)  # Derive AID from ked
     ked["aid"] = aider.qb64  # update aid element in ked with aid qb64
@@ -164,7 +155,6 @@ def rotate( aid,
             cuts=None,
             adds=None,
             data=None,
-            idxs=None
           ):
 
     """
@@ -184,9 +174,6 @@ def rotate( aid,
         cuts
         adds
         data
-        idxs
-
-
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.rot
@@ -265,11 +252,6 @@ def rotate( aid,
                data=data,  # list of seals
                )
 
-    if idxs is not None:  # add idxs element to ked
-        if isinstance(idxs, int):
-            idxs="{:x}".format(nsigs)  # single lowercase hex string
-        ked["idxs"] = idxs  # update ked with idxs field
-
     return Serder(ked=ked)  # return serialized ked
 
 
@@ -279,7 +261,6 @@ def interact( aid,
               kind=Serials.json,
               sn=1,
               data=None,
-              idxs=None
           ):
 
     """
@@ -293,9 +274,6 @@ def interact( aid,
         kind
         sn
         data
-        idxs
-
-
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.ixn
@@ -312,11 +290,6 @@ def interact( aid,
                dig=dig,
                data=data,  # list of seals
                )
-
-    if idxs is not None:  # add idxs element to ked
-        if isinstance(idxs, int):
-            idxs="{:x}".format(nsigs)  # single lowercase hex string
-        ked["idxs"] = idxs  # update ked with idxs field
 
     return Serder(ked=ked)  # return serialized ked
 
@@ -691,14 +664,15 @@ class Kevery:
     Properties:
 
     """
-    def __init__(self):
+    def __init__(self, framed=True):
         """
         Set up event stream
 
         """
+        self.framed = True if framed else False  # extract until end-of-stream
 
 
-    def extractOne(self, kes):
+    def extractOne(self, kes, framed=True):
         """
         Extract one event with attached signatures from key event stream kes
         Returns: (serder, sigers)
@@ -707,6 +681,10 @@ class Kevery:
             kes is bytearray of serialized key event stream.
                 May contain one or more sets each of a serialized event with
                 attached signatures.
+
+            framed is Boolean, If True and no sig counter then extract signatures
+                until end-of-stream. This is useful for framed packets with
+                one event and one set of attached signatures per invocation.
 
         """
         # deserialize packet from kes
@@ -723,45 +701,30 @@ class Kevery:
 
         del kes[:srdr.size]  # strip off event from front of kes
 
-        # extract attached sigs as Sigxers
+        # extact sig counter if any
+        try:
+            counter = SigCounter(qb64=kes)  # qb64
+            nsigs = counter.count
+            del kes[:len(counter.qb64)]  # strip off counter
+        except ValidationError as ex:
+            nsigs = 0  # no signature count
+
+        # extract attached sigs as Sigers
         sigers = []  # list of Siger instances for attached indexed signatures
-        if "idxs" in ked and ked["idxs"]: # extract signatures given indexes
-            indexes = ked["idxs"]
-            if isinstance(indexes, str):
-                nsigs = int(indexes, 16)
-                if nsigs < 1:
-                    raise ValidationError("Invalid number of attached sigs = {}."
-                                              " Must be > 1 if not empty.".format(nsigs))
-
-                for i in range(nsigs): # extract each attached signature
-                    # check here for type of attached signatures qb64 or qb2
-                    siger = Siger(qb64=kes)  #  qb64
-                    sigers.append(siger)
-                    del kes[:len(siger.qb64)]  # strip off signature
-
-            elif isinstance(indexes, list):
-                if len(set(indexes)) != len(indexes):  # duplicate index(es)
-                    raise ValidationError("Duplicate indexes in sigs = {}."
-                                              "".format(indexes))
-
-                for index in indexes:
-                    # check here for type of attached signatures qb64 or qb2
-                    siger = SigMat(qb64=kes)  #  qb64
-                    sigers.append(siger)
-                    del kes[:len(siger.qb64)]  # strip off signature
-
-                    if index != siger.index:
-                        raise ValidationError("Mismatching signature index = {}"
-                                              " with index = {}".format(siger.index,
-                                                                        index))
-            else:
-                raise ValidationError("Invalid format of indexes = {}."
-                                          "".format(indexes))
+        if nsigs:
+            for i in range(nsigs): # extract each attached signature
+                # check here for type of attached signatures qb64 or qb2
+                siger = Siger(qb64=kes)  # qb64
+                sigers.append(siger)
+                del kes[:len(siger.qb64)]  # strip off signature
 
         else:  # no info on attached sigs
-            pass
-            #  check flag if should parse rest of stream for attached sigs
-            #  or should parse for index block
+            if framed:  # parse for signatures until end-of-stream
+                while kes:
+                    # check here for type of attached signatures qb64 or qb2
+                    siger = Siger(qb64=kes)  # qb64
+                    sigers.append(siger)
+                    del kes[:len(siger.qb64)]  # strip off signature
 
         if not sigers:
             raise ValidationError("Missing attached signature(s).")
@@ -852,7 +815,7 @@ class Kevery:
 
         while kes:
             try:
-                serder, sigers = self.extractOne(kes=kes)
+                serder, sigers = self.extractOne(kes=kes, framed=self.framed)
             except Exception as ex:
                 # log diagnostics errors etc
                 # error extracting means bad key event stream
@@ -864,6 +827,7 @@ class Kevery:
             except Exception as  ex:
                 # log diagnostics errors etc
                 continue
+
 
     def duplicity(self, serder, sigers):
         """
