@@ -597,10 +597,30 @@ def test_sigmat():
     assert SigTwoSizes[SigTwoDex.Ed25519] == 88
     assert SigTwoSizes[SigTwoDex.ECDSA_256k1] == 88
 
+    cs = IntToB64(27)
+    assert cs == "b"
+    i = B64ToInt(cs)
+    assert i == 27
+
     cs = IntToB64(80)
     assert cs == "BQ"
     i = B64ToInt(cs)
-    assert i ==  80
+    assert i == 80
+
+    cs = IntToB64(4095)
+    assert cs == '__'
+    i = B64ToInt(cs)
+    assert i == 4095
+
+    cs = IntToB64(4096)
+    assert cs == 'BAA'
+    i = B64ToInt(cs)
+    assert i == 4096
+
+    cs = IntToB64(6011)
+    assert cs == "Bd7"
+    i = B64ToInt(cs)
+    assert i == 6011
 
     sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
            b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
