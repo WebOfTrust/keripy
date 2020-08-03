@@ -861,7 +861,7 @@ class Kevery:
 
         while kes:
             try:
-                serder, sigers = self.extractOne(kes=kes)
+                serder, sigers = self.extractOne(kes=kes, framed=self.framed)
             except Exception as ex:
                 # log diagnostics errors etc
                 # error extracting means bad key event stream
