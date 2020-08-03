@@ -983,6 +983,8 @@ def IntToB64(i):
     Returns conversion of int i to Base64 str
     """
     cs = deque()  #  characters base64
+    cs.appendleft(B64ChrByIdx[i % 64])
+    i = i // 64
     while i:
         cs.appendleft(B64ChrByIdx[i % 64])
         i = i // 64
@@ -997,7 +999,6 @@ def B64ToInt(cs):
     for e, c in enumerate(reversed(cs)):
         i += B64IdxByChr[c] * 64 ** e
     return i
-
 
 
 @dataclass(frozen=True)
@@ -1178,7 +1179,7 @@ class SigMat:
         .qb64 str in Base64 with derivation code and signature crypto material
         .qb2  bytes in binary with derivation code and signature crypto material
     """
-    def __init__(self, raw=b'', qb64='', qb2='', code=SigTwoDex.Ed25519, index=0):
+    def __init__(self, raw=None, qb64=None, qb2=None, code=SigTwoDex.Ed25519, index=0):
         """
         Validate as fully qualified
         Parameters:
@@ -1190,20 +1191,22 @@ class SigMat:
 
         When raw provided then validate that code is correct for length of raw
             and assign .raw .code and .index
-        Else when qb64 pr qb2 provided extract and assign .raw and .code
+        Else when either qb64 or qb2 provided then extract and assign .raw and .code
 
         """
-        if raw:  #  raw provided
+        if raw is not None:  #  raw provided
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
             pad = self._pad(raw)
             if (not ( (pad == 2 and (code in SigTwoDex)) or  # Two or Six or Ten
+                      (pad == 0 and (code in SigCntDex)) or  # Cnt (Count)
                       (pad == 0 and (code in SigFourDex)) or  # Four or Eight
                       (pad == 1 and (code in SigFiveDex)) )):   # Five or Nine
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
 
             if ( (code in SigTwoDex and ((index < 0) or (index > SIGTWOMAX)) ) or
+                 (code in SigCntDex and ((index < 0) or (index > SIGFOURMAX)) ) or
                  (code in SigFourDex and ((index < 0) or (index > SIGFOURMAX)) ) or
                  (code in SigFiveDex and ((index < 0) or (index > SIGFIVEMAX)) ) ):
 
@@ -1220,12 +1223,12 @@ class SigMat:
             self._index = index
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
-        elif qb64:
+        elif qb64 is not None:
             if hasattr(qb64, "decode"):  # converts bytes like to str
                 qb64 = qb64.decode("utf-8")
             self._exfil(qb64)
 
-        elif qb2:  # rewrite to use direct binary exfiltration
+        elif qb2 is not None:  # rewrite to use direct binary exfiltration
             self._exfil(encodeB64(qb2).decode("utf-8"))
 
         else:
@@ -1283,18 +1286,21 @@ class SigMat:
         Returns fully qualified attached sig base64 computed from
         self.raw, self.code and self.index.
         """
+        # full is pre code + index
+        full =  "{}{}".format(self._code, IntToB64(self._index))
+
+        #if self._code in SigTwoDex:  # 2 char = code + index
+            #full = "{}{}".format(self._code, B64ChrByIdx[self._index])
+
+        #elif self._code == SigSelDex.four: # 4 char = code + index
+            #full =  "{}{}".format(self._code, IntToB64(self._index)
+
+        #else:
+            #raise ValueError("Unrecognized code = {}".format(self._code))
+
+
         pad = self.pad
         # valid pad for code length
-        if self._code in SigTwoDex:  # 2 char = code + index
-            full = "{}{}".format(self._code, B64ChrByIdx[self._index])
-
-        elif self._code == SigSelDex.four: # 4 char = code + index
-            pass
-
-        else:
-            raise ValueError("Unrecognized code = {}".format(self._code))
-
-        # full is pre code + index
         if len(full) % 4 != pad:  # pad is not remainder of len(code) % 4
             raise ValidationError("Invalid code + index = {} for converted raw pad = {}."
                                   .format(full, self.pad))

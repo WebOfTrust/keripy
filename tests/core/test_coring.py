@@ -597,6 +597,11 @@ def test_sigmat():
     assert SigTwoSizes[SigTwoDex.Ed25519] == 88
     assert SigTwoSizes[SigTwoDex.ECDSA_256k1] == 88
 
+    cs = IntToB64(0)
+    assert cs == "A"
+    i = B64ToInt(cs)
+    assert i == 0
+
     cs = IntToB64(27)
     assert cs == "b"
     i = B64ToInt(cs)
@@ -1055,4 +1060,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_nexter()
+    test_siger()
