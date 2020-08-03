@@ -22,7 +22,7 @@ from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
 from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat
+from keri.core.coring import SigMat, SigCounter
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
@@ -193,7 +193,6 @@ def test_kever():
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 cnfg=[],  # list of config ordered mappings may be empty
-                idxs="{:x}".format(nsigs)  # single lowercase hex string
                )
 
 
@@ -625,7 +624,6 @@ def test_process_nontransferable():
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 cnfg=[],  # list of config ordered mappings may be empty
-                idxs="{:x}".format(nsigs)  # single lowercase hex string
                )
 
     # verify derivation of aid0 from ked0
@@ -640,38 +638,33 @@ def test_process_nontransferable():
     # verify signature
     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
+    # create attached sig counter
+    cnt0 = SigCounter(raw=b'', count=1)
+
     # create packet
-    msgb0 = bytearray(tser0.raw + tsig0.qb64b)
+    msgb0 = bytearray(tser0.raw + cnt0.qb64b + tsig0.qb64b)
 
     # deserialize packet
     rser0 = Serder(raw=msgb0)
     assert rser0.raw == tser0.raw
-
     del msgb0[:rser0.size]  # strip off event from front
 
-    # extract attached sigs if any
-    if "idxs" not in rser0.ked or not rser0.ked["idxs"]:  # no info on attached sigs
-        assert False
+    # extract sig counter
+    rcnt0 = SigCounter(qb64=msgb0)
+    nrsigs = rcnt0.count
+    assert nrsigs == 1
+    del msgb0[:len(rcnt0.qb64)]
 
-    else:
-        ridxs = rser0.ked["idxs"]  # exract signature indexes
-        if isinstance(ridxs, list):
-            for idx in ridxs:
-                pass
-            assert False
-
-        else:
-            nrsigs = int(ridxs, 16)
-            assert nrsigs == 1
-            keys = rser0.ked["keys"]
-            for i in range(nrsigs): # verify each attached signature
-                rsig = SigMat(qb64=msgb0)
-                assert rsig.index == 0
-                verfer = Verfer(qb64=keys[rsig.index])
-                assert verfer.qb64 == aid0.qb64
-                assert verfer.qb64 == skp0.verfer.qb64
-                assert verfer.verify(rsig.raw, rser0.raw)
-                del msgb0[:len(rsig.qb64)]
+    # extract attached sigs
+    keys = rser0.ked["keys"]
+    for i in range(nrsigs): # verify each attached signature
+        rsig = SigMat(qb64=msgb0)
+        assert rsig.index == 0
+        verfer = Verfer(qb64=keys[rsig.index])
+        assert verfer.qb64 == aid0.qb64
+        assert verfer.qb64 == skp0.verfer.qb64
+        assert verfer.verify(rsig.raw, rser0.raw)
+        del msgb0[:len(rsig.qb64)]
 
     # verify aid
     raid0 = Aider(qb64=rser0.ked["aid"])
@@ -714,8 +707,6 @@ def test_process_transferable():
                 nxt=nxt,  # hash qual Base64
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
-                cnfg=[],  # list of config ordered mappings may be empty
-                idxs="{:x}".format(nsigs)  # single lowercase hex string
                )
 
 
@@ -735,38 +726,33 @@ def test_process_transferable():
     # verify signature
     assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
+    # create attached sig counter
+    cnt0 = SigCounter(raw=b'', count=1)
+
     # create packet
-    msgb0 = bytearray(tser0.raw + tsig0.qb64b)
+    msgb0 = bytearray(tser0.raw + cnt0.qb64b + tsig0.qb64b)
 
     # deserialize packet
     rser0 = Serder(raw=msgb0)
     assert rser0.raw == tser0.raw
-
     del msgb0[:rser0.size]  # strip off event from front
 
-    # extract attached idxs if any
-    if "idxs" not in rser0.ked or not rser0.ked["idxs"]:  # no info on attached idxs
-        assert False
+    # extract sig counter
+    rcnt0 = SigCounter(qb64=msgb0)
+    nrsigs = rcnt0.count
+    assert nrsigs == 1
+    del msgb0[:len(rcnt0.qb64)]
 
-    else:
-        ridxs = rser0.ked["idxs"]  # exract signature indexes
-        if isinstance(ridxs, list):
-            for idx in ridxs:
-                pass
-            assert False
-
-        else:
-            nrsigs = int(ridxs, 16)
-            assert nrsigs == 1
-            keys = rser0.ked["keys"]
-            for i in range(nrsigs): # verify each attached signature
-                rsig = SigMat(qb64=msgb0)
-                assert rsig.index == 0
-                verfer = Verfer(qb64=keys[rsig.index])
-                assert verfer.qb64 == aid0.qb64
-                assert verfer.qb64 == skp0.verfer.qb64
-                assert verfer.verify(rsig.raw, rser0.raw)
-                del msgb0[:len(rsig.qb64)]
+    # extract attached sigs
+    keys = rser0.ked["keys"]
+    for i in range(nrsigs): # verify each attached signature
+        rsig = SigMat(qb64=msgb0)
+        assert rsig.index == 0
+        verfer = Verfer(qb64=keys[rsig.index])
+        assert verfer.qb64 == aid0.qb64
+        assert verfer.qb64 == skp0.verfer.qb64
+        assert verfer.verify(rsig.raw, rser0.raw)
+        del msgb0[:len(rsig.qb64)]
 
     # verify aid
     raid0 = Aider(qb64=rser0.ked["aid"])
@@ -846,21 +832,20 @@ def test_process_manual():
                 toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                 wits=[],  # list of qual Base64 may be empty
                 cnfg=[],  # list of config ordered mappings may be empty
-                idxs=["{:x}".format(index)]  # optional list of lowercase hex strings no leading zeros or single lowercase hex string
                )
 
 
     txsrdr = Serder(ked=ked0, kind=Serials.json)
-    assert txsrdr.raw == (b'{"vs":"KERI10JSON000108_","aid":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
-                          b'","sn":"0","ilk":"icp","sith":"1","keys":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7M'
-                          b'yzuKsKJP50s"],"nxt":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","toad":"'
-                          b'0","wits":[],"cnfg":[],"idxs":["0"]}')
+    assert txsrdr.raw == (b'{"vs":"KERI10JSON0000fb_","aid":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50'
+                          b's","sn":"0","ilk":"icp","sith":"1","keys":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7'
+                          b'MyzuKsKJP50s"],"nxt":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","toad":"'
+                          b'0","wits":[],"cnfg":[]}')
 
-    assert txsrdr.size == 264
+    assert txsrdr.size == 251
 
     txdig = blake3.blake3(txsrdr.raw).digest()
     txdigmat = CryMat(raw=txdig, code=CryOneDex.Blake3_256)
-    assert txdigmat.qb64 == 'ErN5rbHXT5Nqt6B4rnwQhXzzZS67trqLaADghoHYQlfM'
+    assert txdigmat.qb64 == 'E2LTcl4MKQfXUu7hYG-KGnQKjCBA4rYDwLBROIX8pyK8'
 
     assert txsrdr.dig == txdigmat.qb64
 
@@ -871,13 +856,13 @@ def test_process_manual():
     assert not result  # None if verifies successfully else raises ValueError
 
     txsigmat = SigMat(raw=sig0raw, code=SigTwoDex.Ed25519, index=index)
-    assert txsigmat.qb64 == 'AAQ29m1nz43THJK99M6coPmJ7rwRvHsje4HKARYLRXfDGufqy6FpkdlxSs5-uDvqP5XEuU-p9dvzFKqn9kD7hIDA'
+    assert txsigmat.qb64 == 'AAYz-F6RJVhqXkRMWdxV12fzZmSqBeMrYDBrutQKEDFQW1TnNn8ftcSnm6pVamB7xm90aCAr3VzJAyidV-t8JaDw'
     assert len(txsigmat.qb64) == 88
     assert txsigmat.index == index
 
     msgb = txsrdr.raw + txsigmat.qb64.encode("utf-8")
 
-    assert len(msgb) == 352  #  264 + 88
+    assert len(msgb) == 339  #  251 + 88
 
     #  Recieve side
     rxsrdr = Serder(raw=msgb)
@@ -897,10 +882,6 @@ def test_process_manual():
     rxverqb64 = rxsrdr.ked["keys"][index]
     rxvermat = CryMat(qb64=rxverqb64)
     assert rxvermat.qb64 == rxaidmat.qb64  #  basic derivation same
-
-    indexes = [ int(index, 16) for index in rxsrdr.ked["idxs"]]
-    assert indexes == [0]
-    assert indexes[0] == rxsigmat.index
 
     result = pysodium.crypto_sign_verify_detached(rxsigmat.raw, rxsrdr.raw, rxvermat.raw)
     assert not result  # None if verifies successfully else raises ValueError
