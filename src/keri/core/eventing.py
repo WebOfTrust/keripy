@@ -691,12 +691,12 @@ class Kevery:
     Properties:
 
     """
-    def __init__(self, exhaustive=True):
+    def __init__(self, framed=True):
         """
         Set up event stream
 
         """
-        self.exhaustive = True if exhaustive else False  # extract until end-of-stream
+        self.framed = True if framed else False  # extract until end-of-stream
 
 
     def extractOne(self, kes, framed=True):
