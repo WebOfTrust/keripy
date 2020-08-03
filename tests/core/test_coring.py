@@ -598,7 +598,7 @@ def test_sigmat():
     assert SigTwoSizes[SigTwoDex.ECDSA_256k1] == 88
 
     cs = IntToB64(80)
-    assert cs ==  "BQ"
+    assert cs == "BQ"
     i = B64ToInt(cs)
     assert i ==  80
 

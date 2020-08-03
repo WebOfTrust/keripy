@@ -8,7 +8,7 @@ import json
 import copy
 
 from dataclasses import dataclass, astuple
-from collections import namedtuple
+from collections import namedtuple, deque
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from math import ceil
@@ -968,7 +968,7 @@ BASE64_PAD = '='
 
 # Mappings between Base64 Encode Index and Decode Characters
 #  B64ChrByIdx is dict where each key is a B64 index and each value is the B64 char
-#  B64IdxByChr is dict where each key is a B64 chars and each values is the B64 indexe
+#  B64IdxByChr is dict where each key is a B64 chars and each value is the B64 index
 # Map Base64 index to char
 B64ChrByIdx = dict((index, char) for index,  char in enumerate([chr(x) for x in range(65, 91)]))
 B64ChrByIdx.update([(index + 26, char) for index,  char in enumerate([chr(x) for x in range(97, 123)])])
@@ -980,22 +980,24 @@ B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}  # map char t
 
 def IntToB64(i):
     """
-    Returns conversion of int i to 2 digit Base64 str
-    0 <= 1 <= 4095
+    Returns conversion of int i to Base64 str
     """
-    if i < 0 or i >  4095:
-        raise ValueError("Invalid int = {}".format(i))
-
-    return "{}{}".format(B64ChrByIdx[i // 64], B64ChrByIdx[i % 64])
+    cs = deque()  #  characters base64
+    while i:
+        cs.appendleft(B64ChrByIdx[i % 64])
+        i = i // 64
+    return ( "".join(cs))
 
 def B64ToInt(cs):
     """
-    Returns conversion of 2 digit Base64 str cs to int
-    """
-    if len(cs) > 2:
-        raise ValueError("Invalid cs = {}".format(cs))
+    Returns conversion of Base64 str cs to int
 
-    return (B64IdxByChr[cs[0]] * 64 + B64IdxByChr[cs[1]])
+    """
+    i = 0
+    for e, c in enumerate(reversed(cs)):
+        i += B64IdxByChr[c] * 64 ** e
+    return i
+
 
 
 @dataclass(frozen=True)
@@ -1008,7 +1010,7 @@ class SigSelectCodex:
     four: str = '0'  # use four character table.
     five: str = '1'  # use five character table.
     six:  str = '2'  # use six character table.
-    dash:  str = '-'  # use signature count table
+    dash: str = '-'  # use signature count table
 
     def __iter__(self):
         return iter(astuple(self))
@@ -1046,8 +1048,8 @@ SigCntSizes = {
                }
 
 SigCntRawSizes = {
-                "-A": 3,
-                "-B": 3,
+                "-A": 0,
+                "-B": 0,
                }
 
 SIGCNTMAX = 4095  # maximum count value given two base 64 digits
@@ -1292,6 +1294,7 @@ class SigMat:
         else:
             raise ValueError("Unrecognized code = {}".format(self._code))
 
+        # full is pre code + index
         if len(full) % 4 != pad:  # pad is not remainder of len(code) % 4
             raise ValidationError("Invalid code + index = {} for converted raw pad = {}."
                                   .format(full, self.pad))
