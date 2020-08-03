@@ -978,17 +978,21 @@ B64ChrByIdx[63] = '_'
 
 B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}  # map char to Base64 index
 
-def IntToB64(i):
+def IntToB64(i, l=1):
     """
     Returns conversion of int i to Base64 str
+
+    l is min number of b64 digits padded with Base4 zeros "A"
     """
-    cs = deque()  #  characters base64
-    cs.appendleft(B64ChrByIdx[i % 64])
+    d = deque()  # deque of characters base64
+    d.appendleft(B64ChrByIdx[i % 64])
     i = i // 64
     while i:
-        cs.appendleft(B64ChrByIdx[i % 64])
+        d.appendleft(B64ChrByIdx[i % 64])
         i = i // 64
-    return ( "".join(cs))
+    for j in range(l - len(d)):  # range(x)  x <= 0 means do not iterate
+        d.appendleft("A")
+    return ( "".join(d))
 
 def B64ToInt(cs):
     """
@@ -1043,15 +1047,23 @@ class SigCntCodex:
 SigCntDex = SigCntCodex()  #  Make instance
 
 # Mapping of Code to Size
+# Total size  qb64
 SigCntSizes = {
                 "-A": 4,
                 "-B": 4,
-               }
+              }
 
+# size of index portion of code qb64
+SigCntIdxSizes = {
+                   "-A": 2,
+                   "-B": 2,
+                 }
+
+# total size of raw unqualified
 SigCntRawSizes = {
-                "-A": 0,
-                "-B": 0,
-               }
+                   "-A": 0,
+                   "-B": 0,
+                 }
 
 SIGCNTMAX = 4095  # maximum count value given two base 64 digits
 
@@ -1083,6 +1095,12 @@ SigTwoSizes = {
                 "A": 88,
                 "B": 88,
               }
+
+# size of index portion of code qb64
+SigTwoIdxSizes = {
+                   "A": 1,
+                   "B": 1,
+                 }
 
 SigTwoRawSizes = {
                 "A": 64,
@@ -1117,6 +1135,11 @@ SigFourSizes = {
                 "0A": 156,
                }
 
+# size of index portion of code qb64
+SigFourIdxSizes = {
+                   "0A": 2,
+                 }
+
 SigFourRawSizes = {
                 "0A": 114,
                }
@@ -1145,6 +1168,7 @@ SigFiveDex = SigFiveCodex()  #  Make instance
 
 # Mapping of Code to Size
 SigFiveSizes = {}
+SigFiveIdxSizes = {}
 SigFiveRawSizes = {}
 
 SIGFIVEMAX = 4095  # maximum index value given two base 64 digits
@@ -1155,6 +1179,10 @@ SigSizes.update(SigTwoSizes)
 SigSizes.update(SigFourSizes)
 SigSizes.update(SigFiveSizes)
 
+SigIdxSizes = dict(SigCntIdxSizes)
+SigIdxSizes.update(SigTwoIdxSizes)
+SigIdxSizes.update(SigFourIdxSizes)
+SigIdxSizes.update(SigFiveIdxSizes)
 
 SigRawSizes = dict(SigCntRawSizes)
 SigRawSizes.update(SigTwoRawSizes)
@@ -1286,18 +1314,9 @@ class SigMat:
         Returns fully qualified attached sig base64 computed from
         self.raw, self.code and self.index.
         """
+        l = SigIdxSizes[self._code]  # index length b64 characters
         # full is pre code + index
-        full =  "{}{}".format(self._code, IntToB64(self._index))
-
-        #if self._code in SigTwoDex:  # 2 char = code + index
-            #full = "{}{}".format(self._code, B64ChrByIdx[self._index])
-
-        #elif self._code == SigSelDex.four: # 4 char = code + index
-            #full =  "{}{}".format(self._code, IntToB64(self._index)
-
-        #else:
-            #raise ValueError("Unrecognized code = {}".format(self._code))
-
+        full =  "{}{}".format(self._code, IntToB64(self._index, l=l))
 
         pad = self.pad
         # valid pad for code length

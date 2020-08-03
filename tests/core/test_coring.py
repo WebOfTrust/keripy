@@ -607,6 +607,11 @@ def test_sigmat():
     i = B64ToInt(cs)
     assert i == 27
 
+    cs = IntToB64(27, l=2)
+    assert cs == "Ab"
+    i = B64ToInt(cs)
+    assert i == 27
+
     cs = IntToB64(80)
     assert cs == "BQ"
     i = B64ToInt(cs)
@@ -1060,4 +1065,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_siger()
+    test_sigmat()
