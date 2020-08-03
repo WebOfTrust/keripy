@@ -1007,12 +1007,50 @@ class SigSelectCodex:
     """
     four: str = '0'  # use four character table.
     five: str = '1'  # use five character table.
-    six:  str = '2'  # use siz character table.
+    six:  str = '2'  # use six character table.
+    dash:  str = '-'  # use signature count table
 
     def __iter__(self):
         return iter(astuple(self))
 
 SigSelDex = SigSelectCodex()  # Make instance
+
+
+
+@dataclass(frozen=True)
+class SigCntCodex:
+    """
+    SigCntCodex codex of four character length derivation codes that indicate
+    count (number) of attached signatures following an event .
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    Note binary length of everything in SigCntCodex results in 0 Base64 pad bytes.
+
+    First two code characters select format of attached signatures
+    Next two code charaters select count total of attached signatures to an event
+    Only provide first two characters here
+    """
+    Base64: str =  '-A'  # Fully Qualified Base64 Format Signatures.
+    Base64: str =  '-B'  # Fully Qualified Base2 Format Signatures.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+SigCntDex = SigCntCodex()  #  Make instance
+
+# Mapping of Code to Size
+SigCntSizes = {
+                "-A": 4,
+                "-B": 4,
+               }
+
+SigCntRawSizes = {
+                "-A": 3,
+                "-B": 3,
+               }
+
+SIGCNTMAX = 4095  # maximum count value given two base 64 digits
 
 
 @dataclass(frozen=True)
@@ -1101,6 +1139,7 @@ class SigFiveCodex:
 
 SigFiveDex = SigFiveCodex()  #  Make instance
 
+
 # Mapping of Code to Size
 SigFiveSizes = {}
 SigFiveRawSizes = {}
@@ -1108,11 +1147,14 @@ SigFiveRawSizes = {}
 SIGFIVEMAX = 4095  # maximum index value given two base 64 digits
 
 # all sizes in one dict
-SigSizes = dict(SigTwoSizes)
+SigSizes = dict(SigCntSizes)
+SigSizes.update(SigTwoSizes)
 SigSizes.update(SigFourSizes)
 SigSizes.update(SigFiveSizes)
 
-SigRawSizes = dict(SigTwoRawSizes)
+
+SigRawSizes = dict(SigCntRawSizes)
+SigRawSizes.update(SigTwoRawSizes)
 SigRawSizes.update(SigFourRawSizes)
 SigRawSizes.update(SigFiveRawSizes)
 
@@ -1154,7 +1196,7 @@ class SigMat:
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
             pad = self._pad(raw)
             if (not ( (pad == 2 and (code in SigTwoDex)) or  # Two or Six or Ten
-                      (pad == 0 and (code in SigFourDex)) or  #  Four or Eight
+                      (pad == 0 and (code in SigFourDex)) or  # Four or Eight
                       (pad == 1 and (code in SigFiveDex)) )):   # Five or Nine
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
