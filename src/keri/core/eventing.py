@@ -50,6 +50,7 @@ Location = namedtuple("Location", 'sn dig')  # Location of key event
 Kevers = dict()  # dict of existing Kevers indexed by aid (qb64) of each Kever
 
 # Generator KELs as dict of dicts of events keyed by aid (qb64) then in order by event sn str
+# mdict keys must be subclass of str
 KELs = dict()
 # Validator KERLs as dict of dicts of events keyed by aid (qb64) then in order by event sn str
 # mdict keys must be subclass of str
@@ -58,6 +59,7 @@ KERLs = dict()
 # Validator KELDs as dict of dicts of events keyed by aid  then by event dig (qb64)
 KEDLs = dict()
 # Validator Escows as dict of dicts of events keyed by aid (qb64) then in order by event sn str
+# mdict keys must be subclass of str
 Escrows = dict()
 # Potential Duplicitous Event Log
 # Validator PDELs as dict of dicts of dup events keyed by aid (qb64) then by event dig (qb64)
@@ -464,6 +466,8 @@ class Kever:
 
                 else:  # sn > self.lastEst.sn  recovery event
                     # fetch last entry of prior events at prior sn = sn -1
+                    # need KEL for generator use and KERL for validator
+
                     entry = KERLs[aid].nabone("{:x}".format(sn - 1))
                     if dig == entry.serder.dig:
                         raise ValidationError("Mismatch event dig = {} with dig "
