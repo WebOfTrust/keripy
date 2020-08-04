@@ -1439,7 +1439,8 @@ class SigCounter(SigMat):
 
 
     """
-    def __init__(self, raw=None, code=SigCntDex.Base64, index=None, count=None, **kwa):
+    def __init__(self, raw=None, qb64=None, qb2=None, code=SigCntDex.Base64,
+                 index=None, count=None, **kwa):
         """
         Assign verfer to ._verfer
 
@@ -1447,16 +1448,20 @@ class SigCounter(SigMat):
             count is int number of attached sigantures same as index
 
         """
-        raw = b'' if raw is not None else raw  # force raw to be empty
+        raw = b'' if raw is not None else raw  # force raw to be empty is
+
+        if raw is None and qb64 is None and qb2 is None:
+            raw = b''
 
         # accept either index or count to init index
         if count is not None:
             index = count
         if index is None:
-            index =  0
+            index = 1  # most common case
 
         # force raw empty
-        super(SigCounter, self).__init__(raw=raw, code=code, index=index, **kwa)
+        super(SigCounter, self).__init__(raw=raw, qb64=qb64, qb2=qb2,
+                                         code=code, index=index, **kwa)
 
         if self.code not in SigCntDex:
             raise ValidationError("Invalid code = {} for SigCounter."
