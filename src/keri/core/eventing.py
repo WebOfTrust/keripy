@@ -26,6 +26,7 @@ from ..help.helping import mdict
 
 from .coring import Versify, Serials, Ilks, CryOneDex
 from .coring import Signer, Verfer, Diger, Nexter, Aider, Serder
+from .coring import SigCounter, Siger
 
 
 @dataclass(frozen=True)
@@ -46,26 +47,32 @@ TraitDex = TraitCodex()  # Make instance
 
 LogEntry = namedtuple("LogEntry", 'serder sigers')  # LogEntry for KELS KERLS DELS etc
 Location = namedtuple("Location", 'sn dig')  # Location of key event
+Logs = namedtuple("Logs", 'kevers kels kedls')
+
 
 Kevers = dict()  # dict of existing Kevers indexed by aid (qb64) of each Kever
-
-# Generator KELs as dict of dicts of events keyed by aid (qb64) then in order by event sn str
+# Generator or Validator KELs as dict of dicts of events keyed by aid (qb64)
+# then in order by event sn str
 # mdict keys must be subclass of str
 KELs = dict()
-# Validator KERLs as dict of dicts of events keyed by aid (qb64) then in order by event sn str
+# Witness or Validator KERLs as dict of dicts of events keyed by aid (qb64)
+# then in order by event sn str
 # mdict keys must be subclass of str
 KERLs = dict()
 # Key Event Digest Log
 # Validator KELDs as dict of dicts of events keyed by aid  then by event dig (qb64)
 KEDLs = dict()
-# Validator Escows as dict of dicts of events keyed by aid (qb64) then in order by event sn str
+# Validator Escows as dict of dicts of events keyed by aid (qb64)
+# then in order by event sn str
 # mdict keys must be subclass of str
 Escrows = dict()
 # Potential Duplicitous Event Log
-# Validator PDELs as dict of dicts of dup events keyed by aid (qb64) then by event dig (qb64)
+# Validator PDELs as dict of dicts of dup events keyed by aid (qb64)
+# then by event dig (qb64)
 PDELs = dict()
 # Verified Duplicitous Event Log
-# Validator DELs as dict of dicts of dup events keyed by aid  (qb64) then by event dig (qb64)
+# Validator DELs as dict of dicts of dup events keyed by aid  (qb64)
+# then by event dig (qb64)
 DELs = dict()
 
 
@@ -330,7 +337,7 @@ class Kever:
     """
     EstOnly = False
 
-    def __init__(self, serder, sigers, estOnly=None):
+    def __init__(self, serder, sigers, estOnly=None, logs=None):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -342,7 +349,12 @@ class Kever:
 
         """
         # update state as we go because if invalid we fail to finish init
-        self.version =  serder.version  # version dispatch ?
+        if logs is None:
+            logs = Logs(kevers=dict(), kels=dict(), kedls=dict())
+
+        self.logs = logs
+
+        self.version = serder.version  # version dispatch ?
         self.verfers = serder.verfers  # converts keys to verifiers
         # verify indexes of attached signatures against verifiers
         for siger in sigers:
@@ -415,21 +427,21 @@ class Kever:
 
         aid = self.aider.qb64
         dig = self.diger.qb64
-
         # need this to recognize recovery events
         self.lastEst = Location(sn=self.sn, dig=dig)  # last establishment event location
 
         # update logs
+        if aid in self.logs.kevers:
+            raise ValueError("Kever aid = {} already in kevers log".format(aid))
+
+        self.logs.kevers[aid] = self
         entry = LogEntry(serder=serder, sigers=sigers)
-        if aid not in Kevers:
-            Kevers[aid] = dict()
-        Kevers[aid][dig] = self
-        if aid not in KERLs:
-            KERLs[aid] = mdict()  # supports recover forks by sn
-        KERLs[aid].add(ked["sn"], entry)  # multiple values each sn hex str
-        if aid not in KEDLs:
-            KEDLs[aid] = dict()
-        KEDLs[aid][dig] = entry
+        if aid not in self.logs.kels:
+            self.logs.kels[aid] = mdict()  # supports recover forks by sn
+        self.logs.kels[aid].add(ked["sn"], entry)  # multiple values each sn hex str
+        if aid not in self.logs.kedls:
+            self.logs.kedls[aid] = dict()
+        self.logs.kedls[aid][dig] = entry
 
 
     def update(self, serder,  sigers):
@@ -468,7 +480,7 @@ class Kever:
                     # fetch last entry of prior events at prior sn = sn -1
                     # need KEL for generator use and KERL for validator
 
-                    entry = KERLs[aid].nabone("{:x}".format(sn - 1))
+                    entry = self.logs.kels[aid].nabone("{:x}".format(sn - 1))
                     if dig == entry.serder.dig:
                         raise ValidationError("Mismatch event dig = {} with dig "
                                               "= {} at event sn = {}."
@@ -579,8 +591,8 @@ class Kever:
 
             # update logs
             entry = LogEntry(serder=serder, sigers=sigers)
-            KERLs[self.aider.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
-            KEDLs[self.aider.qb64][self.diger.qb64] = entry
+            self.logs.kels[self.aider.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
+            self.logs.kedls[self.aider.qb64][self.diger.qb64] = entry
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -617,8 +629,8 @@ class Kever:
 
             # update logs
             entry = LogEntry(serder=serder, sigers=sigers)
-            KERLs[self.aider.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
-            KEDLs[self.aider.qb64][self.diger.qb64] = entry
+            self.logs.kels[self.aider.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
+            self.logs.kedls[self.aider.qb64][self.diger.qb64] = entry
 
 
         else:  # unsupported event ilk so discard
@@ -668,12 +680,15 @@ class Kevery:
     Properties:
 
     """
-    def __init__(self, framed=True):
+    def __init__(self, framed=True, logs=None):
         """
-        Set up event stream
+        Set up event stream and logs
 
         """
         self.framed = True if framed else False  # extract until end-of-stream
+        if logs is None:
+            logs = Logs(kevers=dict(), kels=dict(), kedls=dict())
+        self.logs = logs
 
 
     def extractOne(self, kes, framed=True):
@@ -703,7 +718,7 @@ class Kevery:
             raise VersionError("Unsupported version = {}, expected {}."
                                   "".format(version, Version))
 
-        del kes[:srdr.size]  # strip off event from front of kes
+        del kes[:serder.size]  # strip off event from front of kes
 
         # extact sig counter if any
         try:
@@ -761,11 +776,13 @@ class Kevery:
             raise ValidationError("Invalid sn = {}".format(ked["sn"]))
         dig = serder.dig
 
-        if aid not in Kevers:  #  first seen event for aid
+        if aid not in self.logs.kevers:  #  first seen event for aid
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures
                 # raises exception if problem adds to KEL Kevers
-                kever = Kever(serder=serder, sigers=sigers)  # create kever from serder
+                # create kever from serder
+                kever = Kever(serder=serder, sigers=sigers, logs=self.logs)
+                #kever should log it
 
             else:  # not inception so can't verify, add to escrow
                 # log escrowed
@@ -776,18 +793,18 @@ class Kevery:
 
 
         else:  # already accepted inception event for aid
-            if dig in KEDLs["aid"]:  #  duplicate event so dicard
+            if dig in self.logs.kedls[aid]:  #  duplicate event so dicard
                 # log duplicate
                 return  # discard
 
             if ilk == Ilks.icp:  # inception event so maybe duplicitous
                 if aid not in PDELs:  #  add to PDELs
-                    PDELs[aid] = dict()
+                    PDELS[aid] = dict()
                 if dig not in PDELS[aid]:
-                    PDELs[aid][dig] = LogEntry(serder=serder, sigers=sigers)
+                    PDELS[aid][dig] = LogEntry(serder=serder, sigers=sigers)
 
             else:  # rot or ixn, so sn matters
-                kever = Kevers[aid]  # get existing kever for aid
+                kever = self.logs.kevers[aid]  # get existing kever for aid
                 sno = kever.sn + 1  # proper sn of new inorder event
 
                 if sn > sno:  # sn later than sno so out of order escrow
@@ -807,7 +824,7 @@ class Kevery:
                     if aid not in PDELs:  #  add to PDELs
                         PDELs[aid] = dict()
                     if dig not in PDELS[aid]:
-                        PDELs[aid][dig] = LogEntry(serder=serder, sigers=sigers)
+                        PDELS[aid][dig] = LogEntry(serder=serder, sigers=sigers)
 
 
     def processAll(self, kes):

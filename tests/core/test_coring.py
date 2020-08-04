@@ -747,39 +747,55 @@ def test_sigcounter():
     """
     Test SigCounter subclass of Sigmat
     """
-    with pytest.raises(EmptyMaterialError):
-        counter = SigCounter()
+    # with pytest.raises(EmptyMaterialError):
+    #    counter = SigCounter()
 
-    qsc = SigCntDex.Base64 + IntToB64(0, l=2)
-    assert qsc == '-AAA'
+    qsc = SigCntDex.Base64 + IntToB64(1, l=2)
+    assert qsc == '-AAB'
+
+    counter = SigCounter()
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == 1
+    assert counter.count == 1
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x01'
 
     counter = SigCounter(raw=b'')
     assert counter.raw == b''
     assert counter.code == SigCntDex.Base64
-    assert counter.index == 0
-    assert counter.count == 0
+    assert counter.index == 1
+    assert counter.count == 1
     assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x00'
+    assert counter.qb2 == b'\xf8\x00\x01'
 
     counter = SigCounter(qb64=qsc)
     assert counter.raw == b''
     assert counter.code == SigCntDex.Base64
-    assert counter.index == 0
-    assert counter.count == 0
-    assert counter.qb64 == '-AAA'
-    assert counter.qb2 == b'\xf8\x00\x00'
+    assert counter.index == 1
+    assert counter.count == 1
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x01'
+
+    counter = SigCounter(raw=b'', count=1)
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base64
+    assert counter.index == 1
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x01'
 
     counter = SigCounter(raw=b'', count=0)
     assert counter.raw == b''
     assert counter.code == SigCntDex.Base64
     assert counter.index == 0
-    assert counter.qb64 == qsc
+    assert counter.qb64 == '-AAA'
     assert counter.qb2 == b'\xf8\x00\x00'
+
 
     cnt = 5
     qsc = SigCntDex.Base64 + IntToB64(cnt, l=2)
     assert qsc == '-AAF'
-    counter = SigCounter(raw=b'', count=cnt)
+    counter = SigCounter(count=cnt)
     assert counter.raw == b''
     assert counter.code == SigCntDex.Base64
     assert counter.index == cnt

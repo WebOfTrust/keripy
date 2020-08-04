@@ -28,8 +28,8 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import TraitDex, incept, rotate, interact, Kever, Kevery
-
+from keri.core.eventing import Logs, TraitDex
+from keri.core.eventing import incept, rotate, interact, Kever, Kevery
 
 def test_ilks():
     """
@@ -589,7 +589,210 @@ def test_kevery():
     Test the support functionality for Kevery factory class
     Key Event Verifier Factory
     """
-    kevery = Kevery()
+
+
+    # Test sequence of events given set of secrets
+    secrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
+
+    # create event stream
+    kes = bytearray()
+    #  create signers
+    signers = [Signer(qb64=secret) for secret in secrets]  # faster
+    assert [signer.qb64 for signer in signers] == secrets
+
+
+    # Event 0  Inception Transferable (nxt digest not empty)
+    serder = incept(keys=[signers[0].verfer.qb64],
+                    nxt=Nexter(keys=[signers[1].verfer.qb64]).qb64)
+    # create sig counter
+    counter = SigCounter()  # default is count = 1
+    # sign serialization
+    signer = signers[0].sign(serder.raw, index=0)
+    # create key event verifier state
+    kever = Kever(serder=serder, sigers=[signer])
+    #extend key event stream
+    kes.extend(serder.raw)
+    kes.extend(counter.qb64b)
+    kes.extend(signer.qb64b)
+
+    assert kes == bytearray(b'{"vs":"KERI10JSON0000fb_","aid":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
+                            b'ZOoeKtWTOunRA","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
+                            b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EGAPkzNZMtX-QiVgbR'
+                            b'byAIZGoXvbGv9IPb0foWTZvI_4","toad":"0","wits":[],"cnfg":[]}-AABA'
+                            b'A8yMYsLXbmnwXWIsdZ7Uzw3Q7ppynI1xYCf-43hsf7XIgp5NZ-HlZbDC3o0lwWEF'
+                            b'nk4O6glvxx3bJ8Zfgg606DA')
+
+    # Event 1 Rotation Transferable
+    serder = rotate(aid=kever.aider.qb64,
+                    keys=[signers[1].verfer.qb64],
+                    dig=kever.diger.qb64,
+                    nxt=Nexter(keys=[signers[2].verfer.qb64]).qb64,
+                    sn=1)
+    # create sig counter
+    counter = SigCounter()  # default is count = 1
+    # sign serialization
+    signer = signers[1].sign(serder.raw, index=0)
+    # update key event verifier state
+    kever.update(serder=serder, sigers=[signer])
+    #extend key event stream
+    kes.extend(serder.raw)
+    kes.extend(counter.qb64b)
+    kes.extend(signer.qb64b)
+
+    # Event 2 Rotation Transferable
+    serder = rotate(aid=kever.aider.qb64,
+                    keys=[signers[2].verfer.qb64],
+                    dig=kever.diger.qb64,
+                    nxt=Nexter(keys=[signers[3].verfer.qb64]).qb64,
+                    sn=2)
+    # create sig counter
+    counter = SigCounter()  # default is count = 1
+    # sign serialization
+    signer = signers[2].sign(serder.raw, index=0)
+    # update key event verifier state
+    kever.update(serder=serder, sigers=[signer])
+    #extend key event stream
+    kes.extend(serder.raw)
+    kes.extend(counter.qb64b)
+    kes.extend(signer.qb64b)
+
+    # Event 3 Interaction
+    serder = interact(aid=kever.aider.qb64,
+                      dig=kever.diger.qb64,
+                      sn=3)
+    # create sig counter
+    counter = SigCounter()  # default is count = 1
+    # sign serialization
+    signer = signers[2].sign(serder.raw, index=0)
+    # update key event verifier state
+    kever.update(serder=serder, sigers=[signer])
+    #extend key event stream
+    kes.extend(serder.raw)
+    kes.extend(counter.qb64b)
+    kes.extend(signer.qb64b)
+
+    # Event 4 Interaction
+    serder = interact(aid=kever.aider.qb64,
+                      dig=kever.diger.qb64,
+                      sn=4)
+    # create sig counter
+    counter = SigCounter()  # default is count = 1
+    # sign serialization
+    signer = signers[2].sign(serder.raw, index=0)
+    # update key event verifier state
+    kever.update(serder=serder, sigers=[signer])
+    #extend key event stream
+    kes.extend(serder.raw)
+    kes.extend(counter.qb64b)
+    kes.extend(signer.qb64b)
+
+    # Event 5 Rotation Transferable
+    serder = rotate(aid=kever.aider.qb64,
+                    keys=[signers[3].verfer.qb64],
+                    dig=kever.diger.qb64,
+                    nxt=Nexter(keys=[signers[4].verfer.qb64]).qb64,
+                    sn=5)
+    # create sig counter
+    counter = SigCounter()  # default is count = 1
+    # sign serialization
+    signer = signers[3].sign(serder.raw, index=0)
+    # update key event verifier state
+    kever.update(serder=serder, sigers=[signer])
+    #extend key event stream
+    kes.extend(serder.raw)
+    kes.extend(counter.qb64b)
+    kes.extend(signer.qb64b)
+
+    # Event 6 Interaction
+    serder = interact(aid=kever.aider.qb64,
+                      dig=kever.diger.qb64,
+                      sn=6)
+    # create sig counter
+    counter = SigCounter()  # default is count = 1
+    # sign serialization
+    signer = signers[3].sign(serder.raw, index=0)
+    # update key event verifier state
+    kever.update(serder=serder, sigers=[signer])
+    #extend key event stream
+    kes.extend(serder.raw)
+    kes.extend(counter.qb64b)
+    kes.extend(signer.qb64b)
+
+    # Event 7 Rotation to null NonTransferable Abandon
+   # nxt digest is empty
+    serder = rotate(aid=kever.aider.qb64,
+                keys=[signers[4].verfer.qb64],
+                dig=kever.diger.qb64,
+                nxt="",
+                sn=7)
+    # create sig counter
+    counter = SigCounter()  # default is count = 1
+    # sign serialization
+    signer = signers[4].sign(serder.raw, index=0)
+    # update key event verifier state
+    kever.update(serder=serder, sigers=[signer])
+    #extend key event stream
+    kes.extend(serder.raw)
+    kes.extend(counter.qb64b)
+    kes.extend(signer.qb64b)
+
+    # Event 8 Interaction
+    serder = interact(aid=kever.aider.qb64,
+                      dig=kever.diger.qb64,
+                      sn=8)
+    # create sig counter
+    counter = SigCounter()  # default is count = 1
+    # sign serialization
+    signer = signers[4].sign(serder.raw, index=0)
+    # update key event verifier state
+    with pytest.raises(ValidationError):  # nontransferable so reject update
+        kever.update(serder=serder, sigers=[signer])
+    #extend key event stream
+    kes.extend(serder.raw)
+    kes.extend(counter.qb64b)
+    kes.extend(signer.qb64b)
+
+    # Event 8 Rotation
+    serder = rotate(aid=kever.aider.qb64,
+                    keys=[signers[4].verfer.qb64],
+                    dig=kever.diger.qb64,
+                    nxt=Nexter(keys=[signers[5].verfer.qb64]).qb64,
+                    sn=8)
+    # create sig counter
+    counter = SigCounter()  # default is count = 1
+    # sign serialization
+    signer = signers[4].sign(serder.raw, index=0)
+    # update key event verifier state
+    with pytest.raises(ValidationError):  # nontransferable so reject update
+        kever.update(serder=serder, sigers=[signer])
+    #extend key event stream
+    kes.extend(serder.raw)
+    kes.extend(counter.qb64b)
+    kes.extend(signer.qb64b)
+
+    assert len(kes) == 3349
+
+    klogs = Logs(kevers=dict(), kels=dict(), kedls=dict())
+
+    kevery = Kevery(logs=klogs)
+    kevery.processAll(kes=kes)
+
+    aid = kever.aider.qb64
+    assert aid in klogs.kevers
+    vkever = klogs.kevers[aid]
+    assert vkever.sn == kever.sn
+    assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
+    assert vkever.verfers[0].qb64 == signers[4].verfer.qb64
+
     """ Done Test """
 
 def test_process_nontransferable():
@@ -889,4 +1092,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_keyeventsequence_1()
+    test_kevery()
