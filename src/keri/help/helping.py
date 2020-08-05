@@ -8,11 +8,12 @@ import shutil
 import tempfile
 import base64
 
+from collections.abc import Iterable, Sequence,  Mapping
+
 import pysodium
 
 from multidict import MultiDict  # base class for mdict defined below
 from orderedset import OrderedSet as oset
-
 
 def cleanupBaseDir(baseDirPath):
     """
@@ -188,3 +189,79 @@ class mdict(MultiDict):
         """
         keys = oset(self.keys())  # get rid of duplicates provided by .keys()
         return [(k, self.nabone(k)) for k in keys]
+
+
+def nonStringIterable(obj):
+    """
+    Returns True if obj is non-string iterable, False otherwise
+
+    Future proof way that is compatible with both Python3 and Python2 to check
+    for non string iterables.
+
+    Faster way that is less future proof
+    return (hasattr(x, '__iter__') and not isinstance(x, (str, bytes)))
+    """
+    return (not isinstance(obj, (str, bytes)) and isinstance(obj, Iterable))
+
+def nonStringSequence(obj):
+    """
+    Returns True if obj is non-string sequence, False otherwise
+
+    Future proof way that is compatible with both Python3 and Python2 to check
+    for non string sequences.
+
+    """
+    return (not isinstance(obj, (str, bytes)) and isinstance(obj, Sequence) )
+
+
+
+def extractElementValues(element, values):
+    """
+    Recusive depth first search that recursively extracts value(s) from element
+    and appends to values list
+
+    Assumes that extracted values are str
+
+    Parameters:
+        element is some element to extract values from
+        values is list of values from elements that are not nonStringIterables
+
+    IF element is mapping or sequence (nonStringIterable) then
+        recusively  extractValues from the items of that element
+
+    Else
+        append element to values list
+
+    return
+
+    """
+    if nonStringIterable(element):
+        if isinstance(element, Mapping):  # dict like
+            for k in element:
+                extractElementValues(element=element[k], values=values)
+        else:
+            for k in element:
+                extractElementValues(element=k, values=values)
+
+    elif isinstance(element, str):
+        values.append(element)
+
+    else:
+        raise ValueError("Unexpected element value = {}. Not a str.".format(element))
+
+    return
+
+def extractValues(ked, labels):
+    """
+    Returns list of depth first recursively extracted values from elements of
+    key event dict ked whose flabels are in lables list
+
+    Parameters:
+       ked is key event dict
+       labels is list of element labels in ked from which to extract values
+    """
+    values = []
+    for label in labels:
+        extractElementValues(element=ked[label], values=values)
+
+    return values

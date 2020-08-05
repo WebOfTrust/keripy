@@ -133,7 +133,7 @@ def incept( keys,
     cnfg = cnfg if cnfg is not None else []
 
     ked = dict(vs=vs,  # version string
-               aid="",  # ab64 prefix
+               aid="",  # qb64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=ilk,
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
