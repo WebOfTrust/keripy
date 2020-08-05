@@ -81,12 +81,11 @@ def test_extractvalues():
                cnfg=[dict(trait="EstOnly")],
                )
 
-    labels = ["vs", "sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "cnfg"]
+    labels = ["vs", "ilk", "sith", "keys", "nxt", "toad", "wits", "cnfg"]
 
     values = extractValues(ked=ked, labels=labels)
 
     assert values == [  'KERI10JSON0000fb_',
-                        '0',
                         'icp',
                         '1',
                         'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA',
@@ -98,7 +97,7 @@ def test_extractvalues():
 
     ser = "".join(values)
 
-    assert ser == ('KERI10JSON0000fb_0icp1DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtW'
+    assert ser == ('KERI10JSON0000fb_icp1DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtW'
                    'TOunRAEGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_40EstOnly')
     """End Test"""
 
