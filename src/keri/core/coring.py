@@ -971,7 +971,7 @@ class Aider(CryMat):
         if ilk == Ilks.icp:
             labels = ICP_DERIVE_LABELS
         elif ilk == Ilks.dip:
-            labels == DIP_DERIVE_LABELS
+            labels = DIP_DERIVE_LABELS
         else:
             raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
 
@@ -1061,7 +1061,7 @@ class Aider(CryMat):
             if ilk == Ilks.icp:
                 labels = ICP_DERIVE_LABELS
             elif ilk == Ilks.dip:
-                labels == DIP_DERIVE_LABELS
+                labels = DIP_DERIVE_LABELS
             else:
                 raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
 

@@ -646,6 +646,29 @@ def test_aider():
     assert aider.qb64 == 'EXpGDy9FxDESc974WW86xDxM0fQgKjhDWOklCXtstkus'
     assert aider.verify(ked=ked) == True
 
+    perm = []
+    seal = dict(aid = 'EXpGDy9FxDESc974WW86xDxM0fQgKjhDWOklCXtstkus',
+                sn  = '2',
+                ilk = Ilks.ixn,
+                dig = 'E03rxRmMcP2-I2Gd0sUhlYwjk8KEz5gNGxPwPg-sGJds')
+
+    ked = dict(vs=vs,  # version string
+               aid="",  # qb64 prefix
+               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=Ilks.dip,
+               sith="{:x}".format(sith), # hex string no leading zeros lowercase
+               keys=keys,  # list of qb64
+               nxt=nexter.qb64,  # hash qual Base64
+               toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+               wits=wits,  # list of qb64 may be empty
+               perm=cnfg,  # list of config ordered mappings may be empty
+               seal=seal
+               )
+
+    aider = Aider(ked=ked, code=CryOneDex.Blake3_256)
+    assert aider.qb64 == 'EQrpcQ1RX0jDKcBbGXWZra3dr3bFyz6Ly1icEBlgD20s'
+    assert aider.verify(ked=ked) == True
+
 
     """ Done Test """
 
