@@ -28,6 +28,16 @@ from .coring import Versify, Serials, Ilks, CryOneDex
 from .coring import Signer, Verfer, Diger, Nexter, Aider, Serder
 from .coring import SigCounter, Siger
 
+ICP_LABELS = ["vs", "aid", "sn", "ilk", "sith", "keys", "nxt",
+              "toad", "wits", "cnfg"]
+ROT_LABELS = ["vs", "aid", "sn", "ilk", "dig", "sith", "keys", "nxt",
+              "toad", "cuts", "adds", "data"]
+IXN_LABELS = ["vs", "aid", "sn", "ilk", "dig", "data"]
+DIP_LABELS = ["vs", "aid", "sn", "ilk", "sith", "keys", "nxt",
+              "toad", "wits", "perm", "seal"]
+DRT_LABELS = ["vs", "aid", "sn", "ilk", "dig", "sith", "keys", "nxt",
+              "toad", "cuts", "adds", "perm", "seal"]
+
 
 @dataclass(frozen=True)
 class TraitCodex:
@@ -364,6 +374,18 @@ class Kever:
             siger.verfer = self.verfers[siger.index]  # assign verfer
 
         ked = serder.ked
+
+        for k in ICP_LABELS:
+            if k not in ked:
+                raise ValidationError("Missing element = {} from {}  event."
+                                      "".format(k, Ilks.icp))
+
+        ilk = ked["ilk"]
+        if ilk != Ilks.icp:
+            raise ValidationError("Expected ilk = {} got {}."
+                                              "".format(Ilks.icp, ilk))
+        self.ilk = ilk
+
         sith = ked["sith"]
         if isinstance(sith, str):
             self.sith = int(sith, 16)
@@ -390,11 +412,7 @@ class Kever:
                                               "".format(self.sn, ked))
         self.diger = serder.diger
 
-        ilk = ked["ilk"]
-        if ilk != Ilks.icp:
-            raise ValidationError("Expected ilk = {} got {}."
-                                              "".format(Ilks.icp, ilk))
-        self.ilk = ilk
+
 
         nxt = ked["nxt"]
         self.nexter = Nexter(qb64=nxt) if nxt else None
@@ -465,6 +483,12 @@ class Kever:
                                   " = {}.".format(aid, self.aider.qb64))
 
         if ilk == Ilks.rot:  # subsequent rotation event
+            for k in ROT_LABELS:
+                if k not in ked:
+                    raise ValidationError("Missing element = {} from {}  event."
+                                          "".format(k, Ilks.rot))
+
+
             if sn > self.sn + 1:  #  out of order event
                 raise ValidationError("Out of order event sn = {} expecting"
                                       " = {}.".format(sn, self.sn+1))
@@ -599,6 +623,11 @@ class Kever:
             if self.estOnly:
                 raise ValidationError("Unexpected non-establishment event = {}."
                                   "".format(serder))
+
+            for k in IXN_LABELS:
+                if k not in ked:
+                    raise ValidationError("Missing element = {} from {} event."
+                                          "".format(k, Ilks.ixn))
 
             if not sn == (self.sn + 1):  # sn not in order
                 raise ValidationError("Invalid sn = {} expecting = {}.".format(sn, self.sn+1))
