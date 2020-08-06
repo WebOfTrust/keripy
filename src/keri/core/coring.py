@@ -875,11 +875,11 @@ class Aider(CryMat):
                 raise  ex
 
             if code == CryOneDex.Ed25519N:
-                self._derive = self._ed25519nDerive
+                self._derive = self._DeriveBasicEd25519N
             elif code == CryOneDex.Ed25519:
-                self._derive = self._ed25519Derive
+                self._derive = self._DeriveBasicEd25519
             elif code == CryOneDex.Blake3_256:
-                self._derive = self._blake3_256Derive
+                self._derive = self._DeriveDigBlake3_256
             else:
                 raise ValueError("Unsupported code = {} for aider.".format(code))
 
@@ -887,11 +887,11 @@ class Aider(CryMat):
             super(Aider, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code == CryOneDex.Ed25519N:
-            self._verify = self._ed25519nVerify
+            self._verify = self._VerifyBasicEd25519N
         elif self.code == CryOneDex.Ed25519:
-            self._verify = self._ed25519Verify
+            self._verify = self._VerifyBasicEd25519
         elif self.code == CryOneDex.Blake3_256:
-            self._verify = self._blake3_256Verify
+            self._verify = self._VerifyDigBlake3_256
         else:
             raise ValueError("Unsupported code = {} for aider.".format(self.code))
 
@@ -913,7 +913,7 @@ class Aider(CryMat):
         return (self._derive(ked=ked))
 
 
-    def _ed25519nDerive(self, ked):
+    def _DeriveBasicEd25519N(self, ked):
         """
         Returns tuple (raw, code) of basic nontransferable Ed25519 aid (qb64)
             as derived from key event dict ked
@@ -943,7 +943,7 @@ class Aider(CryMat):
         return (verfer.raw, verfer.code)
 
 
-    def _ed25519Derive(self, ked):
+    def _DeriveBasicEd25519(self, ked):
         """
         Returns tuple (raw, code) of basic Ed25519 aid (qb64)
             as derived from key event dict ked
@@ -965,7 +965,28 @@ class Aider(CryMat):
         return (verfer.raw, verfer.code)
 
 
-    def _blake3_256Derive(self, ked):
+    def _DeriveDigBlake3_256(self, ked):
+        """
+        Returns tuple (raw, code) of basic Ed25519 aid (qb64)
+            as derived from key event dict ked
+        """
+        ilk = ked["ilk"]
+        if ilk == Ilks.icp:
+            labels = self.IcpLabels  # ICP_DERIVE_LABELS
+        elif ilk == Ilks.dip:
+            labels = self.DipLabels  # DIP_DERIVE_LABELS
+        else:
+            raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
+
+        for l in labels:
+            if l not in ked:
+                raise DerivationError("Missing element = {} from ked.".format(l))
+
+        values = extractValues(ked=ked, labels=labels)
+        ser = "".join(values).encode("utf-8")
+        return (blake3.blake3(ser).digest(), CryOneDex.Blake3_256)
+
+    def _DeriveSigEd25519(self, ked):
         """
         Returns tuple (raw, code) of basic Ed25519 aid (qb64)
             as derived from key event dict ked
@@ -998,7 +1019,7 @@ class Aider(CryMat):
         return (self._verify(ked=ked, aid=self.qb64))
 
 
-    def _ed25519nVerify(self, ked, aid):
+    def _VerifyBasicEd25519N(self, ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from inception iked dict
@@ -1024,7 +1045,7 @@ class Aider(CryMat):
         return True
 
 
-    def _ed25519Verify(self, ked, aid):
+    def _VerifyBasicEd25519(self, ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from
@@ -1047,7 +1068,7 @@ class Aider(CryMat):
         return True
 
 
-    def _blake3_256Verify(self, ked, aid):
+    def _VerifyDigBlake3_256(self, ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from
@@ -1058,7 +1079,7 @@ class Aider(CryMat):
             aid is Base64 fully qualified
         """
         try:
-            raw, code =  self._blake3_256Derive(ked=ked)
+            raw, code =  self._DeriveDigBlake3_256(ked=ked)
             crymat = CryMat(raw=raw, code=CryOneDex.Blake3_256)
             if crymat.qb64 != aid:
                 return False
