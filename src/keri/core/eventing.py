@@ -86,7 +86,9 @@ PDELs = dict()
 DELs = dict()
 
 
-def incept( keys,
+def incept(
+            keys,
+            code=None,
             version=Version,
             kind=Serials.json,
             sith=None,
@@ -154,8 +156,12 @@ def incept( keys,
                cnfg=cnfg,  # list of config ordered mappings may be empty
                )
 
-    # raises derivation error if non-empty nxt but ephemeral code
-    aider = Aider(ked=ked)  # Derive AID from ked
+    if code is None and len(keys) == 1:
+        aider = Aider(qb64=keys[0])
+    else:
+        # raises derivation error if non-empty nxt but ephemeral code
+        aider = Aider(ked=ked, code=code)  # Derive AID from ked and code
+
     ked["aid"] = aider.qb64  # update aid element in ked with aid qb64
 
     return Serder(ked=ked)  # return serialized ked

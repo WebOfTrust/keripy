@@ -20,6 +20,8 @@ import blake3
 
 from ..kering import ValidationError, VersionError, EmptyMaterialError, DerivationError
 from ..kering import Versionage, Version
+from ..help.helping import extractValues
+
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
@@ -834,11 +836,16 @@ class Nexter(Diger):
 
         return (self._verify(ser=ser, dig=self.raw))
 
+# elements in digest or signature derivation from inception icp
+ICP_DERIVE_LABELS = ["sith", "keys", "nxt", "toad", "wits", "cnfg"]
+# elements in digest or signature derivation from delegated inception dip
+DIP_DERIVE_LABELS = ["sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
+
 
 class Aider(CryMat):
     """
-    Aider is CryMat subclass for autonomic identifier prefix using basic derivation
-    from public key
+    DigAider is CryMat subclass for autonomic identifier prefix using
+    derivation as determined by code from ked
 
     See CryMat for other inherited attributes and properties:
 
@@ -850,45 +857,76 @@ class Aider(CryMat):
         verify():  Verifies derivation of aid
 
     """
+
     def __init__(self, raw=b'', code=CryOneDex.Ed25519N, ked=None, **kwa):
         """
-        assign ._verify to verify derivation of aid  = .qb64
+        assign ._derive to derive derivatin of aid from ked
+        assign ._verify to verify derivation of aid from ked
 
         """
         try:
             super(Aider, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
-            if not ked:
+            if not ked or not code:
                 raise  ex
-            verfer = self._derive(ked)  # use ked to derive aid
-            super(Aider, self).__init__(raw=verfer.raw,
-                                        code=verfer.code,
-                                        **kwa)
+
+            if code == CryOneDex.Ed25519N:
+                self._derive = self._ed25519nDerive
+            elif code == CryOneDex.Ed25519:
+                self._derive = self._ed25519Derive
+            elif code == CryOneDex.Blake3_256:
+                self._derive = self._blake3_256Derive
+            else:
+                raise ValueError("Unsupported code = {} for aider.".format(code))
+
+            raw, code = self._derive(ked)  # use ked to derive aid
+            super(Aider, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code == CryOneDex.Ed25519N:
-            self._verify = self._ed25519n
+            self._verify = self._ed25519nVerify
         elif self.code == CryOneDex.Ed25519:
-            self._verify = self._ed25519
+            self._verify = self._ed25519Verify
+        elif self.code == CryOneDex.Blake3_256:
+            self._verify = self._blake3_256Verify
         else:
             raise ValueError("Unsupported code = {} for aider.".format(self.code))
 
-    @staticmethod
-    def _derive(ked):
+        #if ked and not self.verify(ked):
+            #raise DerivationError("Error verifying derived aid = {} with code "
+                                  #"= {} from ked = {}.".format(self.qb64,
+                                                               #self.code,
+                                                               #ked))
+
+
+    def derive(self, ked):
         """
-        Returns Verifier derived from ked (key event dict) to use for .raw & .code
+        Returns tuple (raw, code) of aid as derived from key event dict ked.
+                uses a derivation code specific _derive method
+
+        Parameters:
+            ked is inception key event dict
+        """
+        return (self._derive(ked=ked))
+
+
+    @staticmethod
+    def _ed25519nDerive(ked):
+        """
+        Returns tuple (raw, code) of basic nontransferable Ed25519 aid (qb64)
+            as derived from key event dict ked
         """
         try:
             keys = ked["keys"]
             if len(keys) != 1:
-                raise DerivationError("Basic derivation needs 1 key got "
-                                      "{}".format(len(keys)))
+                raise DerivationError("Basic derivation needs at most 1 key "
+                                      " got {} keys instead".format(len(keys)))
             verfer = Verfer(qb64=keys[0])
         except Exception as ex:
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verfer.code not in [CryOneDex.Ed25519N, CryOneDex.Ed25519]:
-            raise DerivationError("Invalid derivation code = {}"
+        if verfer.code not in [CryOneDex.Ed25519N]:
+            raise DerivationError("Invalid derivation code = {}."
                                   "".format(verfer.code))
 
         try:
@@ -899,7 +937,52 @@ class Aider(CryMat):
         except Exception as ex:
             raise DerivationError("Error checking nxt = {}".format(ex))
 
-        return verfer
+        return (verfer.raw, verfer.code)
+
+    @staticmethod
+    def _ed25519Derive(ked):
+        """
+        Returns tuple (raw, code) of basic Ed25519 aid (qb64)
+            as derived from key event dict ked
+        """
+        try:
+            keys = ked["keys"]
+            if len(keys) != 1:
+                raise DerivationError("Basic derivation needs at most 1 key "
+                                      " got {} keys instead".format(len(keys)))
+            verfer = Verfer(qb64=keys[0])
+        except Exception as ex:
+            raise DerivationError("Error extracting public key ="
+                                  " = {}".format(ex))
+
+        if verfer.code not in [CryOneDex.Ed25519]:
+            raise DerivationError("Invalid derivation code = {}"
+                                  "".format(verfer.code))
+
+        return (verfer.raw, verfer.code)
+
+    @staticmethod
+    def _blake3_256Derive(ked):
+        """
+        Returns tuple (raw, code) of basic Ed25519 aid (qb64)
+            as derived from key event dict ked
+        """
+        ilk = ked["ilk"]
+        if ilk == Ilks.icp:
+            labels = ICP_DERIVE_LABELS
+        elif ilk == Ilks.dip:
+            labels == DIP_DERIVE_LABELS
+        else:
+            raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
+
+        for l in labels:
+            if l not in ked:
+                raise DerivationError("Missing element = {} from ked.".format(l))
+
+        values = extractValues(ked=ked, labels=labels)
+        ser = "".join(values).encode("utf-8")
+        return (blake3.blake3(ser).digest(), CryOneDex.Blake3_256)
+
 
     def verify(self, ked):
         """
@@ -913,13 +996,13 @@ class Aider(CryMat):
 
 
     @staticmethod
-    def _ed25519n(ked, aid):
+    def _ed25519nVerify(ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from inception iked dict
 
         Parameters:
-            iked is inception key event dict
+            ked is inception key event dict
             aid is Base64 fully qualified
         """
         try:
@@ -940,7 +1023,7 @@ class Aider(CryMat):
 
 
     @staticmethod
-    def _ed25519(ked, aid):
+    def _ed25519Verify(ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from
@@ -962,6 +1045,41 @@ class Aider(CryMat):
 
         return True
 
+    @staticmethod
+    def _blake3_256Verify(ked, aid):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 aid from
+        inception key event dict (ked)
+
+        Parameters:
+            iked is inception key event dict
+            aid is Base64 fully qualified
+        """
+        try:
+            ilk = ked["ilk"]
+            if ilk == Ilks.icp:
+                labels = ICP_DERIVE_LABELS
+            elif ilk == Ilks.dip:
+                labels == DIP_DERIVE_LABELS
+            else:
+                raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
+
+            for l in labels:
+                if l not in ked:
+                    raise DerivationError("Missing element = {} from ked.".format(l))
+
+            values = extractValues(ked=ked, labels=labels)
+            ser = "".join(values).encode("utf-8")
+            raw = blake3.blake3(ser).digest()
+            crymat = CryMat(raw=raw, code=CryOneDex.Blake3_256)
+            if crymat.qb64 != aid:
+                return False
+
+        except Exception as ex:
+            return False
+
+        return True
 
 
 BASE64_PAD = '='

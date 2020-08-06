@@ -74,7 +74,8 @@ def test_keyeventfuncs():
 
 
     with pytest.raises(DerivationError):
-        serder = incept(keys=keys0, nxt="ABCDE")  # non-empty nxt wtih non-transferable code
+        # non-empty nxt wtih non-transferable code
+        serder = incept(keys=keys0, code=CryOneDex.Ed25519N, nxt="ABCDE")
 
     # Inception: Transferable Case but abandoned in incept so equivalent
     signer0 = Signer(raw=seed)  #  original signing keypair transferable default
@@ -197,8 +198,9 @@ def test_kever():
 
 
     # Derive AID from ked
-    aid0 = Aider(ked=ked0)
+    aid0 = Aider(ked=ked0, code = CryOneDex.Ed25519)
     assert aid0.code == CryOneDex.Ed25519
+    assert aid0.qb64 == skp0.verfer.qb64
 
     # update ked with aid
     ked0["aid"] = aid0.qb64
@@ -914,8 +916,9 @@ def test_process_transferable():
 
 
     # Derive AID from ked
-    aid0 = Aider(ked=ked0)
+    aid0 = Aider(ked=ked0, code=CryOneDex.Ed25519)
     assert aid0.code == CryOneDex.Ed25519
+    assert aid0.qb64 == skp0.verfer.qb64
 
     # update ked with aid
     ked0["aid"] = aid0.qb64
@@ -1092,4 +1095,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_kevery()
+    test_keyeventfuncs()
