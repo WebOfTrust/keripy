@@ -857,6 +857,10 @@ class Aider(CryMat):
         verify():  Verifies derivation of aid
 
     """
+    # elements in digest or signature derivation from inception icp
+    IcpLabels = ["sith", "keys", "nxt", "toad", "wits", "cnfg"]
+    # elements in digest or signature derivation from delegated inception dip
+    DipLabels = ["sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
 
     def __init__(self, raw=b'', code=CryOneDex.Ed25519N, ked=None, **kwa):
         """
@@ -909,8 +913,7 @@ class Aider(CryMat):
         return (self._derive(ked=ked))
 
 
-    @staticmethod
-    def _ed25519nDerive(ked):
+    def _ed25519nDerive(self, ked):
         """
         Returns tuple (raw, code) of basic nontransferable Ed25519 aid (qb64)
             as derived from key event dict ked
@@ -939,8 +942,8 @@ class Aider(CryMat):
 
         return (verfer.raw, verfer.code)
 
-    @staticmethod
-    def _ed25519Derive(ked):
+
+    def _ed25519Derive(self, ked):
         """
         Returns tuple (raw, code) of basic Ed25519 aid (qb64)
             as derived from key event dict ked
@@ -961,17 +964,17 @@ class Aider(CryMat):
 
         return (verfer.raw, verfer.code)
 
-    @staticmethod
-    def _blake3_256Derive(ked):
+
+    def _blake3_256Derive(self, ked):
         """
         Returns tuple (raw, code) of basic Ed25519 aid (qb64)
             as derived from key event dict ked
         """
         ilk = ked["ilk"]
         if ilk == Ilks.icp:
-            labels = ICP_DERIVE_LABELS
+            labels = self.IcpLabels  # ICP_DERIVE_LABELS
         elif ilk == Ilks.dip:
-            labels = DIP_DERIVE_LABELS
+            labels = self.DipLabels  # DIP_DERIVE_LABELS
         else:
             raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
 
@@ -995,8 +998,7 @@ class Aider(CryMat):
         return (self._verify(ked=ked, aid=self.qb64))
 
 
-    @staticmethod
-    def _ed25519nVerify(ked, aid):
+    def _ed25519nVerify(self, ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from inception iked dict
@@ -1022,8 +1024,7 @@ class Aider(CryMat):
         return True
 
 
-    @staticmethod
-    def _ed25519Verify(ked, aid):
+    def _ed25519Verify(self, ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from
@@ -1045,8 +1046,8 @@ class Aider(CryMat):
 
         return True
 
-    @staticmethod
-    def _blake3_256Verify(ked, aid):
+
+    def _blake3_256Verify(self, ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from
@@ -1057,21 +1058,7 @@ class Aider(CryMat):
             aid is Base64 fully qualified
         """
         try:
-            ilk = ked["ilk"]
-            if ilk == Ilks.icp:
-                labels = ICP_DERIVE_LABELS
-            elif ilk == Ilks.dip:
-                labels = DIP_DERIVE_LABELS
-            else:
-                raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
-
-            for l in labels:
-                if l not in ked:
-                    raise DerivationError("Missing element = {} from ked.".format(l))
-
-            values = extractValues(ked=ked, labels=labels)
-            ser = "".join(values).encode("utf-8")
-            raw = blake3.blake3(ser).digest()
+            raw, code =  self._blake3_256Derive(ked=ked)
             crymat = CryMat(raw=raw, code=CryOneDex.Blake3_256)
             if crymat.qb64 != aid:
                 return False
@@ -1080,6 +1067,7 @@ class Aider(CryMat):
             return False
 
         return True
+
 
 
 BASE64_PAD = '='
