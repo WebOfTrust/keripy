@@ -1036,7 +1036,7 @@ class Aider(CryMat):
         if not (seed or secret):
             raise DerivationError("Missing seed or secret.")
 
-        signer = Signer(raw=seed, qb2=secret)
+        signer = Signer(raw=seed, qb64=secret)
 
         if verfer.raw != signer.verfer.raw:
             raise DerivationError("Key in ked not match seed.")

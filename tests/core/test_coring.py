@@ -705,9 +705,9 @@ def test_aider():
     assert aider.qb64 == '0BSb9qBNXUerVs4IDYnai29AXcPQJtudLPfzfvehicA7LrswWBPmNlNQK9gIJB4pny2YpuB3m6-pgyl4cU65RRCA'
     assert aider.verify(ked=ked) == True
 
-    #aider = Aider(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
-    #assert aider.qb64 == '0BSb9qBNXUerVs4IDYnai29AXcPQJtudLPfzfvehicA7LrswWBPmNlNQK9gIJB4pny2YpuB3m6-pgyl4cU65RRCA'
-    #assert aider.verify(ked=ked) == True
+    aider = Aider(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
+    assert aider.qb64 == '0BSb9qBNXUerVs4IDYnai29AXcPQJtudLPfzfvehicA7LrswWBPmNlNQK9gIJB4pny2YpuB3m6-pgyl4cU65RRCA'
+    assert aider.verify(ked=ked) == True
 
     """ Done Test """
 
