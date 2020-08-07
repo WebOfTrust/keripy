@@ -20,6 +20,8 @@ import blake3
 
 from ..kering import ValidationError, VersionError, EmptyMaterialError, DerivationError
 from ..kering import Versionage, Version
+from ..help.helping import extractValues
+
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
@@ -230,7 +232,7 @@ class CryMat:
 
     """
 
-    def __init__(self, raw=b'', qb64='', qb2='', code=CryOneDex.Ed25519N):
+    def __init__(self, raw=None, qb64=None, qb2=None, code=CryOneDex.Ed25519N):
         """
         Validate as fully qualified
         Parameters:
@@ -244,7 +246,7 @@ class CryMat:
         Else when qb64 or qb2 provided extract and assign .raw and .code
 
         """
-        if raw:  #  raw provided so infil with code
+        if raw is not None:  #  raw provided so infil with code
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
             pad = self._pad(raw)
@@ -264,12 +266,12 @@ class CryMat:
             self._code = code
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
-        elif qb64:
+        elif qb64 is not None:
             if hasattr(qb64, "decode"):  # converts bytes like to str
                 qb64 = qb64.decode("utf-8")
             self._exfil(qb64)
 
-        elif qb2:  # rewrite to use direct binary exfiltration
+        elif qb2 is not None:  # rewrite to use direct binary exfiltration
             self._exfil(encodeB64(qb2).decode("utf-8"))
 
         else:
@@ -520,7 +522,7 @@ class Signer(CryMat):
         sign: create signature
 
     """
-    def __init__(self,raw=b'', code=CryOneDex.Ed25519_Seed, transferable=True, **kwa):
+    def __init__(self,raw=None, code=CryOneDex.Ed25519_Seed, transferable=True, **kwa):
         """
         Assign signing cipher suite function to ._sign
 
@@ -665,7 +667,7 @@ class Diger(CryMat):
         verify: verifies signature
 
     """
-    def __init__(self, raw=b'', ser=b'', code=CryOneDex.Blake3_256, **kwa):
+    def __init__(self, raw=None, ser=None, code=CryOneDex.Blake3_256, **kwa):
         """
         Assign digest verification function to ._verify
 
@@ -733,7 +735,7 @@ class Nexter(Diger):
 
 
     """
-    def __init__(self, ser=b'', sith=None, keys=None, ked=None, **kwa):
+    def __init__(self, ser=None, sith=None, keys=None, ked=None, **kwa):
         """
         Assign digest verification function to ._verify
 
@@ -834,11 +836,16 @@ class Nexter(Diger):
 
         return (self._verify(ser=ser, dig=self.raw))
 
+# elements in digest or signature derivation from inception icp
+ICP_DERIVE_LABELS = ["sith", "keys", "nxt", "toad", "wits", "cnfg"]
+# elements in digest or signature derivation from delegated inception dip
+DIP_DERIVE_LABELS = ["sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
+
 
 class Aider(CryMat):
     """
-    Aider is CryMat subclass for autonomic identifier prefix using basic derivation
-    from public key
+    DigAider is CryMat subclass for autonomic identifier prefix using
+    derivation as determined by code from ked
 
     See CryMat for other inherited attributes and properties:
 
@@ -850,45 +857,91 @@ class Aider(CryMat):
         verify():  Verifies derivation of aid
 
     """
-    def __init__(self, raw=b'', code=CryOneDex.Ed25519N, ked=None, **kwa):
+    # elements in digest or signature derivation from inception icp
+    IcpLabels = ["sith", "keys", "nxt", "toad", "wits", "cnfg"]
+    # elements in digest or signature derivation from delegated inception dip
+    DipLabels = ["sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
+
+    def __init__(self, raw=None, code=CryOneDex.Ed25519N, ked=None,
+                 seed=None, secret=None, **kwa):
         """
-        assign ._verify to verify derivation of aid  = .qb64
+        assign ._derive to derive derivatin of aid from ked
+        assign ._verify to verify derivation of aid from ked
+
+        Parameters:
+            seed is bytes seed when signature derivation
+            secret is qb64 when signature derivation when applicable
+               one of seed or secret must be provided when signature derivation
 
         """
         try:
             super(Aider, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
-            if not ked:
+            if not ked or not code:
                 raise  ex
-            verfer = self._derive(ked)  # use ked to derive aid
-            super(Aider, self).__init__(raw=verfer.raw,
-                                        code=verfer.code,
-                                        **kwa)
+
+            if code == CryOneDex.Ed25519N:
+                self._derive = self._DeriveBasicEd25519N
+            elif code == CryOneDex.Ed25519:
+                self._derive = self._DeriveBasicEd25519
+            elif code == CryOneDex.Blake3_256:
+                self._derive = self._DeriveDigBlake3_256
+            elif code == CryTwoDex.Ed25519:
+                self._derive = self._DeriveSigEd25519
+            else:
+                raise ValueError("Unsupported code = {} for aider.".format(code))
+
+            # use ked to derive aid
+            raw, code = self._derive(ked=ked, seed=seed, secret=secret)
+            super(Aider, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code == CryOneDex.Ed25519N:
-            self._verify = self._ed25519n
+            self._verify = self._VerifyBasicEd25519N
         elif self.code == CryOneDex.Ed25519:
-            self._verify = self._ed25519
+            self._verify = self._VerifyBasicEd25519
+        elif self.code == CryOneDex.Blake3_256:
+            self._verify = self._VerifyDigBlake3_256
+        elif code == CryTwoDex.Ed25519:
+            self._verify = self._VerifySigEd25519
         else:
             raise ValueError("Unsupported code = {} for aider.".format(self.code))
 
-    @staticmethod
-    def _derive(ked):
+        #if ked and not self.verify(ked):
+            #raise DerivationError("Error verifying derived aid = {} with code "
+                                  #"= {} from ked = {}.".format(self.qb64,
+                                                               #self.code,
+                                                               #ked))
+
+
+    def derive(self, ked, seed=None, secret=None):
         """
-        Returns Verifier derived from ked (key event dict) to use for .raw & .code
+        Returns tuple (raw, code) of aid as derived from key event dict ked.
+                uses a derivation code specific _derive method
+
+        Parameters:
+            ked is inception key event dict
+            seed is only used for sig derivation it is the secret key/secret
+        """
+        return (self._derive(ked=ked, seed=seed, secret=secret))
+
+
+    def _DeriveBasicEd25519N(self, ked, seed=None, secret=None):
+        """
+        Returns tuple (raw, code) of basic nontransferable Ed25519 aid (qb64)
+            as derived from key event dict ked
         """
         try:
             keys = ked["keys"]
             if len(keys) != 1:
-                raise DerivationError("Basic derivation needs 1 key got "
-                                      "{}".format(len(keys)))
+                raise DerivationError("Basic derivation needs at most 1 key "
+                                      " got {} keys instead".format(len(keys)))
             verfer = Verfer(qb64=keys[0])
         except Exception as ex:
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verfer.code not in [CryOneDex.Ed25519N, CryOneDex.Ed25519]:
-            raise DerivationError("Invalid derivation code = {}"
+        if verfer.code not in [CryOneDex.Ed25519N]:
+            raise DerivationError("Invalid derivation code = {}."
                                   "".format(verfer.code))
 
         try:
@@ -899,7 +952,101 @@ class Aider(CryMat):
         except Exception as ex:
             raise DerivationError("Error checking nxt = {}".format(ex))
 
-        return verfer
+        return (verfer.raw, verfer.code)
+
+
+    def _DeriveBasicEd25519(self, ked, seed=None, secret=None):
+        """
+        Returns tuple (raw, code) of basic Ed25519 aid (qb64)
+            as derived from key event dict ked
+        """
+        try:
+            keys = ked["keys"]
+            if len(keys) != 1:
+                raise DerivationError("Basic derivation needs at most 1 key "
+                                      " got {} keys instead".format(len(keys)))
+            verfer = Verfer(qb64=keys[0])
+        except Exception as ex:
+            raise DerivationError("Error extracting public key ="
+                                  " = {}".format(ex))
+
+        if verfer.code not in [CryOneDex.Ed25519]:
+            raise DerivationError("Invalid derivation code = {}"
+                                  "".format(verfer.code))
+
+        return (verfer.raw, verfer.code)
+
+
+    def _DeriveDigBlake3_256(self, ked, seed=None, secret=None):
+        """
+        Returns tuple (raw, code) of basic Ed25519 aid (qb64)
+            as derived from key event dict ked
+        """
+        ilk = ked["ilk"]
+        if ilk == Ilks.icp:
+            labels = self.IcpLabels  # ICP_DERIVE_LABELS
+        elif ilk == Ilks.dip:
+            labels = self.DipLabels  # DIP_DERIVE_LABELS
+        else:
+            raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
+
+        for l in labels:
+            if l not in ked:
+                raise DerivationError("Missing element = {} from ked.".format(l))
+
+        values = extractValues(ked=ked, labels=labels)
+        ser = "".join(values).encode("utf-8")
+        dig =  blake3.blake3(ser).digest()
+        return (dig, CryOneDex.Blake3_256)
+
+    def _DeriveSigEd25519(self, ked, seed=None, secret=None):
+        """
+        Returns tuple (raw, code) of basic Ed25519 aid (qb64)
+            as derived from key event dict ked
+        """
+        ilk = ked["ilk"]
+        if ilk == Ilks.icp:
+            labels = self.IcpLabels  # ICP_DERIVE_LABELS
+        elif ilk == Ilks.dip:
+            labels = self.DipLabels  # DIP_DERIVE_LABELS
+        else:
+            raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
+
+        for l in labels:
+            if l not in ked:
+                raise DerivationError("Missing element = {} from ked.".format(l))
+
+        values = extractValues(ked=ked, labels=labels)
+        ser = "".join(values).encode("utf-8")
+
+        try:
+            keys = ked["keys"]
+            if len(keys) != 1:
+                raise DerivationError("Basic derivation needs at most 1 key "
+                                      " got {} keys instead".format(len(keys)))
+            verfer = Verfer(qb64=keys[0])
+        except Exception as ex:
+            raise DerivationError("Error extracting public key ="
+                                  " = {}".format(ex))
+
+        if verfer.code not in [CryOneDex.Ed25519]:
+            raise DerivationError("Invalid derivation code = {}"
+                                  "".format(verfer.code))
+
+        if not (seed or secret):
+            raise DerivationError("Missing seed or secret.")
+
+        signer = Signer(raw=seed, qb64=secret)
+
+        if verfer.raw != signer.verfer.raw:
+            raise DerivationError("Key in ked not match seed.")
+
+        sigver = signer.sign(ser=ser)
+
+        # sig = pysodium.crypto_sign_detached(ser, signer.raw + verfer.raw)
+
+        return (sigver.raw, CryTwoDex.Ed25519)
+
 
     def verify(self, ked):
         """
@@ -907,19 +1054,18 @@ class Aider(CryMat):
                 False otherwise
 
         Parameters:
-            iked is inception key event dict
+            ked is inception key event dict
         """
         return (self._verify(ked=ked, aid=self.qb64))
 
 
-    @staticmethod
-    def _ed25519n(ked, aid):
+    def _VerifyBasicEd25519N(self, ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from inception iked dict
 
         Parameters:
-            iked is inception key event dict
+            ked is inception key event dict
             aid is Base64 fully qualified
         """
         try:
@@ -939,15 +1085,14 @@ class Aider(CryMat):
         return True
 
 
-    @staticmethod
-    def _ed25519(ked, aid):
+    def _VerifyBasicEd25519(self, ked, aid):
         """
         Returns True if verified raises exception otherwise
         Verify derivation of fully qualified Base64 aid from
         inception key event dict (ked)
 
         Parameters:
-            iked is inception key event dict
+            ked is inception key event dict
             aid is Base64 fully qualified
         """
         try:
@@ -961,6 +1106,86 @@ class Aider(CryMat):
             return False
 
         return True
+
+
+    def _VerifyDigBlake3_256(self, ked, aid):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 aid from
+        inception key event dict (ked)
+
+        Parameters:
+            ked is inception key event dict
+            aid is Base64 fully qualified
+        """
+        try:
+            raw, code =  self._DeriveDigBlake3_256(ked=ked)
+            crymat = CryMat(raw=raw, code=CryOneDex.Blake3_256)
+            if crymat.qb64 != aid:
+                return False
+
+        except Exception as ex:
+            return False
+
+        return True
+
+
+    def _VerifySigEd25519(self, ked, aid):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 aid from
+        inception key event dict (ked)
+
+        Parameters:
+            ked is inception key event dict
+            aid is Base64 fully qualified
+        """
+        try:
+            ilk = ked["ilk"]
+            if ilk == Ilks.icp:
+                labels = self.IcpLabels  # ICP_DERIVE_LABELS
+            elif ilk == Ilks.dip:
+                labels = self.DipLabels  # DIP_DERIVE_LABELS
+            else:
+                raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
+
+            for l in labels:
+                if l not in ked:
+                    raise DerivationError("Missing element = {} from ked.".format(l))
+
+            values = extractValues(ked=ked, labels=labels)
+            ser = "".join(values).encode("utf-8")
+
+            try:
+                keys = ked["keys"]
+                if len(keys) != 1:
+                    raise DerivationError("Basic derivation needs at most 1 key "
+                                          " got {} keys instead".format(len(keys)))
+                verfer = Verfer(qb64=keys[0])
+            except Exception as ex:
+                raise DerivationError("Error extracting public key ="
+                                      " = {}".format(ex))
+
+            if verfer.code not in [CryOneDex.Ed25519]:
+                raise DerivationError("Invalid derivation code = {}"
+                                      "".format(verfer.code))
+
+            sigver = Sigver(qb64=aid, verfer=verfer)
+
+            result = sigver.verfer.verify(sig=sigver.raw, ser=ser)
+            return result
+
+            #try:  # verify returns None if valid else raises ValueError
+                #result = pysodium.crypto_sign_verify_detached(sig, ser, verfer.raw)
+            #except Exception as ex:
+                #return False
+
+        except Exception as ex:
+            return False
+
+        return True
+
+
 
 
 
