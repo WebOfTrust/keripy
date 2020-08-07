@@ -669,6 +669,45 @@ def test_aider():
     assert aider.qb64 == 'EQrpcQ1RX0jDKcBbGXWZra3dr3bFyz6Ly1icEBlgD20s'
     assert aider.verify(ked=ked) == True
 
+    #  Test signature derivation
+
+    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed =  (b'\xdf\x95\xf9\xbcK@s="\xee\x95w\xbf>F&\xbb\x82\x8f)\x95\xb9\xc0\x1eS\x1b{L'
+             b't\xcfH\xa6')
+    signer = Signer(raw=seed)
+    secret = signer.qb64
+    assert secret ==  'A35X5vEtAcz0i7pV3vz5GJruCjymVucAeUxt7THTPSKY'
+
+    vs = Versify(version=Version, kind=Serials.json, size=0)
+    sn = 0
+    ilk = Ilks.icp
+    sith = 1
+    keys = [signer.verfer.qb64]
+    nxt = ""
+    toad = 0
+    wits = []
+    cnfg = []
+
+    nexter = Nexter(sith=1, keys=[nxtfer.qb64])
+    ked = dict(vs=vs,  # version string
+               aid="",  # qb64 prefix
+               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,
+               sith="{:x}".format(sith), # hex string no leading zeros lowercase
+               keys=keys,  # list of qb64
+               nxt=nexter.qb64,  # hash qual Base64
+               toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+               wits=wits,  # list of qb64 may be empty
+               cnfg=cnfg,  # list of config ordered mappings may be empty
+               )
+
+    aider = Aider(ked=ked, code=CryTwoDex.Ed25519, seed=seed)
+    assert aider.qb64 == '0BSb9qBNXUerVs4IDYnai29AXcPQJtudLPfzfvehicA7LrswWBPmNlNQK9gIJB4pny2YpuB3m6-pgyl4cU65RRCA'
+    assert aider.verify(ked=ked) == True
+
+    #aider = Aider(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
+    #assert aider.qb64 == '0BSb9qBNXUerVs4IDYnai29AXcPQJtudLPfzfvehicA7LrswWBPmNlNQK9gIJB4pny2YpuB3m6-pgyl4cU65RRCA'
+    #assert aider.verify(ked=ked) == True
 
     """ Done Test """
 
