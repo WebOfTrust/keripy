@@ -834,6 +834,8 @@ def test_multisig_digaid():
                     code=code,
                     sith=sith,
                     nxt=Nexter(keys=nxtkeys).qb64)
+
+    assert serder.ked["aid"] == 'EeHEtwqUsoOHqchJNDvxIb-bTOB4E8m73osS_cJYuShY'
     # create sig counter
     count = len(keys)
     counter = SigCounter(count=count)  # default is count = 1
