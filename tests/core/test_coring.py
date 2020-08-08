@@ -613,7 +613,7 @@ def test_prefixer():
     cnfg = []
 
     ked = dict(vs=vs,  # version string
-               aid="",  # qb64 prefix
+               pre="",  # qb64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=ilk,
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
@@ -631,7 +631,7 @@ def test_prefixer():
 
     nexter = Nexter(sith=1, keys=[nxtfer.qb64])
     ked = dict(vs=vs,  # version string
-               aid="",  # qb64 prefix
+               pre="",  # qb64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=ilk,
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
@@ -647,13 +647,13 @@ def test_prefixer():
     assert prefixer.verify(ked=ked) == True
 
     perm = []
-    seal = dict(aid = 'EXpGDy9FxDESc974WW86xDxM0fQgKjhDWOklCXtstkus',
+    seal = dict(pre = 'EXpGDy9FxDESc974WW86xDxM0fQgKjhDWOklCXtstkus',
                 sn  = '2',
                 ilk = Ilks.ixn,
                 dig = 'E03rxRmMcP2-I2Gd0sUhlYwjk8KEz5gNGxPwPg-sGJds')
 
     ked = dict(vs=vs,  # version string
-               aid="",  # qb64 prefix
+               pre="",  # qb64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=Ilks.dip,
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
@@ -690,7 +690,7 @@ def test_prefixer():
 
     nexter = Nexter(sith=1, keys=[nxtfer.qb64])
     ked = dict(vs=vs,  # version string
-               aid="",  # qb64 prefix
+               pre="",  # qb64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=ilk,
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
@@ -992,7 +992,7 @@ def test_serials():
 
 
     icp = dict(vs = Vstrings.json,
-              aid = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
+              pre = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
               sn = '0001',
               ilk = 'icp',
               dig = 'DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS',
@@ -1005,7 +1005,7 @@ def test_serials():
              )
 
     rot = dict(vs = Vstrings.json,
-              aid = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
+              pre = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
               sn = '0001',
               ilk = 'rot',
               dig = 'DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS',
@@ -1020,7 +1020,7 @@ def test_serials():
 
     icps = json.dumps(icp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert len(icps) == 303
-    assert icps == (b'{"vs":"KERI10JSON000000_","aid":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    assert icps == (b'{"vs":"KERI10JSON000000_","pre":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"icp","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"nxt":"'
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"cnfg":[]}')
@@ -1030,7 +1030,7 @@ def test_serials():
 
     rots = json.dumps(rot, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert len(rots) == 313
-    assert rots == (b'{"vs":"KERI10JSON000000_","aid":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    assert rots == (b'{"vs":"KERI10JSON000000_","pre":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"rot","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"nxt":"'
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"cuts":[],"adds":[],"'
@@ -1042,7 +1042,7 @@ def test_serials():
     icp["vs"] = Vstrings.mgpk
     icps = msgpack.dumps(icp)
     assert len(icps) == 264
-    assert icps == (b'\x8b\xa2vs\xb1KERI10MGPK000000_\xa3aid\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
+    assert icps == (b'\x8b\xa2vs\xb1KERI10MGPK000000_\xa3pre\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'SVPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwy'
                     b'Z-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZ'
                     b'H3ULvYAfSVPzhzS6b5CM\xa3nxt\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
@@ -1055,7 +1055,7 @@ def test_serials():
     rot["vs"] = Vstrings.mgpk
     rots = msgpack.dumps(rot)
     assert len(rots) == 270
-    assert rots == (b'\x8c\xa2vs\xb1KERI10MGPK000000_\xa3aid\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
+    assert rots == (b'\x8c\xa2vs\xb1KERI10MGPK000000_\xa3pre\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'SVPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3rot\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwy'
                     b'Z-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZ'
                     b'H3ULvYAfSVPzhzS6b5CM\xa3nxt\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
@@ -1069,10 +1069,11 @@ def test_serials():
     icp["vs"] = Vstrings.cbor
     icps = cbor.dumps(icp)
     assert len(icps) == 264
-    assert icps == (b'\xabbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
-                     b'bsnd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
-                     b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
-                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dcnfg\x80')
+    assert icps == (b'\xabbvsqKERI10CBOR000000_cprex,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+                    b'bsnd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
+                    b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
+                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dcnfg\x80')
+
 
 
     match = Rever.search(icps)
@@ -1081,7 +1082,7 @@ def test_serials():
     rot["vs"] = Vstrings.cbor
     rots = cbor.dumps(rot)
     assert len(rots) == 270
-    assert rots == (b'\xacbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    assert rots == (b'\xacbvsqKERI10CBOR000000_cprex,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'bsnd0001cilkcrotcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
                     b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dcuts\x80dadds\x80ddata\x80')
@@ -1112,7 +1113,7 @@ def test_serder():
         serder = Serder()
 
 
-    e1 = dict(vs=Vstrings.json, aid="ABCDEFG", sn="0001", ilk="rot")
+    e1 = dict(vs=Vstrings.json, pre="ABCDEFG", sn="0001", ilk="rot")
     serder = Serder(ked=e1)
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
@@ -1196,7 +1197,7 @@ def test_serder():
     assert len(evt1.diger.raw) == 32
     assert len(evt1.dig) == 44
     assert len(evt1.dig) == CryOneSizes[CryOneDex.Blake3_256]
-    assert evt1.dig == 'EWRKo-8KjGqPxHBsd77LfTy5sHBkfql6NOwl0-8VoI3U'
+    assert evt1.dig == 'EaDVEkrFdx8W0ZZAsfwf9mjxhgBt6PvfCmFPdr7RIcfY'
     assert evt1.diger.verify(evt1.raw)
 
     evt1 = Serder(ked=ked1)

@@ -337,7 +337,7 @@ class CryMat:
         code = qb64[:pre]
 
         # need to map code to length so can only consume proper number of chars
-        #  from front of qb64 so can use with full identifiers not just aid prefixes
+        #  from front of qb64 so can use with full identifiers not just prefixes
 
         if code in CryOneDex:  # One Char code
             qb64 = qb64[:CryOneSizes[code]]  # strip of identifier after prefix
@@ -854,7 +854,7 @@ class Prefixer(CryMat):
     Properties:
 
     Methods:
-        verify():  Verifies derivation of aid
+        verify():  Verifies derivation of aid prefix
 
     """
     # elements in digest or signature derivation from inception icp
@@ -865,8 +865,8 @@ class Prefixer(CryMat):
     def __init__(self, raw=None, code=CryOneDex.Ed25519N, ked=None,
                  seed=None, secret=None, **kwa):
         """
-        assign ._derive to derive derivatin of aid from ked
-        assign ._verify to verify derivation of aid from ked
+        assign ._derive to derive derivatin of aid prefix from ked
+        assign ._verify to verify derivation of aid prefix  from ked
 
         Parameters:
             seed is bytes seed when signature derivation
@@ -891,7 +891,7 @@ class Prefixer(CryMat):
             else:
                 raise ValueError("Unsupported code = {} for prefixer.".format(code))
 
-            # use ked to derive aid
+            # use ked to derive aid prefix
             raw, code = self._derive(ked=ked, seed=seed, secret=secret)
             super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
 
@@ -907,7 +907,7 @@ class Prefixer(CryMat):
             raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
 
         #if ked and not self.verify(ked):
-            #raise DerivationError("Error verifying derived aid = {} with code "
+            #raise DerivationError("Error verifying derived prefix = {} with code "
                                   #"= {} from ked = {}.".format(self.qb64,
                                                                #self.code,
                                                                #ked))
@@ -915,7 +915,7 @@ class Prefixer(CryMat):
 
     def derive(self, ked, seed=None, secret=None):
         """
-        Returns tuple (raw, code) of aid as derived from key event dict ked.
+        Returns tuple (raw, code) of aid prefix as derived from key event dict ked.
                 uses a derivation code specific _derive method
 
         Parameters:
@@ -927,7 +927,7 @@ class Prefixer(CryMat):
 
     def _DeriveBasicEd25519N(self, ked, seed=None, secret=None):
         """
-        Returns tuple (raw, code) of basic nontransferable Ed25519 aid (qb64)
+        Returns tuple (raw, code) of basic nontransferable Ed25519 prefix (qb64)
             as derived from key event dict ked
         """
         try:
@@ -957,7 +957,7 @@ class Prefixer(CryMat):
 
     def _DeriveBasicEd25519(self, ked, seed=None, secret=None):
         """
-        Returns tuple (raw, code) of basic Ed25519 aid (qb64)
+        Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
             as derived from key event dict ked
         """
         try:
@@ -979,7 +979,7 @@ class Prefixer(CryMat):
 
     def _DeriveDigBlake3_256(self, ked, seed=None, secret=None):
         """
-        Returns tuple (raw, code) of basic Ed25519 aid (qb64)
+        Returns tuple (raw, code) of basic Ed25519 pre (qb64)
             as derived from key event dict ked
         """
         ilk = ked["ilk"]
@@ -988,7 +988,7 @@ class Prefixer(CryMat):
         elif ilk == Ilks.dip:
             labels = self.DipLabels  # DIP_DERIVE_LABELS
         else:
-            raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
+            raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         for l in labels:
             if l not in ked:
@@ -1001,7 +1001,7 @@ class Prefixer(CryMat):
 
     def _DeriveSigEd25519(self, ked, seed=None, secret=None):
         """
-        Returns tuple (raw, code) of basic Ed25519 aid (qb64)
+        Returns tuple (raw, code) of basic Ed25519 pre (qb64)
             as derived from key event dict ked
         """
         ilk = ked["ilk"]
@@ -1010,7 +1010,7 @@ class Prefixer(CryMat):
         elif ilk == Ilks.dip:
             labels = self.DipLabels  # DIP_DERIVE_LABELS
         else:
-            raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
+            raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         for l in labels:
             if l not in ked:
@@ -1056,24 +1056,24 @@ class Prefixer(CryMat):
         Parameters:
             ked is inception key event dict
         """
-        return (self._verify(ked=ked, aid=self.qb64))
+        return (self._verify(ked=ked, pre=self.qb64))
 
 
-    def _VerifyBasicEd25519N(self, ked, aid):
+    def _VerifyBasicEd25519N(self, ked, pre):
         """
         Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 aid from inception iked dict
+        Verify derivation of fully qualified Base64 pre from inception iked dict
 
         Parameters:
             ked is inception key event dict
-            aid is Base64 fully qualified
+            pre is Base64 fully qualified prefix
         """
         try:
             keys = ked["keys"]
             if len(keys) != 1:
                 return False
 
-            if keys[0] != aid:
+            if keys[0] != pre:
                 return False
 
             if ked["nxt"]:  # must be empty
@@ -1085,22 +1085,22 @@ class Prefixer(CryMat):
         return True
 
 
-    def _VerifyBasicEd25519(self, ked, aid):
+    def _VerifyBasicEd25519(self, ked, pre):
         """
         Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 aid from
+        Verify derivation of fully qualified Base64 prefix from
         inception key event dict (ked)
 
         Parameters:
             ked is inception key event dict
-            aid is Base64 fully qualified
+            pre is Base64 fully qualified prefix
         """
         try:
             keys = ked["keys"]
             if len(keys) != 1:
                 return False
 
-            if keys[0] != aid:
+            if keys[0] != pre:
                 return False
         except Exception as ex:
             return False
@@ -1108,20 +1108,20 @@ class Prefixer(CryMat):
         return True
 
 
-    def _VerifyDigBlake3_256(self, ked, aid):
+    def _VerifyDigBlake3_256(self, ked, pre):
         """
         Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 aid from
+        Verify derivation of fully qualified Base64 prefix from
         inception key event dict (ked)
 
         Parameters:
             ked is inception key event dict
-            aid is Base64 fully qualified
+            pre is Base64 fully qualified
         """
         try:
             raw, code =  self._DeriveDigBlake3_256(ked=ked)
             crymat = CryMat(raw=raw, code=CryOneDex.Blake3_256)
-            if crymat.qb64 != aid:
+            if crymat.qb64 != pre:
                 return False
 
         except Exception as ex:
@@ -1130,15 +1130,15 @@ class Prefixer(CryMat):
         return True
 
 
-    def _VerifySigEd25519(self, ked, aid):
+    def _VerifySigEd25519(self, ked, pre):
         """
         Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 aid from
+        Verify derivation of fully qualified Base64 prefix from
         inception key event dict (ked)
 
         Parameters:
             ked is inception key event dict
-            aid is Base64 fully qualified
+            pre is Base64 fully qualified prefix
         """
         try:
             ilk = ked["ilk"]
@@ -1147,7 +1147,7 @@ class Prefixer(CryMat):
             elif ilk == Ilks.dip:
                 labels = self.DipLabels  # DIP_DERIVE_LABELS
             else:
-                raise DerivationError("Invalid ilk = {} to derive aid.".format(ilk))
+                raise DerivationError("Invalid ilk = {} to derive prefix.".format(ilk))
 
             for l in labels:
                 if l not in ked:
@@ -1170,7 +1170,7 @@ class Prefixer(CryMat):
                 raise DerivationError("Invalid derivation code = {}"
                                       "".format(verfer.code))
 
-            sigver = Sigver(qb64=aid, verfer=verfer)
+            sigver = Sigver(qb64=pre, verfer=verfer)
 
             result = sigver.verfer.verify(sig=sigver.raw, ser=ser)
             return result
@@ -1564,7 +1564,7 @@ class SigMat:
         index = 0
 
         # need to map code to length so can only consume proper number of chars
-        #  from front of qb64 so can use with full identifiers not just aid prefixes
+        # from front of qb64 so can use with full identifiers not just prefixes
 
         if code in SigTwoDex:  # 2 char = 1 code + 1 index
             qb64 = qb64[:SigTwoSizes[code]]  # strip of exact len identifier after prefix
