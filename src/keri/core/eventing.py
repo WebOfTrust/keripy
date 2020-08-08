@@ -25,7 +25,7 @@ from ..kering import Versionage, Version
 from ..help.helping import mdict
 
 from .coring import Versify, Serials, Ilks, CryOneDex
-from .coring import Signer, Verfer, Diger, Nexter, Aider, Serder
+from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder
 from .coring import SigCounter, Siger
 
 ICP_LABELS = ["vs", "aid", "sn", "ilk", "sith", "keys", "nxt",
@@ -157,12 +157,12 @@ def incept(
                )
 
     if code is None and len(keys) == 1:
-        aider = Aider(qb64=keys[0])
+        prefixer = Prefixer(qb64=keys[0])
     else:
         # raises derivation error if non-empty nxt but ephemeral code
-        aider = Aider(ked=ked, code=code)  # Derive AID from ked and code
+        prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
 
-    ked["aid"] = aider.qb64  # update aid element in ked with aid qb64
+    ked["aid"] = prefixer.qb64  # update aid element in ked with aid qb64
 
     return Serder(ked=ked)  # return serialized ked
 
@@ -332,7 +332,7 @@ class Kever:
 
     Attributes:
         .version is version of current event state
-        .aider is aider instance of current event state
+        .prefixer is prefixer instance for current event state
         .sn is sequence number int
         .diger is Diger instance with digest of current event not prior event
         .ilk is str of current event type
@@ -407,10 +407,10 @@ class Kever:
             raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigers, serder))
 
-        self.aider = Aider(qb64=ked["aid"])
-        if not self.aider.verify(ked=ked):  # invalid aid
+        self.prefixer = Prefixer(qb64=ked["aid"])
+        if not self.prefixer.verify(ked=ked):  # invalid aid
             raise ValidationError("Invalid aid = {} for inception ked = {}."
-                                  "".format(self.aider.qb64, ked))
+                                  "".format(self.prefixer.qb64, ked))
 
         self.sn = int(ked["sn"], 16)
         if self.sn != 0:
@@ -449,7 +449,7 @@ class Kever:
             if "trait" in d and d["trait"] == TraitDex.EstOnly:
                 self.estOnly = True
 
-        aid = self.aider.qb64
+        aid = self.prefixer.qb64
         dig = self.diger.qb64
         # need this to recognize recovery events
         self.lastEst = Location(sn=self.sn, dig=dig)  # last establishment event location
@@ -484,9 +484,9 @@ class Kever:
         dig = ked["dig"]
         ilk = ked["ilk"]
 
-        if aid != self.aider.qb64:
+        if aid != self.prefixer.qb64:
             raise ValidationError("Mismatch event aid = {} expecting"
-                                  " = {}.".format(aid, self.aider.qb64))
+                                  " = {}.".format(aid, self.prefixer.qb64))
 
         if ilk == Ilks.rot:  # subsequent rotation event
             for k in ROT_LABELS:
@@ -530,7 +530,7 @@ class Kever:
 
             if self.nexter is None:   # empty so rotations not allowed
                 raise ValidationError("Attempted rotation for nontransferable"
-                                      " aid = {}".format(self.aider.qb64))
+                                      " aid = {}".format(self.prefixer.qb64))
 
             verfers = serder.verfers  # only for establishment events
 
@@ -621,8 +621,8 @@ class Kever:
 
             # update logs
             entry = LogEntry(serder=serder, sigers=sigers)
-            self.logs.kels[self.aider.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
-            self.logs.kedls[self.aider.qb64][self.diger.qb64] = entry
+            self.logs.kels[self.prefixer.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
+            self.logs.kedls[self.prefixer.qb64][self.diger.qb64] = entry
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -664,8 +664,8 @@ class Kever:
 
             # update logs
             entry = LogEntry(serder=serder, sigers=sigers)
-            self.logs.kels[self.aider.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
-            self.logs.kedls[self.aider.qb64][self.diger.qb64] = entry
+            self.logs.kels[self.prefixer.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
+            self.logs.kedls[self.prefixer.qb64][self.diger.qb64] = entry
 
 
         else:  # unsupported event ilk so discard
@@ -799,10 +799,10 @@ class Kevery:
         # fetch ked ilk  aid, sn, dig to see how to process
         ked = serder.ked
         try:  # see if aid in event validates
-            aider = Aider(qb64=ked["aid"])
+            prefixer = Prefixer(qb64=ked["aid"])
         except Exception as ex:
             raise ValidationError("Invalid aid = {}.".format(ked["aid"]))
-        aid = aider.qb64
+        aid = prefixer.qb64
         ked = serder.ked
         ilk = ked["ilk"]
         try:
@@ -898,10 +898,10 @@ class Kevery:
         # fetch ked ilk  aid, sn, dig to see how to process
         ked = serder.ked
         try:  # see if aid in event validates
-            aider = Aider(qb64=ked["aid"])
+            prefixer = Prefixer(qb64=ked["aid"])
         except Exception as ex:
             raise ValidationError("Invalid aid = {}.".format(ked["aid"]))
-        aid = aider.qb64
+        aid = prefixer.qb64
         ked = serder.ked
         ilk = ked["ilk"]
         try:

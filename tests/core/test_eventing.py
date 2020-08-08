@@ -15,7 +15,7 @@ from keri.kering import ValidationError, EmptyMaterialError, DerivationError
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, Verfer, Signer, Diger, Nexter, Aider
+from keri.core.coring import CryMat, Verfer, Signer, Diger, Nexter, Prefixer
 from keri.core.coring import generateSigners
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
@@ -198,7 +198,7 @@ def test_kever():
 
 
     # Derive AID from ked
-    aid0 = Aider(ked=ked0, code = CryOneDex.Ed25519)
+    aid0 = Prefixer(ked=ked0, code = CryOneDex.Ed25519)
     assert aid0.code == CryOneDex.Ed25519
     assert aid0.qb64 == skp0.verfer.qb64
 
@@ -286,7 +286,7 @@ def test_keyeventsequence_0():
     assert signers[0].verfer.verify(sig0.raw, serder0.raw)
     # create key event verifier state
     kever = Kever(serder=serder0, sigers=[sig0])
-    assert kever.aider.qb64 == aid
+    assert kever.prefixer.qb64 == aid
     assert kever.sn == 0
     assert kever.diger.qb64 == serder0.dig
     assert kever.ilk == Ilks.icp
@@ -316,7 +316,7 @@ def test_keyeventsequence_0():
     assert signers[1].verfer.verify(sig1.raw, serder1.raw)
     # update key event verifier state
     kever.update(serder=serder1, sigers=[sig1])
-    assert kever.aider.qb64 == aid
+    assert kever.prefixer.qb64 == aid
     assert kever.sn == 1
     assert kever.diger.qb64 == serder1.dig
     assert kever.ilk == Ilks.rot
@@ -340,7 +340,7 @@ def test_keyeventsequence_0():
     assert signers[2].verfer.verify(sig2.raw, serder2.raw)
     # update key event verifier state
     kever.update(serder=serder2, sigers=[sig2])
-    assert kever.aider.qb64 == aid
+    assert kever.prefixer.qb64 == aid
     assert kever.sn == 2
     assert kever.diger.qb64 == serder2.dig
     assert kever.ilk == Ilks.rot
@@ -358,7 +358,7 @@ def test_keyeventsequence_0():
     assert signers[2].verfer.verify(sig3.raw, serder3.raw)
     # update key event verifier state
     kever.update(serder=serder3, sigers=[sig3])
-    assert kever.aider.qb64 == aid
+    assert kever.prefixer.qb64 == aid
     assert kever.sn == 3
     assert kever.diger.qb64 == serder3.dig
     assert kever.ilk == Ilks.ixn
@@ -376,7 +376,7 @@ def test_keyeventsequence_0():
     assert signers[2].verfer.verify(sig4.raw, serder4.raw)
     # update key event verifier state
     kever.update(serder=serder4, sigers=[sig4])
-    assert kever.aider.qb64 == aid
+    assert kever.prefixer.qb64 == aid
     assert kever.sn == 4
     assert kever.diger.qb64 == serder4.dig
     assert kever.ilk == Ilks.ixn
@@ -400,7 +400,7 @@ def test_keyeventsequence_0():
     assert signers[3].verfer.verify(sig5.raw, serder5.raw)
     # update key event verifier state
     kever.update(serder=serder5, sigers=[sig5])
-    assert kever.aider.qb64 == aid
+    assert kever.prefixer.qb64 == aid
     assert kever.sn == 5
     assert kever.diger.qb64 == serder5.dig
     assert kever.ilk == Ilks.rot
@@ -418,7 +418,7 @@ def test_keyeventsequence_0():
     assert signers[3].verfer.verify(sig6.raw, serder6.raw)
     # update key event verifier state
     kever.update(serder=serder6, sigers=[sig6])
-    assert kever.aider.qb64 == aid
+    assert kever.prefixer.qb64 == aid
     assert kever.sn == 6
     assert kever.diger.qb64 == serder6.dig
     assert kever.ilk == Ilks.ixn
@@ -439,7 +439,7 @@ def test_keyeventsequence_0():
     assert signers[4].verfer.verify(sig7.raw, serder7.raw)
     # update key event verifier state
     kever.update(serder=serder7, sigers=[sig7])
-    assert kever.aider.qb64 == aid
+    assert kever.prefixer.qb64 == aid
     assert kever.sn == 7
     assert kever.diger.qb64 == serder7.dig
     assert kever.ilk == Ilks.rot
@@ -534,7 +534,7 @@ def test_keyeventsequence_1():
     assert signers[0].verfer.verify(sig0.raw, serder0.raw)
     # create key event verifier state
     kever = Kever(serder=serder0, sigers=[sig0])
-    assert kever.aider.qb64 == aid
+    assert kever.prefixer.qb64 == aid
     assert kever.sn == 0
     assert kever.diger.qb64 == serder0.dig
     assert kever.ilk == Ilks.icp
@@ -577,7 +577,7 @@ def test_keyeventsequence_1():
     assert signers[1].verfer.verify(sig1.raw, serder1.raw)
     # update key event verifier state
     kever.update(serder=serder1, sigers=[sig1])
-    assert kever.aider.qb64 == aid
+    assert kever.prefixer.qb64 == aid
     assert kever.sn == 1
     assert kever.diger.qb64 == serder1.dig
     assert kever.ilk == Ilks.rot
@@ -634,7 +634,7 @@ def test_kevery():
                             b'nk4O6glvxx3bJ8Zfgg606DA')
 
     # Event 1 Rotation Transferable
-    serder = rotate(aid=kever.aider.qb64,
+    serder = rotate(aid=kever.prefixer.qb64,
                     keys=[signers[1].verfer.qb64],
                     dig=kever.diger.qb64,
                     nxt=Nexter(keys=[signers[2].verfer.qb64]).qb64,
@@ -651,7 +651,7 @@ def test_kevery():
     kes.extend(siger.qb64b)
 
     # Event 2 Rotation Transferable
-    serder = rotate(aid=kever.aider.qb64,
+    serder = rotate(aid=kever.prefixer.qb64,
                     keys=[signers[2].verfer.qb64],
                     dig=kever.diger.qb64,
                     nxt=Nexter(keys=[signers[3].verfer.qb64]).qb64,
@@ -668,7 +668,7 @@ def test_kevery():
     kes.extend(siger.qb64b)
 
     # Event 3 Interaction
-    serder = interact(aid=kever.aider.qb64,
+    serder = interact(aid=kever.prefixer.qb64,
                       dig=kever.diger.qb64,
                       sn=3)
     # create sig counter
@@ -683,7 +683,7 @@ def test_kevery():
     kes.extend(siger.qb64b)
 
     # Event 4 Interaction
-    serder = interact(aid=kever.aider.qb64,
+    serder = interact(aid=kever.prefixer.qb64,
                       dig=kever.diger.qb64,
                       sn=4)
     # create sig counter
@@ -698,7 +698,7 @@ def test_kevery():
     kes.extend(siger.qb64b)
 
     # Event 5 Rotation Transferable
-    serder = rotate(aid=kever.aider.qb64,
+    serder = rotate(aid=kever.prefixer.qb64,
                     keys=[signers[3].verfer.qb64],
                     dig=kever.diger.qb64,
                     nxt=Nexter(keys=[signers[4].verfer.qb64]).qb64,
@@ -715,7 +715,7 @@ def test_kevery():
     kes.extend(siger.qb64b)
 
     # Event 6 Interaction
-    serder = interact(aid=kever.aider.qb64,
+    serder = interact(aid=kever.prefixer.qb64,
                       dig=kever.diger.qb64,
                       sn=6)
     # create sig counter
@@ -731,7 +731,7 @@ def test_kevery():
 
     # Event 7 Rotation to null NonTransferable Abandon
    # nxt digest is empty
-    serder = rotate(aid=kever.aider.qb64,
+    serder = rotate(aid=kever.prefixer.qb64,
                 keys=[signers[4].verfer.qb64],
                 dig=kever.diger.qb64,
                 nxt="",
@@ -748,7 +748,7 @@ def test_kevery():
     kes.extend(siger.qb64b)
 
     # Event 8 Interaction
-    serder = interact(aid=kever.aider.qb64,
+    serder = interact(aid=kever.prefixer.qb64,
                       dig=kever.diger.qb64,
                       sn=8)
     # create sig counter
@@ -764,7 +764,7 @@ def test_kevery():
     kes.extend(siger.qb64b)
 
     # Event 8 Rotation
-    serder = rotate(aid=kever.aider.qb64,
+    serder = rotate(aid=kever.prefixer.qb64,
                     keys=[signers[4].verfer.qb64],
                     dig=kever.diger.qb64,
                     nxt=Nexter(keys=[signers[5].verfer.qb64]).qb64,
@@ -788,7 +788,7 @@ def test_kevery():
     kevery = Kevery(logs=klogs)
     kevery.processAll(kes=kes)
 
-    aid = kever.aider.qb64
+    aid = kever.prefixer.qb64
     assert aid in klogs.kevers
     vkever = klogs.kevers[aid]
     assert vkever.sn == kever.sn
@@ -864,7 +864,7 @@ def test_multisig_digaid():
     keys = nxtkeys
     sith = 2
     nxtkeys = [signers[5].verfer.qb64, signers[6].verfer.qb64, signers[7].verfer.qb64]
-    serder = rotate(aid=kever.aider.qb64,
+    serder = rotate(aid=kever.prefixer.qb64,
                     keys=keys,
                     sith=sith,
                     dig=kever.diger.qb64,
@@ -885,7 +885,7 @@ def test_multisig_digaid():
 
 
     # Event 2 Interaction
-    serder = interact(aid=kever.aider.qb64,
+    serder = interact(aid=kever.prefixer.qb64,
                       dig=kever.diger.qb64,
                       sn=2)
     # create sig counter
@@ -901,7 +901,7 @@ def test_multisig_digaid():
         kes.extend(siger.qb64b)
 
     # Event 4 Interaction
-    serder = interact(aid=kever.aider.qb64,
+    serder = interact(aid=kever.prefixer.qb64,
                       dig=kever.diger.qb64,
                       sn=3)
     # create sig counter
@@ -919,7 +919,7 @@ def test_multisig_digaid():
     # Event 7 Rotation to null NonTransferable Abandon
     # nxt digest is empty
     keys = nxtkeys
-    serder = rotate(aid=kever.aider.qb64,
+    serder = rotate(aid=kever.prefixer.qb64,
                 keys=keys,
                 sith=2,
                 dig=kever.diger.qb64,
@@ -945,7 +945,7 @@ def test_multisig_digaid():
     kevery = Kevery(logs=klogs)
     kevery.processAll(kes=kes)
 
-    aid = kever.aider.qb64
+    aid = kever.prefixer.qb64
     assert aid in klogs.kevers
     vkever = klogs.kevers[aid]
     assert vkever.sn == kever.sn
@@ -966,7 +966,7 @@ def test_process_nontransferable():
     assert skp0.verfer.code == CryOneDex.Ed25519N
 
     # Derive AID by merely assigning verifier public key
-    aid0 = Aider(qb64=skp0.verfer.qb64)
+    aid0 = Prefixer(qb64=skp0.verfer.qb64)
     assert aid0.code == CryOneDex.Ed25519N
 
     # Ephemeral may be used without inception event
@@ -1030,7 +1030,7 @@ def test_process_nontransferable():
         del msgb0[:len(rsig.qb64)]
 
     # verify aid
-    raid0 = Aider(qb64=rser0.ked["aid"])
+    raid0 = Prefixer(qb64=rser0.ked["aid"])
     assert raid0.verify(ked=rser0.ked)
     """ Done Test """
 
@@ -1074,7 +1074,7 @@ def test_process_transferable():
 
 
     # Derive AID from ked
-    aid0 = Aider(ked=ked0, code=CryOneDex.Ed25519)
+    aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519)
     assert aid0.code == CryOneDex.Ed25519
     assert aid0.qb64 == skp0.verfer.qb64
 
@@ -1119,7 +1119,7 @@ def test_process_transferable():
         del msgb0[:len(rsig.qb64)]
 
     # verify aid
-    raid0 = Aider(qb64=rser0.ked["aid"])
+    raid0 = Prefixer(qb64=rser0.ked["aid"])
     assert raid0.verify(ked=rser0.ked)
 
     #verify nxt digest from event is still valid

@@ -842,7 +842,7 @@ ICP_DERIVE_LABELS = ["sith", "keys", "nxt", "toad", "wits", "cnfg"]
 DIP_DERIVE_LABELS = ["sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
 
 
-class Aider(CryMat):
+class Prefixer(CryMat):
     """
     DigAider is CryMat subclass for autonomic identifier prefix using
     derivation as determined by code from ked
@@ -875,7 +875,7 @@ class Aider(CryMat):
 
         """
         try:
-            super(Aider, self).__init__(raw=raw, code=code, **kwa)
+            super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
             if not ked or not code:
                 raise  ex
@@ -889,11 +889,11 @@ class Aider(CryMat):
             elif code == CryTwoDex.Ed25519:
                 self._derive = self._DeriveSigEd25519
             else:
-                raise ValueError("Unsupported code = {} for aider.".format(code))
+                raise ValueError("Unsupported code = {} for prefixer.".format(code))
 
             # use ked to derive aid
             raw, code = self._derive(ked=ked, seed=seed, secret=secret)
-            super(Aider, self).__init__(raw=raw, code=code, **kwa)
+            super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code == CryOneDex.Ed25519N:
             self._verify = self._VerifyBasicEd25519N
@@ -904,7 +904,7 @@ class Aider(CryMat):
         elif code == CryTwoDex.Ed25519:
             self._verify = self._VerifySigEd25519
         else:
-            raise ValueError("Unsupported code = {} for aider.".format(self.code))
+            raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
 
         #if ked and not self.verify(ked):
             #raise DerivationError("Error verifying derived aid = {} with code "
