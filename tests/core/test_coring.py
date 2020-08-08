@@ -21,7 +21,7 @@ from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import CryMat, Verfer, Sigver, Signer, Diger, Nexter
-from keri.core.coring import Aider
+from keri.core.coring import Prefixer
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import SigSelDex
 from keri.core.coring import SigCntDex, SigCntSizes, SigCntRawSizes
@@ -534,9 +534,9 @@ def test_nexter():
 
 
 
-def test_aider():
+def test_prefixer():
     """
-    Test the support functionality for aider subclass of crymat
+    Test the support functionality for prefixer subclass of crymat
     """
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
@@ -551,69 +551,69 @@ def test_aider():
     assert nxtfer.qb64 == 'Dpl-JNEryNVTBgyMGmEym7xqzaOpBOngn2gSIssRf9gA'
 
     with pytest.raises(EmptyMaterialError):
-        aider = Aider()
+        prefixer = Prefixer()
 
     with pytest.raises(ValueError):
-        aider = Aider(raw=verkey, code=CryOneDex.SHA2_256)
+        prefixer = Prefixer(raw=verkey, code=CryOneDex.SHA2_256)
 
 
     # test creation given raw and code no derivation
-    aider = Aider(raw=verkey)  # defaults provide Ed25519N aider
-    assert aider.code == CryOneDex.Ed25519N
-    assert len(aider.raw) == CryOneRawSizes[aider.code]
-    assert len(aider.qb64) == CryOneSizes[aider.code]
+    prefixer = Prefixer(raw=verkey)  # defaults provide Ed25519N prefixer
+    assert prefixer.code == CryOneDex.Ed25519N
+    assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
+    assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
 
-    ked = dict(keys=[aider.qb64], nxt="")
-    assert aider.verify(ked=ked) == True
+    ked = dict(keys=[prefixer.qb64], nxt="")
+    assert prefixer.verify(ked=ked) == True
 
-    ked = dict(keys=[aider.qb64], nxt="ABC")
-    assert aider.verify(ked=ked) == False
+    ked = dict(keys=[prefixer.qb64], nxt="ABC")
+    assert prefixer.verify(ked=ked) == False
 
-    aider = Aider(raw=verkey, code=CryOneDex.Ed25519)  # defaults provide Ed25519N aider
-    assert aider.code == CryOneDex.Ed25519
-    assert len(aider.raw) == CryOneRawSizes[aider.code]
-    assert len(aider.qb64) == CryOneSizes[aider.code]
+    prefixer = Prefixer(raw=verkey, code=CryOneDex.Ed25519)  # defaults provide Ed25519N prefixer
+    assert prefixer.code == CryOneDex.Ed25519
+    assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
+    assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
 
-    ked = dict(keys=[aider.qb64])
-    assert aider.verify(ked=ked) == True
+    ked = dict(keys=[prefixer.qb64])
+    assert prefixer.verify(ked=ked) == True
 
     verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
-    aider = Aider(raw=verfer.raw)
-    assert aider.code == CryOneDex.Ed25519N
-    assert aider.verify(ked=ked) == False
+    prefixer = Prefixer(raw=verfer.raw)
+    assert prefixer.code == CryOneDex.Ed25519N
+    assert prefixer.verify(ked=ked) == False
 
     # Test basic derivation from ked
     ked = dict(keys=[verfer.qb64], nxt="")
-    aider = Aider(ked=ked, code=CryOneDex.Ed25519)
-    assert aider.qb64 == verfer.qb64
-    assert aider.verify(ked=ked) == True
+    prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519)
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=ked) == True
 
     with pytest.raises(DerivationError):
-        aider = Aider(ked=ked)
+        prefixer = Prefixer(ked=ked)
 
     verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
     ked = dict(keys=[verfer.qb64], nxt="")
-    aider = Aider(ked=ked)
-    assert aider.qb64 == verfer.qb64
-    assert aider.verify(ked=ked) == True
+    prefixer = Prefixer(ked=ked)
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=ked) == True
 
     ked = dict(keys=[verfer.qb64], nxt="ABCD")
     with pytest.raises(DerivationError):
-        aider = Aider(ked=ked)
+        prefixer = Prefixer(ked=ked)
 
     # Test digest derivation from inception ked
     vs = Versify(version=Version, kind=Serials.json, size=0)
     sn = 0
     ilk = Ilks.icp
     sith = 1
-    keys = [Aider(raw=verkey, code=CryOneDex.Ed25519).qb64]
+    keys = [Prefixer(raw=verkey, code=CryOneDex.Ed25519).qb64]
     nxt = ""
     toad = 0
     wits = []
     cnfg = []
 
     ked = dict(vs=vs,  # version string
-               aid="",  # qb64 prefix
+               pre="",  # qb64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=ilk,
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
@@ -624,14 +624,14 @@ def test_aider():
                cnfg=cnfg,  # list of config ordered mappings may be empty
                )
 
-    aider = Aider(ked=ked, code=CryOneDex.Blake3_256)
-    assert aider.qb64 == 'E03rxRmMcP2-I2Gd0sUhlYwjk8KEz5gNGxPwPg-sGJds'
-    assert aider.verify(ked=ked) == True
+    prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
+    assert prefixer.qb64 == 'E03rxRmMcP2-I2Gd0sUhlYwjk8KEz5gNGxPwPg-sGJds'
+    assert prefixer.verify(ked=ked) == True
 
 
     nexter = Nexter(sith=1, keys=[nxtfer.qb64])
     ked = dict(vs=vs,  # version string
-               aid="",  # qb64 prefix
+               pre="",  # qb64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=ilk,
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
@@ -642,18 +642,18 @@ def test_aider():
                cnfg=cnfg,  # list of config ordered mappings may be empty
                )
 
-    aider = Aider(ked=ked, code=CryOneDex.Blake3_256)
-    assert aider.qb64 == 'EXpGDy9FxDESc974WW86xDxM0fQgKjhDWOklCXtstkus'
-    assert aider.verify(ked=ked) == True
+    prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
+    assert prefixer.qb64 == 'EXpGDy9FxDESc974WW86xDxM0fQgKjhDWOklCXtstkus'
+    assert prefixer.verify(ked=ked) == True
 
     perm = []
-    seal = dict(aid = 'EXpGDy9FxDESc974WW86xDxM0fQgKjhDWOklCXtstkus',
+    seal = dict(pre = 'EXpGDy9FxDESc974WW86xDxM0fQgKjhDWOklCXtstkus',
                 sn  = '2',
                 ilk = Ilks.ixn,
                 dig = 'E03rxRmMcP2-I2Gd0sUhlYwjk8KEz5gNGxPwPg-sGJds')
 
     ked = dict(vs=vs,  # version string
-               aid="",  # qb64 prefix
+               pre="",  # qb64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=Ilks.dip,
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
@@ -665,9 +665,9 @@ def test_aider():
                seal=seal
                )
 
-    aider = Aider(ked=ked, code=CryOneDex.Blake3_256)
-    assert aider.qb64 == 'EQrpcQ1RX0jDKcBbGXWZra3dr3bFyz6Ly1icEBlgD20s'
-    assert aider.verify(ked=ked) == True
+    prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
+    assert prefixer.qb64 == 'EQrpcQ1RX0jDKcBbGXWZra3dr3bFyz6Ly1icEBlgD20s'
+    assert prefixer.verify(ked=ked) == True
 
     #  Test signature derivation
 
@@ -690,7 +690,7 @@ def test_aider():
 
     nexter = Nexter(sith=1, keys=[nxtfer.qb64])
     ked = dict(vs=vs,  # version string
-               aid="",  # qb64 prefix
+               pre="",  # qb64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=ilk,
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
@@ -701,13 +701,13 @@ def test_aider():
                cnfg=cnfg,  # list of config ordered mappings may be empty
                )
 
-    aider = Aider(ked=ked, code=CryTwoDex.Ed25519, seed=seed)
-    assert aider.qb64 == '0BSb9qBNXUerVs4IDYnai29AXcPQJtudLPfzfvehicA7LrswWBPmNlNQK9gIJB4pny2YpuB3m6-pgyl4cU65RRCA'
-    assert aider.verify(ked=ked) == True
+    prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, seed=seed)
+    assert prefixer.qb64 == '0BSb9qBNXUerVs4IDYnai29AXcPQJtudLPfzfvehicA7LrswWBPmNlNQK9gIJB4pny2YpuB3m6-pgyl4cU65RRCA'
+    assert prefixer.verify(ked=ked) == True
 
-    aider = Aider(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
-    assert aider.qb64 == '0BSb9qBNXUerVs4IDYnai29AXcPQJtudLPfzfvehicA7LrswWBPmNlNQK9gIJB4pny2YpuB3m6-pgyl4cU65RRCA'
-    assert aider.verify(ked=ked) == True
+    prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
+    assert prefixer.qb64 == '0BSb9qBNXUerVs4IDYnai29AXcPQJtudLPfzfvehicA7LrswWBPmNlNQK9gIJB4pny2YpuB3m6-pgyl4cU65RRCA'
+    assert prefixer.verify(ked=ked) == True
 
     """ Done Test """
 
@@ -992,7 +992,7 @@ def test_serials():
 
 
     icp = dict(vs = Vstrings.json,
-              aid = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
+              pre = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
               sn = '0001',
               ilk = 'icp',
               dig = 'DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS',
@@ -1005,7 +1005,7 @@ def test_serials():
              )
 
     rot = dict(vs = Vstrings.json,
-              aid = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
+              pre = 'AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM',
               sn = '0001',
               ilk = 'rot',
               dig = 'DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfS',
@@ -1020,7 +1020,7 @@ def test_serials():
 
     icps = json.dumps(icp, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert len(icps) == 303
-    assert icps == (b'{"vs":"KERI10JSON000000_","aid":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    assert icps == (b'{"vs":"KERI10JSON000000_","pre":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"icp","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"nxt":"'
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"wits":[],"cnfg":[]}')
@@ -1030,7 +1030,7 @@ def test_serials():
 
     rots = json.dumps(rot, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert len(rots) == 313
-    assert rots == (b'{"vs":"KERI10JSON000000_","aid":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    assert rots == (b'{"vs":"KERI10JSON000000_","pre":"AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'","sn":"0001","ilk":"rot","dig":"DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'S","sith":1,"keys":["AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],"nxt":"'
                     b'DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM","toad":0,"cuts":[],"adds":[],"'
@@ -1042,7 +1042,7 @@ def test_serials():
     icp["vs"] = Vstrings.mgpk
     icps = msgpack.dumps(icp)
     assert len(icps) == 264
-    assert icps == (b'\x8b\xa2vs\xb1KERI10MGPK000000_\xa3aid\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
+    assert icps == (b'\x8b\xa2vs\xb1KERI10MGPK000000_\xa3pre\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'SVPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3icp\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwy'
                     b'Z-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZ'
                     b'H3ULvYAfSVPzhzS6b5CM\xa3nxt\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
@@ -1055,7 +1055,7 @@ def test_serials():
     rot["vs"] = Vstrings.mgpk
     rots = msgpack.dumps(rot)
     assert len(rots) == 270
-    assert rots == (b'\x8c\xa2vs\xb1KERI10MGPK000000_\xa3aid\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
+    assert rots == (b'\x8c\xa2vs\xb1KERI10MGPK000000_\xa3pre\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAf'
                     b'SVPzhzS6b5CM\xa2sn\xa40001\xa3ilk\xa3rot\xa3dig\xd9,DVPzhzS6b5CMaU6JR2nmwy'
                     b'Z-i0d8JZAoTNZH3ULvYAfS\xa4sith\x01\xa4keys\x91\xd9,AaU6JR2nmwyZ-i0d8JZAoTNZ'
                     b'H3ULvYAfSVPzhzS6b5CM\xa3nxt\xd9,DZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5'
@@ -1069,10 +1069,11 @@ def test_serials():
     icp["vs"] = Vstrings.cbor
     icps = cbor.dumps(icp)
     assert len(icps) == 264
-    assert icps == (b'\xabbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
-                     b'bsnd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
-                     b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
-                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dcnfg\x80')
+    assert icps == (b'\xabbvsqKERI10CBOR000000_cprex,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+                    b'bsnd0001cilkcicpcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
+                    b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
+                    b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dwits\x80dcnfg\x80')
+
 
 
     match = Rever.search(icps)
@@ -1081,7 +1082,7 @@ def test_serials():
     rot["vs"] = Vstrings.cbor
     rots = cbor.dumps(rot)
     assert len(rots) == 270
-    assert rots == (b'\xacbvsqKERI10CBOR000000_caidx,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    assert rots == (b'\xacbvsqKERI10CBOR000000_cprex,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
                     b'bsnd0001cilkcrotcdigx,DVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSdsith\x01'
                     b'dkeys\x81x,AaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CMcnxtx,DZ-i0d8JZAoTNZ'
                     b'H3ULvaU6JR2nmwyYAfSVPzhzS6b5CMdtoad\x00dcuts\x80dadds\x80ddata\x80')
@@ -1112,7 +1113,7 @@ def test_serder():
         serder = Serder()
 
 
-    e1 = dict(vs=Vstrings.json, aid="ABCDEFG", sn="0001", ilk="rot")
+    e1 = dict(vs=Vstrings.json, pre="ABCDEFG", sn="0001", ilk="rot")
     serder = Serder(ked=e1)
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
@@ -1196,7 +1197,7 @@ def test_serder():
     assert len(evt1.diger.raw) == 32
     assert len(evt1.dig) == 44
     assert len(evt1.dig) == CryOneSizes[CryOneDex.Blake3_256]
-    assert evt1.dig == 'EWRKo-8KjGqPxHBsd77LfTy5sHBkfql6NOwl0-8VoI3U'
+    assert evt1.dig == 'EaDVEkrFdx8W0ZZAsfwf9mjxhgBt6PvfCmFPdr7RIcfY'
     assert evt1.diger.verify(evt1.raw)
 
     evt1 = Serder(ked=ked1)
@@ -1290,4 +1291,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_aider()
+    test_prefixer()
