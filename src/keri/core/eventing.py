@@ -410,11 +410,6 @@ class Kever:
             # fix this to support list sith
             raise ValueError("Unsupported type for sith = {}".format(sith))
 
-
-        if not self.verifySigs(sigers=sigers, serder=serder):
-            raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigers, serder))
-
         self.prefixer = Prefixer(qb64=ked["pre"])
         if not self.prefixer.verify(ked=ked):  # invalid prefix
             raise ValidationError("Invalid prefix = {} for inception ked = {}."
@@ -461,6 +456,21 @@ class Kever:
         dig = self.diger.qb64
         # need this to recognize recovery events
         self.lastEst = Location(sn=self.sn, dig=dig)  # last establishment event location
+
+        # verify signatures
+        if not self.verifySigs(sigers=sigers, serder=serder):
+            raise ValidationError("Failure verifying signatures = {} for {}"
+                                  "".format(sigers, serder))
+
+        # verify sith given signatures verify
+        if not self.verifySith(sigers=sigers):  # uses self.sith
+            entry = LogEntry(serder=serder, sigers=sigers)
+            if pre not in self.logs.pses:
+                self.logs.pses[pre] = mdict()  # supports recover forks by sn
+            self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
+            raise ValidationError("Failure verifying sith = {} on sigs for {}"
+                                  "".format(self.sith, sigers))
+
 
         # update logs
         if pre in self.logs.kevers:
@@ -557,18 +567,7 @@ class Kever:
                 raise ValidationError("Mismatch nxt digest = {} with rotation"
                                       " sith = {}, keys = {}.".format(nexter.qb64))
 
-            # prior nxt valid so verify sigers using new verifier keys from event
-            # rotation event use keys from event
-            # verify indexes of attached signatures against verifiers
-            for siger in sigers:
-                if siger.index >= len(verfers):
-                    raise ValidationError("Index = {} to large for keys."
-                                          "".format(siger.index))
-                siger.verfer = verfers[siger.index]  # assign verfer
 
-            if not self.verifySigs(sigers=sigers, serder=serder, sith=sith):
-                raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigers, serder))
 
             # compute wits from cuts and adds use set
             # verify set math
@@ -606,6 +605,28 @@ class Kever:
             else:
                 if toad != 0:  # invalid toad
                     raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+
+            # prior nxt valid so verify sigers using new verifier keys from event
+            # rotation event use keys from event
+            # verify indexes of attached signatures against verifiers
+            for siger in sigers:
+                if siger.index >= len(verfers):
+                    raise ValidationError("Index = {} to large for keys."
+                                          "".format(siger.index))
+                siger.verfer = verfers[siger.index]  # assign verfer
+
+            if not self.verifySigs(sigers=sigers, serder=serder, sith=sith):
+                raise ValidationError("Failure verifying signatures = {} for {}"
+                                  "".format(sigers, serder))
+
+            # verify sith given signatures verify
+            if not self.verifySith(sigers=sigers):  # uses self.sith
+                entry = LogEntry(serder=serder, sigers=sigers)
+                if pre not in self.logs.pses:
+                    self.logs.pses[pre] = mdict()  # supports recover forks by sn
+                self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
+                raise ValidationError("Failure verifying sith = {} on sigs for {}"
+                                      "".format(self.sith, sigers))
 
 
             # nxt and signatures verify so update state
@@ -664,6 +685,15 @@ class Kever:
                 raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigers, serder))
 
+            # verify sith given signatures verify
+            if not self.verifySith(sigers=sigers):  # uses self.sith
+                entry = LogEntry(serder=serder, sigers=sigers)
+                if pre not in self.logs.pses:
+                    self.logs.pses[pre] = mdict()  # supports recover forks by sn
+                self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
+                raise ValidationError("Failure verifying sith = {} on sigs for {}"
+                                      "".format(self.sith, sigers))
+
             # update state
             self.sn = sn
             self.diger = serder.diger
@@ -704,6 +734,26 @@ class Kever:
             return False
 
         return True
+
+    def verifySith(self, sigers, sith=None):
+        """
+        Assumes that all sigers signatures were already verified
+        If sith not provided then use .sith instead
+
+        Parameters:
+            sigers is list of Siger instances
+            sith is int threshold
+
+        """
+        sith = sith if sith is not None else self.sith
+
+        if not isinstance(sith, int):
+            raise ValueError("Unsupported type for sith ={}".format(sith))
+        if len(sigers) < sith:  # not meet threshold fix for list sith
+            return False
+
+        return True
+
 
 
 
