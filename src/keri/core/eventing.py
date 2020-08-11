@@ -57,33 +57,41 @@ TraitDex = TraitCodex()  # Make instance
 
 LogEntry = namedtuple("LogEntry", 'serder sigers')  # LogEntry for KELS KERLS DELS etc
 Location = namedtuple("Location", 'sn dig')  # Location of key event
-Logs = namedtuple("Logs", 'kevers kels kedls')
-
-
-Kevers = dict()  # dict of existing Kevers indexed by pre (qb64) of each Kever
-# Generator or Validator KELs as dict of dicts of events keyed by pre (qb64)
+Logs = namedtuple("Logs", 'kevers kels kedls ooes pses')
+# kevers dict of existing Kevers indexed by pre (qb64) of each Kever
+# kels Generator or Validator KELs as dict of dicts of events keyed by pre (qb64)
 # then in order by event sn str
 # mdict keys must be subclass of str
-KELs = dict()
+# kedls Witness or Validator KERLs as dict of dicts of events keyed by pre (qb64)
+# then in order by event sn str
+# mdict keys must be subclass of str
+# kedls  Key Event Digest Log
+# Validator KELDs as dict of dicts of events keyed by pre  then by event dig (qb64)
+# ooes Out of Order Escows as dict of dicts of events keyed by pre (qb64)
+# then in order by event sn str
+# mdict keys must be subclass of str
+# pses Partial Signature Escows as dict of dicts of events keyed by pre (qb64)
+# then in order by event sn str
+# mdict keys must be subclass of str
+
+
+
 # Witness or Validator KERLs as dict of dicts of events keyed by pre (qb64)
 # then in order by event sn str
 # mdict keys must be subclass of str
 KERLs = dict()
-# Key Event Digest Log
-# Validator KELDs as dict of dicts of events keyed by pre  then by event dig (qb64)
-KEDLs = dict()
-# Validator Escows as dict of dicts of events keyed by pre (qb64)
-# then in order by event sn str
-# mdict keys must be subclass of str
-Escrows = dict()
+
 # Potential Duplicitous Event Log
 # Validator PDELs as dict of dicts of dup events keyed by pre (qb64)
 # then by event dig (qb64)
 PDELs = dict()
+
 # Verified Duplicitous Event Log
 # Validator DELs as dict of dicts of dup events keyed by pre  (qb64)
 # then by event dig (qb64)
 DELs = dict()
+
+#
 
 
 def incept(
@@ -366,7 +374,7 @@ class Kever:
         """
         # update state as we go because if invalid we fail to finish init
         if logs is None:
-            logs = Logs(kevers=dict(), kels=dict(), kedls=dict())
+            logs = Logs(kevers=dict(), kels=dict(), kedls=dict(), ooes=dict(), pses=dict())
 
         self.logs = logs
 
@@ -403,7 +411,7 @@ class Kever:
             raise ValueError("Unsupported type for sith = {}".format(sith))
 
 
-        if not self.verify(sigers=sigers, serder=serder):
+        if not self.verifySigs(sigers=sigers, serder=serder):
             raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigers, serder))
 
@@ -558,7 +566,7 @@ class Kever:
                                           "".format(siger.index))
                 siger.verfer = verfers[siger.index]  # assign verfer
 
-            if not self.verify(sigers=sigers, serder=serder, sith=sith):
+            if not self.verifySigs(sigers=sigers, serder=serder, sith=sith):
                 raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigers, serder))
 
@@ -652,7 +660,7 @@ class Kever:
                                           "".format(siger.index))
                 siger.verfer = self.verfers[siger.index]  # assign verfer
 
-            if not self.verify(sigers=sigers, serder=serder):
+            if not self.verifySigs(sigers=sigers, serder=serder):
                 raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigers, serder))
 
@@ -672,7 +680,7 @@ class Kever:
             raise ValidationError("Unsupported ilk = {}.".format(ilk))
 
 
-    def verify(self, sigers, serder, sith=None):
+    def verifySigs(self, sigers, serder, sith=None):
         """
         Use verfer in each siger to verify signature against serder with sith
         Assumes that sigers with verfer already extracted correctly wrt indexes
@@ -722,7 +730,7 @@ class Kevery:
         """
         self.framed = True if framed else False  # extract until end-of-stream
         if logs is None:
-            logs = Logs(kevers=dict(), kels=dict(), kedls=dict())
+            logs = Logs(kevers=dict(), kels=dict(), kedls=dict(), ooes=dict(), pses=dict())
         self.logs = logs
 
 
@@ -821,10 +829,10 @@ class Kevery:
 
             else:  # not inception so can't verify, add to escrow
                 # log escrowed
-                if pre not in Escrows:  #  add to Escrows
-                    Escrows[pre] = mdict()  # multiple values by sn
-                if sn not in Escrows[pre]:
-                    Escrows[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
+                if pre not in self.logs.ooes:  #  add to Escrows
+                    self.logs.ooes[pre] = mdict()  # multiple values by sn
+                if sn not in self.logs.ooes[pre]:
+                    self.logs.ooes[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
 
 
         else:  # already accepted inception event for pre
@@ -844,10 +852,10 @@ class Kevery:
 
                 if sn > sno:  # sn later than sno so out of order escrow
                     #  log escrowed
-                    if pre not in Escrows:  #  add to Escrows
-                        Escrows[pre] = mdict()  # multiple values by sn
-                    if sn not in Escrows[pre]:
-                        Escrows[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
+                    if pre not in self.logs.ooes:  #  add to Escrows
+                        self.logs.ooes[pre] = mdict()  # multiple values by sn
+                    if sn not in self.logs.ooes[pre]:
+                        self.logs.ooes[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
 
                 elif ((sn == sno) or  # new inorder event
                       (ilk == Ilks.rot and kever.lastEst.sn < sn <= sno )):  # recovery
@@ -910,7 +918,7 @@ class Kevery:
             raise ValidationError("Invalid sn = {}".format(ked["sn"]))
         dig = serder.dig
 
-        if dig in KEDLs["pre"]:
+        if dig in PDELs["pre"]:
             return
 
         if ilk == Ilks.icp:  # inception event so maybe duplicitous
