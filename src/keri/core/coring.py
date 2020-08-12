@@ -858,9 +858,9 @@ class Prefixer(CryMat):
 
     """
     # elements in digest or signature derivation from inception icp
-    IcpLabels = ["sith", "keys", "nxt", "toad", "wits", "cnfg"]
+    IcpLabels = ["sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "cnfg"]
     # elements in digest or signature derivation from delegated inception dip
-    DipLabels = ["sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
+    DipLabels = ["sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
 
     def __init__(self, raw=None, code=CryOneDex.Ed25519N, ked=None,
                  seed=None, secret=None, **kwa):

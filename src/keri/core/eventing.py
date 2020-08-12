@@ -57,33 +57,41 @@ TraitDex = TraitCodex()  # Make instance
 
 LogEntry = namedtuple("LogEntry", 'serder sigers')  # LogEntry for KELS KERLS DELS etc
 Location = namedtuple("Location", 'sn dig')  # Location of key event
-Logs = namedtuple("Logs", 'kevers kels kedls')
-
-
-Kevers = dict()  # dict of existing Kevers indexed by pre (qb64) of each Kever
-# Generator or Validator KELs as dict of dicts of events keyed by pre (qb64)
+Logs = namedtuple("Logs", 'kevers kels kedls ooes pses')
+# kevers dict of existing Kevers indexed by pre (qb64) of each Kever
+# kels Generator or Validator KELs as dict of dicts of events keyed by pre (qb64)
 # then in order by event sn str
 # mdict keys must be subclass of str
-KELs = dict()
+# kedls Witness or Validator KERLs as dict of dicts of events keyed by pre (qb64)
+# then in order by event sn str
+# mdict keys must be subclass of str
+# kedls  Key Event Digest Log
+# Validator KELDs as dict of dicts of events keyed by pre  then by event dig (qb64)
+# ooes Out of Order Escows as dict of dicts of events keyed by pre (qb64)
+# then in order by event sn str
+# mdict keys must be subclass of str
+# pses Partial Signature Escows as dict of dicts of events keyed by pre (qb64)
+# then in order by event sn str
+# mdict keys must be subclass of str
+
+
+
 # Witness or Validator KERLs as dict of dicts of events keyed by pre (qb64)
 # then in order by event sn str
 # mdict keys must be subclass of str
 KERLs = dict()
-# Key Event Digest Log
-# Validator KELDs as dict of dicts of events keyed by pre  then by event dig (qb64)
-KEDLs = dict()
-# Validator Escows as dict of dicts of events keyed by pre (qb64)
-# then in order by event sn str
-# mdict keys must be subclass of str
-Escrows = dict()
+
 # Potential Duplicitous Event Log
 # Validator PDELs as dict of dicts of dup events keyed by pre (qb64)
 # then by event dig (qb64)
 PDELs = dict()
+
 # Verified Duplicitous Event Log
 # Validator DELs as dict of dicts of dup events keyed by pre  (qb64)
 # then by event dig (qb64)
 DELs = dict()
+
+#
 
 
 def incept(
@@ -366,7 +374,7 @@ class Kever:
         """
         # update state as we go because if invalid we fail to finish init
         if logs is None:
-            logs = Logs(kevers=dict(), kels=dict(), kedls=dict())
+            logs = Logs(kevers=dict(), kels=dict(), kedls=dict(), ooes=dict(), pses=dict())
 
         self.logs = logs
 
@@ -401,11 +409,6 @@ class Kever:
         else:
             # fix this to support list sith
             raise ValueError("Unsupported type for sith = {}".format(sith))
-
-
-        if not self.verify(sigers=sigers, serder=serder):
-            raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigers, serder))
 
         self.prefixer = Prefixer(qb64=ked["pre"])
         if not self.prefixer.verify(ked=ked):  # invalid prefix
@@ -453,6 +456,21 @@ class Kever:
         dig = self.diger.qb64
         # need this to recognize recovery events
         self.lastEst = Location(sn=self.sn, dig=dig)  # last establishment event location
+
+        # verify signatures
+        if not self.verifySigs(sigers=sigers, serder=serder):
+            raise ValidationError("Failure verifying signatures = {} for {}"
+                                  "".format(sigers, serder))
+
+        # verify sith given signatures verify
+        if not self.verifySith(sigers=sigers):  # uses self.sith
+            entry = LogEntry(serder=serder, sigers=sigers)
+            if pre not in self.logs.pses:
+                self.logs.pses[pre] = mdict()  # supports recover forks by sn
+            self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
+            raise ValidationError("Failure verifying sith = {} on sigs for {}"
+                                  "".format(self.sith, sigers))
+
 
         # update logs
         if pre in self.logs.kevers:
@@ -549,18 +567,7 @@ class Kever:
                 raise ValidationError("Mismatch nxt digest = {} with rotation"
                                       " sith = {}, keys = {}.".format(nexter.qb64))
 
-            # prior nxt valid so verify sigers using new verifier keys from event
-            # rotation event use keys from event
-            # verify indexes of attached signatures against verifiers
-            for siger in sigers:
-                if siger.index >= len(verfers):
-                    raise ValidationError("Index = {} to large for keys."
-                                          "".format(siger.index))
-                siger.verfer = verfers[siger.index]  # assign verfer
 
-            if not self.verify(sigers=sigers, serder=serder, sith=sith):
-                raise ValidationError("Failure verifying signatures = {} for {}"
-                                  "".format(sigers, serder))
 
             # compute wits from cuts and adds use set
             # verify set math
@@ -598,6 +605,28 @@ class Kever:
             else:
                 if toad != 0:  # invalid toad
                     raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+
+            # prior nxt valid so verify sigers using new verifier keys from event
+            # rotation event use keys from event
+            # verify indexes of attached signatures against verifiers
+            for siger in sigers:
+                if siger.index >= len(verfers):
+                    raise ValidationError("Index = {} to large for keys."
+                                          "".format(siger.index))
+                siger.verfer = verfers[siger.index]  # assign verfer
+
+            if not self.verifySigs(sigers=sigers, serder=serder):
+                raise ValidationError("Failure verifying signatures = {} for {}"
+                                  "".format(sigers, serder))
+
+            # verify sith given signatures verify
+            if not self.verifySith(sigers=sigers, sith=sith):  # uses new sith
+                entry = LogEntry(serder=serder, sigers=sigers)
+                if pre not in self.logs.pses:
+                    self.logs.pses[pre] = mdict()  # supports recover forks by sn
+                self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
+                raise ValidationError("Failure verifying sith = {} on sigs for {}"
+                                      "".format(self.sith, sigers))
 
 
             # nxt and signatures verify so update state
@@ -652,9 +681,18 @@ class Kever:
                                           "".format(siger.index))
                 siger.verfer = self.verfers[siger.index]  # assign verfer
 
-            if not self.verify(sigers=sigers, serder=serder):
+            if not self.verifySigs(sigers=sigers, serder=serder):
                 raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigers, serder))
+
+            # verify sith given signatures verify
+            if not self.verifySith(sigers=sigers):  # uses self.sith
+                entry = LogEntry(serder=serder, sigers=sigers)
+                if pre not in self.logs.pses:
+                    self.logs.pses[pre] = mdict()  # supports recover forks by sn
+                self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
+                raise ValidationError("Failure verifying sith = {} on sigs for {}"
+                                      "".format(self.sith, sigers))
 
             # update state
             self.sn = sn
@@ -672,30 +710,45 @@ class Kever:
             raise ValidationError("Unsupported ilk = {}.".format(ilk))
 
 
-    def verify(self, sigers, serder, sith=None):
+    def verifySigs(self, sigers, serder):
         """
-        Use verfer in each siger to verify signature against serder with sith
+        Use verfer in each siger to verify signature against serder
         Assumes that sigers with verfer already extracted correctly wrt indexes
-        If sith not provided then use .sith instead
 
         Parameters:
             sigers is list of Siger instances
             serder is Serder instance
+
+        """
+        for siger in sigers:
+            if not siger.verfer.verify(siger.raw, serder.raw):
+                return False
+
+        if len(sigers) < 1:  # at least one signature
+            return False
+
+        return True
+
+    def verifySith(self, sigers, sith=None):
+        """
+        Assumes that all sigers signatures were already verified
+        If sith not provided then use .sith instead
+
+        Parameters:
+            sigers is list of Siger instances
             sith is int threshold
 
         """
         sith = sith if sith is not None else self.sith
 
-        for siger in sigers:
-            if not siger.verfer.verify(siger.raw, serder.raw):
-                return False
-
         if not isinstance(sith, int):
             raise ValueError("Unsupported type for sith ={}".format(sith))
+
         if len(sigers) < sith:  # not meet threshold fix for list sith
             return False
 
         return True
+
 
 
 
@@ -722,7 +775,7 @@ class Kevery:
         """
         self.framed = True if framed else False  # extract until end-of-stream
         if logs is None:
-            logs = Logs(kevers=dict(), kels=dict(), kedls=dict())
+            logs = Logs(kevers=dict(), kels=dict(), kedls=dict(), ooes=dict(), pses=dict())
         self.logs = logs
 
 
@@ -821,10 +874,10 @@ class Kevery:
 
             else:  # not inception so can't verify, add to escrow
                 # log escrowed
-                if pre not in Escrows:  #  add to Escrows
-                    Escrows[pre] = mdict()  # multiple values by sn
-                if sn not in Escrows[pre]:
-                    Escrows[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
+                if pre not in self.logs.ooes:  #  add to Escrows
+                    self.logs.ooes[pre] = mdict()  # multiple values by sn
+                if sn not in self.logs.ooes[pre]:
+                    self.logs.ooes[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
 
 
         else:  # already accepted inception event for pre
@@ -844,10 +897,10 @@ class Kevery:
 
                 if sn > sno:  # sn later than sno so out of order escrow
                     #  log escrowed
-                    if pre not in Escrows:  #  add to Escrows
-                        Escrows[pre] = mdict()  # multiple values by sn
-                    if sn not in Escrows[pre]:
-                        Escrows[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
+                    if pre not in self.logs.ooes:  #  add to Escrows
+                        self.logs.ooes[pre] = mdict()  # multiple values by sn
+                    if sn not in self.logs.ooes[pre]:
+                        self.logs.ooes[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
 
                 elif ((sn == sno) or  # new inorder event
                       (ilk == Ilks.rot and kever.lastEst.sn < sn <= sno )):  # recovery
@@ -910,7 +963,7 @@ class Kevery:
             raise ValidationError("Invalid sn = {}".format(ked["sn"]))
         dig = serder.dig
 
-        if dig in KEDLs["pre"]:
+        if dig in PDELs["pre"]:
             return
 
         if ilk == Ilks.icp:  # inception event so maybe duplicitous
