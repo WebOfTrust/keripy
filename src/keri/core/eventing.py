@@ -615,7 +615,7 @@ class Kever:
                                           "".format(siger.index))
                 siger.verfer = verfers[siger.index]  # assign verfer
 
-            if not self.verifySigs(sigers=sigers, serder=serder, sith=sith):
+            if not self.verifySigs(sigers=sigers, serder=serder):
                 raise ValidationError("Failure verifying signatures = {} for {}"
                                   "".format(sigers, serder))
 
@@ -710,27 +710,21 @@ class Kever:
             raise ValidationError("Unsupported ilk = {}.".format(ilk))
 
 
-    def verifySigs(self, sigers, serder, sith=None):
+    def verifySigs(self, sigers, serder):
         """
-        Use verfer in each siger to verify signature against serder with sith
+        Use verfer in each siger to verify signature against serder
         Assumes that sigers with verfer already extracted correctly wrt indexes
-        If sith not provided then use .sith instead
 
         Parameters:
             sigers is list of Siger instances
             serder is Serder instance
-            sith is int threshold
 
         """
-        sith = sith if sith is not None else self.sith
-
         for siger in sigers:
             if not siger.verfer.verify(siger.raw, serder.raw):
                 return False
 
-        if not isinstance(sith, int):
-            raise ValueError("Unsupported type for sith ={}".format(sith))
-        if len(sigers) < sith:  # not meet threshold fix for list sith
+        if len(sigers) < 1:  # at least one signature
             return False
 
         return True
@@ -749,6 +743,7 @@ class Kever:
 
         if not isinstance(sith, int):
             raise ValueError("Unsupported type for sith ={}".format(sith))
+
         if len(sigers) < sith:  # not meet threshold fix for list sith
             return False
 
