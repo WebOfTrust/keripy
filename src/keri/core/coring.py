@@ -836,11 +836,6 @@ class Nexter(Diger):
 
         return (self._verify(ser=ser, dig=self.raw))
 
-# elements in digest or signature derivation from inception icp
-ICP_DERIVE_LABELS = ["sith", "keys", "nxt", "toad", "wits", "cnfg"]
-# elements in digest or signature derivation from delegated inception dip
-DIP_DERIVE_LABELS = ["sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
-
 
 class Prefixer(CryMat):
     """
@@ -858,9 +853,9 @@ class Prefixer(CryMat):
 
     """
     # elements in digest or signature derivation from inception icp
-    IcpLabels = ["sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "cnfg"]
+    IcpLabels = ["vs", "sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "cnfg"]
     # elements in digest or signature derivation from delegated inception dip
-    DipLabels = ["sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
+    DipLabels = ["vs", "sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
 
     def __init__(self, raw=None, code=CryOneDex.Ed25519N, ked=None,
                  seed=None, secret=None, **kwa):
@@ -990,6 +985,11 @@ class Prefixer(CryMat):
         else:
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
+        # put in dummy pre to get size correct
+        ked["pre"] = "{}".format("a"*CryOneSizes[CryOneDex.Blake3_256])
+        serder = Serder(ked=ked)
+        ked = serder.ked  # use updated ked with valid vs element
+
         for l in labels:
             if l not in ked:
                 raise DerivationError("Missing element = {} from ked.".format(l))
@@ -1011,6 +1011,11 @@ class Prefixer(CryMat):
             labels = self.DipLabels  # DIP_DERIVE_LABELS
         else:
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
+
+        # put in dummy pre to get size correct
+        ked["pre"] = "{}".format("a"*CryTwoSizes[CryTwoDex.Ed25519])
+        serder = Serder(ked=ked)
+        ked = serder.ked  # use updated ked with valid vs element
 
         for l in labels:
             if l not in ked:
@@ -1148,6 +1153,11 @@ class Prefixer(CryMat):
                 labels = self.DipLabels  # DIP_DERIVE_LABELS
             else:
                 raise DerivationError("Invalid ilk = {} to derive prefix.".format(ilk))
+
+            # put in dummy pre to get size correct
+            ked["pre"] = "{}".format("a"*CryTwoSizes[CryTwoDex.Ed25519])
+            serder = Serder(ked=ked)
+            ked = serder.ked  # use updated ked with valid vs element
 
             for l in labels:
                 if l not in ked:
