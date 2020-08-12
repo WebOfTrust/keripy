@@ -835,7 +835,7 @@ def test_multisig_digaid():
                     sith=sith,
                     nxt=Nexter(keys=nxtkeys).qb64)
 
-    assert serder.ked["pre"] == 'EeHEtwqUsoOHqchJNDvxIb-bTOB4E8m73osS_cJYuShY'
+    assert serder.ked["pre"] == 'EsXOsQwsb0sM_fGWnoau5CdvjrvLj7YWinjeyTusmBnk'
     # create sig counter
     count = len(keys)
     counter = SigCounter(count=count)  # default is count = 1
@@ -849,16 +849,16 @@ def test_multisig_digaid():
     for siger in sigers:
         kes.extend(siger.qb64b)
 
-    assert kes == bytearray(b'{"vs":"KERI10JSON000159_","pre":"EeHEtwqUsoOHqchJNDvxIb-bTOB4E8m'
-                            b'73osS_cJYuShY","sn":"0","ilk":"icp","sith":"2","keys":["DSuhyBcP'
+    assert kes == bytearray(b'{"vs":"KERI10JSON000159_","pre":"EsXOsQwsb0sM_fGWnoau5CdvjrvLj7Y'
+                            b'WinjeyTusmBnk","sn":"0","ilk":"icp","sith":"2","keys":["DSuhyBcP'
                             b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA","DVcuJOOJF1IE8svqEtrSuyQjG'
                             b'Td2HhfAkt9y2QkUtFJI","DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Gr'
                             b'h8"],"nxt":"Evhf3437ZRRnVhT0zOxo_rBX_GxpGoAnLuzrVlDK8ZdM","toad"'
-                            b':"0","wits":[],"cnfg":[]}-AADAA64PoFOk7OFJyDwa3QvxuObP2NFa4lPPVx'
-                            b'FH6Nw5G4ypKpce4SjQ3y5XrkVjGJmSqt8lZPWDfipBg1nbo6iGZBgAB1szAmkNiH'
-                            b'NjBBB4XitB4gW8PLYsrSXYmLhQ5rQ74pwNuZlJBz3SLtds8nsA6gIrNGscnC0k24'
-                            b'BT17gfJjJcnCwACgHLdsMXS57XzQRDP-R2MBEVjOzkMyqtdT0TmRVj3qHv8tVd2T'
-                            b'3VYw19Ly0KovWiiqZTeQkI8JSXanfJKGw0_Bg')
+                            b':"0","wits":[],"cnfg":[]}-AADAA97g9QIKQb5c9N0msEp3rB0KN5Lxv31wPW'
+                            b'tPRknYBAr9SuzrdfRXRrJiG-4utXDLj-8HHMrJfk4rsMhxDkrgwDgAB8B8Gi-_ql'
+                            b'YQSXccPrcBmeKa-gfQeq3dVsNU3CGAnEZrhpKKUUuK6MJ7jvv8QCiCeEm0ONCaot'
+                            b'ZQl0u1k17mdBgAC_659hyxwtTMZy4Jxs0LERF0JQ8NpaVrz5xURR3BXIBBFSg6la'
+                            b'nso6kmpiRlavNVZlqTVz4YrsfI4b_LQ1CgYAQ')
 
     # Event 1 Rotation Transferable
     keys = nxtkeys

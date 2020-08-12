@@ -625,7 +625,7 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
-    assert prefixer.qb64 == 'E03rxRmMcP2-I2Gd0sUhlYwjk8KEz5gNGxPwPg-sGJds'
+    assert prefixer.qb64 == 'Eef0L-H343Eww3BnL0trkQhpxUGyT7AmsDFEEdQv4kPU'
     assert prefixer.verify(ked=ked) == True
 
 
@@ -643,11 +643,11 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
-    assert prefixer.qb64 == 'EXpGDy9FxDESc974WW86xDxM0fQgKjhDWOklCXtstkus'
+    assert prefixer.qb64 == 'EkbeB57LYWRYNqg4xarckyfd_LsaH0J350WmOdvMwU_Q'
     assert prefixer.verify(ked=ked) == True
 
     perm = []
-    seal = dict(pre = 'EXpGDy9FxDESc974WW86xDxM0fQgKjhDWOklCXtstkus',
+    seal = dict(pre = 'EkbeB57LYWRYNqg4xarckyfd_LsaH0J350WmOdvMwU_Q',
                 sn  = '2',
                 ilk = Ilks.ixn,
                 dig = 'E03rxRmMcP2-I2Gd0sUhlYwjk8KEz5gNGxPwPg-sGJds')
@@ -666,7 +666,7 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
-    assert prefixer.qb64 == 'EQrpcQ1RX0jDKcBbGXWZra3dr3bFyz6Ly1icEBlgD20s'
+    assert prefixer.qb64 == 'EDjYdngSGQkPdtSgr1W0nb4arGq0pBeWjoY51zeoMzsw'
     assert prefixer.verify(ked=ked) == True
 
     #  Test signature derivation
@@ -702,11 +702,11 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, seed=seed)
-    assert prefixer.qb64 == '0BSb9qBNXUerVs4IDYnai29AXcPQJtudLPfzfvehicA7LrswWBPmNlNQK9gIJB4pny2YpuB3m6-pgyl4cU65RRCA'
+    assert prefixer.qb64 == '0B3c4ueR9JwCpUqj11EbfuexY5InHBGiPT8bdsFwy0F9Z28nsRYjbVHqcQ5Ulo63xbU9m-sUnVOqh-29WmaJRLCA'
     assert prefixer.verify(ked=ked) == True
 
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
-    assert prefixer.qb64 == '0BSb9qBNXUerVs4IDYnai29AXcPQJtudLPfzfvehicA7LrswWBPmNlNQK9gIJB4pny2YpuB3m6-pgyl4cU65RRCA'
+    assert prefixer.qb64 == '0B3c4ueR9JwCpUqj11EbfuexY5InHBGiPT8bdsFwy0F9Z28nsRYjbVHqcQ5Ulo63xbU9m-sUnVOqh-29WmaJRLCA'
     assert prefixer.verify(ked=ked) == True
 
     """ Done Test """
