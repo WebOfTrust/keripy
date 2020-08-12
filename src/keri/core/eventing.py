@@ -620,7 +620,7 @@ class Kever:
                                   "".format(sigers, serder))
 
             # verify sith given signatures verify
-            if not self.verifySith(sigers=sigers):  # uses self.sith
+            if not self.verifySith(sigers=sigers, sith=sith):  # uses new sith
                 entry = LogEntry(serder=serder, sigers=sigers)
                 if pre not in self.logs.pses:
                     self.logs.pses[pre] = mdict()  # supports recover forks by sn
