@@ -33,19 +33,6 @@ def setupTmpBaseDir(baseDirPath=""):
     return baseDirPath
 
 
-def cleanupTmpBaseDir(baseDirPath):
-    """
-    Remove temporary root of baseDirPath
-    Ascend tree to find temporary root directory
-    """
-    if os.path.exists(baseDirPath):
-        while baseDirPath.startswith("/tmp/keri"):
-            if baseDirPath.endswith("test"):
-                shutil.rmtree(baseDirPath)
-                break
-            baseDirPath = os.path.dirname(baseDirPath)
-
-
 def keyToKey64u(key):
     """
     Returns 64u

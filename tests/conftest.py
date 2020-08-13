@@ -20,9 +20,9 @@ def setupTeardown():
     to each test function
     """
     #setup
-    DB_DIR_PATH = "/tmp/keri_db_setup_test"
-    yield DB_DIR_PATH  # this allows the test to run
+    TEST_DB_DIR_PATH = "/tmp/keri_db_setup_test"
+    yield TEST_DB_DIR_PATH  # this allows the test to run
 
     # teardown
-    cleanupBaseDir(DB_DIR_PATH)
-    assert not os.path.exists(DB_DIR_PATH)
+    cleanupBaseDir(TEST_DB_DIR_PATH)
+    assert not os.path.exists(TEST_DB_DIR_PATH)

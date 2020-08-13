@@ -16,8 +16,8 @@ except ImportError:
 
 MAX_DB_COUNT = 8
 
-DATABASE_DIR_PATH = "/var/keri/db"  # default
-ALT_DATABASE_DIR_PATH = os.path.join('~', '.keri/db')  #  when /var not permitted
+DB_DIR_PATH = "/var/keri/db"  # default
+ALT_DB_DIR_PATH = os.path.join('~', '.keri/db')  #  when /var not permitted
 
 DB_KEY_EVENT_LOG_NAME = b'kel'
 
@@ -43,28 +43,29 @@ def setupDbEnv(baseDirPath=None, port=8080):
     Setup the module globals keriDbDirPath, and keriDB using baseDirPath
     if provided otherwise use DATABASE_DIR_PATH
     Fallback is ALT_DATABASE_DIR_PATH
-    :param port: int
-        used to differentiate dbs for multiple servers running on the same computer
-    :param baseDirPath: string
-        directory where the database is located
+
+    Parameters:
+        port is int used to differentiate dbs for multiple servers running
+                    on the same computer
+        baseDirPath is string pathname of directory where the database is located
     """
     global keriDbDirPath, keriDB
 
     if not baseDirPath:
-        baseDirPath = "{}{}".format(DATABASE_DIR_PATH, port)
+        baseDirPath = "{}{}".format(DB_DIR_PATH, port)
 
     baseDirPath = os.path.abspath(os.path.expanduser(baseDirPath))
     if not os.path.exists(baseDirPath):
         try:
             os.makedirs(baseDirPath)
         except OSError as ex:
-            baseDirPath = "{}{}".format(ALT_DATABASE_DIR_PATH, port)
+            baseDirPath = "{}{}".format(ALT_DB_DIR_PATH, port)
             baseDirPath = os.path.abspath(os.path.expanduser(baseDirPath))
             if not os.path.exists(baseDirPath):
                 os.makedirs(baseDirPath)
     else:
         if not os.access(baseDirPath, os.R_OK | os.W_OK):
-            baseDirPath = "{}{}".format(ALT_DATABASE_DIR_PATH, port)
+            baseDirPath = "{}{}".format(ALT_DB_DIR_PATH, port)
             baseDirPath = os.path.abspath(os.path.expanduser(baseDirPath))
             if not os.path.exists(baseDirPath):
                 os.makedirs(baseDirPath)
@@ -80,13 +81,3 @@ def setupDbEnv(baseDirPath=None, port=8080):
 
     return keriDB
 
-
-def setupTestDbEnv():
-    """
-    Return dbEnv resulting from baseDirpath in temporary directory
-    and then setupDbEnv
-    """
-    baseDirPath = setupTmpBaseDir()
-    baseDirPath = os.path.join(baseDirPath, "db/keri")
-    os.makedirs(baseDirPath)
-    return setupDbEnv(baseDirPath=baseDirPath)
