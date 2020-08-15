@@ -37,7 +37,6 @@ class DatabaseError(KeriError):
     """
 
 
-
 def setupDbEnv(baseDirPath=None, port=8080):
     """
     Setup the module globals keriDbDirPath, and keriDB using baseDirPath
@@ -72,12 +71,24 @@ def setupDbEnv(baseDirPath=None, port=8080):
 
     keriDbDirPath = baseDirPath  # set global db directory path
 
-    # open lmdb database
+    # open lmdb major database instance
     # creates files data.mdb and lock.mdb in dbBaseDirPath
     keriDB = lmdb.open(keriDbDirPath, max_dbs=MAX_DB_COUNT)  # set global
 
-    # create named dbs  (core and tables)
+    # create named sub dbs  within major db  instance(core and tables)
     keriDB.open_db(DB_KEY_EVENT_LOG_NAME)  #  open KEL
 
     return keriDB
+
+
+
+def setupTestDbEnv():
+    """
+    Return dbEnv resulting from baseDirpath in temporary directory
+    and then setupDbEnv
+    """
+    baseDirPath = setupTmpBaseDir()
+    baseDirPath = os.path.join(baseDirPath, "db/keri")
+    os.makedirs(baseDirPath)
+    return setupDbEnv(baseDirPath=baseDirPath)
 
