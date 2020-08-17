@@ -188,8 +188,10 @@ class Databaser:
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs)
 
         # create named sub dbs  within main DB instance
-        self.kels = self.env.open_db(key=b'KELs', dupsort=True)  #  open named sub db 'KELs'
-        self.kelds = self.env.open_db(key=b'KELDs')  #  open named sub db 'KELDs'
+        # sub db name must include a non Base64 character to avoid namespace
+        # collisions with Base64 aid prefixes. So use "."
+        self.kels = self.env.open_db(key=b'kels.', dupsort=True)  #  open named sub db 'KELs'
+        self.kelds = self.env.open_db(key=b'kelds.')  #  open named sub db 'KELDs'
 
 
     def clearDirPath(self):
