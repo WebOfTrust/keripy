@@ -45,28 +45,18 @@ l
 
 """
 import os
-import lmdb
+import shutil
+import tempfile
 
+from contextlib import contextmanager
+
+import lmdb
 
 try:
     import simplejson as json
 except ImportError:
     import json
 
-
-
-MAX_DB_COUNT = 8
-
-DB_DIR_PATH = "/var/keri/db"  # default
-ALT_DB_DIR_PATH = os.path.join('~', '.keri/db')  #  when /var not permitted
-
-DB_KEY_EVENT_LOG_NAME = b'kel'
-
-
-keriDbDirPath = None   # database directory location has not been set up yet
-keriDBEnv = None    # database environment has not been set up yet
-
-from  ..help.helping import setupTmpBaseDir
 
 from  ..kering import  KeriError
 
@@ -77,59 +67,130 @@ class DatabaseError(KeriError):
         raise DatabaseError("error message")
     """
 
-
-def setupDbEnv(baseDirPath=None, port=8080):
+@contextmanager
+def openDatabaser(name="test"):
     """
-    Setup the module globals keriDbDirPath, and keriDB using baseDirPath
-    if provided otherwise use DATABASE_DIR_PATH
-    Fallback is ALT_DATABASE_DIR_PATH
+    Wrapper to enable temporary (test) Databaser instances
+    When used in with statement calls .clearDirPath() on exit of with block
 
     Parameters:
-        port is int used to differentiate dbs for multiple servers running
-                    on the same computer
-        baseDirPath is string pathname of directory where the database is located
+        name is str name of temporary Databaser dirPath  extended name so
+                 can have multiple temporary databasers is use differen name
+
+    Usage:
+
+    with openDatabaser(name="gen1") as baser1:
+        baser1.env  ....
+
     """
-    global keriDbDirPath, keriDBEnv
+    try:
+        databaser = Databaser(name=name, temp=True)
 
-    if not baseDirPath:
-        baseDirPath = "{}{}".format(DB_DIR_PATH, port)
+        yield databaser
 
-    baseDirPath = os.path.abspath(os.path.expanduser(baseDirPath))
-    if not os.path.exists(baseDirPath):
-        try:
-            os.makedirs(baseDirPath)
-        except OSError as ex:
-            baseDirPath = "{}{}".format(ALT_DB_DIR_PATH, port)
-            baseDirPath = os.path.abspath(os.path.expanduser(baseDirPath))
-            if not os.path.exists(baseDirPath):
-                os.makedirs(baseDirPath)
-    else:
-        if not os.access(baseDirPath, os.R_OK | os.W_OK):
-            baseDirPath = "{}{}".format(ALT_DB_DIR_PATH, port)
-            baseDirPath = os.path.abspath(os.path.expanduser(baseDirPath))
-            if not os.path.exists(baseDirPath):
-                os.makedirs(baseDirPath)
+    finally:
 
-    keriDbDirPath = baseDirPath  # set global db directory path
+        databaser.clearDirPath()
 
-    # open lmdb major database instance
-    # creates files data.mdb and lock.mdb in dbBaseDirPath
-    keriDBEnv = lmdb.open(keriDbDirPath, max_dbs=MAX_DB_COUNT)  # set global
-
-    # create named sub dbs  within major db  instance(core and tables)
-    keriDBEnv.open_db(DB_KEY_EVENT_LOG_NAME)  #  open KEL
-
-    return keriDBEnv
-
-
-
-def setupTestDbEnv():
+class Databaser:
     """
-    Return dbEnv resulting from baseDirpath in temporary directory
-    and then setupDbEnv
+    Databaser instances create and use a specific instance of an LMDB database
+    with associate directory for use with KERI
+
+    Sets up named sub databases within main database
+
+    Attributes:
+        .name is LMDB database name did2offer
+        .env is LMDB main (super) database environment
+        .dirPath is LMDB main (super) database directory path
+
+    Properties:
+
+
     """
-    baseDirPath = setupTmpBaseDir()
-    baseDirPath = os.path.join(baseDirPath, "db/keri")
-    os.makedirs(baseDirPath)
-    return setupDbEnv(baseDirPath=baseDirPath)
+    HeadDirPath = "/var"  # default in /var
+    TailDirPath = "keri/db"
+    AltHeadDirPath = "~"  #  put in ~ when /var not permitted
+    AltTailDirPath = ".keri/db"
+    MaxNamedDBs = 8
+
+    def __init__(self, headDirPath=None, name='main', temp=False):
+        """
+        Setup main database directory at .dirpath.
+        Create main database environment at .env using .dirpath.
+        Setup named sub databases.
+
+        Parameters:
+            headDirPath is str head of the pathname of directory for main database
+                If not provided use default headDirpath
+            name is str pathname differentiator for directory for main database
+                When system employs more than one keri databse name allows
+                differentiating each instance by name
+            temp is boolean If True then use temporary head pathname  instead of
+                headDirPath if any or default headDirPath
+        """
+        self.name = name
+
+        if temp:
+            headDirPath = tempfile.mkdtemp(prefix="keri_lmdb_", suffix="_test", dir="/tmp")
+            self.dirPath = os.path.abspath(
+                                os.path.join(headDirPath,
+                                             self.TailDirPath,
+                                             self.name))
+            os.makedirs(self.dirPath)
+
+        else:
+            if not headDirPath:
+                headDirPath = self.HeadDirPath
+
+            self.dbDirpath = os.path.abspath(
+                                os.path.expanduser(
+                                    os.path.join(headDirPath,
+                                                 self.TailDirPath,
+                                                 self.name)))
+
+            if not os.path.exists(self.dbDirpath):
+                try:
+                    os.makedirs(self.dbDirpath)
+                except OSError as ex:
+                    headDirPath = self.AltHeadDirPath
+                    self.dbDirpath = os.path.abspath(
+                                        os.path.expanduser(
+                                            os.path.join(headDirPath,
+                                                         self.AltTailDirPath,
+                                                         self.name)))
+                    if not os.path.exists(self.dbDirpath):
+                        os.makedirs(self.dbDirpath)
+            else:
+                if not os.access(self.dbDirpath, os.R_OK | os.W_OK):
+                    headDirPath = self.AltHeadDirPath
+                    self.dbDirpath = os.path.abspath(
+                                        os.path.expanduser(
+                                            os.path.join(headDirPath,
+                                                         self.AltTailDirPath,
+                                                         self.name)))
+                    if not os.path.exists(self.dbDirpath):
+                        os.makedirs(self.dbDirpath)
+
+        # open lmdb major database instance
+        # creates files data.mdb and lock.mdb in .dbDirPath
+        self.env = lmdb.open(self.dirPath, max_dbs=self.MaxNamedDBs)
+
+        # create named sub dbs  within main DB instance
+        self.kel = self.env.open_db("KEL")  #  open named sub db 'KEL'
+
+
+    def clearDirPath(self):
+        """
+        Remove .dirPath
+        """
+        if self.env:
+            try:
+                self.env.close()
+            except:
+                pass
+
+        if os.path.exists(self.dirPath):
+            shutil.rmtree(self.dirPath)
+
 
