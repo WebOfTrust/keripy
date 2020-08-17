@@ -67,6 +67,14 @@ class DatabaseError(KeriError):
         raise DatabaseError("error message")
     """
 
+def clearDatabaserDir(path):
+    """
+    Remove directory path
+    """
+    if os.path.exists(path):
+        shutil.rmtree(path)
+
+
 @contextmanager
 def openDatabaser(name="test"):
     """
@@ -102,7 +110,10 @@ class Databaser:
     Attributes:
         .name is LMDB database name did2offer
         .env is LMDB main (super) database environment
-        .dirPath is LMDB main (super) database directory path
+        .path is LMDB main (super) database directory path
+
+        .kels is named sub DB of key event logs indexed by identifier prefix and
+                 then by digest of serialized key event
 
     Properties:
 
@@ -133,51 +144,52 @@ class Databaser:
 
         if temp:
             headDirPath = tempfile.mkdtemp(prefix="keri_lmdb_", suffix="_test", dir="/tmp")
-            self.dirPath = os.path.abspath(
+            self.path = os.path.abspath(
                                 os.path.join(headDirPath,
                                              self.TailDirPath,
                                              self.name))
-            os.makedirs(self.dirPath)
+            os.makedirs(self.path)
 
         else:
             if not headDirPath:
                 headDirPath = self.HeadDirPath
 
-            self.dbDirpath = os.path.abspath(
+            self.path = os.path.abspath(
                                 os.path.expanduser(
                                     os.path.join(headDirPath,
                                                  self.TailDirPath,
                                                  self.name)))
 
-            if not os.path.exists(self.dbDirpath):
+            if not os.path.exists(self.path):
                 try:
-                    os.makedirs(self.dbDirpath)
+                    os.makedirs(self.path)
                 except OSError as ex:
                     headDirPath = self.AltHeadDirPath
-                    self.dbDirpath = os.path.abspath(
+                    self.path = os.path.abspath(
                                         os.path.expanduser(
                                             os.path.join(headDirPath,
                                                          self.AltTailDirPath,
                                                          self.name)))
-                    if not os.path.exists(self.dbDirpath):
-                        os.makedirs(self.dbDirpath)
+                    if not os.path.exists(self.path):
+                        os.makedirs(self.path)
             else:
-                if not os.access(self.dbDirpath, os.R_OK | os.W_OK):
+                if not os.access(self.path, os.R_OK | os.W_OK):
                     headDirPath = self.AltHeadDirPath
-                    self.dbDirpath = os.path.abspath(
+                    self.path = os.path.abspath(
                                         os.path.expanduser(
                                             os.path.join(headDirPath,
                                                          self.AltTailDirPath,
                                                          self.name)))
-                    if not os.path.exists(self.dbDirpath):
-                        os.makedirs(self.dbDirpath)
+                    if not os.path.exists(self.path):
+                        os.makedirs(self.path)
 
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
-        self.env = lmdb.open(self.dirPath, max_dbs=self.MaxNamedDBs)
+        self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs)
 
         # create named sub dbs  within main DB instance
-        self.kel = self.env.open_db("KEL")  #  open named sub db 'KEL'
+        self.kels = self.env.open_db(key=b'KELs', dupsort=True)  #  open named sub db 'KELs'
+        self.kelds = self.env.open_db(key=b'KELDs')  #  open named sub db 'KELDs'
 
 
     def clearDirPath(self):
@@ -190,7 +202,7 @@ class Databaser:
             except:
                 pass
 
-        if os.path.exists(self.dirPath):
-            shutil.rmtree(self.dirPath)
+        if os.path.exists(self.path):
+            shutil.rmtree(self.path)
 
 
