@@ -852,11 +852,9 @@ class Prefixer(CryMat):
         verify():  Verifies derivation of aid prefix
 
     """
-    # elements in digest or signature derivation from inception icp
-    # IcpLabels = ["vs", "sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "cnfg"]
+    # element labels to exclude in digest or signature derivation from inception icp
     IcpExcludes = ["pre"]
-    # elements in digest or signature derivation from delegated inception dip
-    # DipLabels = ["vs", "sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
+    # element labels to exclude in digest or signature derivation from delegated inception dip
     DipExcludes = ["pre"]
 
     def __init__(self, raw=None, code=CryOneDex.Ed25519N, ked=None,
@@ -982,10 +980,8 @@ class Prefixer(CryMat):
         ilk = ked["ilk"]
         if ilk == Ilks.icp:
             labels = [key for key in ked if key not in self.IcpExcludes]
-            # labels = self.IcpLabels  # ICP_DERIVE_LABELS
         elif ilk == Ilks.dip:
             labels = [key for key in ked if key not in self.DipExcludes]
-            # labels = self.DipLabels  # DIP_DERIVE_LABELS
         else:
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
@@ -1011,10 +1007,8 @@ class Prefixer(CryMat):
         ilk = ked["ilk"]
         if ilk == Ilks.icp:
             labels = [key for key in ked if key not in self.IcpExcludes]
-            # labels = self.IcpLabels  # ICP_DERIVE_LABELS
         elif ilk == Ilks.dip:
             labels = [key for key in ked if key not in self.DipExcludes]
-            # labels = self.DipLabels  # DIP_DERIVE_LABELS
         else:
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
@@ -1155,10 +1149,8 @@ class Prefixer(CryMat):
             ilk = ked["ilk"]
             if ilk == Ilks.icp:
                 labels = [key for key in ked if key not in self.IcpExcludes]
-                # labels = self.IcpLabels  # ICP_DERIVE_LABELS
             elif ilk == Ilks.dip:
                 labels = [key for key in ked if key not in self.DipExcludes]
-                # labels = self.DipLabels  # DIP_DERIVE_LABELS
             else:
                 raise DerivationError("Invalid ilk = {} to derive prefix.".format(ilk))
 
