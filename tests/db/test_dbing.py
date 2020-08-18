@@ -7,7 +7,8 @@ import os
 
 import lmdb
 
-from keri.db.dbing import clearDatabaserDir, openDatabaser, Databaser
+from keri.db.dbing import clearDatabaserDir, openDatabaser
+from keri.db.dbing import Databaser, Logger, Dupler
 
 def test_opendatabaser():
     """
@@ -53,7 +54,7 @@ def test_opendatabaser():
 
 def test_databaser():
     """
-    Different tests.
+    Test Databaser creation
     """
     databaser = Databaser()
     assert isinstance(databaser, Databaser)
@@ -63,15 +64,54 @@ def test_databaser():
     assert databaser.env.path() == databaser.path
     assert os.path.exists(databaser.path)
 
-    assert isinstance(databaser.kels, lmdb._Database)
-    assert isinstance(databaser.kelds, lmdb._Database)
-
     databaser.clearDirPath()
     assert not os.path.exists(databaser.path)
+    """ End Test """
 
 
+def test_logger():
+    """
+    Test Logger class
+    """
+    logger = Logger()
+    assert isinstance(logger, Logger)
+    assert logger.name == "main"
+    assert isinstance(logger.env, lmdb.Environment)
+    assert logger.path.endswith("keri/db/main")
+    assert logger.env.path() == logger.path
+    assert os.path.exists(logger.path)
+
+    assert isinstance(logger.kels, lmdb._Database)
+    assert isinstance(logger.kelds, lmdb._Database)
+
+    logger.clearDirPath()
+    assert not os.path.exists(logger.path)
 
     """ End Test """
 
+
+def test_dupler():
+    """
+    Test Dupler class
+
+    """
+    dupler = Dupler()
+    assert isinstance(dupler, Dupler)
+    assert dupler.name == "main"
+    assert isinstance(dupler.env, lmdb.Environment)
+    assert dupler.path.endswith("keri/db/main")
+    assert dupler.env.path() == dupler.path
+    assert os.path.exists(dupler.path)
+
+    assert isinstance(dupler.dels, lmdb._Database)
+    assert isinstance(dupler.delps, lmdb._Database)
+
+    dupler.clearDirPath()
+    assert not os.path.exists(dupler.path)
+
+    """ End Test """
+
+
+
 if __name__ == "__main__":
-    test_databaser()
+    test_dupler()

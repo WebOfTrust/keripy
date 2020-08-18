@@ -102,18 +102,13 @@ def openDatabaser(name="test"):
 
 class Databaser:
     """
-    Databaser instances create and use a specific instance of an LMDB database
-    with associate directory for use with KERI
-
-    Sets up named sub databases within main database
+    Databaser base class for LMDB instances.
+    Creates a specific instance of an LMDB database directory and environment.
 
     Attributes:
         .name is LMDB database name did2offer
         .env is LMDB main (super) database environment
         .path is LMDB main (super) database directory path
-
-        .kels is named sub DB of key event logs indexed by identifier prefix and
-                 then by digest of serialized key event
 
     Properties:
 
@@ -129,7 +124,6 @@ class Databaser:
         """
         Setup main database directory at .dirpath.
         Create main database environment at .env using .dirpath.
-        Setup named sub databases.
 
         Parameters:
             headDirPath is str head of the pathname of directory for main database
@@ -187,12 +181,6 @@ class Databaser:
         # creates files data.mdb and lock.mdb in .dbDirPath
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs)
 
-        # create named sub dbs  within main DB instance
-        # sub db name must include a non Base64 character to avoid namespace
-        # collisions with Base64 aid prefixes. So use "."
-        self.kels = self.env.open_db(key=b'kels.', dupsort=True)  #  open named sub db 'KELs'
-        self.kelds = self.env.open_db(key=b'kelds.')  #  open named sub db 'KELDs'
-
 
     def clearDirPath(self):
         """
@@ -208,3 +196,66 @@ class Databaser:
             shutil.rmtree(self.path)
 
 
+class Logger(Databaser):
+    """
+    Logger sets up named sub databases with Keri Event Logs within main database
+
+    Attributes:
+        see superclass Databaser for inherited attributes
+
+        .kels is named sub DB of key event logs indexed by identifier prefix and
+                then by sequence number of event. Allows multiple values per index.
+        .kelds is named sub DB of key event logs indexed by identifer prefix and
+                then by digest of serialized key event
+    Properties:
+
+
+    """
+    def __init__(self, **kwa):
+        """
+        Setup named sub databases.
+
+        Parameters:
+
+        """
+        super(Logger, self).__init__(**kwa)
+
+        # create named sub dbs  within main DB instance
+        # sub db name must include a non Base64 character to avoid namespace
+        # collisions with Base64 aid prefixes. So use "."
+
+        # dupsort=True means allow duplicates for sn indexed
+        self.kels = self.env.open_db(key=b'kels.', dupsort=True)  # open named sub db
+        self.kelds = self.env.open_db(key=b'kelds.')  #  open named sub db
+
+
+class Dupler(Databaser):
+    """
+    Dupler sets up named sub databases with Duplicitous Event Logs within main database
+
+    Attributes:
+        see superclass Databaser for inherited attributes
+
+        .kels is named sub DB of key event logs indexed by identifier prefix and
+                then by sequence number of event. Allows multiple values per index.
+        .kelds is named sub DB of key event logs indexed by identifer prefix and
+                then by digest of serialized key event
+    Properties:
+
+
+    """
+    def __init__(self, **kwa):
+        """
+        Setup named sub databases.
+
+        Parameters:
+
+        """
+        super(Dupler, self).__init__(**kwa)
+
+        # create named sub dbs  within main DB instance
+        # sub db name must include a non Base64 character to avoid namespace
+        # collisions with Base64 aid prefixes. So use "."
+
+        self.dels = self.env.open_db(key=b'dels.')  #  open named sub db
+        self.delps = self.env.open_db(key=b'delps.')  #  open named sub db
