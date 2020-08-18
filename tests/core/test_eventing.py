@@ -783,7 +783,7 @@ def test_kevery():
 
     assert len(kes) == 3349
 
-    klogs = Logs(kevers=dict(), kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
+    klogs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
 
     kevery = Kevery(logs=klogs)
     kevery.processAll(kes=kes)
@@ -941,7 +941,7 @@ def test_multisig_digaid():
 
     assert len(kes) == 2783
 
-    klogs = Logs(kevers=dict(), kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
+    klogs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
 
     kevery = Kevery(logs=klogs)
     kevery.processAll(kes=kes)

@@ -57,8 +57,8 @@ TraitDex = TraitCodex()  # Make instance
 
 LogEntry = namedtuple("LogEntry", 'serder sigers')  # LogEntry for KELS KERLS DELS etc
 Location = namedtuple("Location", 'sn dig')  # Location of key event
-Logs = namedtuple("Logs", 'kevers kels kelds ooes pses')
-# kevers dict of existing Kevers indexed by pre (qb64) of each Kever
+Logs = namedtuple("Logs", 'kels kelds ooes pses')
+
 # kels Generator or Validator KELs as dict of dicts of events keyed by pre (qb64)
 # then in order by event sn str
 # mdict keys must be subclass of str
@@ -374,7 +374,7 @@ class Kever:
         """
         # update state as we go because if invalid we fail to finish init
         if logs is None:
-            logs = Logs(kevers=dict(), kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
+            logs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
 
         self.logs = logs
 
@@ -761,11 +761,14 @@ class Kevery:
     Has the following public attributes and properties:
 
     Attributes:
+        .kevers is dict of existing kevers indexed by pre (qb64) of each Kever
+        .logs is named tuple of logs
+        .framed is Boolean stream is packet framed If True Else not framed
 
     Properties:
 
     """
-    def __init__(self, framed=True, kevers=None, logs=None):
+    def __init__(self,kevers=None, logs=None,  framed=True):
         """
         Set up event stream and logs
 
@@ -773,7 +776,7 @@ class Kevery:
         self.framed = True if framed else False  # extract until end-of-stream
         self.kevers = kevers if kevers is not None else dict()
         if logs is None:
-            logs = Logs(kevers=dict(), kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
+            logs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
         self.logs = logs
 
 
