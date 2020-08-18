@@ -473,10 +473,7 @@ class Kever:
 
 
         # update logs
-        if pre in self.logs.kevers:
-            raise ValueError("Kever prefix = {} already in kevers log".format(pre))
 
-        self.logs.kevers[pre] = self
         entry = LogEntry(serder=serder, sigers=sigers)
         if pre not in self.logs.kels:
             self.logs.kels[pre] = mdict()  # supports recover forks by sn
@@ -768,12 +765,13 @@ class Kevery:
     Properties:
 
     """
-    def __init__(self, framed=True, logs=None):
+    def __init__(self, framed=True, kevers=None, logs=None):
         """
         Set up event stream and logs
 
         """
         self.framed = True if framed else False  # extract until end-of-stream
+        self.kevers = kevers if kevers is not None else dict()
         if logs is None:
             logs = Logs(kevers=dict(), kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
         self.logs = logs
@@ -864,13 +862,13 @@ class Kevery:
             raise ValidationError("Invalid sn = {}".format(ked["sn"]))
         dig = serder.dig
 
-        if pre not in self.logs.kevers:  #  first seen event for pre
+        if pre not in self.kevers:  #  first seen event for pre
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures
                 # raises exception if problem adds to KEL Kevers
                 # create kever from serder
                 kever = Kever(serder=serder, sigers=sigers, logs=self.logs)
-                #kever should log it
+                self.kevers[pre] = kever
 
             else:  # not inception so can't verify, add to escrow
                 # log escrowed
@@ -892,7 +890,7 @@ class Kevery:
                     DELPs[pre][dig] = LogEntry(serder=serder, sigers=sigers)
 
             else:  # rot or ixn, so sn matters
-                kever = self.logs.kevers[pre]  # get existing kever for pre
+                kever = self.kevers[pre]  # get existing kever for pre
                 sno = kever.sn + 1  # proper sn of new inorder event
 
                 if sn > sno:  # sn later than sno so out of order escrow

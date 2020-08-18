@@ -789,8 +789,8 @@ def test_kevery():
     kevery.processAll(kes=kes)
 
     pre = kever.prefixer.qb64
-    assert pre in klogs.kevers
-    vkever = klogs.kevers[pre]
+    assert pre in kevery.kevers
+    vkever = kevery.kevers[pre]
     assert vkever.sn == kever.sn
     assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
     assert vkever.verfers[0].qb64 == signers[4].verfer.qb64
@@ -947,8 +947,8 @@ def test_multisig_digaid():
     kevery.processAll(kes=kes)
 
     pre = kever.prefixer.qb64
-    assert pre in klogs.kevers
-    vkever = klogs.kevers[pre]
+    assert pre in kevery.kevers
+    vkever = kevery.kevers[pre]
     assert vkever.sn == kever.sn
     assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
     assert vkever.verfers[0].qb64 == signers[5].verfer.qb64
