@@ -57,15 +57,15 @@ TraitDex = TraitCodex()  # Make instance
 
 LogEntry = namedtuple("LogEntry", 'serder sigers')  # LogEntry for KELS KERLS DELS etc
 Location = namedtuple("Location", 'sn dig')  # Location of key event
-Logs = namedtuple("Logs", 'kevers kels kedls ooes pses')
+Logs = namedtuple("Logs", 'kevers kels kelds ooes pses')
 # kevers dict of existing Kevers indexed by pre (qb64) of each Kever
 # kels Generator or Validator KELs as dict of dicts of events keyed by pre (qb64)
 # then in order by event sn str
 # mdict keys must be subclass of str
-# kedls Witness or Validator KERLs as dict of dicts of events keyed by pre (qb64)
+# kelds Witness or Validator KERLs as dict of dicts of events keyed by pre (qb64)
 # then in order by event sn str
 # mdict keys must be subclass of str
-# kedls  Key Event Digest Log
+# kelds  Key Event Digest Log
 # Validator KELDs as dict of dicts of events keyed by pre  then by event dig (qb64)
 # ooes Out of Order Escows as dict of dicts of events keyed by pre (qb64)
 # then in order by event sn str
@@ -84,7 +84,7 @@ KERLs = dict()
 # Potential Duplicitous Event Log
 # Validator PDELs as dict of dicts of dup events keyed by pre (qb64)
 # then by event dig (qb64)
-PDELs = dict()
+DELPs = dict()
 
 # Verified Duplicitous Event Log
 # Validator DELs as dict of dicts of dup events keyed by pre  (qb64)
@@ -374,7 +374,7 @@ class Kever:
         """
         # update state as we go because if invalid we fail to finish init
         if logs is None:
-            logs = Logs(kevers=dict(), kels=dict(), kedls=dict(), ooes=dict(), pses=dict())
+            logs = Logs(kevers=dict(), kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
 
         self.logs = logs
 
@@ -481,9 +481,9 @@ class Kever:
         if pre not in self.logs.kels:
             self.logs.kels[pre] = mdict()  # supports recover forks by sn
         self.logs.kels[pre].add(ked["sn"], entry)  # multiple values each sn hex str
-        if pre not in self.logs.kedls:
-            self.logs.kedls[pre] = dict()
-        self.logs.kedls[pre][dig] = entry
+        if pre not in self.logs.kelds:
+            self.logs.kelds[pre] = dict()
+        self.logs.kelds[pre][dig] = entry
 
 
     def update(self, serder,  sigers):
@@ -651,7 +651,7 @@ class Kever:
             # update logs
             entry = LogEntry(serder=serder, sigers=sigers)
             self.logs.kels[self.prefixer.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
-            self.logs.kedls[self.prefixer.qb64][self.diger.qb64] = entry
+            self.logs.kelds[self.prefixer.qb64][self.diger.qb64] = entry
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -703,7 +703,7 @@ class Kever:
             # update logs
             entry = LogEntry(serder=serder, sigers=sigers)
             self.logs.kels[self.prefixer.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
-            self.logs.kedls[self.prefixer.qb64][self.diger.qb64] = entry
+            self.logs.kelds[self.prefixer.qb64][self.diger.qb64] = entry
 
 
         else:  # unsupported event ilk so discard
@@ -775,7 +775,7 @@ class Kevery:
         """
         self.framed = True if framed else False  # extract until end-of-stream
         if logs is None:
-            logs = Logs(kevers=dict(), kels=dict(), kedls=dict(), ooes=dict(), pses=dict())
+            logs = Logs(kevers=dict(), kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
         self.logs = logs
 
 
@@ -881,15 +881,15 @@ class Kevery:
 
 
         else:  # already accepted inception event for pre
-            if dig in self.logs.kedls[pre]:  #  duplicate event so dicard
+            if dig in self.logs.kelds[pre]:  #  duplicate event so dicard
                 # log duplicate
                 return  # discard
 
             if ilk == Ilks.icp:  # inception event so maybe duplicitous
-                if pre not in PDELs:  #  add to PDELs
-                    PDELS[pre] = dict()
-                if dig not in PDELS[pre]:
-                    PDELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
+                if pre not in DELPs:  #  add to PDELs
+                    DELPs[pre] = dict()
+                if dig not in DELPs[pre]:
+                    DELPs[pre][dig] = LogEntry(serder=serder, sigers=sigers)
 
             else:  # rot or ixn, so sn matters
                 kever = self.logs.kevers[pre]  # get existing kever for pre
@@ -909,10 +909,10 @@ class Kevery:
                     kever.update(serder=serder, sigers=sigers)
 
                 else:  # maybe duplicitous
-                    if pre not in PDELs:  #  add to PDELs
-                        PDELs[pre] = dict()
-                    if dig not in PDELS[pre]:
-                        PDELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
+                    if pre not in DELPs:  #  add to PDELs
+                        DELPs[pre] = dict()
+                    if dig not in DELPs[pre]:
+                        DELPs[pre][dig] = LogEntry(serder=serder, sigers=sigers)
 
 
     def processAll(self, kes):
@@ -963,7 +963,7 @@ class Kevery:
             raise ValidationError("Invalid sn = {}".format(ked["sn"]))
         dig = serder.dig
 
-        if dig in PDELs["pre"]:
+        if dig in DELPs["pre"]:
             return
 
         if ilk == Ilks.icp:  # inception event so maybe duplicitous
