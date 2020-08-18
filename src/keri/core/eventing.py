@@ -84,7 +84,7 @@ KERLs = dict()
 # Potential Duplicitous Event Log
 # Validator PDELs as dict of dicts of dup events keyed by pre (qb64)
 # then by event dig (qb64)
-PDELs = dict()
+DELPs = dict()
 
 # Verified Duplicitous Event Log
 # Validator DELs as dict of dicts of dup events keyed by pre  (qb64)
@@ -886,10 +886,10 @@ class Kevery:
                 return  # discard
 
             if ilk == Ilks.icp:  # inception event so maybe duplicitous
-                if pre not in PDELs:  #  add to PDELs
-                    PDELS[pre] = dict()
-                if dig not in PDELS[pre]:
-                    PDELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
+                if pre not in DELPs:  #  add to PDELs
+                    DELPs[pre] = dict()
+                if dig not in DELPs[pre]:
+                    DELPs[pre][dig] = LogEntry(serder=serder, sigers=sigers)
 
             else:  # rot or ixn, so sn matters
                 kever = self.logs.kevers[pre]  # get existing kever for pre
@@ -909,10 +909,10 @@ class Kevery:
                     kever.update(serder=serder, sigers=sigers)
 
                 else:  # maybe duplicitous
-                    if pre not in PDELs:  #  add to PDELs
-                        PDELs[pre] = dict()
-                    if dig not in PDELS[pre]:
-                        PDELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
+                    if pre not in DELPs:  #  add to PDELs
+                        DELPs[pre] = dict()
+                    if dig not in DELPs[pre]:
+                        DELPs[pre][dig] = LogEntry(serder=serder, sigers=sigers)
 
 
     def processAll(self, kes):
@@ -963,7 +963,7 @@ class Kevery:
             raise ValidationError("Invalid sn = {}".format(ked["sn"]))
         dig = serder.dig
 
-        if dig in PDELs["pre"]:
+        if dig in DELPs["pre"]:
             return
 
         if ilk == Ilks.icp:  # inception event so maybe duplicitous
