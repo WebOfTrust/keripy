@@ -747,10 +747,6 @@ class Kever:
         return True
 
 
-
-
-
-
 class Kevery:
     """
     Kevery is Kever (KERI key event verifier) instance factory which are
