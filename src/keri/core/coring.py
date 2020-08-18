@@ -853,9 +853,11 @@ class Prefixer(CryMat):
 
     """
     # elements in digest or signature derivation from inception icp
-    IcpLabels = ["vs", "sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "cnfg"]
+    # IcpLabels = ["vs", "sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "cnfg"]
+    IcpExcludes = ["pre"]
     # elements in digest or signature derivation from delegated inception dip
-    DipLabels = ["vs", "sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
+    # DipLabels = ["vs", "sn", "ilk", "sith", "keys", "nxt", "toad", "wits", "perm", "seal"]
+    DipExcludes = ["pre"]
 
     def __init__(self, raw=None, code=CryOneDex.Ed25519N, ked=None,
                  seed=None, secret=None, **kwa):
@@ -979,9 +981,11 @@ class Prefixer(CryMat):
         """
         ilk = ked["ilk"]
         if ilk == Ilks.icp:
-            labels = self.IcpLabels  # ICP_DERIVE_LABELS
+            labels = [key for key in ked if key not in self.IcpExcludes]
+            # labels = self.IcpLabels  # ICP_DERIVE_LABELS
         elif ilk == Ilks.dip:
-            labels = self.DipLabels  # DIP_DERIVE_LABELS
+            labels = [key for key in ked if key not in self.DipExcludes]
+            # labels = self.DipLabels  # DIP_DERIVE_LABELS
         else:
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
@@ -1006,9 +1010,11 @@ class Prefixer(CryMat):
         """
         ilk = ked["ilk"]
         if ilk == Ilks.icp:
-            labels = self.IcpLabels  # ICP_DERIVE_LABELS
+            labels = [key for key in ked if key not in self.IcpExcludes]
+            # labels = self.IcpLabels  # ICP_DERIVE_LABELS
         elif ilk == Ilks.dip:
-            labels = self.DipLabels  # DIP_DERIVE_LABELS
+            labels = [key for key in ked if key not in self.DipExcludes]
+            # labels = self.DipLabels  # DIP_DERIVE_LABELS
         else:
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
@@ -1148,9 +1154,11 @@ class Prefixer(CryMat):
         try:
             ilk = ked["ilk"]
             if ilk == Ilks.icp:
-                labels = self.IcpLabels  # ICP_DERIVE_LABELS
+                labels = [key for key in ked if key not in self.IcpExcludes]
+                # labels = self.IcpLabels  # ICP_DERIVE_LABELS
             elif ilk == Ilks.dip:
-                labels = self.DipLabels  # DIP_DERIVE_LABELS
+                labels = [key for key in ked if key not in self.DipExcludes]
+                # labels = self.DipLabels  # DIP_DERIVE_LABELS
             else:
                 raise DerivationError("Invalid ilk = {} to derive prefix.".format(ilk))
 
