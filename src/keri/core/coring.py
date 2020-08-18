@@ -920,6 +920,17 @@ class Prefixer(CryMat):
         return (self._derive(ked=ked, seed=seed, secret=secret))
 
 
+    def verify(self, ked):
+        """
+        Returns True if derivation from iked for .code matches .qb64,
+                False otherwise
+
+        Parameters:
+            ked is inception key event dict
+        """
+        return (self._verify(ked=ked, pre=self.qb64))
+
+
     def _DeriveBasicEd25519N(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic nontransferable Ed25519 prefix (qb64)
@@ -950,6 +961,32 @@ class Prefixer(CryMat):
         return (verfer.raw, verfer.code)
 
 
+    def _VerifyBasicEd25519N(self, ked, pre):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 pre from inception iked dict
+
+        Parameters:
+            ked is inception key event dict
+            pre is Base64 fully qualified prefix
+        """
+        try:
+            keys = ked["keys"]
+            if len(keys) != 1:
+                return False
+
+            if keys[0] != pre:
+                return False
+
+            if ked["nxt"]:  # must be empty
+                return False
+
+        except Exception as ex:
+            return False
+
+        return True
+
+
     def _DeriveBasicEd25519(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
@@ -970,6 +1007,29 @@ class Prefixer(CryMat):
                                   "".format(verfer.code))
 
         return (verfer.raw, verfer.code)
+
+
+    def _VerifyBasicEd25519(self, ked, pre):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 prefix from
+        inception key event dict (ked)
+
+        Parameters:
+            ked is inception key event dict
+            pre is Base64 fully qualified prefix
+        """
+        try:
+            keys = ked["keys"]
+            if len(keys) != 1:
+                return False
+
+            if keys[0] != pre:
+                return False
+        except Exception as ex:
+            return False
+
+        return True
 
 
     def _DeriveDigBlake3_256(self, ked, seed=None, secret=None):
@@ -998,6 +1058,29 @@ class Prefixer(CryMat):
         ser = "".join(values).encode("utf-8")
         dig =  blake3.blake3(ser).digest()
         return (dig, CryOneDex.Blake3_256)
+
+
+    def _VerifyDigBlake3_256(self, ked, pre):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 prefix from
+        inception key event dict (ked)
+
+        Parameters:
+            ked is inception key event dict
+            pre is Base64 fully qualified
+        """
+        try:
+            raw, code =  self._DeriveDigBlake3_256(ked=ked)
+            crymat = CryMat(raw=raw, code=CryOneDex.Blake3_256)
+            if crymat.qb64 != pre:
+                return False
+
+        except Exception as ex:
+            return False
+
+        return True
+
 
     def _DeriveSigEd25519(self, ked, seed=None, secret=None):
         """
@@ -1051,88 +1134,6 @@ class Prefixer(CryMat):
         # sig = pysodium.crypto_sign_detached(ser, signer.raw + verfer.raw)
 
         return (sigver.raw, CryTwoDex.Ed25519)
-
-
-    def verify(self, ked):
-        """
-        Returns True if derivation from iked for .code matches .qb64,
-                False otherwise
-
-        Parameters:
-            ked is inception key event dict
-        """
-        return (self._verify(ked=ked, pre=self.qb64))
-
-
-    def _VerifyBasicEd25519N(self, ked, pre):
-        """
-        Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 pre from inception iked dict
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified prefix
-        """
-        try:
-            keys = ked["keys"]
-            if len(keys) != 1:
-                return False
-
-            if keys[0] != pre:
-                return False
-
-            if ked["nxt"]:  # must be empty
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
-
-
-    def _VerifyBasicEd25519(self, ked, pre):
-        """
-        Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 prefix from
-        inception key event dict (ked)
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified prefix
-        """
-        try:
-            keys = ked["keys"]
-            if len(keys) != 1:
-                return False
-
-            if keys[0] != pre:
-                return False
-        except Exception as ex:
-            return False
-
-        return True
-
-
-    def _VerifyDigBlake3_256(self, ked, pre):
-        """
-        Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 prefix from
-        inception key event dict (ked)
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified
-        """
-        try:
-            raw, code =  self._DeriveDigBlake3_256(ked=ked)
-            crymat = CryMat(raw=raw, code=CryOneDex.Blake3_256)
-            if crymat.qb64 != pre:
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
 
 
     def _VerifySigEd25519(self, ked, pre):
