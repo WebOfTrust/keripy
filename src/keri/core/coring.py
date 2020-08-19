@@ -95,11 +95,57 @@ class CrySelectCodex:
     """
     two:  str = '0'  # use two character table.
     four: str = '1'  # use four character table.
+    dash: str = '-'  # use four character count table.
 
     def __iter__(self):
         return iter(astuple(self))
 
 CrySelDex = CrySelectCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class CryCntCodex:
+    """
+    CryCntCodex codex of four character length derivation codes that indicate
+    count (number) of attached receipt couplets following a receipt statement .
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    .raw is empty
+
+    Note binary length of everything in CryCntCodex results in 0 Base64 pad bytes.
+
+    First two code characters select format of attached signatures
+    Next two code charaters select count total of attached signatures to an event
+    Only provide first two characters here
+    """
+    Base64: str =  '-A'  # Fully Qualified Base64 Format Receipt Couplets.
+    Base2:  str =  '-B'  # Fully Qualified Base2 Format Receipt Couplets.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+CryCntDex = CryCntCodex()  #  Make instance
+
+# Mapping of Code to Size
+# Total size  qb64
+CryCntSizes = {
+                "-A": 4,
+                "-B": 4,
+              }
+
+# size of index portion of code qb64
+CryCntIdxSizes = {
+                   "-A": 2,
+                   "-B": 2,
+                 }
+
+# total size of raw unqualified
+CryCntRawSizes = {
+                   "-A": 0,
+                   "-B": 0,
+                 }
+
+CRYCNTMAX = 4095  # maximum count value given two base 64 digits
 
 
 @dataclass(frozen=True)
@@ -204,17 +250,19 @@ CryFourRawSizes = {
                   }
 
 # all sizes in one dict
-CrySizes = dict()
+CrySizes = dict(CryCntSizes)
 CrySizes.update(CryOneSizes)
 CrySizes.update(CryTwoSizes)
 CrySizes.update(CryFourSizes)
 
 # all sizes in one dict
-CryRawSizes = dict()
+CryRawSizes = dict(CryCntRawSizes)
 CryRawSizes.update(CryOneRawSizes)
 CryRawSizes.update(CryTwoRawSizes)
 CryRawSizes.update(CryFourRawSizes)
 
+# all sizes in one dict
+CryIdxSizes = dict(CryCntIdxSizes)
 
 
 class CryMat:
