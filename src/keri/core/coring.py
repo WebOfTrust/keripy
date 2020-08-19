@@ -305,9 +305,13 @@ class CryMat:
             pad = self._pad(raw)
             if (not ( (pad == 1 and (code in CryOneDex)) or  # One or Five or Nine
                       (pad == 2 and (code in CryTwoDex)) or  # Two or Six or Ten
-                      (pad == 0 and (code in CryFourDex)) )):  # Four or Eight
+                      (pad == 0 and (code in CryFourDex)) or # Four or Eight
+                      (pad == 0 and (code in CryCntDex)) )):  # Cnt Four
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
+
+            if (code in CryCntDex and ((index < 0) or (index > CRYCNTMAX))):
+                raise ValidationError("Invalid index={} for code={}.".format(index, code))
 
             raw = raw[:CryRawSizes[code]]  #  allows longer by truncating if stream
             if len(raw) != CryRawSizes[code]:  # forbids shorter
@@ -410,6 +414,7 @@ class CryMat:
         """
         pre = 1
         code = qb64[:pre]
+        index = 0
 
         # need to map code to length so can only consume proper number of chars
         #  from front of qb64 so can use with full identifiers not just prefixes
@@ -431,6 +436,15 @@ class CryMat:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:CryFourSizes[code]]  # strip of identifier after prefix
 
+        elif code == CrySelDex.dash:  #  '-' 2 char code + 2 char index count
+            pre += 1
+            code = qb64[pre-2:pre]
+            if code not in CryCntDex:  # 4 char = 2 code + 2 index
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+            qb64 = qb64[:CryCntSizes[code]]  # strip of exact len identifier after prefix
+            pre += 2
+            index = B64ToInt(qb64[pre-2:pre])
+
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
 
@@ -449,6 +463,7 @@ class CryMat:
             raise ValueError("Improperly qualified material = {}".format(qb64))
 
         self._code = code
+        self._index = index
         self._raw = raw
 
 
@@ -482,6 +497,66 @@ class CryMat:
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil().encode("utf-8"))
+
+
+class CryCounter(CryMat):
+    """
+    CryCounter is subclass of CryMat, cryptographic material,
+    CryCrount provides count of following number of attached cryptographic
+    material items in its .count property.
+    Useful when parsing attached receipt couplets from stream where CryCounter
+    instance qb64 is inserted after Serder of receipt statement and
+    before attached receipt couplets.
+
+    Changes default initialization code = CryCntDex.Base64
+    Raises error on init if code not in CryCntDex
+
+    See CryMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .count is int count of attached signatures (same as .index)
+
+    Methods:
+
+
+    """
+    def __init__(self, raw=None, qb64=None, qb2=None, code=CryCntDex.Base64,
+                 index=None, count=None, **kwa):
+        """
+
+        Parameters:  See CryMat for inherted parameters
+            count is int number of attached sigantures same as index
+
+        """
+        raw = b'' if raw is not None else raw  # force raw to be empty is
+
+        if raw is None and qb64 is None and qb2 is None:
+            raw = b''
+
+        # accept either index or count to init index
+        if count is not None:
+            index = count
+        if index is None:
+            index = 1  # most common case
+
+        # force raw empty
+        super(CryCounter, self).__init__(raw=raw, qb64=qb64, qb2=qb2,
+                                         code=code, index=index, **kwa)
+
+        if self.code not in CryCntDex:
+            raise ValidationError("Invalid code = {} for CryCounter."
+                                  "".format(self.code))
+
+    @property
+    def count(self):
+        """
+        Property counter:
+        Returns .index as count
+        Assumes ._index is correctly assigned
+        """
+        return self.index
 
 
 class Verfer(CryMat):
@@ -1763,7 +1838,6 @@ class SigCounter(SigMat):
     def __init__(self, raw=None, qb64=None, qb2=None, code=SigCntDex.Base64,
                  index=None, count=None, **kwa):
         """
-        Assign verfer to ._verfer
 
         Parameters:  See CryMat for inherted parameters
             count is int number of attached sigantures same as index
