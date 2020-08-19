@@ -75,6 +75,38 @@ def clearDatabaserDir(path):
         shutil.rmtree(path)
 
 
+
+@contextmanager
+def openDatabaser(name="test", cls=None):
+    """
+    Wrapper to enable temporary (test) Databaser instances
+    When used in with statement calls .clearDirPath() on exit of with block
+
+    Parameters:
+        name is str name of temporary Databaser dirPath  extended name so
+                 can have multiple temporary databasers is use differen name
+        cls is Class instance of subclass instance
+
+    Usage:
+
+    with openDatabaser(name="gen1") as baser1:
+        baser1.env  ....
+
+    with openDatabaser(name="gen2, cls=Logger)
+
+    """
+    if cls is None:
+        cls = Databaser
+    try:
+        databaser = cls(name=name, temp=True)
+
+        yield databaser
+
+    finally:
+
+        databaser.clearDirPath()
+
+
 class Databaser:
     """
     Databaser base class for LMDB instances.
@@ -393,31 +425,3 @@ class Dupler(Databaser):
         self.pdes = self.env.open_db(key=b'pdes.', dupsort=True)
 
 
-
-@contextmanager
-def openDatabaser(name="test", cls=Databaser):
-    """
-    Wrapper to enable temporary (test) Databaser instances
-    When used in with statement calls .clearDirPath() on exit of with block
-
-    Parameters:
-        name is str name of temporary Databaser dirPath  extended name so
-                 can have multiple temporary databasers is use differen name
-        cls is Class instance of subclass instance
-
-    Usage:
-
-    with openDatabaser(name="gen1") as baser1:
-        baser1.env  ....
-
-    with openDatabaser(name="gen2, cls=Logger)
-
-    """
-    try:
-        databaser = cls(name=name, temp=True)
-
-        yield databaser
-
-    finally:
-
-        databaser.clearDirPath()
