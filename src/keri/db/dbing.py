@@ -75,31 +75,6 @@ def clearDatabaserDir(path):
         shutil.rmtree(path)
 
 
-@contextmanager
-def openDatabaser(name="test"):
-    """
-    Wrapper to enable temporary (test) Databaser instances
-    When used in with statement calls .clearDirPath() on exit of with block
-
-    Parameters:
-        name is str name of temporary Databaser dirPath  extended name so
-                 can have multiple temporary databasers is use differen name
-
-    Usage:
-
-    with openDatabaser(name="gen1") as baser1:
-        baser1.env  ....
-
-    """
-    try:
-        databaser = Databaser(name=name, temp=True)
-
-        yield databaser
-
-    finally:
-
-        databaser.clearDirPath()
-
 class Databaser:
     """
     Databaser base class for LMDB instances.
@@ -293,6 +268,84 @@ class Logger(Databaser):
         self.pdes = self.env.open_db(key=b'pdes.', dupsort=True)
 
 
+    def getEvt(self, key):
+        """
+        Return event at key
+        Returns None if no entry at key
+
+        """
+        with self.env.begin(db=self.evts, write=False) as txn:
+            val = txn.get(key)
+
+        return val
+
+
+    def putEvt(self, key, val):
+        """
+        Write serialized event bytes val to key
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        with self.env.begin(db=self.evts, write=True) as txn:
+            result = txn.put(key, val)
+
+        return result
+
+
+    def delEvt(self, key):
+        """
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        with self.env.begin(db=self.evts, write=True) as txn:
+            result = txn.delete(key)
+
+        return result
+
+
+    def getSigs(self, key):
+        """
+        Return list of sigantures at key
+        Returns empty list if no entry at key
+
+        """
+        with self.env.begin(db=self.sigs, write=False) as txn:
+            cursor = txn.cursor()
+            vals = []
+
+            if cursor.set_key_dup(key):
+                vals.append(cursor.value())
+
+                while cursor.next_dup():
+                    vals.append(cursor.value())
+
+        return vals
+
+
+    def putSigs(self, key, vals):
+        """
+        Write each entry from list of bytes signatures vals to key
+        Adds to existing signatures if any
+        Returns True If only one first written val in vals Else False
+        """
+        with self.env.begin(db=self.sigs, write=True) as txn:
+            for val in vals:
+                result = txn.put(key, val, dupdata=True, )
+
+        return result
+
+
+    def delSigs(self, key, dupdata=True):
+        """
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        with self.env.begin(db=self.sigs, write=True) as txn:
+            result = txn.delete(key)
+
+        return result
+
+
 class Dupler(Databaser):
     """
     Dupler sets up named sub databases with Duplicitous Event Logs within main database
@@ -338,3 +391,33 @@ class Dupler(Databaser):
         self.evts = self.env.open_db(key=b'evts.')  #  open named sub db
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.pdes = self.env.open_db(key=b'pdes.', dupsort=True)
+
+
+
+@contextmanager
+def openDatabaser(name="test", cls=Databaser):
+    """
+    Wrapper to enable temporary (test) Databaser instances
+    When used in with statement calls .clearDirPath() on exit of with block
+
+    Parameters:
+        name is str name of temporary Databaser dirPath  extended name so
+                 can have multiple temporary databasers is use differen name
+        cls is Class instance of subclass instance
+
+    Usage:
+
+    with openDatabaser(name="gen1") as baser1:
+        baser1.env  ....
+
+    with openDatabaser(name="gen2, cls=Logger)
+
+    """
+    try:
+        databaser = cls(name=name, temp=True)
+
+        yield databaser
+
+    finally:
+
+        databaser.clearDirPath()

@@ -103,6 +103,29 @@ def test_logger():
     logger.clearDirPath()
     assert not os.path.exists(logger.path)
 
+    # Test using context manager
+    with openDatabaser(cls=Logger) as logger:
+        assert isinstance(logger, Logger)
+        assert logger.name == "test"
+        assert isinstance(logger.env, lmdb.Environment)
+        assert logger.path.startswith("/tmp/keri_lmdb_")
+        assert logger.path.endswith("_test/keri/db/test")
+        assert logger.env.path() == logger.path
+        assert os.path.exists(logger.path)
+
+        assert isinstance(logger.evts, lmdb._Database)
+        assert isinstance(logger.sigs, lmdb._Database)
+        assert isinstance(logger.rcts, lmdb._Database)
+        assert isinstance(logger.kels, lmdb._Database)
+        assert isinstance(logger.ooes, lmdb._Database)
+        assert isinstance(logger.pses, lmdb._Database)
+        assert isinstance(logger.dels, lmdb._Database)
+        assert isinstance(logger.pdes, lmdb._Database)
+
+
+    assert not os.path.exists(logger.path)
+
+
     """ End Test """
 
 
@@ -128,7 +151,17 @@ def test_dupler():
 
     """ End Test """
 
+def test_uselogger():
+    """
+    Test using logger to
+    """
+    with openDatabaser(cls=Logger) as logger:
+        pass
 
+
+    assert not os.path.exists(logger.path)
+
+    """ End Test """
 
 if __name__ == "__main__":
     test_databaser()
