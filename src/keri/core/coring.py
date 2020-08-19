@@ -101,6 +101,7 @@ class CrySelectCodex:
 
 CrySelDex = CrySelectCodex()  # Make instance
 
+
 @dataclass(frozen=True)
 class CryOneCodex:
     """
@@ -203,14 +204,17 @@ CryFourRawSizes = {
                   }
 
 # all sizes in one dict
-CrySizes = dict(CryOneSizes)
+CrySizes = dict()
+CrySizes.update(CryOneSizes)
 CrySizes.update(CryTwoSizes)
 CrySizes.update(CryFourSizes)
 
 # all sizes in one dict
-CryRawSizes = dict(CryOneRawSizes)
+CryRawSizes = dict()
+CryRawSizes.update(CryOneRawSizes)
 CryRawSizes.update(CryTwoRawSizes)
 CryRawSizes.update(CryFourRawSizes)
+
 
 
 class CryMat:
@@ -252,7 +256,7 @@ class CryMat:
             pad = self._pad(raw)
             if (not ( (pad == 1 and (code in CryOneDex)) or  # One or Five or Nine
                       (pad == 2 and (code in CryTwoDex)) or  # Two or Six or Ten
-                      (pad == 0 and (code in CryFourDex)) )):  #  Four or Eight
+                      (pad == 0 and (code in CryFourDex)) )):  # Four or Eight
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
 
@@ -348,6 +352,13 @@ class CryMat:
             if code not in CryTwoDex:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:CryTwoSizes[code]]  # strip of identifier after prefix
+
+        elif code == CrySelDex.four: # first char of four char cnt code
+            pre += 3
+            code = qb64[pre-4:pre]  #  get full code
+            if code not in CryFourDex:
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+            qb64 = qb64[:CryFourSizes[code]]  # strip of identifier after prefix
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))

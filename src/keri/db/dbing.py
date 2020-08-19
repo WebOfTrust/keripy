@@ -224,9 +224,10 @@ class Logger(Databaser):
         # sub db name must include a non Base64 character to avoid namespace
         # collisions with Base64 aid prefixes. So use "."
 
+        self.kelds = self.env.open_db(key=b'kelds.')  #  open named sub db
         # dupsort=True means allow duplicates for sn indexed
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)  # open named sub db
-        self.kelds = self.env.open_db(key=b'kelds.')  #  open named sub db
+
 
 
 class Dupler(Databaser):
@@ -236,9 +237,9 @@ class Dupler(Databaser):
     Attributes:
         see superclass Databaser for inherited attributes
 
-        .kels is named sub DB of key event logs indexed by identifier prefix and
+        .dels is named sub DB of duplicitous event logs indexed by identifier prefix and
                 then by sequence number of event. Allows multiple values per index.
-        .kelds is named sub DB of key event logs indexed by identifer prefix and
+        .delps is named sub DB of potentials duplicitous event logs indexed by identifer prefix and
                 then by digest of serialized key event
     Properties:
 

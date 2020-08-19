@@ -62,14 +62,14 @@ Logs = namedtuple("Logs", 'kels kelds ooes pses')
 # kels Generator or Validator KELs as dict of dicts of events keyed by pre (qb64)
 # then in order by event sn str
 # mdict keys must be subclass of str
-# kelds Witness or Validator KERLs as dict of dicts of events keyed by pre (qb64)
-# then in order by event sn str
-# mdict keys must be subclass of str
+
 # kelds  Key Event Digest Log
 # Validator KELDs as dict of dicts of events keyed by pre  then by event dig (qb64)
+
 # ooes Out of Order Escows as dict of dicts of events keyed by pre (qb64)
 # then in order by event sn str
 # mdict keys must be subclass of str
+
 # pses Partial Signature Escows as dict of dicts of events keyed by pre (qb64)
 # then in order by event sn str
 # mdict keys must be subclass of str
