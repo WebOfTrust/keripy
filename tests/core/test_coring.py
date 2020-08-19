@@ -17,11 +17,12 @@ from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage
 from keri.kering import ValidationError, EmptyMaterialError, DerivationError
-from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
+from keri.core.coring import CrySelDex, CryCntDex, CryOneDex, CryTwoDex, CryFourDex
+from keri.core.coring import CryCntSizes, CryCntRawSizes, CryCntIdxSizes
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, Verfer, Sigver, Signer, Diger, Nexter
-from keri.core.coring import Prefixer
+from keri.core.coring import CryMat, CryCounter, Verfer, Sigver, Signer
+from keri.core.coring import Diger, Nexter, Prefixer
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import SigSelDex
 from keri.core.coring import SigCntDex, SigCntSizes, SigCntRawSizes
@@ -236,6 +237,95 @@ def test_crymat():
     assert crymat.code == CryTwoDex.Ed25519
 
     """ Done Test """
+
+def test_crycounter():
+    """
+    Test CryCounter subclass of CryMat
+    """
+    # with pytest.raises(EmptyMaterialError):
+    #    counter = SigCounter()
+
+    qsc = CryCntDex.Base64 + IntToB64(1, l=2)
+    assert qsc == '-AAB'
+
+    counter = CryCounter()
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base64
+    assert counter.index == 1
+    assert counter.count == 1
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x01'
+
+    counter = CryCounter(raw=b'')
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base64
+    assert counter.index == 1
+    assert counter.count == 1
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x01'
+
+    counter = CryCounter(qb64=qsc)
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base64
+    assert counter.index == 1
+    assert counter.count == 1
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x01'
+
+    counter = CryCounter(raw=b'', count=1)
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base64
+    assert counter.index == 1
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x01'
+
+    counter = CryCounter(raw=b'', count=0)
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base64
+    assert counter.index == 0
+    assert counter.qb64 == '-AAA'
+    assert counter.qb2 == b'\xf8\x00\x00'
+
+
+    cnt = 5
+    qsc = SigCntDex.Base64 + IntToB64(cnt, l=2)
+    assert qsc == '-AAF'
+    counter = CryCounter(count=cnt)
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base64
+    assert counter.index == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x05'
+
+    counter = CryCounter(qb64=qsc)
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base64
+    assert counter.index == cnt
+    assert counter.count == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x00\x05'
+
+    cnt = 5
+    qsc = CryCntDex.Base2 + IntToB64(cnt, l=2)
+    assert qsc == '-BAF'
+    counter = CryCounter(code=CryCntDex.Base2, count=cnt)
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base2
+    assert counter.index == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x10\x05'
+
+    counter = CryCounter(qb64=qsc)
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base2
+    assert counter.index == cnt
+    assert counter.count == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x10\x05'
+
+
+    """ Done Test """
+
 
 
 def test_verfer():
@@ -936,6 +1026,25 @@ def test_sigcounter():
     assert counter.qb64 == qsc
     assert counter.qb2 == b'\xf8\x00\x05'
 
+    cnt = 5
+    qsc = SigCntDex.Base2 + IntToB64(cnt, l=2)
+    assert qsc == '-BAF'
+    counter = SigCounter(code=SigCntDex.Base2, count=cnt)
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base2
+    assert counter.index == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x10\x05'
+
+    counter = SigCounter(qb64=qsc)
+    assert counter.raw == b''
+    assert counter.code == SigCntDex.Base2
+    assert counter.index == cnt
+    assert counter.count == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb2 == b'\xf8\x10\x05'
+
+
 
     """ Done Test """
 
@@ -1291,4 +1400,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_prefixer()
+    test_crycounter()
