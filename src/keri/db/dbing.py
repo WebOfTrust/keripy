@@ -345,7 +345,7 @@ class Logger(Databaser):
             cursor = txn.cursor()
             vals = []
 
-            if cursor.set_key_dup(key):
+            if cursor.set_key(key):  # moves to first_dup
                 vals.append(cursor.value())
 
                 while cursor.next_dup():
