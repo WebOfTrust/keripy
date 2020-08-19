@@ -196,6 +196,23 @@ class Databaser:
             shutil.rmtree(self.path)
 
 
+    @staticmethod
+    def dgKey(pre, dig):
+        """
+        Returns bytes DB key from concatenation of qualified Base64 prefix
+        bytes pre and qualified Base64 str digest of serialized event
+        """
+        return (b'%s.%s' %  (pre, dig))
+
+    @staticmethod
+    def snKey(pre, sn):
+        """
+        Returns bytes DB key from concatenation of qualified Base64 prefix
+        bytes pre and  int sn (sequence number) of event
+        """
+        return (b'%s.%032x' % (pre, sn))
+
+
 class Logger(Databaser):
     """
     Logger sets up named sub databases with Keri Event Logs within main database

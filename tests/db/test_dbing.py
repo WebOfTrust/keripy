@@ -64,8 +64,18 @@ def test_databaser():
     assert databaser.env.path() == databaser.path
     assert os.path.exists(databaser.path)
 
+    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    dig = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    sn = 3
+
+    assert databaser.snKey(pre, sn) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                        b'.00000000000000000000000000000003')
+    assert databaser.dgKey(pre, dig) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                         b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+
     databaser.clearDirPath()
     assert not os.path.exists(databaser.path)
+
     """ End Test """
 
 
@@ -121,4 +131,4 @@ def test_dupler():
 
 
 if __name__ == "__main__":
-    test_dupler()
+    test_databaser()
