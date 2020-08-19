@@ -203,10 +203,51 @@ class Logger(Databaser):
     Attributes:
         see superclass Databaser for inherited attributes
 
-        .kels is named sub DB of key event logs indexed by identifier prefix and
-                then by sequence number of event. Allows multiple values per index.
-        .kelds is named sub DB of key event logs indexed by identifer prefix and
-                then by digest of serialized key event
+        .evts is named sub DB whose values are serialized events
+            DB is keyed by identifer prefix plus digest of serialized event
+            Only one value per DB key is allowed
+
+        .sigs is named sub DB of full qualified event signatures
+            DB is keyed by identifer prefix plus digest of serialized event
+            More than one value per DB key is allowed
+
+        .rcts is named sub DB of event receipt couplets. Each couplet is
+            concatenation of fully qualified witness or validator prefix plus
+            fully qualified event signature by witness or validator
+            SB is keyed by identifer prefix plus digest of serialized event
+            More than one value per DB key is allowed
+
+        .kels is named sub DB of key event log tables that map sequence numbers
+            to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+        .pses is named sub DB of partially signed escrowed event tables
+            that map sequence numbers to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+        .ooes is named sub DB of out of order escrowed event tables
+            that map sequence numbers to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+        .dels is named sub DB of deplicitous event log tables that map sequence numbers
+            to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+        .pdes is named sub DB of potentially deplicitous escrowed event tables
+            that map sequence numbers to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+
     Properties:
 
 
@@ -220,14 +261,19 @@ class Logger(Databaser):
         """
         super(Logger, self).__init__(**kwa)
 
-        # create named sub dbs  within main DB instance
-        # sub db name must include a non Base64 character to avoid namespace
-        # collisions with Base64 aid prefixes. So use "."
-
-        self.kelds = self.env.open_db(key=b'kelds.')  #  open named sub db
+        # create by opening first time named sub DBs within main DB instance
+        # Names end with "." as sub DB name must include a non Base64 character
+        # to avoid namespace collisions with Base64 identifier prefixes.
         # dupsort=True means allow duplicates for sn indexed
-        self.kels = self.env.open_db(key=b'kels.', dupsort=True)  # open named sub db
 
+        self.evts = self.env.open_db(key=b'evts.')
+        self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
+        self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
+        self.kels = self.env.open_db(key=b'kels.', dupsort=True)
+        self.pses = self.env.open_db(key=b'pses.', dupsort=True)
+        self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
+        self.dels = self.env.open_db(key=b'dels.', dupsort=True)
+        self.pdes = self.env.open_db(key=b'pdes.', dupsort=True)
 
 
 class Dupler(Databaser):
@@ -237,10 +283,23 @@ class Dupler(Databaser):
     Attributes:
         see superclass Databaser for inherited attributes
 
-        .dels is named sub DB of duplicitous event logs indexed by identifier prefix and
-                then by sequence number of event. Allows multiple values per index.
-        .delps is named sub DB of potentials duplicitous event logs indexed by identifer prefix and
-                then by digest of serialized key event
+        .evts is named sub DB whose values are serialized events
+            DB is keyed by identifer prefix plus digest of serialized event
+            Only one value per DB key is allowed
+
+        .dels is named sub DB of deplicitous event log tables that map sequence numbers
+            to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+        .pdes is named sub DB of potentially deplicitous escrowed event tables
+            that map sequence numbers to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+
     Properties:
 
 
@@ -254,9 +313,11 @@ class Dupler(Databaser):
         """
         super(Dupler, self).__init__(**kwa)
 
-        # create named sub dbs  within main DB instance
-        # sub db name must include a non Base64 character to avoid namespace
-        # collisions with Base64 aid prefixes. So use "."
+        # create by opening first time named sub DBs within main DB instance
+        # Names end with "." as sub DB name must include a non Base64 character
+        # to avoid namespace collisions with Base64 identifier prefixes.
+        # dupsort=True means allow duplicates for sn indexed
 
-        self.dels = self.env.open_db(key=b'dels.')  #  open named sub db
-        self.delps = self.env.open_db(key=b'delps.')  #  open named sub db
+        self.evts = self.env.open_db(key=b'evts.')  #  open named sub db
+        self.dels = self.env.open_db(key=b'dels.', dupsort=True)
+        self.pdes = self.env.open_db(key=b'pdes.', dupsort=True)

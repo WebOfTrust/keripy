@@ -81,8 +81,14 @@ def test_logger():
     assert logger.env.path() == logger.path
     assert os.path.exists(logger.path)
 
+    assert isinstance(logger.evts, lmdb._Database)
+    assert isinstance(logger.sigs, lmdb._Database)
+    assert isinstance(logger.rcts, lmdb._Database)
     assert isinstance(logger.kels, lmdb._Database)
-    assert isinstance(logger.kelds, lmdb._Database)
+    assert isinstance(logger.ooes, lmdb._Database)
+    assert isinstance(logger.pses, lmdb._Database)
+    assert isinstance(logger.dels, lmdb._Database)
+    assert isinstance(logger.pdes, lmdb._Database)
 
     logger.clearDirPath()
     assert not os.path.exists(logger.path)
@@ -103,8 +109,9 @@ def test_dupler():
     assert dupler.env.path() == dupler.path
     assert os.path.exists(dupler.path)
 
+    assert isinstance(dupler.evts, lmdb._Database)
     assert isinstance(dupler.dels, lmdb._Database)
-    assert isinstance(dupler.delps, lmdb._Database)
+    assert isinstance(dupler.pdes, lmdb._Database)
 
     dupler.clearDirPath()
     assert not os.path.exists(dupler.path)
