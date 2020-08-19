@@ -284,7 +284,7 @@ class CryMat:
 
     """
 
-    def __init__(self, raw=None, qb64=None, qb2=None, code=CryOneDex.Ed25519N):
+    def __init__(self, raw=None, qb64=None, qb2=None, code=CryOneDex.Ed25519N, index=0):
         """
         Validate as fully qualified
         Parameters:
@@ -292,6 +292,7 @@ class CryMat:
             qb64 is str of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
             code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
 
         When raw provided then validate that code is correct for length of raw
             and assign .raw
@@ -316,6 +317,7 @@ class CryMat:
                                                              CryRawSizes[code]))
 
             self._code = code
+            self._index = index
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
         elif qb64 is not None:
@@ -350,6 +352,7 @@ class CryMat:
         """
         return self._pad(self._raw)
 
+
     @property
     def code(self):
         """
@@ -357,6 +360,16 @@ class CryMat:
         Makes .code read only
         """
         return self._code
+
+
+    @property
+    def index(self):
+        """
+        Returns ._index
+        Makes .index read only
+        """
+        return self._index
+
 
     @property
     def raw(self):
@@ -366,19 +379,29 @@ class CryMat:
         """
         return self._raw
 
+
     def _infil(self):
         """
-        Returns fully qualified base64 given self.pad, self.code and self.raw
+        Returns fully qualified base64 given self.pad, self.code, self.count
+        and self.raw
         code is Codex value
+        count is attached receipt couplet count when applicable for CryCntDex codes
         raw is bytes or bytearray
         """
+        if self._code in CryCntDex:
+            l = CryIdxSizes[self._code]  # count length b64 characters
+            # full is pre code + index
+            full = "{}{}".format(self._code, IntToB64(self._index, l=l))
+        else:
+            full = self._code
+
         pad = self.pad
         # valid pad for code length
-        if len(self._code) % 4 != pad:  # pad is not remainder of len(code) % 4
+        if len(full) % 4 != pad:  # pad is not remainder of len(code) % 4
             raise ValidationError("Invalid code = {} for converted raw pad = {}."
-                                  .format(self._code, self.pad))
+                                  .format(full, self.pad))
         # prepending derivation code and strip off trailing pad characters
-        return (self._code + encodeB64(self._raw).decode("utf-8")[:-pad])
+        return (full + encodeB64(self._raw).decode("utf-8")[:-pad])
 
 
     def _exfil(self, qb64):
@@ -427,6 +450,7 @@ class CryMat:
 
         self._code = code
         self._raw = raw
+
 
     @property
     def qb64(self):
@@ -1581,6 +1605,7 @@ class SigMat:
         """
         return self._pad(self._raw)
 
+
     @property
     def code(self):
         """
@@ -1588,6 +1613,7 @@ class SigMat:
         Makes .code read only
         """
         return self._code
+
 
     @property
     def index(self):
