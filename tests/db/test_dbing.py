@@ -10,6 +10,11 @@ import lmdb
 from keri.db.dbing import clearDatabaserDir, openDatabaser
 from keri.db.dbing import Databaser, Logger, Dupler
 
+from keri.core.coring import Signer, Nexter, Prefixer
+from keri.core.coring import CryCntDex, CryOneDex, CryTwoDex, CryFourDex
+
+from keri.core.eventing import incept, rotate, interact, Kever, Kevery
+
 def test_opendatabaser():
     """
     test contextmanager decorator for test databases
@@ -155,13 +160,71 @@ def test_uselogger():
     """
     Test using logger to
     """
-    with openDatabaser(cls=Logger) as logger:
-        pass
+    # Some secrets to use on the events
+    secrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
 
+    #  create signers from the secrets
+    signers = [Signer(qb64=secret) for secret in secrets]  # faster
+    assert [siger.qb64 for siger in signers] == secrets
+
+
+
+    with openDatabaser(cls=Logger) as logger:
+        # Event 0  Inception Transferable (nxt digest not empty) 2 0f 3 multisig
+        keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
+        count = len(keys)
+        nxtkeys = [signers[3].verfer.qb64, signers[4].verfer.qb64, signers[5].verfer.qb64]
+        sith = 2
+        code = CryOneDex.Blake3_256  # Blake3 digest of incepting data
+        serder = incept(keys=keys,
+                        code=code,
+                        sith=sith,
+                        nxt=Nexter(keys=nxtkeys).qb64)
+
+
+        # sign serialization
+        sigers = [signers[i].sign(serder.raw, index=i) for i in range(count)]
+        # create key event verifier state
+        kever = Kever(serder=serder, sigers=sigers)
+
+        # Event 1 Rotation Transferable
+        keys = nxtkeys
+        nxtkeys = [signers[5].verfer.qb64, signers[6].verfer.qb64, signers[7].verfer.qb64]
+        serder = rotate(pre=kever.prefixer.qb64,
+                        keys=keys,
+                        sith=sith,
+                        dig=kever.diger.qb64,
+                        nxt=Nexter(keys=nxtkeys).qb64,
+                        sn=1)
+
+        # sign serialization
+        sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
+        # update key event verifier state
+        kever.update(serder=serder, sigers=sigers)
+
+
+        # Event 2 Interaction
+        serder = interact(pre=kever.prefixer.qb64,
+                          dig=kever.diger.qb64,
+                          sn=2)
+
+        # sign serialization  (keys don't change for signing)
+        sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
+        # update key event verifier state
+        kever.update(serder=serder, sigers=sigers)
 
     assert not os.path.exists(logger.path)
 
     """ End Test """
 
 if __name__ == "__main__":
-    test_databaser()
+    test_uselogger()

@@ -306,7 +306,7 @@ class Logger(Databaser):
         Returns None if no entry at key
 
         """
-        with self.env.begin(db=self.evts, write=False) as txn:
+        with self.env.begin(db=self.evts, write=False, buffers=True) as txn:
             val = txn.get(key)
 
         return val
@@ -318,7 +318,7 @@ class Logger(Databaser):
         Overwrites existing val if any
         Returns True If val successfully written Else False
         """
-        with self.env.begin(db=self.evts, write=True) as txn:
+        with self.env.begin(db=self.evts, write=True, buffers=True) as txn:
             result = txn.put(key, val)
 
         return result
@@ -329,7 +329,7 @@ class Logger(Databaser):
         Deletes value at key.
         Returns True If key exists in database Else False
         """
-        with self.env.begin(db=self.evts, write=True) as txn:
+        with self.env.begin(db=self.evts, write=True, buffers=True) as txn:
             result = txn.delete(key)
 
         return result
@@ -337,11 +337,11 @@ class Logger(Databaser):
 
     def getSigs(self, key):
         """
-        Return list of sigantures at key
+        Return list of signatures at key
         Returns empty list if no entry at key
 
         """
-        with self.env.begin(db=self.sigs, write=False) as txn:
+        with self.env.begin(db=self.sigs, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             vals = []
 
@@ -360,14 +360,14 @@ class Logger(Databaser):
         Adds to existing signatures if any
         Returns True If only one first written val in vals Else False
         """
-        with self.env.begin(db=self.sigs, write=True) as txn:
+        with self.env.begin(db=self.sigs, write=True, buffers=True) as txn:
             for val in vals:
                 result = txn.put(key, val, dupdata=True, )
 
         return result
 
 
-    def delSigs(self, key, dupdata=True):
+    def delSigs(self, key, dupdata=True, buffers=True):
         """
         Deletes value at key.
         Returns True If key exists in database Else False
