@@ -95,11 +95,58 @@ class CrySelectCodex:
     """
     two:  str = '0'  # use two character table.
     four: str = '1'  # use four character table.
+    dash: str = '-'  # use four character count table.
 
     def __iter__(self):
         return iter(astuple(self))
 
 CrySelDex = CrySelectCodex()  # Make instance
+
+
+@dataclass(frozen=True)
+class CryCntCodex:
+    """
+    CryCntCodex codex of four character length derivation codes that indicate
+    count (number) of attached receipt couplets following a receipt statement .
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    .raw is empty
+
+    Note binary length of everything in CryCntCodex results in 0 Base64 pad bytes.
+
+    First two code characters select format of attached signatures
+    Next two code charaters select count total of attached signatures to an event
+    Only provide first two characters here
+    """
+    Base64: str =  '-A'  # Fully Qualified Base64 Format Receipt Couplets.
+    Base2:  str =  '-B'  # Fully Qualified Base2 Format Receipt Couplets.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+CryCntDex = CryCntCodex()  #  Make instance
+
+# Mapping of Code to Size
+# Total size  qb64
+CryCntSizes = {
+                "-A": 4,
+                "-B": 4,
+              }
+
+# size of index portion of code qb64
+CryCntIdxSizes = {
+                   "-A": 2,
+                   "-B": 2,
+                 }
+
+# total size of raw unqualified
+CryCntRawSizes = {
+                   "-A": 0,
+                   "-B": 0,
+                 }
+
+CRYCNTMAX = 4095  # maximum count value given two base 64 digits
+
 
 @dataclass(frozen=True)
 class CryOneCodex:
@@ -203,14 +250,19 @@ CryFourRawSizes = {
                   }
 
 # all sizes in one dict
-CrySizes = dict(CryOneSizes)
+CrySizes = dict(CryCntSizes)
+CrySizes.update(CryOneSizes)
 CrySizes.update(CryTwoSizes)
 CrySizes.update(CryFourSizes)
 
 # all sizes in one dict
-CryRawSizes = dict(CryOneRawSizes)
+CryRawSizes = dict(CryCntRawSizes)
+CryRawSizes.update(CryOneRawSizes)
 CryRawSizes.update(CryTwoRawSizes)
 CryRawSizes.update(CryFourRawSizes)
+
+# all sizes in one dict
+CryIdxSizes = dict(CryCntIdxSizes)
 
 
 class CryMat:
@@ -232,7 +284,7 @@ class CryMat:
 
     """
 
-    def __init__(self, raw=None, qb64=None, qb2=None, code=CryOneDex.Ed25519N):
+    def __init__(self, raw=None, qb64=None, qb2=None, code=CryOneDex.Ed25519N, index=0):
         """
         Validate as fully qualified
         Parameters:
@@ -240,6 +292,7 @@ class CryMat:
             qb64 is str of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
             code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
 
         When raw provided then validate that code is correct for length of raw
             and assign .raw
@@ -252,9 +305,13 @@ class CryMat:
             pad = self._pad(raw)
             if (not ( (pad == 1 and (code in CryOneDex)) or  # One or Five or Nine
                       (pad == 2 and (code in CryTwoDex)) or  # Two or Six or Ten
-                      (pad == 0 and (code in CryFourDex)) )):  #  Four or Eight
+                      (pad == 0 and (code in CryFourDex)) or # Four or Eight
+                      (pad == 0 and (code in CryCntDex)) )):  # Cnt Four
 
                 raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
+
+            if (code in CryCntDex and ((index < 0) or (index > CRYCNTMAX))):
+                raise ValidationError("Invalid index={} for code={}.".format(index, code))
 
             raw = raw[:CryRawSizes[code]]  #  allows longer by truncating if stream
             if len(raw) != CryRawSizes[code]:  # forbids shorter
@@ -264,6 +321,7 @@ class CryMat:
                                                              CryRawSizes[code]))
 
             self._code = code
+            self._index = index
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
         elif qb64 is not None:
@@ -298,6 +356,7 @@ class CryMat:
         """
         return self._pad(self._raw)
 
+
     @property
     def code(self):
         """
@@ -305,6 +364,16 @@ class CryMat:
         Makes .code read only
         """
         return self._code
+
+
+    @property
+    def index(self):
+        """
+        Returns ._index
+        Makes .index read only
+        """
+        return self._index
+
 
     @property
     def raw(self):
@@ -314,19 +383,29 @@ class CryMat:
         """
         return self._raw
 
+
     def _infil(self):
         """
-        Returns fully qualified base64 given self.pad, self.code and self.raw
+        Returns fully qualified base64 given self.pad, self.code, self.count
+        and self.raw
         code is Codex value
+        count is attached receipt couplet count when applicable for CryCntDex codes
         raw is bytes or bytearray
         """
+        if self._code in CryCntDex:
+            l = CryIdxSizes[self._code]  # count length b64 characters
+            # full is pre code + index
+            full = "{}{}".format(self._code, IntToB64(self._index, l=l))
+        else:
+            full = self._code
+
         pad = self.pad
         # valid pad for code length
-        if len(self._code) % 4 != pad:  # pad is not remainder of len(code) % 4
+        if len(full) % 4 != pad:  # pad is not remainder of len(code) % 4
             raise ValidationError("Invalid code = {} for converted raw pad = {}."
-                                  .format(self._code, self.pad))
+                                  .format(full, self.pad))
         # prepending derivation code and strip off trailing pad characters
-        return (self._code + encodeB64(self._raw).decode("utf-8")[:-pad])
+        return (full + encodeB64(self._raw).decode("utf-8")[:-pad])
 
 
     def _exfil(self, qb64):
@@ -335,6 +414,7 @@ class CryMat:
         """
         pre = 1
         code = qb64[:pre]
+        index = 0
 
         # need to map code to length so can only consume proper number of chars
         #  from front of qb64 so can use with full identifiers not just prefixes
@@ -348,6 +428,22 @@ class CryMat:
             if code not in CryTwoDex:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:CryTwoSizes[code]]  # strip of identifier after prefix
+
+        elif code == CrySelDex.four: # first char of four char cnt code
+            pre += 3
+            code = qb64[pre-4:pre]  #  get full code
+            if code not in CryFourDex:
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+            qb64 = qb64[:CryFourSizes[code]]  # strip of identifier after prefix
+
+        elif code == CrySelDex.dash:  #  '-' 2 char code + 2 char index count
+            pre += 1
+            code = qb64[pre-2:pre]
+            if code not in CryCntDex:  # 4 char = 2 code + 2 index
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
+            qb64 = qb64[:CryCntSizes[code]]  # strip of exact len identifier after prefix
+            pre += 2
+            index = B64ToInt(qb64[pre-2:pre])
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
@@ -367,7 +463,9 @@ class CryMat:
             raise ValueError("Improperly qualified material = {}".format(qb64))
 
         self._code = code
+        self._index = index
         self._raw = raw
+
 
     @property
     def qb64(self):
@@ -399,6 +497,66 @@ class CryMat:
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil().encode("utf-8"))
+
+
+class CryCounter(CryMat):
+    """
+    CryCounter is subclass of CryMat, cryptographic material,
+    CryCrount provides count of following number of attached cryptographic
+    material items in its .count property.
+    Useful when parsing attached receipt couplets from stream where CryCounter
+    instance qb64 is inserted after Serder of receipt statement and
+    before attached receipt couplets.
+
+    Changes default initialization code = CryCntDex.Base64
+    Raises error on init if code not in CryCntDex
+
+    See CryMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .count is int count of attached signatures (same as .index)
+
+    Methods:
+
+
+    """
+    def __init__(self, raw=None, qb64=None, qb2=None, code=CryCntDex.Base64,
+                 index=None, count=None, **kwa):
+        """
+
+        Parameters:  See CryMat for inherted parameters
+            count is int number of attached sigantures same as index
+
+        """
+        raw = b'' if raw is not None else raw  # force raw to be empty is
+
+        if raw is None and qb64 is None and qb2 is None:
+            raw = b''
+
+        # accept either index or count to init index
+        if count is not None:
+            index = count
+        if index is None:
+            index = 1  # most common case
+
+        # force raw empty
+        super(CryCounter, self).__init__(raw=raw, qb64=qb64, qb2=qb2,
+                                         code=code, index=index, **kwa)
+
+        if self.code not in CryCntDex:
+            raise ValidationError("Invalid code = {} for CryCounter."
+                                  "".format(self.code))
+
+    @property
+    def count(self):
+        """
+        Property counter:
+        Returns .index as count
+        Assumes ._index is correctly assigned
+        """
+        return self.index
 
 
 class Verfer(CryMat):
@@ -920,6 +1078,17 @@ class Prefixer(CryMat):
         return (self._derive(ked=ked, seed=seed, secret=secret))
 
 
+    def verify(self, ked):
+        """
+        Returns True if derivation from iked for .code matches .qb64,
+                False otherwise
+
+        Parameters:
+            ked is inception key event dict
+        """
+        return (self._verify(ked=ked, pre=self.qb64))
+
+
     def _DeriveBasicEd25519N(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic nontransferable Ed25519 prefix (qb64)
@@ -950,6 +1119,32 @@ class Prefixer(CryMat):
         return (verfer.raw, verfer.code)
 
 
+    def _VerifyBasicEd25519N(self, ked, pre):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 pre from inception iked dict
+
+        Parameters:
+            ked is inception key event dict
+            pre is Base64 fully qualified prefix
+        """
+        try:
+            keys = ked["keys"]
+            if len(keys) != 1:
+                return False
+
+            if keys[0] != pre:
+                return False
+
+            if ked["nxt"]:  # must be empty
+                return False
+
+        except Exception as ex:
+            return False
+
+        return True
+
+
     def _DeriveBasicEd25519(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
@@ -970,6 +1165,29 @@ class Prefixer(CryMat):
                                   "".format(verfer.code))
 
         return (verfer.raw, verfer.code)
+
+
+    def _VerifyBasicEd25519(self, ked, pre):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 prefix from
+        inception key event dict (ked)
+
+        Parameters:
+            ked is inception key event dict
+            pre is Base64 fully qualified prefix
+        """
+        try:
+            keys = ked["keys"]
+            if len(keys) != 1:
+                return False
+
+            if keys[0] != pre:
+                return False
+        except Exception as ex:
+            return False
+
+        return True
 
 
     def _DeriveDigBlake3_256(self, ked, seed=None, secret=None):
@@ -998,6 +1216,29 @@ class Prefixer(CryMat):
         ser = "".join(values).encode("utf-8")
         dig =  blake3.blake3(ser).digest()
         return (dig, CryOneDex.Blake3_256)
+
+
+    def _VerifyDigBlake3_256(self, ked, pre):
+        """
+        Returns True if verified raises exception otherwise
+        Verify derivation of fully qualified Base64 prefix from
+        inception key event dict (ked)
+
+        Parameters:
+            ked is inception key event dict
+            pre is Base64 fully qualified
+        """
+        try:
+            raw, code =  self._DeriveDigBlake3_256(ked=ked)
+            crymat = CryMat(raw=raw, code=CryOneDex.Blake3_256)
+            if crymat.qb64 != pre:
+                return False
+
+        except Exception as ex:
+            return False
+
+        return True
+
 
     def _DeriveSigEd25519(self, ked, seed=None, secret=None):
         """
@@ -1051,88 +1292,6 @@ class Prefixer(CryMat):
         # sig = pysodium.crypto_sign_detached(ser, signer.raw + verfer.raw)
 
         return (sigver.raw, CryTwoDex.Ed25519)
-
-
-    def verify(self, ked):
-        """
-        Returns True if derivation from iked for .code matches .qb64,
-                False otherwise
-
-        Parameters:
-            ked is inception key event dict
-        """
-        return (self._verify(ked=ked, pre=self.qb64))
-
-
-    def _VerifyBasicEd25519N(self, ked, pre):
-        """
-        Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 pre from inception iked dict
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified prefix
-        """
-        try:
-            keys = ked["keys"]
-            if len(keys) != 1:
-                return False
-
-            if keys[0] != pre:
-                return False
-
-            if ked["nxt"]:  # must be empty
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
-
-
-    def _VerifyBasicEd25519(self, ked, pre):
-        """
-        Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 prefix from
-        inception key event dict (ked)
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified prefix
-        """
-        try:
-            keys = ked["keys"]
-            if len(keys) != 1:
-                return False
-
-            if keys[0] != pre:
-                return False
-        except Exception as ex:
-            return False
-
-        return True
-
-
-    def _VerifyDigBlake3_256(self, ked, pre):
-        """
-        Returns True if verified raises exception otherwise
-        Verify derivation of fully qualified Base64 prefix from
-        inception key event dict (ked)
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified
-        """
-        try:
-            raw, code =  self._DeriveDigBlake3_256(ked=ked)
-            crymat = CryMat(raw=raw, code=CryOneDex.Blake3_256)
-            if crymat.qb64 != pre:
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
 
 
     def _VerifySigEd25519(self, ked, pre):
@@ -1521,6 +1680,7 @@ class SigMat:
         """
         return self._pad(self._raw)
 
+
     @property
     def code(self):
         """
@@ -1528,6 +1688,7 @@ class SigMat:
         Makes .code read only
         """
         return self._code
+
 
     @property
     def index(self):
@@ -1677,7 +1838,6 @@ class SigCounter(SigMat):
     def __init__(self, raw=None, qb64=None, qb2=None, code=SigCntDex.Base64,
                  index=None, count=None, **kwa):
         """
-        Assign verfer to ._verfer
 
         Parameters:  See CryMat for inherted parameters
             count is int number of attached sigantures same as index

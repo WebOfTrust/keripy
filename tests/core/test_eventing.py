@@ -783,14 +783,14 @@ def test_kevery():
 
     assert len(kes) == 3349
 
-    klogs = Logs(kevers=dict(), kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
+    klogs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
 
     kevery = Kevery(logs=klogs)
     kevery.processAll(kes=kes)
 
     pre = kever.prefixer.qb64
-    assert pre in klogs.kevers
-    vkever = klogs.kevers[pre]
+    assert pre in kevery.kevers
+    vkever = kevery.kevers[pre]
     assert vkever.sn == kever.sn
     assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
     assert vkever.verfers[0].qb64 == signers[4].verfer.qb64
@@ -941,14 +941,14 @@ def test_multisig_digaid():
 
     assert len(kes) == 2783
 
-    klogs = Logs(kevers=dict(), kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
+    klogs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
 
     kevery = Kevery(logs=klogs)
     kevery.processAll(kes=kes)
 
     pre = kever.prefixer.qb64
-    assert pre in klogs.kevers
-    vkever = klogs.kevers[pre]
+    assert pre in kevery.kevers
+    vkever = kevery.kevers[pre]
     assert vkever.sn == kever.sn
     assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
     assert vkever.verfers[0].qb64 == signers[5].verfer.qb64
