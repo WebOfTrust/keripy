@@ -282,13 +282,23 @@ class Logger(Databaser):
 
         Parameters:
 
+        Notes:
+
+        dupsort=True for sub DB means allow unique (key,pair) duplicates at a key.
+        Duplicate means that is more than one value at a key but not a redundant
+        copies a (key,value) pair per key. In other words the pair (key,value)
+        must be unique both key and value in combination.
+        Attempting to put the same (key,value) pair a second time does
+        not add another copy.
+
+        Duplicates are inserted in lexocographic order by value, insertion order.
+
         """
         super(Logger, self).__init__(**kwa)
 
-        # create by opening first time named sub DBs within main DB instance
+        # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
-        # dupsort=True means allow duplicates for sn indexed
 
         self.evts = self.env.open_db(key=b'evts.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
@@ -340,16 +350,14 @@ class Logger(Databaser):
         Return list of signatures at key
         Returns empty list if no entry at key
 
+        Duplicates are retrieved in lexocographic order not insertion order.
         """
         with self.env.begin(db=self.sigs, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             vals = []
 
             if cursor.set_key(key):  # moves to first_dup
-                vals.append(cursor.value())
-
-                while cursor.next_dup():
-                    vals.append(cursor.value())
+                vals = [val for val in cursor.iternext_dup()]
 
         return vals
 
@@ -359,6 +367,8 @@ class Logger(Databaser):
         Write each entry from list of bytes signatures vals to key
         Adds to existing signatures if any
         Returns True If only one first written val in vals Else False
+
+        Duplicates are inserted in lexocographic order not insertion order.
         """
         with self.env.begin(db=self.sigs, write=True, buffers=True) as txn:
             for val in vals:
@@ -367,12 +377,12 @@ class Logger(Databaser):
         return result
 
 
-    def delSigs(self, key, dupdata=True, buffers=True):
+    def delSigs(self, key, dupdata=True):
         """
         Deletes value at key.
         Returns True If key exists in database Else False
         """
-        with self.env.begin(db=self.sigs, write=True) as txn:
+        with self.env.begin(db=self.sigs, write=True, buffers=True) as txn:
             result = txn.delete(key)
 
         return result

@@ -4,14 +4,16 @@ tests.db.dbing module
 
 """
 import os
+import json
 
 import lmdb
 
 from keri.db.dbing import clearDatabaserDir, openDatabaser
 from keri.db.dbing import Databaser, Logger, Dupler
 
-from keri.core.coring import Signer, Nexter, Prefixer
+from keri.core.coring import Signer, Nexter, Prefixer, Serder
 from keri.core.coring import CryCntDex, CryOneDex, CryTwoDex, CryFourDex
+from keri.core.coring import Serials, Vstrings, Versify
 
 from keri.core.eventing import incept, rotate, interact, Kever, Kevery
 
@@ -130,6 +132,63 @@ def test_logger():
 
     assert not os.path.exists(logger.path)
 
+    pre = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    preb = pre.encode("utf-8")
+    dig = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    digb = dig.encode("utf-8")
+    sig0 = 'AAz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'
+    sig0b = sig0.encode("utf-8")
+    sig1 = 'AB_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z'
+    sig1b = sig1.encode("utf-8")
+    sn = 3
+    vs = Versify(kind=Serials.json, size=20)
+    assert vs == 'KERI10JSON000014_'
+
+    ked = dict(vs=vs, pre="ABCDEFG", sn="{:x}".format(sn), ilk="rot", dig=dig)
+    skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    assert skedb == (b'{"vs":"KERI10JSON000014_","pre":"ABCDEFG","sn":"3","ilk":"rot","dig":"EGAPkz'
+                     b'NZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4"}')
+
+    with openDatabaser(cls=Logger) as lgr:
+        key = lgr.dgKey(preb, digb)
+        assert key == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
+                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+
+        assert lgr.getEvt(key) == None
+        assert lgr.delEvt(key) == False
+
+        assert lgr.putEvt(key, val=skedb) == True
+        assert lgr.putEvt(key, val=skedb) == True
+
+        assert lgr.getEvt(key) == skedb
+        assert lgr.delEvt(key) == True
+        assert lgr.getEvt(key) == None
+
+        assert lgr.getSigs(key) == []
+        assert lgr.delSigs(key) == False
+
+
+        # dup vals are lexocographic
+        assert lgr.putSigs(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert lgr.getSigs(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.putSigs(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getSigs(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.delSigs(key) == True
+        assert lgr.getSigs(key) == []
+
+        assert lgr.putSigs(key, vals=[sig0b]) == True
+        assert lgr.getSigs(key) == [sig0b]
+        assert lgr.putSigs(key, vals=[sig1b]) == True
+        assert lgr.getSigs(key) == [sig0b, sig1b]
+        assert lgr.delSigs(key) == True
+        assert lgr.putSigs(key, vals=[sig1b, sig0b]) == True
+        assert lgr.getSigs(key) == [sig0b, sig1b]
+
+        assert lgr.delSigs(key) == True
+        assert lgr.getSigs(key) == []
+
+    assert not os.path.exists(lgr.path)
+
 
     """ End Test """
 
@@ -227,4 +286,4 @@ def test_uselogger():
     """ End Test """
 
 if __name__ == "__main__":
-    test_uselogger()
+    test_logger()
