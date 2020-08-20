@@ -132,41 +132,47 @@ def test_logger():
 
     assert not os.path.exists(logger.path)
 
-    pre = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-    preb = pre.encode("utf-8")
-    dig = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
-    digb = dig.encode("utf-8")
-    sig0 = 'AAz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'
-    sig0b = sig0.encode("utf-8")
-    sig1 = 'AB_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z'
-    sig1b = sig1.encode("utf-8")
+    preb = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
+    digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
     sn = 3
     vs = Versify(kind=Serials.json, size=20)
     assert vs == 'KERI10JSON000014_'
 
-    ked = dict(vs=vs, pre="ABCDEFG", sn="{:x}".format(sn), ilk="rot", dig=dig)
+    ked = dict(vs=vs, pre=preb.decode("utf-8"),
+               sn="{:x}".format(sn),
+               ilk="rot",
+               dig=digb.decode("utf-8"))
     skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert skedb == (b'{"vs":"KERI10JSON000014_","pre":"ABCDEFG","sn":"3","ilk":"rot","dig":"EGAPkz'
-                     b'NZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4"}')
+    assert skedb == (b'{"vs":"KERI10JSON000014_","pre":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                     b'c","sn":"3","ilk":"rot","dig":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4"'
+                     b'}')
+
+
+    sig0b = 'AAz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'.encode("utf-8")
+    sig1b = 'AB_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z'.encode("utf-8")
+
+    wit0b = 'BmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGwT'.encode("utf-8")
+    wit1b = 'BjhccWzwEHHzq7K0gzmuupUhPx5_yZ-Wk1x4eQPYGGwT'.encode("utf-8")
+    wsig0b = '0A1Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ9'.encode("utf-8")
+    wsig1b = '0A5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2zJ91Timrykocna6Z'.encode("utf-8")
 
     with openDatabaser(cls=Logger) as lgr:
         key = lgr.dgKey(preb, digb)
         assert key == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
                        b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
 
+        #  test .evts sub db methods
         assert lgr.getEvt(key) == None
         assert lgr.delEvt(key) == False
-
         assert lgr.putEvt(key, val=skedb) == True
         assert lgr.putEvt(key, val=skedb) == True
-
         assert lgr.getEvt(key) == skedb
         assert lgr.delEvt(key) == True
         assert lgr.getEvt(key) == None
 
+        # test .sigs sub db methods
         assert lgr.getSigs(key) == []
         assert lgr.delSigs(key) == False
-
 
         # dup vals are lexocographic
         assert lgr.putSigs(key, vals=[b"z", b"m", b"x", b"a"]) == True
@@ -183,9 +189,31 @@ def test_logger():
         assert lgr.delSigs(key) == True
         assert lgr.putSigs(key, vals=[sig1b, sig0b]) == True
         assert lgr.getSigs(key) == [sig0b, sig1b]
-
         assert lgr.delSigs(key) == True
         assert lgr.getSigs(key) == []
+
+        # test .rcts sub db methods
+        assert lgr.getRcts(key) == []
+        assert lgr.delRcts(key) == False
+
+        # dup vals are lexocographic
+        assert lgr.putRcts(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert lgr.getRcts(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.putRcts(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getRcts(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.delRcts(key) == True
+        assert lgr.getRcts(key) == []
+
+        assert lgr.putRcts(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
+        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.putRcts(key, vals=[wit1b + wsig1b]) == True
+        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.delRcts(key) == True
+        assert lgr.putRcts(key, vals=[wit1b + wsig1b, wit0b + wsig0b]) == True
+        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.delRcts(key) == True
+        assert lgr.getRcts(key) == []
+
 
     assert not os.path.exists(lgr.path)
 

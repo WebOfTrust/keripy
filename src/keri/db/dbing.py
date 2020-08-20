@@ -365,7 +365,7 @@ class Logger(Databaser):
     def putSigs(self, key, vals):
         """
         Write each entry from list of bytes signatures vals to key
-        Adds to existing signatures if any
+        Adds to existing signatures at key if any
         Returns True If only one first written val in vals Else False
 
         Duplicates are inserted in lexocographic order not insertion order.
@@ -379,13 +379,57 @@ class Logger(Databaser):
 
     def delSigs(self, key, dupdata=True):
         """
-        Deletes value at key.
+        Deletes all values at key.
         Returns True If key exists in database Else False
         """
         with self.env.begin(db=self.sigs, write=True, buffers=True) as txn:
             result = txn.delete(key)
 
         return result
+
+
+    def getRcts(self, key):
+        """
+        Return list of receipt couplets at key
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        with self.env.begin(db=self.rcts, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            vals = []
+
+            if cursor.set_key(key):  # moves to first_dup
+                vals = [val for val in cursor.iternext_dup()]
+
+        return vals
+
+
+    def putRcts(self, key, vals):
+        """
+        Write each entry from list of bytes receipt couplets vals to key
+        Adds to existing receipts at key if any
+        Returns True If only one first written val in vals Else False
+
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        with self.env.begin(db=self.rcts, write=True, buffers=True) as txn:
+            for val in vals:
+                result = txn.put(key, val, dupdata=True, )
+
+        return result
+
+
+    def delRcts(self, key, dupdata=True):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        with self.env.begin(db=self.rcts, write=True, buffers=True) as txn:
+            result = txn.delete(key)
+
+        return result
+
 
 
 class Dupler(Databaser):
