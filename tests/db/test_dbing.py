@@ -8,7 +8,7 @@ import json
 
 import lmdb
 
-from keri.db.dbing import clearDatabaserDir, openDatabaser
+from keri.db.dbing import clearDatabaserDir, openDatabaser, openLogger
 from keri.db.dbing import Databaser, Logger, Dupler
 
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
@@ -83,6 +83,21 @@ def test_databaser():
     databaser.clearDirPath()
     assert not os.path.exists(databaser.path)
 
+    with openDatabaser() as dber:
+        db = dber.env.open_db(key=b'stuff.')
+        key = b'A'
+        val = b'whatever'
+        assert dber.getVal(db, key) == None
+        assert dber.delVal(db, key) == False
+        assert dber.putVal(db, key, val) == True
+        assert dber.putVal(db, key, val) == True
+        assert dber.getVal(db, key) == val
+        assert dber.delVal(db, key) == True
+        assert dber.getVal(db, key) == None
+
+
+    assert not os.path.exists(dber.path)
+
     """ End Test """
 
 
@@ -156,7 +171,7 @@ def test_logger():
     wsig0b = '0A1Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ9'.encode("utf-8")
     wsig1b = '0A5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2zJ91Timrykocna6Z'.encode("utf-8")
 
-    with openDatabaser(cls=Logger) as lgr:
+    with openLogger() as lgr:
         key = lgr.dgKey(preb, digb)
         assert key == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
                        b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
@@ -265,7 +280,7 @@ def test_uselogger():
 
 
 
-    with openDatabaser(cls=Logger) as logger:
+    with openLogger() as lgr:
         # Event 0  Inception Transferable (nxt digest not empty) 2 0f 3 multisig
         keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
         count = len(keys)
@@ -309,9 +324,9 @@ def test_uselogger():
         # update key event verifier state
         kever.update(serder=serder, sigers=sigers)
 
-    assert not os.path.exists(logger.path)
+    assert not os.path.exists(lgr.path)
 
     """ End Test """
 
 if __name__ == "__main__":
-    test_logger()
+    test_databaser()
