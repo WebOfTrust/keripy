@@ -225,14 +225,12 @@ class Databaser:
         Returns None if no entry at key
 
         Parameters:
-            db is opened named sub db
+            db is opened named sub db with dupsort=False
             key is bytes of key within sub db's keyspace
 
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
-            val = txn.get(key)
-
-        return val
+            return( txn.get(key))
 
 
     def putVal(self, db, key, val):
@@ -242,14 +240,12 @@ class Databaser:
         Returns True If val successfully written Else False
 
         Parameters:
-            db is opened named sub db
+            db is opened named sub db with dupsort=False
             key is bytes of key within sub db's keyspace
             val is bytes of value to be written
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            result = txn.put(key, val)
-
-        return result
+            return (txn.put(key, val))
 
 
     def delVal(self, db, key):
@@ -258,13 +254,64 @@ class Databaser:
         Returns True If key exists in database Else False
 
         Parameters:
-            db is opened named sub db
+            db is opened named sub db with dupsort=False
             key is bytes of key within sub db's keyspace
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            result = txn.delete(key)
+            return (txn.delete(key))
 
-        return result
+
+    def getVals(self, db, key):
+        """
+        Return list of values at key in db
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            vals = []
+            if cursor.set_key(key):  # moves to first_dup
+                vals = [val for val in cursor.iternext_dup()]
+            return vals
+
+
+    def putVals(self, db, key, vals):
+        """
+        Write each entry from list of bytes vals to key in db
+        Adds to existing signatures at key if any
+        Returns True If only one first written val in vals Else False
+
+        Duplicates are inserted in lexocographic order not insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            vals is list of bytes of values to be written
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            result = True
+            for val in vals:
+                result = result and txn.put(key, val, dupdata=True, )
+            return result
+
+
+    def delVals(self,db, key, dupdata=True):
+        """
+        Deletes all values at key in db.
+        Returns True If key exists in db Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            return (txn.delete(key))
 
 
 def openLogger(name="test"):
@@ -425,8 +472,9 @@ class Logger(Databaser):
         Duplicates are inserted in lexocographic order not insertion order.
         """
         with self.env.begin(db=self.sigs, write=True, buffers=True) as txn:
+            result = True
             for val in vals:
-                result = txn.put(key, val, dupdata=True, )
+                result = result and txn.put(key, val, dupdata=True, )
 
         return result
 
@@ -468,8 +516,9 @@ class Logger(Databaser):
         Duplicates are inserted in lexocographic order not insertion order.
         """
         with self.env.begin(db=self.rcts, write=True, buffers=True) as txn:
+            result = True
             for val in vals:
-                result = txn.put(key, val, dupdata=True, )
+                result = result and txn.put(key, val, dupdata=True, )
 
         return result
 

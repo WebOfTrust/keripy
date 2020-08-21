@@ -84,9 +84,12 @@ def test_databaser():
     assert not os.path.exists(databaser.path)
 
     with openDatabaser() as dber:
-        db = dber.env.open_db(key=b'stuff.')
+
         key = b'A'
         val = b'whatever'
+        db = dber.env.open_db(key=b'beep.')
+
+        #test val methods
         assert dber.getVal(db, key) == None
         assert dber.delVal(db, key) == False
         assert dber.putVal(db, key, val) == True
@@ -94,6 +97,21 @@ def test_databaser():
         assert dber.getVal(db, key) == val
         assert dber.delVal(db, key) == True
         assert dber.getVal(db, key) == None
+
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+        db = dber.env.open_db(key=b'boop.', dupsort=True)
+
+        # test vals dup methods  dup vals are lexocographic
+        assert dber.getVals(db, key) == []
+        assert dber.delVals(db, key) == False
+        assert dber.putVals(db, key, vals) == True
+        assert dber.getVals(db, key) == [b'a', b'm', b'x', b'z']
+        assert dber.putVals(db, key, vals=[b'a']) == True   # duplicate
+        assert dber.getVals(db, key) == [b'a', b'm', b'x', b'z']
+        assert dber.delVals(db, key) == True
+        assert dber.getVals(db, key) == []
+
 
 
     assert not os.path.exists(dber.path)
