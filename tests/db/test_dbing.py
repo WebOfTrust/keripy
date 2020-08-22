@@ -293,6 +293,22 @@ def test_logger():
         assert lgr.delKels(key) == True
         assert lgr.getKels(key) == []
 
+        # test .pses insertion order dup methods.  dup vals are insertion order
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+
+        assert lgr.getPses(key) == []
+        assert lgr.getPsesLast(key) == None
+        assert lgr.delPses(key) == False
+        assert lgr.putPses(key, vals) == True
+        assert lgr.getPses(key) == vals  # preserved insertion order
+        assert lgr.getPsesLast(key) == vals[-1]
+        assert lgr.putPses(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getPses(key) == vals  #  no change
+        assert lgr.delPses(key) == True
+        assert lgr.getPses(key) == []
+
+
 
     assert not os.path.exists(lgr.path)
 

@@ -684,6 +684,45 @@ class Logger(Databaser):
         return self.delIoVals(self.kels, key)
 
 
+    def putPses(self, key, vals):
+        """
+        Write each partial signed event entry from list of bytes vals to key
+        Adds to existing event indexes at key if any
+        Returns True If no error
+
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.pses, key, vals)
+
+
+    def getPses(self, key):
+        """
+        Return list of partial signed event vals at key
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.pses, key)
+
+
+    def getPsesLast(self, key):
+        """
+        Return last inserted dup partial signed event at key
+        Returns None if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsLast(self.pses, key)
+
+
+    def delPses(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.pses, key)
+
+
 
 class Dupler(Databaser):
     """
