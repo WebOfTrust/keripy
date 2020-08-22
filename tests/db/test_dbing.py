@@ -84,12 +84,11 @@ def test_databaser():
     assert not os.path.exists(databaser.path)
 
     with openDatabaser() as dber:
-
+        #test Val methods
         key = b'A'
         val = b'whatever'
         db = dber.env.open_db(key=b'beep.')
 
-        #test val methods
         assert dber.getVal(db, key) == None
         assert dber.delVal(db, key) == False
         assert dber.putVal(db, key, val) == True
@@ -98,21 +97,33 @@ def test_databaser():
         assert dber.delVal(db, key) == True
         assert dber.getVal(db, key) == None
 
+        # test Vals dup methods.  dup vals are lexocographic
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
         db = dber.env.open_db(key=b'boop.', dupsort=True)
 
-        # test vals dup methods  dup vals are lexocographic
         assert dber.getVals(db, key) == []
         assert dber.delVals(db, key) == False
         assert dber.putVals(db, key, vals) == True
-        assert dber.getVals(db, key) == [b'a', b'm', b'x', b'z']
+        assert dber.getVals(db, key) == [b'a', b'm', b'x', b'z']  #  lexocographic order
         assert dber.putVals(db, key, vals=[b'a']) == True   # duplicate
-        assert dber.getVals(db, key) == [b'a', b'm', b'x', b'z']
+        assert dber.getVals(db, key) == [b'a', b'm', b'x', b'z']  #  no change
         assert dber.delVals(db, key) == True
         assert dber.getVals(db, key) == []
 
+        # test IoVals insertion order dup methods.  dup vals are insertion order
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+        db = dber.env.open_db(key=b'peep.', dupsort=True)
 
+        assert dber.getIoVals(db, key) == []
+        assert dber.delIoVals(db, key) == False
+        assert dber.putIoVals(db, key, vals) == True
+        assert dber.getIoVals(db, key) == vals  # preserved insertion order
+        assert dber.putIoVals(db, key, vals=[b'a']) == True   # duplicate
+        assert dber.getIoVals(db, key) == vals  #  no change
+        assert dber.delIoVals(db, key) == True
+        assert dber.getIoVals(db, key) == []
 
     assert not os.path.exists(dber.path)
 

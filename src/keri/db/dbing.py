@@ -219,19 +219,6 @@ class Databaser:
         """
         return (b'%s.%032x' % (pre, sn))
 
-    def getVal(self, db, key):
-        """
-        Return val at key in db
-        Returns None if no entry at key
-
-        Parameters:
-            db is opened named sub db with dupsort=False
-            key is bytes of key within sub db's keyspace
-
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            return( txn.get(key))
-
 
     def putVal(self, db, key, val):
         """
@@ -248,6 +235,20 @@ class Databaser:
             return (txn.put(key, val))
 
 
+    def getVal(self, db, key):
+        """
+        Return val at key in db
+        Returns None if no entry at key
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            return( txn.get(key))
+
+
     def delVal(self, db, key):
         """
         Deletes value at key in db.
@@ -259,6 +260,28 @@ class Databaser:
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             return (txn.delete(key))
+
+
+    def putVals(self, db, key, vals):
+        """
+        Write each entry from list of bytes vals to key in db
+        Adds to existing values at key if any
+        Returns True If only one first written val in vals Else False
+
+        Duplicates are inserted in lexocographic order not insertion order.
+        Lmdb does not insert a duplicate unless it is a unique value for that
+        key.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            vals is list of bytes of values to be written
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            result = True
+            for val in vals:
+                result = result and txn.put(key, val, dupdata=True)
+            return result
 
 
     def getVals(self, db, key):
@@ -281,27 +304,85 @@ class Databaser:
             return vals
 
 
-    def putVals(self, db, key, vals):
+    def delVals(self,db, key, dupdata=True):
         """
-        Write each entry from list of bytes vals to key in db
-        Adds to existing signatures at key if any
+        Deletes all values at key in db.
+        Returns True If key exists in db Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            return (txn.delete(key))
+
+
+    def putIoVals(self, db, key, vals):
+        """
+        Write each entry from list of bytes vals to key in db in insertion order
+        Adds to existing values at key if any
         Returns True If only one first written val in vals Else False
 
-        Duplicates are inserted in lexocographic order not insertion order.
+        Duplicates preserve insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates. With prepended ordinal must explicity
+        check for duplicate values before insertion. Uses a python set for the
+        duplicate inclusion test. Set inclusion scales with O(1) whereas list
+        inclusion scales with O(n).
 
         Parameters:
             db is opened named sub db with dupsort=False
             key is bytes of key within sub db's keyspace
             vals is list of bytes of values to be written
         """
+        dups = set(self.getIoVals(db, key))  #get preexisting dups if any
         with self.env.begin(db=db, write=True, buffers=True) as txn:
+            cnt = 0
+            cursor = txn.cursor()
+            if cursor.set_key(key):
+                cnt = cursor.count()
             result = True
             for val in vals:
-                result = result and txn.put(key, val, dupdata=True, )
+                if val not in dups:
+                    val = (b'%06x.' % (cnt)) +  val  # prepend ordering prefix
+                    result = result and txn.put(key, val, dupdata=True)
+                    cnt += 1
             return result
 
 
-    def delVals(self,db, key, dupdata=True):
+    def getIoVals(self, db, key):
+        """
+        Return list of values at key in db in insertion order
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates,
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            vals = []
+            if cursor.set_key(key):  # moves to first_dup
+                # slice off prepended ordering prefix
+                vals = [val[7:] for val in cursor.iternext_dup()]
+            return vals
+
+
+
+    def delIoVals(self,db, key, dupdata=True):
         """
         Deletes all values at key in db.
         Returns True If key exists in db Else False
