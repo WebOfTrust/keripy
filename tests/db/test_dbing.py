@@ -146,7 +146,7 @@ def test_logger():
 
     assert isinstance(logger.evts, lmdb._Database)
     assert isinstance(logger.sigs, lmdb._Database)
-    assert isinstance(logger.edts, lmdb._Database)
+    assert isinstance(logger.dtss, lmdb._Database)
     assert isinstance(logger.rcts, lmdb._Database)
     assert isinstance(logger.kels, lmdb._Database)
     assert isinstance(logger.ooes, lmdb._Database)
@@ -169,7 +169,7 @@ def test_logger():
 
         assert isinstance(logger.evts, lmdb._Database)
         assert isinstance(logger.sigs, lmdb._Database)
-        assert isinstance(logger.edts, lmdb._Database)
+        assert isinstance(logger.dtss, lmdb._Database)
         assert isinstance(logger.rcts, lmdb._Database)
         assert isinstance(logger.kels, lmdb._Database)
         assert isinstance(logger.ooes, lmdb._Database)

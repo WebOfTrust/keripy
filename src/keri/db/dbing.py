@@ -450,8 +450,8 @@ class Logger(Databaser):
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .edts is named sub DB of datetime strings in ISO 8601 format of datetime
-            when event first seen by log.
+        .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
+            the datetime when the event was first seen by log.
             Used for escrows timeouts and extended validation.
             DB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
@@ -517,7 +517,7 @@ class Logger(Databaser):
 
         self.evts = self.env.open_db(key=b'evts.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
-        self.edts = self.env.open_db(key=b'edts.', dupsort=True)
+        self.dtss = self.env.open_db(key=b'dtss.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
@@ -526,17 +526,6 @@ class Logger(Databaser):
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
 
-    def getEvt(self, key):
-        """
-        Return event at key
-        Returns None if no entry at key
-
-        """
-        with self.env.begin(db=self.evts, write=False, buffers=True) as txn:
-            val = txn.get(key)
-
-        return val
-
 
     def putEvt(self, key, val):
         """
@@ -544,10 +533,16 @@ class Logger(Databaser):
         Overwrites existing val if any
         Returns True If val successfully written Else False
         """
-        with self.env.begin(db=self.evts, write=True, buffers=True) as txn:
-            result = txn.put(key, val)
+        return self.putVal(self.evts, key, val)
 
-        return result
+
+    def getEvt(self, key):
+        """
+        Return event at key
+        Returns None if no entry at key
+
+        """
+        return self.getVal(self.evts, key)
 
 
     def delEvt(self, key):
@@ -555,10 +550,7 @@ class Logger(Databaser):
         Deletes value at key.
         Returns True If key exists in database Else False
         """
-        with self.env.begin(db=self.evts, write=True, buffers=True) as txn:
-            result = txn.delete(key)
-
-        return result
+        return self.delVal(self.evts, key)
 
 
     def getSigs(self, key):
@@ -568,14 +560,7 @@ class Logger(Databaser):
 
         Duplicates are retrieved in lexocographic order not insertion order.
         """
-        with self.env.begin(db=self.sigs, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            vals = []
-
-            if cursor.set_key(key):  # moves to first_dup
-                vals = [val for val in cursor.iternext_dup()]
-
-        return vals
+        return self.getVals(self.sigs, key)
 
 
     def putSigs(self, key, vals):
@@ -586,40 +571,54 @@ class Logger(Databaser):
 
         Duplicates are inserted in lexocographic order not insertion order.
         """
-        with self.env.begin(db=self.sigs, write=True, buffers=True) as txn:
-            result = True
-            for val in vals:
-                result = result and txn.put(key, val, dupdata=True, )
-
-        return result
+        return self.putVals(self.sigs, key, vals)
 
 
-    def delSigs(self, key, dupdata=True):
+    def getSigs(self, key):
         """
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        with self.env.begin(db=self.sigs, write=True, buffers=True) as txn:
-            result = txn.delete(key)
-
-        return result
-
-
-    def getRcts(self, key):
-        """
-        Return list of receipt couplets at key
+        Return list of signatures at key
         Returns empty list if no entry at key
 
         Duplicates are retrieved in lexocographic order not insertion order.
         """
-        with self.env.begin(db=self.rcts, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            vals = []
+        return self.getVals(self.sigs, key)
 
-            if cursor.set_key(key):  # moves to first_dup
-                vals = [val for val in cursor.iternext_dup()]
 
-        return vals
+    def delSigs(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVals(self.sigs, key)
+
+
+    def putDtss(self, key, vals):
+        """
+        Write each entry from list of bytes datetime stamps vals to key
+        Adds to existing datetime stamps at key if any
+        Returns True If only one first written val in vals Else False
+
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        return self.putVals(self.dtss, key, vals)
+
+
+    def getDtss(self, key):
+        """
+        Return list of bytes datetime stamps  at key
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getVals(self.dtss, key)
+
+
+    def delDtss(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVals(self.dtss, key)
 
 
     def putRcts(self, key, vals):
@@ -630,12 +629,17 @@ class Logger(Databaser):
 
         Duplicates are inserted in lexocographic order not insertion order.
         """
-        with self.env.begin(db=self.rcts, write=True, buffers=True) as txn:
-            result = True
-            for val in vals:
-                result = result and txn.put(key, val, dupdata=True, )
+        return self.putVals(self.rcts, key, vals)
 
-        return result
+
+    def getRcts(self, key):
+        """
+        Return list of receipt couplets at key
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getVals(self.rcts, key)
 
 
     def delRcts(self, key, dupdata=True):
@@ -643,10 +647,7 @@ class Logger(Databaser):
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
-        with self.env.begin(db=self.rcts, write=True, buffers=True) as txn:
-            result = txn.delete(key)
-
-        return result
+        return self.delVals(self.rcts, key)
 
 
 
