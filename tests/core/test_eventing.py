@@ -804,7 +804,7 @@ def test_kevery():
     """ Done Test """
 
 
-def test_multisig_digaid():
+def test_multisig_digprefix():
     """
     Test multisig with self-addressing (digest) pre
     """
