@@ -23,6 +23,7 @@ from orderedset import OrderedSet as oset
 from ..kering import ValidationError, VersionError, EmptyMaterialError, DerivationError
 from ..kering import Versionage, Version
 from ..help.helping import mdict
+from ..db.dbing import Logger
 
 from .coring import Versify, Serials, Ilks, CryOneDex
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder
@@ -764,13 +765,17 @@ class Kevery:
     Properties:
 
     """
-    def __init__(self,kevers=None, logs=None,  framed=True):
+    def __init__(self, kevers=None, logger=None, logs=None,  framed=True):
         """
         Set up event stream and logs
 
         """
         self.framed = True if framed else False  # extract until end-of-stream
         self.kevers = kevers if kevers is not None else dict()
+        if logger is None:
+            logger = Logger()  # default name = "main"
+        self.logger = logger
+
         if logs is None:
             logs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
         self.logs = logs

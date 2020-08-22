@@ -3,6 +3,8 @@
 tests.core.test_eventing module
 
 """
+import os
+
 import pytest
 
 import pysodium
@@ -30,6 +32,8 @@ from keri.core.coring import Ilkage, Ilks
 
 from keri.core.eventing import Logs, TraitDex
 from keri.core.eventing import incept, rotate, interact, Kever, Kevery
+
+from keri.db.dbing import openLogger, Logger
 
 def test_ilks():
     """
@@ -784,16 +788,18 @@ def test_kevery():
     assert len(kes) == 3349
 
     klogs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
+    with openLogger() as logger:
+        kevery = Kevery(logger=logger, logs=klogs)
+        kevery.processAll(kes=kes)
 
-    kevery = Kevery(logs=klogs)
-    kevery.processAll(kes=kes)
+        pre = kever.prefixer.qb64
+        assert pre in kevery.kevers
+        vkever = kevery.kevers[pre]
+        assert vkever.sn == kever.sn
+        assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
+        assert vkever.verfers[0].qb64 == signers[4].verfer.qb64
 
-    pre = kever.prefixer.qb64
-    assert pre in kevery.kevers
-    vkever = kevery.kevers[pre]
-    assert vkever.sn == kever.sn
-    assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
-    assert vkever.verfers[0].qb64 == signers[4].verfer.qb64
+    assert not os.path.exists(kevery.logger.path)
 
     """ Done Test """
 
@@ -942,16 +948,18 @@ def test_multisig_digaid():
     assert len(kes) == 2783
 
     klogs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
+    with openLogger() as logger:
+        kevery = Kevery(logger=logger, logs=klogs)
+        kevery.processAll(kes=kes)
 
-    kevery = Kevery(logs=klogs)
-    kevery.processAll(kes=kes)
+        pre = kever.prefixer.qb64
+        assert pre in kevery.kevers
+        vkever = kevery.kevers[pre]
+        assert vkever.sn == kever.sn
+        assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
+        assert vkever.verfers[0].qb64 == signers[5].verfer.qb64
 
-    pre = kever.prefixer.qb64
-    assert pre in kevery.kevers
-    vkever = kevery.kevers[pre]
-    assert vkever.sn == kever.sn
-    assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
-    assert vkever.verfers[0].qb64 == signers[5].verfer.qb64
+    assert not os.path.exists(kevery.logger.path)
 
     """ Done Test """
 
