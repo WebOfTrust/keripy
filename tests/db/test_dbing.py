@@ -286,6 +286,21 @@ def test_logger():
         assert lgr.delRcts(key) == True
         assert lgr.getRcts(key) == []
 
+        # test .kels insertion order dup methods.  dup vals are insertion order
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+
+        assert lgr.getKels(key) == []
+        assert lgr.getKelsLast(key) == None
+        assert lgr.delKels(key) == False
+        assert lgr.putKels(key, vals) == True
+        assert lgr.getKels(key) == vals  # preserved insertion order
+        assert lgr.getKelsLast(key) == vals[-1]
+        assert lgr.putKels(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getKels(key) == vals  #  no change
+        assert lgr.delKels(key) == True
+        assert lgr.getKels(key) == []
+
 
     assert not os.path.exists(lgr.path)
 
@@ -386,4 +401,4 @@ def test_uselogger():
     """ End Test """
 
 if __name__ == "__main__":
-    test_databaser()
+    test_logger()

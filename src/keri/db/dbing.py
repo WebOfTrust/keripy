@@ -381,20 +381,6 @@ class Databaser:
             return vals
 
 
-
-    def delIoVals(self,db, key, dupdata=True):
-        """
-        Deletes all values at key in db.
-        Returns True If key exists in db Else False
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-        """
-        with self.env.begin(db=db, write=True, buffers=True) as txn:
-            return (txn.delete(key))
-
-
     def getIoValsLast(self, db, key):
         """
         Return last added dup value at key in db in insertion order
@@ -420,6 +406,20 @@ class Databaser:
                 if cursor.last_dup(): # move to last_dup
                     val = cursor.value()[7:]  # slice off prepended ordering prefix
             return val
+
+
+    def delIoVals(self,db, key, dupdata=True):
+        """
+        Deletes all values at key in db.
+        Returns True If key exists in db Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            return (txn.delete(key))
+
 
 
 def openLogger(name="test"):
@@ -567,7 +567,7 @@ class Logger(Databaser):
         """
         Write each entry from list of bytes signatures vals to key
         Adds to existing signatures at key if any
-        Returns True If only one first written val in vals Else False
+        Returns True If no error
 
         Duplicates are inserted in lexocographic order not insertion order.
         """
@@ -596,7 +596,7 @@ class Logger(Databaser):
         """
         Write each entry from list of bytes datetime stamps vals to key
         Adds to existing datetime stamps at key if any
-        Returns True If only one first written val in vals Else False
+        Returns True If no error
 
         Duplicates are inserted in lexocographic order not insertion order.
         """
@@ -625,7 +625,7 @@ class Logger(Databaser):
         """
         Write each entry from list of bytes receipt couplets vals to key
         Adds to existing receipts at key if any
-        Returns True If only one first written val in vals Else False
+        Returns True If no error
 
         Duplicates are inserted in lexocographic order not insertion order.
         """
@@ -642,12 +642,51 @@ class Logger(Databaser):
         return self.getVals(self.rcts, key)
 
 
-    def delRcts(self, key, dupdata=True):
+    def delRcts(self, key):
         """
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
         return self.delVals(self.rcts, key)
+
+
+    def putKels(self, key, vals):
+        """
+        Write each entry from list of bytes vals to key
+        Adds to existing event indexes at key if any
+        Returns True If no error
+
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.kels, key, vals)
+
+
+    def getKels(self, key):
+        """
+        Return list of receipt couplets at key
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.kels, key)
+
+
+    def getKelsLast(self, key):
+        """
+        Return last inserted dup event at key
+        Returns None if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsLast(self.kels, key)
+
+
+    def delKels(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.kels, key)
 
 
 
