@@ -647,7 +647,7 @@ class Logger(Databaser):
 
     def putKels(self, key, vals):
         """
-        Write each entry from list of bytes vals to key
+        Write each dig entry from list of bytes vals to key
         Adds to existing event indexes at key if any
         Returns True If no error
 
@@ -658,7 +658,7 @@ class Logger(Databaser):
 
     def getKels(self, key):
         """
-        Return list of receipt couplets at key
+        Return list of key event dig entries at key
         Returns empty list if no entry at key
 
         Duplicates are retrieved in insertion order.
@@ -668,7 +668,7 @@ class Logger(Databaser):
 
     def getKelsLast(self, key):
         """
-        Return last inserted dup event at key
+        Return last inserted dup event dig at key
         Returns None if no entry at key
 
         Duplicates are retrieved in insertion order.
@@ -721,6 +721,124 @@ class Logger(Databaser):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.pses, key)
+
+
+    def putOoes(self, key, vals):
+        """
+        Write each out of order escrow event dig entry from list of bytes vals to key
+        Adds to existing event indexes at key if any
+        Returns True If no error
+
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.ooes, key, vals)
+
+
+    def getOoes(self, key):
+        """
+        Return list of out of order escrow event dig vals at key
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.ooes, key)
+
+
+    def getOoesLast(self, key):
+        """
+        Return last inserted dup out of order escrow event dig at key
+        Returns None if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsLast(self.ooes, key)
+
+
+    def delOoes(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.ooes, key)
+
+
+    def putDels(self, key, vals):
+        """
+        Write each duplicitous event entry dig from list of bytes vals to key
+        Adds to existing event indexes at key if any
+        Returns True If no error
+
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.dels, key, vals)
+
+
+    def getDels(self, key):
+        """
+        Return list of duplicitous event dig vals at key
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.dels, key)
+
+
+    def getDelsLast(self, key):
+        """
+        Return last inserted dup duplicitous event dig at key
+        Returns None if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsLast(self.dels, key)
+
+
+    def delDels(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.dels, key)
+
+
+    def putLdes(self, key, vals):
+        """
+        Write each likely duplicitous event entry dig from list of bytes vals to key
+        Adds to existing event indexes at key if any
+        Returns True If no error
+
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.ldes, key, vals)
+
+
+    def getLdes(self, key):
+        """
+        Return list of likely duplicitous event dig vals at key
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.ldes, key)
+
+
+    def getLdesLast(self, key):
+        """
+        Return last inserted dup likely duplicitous event dig at key
+        Returns None if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsLast(self.ldes, key)
+
+
+    def delLdes(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.ldes, key)
+
 
 
 

@@ -308,6 +308,50 @@ def test_logger():
         assert lgr.delPses(key) == True
         assert lgr.getPses(key) == []
 
+        # test .ooes insertion order dup methods.  dup vals are insertion order
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+
+        assert lgr.getOoes(key) == []
+        assert lgr.getOoesLast(key) == None
+        assert lgr.delOoes(key) == False
+        assert lgr.putOoes(key, vals) == True
+        assert lgr.getOoes(key) == vals  # preserved insertion order
+        assert lgr.getOoesLast(key) == vals[-1]
+        assert lgr.putOoes(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getOoes(key) == vals  #  no change
+        assert lgr.delOoes(key) == True
+        assert lgr.getOoes(key) == []
+
+        # test .dels insertion order dup methods.  dup vals are insertion order
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+
+        assert lgr.getDels(key) == []
+        assert lgr.getDelsLast(key) == None
+        assert lgr.delDels(key) == False
+        assert lgr.putDels(key, vals) == True
+        assert lgr.getDels(key) == vals  # preserved insertion order
+        assert lgr.getDelsLast(key) == vals[-1]
+        assert lgr.putDels(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getDels(key) == vals  #  no change
+        assert lgr.delDels(key) == True
+        assert lgr.getDels(key) == []
+
+        # test .ldes insertion order dup methods.  dup vals are insertion order
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+
+        assert lgr.getLdes(key) == []
+        assert lgr.getLdesLast(key) == None
+        assert lgr.delLdes(key) == False
+        assert lgr.putLdes(key, vals) == True
+        assert lgr.getLdes(key) == vals  # preserved insertion order
+        assert lgr.getLdesLast(key) == vals[-1]
+        assert lgr.putLdes(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getLdes(key) == vals  #  no change
+        assert lgr.delLdes(key) == True
+        assert lgr.getLdes(key) == []
 
 
     assert not os.path.exists(lgr.path)
