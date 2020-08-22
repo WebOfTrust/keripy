@@ -125,7 +125,7 @@ class Databaser:
     TailDirPath = "keri/db"
     AltHeadDirPath = "~"  #  put in ~ when /var not permitted
     AltTailDirPath = ".keri/db"
-    MaxNamedDBs = 8
+    MaxNamedDBs = 16
 
     def __init__(self, headDirPath=None, name='main', temp=False):
         """
@@ -413,7 +413,7 @@ class Logger(Databaser):
             DB is keyed by identifer prefix plus digest of serialized event
             Only one value per DB key is allowed
 
-        .sigs is named sub DB of full qualified event signatures
+        .sigs is named sub DB of fully qualified event signatures
             DB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
@@ -421,6 +421,12 @@ class Logger(Databaser):
             concatenation of fully qualified witness or validator prefix plus
             fully qualified event signature by witness or validator
             SB is keyed by identifer prefix plus digest of serialized event
+            More than one value per DB key is allowed
+
+        .edts is named sub DB of datetime strings in ISO 8601 format of datetime
+            when event first seen by log.
+            Used for escrows timeouts and extended validation.
+            DB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .kels is named sub DB of key event log tables that map sequence numbers
@@ -447,7 +453,7 @@ class Logger(Databaser):
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .pdes is named sub DB of potentially deplicitous escrowed event tables
+        .ldes is named sub DB of likely deplicitous escrowed event tables
             that map sequence numbers to serialized event digests.
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifer prefix plus sequence number of key event
@@ -484,12 +490,13 @@ class Logger(Databaser):
 
         self.evts = self.env.open_db(key=b'evts.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
+        self.edts = self.env.open_db(key=b'edts.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
-        self.pdes = self.env.open_db(key=b'pdes.', dupsort=True)
+        self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
 
     def getEvt(self, key):

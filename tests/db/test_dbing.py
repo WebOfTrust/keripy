@@ -144,12 +144,13 @@ def test_logger():
 
     assert isinstance(logger.evts, lmdb._Database)
     assert isinstance(logger.sigs, lmdb._Database)
+    assert isinstance(logger.edts, lmdb._Database)
     assert isinstance(logger.rcts, lmdb._Database)
     assert isinstance(logger.kels, lmdb._Database)
     assert isinstance(logger.ooes, lmdb._Database)
     assert isinstance(logger.pses, lmdb._Database)
     assert isinstance(logger.dels, lmdb._Database)
-    assert isinstance(logger.pdes, lmdb._Database)
+    assert isinstance(logger.ldes, lmdb._Database)
 
     logger.clearDirPath()
     assert not os.path.exists(logger.path)
@@ -166,12 +167,13 @@ def test_logger():
 
         assert isinstance(logger.evts, lmdb._Database)
         assert isinstance(logger.sigs, lmdb._Database)
+        assert isinstance(logger.edts, lmdb._Database)
         assert isinstance(logger.rcts, lmdb._Database)
         assert isinstance(logger.kels, lmdb._Database)
         assert isinstance(logger.ooes, lmdb._Database)
         assert isinstance(logger.pses, lmdb._Database)
         assert isinstance(logger.dels, lmdb._Database)
-        assert isinstance(logger.pdes, lmdb._Database)
+        assert isinstance(logger.ldes, lmdb._Database)
 
 
     assert not os.path.exists(logger.path)
