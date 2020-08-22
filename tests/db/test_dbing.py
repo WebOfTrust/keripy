@@ -17,6 +17,8 @@ from keri.core.coring import Serials, Vstrings, Versify
 
 from keri.core.eventing import incept, rotate, interact, Kever, Kevery
 
+from keri.help.helping import nowIso8601, toIso8601, fromIso8601
+
 def test_opendatabaser():
     """
     test contextmanager decorator for test databases
@@ -239,6 +241,28 @@ def test_logger():
         assert lgr.getSigs(key) == [sig0b, sig1b]
         assert lgr.delSigs(key) == True
         assert lgr.getSigs(key) == []
+
+        # test .dtss sub db methods
+        assert lgr.getDtss(key) == []
+        assert lgr.delDtss(key) == False
+
+        # dup vals are lexocographic
+        assert lgr.putDtss(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert lgr.getDtss(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.putDtss(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getDtss(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.delDtss(key) == True
+        assert lgr.getDtss(key) == []
+
+        assert lgr.putDtss(key, vals=[sig0b]) == True
+        assert lgr.getDtss(key) == [sig0b]
+        assert lgr.putDtss(key, vals=[sig1b]) == True
+        assert lgr.getDtss(key) == [sig0b, sig1b]
+        assert lgr.delDtss(key) == True
+        assert lgr.putDtss(key, vals=[sig1b, sig0b]) == True
+        assert lgr.getDtss(key) == [sig0b, sig1b]
+        assert lgr.delDtss(key) == True
+        assert lgr.getDtss(key) == []
 
         # test .rcts sub db methods
         assert lgr.getRcts(key) == []

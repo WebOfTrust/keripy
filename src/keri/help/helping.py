@@ -251,6 +251,7 @@ def nowIso8601():
     """
     return (datetime.datetime.now(datetime.timezone.utc).isoformat())
 
+
 def toIso8601(dt=None):
     """
     Returns str datetime dt in ISO 8601 format
@@ -269,10 +270,10 @@ def toIso8601(dt=None):
     return(dt.isoformat())
 
 
-def fromIso8601(dtstr):
+def fromIso8601(dts):
     """
     Returns datetime object from ISO 8601 formated str
-    Converts dtstr from ISO 8601 format to datetime object
+    Converts dts from ISO 8601 format to datetime object
 
     YYYY-MM-DDTHH:MM:SS.ffffff+HH:MM[:SS[.ffffff]]
     .strftime('%Y-%m-%dT%H:%M:%S.%f%z')
@@ -280,4 +281,4 @@ def fromIso8601(dtstr):
     Assumes TZ aware
     For nanosecond use instead attotime or datatime64 in pandas or numpy
     """
-    return (datetime.fromisoformat(dtstr))
+    return (datetime.datetime.fromisoformat(dts))
