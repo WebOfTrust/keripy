@@ -215,10 +215,24 @@ def test_logger():
         assert lgr.getEvt(key) == None
         assert lgr.delEvt(key) == False
         assert lgr.putEvt(key, val=skedb) == True
+        assert lgr.getEvt(key) == skedb
         assert lgr.putEvt(key, val=skedb) == True
         assert lgr.getEvt(key) == skedb
         assert lgr.delEvt(key) == True
         assert lgr.getEvt(key) == None
+
+        # test .dtss sub db methods
+        val1 = b'2020-08-22T17:50:09.988921+00:00'
+        val2 = b'2020-08-22T17:50:09.988921+00:00'
+
+        assert lgr.getDts(key) == None
+        assert lgr.delDts(key) == False
+        assert lgr.putDts(key, val1) == True
+        assert lgr.getDts(key) == val1
+        assert lgr.putDts(key, val2) == True
+        assert lgr.getDts(key) == val2
+        assert lgr.delDts(key) == True
+        assert lgr.getDts(key) == None
 
         # test .sigs sub db methods
         assert lgr.getSigs(key) == []
@@ -241,28 +255,6 @@ def test_logger():
         assert lgr.getSigs(key) == [sig0b, sig1b]
         assert lgr.delSigs(key) == True
         assert lgr.getSigs(key) == []
-
-        # test .dtss sub db methods
-        assert lgr.getDtss(key) == []
-        assert lgr.delDtss(key) == False
-
-        # dup vals are lexocographic
-        assert lgr.putDtss(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert lgr.getDtss(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.putDtss(key, vals=[b'a']) == True   # duplicate
-        assert lgr.getDtss(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.delDtss(key) == True
-        assert lgr.getDtss(key) == []
-
-        assert lgr.putDtss(key, vals=[sig0b]) == True
-        assert lgr.getDtss(key) == [sig0b]
-        assert lgr.putDtss(key, vals=[sig1b]) == True
-        assert lgr.getDtss(key) == [sig0b, sig1b]
-        assert lgr.delDtss(key) == True
-        assert lgr.putDtss(key, vals=[sig1b, sig0b]) == True
-        assert lgr.getDtss(key) == [sig0b, sig1b]
-        assert lgr.delDtss(key) == True
-        assert lgr.getDtss(key) == []
 
         # test .rcts sub db methods
         assert lgr.getRcts(key) == []

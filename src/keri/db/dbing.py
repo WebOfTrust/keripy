@@ -440,6 +440,12 @@ class Logger(Databaser):
             DB is keyed by identifer prefix plus digest of serialized event
             Only one value per DB key is allowed
 
+        .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
+            the datetime when the event was first seen by log.
+            Used for escrows timeouts and extended validation.
+            DB is keyed by identifer prefix plus digest of serialized event
+            Only one value per DB key is allowed
+
         .sigs is named sub DB of fully qualified event signatures
             DB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
@@ -448,12 +454,6 @@ class Logger(Databaser):
             concatenation of fully qualified witness or validator prefix plus
             fully qualified event signature by witness or validator
             SB is keyed by identifer prefix plus digest of serialized event
-            More than one value per DB key is allowed
-
-        .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
-            the datetime when the event was first seen by log.
-            Used for escrows timeouts and extended validation.
-            DB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .kels is named sub DB of key event log tables that map sequence numbers
@@ -516,8 +516,8 @@ class Logger(Databaser):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.evts = self.env.open_db(key=b'evts.')
+        self.dtss = self.env.open_db(key=b'dtss.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
-        self.dtss = self.env.open_db(key=b'dtss.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
@@ -540,7 +540,6 @@ class Logger(Databaser):
         """
         Return event at key
         Returns None if no entry at key
-
         """
         return self.getVal(self.evts, key)
 
@@ -551,6 +550,31 @@ class Logger(Databaser):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.evts, key)
+
+
+    def putDts(self, key, val):
+        """
+        Write serialized event datetime stamp val to key
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.putVal(self.dtss, key, val)
+
+
+    def getDts(self, key):
+        """
+        Return datetime stamp at key
+        Returns None if no entry at key
+        """
+        return self.getVal(self.dtss, key)
+
+
+    def delDts(self, key):
+        """
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.dtss, key)
 
 
     def getSigs(self, key):
@@ -590,35 +614,6 @@ class Logger(Databaser):
         Returns True If key exists in database Else False
         """
         return self.delVals(self.sigs, key)
-
-
-    def putDtss(self, key, vals):
-        """
-        Write each entry from list of bytes datetime stamps vals to key
-        Adds to existing datetime stamps at key if any
-        Returns True If no error
-
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.dtss, key, vals)
-
-
-    def getDtss(self, key):
-        """
-        Return list of bytes datetime stamps  at key
-        Returns empty list if no entry at key
-
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.dtss, key)
-
-
-    def delDtss(self, key):
-        """
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVals(self.dtss, key)
 
 
     def putRcts(self, key, vals):
