@@ -1001,9 +1001,11 @@ class Logger(Databaser):
 
     def getKelIter(self, pre):
         """
-        Returns iterator of all dup vals for all entries with same prefix across all
-        sequence numbers in insertion order. Assumes that key is combination
-        of prefix and sequence number given by .snKey().
+        Returns iterator of all dup vals in insertion order for all entries
+        with same prefix across all sequence numbers without gaps. Stops if
+        encounters gap.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
 
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
