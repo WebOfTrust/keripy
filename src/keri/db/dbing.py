@@ -320,6 +320,21 @@ class Databaser:
             return vals
 
 
+    def cntVals(self, db, key):
+        """
+        Return count of dup values at key in db, or zero otherwise
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            count = 0
+            if cursor.set_key(key):  # moves to first_dup
+                count = cursor.count()
+            return count
+
     def delVals(self,db, key, dupdata=True):
         """
         Deletes all values at key in db.
@@ -422,6 +437,22 @@ class Databaser:
                 if cursor.last_dup(): # move to last_dup
                     val = cursor.value()[7:]  # slice off prepended ordering prefix
             return val
+
+
+    def cntIoVals(self, db, key):
+        """
+        Return count of dup values at key in db, or zero otherwise
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            count = 0
+            if cursor.set_key(key):  # moves to first_dup
+                count = cursor.count()
+            return count
 
 
     def delIoVals(self,db, key, dupdata=True):
@@ -641,6 +672,14 @@ class Logger(Databaser):
         return self.getVals(self.sigs, key)
 
 
+    def cntSigs(self, key):
+        """
+        Return count of signatures at key
+        Returns zero if no entry at key
+        """
+        return self.cntVals(self.sigs, key)
+
+
     def delSigs(self, key):
         """
         Deletes all values at key.
@@ -668,6 +707,14 @@ class Logger(Databaser):
         Duplicates are retrieved in lexocographic order not insertion order.
         """
         return self.getVals(self.rcts, key)
+
+
+    def cntRcts(self, key):
+        """
+        Return count of receipt couplets at key
+        Returns zero if no entry at key
+        """
+        return self.cntVals(self.rcts, key)
 
 
     def delRcts(self, key):
@@ -709,6 +756,14 @@ class Logger(Databaser):
         return self.getIoValsLast(self.kels, key)
 
 
+    def cntKels(self, key):
+        """
+        Return count of dup event dig at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.kels, key)
+
+
     def delKels(self, key):
         """
         Deletes all values at key.
@@ -746,6 +801,14 @@ class Logger(Databaser):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValsLast(self.pses, key)
+
+
+    def cntPses(self, key):
+        """
+        Return count of dup event dig at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.pses, key)
 
 
     def delPses(self, key):
@@ -787,6 +850,14 @@ class Logger(Databaser):
         return self.getIoValsLast(self.ooes, key)
 
 
+    def cntOoes(self, key):
+        """
+        Return count of dup event dig at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.ooes, key)
+
+
     def delOoes(self, key):
         """
         Deletes all values at key.
@@ -826,6 +897,14 @@ class Logger(Databaser):
         return self.getIoValsLast(self.dels, key)
 
 
+    def cntDels(self, key):
+        """
+        Return count of dup event dig at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.dels, key)
+
+
     def delDels(self, key):
         """
         Deletes all values at key.
@@ -863,6 +942,14 @@ class Logger(Databaser):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValsLast(self.ldes, key)
+
+
+    def cntLdes(self, key):
+        """
+        Return count of dup event dig at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.ldes, key)
 
 
     def delLdes(self, key):
