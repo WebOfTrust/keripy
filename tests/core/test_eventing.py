@@ -166,60 +166,63 @@ def test_kever():
     with pytest.raises(TypeError):
         kever = Kever()
 
-    # Transferable case
-    # Setup inception key event dict
-    # create current key
-    sith = 1  #  one signer
-    skp0 = Signer()  #  original signing keypair transferable default
-    assert skp0.code == CryOneDex.Ed25519_Seed
-    assert skp0.verfer.code == CryOneDex.Ed25519
-    keys = [skp0.verfer.qb64]
-
-    # create next key
-    nxtsith = 1 #  one signer
-    skp1 = Signer()  #  next signing keypair transferable is default
-    assert skp1.code == CryOneDex.Ed25519_Seed
-    assert skp1.verfer.code == CryOneDex.Ed25519
-    nxtkeys = [skp1.verfer.qb64]
-    # compute nxt digest
-    nexter = Nexter(sith=nxtsith, keys=nxtkeys)
-    nxt = nexter.qb64  # transferable so nxt is not empty
-
-    sn = 0  #  inception event so 0
-    toad = 0  # no witnesses
-    nsigs = 1  #  one attached signature unspecified index
-
-    ked0 = dict(vs=Versify(kind=Serials.json, size=0),
-                pre="",  # qual base 64 prefix
-                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-                ilk=Ilks.icp,
-                sith="{:x}".format(sith), # hex string no leading zeros lowercase
-                keys=keys,  # list of signing keys each qual Base64
-                nxt=nxt,  # hash qual Base64
-                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
-                wits=[],  # list of qual Base64 may be empty
-                cnfg=[],  # list of config ordered mappings may be empty
-               )
 
 
-    # Derive AID from ked
-    aid0 = Prefixer(ked=ked0, code = CryOneDex.Ed25519)
-    assert aid0.code == CryOneDex.Ed25519
-    assert aid0.qb64 == skp0.verfer.qb64
+    with openLogger() as lgr:
+        # Transferable case
+        # Setup inception key event dict
+        # create current key
+        sith = 1  #  one signer
+        skp0 = Signer()  #  original signing keypair transferable default
+        assert skp0.code == CryOneDex.Ed25519_Seed
+        assert skp0.verfer.code == CryOneDex.Ed25519
+        keys = [skp0.verfer.qb64]
 
-    # update ked with pre
-    ked0["pre"] = aid0.qb64
+        # create next key
+        nxtsith = 1 #  one signer
+        skp1 = Signer()  #  next signing keypair transferable is default
+        assert skp1.code == CryOneDex.Ed25519_Seed
+        assert skp1.verfer.code == CryOneDex.Ed25519
+        nxtkeys = [skp1.verfer.qb64]
+        # compute nxt digest
+        nexter = Nexter(sith=nxtsith, keys=nxtkeys)
+        nxt = nexter.qb64  # transferable so nxt is not empty
 
-    # Serialize ked0
-    tser0 = Serder(ked=ked0)
+        sn = 0  #  inception event so 0
+        toad = 0  # no witnesses
+        nsigs = 1  #  one attached signature unspecified index
 
-    # sign serialization
-    tsig0 = skp0.sign(tser0.raw, index=0)
+        ked0 = dict(vs=Versify(kind=Serials.json, size=0),
+                    pre="",  # qual base 64 prefix
+                    sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+                    ilk=Ilks.icp,
+                    sith="{:x}".format(sith), # hex string no leading zeros lowercase
+                    keys=keys,  # list of signing keys each qual Base64
+                    nxt=nxt,  # hash qual Base64
+                    toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+                    wits=[],  # list of qual Base64 may be empty
+                    cnfg=[],  # list of config ordered mappings may be empty
+                   )
 
-    # verify signature
-    assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
-    kever = Kever(serder=tser0, sigers=[tsig0])
+        # Derive AID from ked
+        aid0 = Prefixer(ked=ked0, code = CryOneDex.Ed25519)
+        assert aid0.code == CryOneDex.Ed25519
+        assert aid0.qb64 == skp0.verfer.qb64
+
+        # update ked with pre
+        ked0["pre"] = aid0.qb64
+
+        # Serialize ked0
+        tser0 = Serder(ked=ked0)
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        kever = Kever(serder=tser0, sigers=[tsig0], logger=lgr)  # no error
 
 
     """ Done Test """
@@ -541,7 +544,7 @@ def test_keyeventsequence_1():
         sig0 = signers[0].sign(serder0.raw, index=0)
         assert signers[0].verfer.verify(sig0.raw, serder0.raw)
         # create key event verifier state
-        kever = Kever(serder=serder0, sigers=[sig0])
+        kever = Kever(serder=serder0, sigers=[sig0], logger=conlgr)
         assert kever.prefixer.qb64 == pre
         assert kever.sn == 0
         assert kever.diger.qb64 == serder0.dig
@@ -829,134 +832,136 @@ def test_multisig_digprefix():
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
-    # create event stream
-    kes = bytearray()
-    #  create signers
-    signers = [Signer(qb64=secret) for secret in secrets]  # faster
-    assert [siger.qb64 for siger in signers] == secrets
+    with openLogger("controller") as conlgr, openLogger("validator") as vallgr:
+
+        # create event stream
+        kes = bytearray()
+        #  create signers
+        signers = [Signer(qb64=secret) for secret in secrets]  # faster
+        assert [siger.qb64 for siger in signers] == secrets
 
 
-    # Event 0  Inception Transferable (nxt digest not empty)
-    #  2 0f 3 multisig
+        # Event 0  Inception Transferable (nxt digest not empty)
+        #  2 0f 3 multisig
 
-    keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
-    nxtkeys = [signers[3].verfer.qb64, signers[4].verfer.qb64, signers[5].verfer.qb64]
-    sith = 2
-    code = CryOneDex.Blake3_256  # Blake3 digest of incepting data
-    serder = incept(keys=keys,
-                    code=code,
-                    sith=sith,
-                    nxt=Nexter(keys=nxtkeys).qb64)
+        keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
+        nxtkeys = [signers[3].verfer.qb64, signers[4].verfer.qb64, signers[5].verfer.qb64]
+        sith = 2
+        code = CryOneDex.Blake3_256  # Blake3 digest of incepting data
+        serder = incept(keys=keys,
+                        code=code,
+                        sith=sith,
+                        nxt=Nexter(keys=nxtkeys).qb64)
 
-    assert serder.ked["pre"] == 'ECui-E44CqN2U7uffCikRCp_YKLkPrA4jsTZ_A0XRLzc'
-    # create sig counter
-    count = len(keys)
-    counter = SigCounter(count=count)  # default is count = 1
-    # sign serialization
-    sigers = [signers[i].sign(serder.raw, index=i) for i in range(count)]
-    # create key event verifier state
-    kever = Kever(serder=serder, sigers=sigers)
-    #extend key event stream
-    kes.extend(serder.raw)
-    kes.extend(counter.qb64b)
-    for siger in sigers:
-        kes.extend(siger.qb64b)
+        assert serder.ked["pre"] == 'ECui-E44CqN2U7uffCikRCp_YKLkPrA4jsTZ_A0XRLzc'
+        # create sig counter
+        count = len(keys)
+        counter = SigCounter(count=count)  # default is count = 1
+        # sign serialization
+        sigers = [signers[i].sign(serder.raw, index=i) for i in range(count)]
+        # create key event verifier state
+        kever = Kever(serder=serder, sigers=sigers, logger=conlgr)
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        for siger in sigers:
+            kes.extend(siger.qb64b)
 
-    assert kes == bytearray(b'{"vs":"KERI10JSON000159_","pre":"ECui-E44CqN2U7uffCikRCp_YKLkPrA'
-                            b'4jsTZ_A0XRLzc","sn":"0","ilk":"icp","sith":"2","keys":["DSuhyBcP'
-                            b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA","DVcuJOOJF1IE8svqEtrSuyQjG'
-                            b'Td2HhfAkt9y2QkUtFJI","DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Gr'
-                            b'h8"],"nxt":"Evhf3437ZRRnVhT0zOxo_rBX_GxpGoAnLuzrVlDK8ZdM","toad"'
-                            b':"0","wits":[],"cnfg":[]}-AADAAJ66nrRaNjltE31FZ4mELVGUMc_XOqOAOX'
-                            b'ZQjZCEAvbeJQ8r3AnccIe1aepMwgoQUeFdIIQLeEDcH8veLdud_DQABTQYtYWKh3'
-                            b'ScYij7MOZz3oA6ZXdIDLRrv0ObeSb4oc6LYrR1LfkICfXiYDnp90tAdvaJX5siCL'
-                            b'jSD3vfEM9ADDAACQTgUl4zF6U8hfDy8wwUva-HCAiS8LQuP7elKAHqgS8qtqv5hE'
-                            b'j3aTjwE91UtgAX2oCgaw98BCYSeT5AuY1SpDA')
+        assert kes == bytearray(b'{"vs":"KERI10JSON000159_","pre":"ECui-E44CqN2U7uffCikRCp_YKLkPrA'
+                                b'4jsTZ_A0XRLzc","sn":"0","ilk":"icp","sith":"2","keys":["DSuhyBcP'
+                                b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA","DVcuJOOJF1IE8svqEtrSuyQjG'
+                                b'Td2HhfAkt9y2QkUtFJI","DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Gr'
+                                b'h8"],"nxt":"Evhf3437ZRRnVhT0zOxo_rBX_GxpGoAnLuzrVlDK8ZdM","toad"'
+                                b':"0","wits":[],"cnfg":[]}-AADAAJ66nrRaNjltE31FZ4mELVGUMc_XOqOAOX'
+                                b'ZQjZCEAvbeJQ8r3AnccIe1aepMwgoQUeFdIIQLeEDcH8veLdud_DQABTQYtYWKh3'
+                                b'ScYij7MOZz3oA6ZXdIDLRrv0ObeSb4oc6LYrR1LfkICfXiYDnp90tAdvaJX5siCL'
+                                b'jSD3vfEM9ADDAACQTgUl4zF6U8hfDy8wwUva-HCAiS8LQuP7elKAHqgS8qtqv5hE'
+                                b'j3aTjwE91UtgAX2oCgaw98BCYSeT5AuY1SpDA')
 
 
-    # Event 1 Rotation Transferable
-    keys = nxtkeys
-    sith = 2
-    nxtkeys = [signers[5].verfer.qb64, signers[6].verfer.qb64, signers[7].verfer.qb64]
-    serder = rotate(pre=kever.prefixer.qb64,
+        # Event 1 Rotation Transferable
+        keys = nxtkeys
+        sith = 2
+        nxtkeys = [signers[5].verfer.qb64, signers[6].verfer.qb64, signers[7].verfer.qb64]
+        serder = rotate(pre=kever.prefixer.qb64,
+                        keys=keys,
+                        sith=sith,
+                        dig=kever.diger.qb64,
+                        nxt=Nexter(keys=nxtkeys).qb64,
+                        sn=1)
+        # create sig counter
+        count = len(keys)
+        counter = SigCounter(count=count)  # default is count = 1
+        # sign serialization
+        sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
+        # update key event verifier state
+        kever.update(serder=serder, sigers=sigers)
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        for siger in sigers:
+            kes.extend(siger.qb64b)
+
+
+        # Event 2 Interaction
+        serder = interact(pre=kever.prefixer.qb64,
+                          dig=kever.diger.qb64,
+                          sn=2)
+        # create sig counter
+        counter = SigCounter(count=count)  # default is count = 1
+        # sign serialization
+        sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
+        # update key event verifier state
+        kever.update(serder=serder, sigers=sigers)
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        for siger in sigers:
+            kes.extend(siger.qb64b)
+
+        # Event 4 Interaction
+        serder = interact(pre=kever.prefixer.qb64,
+                          dig=kever.diger.qb64,
+                          sn=3)
+        # create sig counter
+        counter = SigCounter(count=count)  # default is count = 1
+        # sign serialization
+        sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
+        # update key event verifier state
+        kever.update(serder=serder, sigers=sigers)
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        for siger in sigers:
+            kes.extend(siger.qb64b)
+
+        # Event 7 Rotation to null NonTransferable Abandon
+        # nxt digest is empty
+        keys = nxtkeys
+        serder = rotate(pre=kever.prefixer.qb64,
                     keys=keys,
-                    sith=sith,
+                    sith=2,
                     dig=kever.diger.qb64,
-                    nxt=Nexter(keys=nxtkeys).qb64,
-                    sn=1)
-    # create sig counter
-    count = len(keys)
-    counter = SigCounter(count=count)  # default is count = 1
-    # sign serialization
-    sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
-    # update key event verifier state
-    kever.update(serder=serder, sigers=sigers)
-    #extend key event stream
-    kes.extend(serder.raw)
-    kes.extend(counter.qb64b)
-    for siger in sigers:
-        kes.extend(siger.qb64b)
+                    nxt="",
+                    sn=4)
+        # create sig counter
+        counter = SigCounter(count=count)  # default is count = 1
+        # sign serialization
+        sigers = [signers[i].sign(serder.raw, index=i-5) for i in range(5, 8)]
+        # update key event verifier state
+        kever.update(serder=serder, sigers=sigers)
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        for siger in sigers:
+            kes.extend(siger.qb64b)
 
 
-    # Event 2 Interaction
-    serder = interact(pre=kever.prefixer.qb64,
-                      dig=kever.diger.qb64,
-                      sn=2)
-    # create sig counter
-    counter = SigCounter(count=count)  # default is count = 1
-    # sign serialization
-    sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
-    # update key event verifier state
-    kever.update(serder=serder, sigers=sigers)
-    #extend key event stream
-    kes.extend(serder.raw)
-    kes.extend(counter.qb64b)
-    for siger in sigers:
-        kes.extend(siger.qb64b)
+        assert len(kes) == 2783
 
-    # Event 4 Interaction
-    serder = interact(pre=kever.prefixer.qb64,
-                      dig=kever.diger.qb64,
-                      sn=3)
-    # create sig counter
-    counter = SigCounter(count=count)  # default is count = 1
-    # sign serialization
-    sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
-    # update key event verifier state
-    kever.update(serder=serder, sigers=sigers)
-    #extend key event stream
-    kes.extend(serder.raw)
-    kes.extend(counter.qb64b)
-    for siger in sigers:
-        kes.extend(siger.qb64b)
+        klogs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
 
-    # Event 7 Rotation to null NonTransferable Abandon
-    # nxt digest is empty
-    keys = nxtkeys
-    serder = rotate(pre=kever.prefixer.qb64,
-                keys=keys,
-                sith=2,
-                dig=kever.diger.qb64,
-                nxt="",
-                sn=4)
-    # create sig counter
-    counter = SigCounter(count=count)  # default is count = 1
-    # sign serialization
-    sigers = [signers[i].sign(serder.raw, index=i-5) for i in range(5, 8)]
-    # update key event verifier state
-    kever.update(serder=serder, sigers=sigers)
-    #extend key event stream
-    kes.extend(serder.raw)
-    kes.extend(counter.qb64b)
-    for siger in sigers:
-        kes.extend(siger.qb64b)
-
-
-    assert len(kes) == 2783
-
-    klogs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
-    with openLogger() as logger:
-        kevery = Kevery(logger=logger, logs=klogs)
+        kevery = Kevery(logger=vallgr, logs=klogs)
         kevery.processAll(kes=kes)
 
         pre = kever.prefixer.qb64
