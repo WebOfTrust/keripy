@@ -347,7 +347,7 @@ class Databaser:
                 vals = [val for val in cursor.iternext_dup()]
             return vals
 
-    def getIterVals(self, db, key):
+    def getValsIter(self, db, key):
         """
         Return iterator of all dup values at key in db
         Raises StopIteration error when done or if empty
@@ -541,7 +541,7 @@ class Databaser:
             return (txn.delete(key))
 
 
-    def getIterAllIoVals(self, db, pre):
+    def getIoValsPreIter(self, db, pre):
         """
         Returns iterator of all dup vals for all entries with same prefix across all
         sequence numbers in insertion order. Assumes that key is combination
@@ -762,13 +762,13 @@ class Logger(Databaser):
         return self.getVals(self.sigs, key)
 
 
-    def getIterSigs(self, key):
+    def getSigsIter(self, key):
         """
         Return iterator of signatures at key
         Raises StopIteration Error when empty
         Duplicates are retrieved in lexocographic order not insertion order.
         """
-        return self.getIterVals(self.sigs, key)
+        return self.getValsIter(self.sigs, key)
 
 
     def putSigs(self, key, vals):
@@ -847,13 +847,13 @@ class Logger(Databaser):
         return self.getVals(self.rcts, key)
 
 
-    def getIterRcts(self, key):
+    def getRctsIter(self, key):
         """
         Return iterator of receipt couplets at key
         Raises StopIteration Error when empty
         Duplicates are retrieved in lexocographic order not insertion order.
         """
-        return self.getIterVals(self.rcts, key)
+        return self.getValsIter(self.rcts, key)
 
 
     def cntRcts(self, key):

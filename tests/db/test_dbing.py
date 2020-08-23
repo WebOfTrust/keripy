@@ -116,7 +116,7 @@ def test_databaser():
         assert dber.addVal(db, key, val=b'a') == False  # duplicate
         assert dber.addVal(db, key, val=b'b') == True
         assert dber.getVals(db, key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in dber.getIterVals(db, key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in dber.getValsIter(db, key)] == [b'a', b'b', b'm', b'x', b'z']
         assert dber.delVals(db, key) == True
         assert dber.getVals(db, key) == []
 
@@ -159,7 +159,7 @@ def test_databaser():
         key = dber.snKey(pre, sn)
         assert dber.putIoVals(db, key, vals2) == True
 
-        vals = [val for val in dber.getIterAllIoVals(db, pre)]
+        vals = [val for val in dber.getIoValsPreIter(db, pre)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
 
@@ -286,7 +286,7 @@ def test_logger():
         assert lgr.addSig(key, b'a') == False   # duplicate
         assert lgr.addSig(key, b'b') == True
         assert lgr.getSigs(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in lgr.getIterSigs(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in lgr.getSigsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
         assert lgr.delSigs(key) == True
         assert lgr.getSigs(key) == []
 
@@ -314,7 +314,7 @@ def test_logger():
         assert lgr.addRct(key, b'a') == False   # duplicate
         assert lgr.addRct(key, b'b') == True
         assert lgr.getRcts(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in lgr.getIterRcts(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in lgr.getRctsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
         assert lgr.delRcts(key) == True
         assert lgr.getRcts(key) == []
 
