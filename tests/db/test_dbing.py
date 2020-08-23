@@ -142,6 +142,9 @@ def test_databaser():
         assert dber.delIoVals(db, key) == True
         assert dber.getIoVals(db, key) == []
 
+        # Test getIterAllIoVals(self, db, pre)
+
+
     assert not os.path.exists(dber.path)
 
     """ End Test """
@@ -498,4 +501,4 @@ def test_uselogger():
     """ End Test """
 
 if __name__ == "__main__":
-    test_logger()
+    test_databaser()

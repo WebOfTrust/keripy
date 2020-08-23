@@ -541,6 +541,38 @@ class Databaser:
             return (txn.delete(key))
 
 
+    def getIterAllIoVals(self, db, pre):
+        """
+        Returns iterator of all dup vals for all entries with same prefix across all
+        sequence numbers in insertion order. Assumes that key is combination
+        of prefix and sequence number given by .snKey().
+
+        Raises StopIteration Error when empty.
+
+        Duplicates are retrieved in insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates,
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = self.snKey(pre, cnt:=0)
+            while cursor.set_key(key):  # moves to first_dup
+                for val in cursor.iternext_dup():
+                    # slice off prepended ordering prefix
+                    yield val[7:]
+                key = self.snKey(pre, cnt:=cnt+1)
+
+
+
 
 def openLogger(name="test"):
     """
