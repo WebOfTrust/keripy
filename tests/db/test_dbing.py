@@ -143,6 +143,25 @@ def test_databaser():
         assert dber.getIoVals(db, key) == []
 
         # Test getIterAllIoVals(self, db, pre)
+        vals0 = [b"gamma", b"beta"]
+        sn = 0
+        key = dber.snKey(pre, sn)
+        assert dber.addIoVal(db, key, vals0[0]) == True
+        assert dber.addIoVal(db, key, vals0[1]) == True
+
+        vals1 = [b"mary", b"peter", b"john", b"paul"]
+        sn += 1
+        key = dber.snKey(pre, sn)
+        assert dber.putIoVals(db, key, vals1) == True
+
+        vals2 = [b"dog", b"cat", b"bird"]
+        sn += 1
+        key = dber.snKey(pre, sn)
+        assert dber.putIoVals(db, key, vals2) == True
+
+        vals = [val for val in dber.getIterAllIoVals(db, pre)]
+        allvals = vals0 + vals1 + vals2
+        assert vals == allvals
 
 
     assert not os.path.exists(dber.path)
