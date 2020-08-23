@@ -447,6 +447,63 @@ def test_logger():
 
     """ End Test """
 
+def test_fetchkel():
+    """
+    Test fetching full KEL from Logger
+    """
+    # Test using context manager
+    preb = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
+    digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
+    sn = 3
+    vs = Versify(kind=Serials.json, size=20)
+    assert vs == 'KERI10JSON000014_'
+
+    ked = dict(vs=vs, pre=preb.decode("utf-8"),
+               sn="{:x}".format(sn),
+               ilk="rot",
+               dig=digb.decode("utf-8"))
+    skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    assert skedb == (b'{"vs":"KERI10JSON000014_","pre":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                     b'c","sn":"3","ilk":"rot","dig":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4"'
+                     b'}')
+
+
+    sig0b = 'AAz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'.encode("utf-8")
+    sig1b = 'AB_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z'.encode("utf-8")
+
+    wit0b = 'BmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGwT'.encode("utf-8")
+    wit1b = 'BjhccWzwEHHzq7K0gzmuupUhPx5_yZ-Wk1x4eQPYGGwT'.encode("utf-8")
+    wsig0b = '0A1Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ9'.encode("utf-8")
+    wsig1b = '0A5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2zJ91Timrykocna6Z'.encode("utf-8")
+
+    with openLogger() as lgr:
+        # test getKelIter
+        sn = 0
+        key = lgr.snKey(preb, sn)
+        assert key == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
+                       b'00000000000000000000000000000000')
+        vals0 = [skedb]
+        assert lgr.addKe(key, vals0[0]) == True
+
+        vals1 = [b"mary", b"peter", b"john", b"paul"]
+        sn += 1
+        key = lgr.snKey(preb, sn)
+        for val in vals1:
+            assert lgr.addKe(key, val) == True
+
+        vals2 = [b"dog", b"cat", b"bird"]
+        sn += 1
+        key = lgr.snKey(preb, sn)
+        for val in vals2:
+            assert lgr.addKe(key, val) == True
+
+        vals = [val for val in lgr.getKelIter(preb)]
+        allvals = vals0 + vals1 + vals2
+        assert vals == allvals
+
+    assert not os.path.exists(lgr.path)
+    """ End Test """
+
 
 
 def test_uselogger():
@@ -520,4 +577,4 @@ def test_uselogger():
     """ End Test """
 
 if __name__ == "__main__":
-    test_databaser()
+    test_fetchkel()

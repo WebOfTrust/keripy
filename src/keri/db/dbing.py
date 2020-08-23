@@ -960,6 +960,22 @@ class Logger(Databaser):
         """
         return self.delIoVals(self.kels, key)
 
+    def getKelIter(self, pre):
+        """
+        Returns iterator of all dup vals for all entries with same prefix across all
+        sequence numbers in insertion order. Assumes that key is combination
+        of prefix and sequence number given by .snKey().
+
+        Raises StopIteration Error when empty.
+        Duplicates are retrieved in insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        return self.getIoValsPreIter(self.kels, pre)
+
 
     def putPses(self, key, vals):
         """
@@ -1122,6 +1138,24 @@ class Logger(Databaser):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.dels, key)
+
+
+    def getDelIter(self, pre):
+        """
+        Returns iterator of all dup vals for all entries with same prefix across all
+        sequence numbers in insertion order. Assumes that key is combination
+        of prefix and sequence number given by .snKey().
+
+        Raises StopIteration Error when empty.
+        Duplicates are retrieved in insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        return self.getIoValsPreIter(self.dels, pre)
+
 
 
     def putLdes(self, key, vals):
