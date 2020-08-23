@@ -769,7 +769,7 @@ class Logger(Databaser):
 
     def putKes(self, key, vals):
         """
-        Write each dig entry from list of bytes vals to key
+        Write each key event dig entry from list of bytes vals to key
         Adds to existing event indexes at key if any
         Returns True If no error
 
@@ -780,7 +780,7 @@ class Logger(Databaser):
 
     def getKes(self, key):
         """
-        Return list of key event dig entries at key
+        Return list of key event dig vals at key
         Returns empty list if no entry at key
 
         Duplicates are retrieved in insertion order.
@@ -790,7 +790,7 @@ class Logger(Databaser):
 
     def getKesLast(self, key):
         """
-        Return last inserted dup event dig at key
+        Return last inserted dup key event dig vals at key
         Returns None if no entry at key
 
         Duplicates are retrieved in insertion order.
@@ -800,7 +800,7 @@ class Logger(Databaser):
 
     def cntKes(self, key):
         """
-        Return count of dup event dig at key
+        Return count of dup key event dig val at key
         Returns zero if no entry at key
         """
         return self.cntIoVals(self.kels, key)
@@ -816,7 +816,7 @@ class Logger(Databaser):
 
     def putPses(self, key, vals):
         """
-        Write each partial signed event entry from list of bytes vals to key
+        Write each partial signed escrow event entry from list of bytes dig vals to key
         Adds to existing event indexes at key if any
         Returns True If no error
 
@@ -827,7 +827,7 @@ class Logger(Databaser):
 
     def getPses(self, key):
         """
-        Return list of partial signed event vals at key
+        Return list of partial signed escrowed event dig vals at key
         Returns empty list if no entry at key
 
         Duplicates are retrieved in insertion order.
@@ -837,7 +837,7 @@ class Logger(Databaser):
 
     def getPsesLast(self, key):
         """
-        Return last inserted dup partial signed event at key
+        Return last inserted dup partial signed escrowed event dig val at key
         Returns None if no entry at key
 
         Duplicates are retrieved in insertion order.
@@ -847,7 +847,7 @@ class Logger(Databaser):
 
     def cntPses(self, key):
         """
-        Return count of dup event dig at key
+        Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
         return self.cntIoVals(self.pses, key)
@@ -931,7 +931,7 @@ class Logger(Databaser):
 
     def getDesLast(self, key):
         """
-        Return last inserted dup duplicitous event dig at key
+        Return last inserted dup duplicitous event dig vals at key
         Returns None if no entry at key
 
         Duplicates are retrieved in insertion order.
@@ -941,7 +941,7 @@ class Logger(Databaser):
 
     def cntDes(self, key):
         """
-        Return count of dup event dig at key
+        Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
         return self.cntIoVals(self.dels, key)
