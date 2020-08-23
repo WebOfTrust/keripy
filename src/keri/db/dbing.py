@@ -767,7 +767,7 @@ class Logger(Databaser):
         return self.delVal(self.ures, key)
 
 
-    def putKels(self, key, vals):
+    def putKes(self, key, vals):
         """
         Write each dig entry from list of bytes vals to key
         Adds to existing event indexes at key if any
@@ -778,7 +778,7 @@ class Logger(Databaser):
         return self.putIoVals(self.kels, key, vals)
 
 
-    def getKels(self, key):
+    def getKes(self, key):
         """
         Return list of key event dig entries at key
         Returns empty list if no entry at key
@@ -788,7 +788,7 @@ class Logger(Databaser):
         return self.getIoVals(self.kels, key)
 
 
-    def getKelsLast(self, key):
+    def getKesLast(self, key):
         """
         Return last inserted dup event dig at key
         Returns None if no entry at key
@@ -798,7 +798,7 @@ class Logger(Databaser):
         return self.getIoValsLast(self.kels, key)
 
 
-    def cntKels(self, key):
+    def cntKes(self, key):
         """
         Return count of dup event dig at key
         Returns zero if no entry at key
@@ -806,7 +806,7 @@ class Logger(Databaser):
         return self.cntIoVals(self.kels, key)
 
 
-    def delKels(self, key):
+    def delKes(self, key):
         """
         Deletes all values at key.
         Returns True If key exists in database Else False
@@ -908,7 +908,7 @@ class Logger(Databaser):
         return self.delIoVals(self.ooes, key)
 
 
-    def putDels(self, key, vals):
+    def putDes(self, key, vals):
         """
         Write each duplicitous event entry dig from list of bytes vals to key
         Adds to existing event indexes at key if any
@@ -919,7 +919,7 @@ class Logger(Databaser):
         return self.putIoVals(self.dels, key, vals)
 
 
-    def getDels(self, key):
+    def getDes(self, key):
         """
         Return list of duplicitous event dig vals at key
         Returns empty list if no entry at key
@@ -929,7 +929,7 @@ class Logger(Databaser):
         return self.getIoVals(self.dels, key)
 
 
-    def getDelsLast(self, key):
+    def getDesLast(self, key):
         """
         Return last inserted dup duplicitous event dig at key
         Returns None if no entry at key
@@ -939,7 +939,7 @@ class Logger(Databaser):
         return self.getIoValsLast(self.dels, key)
 
 
-    def cntDels(self, key):
+    def cntDes(self, key):
         """
         Return count of dup event dig at key
         Returns zero if no entry at key
@@ -947,7 +947,7 @@ class Logger(Databaser):
         return self.cntIoVals(self.dels, key)
 
 
-    def delDels(self, key):
+    def delDes(self, key):
         """
         Deletes all values at key.
         Returns True If key exists in database Else False

@@ -311,18 +311,18 @@ def test_logger():
         key = lgr.snKey(preb, 0)
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert lgr.getKels(key) == []
-        assert lgr.getKelsLast(key) == None
-        assert lgr.cntKels(key) == 0
-        assert lgr.delKels(key) == False
-        assert lgr.putKels(key, vals) == True
-        assert lgr.getKels(key) == vals  # preserved insertion order
-        assert lgr.cntKels(key) == len(vals) == 4
-        assert lgr.getKelsLast(key) == vals[-1]
-        assert lgr.putKels(key, vals=[b'a']) == True   # duplicate
-        assert lgr.getKels(key) == vals  #  no change
-        assert lgr.delKels(key) == True
-        assert lgr.getKels(key) == []
+        assert lgr.getKes(key) == []
+        assert lgr.getKesLast(key) == None
+        assert lgr.cntKes(key) == 0
+        assert lgr.delKes(key) == False
+        assert lgr.putKes(key, vals) == True
+        assert lgr.getKes(key) == vals  # preserved insertion order
+        assert lgr.cntKes(key) == len(vals) == 4
+        assert lgr.getKesLast(key) == vals[-1]
+        assert lgr.putKes(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getKes(key) == vals  #  no change
+        assert lgr.delKes(key) == True
+        assert lgr.getKes(key) == []
 
         # test .pses insertion order dup methods.  dup vals are insertion order
         key = b'A'
@@ -362,18 +362,18 @@ def test_logger():
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert lgr.getDels(key) == []
-        assert lgr.getDelsLast(key) == None
-        assert lgr.cntDels(key) == 0
-        assert lgr.delDels(key) == False
-        assert lgr.putDels(key, vals) == True
-        assert lgr.getDels(key) == vals  # preserved insertion order
-        assert lgr.cntDels(key) == len(vals) == 4
-        assert lgr.getDelsLast(key) == vals[-1]
-        assert lgr.putDels(key, vals=[b'a']) == True   # duplicate
-        assert lgr.getDels(key) == vals  #  no change
-        assert lgr.delDels(key) == True
-        assert lgr.getDels(key) == []
+        assert lgr.getDes(key) == []
+        assert lgr.getDesLast(key) == None
+        assert lgr.cntDes(key) == 0
+        assert lgr.delDes(key) == False
+        assert lgr.putDes(key, vals) == True
+        assert lgr.getDes(key) == vals  # preserved insertion order
+        assert lgr.cntDes(key) == len(vals) == 4
+        assert lgr.getDesLast(key) == vals[-1]
+        assert lgr.putDes(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getDes(key) == vals  #  no change
+        assert lgr.delDes(key) == True
+        assert lgr.getDes(key) == []
 
         # test .ldes insertion order dup methods.  dup vals are insertion order
         key = b'A'
