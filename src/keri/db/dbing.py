@@ -849,6 +849,16 @@ class Logger(Databaser):
         return self.putIoVals(self.kels, key, vals)
 
 
+    def addKe(self, key, val):
+        """
+        Add key event val bytes as dup to key in db
+        Adds to existing event indexes at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.kels, key, val)
+
+
     def getKes(self, key):
         """
         Return list of key event dig vals at key
@@ -891,6 +901,16 @@ class Logger(Databaser):
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.pses, key, vals)
+
+
+    def addPse(self, key, val):
+        """
+        Add Partial signed escrow val bytes as dup to key in db
+        Adds to existing event indexes at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.pses, key, val)
 
 
     def getPses(self, key):
@@ -937,6 +957,16 @@ class Logger(Databaser):
         return self.putIoVals(self.ooes, key, vals)
 
 
+    def addOoe(self, key, val):
+        """
+        Add out of order escrow val bytes as dup to key in db
+        Adds to existing event indexes at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.ooes, key, val)
+
+
     def getOoes(self, key):
         """
         Return list of out of order escrow event dig vals at key
@@ -979,6 +1009,16 @@ class Logger(Databaser):
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.dels, key, vals)
+
+
+    def addDe(self, key, val):
+        """
+        Add duplicate event index val bytes as dup to key in db
+        Adds to existing event indexes at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.dels, key, val)
 
 
     def getDes(self, key):
@@ -1024,6 +1064,16 @@ class Logger(Databaser):
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.ldes, key, vals)
+
+
+    def addLde(self, key, val):
+        """
+        Add likely duplicitous escrow val bytes as dup to key in db
+        Adds to existing event indexes at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.ldes, key, val)
 
 
     def getLdes(self, key):

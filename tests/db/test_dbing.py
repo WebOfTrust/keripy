@@ -333,6 +333,9 @@ def test_logger():
         assert lgr.getKesLast(key) == vals[-1]
         assert lgr.putKes(key, vals=[b'a']) == False   # duplicate
         assert lgr.getKes(key) == vals  #  no change
+        assert lgr.addKe(key, b'a') == False   # duplicate
+        assert lgr.addKe(key, b'b') == True
+        assert lgr.getKes(key) == [b"z", b"m", b"x", b"a", b"b"]
         assert lgr.delKes(key) == True
         assert lgr.getKes(key) == []
 
@@ -350,6 +353,9 @@ def test_logger():
         assert lgr.getPsesLast(key) == vals[-1]
         assert lgr.putPses(key, vals=[b'a']) == False   # duplicate
         assert lgr.getPses(key) == vals  #  no change
+        assert lgr.addPse(key, b'a') == False   # duplicate
+        assert lgr.addPse(key, b'b') == True
+        assert lgr.getPses(key) == [b"z", b"m", b"x", b"a", b"b"]
         assert lgr.delPses(key) == True
         assert lgr.getPses(key) == []
 
@@ -367,6 +373,9 @@ def test_logger():
         assert lgr.getOoesLast(key) == vals[-1]
         assert lgr.putOoes(key, vals=[b'a']) == False   # duplicate
         assert lgr.getOoes(key) == vals  #  no change
+        assert lgr.addOoe(key, b'a') == False   # duplicate
+        assert lgr.addOoe(key, b'b') == True
+        assert lgr.getOoes(key) == [b"z", b"m", b"x", b"a", b"b"]
         assert lgr.delOoes(key) == True
         assert lgr.getOoes(key) == []
 
@@ -384,6 +393,9 @@ def test_logger():
         assert lgr.getDesLast(key) == vals[-1]
         assert lgr.putDes(key, vals=[b'a']) == False   # duplicate
         assert lgr.getDes(key) == vals  #  no change
+        assert lgr.addDe(key, b'a') == False   # duplicate
+        assert lgr.addDe(key, b'b') == True
+        assert lgr.getDes(key) == [b"z", b"m", b"x", b"a", b"b"]
         assert lgr.delDes(key) == True
         assert lgr.getDes(key) == []
 
