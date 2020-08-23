@@ -723,6 +723,16 @@ class Logger(Databaser):
         return self.putVals(self.sigs, key, vals)
 
 
+    def addSig(self, key, val):
+        """
+        Add signature val bytes as dup to key in db
+        Adds to existing values at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        return self.addVal(self.sigs, key, val)
+
+
     def getSigs(self, key):
         """
         Return list of signatures at key
@@ -757,6 +767,16 @@ class Logger(Databaser):
         Duplicates are inserted in lexocographic order not insertion order.
         """
         return self.putVals(self.rcts, key, vals)
+
+
+    def addRct(self, key, val):
+        """
+        Add receipt couplet val bytes as dup to key in db
+        Adds to existing values at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        return self.addVal(self.rcts, key, val)
 
 
     def getRcts(self, key):

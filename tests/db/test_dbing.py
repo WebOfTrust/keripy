@@ -113,8 +113,8 @@ def test_databaser():
         assert dber.cntVals(db, key) == len(vals) == 4
         assert dber.putVals(db, key, vals=[b'a']) == True   # duplicate
         assert dber.getVals(db, key) == [b'a', b'm', b'x', b'z']  #  no change
-        assert dber.addVal(db, key, val=b'b') == True
         assert dber.addVal(db, key, val=b'a') == False  # duplicate
+        assert dber.addVal(db, key, val=b'b') == True
         assert dber.getVals(db, key) == [b'a', b'b', b'm', b'x', b'z']
         assert dber.delVals(db, key) == True
         assert dber.getVals(db, key) == []
@@ -257,8 +257,11 @@ def test_logger():
         assert lgr.putSigs(key, vals=[b"z", b"m", b"x", b"a"]) == True
         assert lgr.getSigs(key) == [b'a', b'm', b'x', b'z']
         assert lgr.cntSigs(key) == 4
-        assert lgr.putSigs(key, vals=[b'a']) == True   # duplicate
+        assert lgr.putSigs(key, vals=[b'a']) == True   # duplicate but True
         assert lgr.getSigs(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.addSig(key, b'a') == False   # duplicate
+        assert lgr.addSig(key, b'b') == True
+        assert lgr.getSigs(key) == [b'a', b'b', b'm', b'x', b'z']
         assert lgr.delSigs(key) == True
         assert lgr.getSigs(key) == []
 
@@ -283,6 +286,9 @@ def test_logger():
         assert lgr.cntRcts(key) == 4
         assert lgr.putRcts(key, vals=[b'a']) == True   # duplicate
         assert lgr.getRcts(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.addRct(key, b'a') == False   # duplicate
+        assert lgr.addRct(key, b'b') == True
+        assert lgr.getRcts(key) == [b'a', b'b', b'm', b'x', b'z']
         assert lgr.delRcts(key) == True
         assert lgr.getRcts(key) == []
 
@@ -476,4 +482,4 @@ def test_uselogger():
     """ End Test """
 
 if __name__ == "__main__":
-    test_databaser()
+    test_logger()
