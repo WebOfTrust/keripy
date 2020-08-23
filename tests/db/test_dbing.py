@@ -290,8 +290,25 @@ def test_logger():
         assert lgr.delRcts(key) == True
         assert lgr.getRcts(key) == []
 
+        # test .ures sub db methods
+        key = lgr.dgKey(wit0b, digb)
+        val1 = preb + sig0b
+        val2 = preb + sig1b
+
+        assert lgr.getUre(key) == None
+        assert lgr.delUre(key) == False
+        assert lgr.putUre(key, val1) == True
+        assert lgr.getUre(key) == val1
+        assert lgr.putUre(key, val2) == False
+        assert lgr.getUre(key) == val1
+        assert lgr.setUre(key, val2) == True
+        assert lgr.getUre(key) == val2
+        assert lgr.delUre(key) == True
+        assert lgr.getUre(key) == None
+
+
         # test .kels insertion order dup methods.  dup vals are insertion order
-        key = b'A'
+        key = lgr.snKey(preb, 0)
         vals = [b"z", b"m", b"x", b"a"]
 
         assert lgr.getKels(key) == []

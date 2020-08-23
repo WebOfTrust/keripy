@@ -491,7 +491,6 @@ class Logger(Databaser):
             the datetime when the event was first seen by log.
             Used for escrows timeouts and extended validation.
             DB is keyed by identifer prefix plus digest of serialized event
-            Only one value per DB key is allowed
 
         .sigs is named sub DB of fully qualified event signatures
             DB is keyed by identifer prefix plus digest of serialized event
@@ -502,6 +501,13 @@ class Logger(Databaser):
             fully qualified event signature by witness or validator
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
+
+        .ures is named sub DB of unverified event receipt escrowed couplets.
+            Each couplet is concatenation of fully qualified identfier prefix
+            for corresponding event plus fully qualified event signature
+            by witness or validator
+            SB is keyed by witness or validator prefix plus digest of serialized event
+            Only one value per DB key is allowed
 
         .kels is named sub DB of key event log tables that map sequence numbers
             to serialized event digests.
@@ -566,6 +572,7 @@ class Logger(Databaser):
         self.dtss = self.env.open_db(key=b'dtss.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
+        self.ures = self.env.open_db(key=b'ures.')
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
@@ -723,6 +730,41 @@ class Logger(Databaser):
         Returns True If key exists in database Else False
         """
         return self.delVals(self.rcts, key)
+
+
+    def putUre(self, key, val):
+        """
+        Write prefix plus signature couplet val to key
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Returns False if key already exists
+        """
+        return self.putVal(self.ures, key, val)
+
+
+    def setUre(self, key, val):
+        """
+        Write prefix plus signature couplet val to key
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.ures, key, val)
+
+
+    def getUre(self, key):
+        """
+        Return prefix plus signature couplet val at key
+        Returns None if no entry at key
+        """
+        return self.getVal(self.ures, key)
+
+
+    def delUre(self, key):
+        """
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.ures, key)
 
 
     def putKels(self, key, vals):
