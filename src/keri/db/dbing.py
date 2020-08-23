@@ -541,11 +541,13 @@ class Databaser:
             return (txn.delete(key))
 
 
-    def getIoValsPreIter(self, db, pre):
+    def getIoValsAllPreIter(self, db, pre):
         """
-        Returns iterator of all dup vals for all entries with same prefix across all
-        sequence numbers in insertion order. Assumes that key is combination
-        of prefix and sequence number given by .snKey().
+        Returns iterator of all dup vals in insertion order for all entries
+        with same prefix across all sequence numbers in order without gaps
+        starting with zero. Stops if gap or different pre.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
 
         Raises StopIteration Error when empty.
 
@@ -571,6 +573,43 @@ class Databaser:
                     yield val[7:]
                 key = self.snKey(pre, cnt:=cnt+1)
 
+
+    def getIoValsAnyPreIter(self, db, pre):
+        """
+        Returns iterator of all dup vals in insertion order for any entries
+        with same prefix across all sequence numbers in order including gaps.
+        Stops when pre is different.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
+
+        Raises StopIteration Error when empty.
+
+        Duplicates are retrieved in insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates,
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = self.snKey(pre, cnt:=0)
+            while cursor.set_range(key):  #  moves to first dup of key >= key
+                key = cursor.key()  # actual key
+                front, back = bytes(key).split(sep=b'.', maxsplit=1)
+                if front != pre:
+                    break
+                for val in cursor.iternext_dup():
+                    # slice off prepended ordering prefix
+                    yield val[7:]
+                cnt = int(back, 16)
+                key = self.snKey(pre, cnt:=cnt+1)
 
 
 
@@ -974,7 +1013,7 @@ class Logger(Databaser):
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
         """
-        return self.getIoValsPreIter(self.kels, pre)
+        return self.getIoValsAllPreIter(self.kels, pre)
 
 
     def putPses(self, key, vals):
@@ -1142,9 +1181,10 @@ class Logger(Databaser):
 
     def getDelIter(self, pre):
         """
-        Returns iterator of all dup vals for all entries with same prefix across all
-        sequence numbers in insertion order. Assumes that key is combination
-        of prefix and sequence number given by .snKey().
+        Returns iterator of all dup vals  in insertion order for any entries
+        with same prefix across all sequence numbers including gaps.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
 
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
@@ -1154,8 +1194,7 @@ class Logger(Databaser):
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
         """
-        return self.getIoValsPreIter(self.dels, pre)
-
+        return self.getIoValsAnyPreIter(self.dels, pre)
 
 
     def putLdes(self, key, vals):

@@ -142,7 +142,7 @@ def test_databaser():
         assert dber.delIoVals(db, key) == True
         assert dber.getIoVals(db, key) == []
 
-        # Test getIterAllIoVals(self, db, pre)
+        # Test getIoValsAllPreIter(self, db, pre)
         vals0 = [b"gamma", b"beta"]
         sn = 0
         key = dber.snKey(pre, sn)
@@ -159,7 +159,29 @@ def test_databaser():
         key = dber.snKey(pre, sn)
         assert dber.putIoVals(db, key, vals2) == True
 
-        vals = [val for val in dber.getIoValsPreIter(db, pre)]
+        vals = [val for val in dber.getIoValsAllPreIter(db, pre)]
+        allvals = vals0 + vals1 + vals2
+        assert vals == allvals
+
+        # Test getIoValsAnyPreIter(self, db, pre)
+        pre = b'QPYGGwTmuupUhPx5_yZ-Wk1x4ejBWzwEHHzq7K0gzhcc'
+        vals0 = [b"gamma", b"beta"]
+        sn = 1  # not start at zero
+        key = dber.snKey(pre, sn)
+        assert dber.addIoVal(db, key, vals0[0]) == True
+        assert dber.addIoVal(db, key, vals0[1]) == True
+
+        vals1 = [b"mary", b"peter", b"john", b"paul"]
+        sn += 1
+        key = dber.snKey(pre, sn)
+        assert dber.putIoVals(db, key, vals1) == True
+
+        vals2 = [b"dog", b"cat", b"bird"]
+        sn += 2  # gap
+        key = dber.snKey(pre, sn)
+        assert dber.putIoVals(db, key, vals2) == True
+
+        vals = [val for val in dber.getIoValsAnyPreIter(db, pre)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
 
@@ -447,9 +469,9 @@ def test_logger():
 
     """ End Test """
 
-def test_fetchkel():
+def test_fetchkeldel():
     """
-    Test fetching full KEL from Logger
+    Test fetching full KEL and full DEL from Logger
     """
     # Test using context manager
     preb = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
@@ -498,6 +520,31 @@ def test_fetchkel():
             assert lgr.addKe(key, val) == True
 
         vals = [val for val in lgr.getKelIter(preb)]
+        allvals = vals0 + vals1 + vals2
+        assert vals == allvals
+
+        # test getDelIter
+        preb = 'TmuupUhPx5_yZ-Wk1x4ejhccBWzwEHHzq7K0gzQPYGGw'.encode("utf-8")
+        sn = 1  # do not start at zero
+        key = lgr.snKey(preb, sn)
+        assert key == (b'TmuupUhPx5_yZ-Wk1x4ejhccBWzwEHHzq7K0gzQPYGGw.'
+                       b'00000000000000000000000000000001')
+        vals0 = [skedb]
+        assert lgr.addDe(key, vals0[0]) == True
+
+        vals1 = [b"mary", b"peter", b"john", b"paul"]
+        sn += 1
+        key = lgr.snKey(preb, sn)
+        for val in vals1:
+            assert lgr.addDe(key, val) == True
+
+        vals2 = [b"dog", b"cat", b"bird"]
+        sn += 3  # skip make gap in SN
+        key = lgr.snKey(preb, sn)
+        for val in vals2:
+            assert lgr.addDe(key, val) == True
+
+        vals = [val for val in lgr.getDelIter(preb)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
 
@@ -577,4 +624,4 @@ def test_uselogger():
     """ End Test """
 
 if __name__ == "__main__":
-    test_fetchkel()
+    test_fetchkeldel()
