@@ -9,7 +9,7 @@ import json
 import lmdb
 
 from keri.db.dbing import clearDatabaserDir, openDatabaser, openLogger
-from keri.db.dbing import Databaser, Logger, Dupler
+from keri.db.dbing import Databaser, Logger
 
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
 from keri.core.coring import CryCntDex, CryOneDex, CryTwoDex, CryFourDex
@@ -395,31 +395,9 @@ def test_logger():
 
     assert not os.path.exists(lgr.path)
 
-
     """ End Test """
 
 
-def test_dupler():
-    """
-    Test Dupler class
-
-    """
-    dupler = Dupler()
-    assert isinstance(dupler, Dupler)
-    assert dupler.name == "main"
-    assert isinstance(dupler.env, lmdb.Environment)
-    assert dupler.path.endswith("keri/db/main")
-    assert dupler.env.path() == dupler.path
-    assert os.path.exists(dupler.path)
-
-    assert isinstance(dupler.evts, lmdb._Database)
-    assert isinstance(dupler.dels, lmdb._Database)
-    assert isinstance(dupler.pdes, lmdb._Database)
-
-    dupler.clearDirPath()
-    assert not os.path.exists(dupler.path)
-
-    """ End Test """
 
 def test_uselogger():
     """
