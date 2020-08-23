@@ -113,6 +113,9 @@ def test_databaser():
         assert dber.cntVals(db, key) == len(vals) == 4
         assert dber.putVals(db, key, vals=[b'a']) == True   # duplicate
         assert dber.getVals(db, key) == [b'a', b'm', b'x', b'z']  #  no change
+        assert dber.addVal(db, key, val=b'b') == True
+        assert dber.addVal(db, key, val=b'a') == False  # duplicate
+        assert dber.getVals(db, key) == [b'a', b'b', b'm', b'x', b'z']
         assert dber.delVals(db, key) == True
         assert dber.getVals(db, key) == []
 
@@ -129,8 +132,11 @@ def test_databaser():
         assert dber.getIoVals(db, key) == vals  # preserved insertion order
         assert dber.cntIoVals(db, key) == len(vals) == 4
         assert dber.getIoValsLast(db, key) == vals[-1]
-        assert dber.putIoVals(db, key, vals=[b'a']) == True   # duplicate
+        assert dber.putIoVals(db, key, vals=[b'a']) == False   # duplicate
         assert dber.getIoVals(db, key) == vals  #  no change
+        assert dber.addIoVal(db, key, val=b'b') == True
+        assert dber.addIoVal(db, key, val=b'a') == False
+        assert dber.getIoVals(db, key) == [b"z", b"m", b"x", b"a", b'b']
         assert dber.delIoVals(db, key) == True
         assert dber.getIoVals(db, key) == []
 
@@ -319,7 +325,7 @@ def test_logger():
         assert lgr.getKes(key) == vals  # preserved insertion order
         assert lgr.cntKes(key) == len(vals) == 4
         assert lgr.getKesLast(key) == vals[-1]
-        assert lgr.putKes(key, vals=[b'a']) == True   # duplicate
+        assert lgr.putKes(key, vals=[b'a']) == False   # duplicate
         assert lgr.getKes(key) == vals  #  no change
         assert lgr.delKes(key) == True
         assert lgr.getKes(key) == []
@@ -336,7 +342,7 @@ def test_logger():
         assert lgr.getPses(key) == vals  # preserved insertion order
         assert lgr.cntPses(key) == len(vals) == 4
         assert lgr.getPsesLast(key) == vals[-1]
-        assert lgr.putPses(key, vals=[b'a']) == True   # duplicate
+        assert lgr.putPses(key, vals=[b'a']) == False   # duplicate
         assert lgr.getPses(key) == vals  #  no change
         assert lgr.delPses(key) == True
         assert lgr.getPses(key) == []
@@ -353,7 +359,7 @@ def test_logger():
         assert lgr.getOoes(key) == vals  # preserved insertion order
         assert lgr.cntOoes(key) == len(vals) == 4
         assert lgr.getOoesLast(key) == vals[-1]
-        assert lgr.putOoes(key, vals=[b'a']) == True   # duplicate
+        assert lgr.putOoes(key, vals=[b'a']) == False   # duplicate
         assert lgr.getOoes(key) == vals  #  no change
         assert lgr.delOoes(key) == True
         assert lgr.getOoes(key) == []
@@ -370,7 +376,7 @@ def test_logger():
         assert lgr.getDes(key) == vals  # preserved insertion order
         assert lgr.cntDes(key) == len(vals) == 4
         assert lgr.getDesLast(key) == vals[-1]
-        assert lgr.putDes(key, vals=[b'a']) == True   # duplicate
+        assert lgr.putDes(key, vals=[b'a']) == False   # duplicate
         assert lgr.getDes(key) == vals  #  no change
         assert lgr.delDes(key) == True
         assert lgr.getDes(key) == []
@@ -387,7 +393,7 @@ def test_logger():
         assert lgr.getLdes(key) == vals  # preserved insertion order
         assert lgr.cntLdes(key) == len(vals) == 4
         assert lgr.getLdesLast(key) == vals[-1]
-        assert lgr.putLdes(key, vals=[b'a']) == True   # duplicate
+        assert lgr.putLdes(key, vals=[b'a']) == False   # duplicate
         assert lgr.getLdes(key) == vals  #  no change
         assert lgr.delLdes(key) == True
         assert lgr.getLdes(key) == []
@@ -470,4 +476,4 @@ def test_uselogger():
     """ End Test """
 
 if __name__ == "__main__":
-    test_logger()
+    test_databaser()

@@ -225,7 +225,7 @@ class Databaser:
         Write serialized bytes val to location key in db
         Does not overwrite.
         Returns True If val successfully written Else False
-        Returns False if key already exitss
+        Returns False if val at key already exitss
 
         Parameters:
             db is opened named sub db with dupsort=False
@@ -283,6 +283,7 @@ class Databaser:
         Write each entry from list of bytes vals to key in db
         Adds to existing values at key if any
         Returns True If only one first written val in vals Else False
+        Apparently always returns True (is this how .put works with dupsort=True)
 
         Duplicates are inserted in lexocographic order not insertion order.
         Lmdb does not insert a duplicate unless it is a unique value for that
@@ -298,6 +299,33 @@ class Databaser:
             for val in vals:
                 result = result and txn.put(key, val, dupdata=True)
             return result
+
+
+    def addVal(self, db, key, val):
+        """
+        Add val bytes as dup to key in db
+        Adds to existing values at key if any
+        Returns True if written else False if dup val already exists
+
+        Duplicates are inserted in lexocographic order not insertion order.
+        Lmdb does not insert a duplicate unless it is a unique value for that
+        key.
+
+        Does inclusion test to dectect of duplicate already exists
+        Uses a python set for the duplicate inclusion test. Set inclusion scales
+        with O(1) whereas list inclusion scales with O(n).
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            val is bytes of value to be written
+        """
+        dups = set(self.getVals(db, key))  #get preexisting dups if any
+        result = False
+        if val not in dups:
+            with self.env.begin(db=db, write=True, buffers=True) as txn:
+                result = txn.put(key, val, dupdata=True)
+        return result
 
 
     def getVals(self, db, key):
@@ -352,7 +380,7 @@ class Databaser:
         """
         Write each entry from list of bytes vals to key in db in insertion order
         Adds to existing values at key if any
-        Returns True If only one first written val in vals Else False
+        Returns True If at least one of vals is added as dup, False otherwise
 
         Duplicates preserve insertion order.
         Because lmdb is lexocographic an insertion ordering value is prepended to
@@ -376,12 +404,39 @@ class Databaser:
             cursor = txn.cursor()
             if cursor.set_key(key):
                 cnt = cursor.count()
-            result = True
+            result = False
             for val in vals:
                 if val not in dups:
+                    result = True
                     val = (b'%06x.' % (cnt)) +  val  # prepend ordering prefix
-                    result = result and txn.put(key, val, dupdata=True)
+                    txn.put(key, val, dupdata=True)
                     cnt += 1
+            return result
+
+
+    def addIoVal(self, db, key, val):
+        """
+        Add val bytes as dup in insertion order to key in db
+        Adds to existing values at key if any
+        Returns True if written else False if val is already a dup
+
+        DDuplicates preserve insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            val is bytes of value to be written
+        """
+        dups = set(self.getIoVals(db, key))  #get preexisting dups if any
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            cnt = 0
+            cursor = txn.cursor()
+            if cursor.set_key(key):
+                cnt = cursor.count()
+            result = False
+            if val not in dups:
+                val = (b'%06x.' % (cnt)) +  val  # prepend ordering prefix
+                result = txn.put(key, val, dupdata=True)
             return result
 
 
@@ -652,7 +707,6 @@ class Logger(Databaser):
         """
         Return list of signatures at key
         Returns empty list if no entry at key
-
         Duplicates are retrieved in lexocographic order not insertion order.
         """
         return self.getVals(self.sigs, key)
@@ -663,7 +717,7 @@ class Logger(Databaser):
         Write each entry from list of bytes signatures vals to key
         Adds to existing signatures at key if any
         Returns True If no error
-
+        Apparently always returns True (is this how .put works with dupsort=True)
         Duplicates are inserted in lexocographic order not insertion order.
         """
         return self.putVals(self.sigs, key, vals)
@@ -673,7 +727,6 @@ class Logger(Databaser):
         """
         Return list of signatures at key
         Returns empty list if no entry at key
-
         Duplicates are retrieved in lexocographic order not insertion order.
         """
         return self.getVals(self.sigs, key)
@@ -700,7 +753,7 @@ class Logger(Databaser):
         Write each entry from list of bytes receipt couplets vals to key
         Adds to existing receipts at key if any
         Returns True If no error
-
+        Apparently always returns True (is this how .put works with dupsort=True)
         Duplicates are inserted in lexocographic order not insertion order.
         """
         return self.putVals(self.rcts, key, vals)
@@ -710,7 +763,6 @@ class Logger(Databaser):
         """
         Return list of receipt couplets at key
         Returns empty list if no entry at key
-
         Duplicates are retrieved in lexocographic order not insertion order.
         """
         return self.getVals(self.rcts, key)
@@ -771,8 +823,7 @@ class Logger(Databaser):
         """
         Write each key event dig entry from list of bytes vals to key
         Adds to existing event indexes at key if any
-        Returns True If no error
-
+        Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.kels, key, vals)
@@ -782,7 +833,6 @@ class Logger(Databaser):
         """
         Return list of key event dig vals at key
         Returns empty list if no entry at key
-
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.kels, key)
@@ -792,7 +842,6 @@ class Logger(Databaser):
         """
         Return last inserted dup key event dig vals at key
         Returns None if no entry at key
-
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValsLast(self.kels, key)
@@ -818,8 +867,7 @@ class Logger(Databaser):
         """
         Write each partial signed escrow event entry from list of bytes dig vals to key
         Adds to existing event indexes at key if any
-        Returns True If no error
-
+        Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.pses, key, vals)
@@ -829,7 +877,6 @@ class Logger(Databaser):
         """
         Return list of partial signed escrowed event dig vals at key
         Returns empty list if no entry at key
-
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.pses, key)
@@ -839,7 +886,6 @@ class Logger(Databaser):
         """
         Return last inserted dup partial signed escrowed event dig val at key
         Returns None if no entry at key
-
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValsLast(self.pses, key)
@@ -865,8 +911,7 @@ class Logger(Databaser):
         """
         Write each out of order escrow event dig entry from list of bytes vals to key
         Adds to existing event indexes at key if any
-        Returns True If no error
-
+        Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.ooes, key, vals)
@@ -876,7 +921,6 @@ class Logger(Databaser):
         """
         Return list of out of order escrow event dig vals at key
         Returns empty list if no entry at key
-
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.ooes, key)
@@ -886,7 +930,6 @@ class Logger(Databaser):
         """
         Return last inserted dup out of order escrow event dig at key
         Returns None if no entry at key
-
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValsLast(self.ooes, key)
@@ -912,8 +955,7 @@ class Logger(Databaser):
         """
         Write each duplicitous event entry dig from list of bytes vals to key
         Adds to existing event indexes at key if any
-        Returns True If no error
-
+        Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.dels, key, vals)
@@ -923,7 +965,6 @@ class Logger(Databaser):
         """
         Return list of duplicitous event dig vals at key
         Returns empty list if no entry at key
-
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.dels, key)
@@ -959,8 +1000,7 @@ class Logger(Databaser):
         """
         Write each likely duplicitous event entry dig from list of bytes vals to key
         Adds to existing event indexes at key if any
-        Returns True If no error
-
+        Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.ldes, key, vals)
@@ -970,7 +1010,6 @@ class Logger(Databaser):
         """
         Return list of likely duplicitous event dig vals at key
         Returns empty list if no entry at key
-
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.ldes, key)
@@ -980,7 +1019,6 @@ class Logger(Databaser):
         """
         Return last inserted dup likely duplicitous event dig at key
         Returns None if no entry at key
-
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValsLast(self.ldes, key)
