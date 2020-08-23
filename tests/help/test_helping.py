@@ -3,6 +3,8 @@
 tests.help.test_helping module
 
 """
+import datetime
+
 import pytest
 
 import pysodium
@@ -10,6 +12,7 @@ import pysodium
 
 from keri.help.helping import mdict
 from keri.help.helping import extractValues
+from keri.help.helping import nowIso8601, toIso8601, fromIso8601
 
 
 def test_mdict():
@@ -101,13 +104,34 @@ def test_extractvalues():
                    'TOunRAEGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_40EstOnly')
     """End Test"""
 
-def test_conversions():
+def test_iso8601():
     """
-    Test conversion helpers
+    Test datetime ISO 8601 helpers
     """
+    # dts = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    dts = '2020-08-22T20:34:41.687702+00:00'
+    dt = fromIso8601(dts)
+    assert dt.year == 2020
+    assert dt.month == 8
+    assert dt.day == 22
 
+    dts1 = nowIso8601()
+    dt1 = fromIso8601(dts1)
+    dts2 = nowIso8601()
+    dt2 = fromIso8601(dts2)
 
+    assert dt2 > dt1
+
+    assert dts1 == toIso8601(dt1)
+    assert dts2 == toIso8601(dt2)
+
+    dts3 = toIso8601()
+    dt3 = fromIso8601(dts3)
+
+    assert dt3 > dt2
+
+    """ End Test """
 
 
 if __name__ == "__main__":
-    test_extractvalues()
+    test_iso8601()

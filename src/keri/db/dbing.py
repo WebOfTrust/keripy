@@ -75,8 +75,9 @@ def clearDatabaserDir(path):
         shutil.rmtree(path)
 
 
+
 @contextmanager
-def openDatabaser(name="test"):
+def openDatabaser(name="test", cls=None):
     """
     Wrapper to enable temporary (test) Databaser instances
     When used in with statement calls .clearDirPath() on exit of with block
@@ -84,21 +85,27 @@ def openDatabaser(name="test"):
     Parameters:
         name is str name of temporary Databaser dirPath  extended name so
                  can have multiple temporary databasers is use differen name
+        cls is Class instance of subclass instance
 
     Usage:
 
     with openDatabaser(name="gen1") as baser1:
         baser1.env  ....
 
+    with openDatabaser(name="gen2, cls=Logger)
+
     """
+    if cls is None:
+        cls = Databaser
     try:
-        databaser = Databaser(name=name, temp=True)
+        databaser = cls(name=name, temp=True)
 
         yield databaser
 
     finally:
 
         databaser.clearDirPath()
+
 
 class Databaser:
     """
@@ -118,7 +125,7 @@ class Databaser:
     TailDirPath = "keri/db"
     AltHeadDirPath = "~"  #  put in ~ when /var not permitted
     AltTailDirPath = ".keri/db"
-    MaxNamedDBs = 8
+    MaxNamedDBs = 16
 
     def __init__(self, headDirPath=None, name='main', temp=False):
         """
@@ -196,6 +203,423 @@ class Databaser:
             shutil.rmtree(self.path)
 
 
+    @staticmethod
+    def dgKey(pre, dig):
+        """
+        Returns bytes DB key from concatenation of qualified Base64 prefix
+        bytes pre and qualified Base64 str digest of serialized event
+        """
+        return (b'%s.%s' %  (pre, dig))
+
+    @staticmethod
+    def snKey(pre, sn):
+        """
+        Returns bytes DB key from concatenation of qualified Base64 prefix
+        bytes pre and  int sn (sequence number) of event
+        """
+        return (b'%s.%032x' % (pre, sn))
+
+
+    def putVal(self, db, key, val):
+        """
+        Write serialized bytes val to location key in db
+        Does not overwrite.
+        Returns True If val successfully written Else False
+        Returns False if val at key already exitss
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            val is bytes of value to be written
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            return (txn.put(key, val, overwrite=False))
+
+
+    def setVal(self, db, key, val):
+        """
+        Write serialized bytes val to location key in db
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            val is bytes of value to be written
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            return (txn.put(key, val))
+
+
+    def getVal(self, db, key):
+        """
+        Return val at key in db
+        Returns None if no entry at key
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            return( txn.get(key))
+
+
+    def delVal(self, db, key):
+        """
+        Deletes value at key in db.
+        Returns True If key exists in database Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            return (txn.delete(key))
+
+
+    def putVals(self, db, key, vals):
+        """
+        Write each entry from list of bytes vals to key in db
+        Adds to existing values at key if any
+        Returns True If only one first written val in vals Else False
+        Apparently always returns True (is this how .put works with dupsort=True)
+
+        Duplicates are inserted in lexocographic order not insertion order.
+        Lmdb does not insert a duplicate unless it is a unique value for that
+        key.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            vals is list of bytes of values to be written
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            result = True
+            for val in vals:
+                result = result and txn.put(key, val, dupdata=True)
+            return result
+
+
+    def addVal(self, db, key, val):
+        """
+        Add val bytes as dup to key in db
+        Adds to existing values at key if any
+        Returns True if written else False if dup val already exists
+
+        Duplicates are inserted in lexocographic order not insertion order.
+        Lmdb does not insert a duplicate unless it is a unique value for that
+        key.
+
+        Does inclusion test to dectect of duplicate already exists
+        Uses a python set for the duplicate inclusion test. Set inclusion scales
+        with O(1) whereas list inclusion scales with O(n).
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            val is bytes of value to be written
+        """
+        dups = set(self.getVals(db, key))  #get preexisting dups if any
+        result = False
+        if val not in dups:
+            with self.env.begin(db=db, write=True, buffers=True) as txn:
+                result = txn.put(key, val, dupdata=True)
+        return result
+
+
+    def getVals(self, db, key):
+        """
+        Return list of values at key in db
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            vals = []
+            if cursor.set_key(key):  # moves to first_dup
+                vals = [val for val in cursor.iternext_dup()]
+            return vals
+
+    def getValsIter(self, db, key):
+        """
+        Return iterator of all dup values at key in db
+        Raises StopIteration error when done or if empty
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            vals = []
+            if cursor.set_key(key):  # moves to first_dup
+                for val in cursor.iternext_dup():
+                    yield val
+
+
+    def cntVals(self, db, key):
+        """
+        Return count of dup values at key in db, or zero otherwise
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            count = 0
+            if cursor.set_key(key):  # moves to first_dup
+                count = cursor.count()
+            return count
+
+    def delVals(self,db, key, dupdata=True):
+        """
+        Deletes all values at key in db.
+        Returns True If key exists in db Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            return (txn.delete(key))
+
+
+    def putIoVals(self, db, key, vals):
+        """
+        Write each entry from list of bytes vals to key in db in insertion order
+        Adds to existing values at key if any
+        Returns True If at least one of vals is added as dup, False otherwise
+
+        Duplicates preserve insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates. With prepended ordinal must explicity
+        check for duplicate values before insertion. Uses a python set for the
+        duplicate inclusion test. Set inclusion scales with O(1) whereas list
+        inclusion scales with O(n).
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            vals is list of bytes of values to be written
+        """
+        dups = set(self.getIoVals(db, key))  #get preexisting dups if any
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            cnt = 0
+            cursor = txn.cursor()
+            if cursor.set_key(key):
+                cnt = cursor.count()
+            result = False
+            for val in vals:
+                if val not in dups:
+                    result = True
+                    val = (b'%06x.' % (cnt)) +  val  # prepend ordering prefix
+                    txn.put(key, val, dupdata=True)
+                    cnt += 1
+            return result
+
+
+    def addIoVal(self, db, key, val):
+        """
+        Add val bytes as dup in insertion order to key in db
+        Adds to existing values at key if any
+        Returns True if written else False if val is already a dup
+
+        DDuplicates preserve insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            val is bytes of value to be written
+        """
+        dups = set(self.getIoVals(db, key))  #get preexisting dups if any
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            cnt = 0
+            cursor = txn.cursor()
+            if cursor.set_key(key):
+                cnt = cursor.count()
+            result = False
+            if val not in dups:
+                val = (b'%06x.' % (cnt)) +  val  # prepend ordering prefix
+                result = txn.put(key, val, dupdata=True)
+            return result
+
+
+    def getIoVals(self, db, key):
+        """
+        Return list of values at key in db in insertion order
+        Returns empty list if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates,
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            vals = []
+            if cursor.set_key(key):  # moves to first_dup
+                # slice off prepended ordering prefix
+                vals = [val[7:] for val in cursor.iternext_dup()]
+            return vals
+
+
+    def getIoValsLast(self, db, key):
+        """
+        Return last added dup value at key in db in insertion order
+        Returns None no entry at key
+
+        Duplicates are retrieved in insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates,
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            val = None
+            if cursor.set_key(key):  # move to first_dup
+                if cursor.last_dup(): # move to last_dup
+                    val = cursor.value()[7:]  # slice off prepended ordering prefix
+            return val
+
+
+    def cntIoVals(self, db, key):
+        """
+        Return count of dup values at key in db, or zero otherwise
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            count = 0
+            if cursor.set_key(key):  # moves to first_dup
+                count = cursor.count()
+            return count
+
+
+    def delIoVals(self,db, key, dupdata=True):
+        """
+        Deletes all values at key in db.
+        Returns True If key exists in db Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            return (txn.delete(key))
+
+
+    def getIoValsAllPreIter(self, db, pre):
+        """
+        Returns iterator of all dup vals in insertion order for all entries
+        with same prefix across all sequence numbers in order without gaps
+        starting with zero. Stops if gap or different pre.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
+
+        Raises StopIteration Error when empty.
+
+        Duplicates are retrieved in insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates,
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = self.snKey(pre, cnt:=0)
+            while cursor.set_key(key):  # moves to first_dup
+                for val in cursor.iternext_dup():
+                    # slice off prepended ordering prefix
+                    yield val[7:]
+                key = self.snKey(pre, cnt:=cnt+1)
+
+
+    def getIoValsAnyPreIter(self, db, pre):
+        """
+        Returns iterator of all dup vals in insertion order for any entries
+        with same prefix across all sequence numbers in order including gaps.
+        Stops when pre is different.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
+
+        Raises StopIteration Error when empty.
+
+        Duplicates are retrieved in insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates,
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = self.snKey(pre, cnt:=0)
+            while cursor.set_range(key):  #  moves to first dup of key >= key
+                key = cursor.key()  # actual key
+                front, back = bytes(key).split(sep=b'.', maxsplit=1)
+                if front != pre:
+                    break
+                for val in cursor.iternext_dup():
+                    # slice off prepended ordering prefix
+                    yield val[7:]
+                cnt = int(back, 16)
+                key = self.snKey(pre, cnt:=cnt+1)
+
+
+
+def openLogger(name="test"):
+    """
+    Returns contextmanager generated by openDatabaser but with Logger instance
+    """
+    return openDatabaser(name=name, cls=Logger)
+
+
 class Logger(Databaser):
     """
     Logger sets up named sub databases with Keri Event Logs within main database
@@ -203,10 +627,63 @@ class Logger(Databaser):
     Attributes:
         see superclass Databaser for inherited attributes
 
-        .kels is named sub DB of key event logs indexed by identifier prefix and
-                then by sequence number of event. Allows multiple values per index.
-        .kelds is named sub DB of key event logs indexed by identifer prefix and
-                then by digest of serialized key event
+        .evts is named sub DB whose values are serialized events
+            DB is keyed by identifer prefix plus digest of serialized event
+            Only one value per DB key is allowed
+
+        .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
+            the datetime when the event was first seen by log.
+            Used for escrows timeouts and extended validation.
+            DB is keyed by identifer prefix plus digest of serialized event
+
+        .sigs is named sub DB of fully qualified event signatures
+            DB is keyed by identifer prefix plus digest of serialized event
+            More than one value per DB key is allowed
+
+        .rcts is named sub DB of event receipt couplets. Each couplet is
+            concatenation of fully qualified witness or validator prefix plus
+            fully qualified event signature by witness or validator
+            SB is keyed by identifer prefix plus digest of serialized event
+            More than one value per DB key is allowed
+
+        .ures is named sub DB of unverified event receipt escrowed couplets.
+            Each couplet is concatenation of fully qualified identfier prefix
+            for corresponding event plus fully qualified event signature
+            by witness or validator
+            SB is keyed by witness or validator prefix plus digest of serialized event
+            Only one value per DB key is allowed
+
+        .kels is named sub DB of key event log tables that map sequence numbers
+            to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+        .pses is named sub DB of partially signed escrowed event tables
+            that map sequence numbers to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+        .ooes is named sub DB of out of order escrowed event tables
+            that map sequence numbers to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+        .dels is named sub DB of deplicitous event log tables that map sequence numbers
+            to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+        .ldes is named sub DB of likely deplicitous escrowed event tables
+            that map sequence numbers to serialized event digests.
+            Values are digests used to lookup event in .evts sub DB
+            DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+
     Properties:
 
 
@@ -216,47 +693,563 @@ class Logger(Databaser):
         Setup named sub databases.
 
         Parameters:
+
+        Notes:
+
+        dupsort=True for sub DB means allow unique (key,pair) duplicates at a key.
+        Duplicate means that is more than one value at a key but not a redundant
+        copies a (key,value) pair per key. In other words the pair (key,value)
+        must be unique both key and value in combination.
+        Attempting to put the same (key,value) pair a second time does
+        not add another copy.
+
+        Duplicates are inserted in lexocographic order by value, insertion order.
 
         """
         super(Logger, self).__init__(**kwa)
 
-        # create named sub dbs  within main DB instance
-        # sub db name must include a non Base64 character to avoid namespace
-        # collisions with Base64 aid prefixes. So use "."
+        # Create by opening first time named sub DBs within main DB instance
+        # Names end with "." as sub DB name must include a non Base64 character
+        # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.kelds = self.env.open_db(key=b'kelds.')  #  open named sub db
-        # dupsort=True means allow duplicates for sn indexed
-        self.kels = self.env.open_db(key=b'kels.', dupsort=True)  # open named sub db
-
-
-
-class Dupler(Databaser):
-    """
-    Dupler sets up named sub databases with Duplicitous Event Logs within main database
-
-    Attributes:
-        see superclass Databaser for inherited attributes
-
-        .dels is named sub DB of duplicitous event logs indexed by identifier prefix and
-                then by sequence number of event. Allows multiple values per index.
-        .delps is named sub DB of potentials duplicitous event logs indexed by identifer prefix and
-                then by digest of serialized key event
-    Properties:
+        self.evts = self.env.open_db(key=b'evts.')
+        self.dtss = self.env.open_db(key=b'dtss.')
+        self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
+        self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
+        self.ures = self.env.open_db(key=b'ures.')
+        self.kels = self.env.open_db(key=b'kels.', dupsort=True)
+        self.pses = self.env.open_db(key=b'pses.', dupsort=True)
+        self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
+        self.dels = self.env.open_db(key=b'dels.', dupsort=True)
+        self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
 
-    """
-    def __init__(self, **kwa):
+    def putEvt(self, key, val):
         """
-        Setup named sub databases.
+        Write serialized event bytes val to key
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        return self.putVal(self.evts, key, val)
+
+    def setEvt(self, key, val):
+        """
+        Write serialized event bytes val to key
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.evts, key, val)
+
+    def getEvt(self, key):
+        """
+        Return event at key
+        Returns None if no entry at key
+        """
+        return self.getVal(self.evts, key)
+
+
+    def delEvt(self, key):
+        """
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.evts, key)
+
+
+    def putDts(self, key, val):
+        """
+        Write serialized event datetime stamp val to key
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Returns False if key already exists
+        """
+        return self.putVal(self.dtss, key, val)
+
+
+    def setDts(self, key, val):
+        """
+        Write serialized event datetime stamp val to key
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.dtss, key, val)
+
+
+    def getDts(self, key):
+        """
+        Return datetime stamp at key
+        Returns None if no entry at key
+        """
+        return self.getVal(self.dtss, key)
+
+
+    def delDts(self, key):
+        """
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.dtss, key)
+
+
+    def getSigs(self, key):
+        """
+        Return list of signatures at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getVals(self.sigs, key)
+
+
+    def getSigsIter(self, key):
+        """
+        Return iterator of signatures at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getValsIter(self.sigs, key)
+
+
+    def putSigs(self, key, vals):
+        """
+        Write each entry from list of bytes signatures vals to key
+        Adds to existing signatures at key if any
+        Returns True If no error
+        Apparently always returns True (is this how .put works with dupsort=True)
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        return self.putVals(self.sigs, key, vals)
+
+
+    def addSig(self, key, val):
+        """
+        Add signature val bytes as dup to key in db
+        Adds to existing values at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        return self.addVal(self.sigs, key, val)
+
+
+    def getSigs(self, key):
+        """
+        Return list of signatures at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getVals(self.sigs, key)
+
+
+    def cntSigs(self, key):
+        """
+        Return count of signatures at key
+        Returns zero if no entry at key
+        """
+        return self.cntVals(self.sigs, key)
+
+
+    def delSigs(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVals(self.sigs, key)
+
+
+    def putRcts(self, key, vals):
+        """
+        Write each entry from list of bytes receipt couplets vals to key
+        Adds to existing receipts at key if any
+        Returns True If no error
+        Apparently always returns True (is this how .put works with dupsort=True)
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        return self.putVals(self.rcts, key, vals)
+
+
+    def addRct(self, key, val):
+        """
+        Add receipt couplet val bytes as dup to key in db
+        Adds to existing values at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        return self.addVal(self.rcts, key, val)
+
+
+    def getRcts(self, key):
+        """
+        Return list of receipt couplets at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getVals(self.rcts, key)
+
+
+    def getRctsIter(self, key):
+        """
+        Return iterator of receipt couplets at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getValsIter(self.rcts, key)
+
+
+    def cntRcts(self, key):
+        """
+        Return count of receipt couplets at key
+        Returns zero if no entry at key
+        """
+        return self.cntVals(self.rcts, key)
+
+
+    def delRcts(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVals(self.rcts, key)
+
+
+    def putUre(self, key, val):
+        """
+        Write prefix plus signature couplet val to key
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Returns False if key already exists
+        """
+        return self.putVal(self.ures, key, val)
+
+
+    def setUre(self, key, val):
+        """
+        Write prefix plus signature couplet val to key
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.ures, key, val)
+
+
+    def getUre(self, key):
+        """
+        Return prefix plus signature couplet val at key
+        Returns None if no entry at key
+        """
+        return self.getVal(self.ures, key)
+
+
+    def delUre(self, key):
+        """
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.ures, key)
+
+
+    def putKes(self, key, vals):
+        """
+        Write each key event dig entry from list of bytes vals to key
+        Adds to existing event indexes at key if any
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.kels, key, vals)
+
+
+    def addKe(self, key, val):
+        """
+        Add key event val bytes as dup to key in db
+        Adds to existing event indexes at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.kels, key, val)
+
+
+    def getKes(self, key):
+        """
+        Return list of key event dig vals at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.kels, key)
+
+
+    def getKesLast(self, key):
+        """
+        Return last inserted dup key event dig vals at key
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsLast(self.kels, key)
+
+
+    def cntKes(self, key):
+        """
+        Return count of dup key event dig val at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.kels, key)
+
+
+    def delKes(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.kels, key)
+
+    def getKelIter(self, pre):
+        """
+        Returns iterator of all dup vals in insertion order for all entries
+        with same prefix across all sequence numbers without gaps. Stops if
+        encounters gap.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
+
+        Raises StopIteration Error when empty.
+        Duplicates are retrieved in insertion order.
 
         Parameters:
-
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
         """
-        super(Dupler, self).__init__(**kwa)
+        return self.getIoValsAllPreIter(self.kels, pre)
 
-        # create named sub dbs  within main DB instance
-        # sub db name must include a non Base64 character to avoid namespace
-        # collisions with Base64 aid prefixes. So use "."
 
-        self.dels = self.env.open_db(key=b'dels.')  #  open named sub db
-        self.delps = self.env.open_db(key=b'delps.')  #  open named sub db
+    def putPses(self, key, vals):
+        """
+        Write each partial signed escrow event entry from list of bytes dig vals to key
+        Adds to existing event indexes at key if any
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.pses, key, vals)
+
+
+    def addPse(self, key, val):
+        """
+        Add Partial signed escrow val bytes as dup to key in db
+        Adds to existing event indexes at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.pses, key, val)
+
+
+    def getPses(self, key):
+        """
+        Return list of partial signed escrowed event dig vals at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.pses, key)
+
+
+    def getPsesLast(self, key):
+        """
+        Return last inserted dup partial signed escrowed event dig val at key
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsLast(self.pses, key)
+
+
+    def cntPses(self, key):
+        """
+        Return count of dup event dig vals at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.pses, key)
+
+
+    def delPses(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.pses, key)
+
+
+    def putOoes(self, key, vals):
+        """
+        Write each out of order escrow event dig entry from list of bytes vals to key
+        Adds to existing event indexes at key if any
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.ooes, key, vals)
+
+
+    def addOoe(self, key, val):
+        """
+        Add out of order escrow val bytes as dup to key in db
+        Adds to existing event indexes at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.ooes, key, val)
+
+
+    def getOoes(self, key):
+        """
+        Return list of out of order escrow event dig vals at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.ooes, key)
+
+
+    def getOoesLast(self, key):
+        """
+        Return last inserted dup out of order escrow event dig at key
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsLast(self.ooes, key)
+
+
+    def cntOoes(self, key):
+        """
+        Return count of dup event dig at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.ooes, key)
+
+
+    def delOoes(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.ooes, key)
+
+
+    def putDes(self, key, vals):
+        """
+        Write each duplicitous event entry dig from list of bytes vals to key
+        Adds to existing event indexes at key if any
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.dels, key, vals)
+
+
+    def addDe(self, key, val):
+        """
+        Add duplicate event index val bytes as dup to key in db
+        Adds to existing event indexes at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.dels, key, val)
+
+
+    def getDes(self, key):
+        """
+        Return list of duplicitous event dig vals at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.dels, key)
+
+
+    def getDesLast(self, key):
+        """
+        Return last inserted dup duplicitous event dig vals at key
+        Returns None if no entry at key
+
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsLast(self.dels, key)
+
+
+    def cntDes(self, key):
+        """
+        Return count of dup event dig vals at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.dels, key)
+
+
+    def delDes(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.dels, key)
+
+
+    def getDelIter(self, pre):
+        """
+        Returns iterator of all dup vals  in insertion order for any entries
+        with same prefix across all sequence numbers including gaps.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
+
+        Raises StopIteration Error when empty.
+        Duplicates are retrieved in insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        return self.getIoValsAnyPreIter(self.dels, pre)
+
+
+    def putLdes(self, key, vals):
+        """
+        Write each likely duplicitous event entry dig from list of bytes vals to key
+        Adds to existing event indexes at key if any
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.ldes, key, vals)
+
+
+    def addLde(self, key, val):
+        """
+        Add likely duplicitous escrow val bytes as dup to key in db
+        Adds to existing event indexes at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.ldes, key, val)
+
+
+    def getLdes(self, key):
+        """
+        Return list of likely duplicitous event dig vals at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.ldes, key)
+
+
+    def getLdesLast(self, key):
+        """
+        Return last inserted dup likely duplicitous event dig at key
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsLast(self.ldes, key)
+
+
+    def cntLdes(self, key):
+        """
+        Return count of dup event dig at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.ldes, key)
+
+
+    def delLdes(self, key):
+        """
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.ldes, key)
+
+

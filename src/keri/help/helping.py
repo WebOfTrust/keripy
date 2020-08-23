@@ -7,6 +7,7 @@ import os
 import shutil
 import tempfile
 import base64
+import datetime
 
 from collections.abc import Iterable, Sequence,  Mapping
 
@@ -235,3 +236,49 @@ def extractValues(ked, labels):
         extractElementValues(element=ked[label], values=values)
 
     return values
+
+
+def nowIso8601():
+    """
+    Returns time now in ISO 8601 format
+    use now(timezone.utc)
+
+    YYYY-MM-DDTHH:MM:SS.ffffff+HH:MM[:SS[.ffffff]]
+    .strftime('%Y-%m-%dT%H:%M:%S.%f%z')
+    '2020-08-22T17:50:09.988921+00:00'
+    Assumes TZ aware
+    For nanosecond use instead attotime or datatime64 in pandas or numpy
+    """
+    return (datetime.datetime.now(datetime.timezone.utc).isoformat())
+
+
+def toIso8601(dt=None):
+    """
+    Returns str datetime dt in ISO 8601 format
+    Converts datetime object dt to ISO 8601 formt
+    If dt is missing use now(timezone.utc)
+
+    YYYY-MM-DDTHH:MM:SS.ffffff+HH:MM[:SS[.ffffff]]
+    .strftime('%Y-%m-%dT%H:%M:%S.%f%z')
+    '2020-08-22T17:50:09.988921+00:00'
+    Assumes TZ aware
+    For nanosecond use instead attotime or datatime64 in pandas or numpy
+    """
+    if dt is None:
+        dt = datetime.datetime.now(datetime.timezone.utc)  # make it aware
+
+    return(dt.isoformat())
+
+
+def fromIso8601(dts):
+    """
+    Returns datetime object from ISO 8601 formated str
+    Converts dts from ISO 8601 format to datetime object
+
+    YYYY-MM-DDTHH:MM:SS.ffffff+HH:MM[:SS[.ffffff]]
+    .strftime('%Y-%m-%dT%H:%M:%S.%f%z')
+    '2020-08-22T17:50:09.988921+00:00'
+    Assumes TZ aware
+    For nanosecond use instead attotime or datatime64 in pandas or numpy
+    """
+    return (datetime.datetime.fromisoformat(dts))
