@@ -94,7 +94,8 @@ def test_databaser():
         assert dber.getVal(db, key) == None
         assert dber.delVal(db, key) == False
         assert dber.putVal(db, key, val) == True
-        assert dber.putVal(db, key, val) == True
+        assert dber.putVal(db, key, val) == False
+        assert dber.setVal(db, key, val) == True
         assert dber.getVal(db, key) == val
         assert dber.delVal(db, key) == True
         assert dber.getVal(db, key) == None
@@ -216,7 +217,8 @@ def test_logger():
         assert lgr.delEvt(key) == False
         assert lgr.putEvt(key, val=skedb) == True
         assert lgr.getEvt(key) == skedb
-        assert lgr.putEvt(key, val=skedb) == True
+        assert lgr.putEvt(key, val=skedb) == False
+        assert lgr.setEvt(key, val=skedb) == True
         assert lgr.getEvt(key) == skedb
         assert lgr.delEvt(key) == True
         assert lgr.getEvt(key) == None
@@ -229,7 +231,9 @@ def test_logger():
         assert lgr.delDts(key) == False
         assert lgr.putDts(key, val1) == True
         assert lgr.getDts(key) == val1
-        assert lgr.putDts(key, val2) == True
+        assert lgr.putDts(key, val2) == False
+        assert lgr.getDts(key) == val1
+        assert lgr.setDts(key, val2) == True
         assert lgr.getDts(key) == val2
         assert lgr.delDts(key) == True
         assert lgr.getDts(key) == None

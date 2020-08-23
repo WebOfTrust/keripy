@@ -223,6 +223,22 @@ class Databaser:
     def putVal(self, db, key, val):
         """
         Write serialized bytes val to location key in db
+        Does not overwrite.
+        Returns True If val successfully written Else False
+        Returns False if key already exitss
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            val is bytes of value to be written
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            return (txn.put(key, val, overwrite=False))
+
+
+    def setVal(self, db, key, val):
+        """
+        Write serialized bytes val to location key in db
         Overwrites existing val if any
         Returns True If val successfully written Else False
 
@@ -526,15 +542,22 @@ class Logger(Databaser):
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
 
-
     def putEvt(self, key, val):
+        """
+        Write serialized event bytes val to key
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        return self.putVal(self.evts, key, val)
+
+    def setEvt(self, key, val):
         """
         Write serialized event bytes val to key
         Overwrites existing val if any
         Returns True If val successfully written Else False
         """
-        return self.putVal(self.evts, key, val)
-
+        return self.setVal(self.evts, key, val)
 
     def getEvt(self, key):
         """
@@ -555,10 +578,20 @@ class Logger(Databaser):
     def putDts(self, key, val):
         """
         Write serialized event datetime stamp val to key
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Returns False if key already exists
+        """
+        return self.putVal(self.dtss, key, val)
+
+
+    def setDts(self, key, val):
+        """
+        Write serialized event datetime stamp val to key
         Overwrites existing val if any
         Returns True If val successfully written Else False
         """
-        return self.putVal(self.dtss, key, val)
+        return self.setVal(self.dtss, key, val)
 
 
     def getDts(self, key):

@@ -362,7 +362,7 @@ class Kever:
     """
     EstOnly = False
 
-    def __init__(self, serder, sigers, estOnly=None, logs=None):
+    def __init__(self, serder, sigers, estOnly=None, logger=None, logs=None):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -374,9 +374,13 @@ class Kever:
 
         """
         # update state as we go because if invalid we fail to finish init
+
+        if logger is None:
+            logger = Logger()  # default name = "main"
+        self.logger = logger
+
         if logs is None:
             logs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
-
         self.logs = logs
 
         self.version = serder.version  # version dispatch ?
@@ -772,6 +776,7 @@ class Kevery:
         """
         self.framed = True if framed else False  # extract until end-of-stream
         self.kevers = kevers if kevers is not None else dict()
+
         if logger is None:
             logger = Logger()  # default name = "main"
         self.logger = logger
@@ -871,7 +876,10 @@ class Kevery:
                 # kever init verifies basic inception stuff and signatures
                 # raises exception if problem adds to KEL Kevers
                 # create kever from serder
-                kever = Kever(serder=serder, sigers=sigers, logs=self.logs)
+                kever = Kever(serder=serder,
+                              sigers=sigers,
+                              logger=self.logger,
+                              logs=self.logs)
                 self.kevers[pre] = kever
 
             else:  # not inception so can't verify, add to escrow
@@ -972,7 +980,7 @@ class Kevery:
             # Using Kever for cheap duplicity detection of inception events
             # kever init verifies basic inception stuff and signatures
             # raises exception if problem.
-            kever = Kever(serder=serder, sigers=sigers)  # create kever from serder
+            kever = Kever(serder=serder, sigers=siger, logger=self.logger)  # create kever from serder
             # No exception above so verified duplicitous event
             # log it and add to DELS if first time
             if pre not in DELs:  #  add to DELS
