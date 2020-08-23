@@ -347,6 +347,24 @@ class Databaser:
                 vals = [val for val in cursor.iternext_dup()]
             return vals
 
+    def getIterVals(self, db, key):
+        """
+        Return iterator of all dup values at key in db
+        Raises StopIteration error when done or if empty
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            vals = []
+            if cursor.set_key(key):  # moves to first_dup
+                for val in cursor.iternext_dup():
+                    yield val
+
 
     def cntVals(self, db, key):
         """
@@ -712,6 +730,15 @@ class Logger(Databaser):
         return self.getVals(self.sigs, key)
 
 
+    def getIterSigs(self, key):
+        """
+        Return iterator of signatures at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getIterVals(self.sigs, key)
+
+
     def putSigs(self, key, vals):
         """
         Write each entry from list of bytes signatures vals to key
@@ -786,6 +813,15 @@ class Logger(Databaser):
         Duplicates are retrieved in lexocographic order not insertion order.
         """
         return self.getVals(self.rcts, key)
+
+
+    def getIterRcts(self, key):
+        """
+        Return iterator of receipt couplets at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getIterVals(self.rcts, key)
 
 
     def cntRcts(self, key):
