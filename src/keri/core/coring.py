@@ -412,38 +412,38 @@ class CryMat:
         """
         Extracts self.code and self.raw from qualified base64 qb64
         """
-        pre = 1
-        code = qb64[:pre]
+        cs = 1  # code size  initially 1 to extract selector
+        code = qb64[:cs]
         index = 0
 
         # need to map code to length so can only consume proper number of chars
         #  from front of qb64 so can use with full identifiers not just prefixes
 
         if code in CryOneDex:  # One Char code
-            qb64 = qb64[:CryOneSizes[code]]  # strip of identifier after prefix
+            qb64 = qb64[:CryOneSizes[code]]  # strip of full crymat
 
         elif code == CrySelDex.two: # first char of two char code
-            pre += 1
-            code = qb64[pre-2:pre]  #  get full code
+            cs += 1  # increase code size
+            code = qb64[0:cs]  #  get full code
             if code not in CryTwoDex:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:CryTwoSizes[code]]  # strip of identifier after prefix
+            qb64 = qb64[:CryTwoSizes[code]]  # strip of full crymat
 
         elif code == CrySelDex.four: # first char of four char cnt code
-            pre += 3
-            code = qb64[pre-4:pre]  #  get full code
+            cs += 3  # increase code size
+            code = qb64[0:cs]  #  get full code
             if code not in CryFourDex:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:CryFourSizes[code]]  # strip of identifier after prefix
+            qb64 = qb64[:CryFourSizes[code]]  # strip of full crymat
 
         elif code == CrySelDex.dash:  #  '-' 2 char code + 2 char index count
-            pre += 1
-            code = qb64[pre-2:pre]
+            cs += 1  # increase code size
+            code = qb64[0:cs]  # get front code
             if code not in CryCntDex:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:CryCntSizes[code]]  # strip of exact len identifier after prefix
-            pre += 2
-            index = B64ToInt(qb64[pre-2:pre])
+            qb64 = qb64[:CryCntSizes[code]]  # strip of full crymat
+            cs += 2  # increase code size
+            index = B64ToInt(qb64[cs-2:cs])  # last two characters for index
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
@@ -454,12 +454,12 @@ class CryMat:
                                                          code,
                                                          CrySizes[code]))
 
-        pad = pre % 4  # pad is remainder pre mod 4
+        pad = cs % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters
-        base = qb64[pre:] + pad * BASE64_PAD
+        base = qb64[cs:] + pad * BASE64_PAD
         raw = decodeB64(base.encode("utf-8"))
 
-        if len(raw) != (len(qb64) - pre) * 3 // 4:  # exact lengths
+        if len(raw) != (len(qb64) - cs) * 3 // 4:  # exact lengths
             raise ValueError("Improperly qualified material = {}".format(qb64))
 
         self._code = code
@@ -1730,35 +1730,35 @@ class SigMat:
         """
         Extracts self.code,self.index, and self.raw from qualified base64 qb64
         """
-        pre = 1
-        code = qb64[:pre]
+        cs = 1  # code size  initially 1 to extract selector or one char code
+        code = qb64[:cs]  # get front code
         index = 0
 
         # need to map code to length so can only consume proper number of chars
         # from front of qb64 so can use with full identifiers not just prefixes
 
         if code in SigTwoDex:  # 2 char = 1 code + 1 index
-            qb64 = qb64[:SigTwoSizes[code]]  # strip of exact len identifier after prefix
-            pre += 1
-            index = B64IdxByChr[qb64[pre-1:pre]]
+            qb64 = qb64[:SigTwoSizes[code]]  # strip of full sigmat
+            cs += 1
+            index = B64IdxByChr[qb64[cs-1:cs]]  # last one character for index
 
         elif code == SigSelDex.four:  #  '0'
-            pre += 1
-            code = qb64[pre-2:pre]
+            cs += 1
+            code = qb64[0:cs]  # get front code
             if code not in SigFourDex:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:SigFourSizes[code]]  # strip of exact len identifier after prefix
-            pre += 2
-            index = B64ToInt(qb64[pre-2:pre])
+            qb64 = qb64[:SigFourSizes[code]]  # strip of full sigmat
+            cs += 2
+            index = B64ToInt(qb64[cs-2:cs])  # last two characters for index
 
         elif code == SigSelDex.dash:  #  '-'
-            pre += 1
-            code = qb64[pre-2:pre]
+            cs += 1
+            code = qb64[0:cs]  # get front code
             if code not in SigCntDex:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:SigCntSizes[code]]  # strip of exact len identifier after prefix
-            pre += 2
-            index = B64ToInt(qb64[pre-2:pre])
+            qb64 = qb64[:SigCntSizes[code]]  # strip of full sigmat
+            cs += 2
+            index = B64ToInt(qb64[cs-2:cs])  # last two characters for index
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
@@ -1769,12 +1769,12 @@ class SigMat:
                                                          code,
                                                          SigSizes[code]))
 
-        pad = pre % 4  # pad is remainder pre mod 4
+        pad = cs % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters
-        base = qb64[pre:] + pad * BASE64_PAD
+        base = qb64[cs:] + pad * BASE64_PAD
         raw = decodeB64(base.encode("utf-8"))
 
-        if len(raw) != (len(qb64) - pre) * 3 // 4:  # exact lengths
+        if len(raw) != (len(qb64) - cs) * 3 // 4:  # exact lengths
             raise ValueError("Improperly qualified material = {}".format(qb64))
 
         self._code = code
