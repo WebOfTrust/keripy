@@ -889,6 +889,11 @@ class Kevery:
             raise ValidationError("Invalid sn = {}".format(sn))
         dig = serder.dig
 
+        if pre in self.logs.kelds:
+            if dig in self.logs.kelds[pre]:  #  duplicate event so discard
+                # log duplicate
+                return  # discard
+
         if pre not in self.kevers:  #  first seen event for pre
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures
@@ -909,10 +914,6 @@ class Kevery:
 
 
         else:  # already accepted inception event for pre
-            if dig in self.logs.kelds[pre]:  #  duplicate event so dicard
-                # log duplicate
-                return  # discard
-
             if ilk == Ilks.icp:  # inception event so maybe duplicitous
                 if pre not in DELPs:  #  add to PDELs
                     DELPs[pre] = dict()

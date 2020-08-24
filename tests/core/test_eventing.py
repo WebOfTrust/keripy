@@ -1274,4 +1274,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_multisig_digaid()
+    test_kevery()
