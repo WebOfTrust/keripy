@@ -2175,6 +2175,15 @@ class Serder:
         return self.diger.qb64
 
     @property
+    def digb(self):
+        """
+        Returns qualified Base64 digest of self.raw
+        dig (digest) property getter
+        """
+        return self.diger.qb64b
+
+
+    @property
     def verfers(self):
         """
         Returns list of Verifier instances as converted from .ked.keys

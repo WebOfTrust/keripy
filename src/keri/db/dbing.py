@@ -1014,7 +1014,7 @@ class Logger(Databaser):
         return self.getIoVals(self.kels, key)
 
 
-    def getKesLast(self, key):
+    def getKeLast(self, key):
         """
         Return last inserted dup key event dig vals at key
         Returns None if no entry at key

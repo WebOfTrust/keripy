@@ -394,13 +394,13 @@ def test_logger():
         vals = [b"z", b"m", b"x", b"a"]
 
         assert lgr.getKes(key) == []
-        assert lgr.getKesLast(key) == None
+        assert lgr.getKeLast(key) == None
         assert lgr.cntKes(key) == 0
         assert lgr.delKes(key) == False
         assert lgr.putKes(key, vals) == True
         assert lgr.getKes(key) == vals  # preserved insertion order
         assert lgr.cntKes(key) == len(vals) == 4
-        assert lgr.getKesLast(key) == vals[-1]
+        assert lgr.getKeLast(key) == vals[-1]
         assert lgr.putKes(key, vals=[b'a']) == False   # duplicate
         assert lgr.getKes(key) == vals  #  no change
         assert lgr.addKe(key, b'a') == False   # duplicate

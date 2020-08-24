@@ -478,9 +478,14 @@ class Kever:
             if pre not in self.logs.pses:
                 self.logs.pses[pre] = mdict()  # supports recover forks by sn
             self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
+
+            dgkey = dgKey(pre, dig)
+            self.logger.putEvt(dgkey, serder.raw)
+            self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            self.logger.addPses(snKey(pre, sn), dig)
+
             raise ValidationError("Failure verifying sith = {} on sigs for {}"
                                   "".format(self.sith, sigers))
-
 
         # update logs
 
@@ -491,6 +496,11 @@ class Kever:
         if pre not in self.logs.kelds:
             self.logs.kelds[pre] = dict()
         self.logs.kelds[pre][dig] = entry
+
+        dgkey = dgKey(pre, dig)
+        self.logger.putEvt(dgkey, serder.raw)
+        self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.logger.addKe(snKey(pre, sn), dig.encode("utf-8"))
 
 
     def update(self, serder,  sigers):
@@ -515,7 +525,7 @@ class Kever:
         if sn == 0:
             raise ValidationError("Zero sn = {} for non=inception ked = {}."
                                               "".format(sn, ked))
-        dig = ked["dig"]
+        dig = ked["dig"]  # prior dig
         ilk = ked["ilk"]
 
         if pre != self.prefixer.qb64:
@@ -543,14 +553,15 @@ class Kever:
                 else:  # sn > self.lastEst.sn  recovery event
                     # fetch last entry of prior events at prior sn = sn -1
                     # need KEL for generator use and KERL for validator
+                    pass
 
-                    entry = self.logs.kels[pre].nabone("{:x}".format(sn - 1))
-                    if dig == entry.serder.dig:
-                        raise ValidationError("Mismatch event dig = {} with dig "
-                                              "= {} at event sn = {}."
-                                              "".format(dig,
-                                                        entry.serder.dig,
-                                                        psn))
+                    #entry = self.logs.kels[pre].nabone("{:x}".format(sn - 1))
+                    #if dig == entry.serder.dig:
+                        #raise ValidationError("Mismatch event dig = {} with dig "
+                                              #"= {} at event sn = {}."
+                                              #"".format(dig,
+                                                        #entry.serder.dig,
+                                                        #psn))
 
             else:  # sn == self.sn +1   new event
                 if dig != self.diger.qb64:  # prior event dig not match
@@ -641,8 +652,15 @@ class Kever:
                 if pre not in self.logs.pses:
                     self.logs.pses[pre] = mdict()  # supports recover forks by sn
                 self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
+
+                dgkey = dgKey(pre, serder.digb)
+                self.logger.putEvt(dgkey, serder.raw)
+                self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                self.logger.addPses(snKey(pre, sn), serder.digb)
+
                 raise ValidationError("Failure verifying sith = {} on sigs for {}"
                                       "".format(self.sith, sigers))
+
 
 
             # nxt and signatures verify so update state
@@ -668,6 +686,11 @@ class Kever:
             entry = LogEntry(serder=serder, sigers=sigers)
             self.logs.kels[self.prefixer.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
             self.logs.kelds[self.prefixer.qb64][self.diger.qb64] = entry
+
+            dgkey = dgKey(pre, serder.digb)
+            self.logger.putEvt(dgkey, serder.raw)
+            self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            self.logger.addKe(snKey(pre, sn), serder.digb)
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -707,6 +730,12 @@ class Kever:
                 if pre not in self.logs.pses:
                     self.logs.pses[pre] = mdict()  # supports recover forks by sn
                 self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
+
+                dgkey = dgKey(pre, serder.digb)
+                self.logger.putEvt(dgkey, serder.raw)
+                self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                self.logger.addPses(snKey(pre, sn), serder.digb)
+
                 raise ValidationError("Failure verifying sith = {} on sigs for {}"
                                       "".format(self.sith, sigers))
 
@@ -720,6 +749,11 @@ class Kever:
             entry = LogEntry(serder=serder, sigers=sigers)
             self.logs.kels[self.prefixer.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
             self.logs.kelds[self.prefixer.qb64][self.diger.qb64] = entry
+
+            dgkey = dgKey(pre, serder.digb)
+            self.logger.putEvt(dgkey, serder.raw)
+            self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            self.logger.addKe(snKey(pre, sn), serder.digb)
 
 
         else:  # unsupported event ilk so discard
@@ -916,7 +950,9 @@ class Kevery:
                 if sn not in self.logs.ooes[pre]:
                     self.logs.ooes[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
 
-                self.logger.putEvt(dgKey(pre, dig), serder.raw)
+                dgkey = dgKey(pre, dig)
+                self.logger.putEvt(dgkey, serder.raw)
+                self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
                 self.logger.addOoes(snKey(pre, sn), dig)
 
 
@@ -926,6 +962,11 @@ class Kevery:
                     DELPs[pre] = dict()
                 if dig not in DELPs[pre]:
                     DELPs[pre][dig] = LogEntry(serder=serder, sigers=sigers)
+
+                dgkey = dgKey(pre, dig)
+                self.logger.putEvt(dgkey, serder.raw)
+                self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                self.logger.addLdes(snKey(pre, sn), dig)
 
             else:  # rot or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
@@ -938,6 +979,11 @@ class Kevery:
                     if sn not in self.logs.ooes[pre]:
                         self.logs.ooes[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
 
+                    dgkey = dgKey(pre, dig)
+                    self.logger.putEvt(dgkey, serder.raw)
+                    self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                    self.logger.addOoes(snKey(pre, sn), dig)
+
                 elif ((sn == sno) or  # new inorder event
                       (ilk == Ilks.rot and kever.lastEst.sn < sn <= sno )):  # recovery
                     # verify signatures etc and update state if valid
@@ -949,6 +995,11 @@ class Kevery:
                         DELPs[pre] = dict()
                     if dig not in DELPs[pre]:
                         DELPs[pre][dig] = LogEntry(serder=serder, sigers=sigers)
+
+                    dgkey = dgKey(pre, dig)
+                    self.logger.putEvt(dgkey, serder.raw)
+                    self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                    self.logger.addLdes(snKey(pre, sn), dig)
 
 
     def processAll(self, kes):
