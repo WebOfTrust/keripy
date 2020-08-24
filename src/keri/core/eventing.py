@@ -420,7 +420,11 @@ class Kever:
             raise ValidationError("Invalid prefix = {} for inception ked = {}."
                                   "".format(self.prefixer.qb64, ked))
 
-        self.sn = int(ked["sn"], 16)
+        sn = ked["sn"]
+        if len(sn) > 32:
+            raise ValidationError("Invalid sn = {} too large. ked = {}."
+                                              "".format(sn, ked))
+        self.sn = int(sn, 16)
         if self.sn != 0:
             raise ValidationError("Invalid sn = {} for inception ked = {}."
                                               "".format(self.sn, ked))
@@ -500,7 +504,11 @@ class Kever:
 
         ked = serder.ked
         pre = ked["pre"]
-        sn = int(ked["sn"], 16)
+        sn = ked["sn"]
+        if len(sn) > 32:
+            raise ValidationError("Invalid sn = {} too large. ked = {}."
+                                              "".format(sn, ked))
+        sn = int(sn, 16)
         dig = ked["dig"]
         ilk = ked["ilk"]
 
