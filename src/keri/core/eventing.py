@@ -56,43 +56,7 @@ class TraitCodex:
 
 TraitDex = TraitCodex()  # Make instance
 
-LogEntry = namedtuple("LogEntry", 'serder sigers')  # LogEntry for KELS KERLS DELS etc
 Location = namedtuple("Location", 'sn dig')  # Location of key event
-Logs = namedtuple("Logs", 'kels kelds ooes pses')
-
-# kels Generator or Validator KELs as dict of dicts of events keyed by pre (qb64)
-# then in order by event sn str
-# mdict keys must be subclass of str
-
-# kelds  Key Event Digest Log
-# Validator KELDs as dict of dicts of events keyed by pre  then by event dig (qb64)
-
-# ooes Out of Order Escows as dict of dicts of events keyed by pre (qb64)
-# then in order by event sn str
-# mdict keys must be subclass of str
-
-# pses Partial Signature Escows as dict of dicts of events keyed by pre (qb64)
-# then in order by event sn str
-# mdict keys must be subclass of str
-
-
-
-# Witness or Validator KERLs as dict of dicts of events keyed by pre (qb64)
-# then in order by event sn str
-# mdict keys must be subclass of str
-KERLs = dict()
-
-# Potential Duplicitous Event Log
-# Validator PDELs as dict of dicts of dup events keyed by pre (qb64)
-# then by event dig (qb64)
-DELPs = dict()
-
-# Verified Duplicitous Event Log
-# Validator DELs as dict of dicts of dup events keyed by pre  (qb64)
-# then by event dig (qb64)
-DELs = dict()
-
-#
 
 
 def incept(
@@ -362,7 +326,7 @@ class Kever:
     """
     EstOnly = False
 
-    def __init__(self, serder, sigers, estOnly=None, logger=None, logs=None):
+    def __init__(self, serder, sigers, estOnly=None, logger=None):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -378,10 +342,6 @@ class Kever:
         if logger is None:
             logger = Logger()  # default name = "main"
         self.logger = logger
-
-        if logs is None:
-            logs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
-        self.logs = logs
 
         self.version = serder.version  # version dispatch ?
         self.verfers = serder.verfers  # converts keys to verifiers
@@ -474,11 +434,6 @@ class Kever:
 
         # verify sith given signatures verify
         if not self.verifySith(sigers=sigers):  # uses self.sith
-            entry = LogEntry(serder=serder, sigers=sigers)
-            if pre not in self.logs.pses:
-                self.logs.pses[pre] = mdict()  # supports recover forks by sn
-            self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
-
             dgkey = dgKey(pre, dig)
             self.logger.putEvt(dgkey, serder.raw)
             self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -488,15 +443,6 @@ class Kever:
                                   "".format(self.sith, sigers))
 
         # update logs
-
-        entry = LogEntry(serder=serder, sigers=sigers)
-        if pre not in self.logs.kels:
-            self.logs.kels[pre] = mdict()  # supports recover forks by sn
-        self.logs.kels[pre].add(ked["sn"], entry)  # multiple values each sn hex str
-        if pre not in self.logs.kelds:
-            self.logs.kelds[pre] = dict()
-        self.logs.kelds[pre][dig] = entry
-
         dgkey = dgKey(pre, dig)
         self.logger.putEvt(dgkey, serder.raw)
         self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -648,11 +594,6 @@ class Kever:
 
             # verify sith given signatures verify
             if not self.verifySith(sigers=sigers, sith=sith):  # uses new sith
-                entry = LogEntry(serder=serder, sigers=sigers)
-                if pre not in self.logs.pses:
-                    self.logs.pses[pre] = mdict()  # supports recover forks by sn
-                self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
-
                 dgkey = dgKey(pre, serder.digb)
                 self.logger.putEvt(dgkey, serder.raw)
                 self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -683,10 +624,6 @@ class Kever:
             self.lastEst = Location(sn=self.sn, dig=self.diger.qb64)
 
             # update logs
-            entry = LogEntry(serder=serder, sigers=sigers)
-            self.logs.kels[self.prefixer.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
-            self.logs.kelds[self.prefixer.qb64][self.diger.qb64] = entry
-
             dgkey = dgKey(pre, serder.digb)
             self.logger.putEvt(dgkey, serder.raw)
             self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -726,11 +663,6 @@ class Kever:
 
             # verify sith given signatures verify
             if not self.verifySith(sigers=sigers):  # uses self.sith
-                entry = LogEntry(serder=serder, sigers=sigers)
-                if pre not in self.logs.pses:
-                    self.logs.pses[pre] = mdict()  # supports recover forks by sn
-                self.logs.pses[pre].add(ked["sn"], entry)  # multiple values each sn hex str
-
                 dgkey = dgKey(pre, serder.digb)
                 self.logger.putEvt(dgkey, serder.raw)
                 self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -746,10 +678,6 @@ class Kever:
 
 
             # update logs
-            entry = LogEntry(serder=serder, sigers=sigers)
-            self.logs.kels[self.prefixer.qb64].add(ked["sn"], entry)  # multiple values each sn hex str
-            self.logs.kelds[self.prefixer.qb64][self.diger.qb64] = entry
-
             dgkey = dgKey(pre, serder.digb)
             self.logger.putEvt(dgkey, serder.raw)
             self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -817,7 +745,7 @@ class Kevery:
     Properties:
 
     """
-    def __init__(self, kevers=None, logger=None, logs=None,  framed=True):
+    def __init__(self, kevers=None, logger=None, framed=True):
         """
         Set up event stream and logs
 
@@ -828,10 +756,6 @@ class Kevery:
         if logger is None:
             logger = Logger()  # default name = "main"
         self.logger = logger
-
-        if logs is None:
-            logs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
-        self.logs = logs
 
 
     def extractOne(self, kes, framed=True):
@@ -923,11 +847,6 @@ class Kevery:
             raise ValidationError("Invalid sn = {}".format(sn))
         dig = serder.dig
 
-        if pre in self.logs.kelds:
-            if dig in self.logs.kelds[pre]:  #  duplicate event so discard
-                # log duplicate
-                return  # discard
-
         if self.logger.getEvt(dgKey(pre, dig)) is not None:
             # performance log duplicate event
             return  # discard duplicate
@@ -939,17 +858,11 @@ class Kevery:
                 # create kever from serder
                 kever = Kever(serder=serder,
                               sigers=sigers,
-                              logger=self.logger,
-                              logs=self.logs)
+                              logger=self.logger)
                 self.kevers[pre] = kever
 
             else:  # not inception so can't verify, add to escrow
                 # log escrowed
-                if pre not in self.logs.ooes:  #  add to Escrows
-                    self.logs.ooes[pre] = mdict()  # multiple values by sn
-                if sn not in self.logs.ooes[pre]:
-                    self.logs.ooes[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
-
                 dgkey = dgKey(pre, dig)
                 self.logger.putEvt(dgkey, serder.raw)
                 self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -958,11 +871,7 @@ class Kevery:
 
         else:  # already accepted inception event for pre
             if ilk == Ilks.icp:  # inception event so maybe duplicitous
-                if pre not in DELPs:  #  add to PDELs
-                    DELPs[pre] = dict()
-                if dig not in DELPs[pre]:
-                    DELPs[pre][dig] = LogEntry(serder=serder, sigers=sigers)
-
+                # log duplicitous
                 dgkey = dgKey(pre, dig)
                 self.logger.putEvt(dgkey, serder.raw)
                 self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -974,11 +883,6 @@ class Kevery:
 
                 if sn > sno:  # sn later than sno so out of order escrow
                     #  log escrowed
-                    if pre not in self.logs.ooes:  #  add to Escrows
-                        self.logs.ooes[pre] = mdict()  # multiple values by sn
-                    if sn not in self.logs.ooes[pre]:
-                        self.logs.ooes[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
-
                     dgkey = dgKey(pre, dig)
                     self.logger.putEvt(dgkey, serder.raw)
                     self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -991,11 +895,7 @@ class Kevery:
                     kever.update(serder=serder, sigers=sigers)
 
                 else:  # maybe duplicitous
-                    if pre not in DELPs:  #  add to PDELs
-                        DELPs[pre] = dict()
-                    if dig not in DELPs[pre]:
-                        DELPs[pre][dig] = LogEntry(serder=serder, sigers=sigers)
-
+                    # log duplicitous
                     dgkey = dgKey(pre, dig)
                     self.logger.putEvt(dgkey, serder.raw)
                     self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
@@ -1050,8 +950,8 @@ class Kevery:
             raise ValidationError("Invalid sn = {}".format(ked["sn"]))
         dig = serder.dig
 
-        if dig in DELPs["pre"]:
-            return
+        #if dig in DELPs["pre"]:
+            #return
 
         if ilk == Ilks.icp:  # inception event so maybe duplicitous
             # Using Kever for cheap duplicity detection of inception events
@@ -1060,10 +960,10 @@ class Kevery:
             kever = Kever(serder=serder, sigers=siger, logger=self.logger)  # create kever from serder
             # No exception above so verified duplicitous event
             # log it and add to DELS if first time
-            if pre not in DELs:  #  add to DELS
-                DELs[pre] = dict()
-            if dig not in DELS[pre]:
-                DELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
+            #if pre not in DELs:  #  add to DELS
+                #DELs[pre] = dict()
+            #if dig not in DELS[pre]:
+                #DELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
 
         else:
             pass

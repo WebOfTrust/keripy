@@ -30,7 +30,7 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import Logs, TraitDex
+from keri.core.eventing import TraitDex
 from keri.core.eventing import incept, rotate, interact, Kever, Kevery
 
 from keri.db.dbing import openLogger, Logger
@@ -796,9 +796,7 @@ def test_kevery():
 
         assert len(kes) == 3349
 
-        klogs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
-
-        kevery = Kevery(logger=vallgr, logs=klogs)
+        kevery = Kevery(logger=vallgr)
         kevery.processAll(kes=kes)
 
         pre = kever.prefixer.qb64
@@ -959,9 +957,7 @@ def test_multisig_digprefix():
 
         assert len(kes) == 2783
 
-        klogs = Logs(kels=dict(), kelds=dict(), ooes=dict(), pses=dict())
-
-        kevery = Kevery(logger=vallgr, logs=klogs)
+        kevery = Kevery(logger=vallgr)
         kevery.processAll(kes=kes)
 
         pre = kever.prefixer.qb64
