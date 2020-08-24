@@ -422,15 +422,16 @@ class Kever:
 
         sn = ked["sn"]
         if len(sn) > 32:
-            raise ValidationError("Invalid sn = {} too large. ked = {}."
+            raise ValidationError("Invalid sn = {} too large.".format(sn))
+        try:
+            sn = int(sn, 16)
+        except Exception as ex:
+            raise ValidationError("Invalid sn = {}".format(sn))
+        if sn != 0:
+            raise ValidationError("Nonzero sn = {} for inception ked = {}."
                                               "".format(sn, ked))
-        self.sn = int(sn, 16)
-        if self.sn != 0:
-            raise ValidationError("Invalid sn = {} for inception ked = {}."
-                                              "".format(self.sn, ked))
+        self.sn = sn
         self.diger = serder.diger
-
-
 
         nxt = ked["nxt"]
         self.nexter = Nexter(qb64=nxt) if nxt else None
@@ -506,9 +507,14 @@ class Kever:
         pre = ked["pre"]
         sn = ked["sn"]
         if len(sn) > 32:
-            raise ValidationError("Invalid sn = {} too large. ked = {}."
+            raise ValidationError("Invalid sn = {} too large.".format(sn))
+        try:
+            sn = int(sn, 16)
+        except Exception as ex:
+            raise ValidationError("Invalid sn = {}".format(sn))
+        if sn == 0:
+            raise ValidationError("Zero sn = {} for non=inception ked = {}."
                                               "".format(sn, ked))
-        sn = int(sn, 16)
         dig = ked["dig"]
         ilk = ked["ilk"]
 
@@ -873,10 +879,14 @@ class Kevery:
         pre = prefixer.qb64
         ked = serder.ked
         ilk = ked["ilk"]
+
+        sn = ked["sn"]
+        if len(sn) > 32:
+            raise ValidationError("Invalid sn = {} too large.".format(sn))
         try:
-            sn = int(ked["sn"], 16)
+            sn = int(sn, 16)
         except Exception as ex:
-            raise ValidationError("Invalid sn = {}".format(ked["sn"]))
+            raise ValidationError("Invalid sn = {}".format(sn))
         dig = serder.dig
 
         if pre not in self.kevers:  #  first seen event for pre
