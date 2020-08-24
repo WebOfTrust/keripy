@@ -23,7 +23,7 @@ from orderedset import OrderedSet as oset
 from ..kering import ValidationError, VersionError, EmptyMaterialError, DerivationError
 from ..kering import Versionage, Version
 from ..help.helping import mdict
-from ..db.dbing import Logger
+from ..db.dbing import dgKey, snKey, Logger
 
 from .coring import Versify, Serials, Ilks, CryOneDex
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder
@@ -894,6 +894,10 @@ class Kevery:
                 # log duplicate
                 return  # discard
 
+        if self.logger.getEvt(dgKey(pre, dig)) is not None:
+            # performance log duplicate event
+            return  # discard duplicate
+
         if pre not in self.kevers:  #  first seen event for pre
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures
@@ -911,6 +915,9 @@ class Kevery:
                     self.logs.ooes[pre] = mdict()  # multiple values by sn
                 if sn not in self.logs.ooes[pre]:
                     self.logs.ooes[pre].add(sn, LogEntry(serder=serder, sigers=sigers))
+
+                self.logger.putEvt(dgKey(pre, dig), serder.raw)
+                self.logger.addOoes(snKey(pre, sn), dig)
 
 
         else:  # already accepted inception event for pre
