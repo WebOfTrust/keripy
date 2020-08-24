@@ -1959,6 +1959,7 @@ class Serder:
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
           ._version is Versionage instance of event version
           ._size is int of number of bytes in serialed event only
+          ._diger is Diger instance of digest of .raw
 
         Properties:
           .raw is bytes of serialized event only
@@ -1966,7 +1967,9 @@ class Serder:
           .kind is serialization kind string value (see namedtuple coring.Serials)
           .version is Versionage instance of event version
           .size is int of number of bytes in serialed event only
-
+          .diger is Diger instance of digest of .raw
+          .dig  is qb64 digest from .diger
+          .digb is qb64b digest from .diger
 
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
@@ -2114,6 +2117,8 @@ class Serder:
         self._kind = kind
         self._version = version
         self._size = size
+        self._diger = Diger(raw=blake3.blake3(self._raw).digest(),
+                            code=CryOneDex.Blake3_256)
 
     @property
     def ked(self):
@@ -2130,6 +2135,8 @@ class Serder:
         self._kind = kind
         self._size = size
         self._version = version
+        self._diger = Diger(raw=blake3.blake3(self._raw).digest(),
+                            code=CryOneDex.Blake3_256)
 
     @property
     def kind(self):
@@ -2163,8 +2170,7 @@ class Serder:
         Returns Diger of digest of self.raw
         diger (digest material) property getter
         """
-        return (Diger(raw=blake3.blake3(self.raw).digest(),
-                       code=CryOneDex.Blake3_256))
+        return self._diger
 
     @property
     def dig(self):
@@ -2173,6 +2179,15 @@ class Serder:
         dig (digest) property getter
         """
         return self.diger.qb64
+
+    @property
+    def digb(self):
+        """
+        Returns qualified Base64 digest of self.raw
+        dig (digest) property getter
+        """
+        return self.diger.qb64b
+
 
     @property
     def verfers(self):

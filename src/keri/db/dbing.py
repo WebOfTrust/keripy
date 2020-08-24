@@ -67,13 +67,37 @@ class DatabaseError(KeriError):
         raise DatabaseError("error message")
     """
 
+
+def dgKey(pre, dig):
+    """
+    Returns bytes DB key from concatenation of qualified Base64 prefix
+    bytes pre and qualified Base64 bytes digest of serialized event
+    If pre or dig are str then converts to bytes
+    """
+    if hasattr(pre, "encode"):
+        pre = pre.encode("utf-8")  # convert str to bytes
+    if hasattr(dig, "encode"):
+        dig = dig.encode("utf-8")  # convert str to bytes
+
+    return (b'%s.%s' %  (pre, dig))
+
+
+def snKey(pre, sn):
+    """
+    Returns bytes DB key from concatenation of qualified Base64 prefix
+    bytes pre and int sn (sequence number) of event
+    """
+    if hasattr(pre, "encode"):
+        pre = pre.encode("utf-8")  # convert str to bytes
+    return (b'%s.%032x' % (pre, sn))
+
+
 def clearDatabaserDir(path):
     """
     Remove directory path
     """
     if os.path.exists(path):
         shutil.rmtree(path)
-
 
 
 @contextmanager
@@ -201,23 +225,6 @@ class Databaser:
 
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
-
-
-    @staticmethod
-    def dgKey(pre, dig):
-        """
-        Returns bytes DB key from concatenation of qualified Base64 prefix
-        bytes pre and qualified Base64 str digest of serialized event
-        """
-        return (b'%s.%s' %  (pre, dig))
-
-    @staticmethod
-    def snKey(pre, sn):
-        """
-        Returns bytes DB key from concatenation of qualified Base64 prefix
-        bytes pre and  int sn (sequence number) of event
-        """
-        return (b'%s.%032x' % (pre, sn))
 
 
     def putVal(self, db, key, val):
@@ -566,12 +573,44 @@ class Databaser:
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = self.snKey(pre, cnt:=0)
+            key = snKey(pre, cnt:=0)
             while cursor.set_key(key):  # moves to first_dup
                 for val in cursor.iternext_dup():
                     # slice off prepended ordering prefix
                     yield val[7:]
-                key = self.snKey(pre, cnt:=cnt+1)
+                key = snKey(pre, cnt:=cnt+1)
+
+
+    def getIoValsLastAllPreIter(self, db, pre):
+        """
+        Returns iterator of last only dup vals in insertion order for all entries
+        with same prefix across all sequence numbers in order without gaps
+        starting with zero. Stops if gap or different pre.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
+
+        Raises StopIteration Error when empty.
+
+        Duplicates are retrieved in insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates,
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = snKey(pre, cnt:=0)
+            while cursor.set_key(key):  # moves to first_dup
+                if cursor.last_dup(): # move to last_dup
+                    yield cursor.value()[7:]  # slice off prepended ordering prefix
+                key = snKey(pre, cnt:=cnt+1)
 
 
     def getIoValsAnyPreIter(self, db, pre):
@@ -599,7 +638,7 @@ class Databaser:
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
-            key = self.snKey(pre, cnt:=0)
+            key = snKey(pre, cnt:=0)
             while cursor.set_range(key):  #  moves to first dup of key >= key
                 key = cursor.key()  # actual key
                 front, back = bytes(key).split(sep=b'.', maxsplit=1)
@@ -609,7 +648,7 @@ class Databaser:
                     # slice off prepended ordering prefix
                     yield val[7:]
                 cnt = int(back, 16)
-                key = self.snKey(pre, cnt:=cnt+1)
+                key = snKey(pre, cnt:=cnt+1)
 
 
 
@@ -975,7 +1014,7 @@ class Logger(Databaser):
         return self.getIoVals(self.kels, key)
 
 
-    def getKesLast(self, key):
+    def getKeLast(self, key):
         """
         Return last inserted dup key event dig vals at key
         Returns None if no entry at key
@@ -1016,6 +1055,25 @@ class Logger(Databaser):
                 within sub db's keyspace
         """
         return self.getIoValsAllPreIter(self.kels, pre)
+
+
+    def getKelEstIter(self, pre):
+        """
+        Returns iterator of last dup vals in insertion order for all entries
+        with same prefix across all sequence numbers without gaps. Stops if
+        encounters gap.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
+
+        Raises StopIteration Error when empty.
+        Duplicates are retrieved in insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        return self.getIoValsLastAllPreIter(self.kels, pre)
 
 
     def putPses(self, key, vals):
