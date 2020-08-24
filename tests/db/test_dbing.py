@@ -159,12 +159,34 @@ def test_databaser():
         key = dber.snKey(pre, sn)
         assert dber.putIoVals(db, key, vals2) == True
 
-        vals = [val for val in dber.getIoValsAllPreIter(db, pre)]
+        vals = [bytes(val) for val in dber.getIoValsAllPreIter(db, pre)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
 
+        # Test getIoValsLastAllPreIter(self, db, pre)
+        pre = b'B4ejWzwQPYGGwTmuupUhPx5_yZ-Wk1xEHHzq7K0gzhcc'
+        vals0 = [b"gamma", b"beta"]
+        sn = 0
+        key = dber.snKey(pre, sn)
+        assert dber.addIoVal(db, key, vals0[0]) == True
+        assert dber.addIoVal(db, key, vals0[1]) == True
+
+        vals1 = [b"mary", b"peter", b"john", b"paul"]
+        sn += 1
+        key = dber.snKey(pre, sn)
+        assert dber.putIoVals(db, key, vals1) == True
+
+        vals2 = [b"dog", b"cat", b"bird"]
+        sn += 1
+        key = dber.snKey(pre, sn)
+        assert dber.putIoVals(db, key, vals2) == True
+
+        vals = [bytes(val) for val in dber.getIoValsLastAllPreIter(db, pre)]
+        lastvals = [vals0[-1], vals1[-1], vals2[-1]]
+        assert vals == lastvals
+
         # Test getIoValsAnyPreIter(self, db, pre)
-        pre = b'QPYGGwTmuupUhPx5_yZ-Wk1x4ejBWzwEHHzq7K0gzhcc'
+        pre = b'BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcc'
         vals0 = [b"gamma", b"beta"]
         sn = 1  # not start at zero
         key = dber.snKey(pre, sn)
@@ -181,7 +203,7 @@ def test_databaser():
         key = dber.snKey(pre, sn)
         assert dber.putIoVals(db, key, vals2) == True
 
-        vals = [val for val in dber.getIoValsAnyPreIter(db, pre)]
+        vals = [bytes(val) for val in dber.getIoValsAnyPreIter(db, pre)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
 
@@ -519,15 +541,41 @@ def test_fetchkeldel():
         for val in vals2:
             assert lgr.addKe(key, val) == True
 
-        vals = [val for val in lgr.getKelIter(preb)]
+        vals = [bytes(val) for val in lgr.getKelIter(preb)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
 
+        # test getKelEstIter
+        preb = 'B4ejhccWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x'.encode("utf-8")
+        sn = 0
+        key = lgr.snKey(preb, sn)
+        assert key == (b'B4ejhccWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x.'
+                       b'00000000000000000000000000000000')
+        vals0 = [skedb]
+        assert lgr.addKe(key, vals0[0]) == True
+
+        vals1 = [b"mary", b"peter", b"john", b"paul"]
+        sn += 1
+        key = lgr.snKey(preb, sn)
+        for val in vals1:
+            assert lgr.addKe(key, val) == True
+
+        vals2 = [b"dog", b"cat", b"bird"]
+        sn += 1
+        key = lgr.snKey(preb, sn)
+        for val in vals2:
+            assert lgr.addKe(key, val) == True
+
+        vals = [bytes(val) for val in lgr.getKelEstIter(preb)]
+        lastvals = [vals0[-1], vals1[-1], vals2[-1]]
+        assert vals == lastvals
+
+
         # test getDelIter
-        preb = 'TmuupUhPx5_yZ-Wk1x4ejhccBWzwEHHzq7K0gzQPYGGw'.encode("utf-8")
+        preb = 'BTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGw'.encode("utf-8")
         sn = 1  # do not start at zero
         key = lgr.snKey(preb, sn)
-        assert key == (b'TmuupUhPx5_yZ-Wk1x4ejhccBWzwEHHzq7K0gzQPYGGw.'
+        assert key == (b'BTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGw.'
                        b'00000000000000000000000000000001')
         vals0 = [skedb]
         assert lgr.addDe(key, vals0[0]) == True
@@ -544,7 +592,7 @@ def test_fetchkeldel():
         for val in vals2:
             assert lgr.addDe(key, val) == True
 
-        vals = [val for val in lgr.getDelIter(preb)]
+        vals = [bytes(val) for val in lgr.getDelIter(preb)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
 

@@ -574,6 +574,38 @@ class Databaser:
                 key = self.snKey(pre, cnt:=cnt+1)
 
 
+    def getIoValsLastAllPreIter(self, db, pre):
+        """
+        Returns iterator of last only dup vals in insertion order for all entries
+        with same prefix across all sequence numbers in order without gaps
+        starting with zero. Stops if gap or different pre.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
+
+        Raises StopIteration Error when empty.
+
+        Duplicates are retrieved in insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates,
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = self.snKey(pre, cnt:=0)
+            while cursor.set_key(key):  # moves to first_dup
+                if cursor.last_dup(): # move to last_dup
+                    yield cursor.value()[7:]  # slice off prepended ordering prefix
+                key = self.snKey(pre, cnt:=cnt+1)
+
+
     def getIoValsAnyPreIter(self, db, pre):
         """
         Returns iterator of all dup vals in insertion order for any entries
@@ -1016,6 +1048,25 @@ class Logger(Databaser):
                 within sub db's keyspace
         """
         return self.getIoValsAllPreIter(self.kels, pre)
+
+
+    def getKelEstIter(self, pre):
+        """
+        Returns iterator of last dup vals in insertion order for all entries
+        with same prefix across all sequence numbers without gaps. Stops if
+        encounters gap.
+        Assumes that key is combination of prefix and sequence number given
+        by .snKey().
+
+        Raises StopIteration Error when empty.
+        Duplicates are retrieved in insertion order.
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            pre is bytes of itdentifier prefix prepended to sn in key
+                within sub db's keyspace
+        """
+        return self.getIoValsLastAllPreIter(self.kels, pre)
 
 
     def putPses(self, key, vals):
