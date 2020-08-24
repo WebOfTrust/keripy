@@ -1054,6 +1054,8 @@ class Logger(Databaser):
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
         """
+        if hasattr(pre, "encode"):
+            pre = pre.encode("utf-8")  # convert str to bytes
         return self.getIoValsAllPreIter(self.kels, pre)
 
 
@@ -1073,6 +1075,8 @@ class Logger(Databaser):
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
         """
+        if hasattr(pre, "encode"):
+            pre = pre.encode("utf-8")  # convert str to bytes
         return self.getIoValsLastAllPreIter(self.kels, pre)
 
 
@@ -1254,6 +1258,8 @@ class Logger(Databaser):
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
         """
+        if hasattr(pre, "encode"):
+            pre = pre.encode("utf-8")  # convert str to bytes
         return self.getIoValsAnyPreIter(self.dels, pre)
 
 
