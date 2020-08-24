@@ -274,6 +274,8 @@ def test_keyeventsequence_0():
 
     with openLogger(name="controller") as conlgr:
 
+        event_digs = [] # list of event digs in sequence
+
         # Event 0  Inception Transferable (nxt digest not empty)
         keys0 = [signers[0].verfer.qb64]
         # compute nxt digest from keys1
@@ -284,6 +286,7 @@ def test_keyeventsequence_0():
         assert nxt1 == 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
         serder0 = incept(keys=keys0, nxt=nxt1)
         pre = serder0.ked["pre"]
+        event_digs.append(serder0.dig)
         assert serder0.ked["pre"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
         assert serder0.ked["sn"] == '0'
         assert serder0.ked["sith"] == '1'
@@ -314,6 +317,7 @@ def test_keyeventsequence_0():
         nxt2 = nexter2.qb64  # transferable so nxt is not empty
         assert nxt2 == 'EoWDoTGQZ6lJ19LsaV4g42k5gccsB_-ttYHOft6kuYZk'
         serder1 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
+        event_digs.append(serder1.dig)
         assert serder1.ked["pre"] == pre
         assert serder1.ked["sn"] == '1'
         assert serder1.ked["sith"] == '1'
@@ -339,6 +343,7 @@ def test_keyeventsequence_0():
         nexter3 = Nexter(keys=keys3)
         nxt3 = nexter3.qb64  # transferable so nxt is not empty
         serder2 = rotate(pre=pre, keys=keys2, dig=serder1.dig, nxt=nxt3, sn=2)
+        event_digs.append(serder2.dig)
         assert serder2.ked["pre"] == pre
         assert serder2.ked["sn"] == '2'
         assert serder2.ked["keys"] == keys2
@@ -359,6 +364,7 @@ def test_keyeventsequence_0():
 
         # Event 3 Interaction
         serder3 = interact(pre=pre, dig=serder2.dig, sn=3)
+        event_digs.append(serder3.dig)
         assert serder3.ked["pre"] == pre
         assert serder3.ked["sn"] == '3'
         assert serder3.ked["dig"] == serder2.dig
@@ -377,6 +383,7 @@ def test_keyeventsequence_0():
 
         # Event 4 Interaction
         serder4 = interact(pre=pre, dig=serder3.dig, sn=4)
+        event_digs.append(serder4.dig)
         assert serder4.ked["pre"] == pre
         assert serder4.ked["sn"] == '4'
         assert serder4.ked["dig"] == serder3.dig
@@ -399,6 +406,7 @@ def test_keyeventsequence_0():
         nexter4 = Nexter(keys=keys4)
         nxt4 = nexter4.qb64  # transferable so nxt is not empty
         serder5 = rotate(pre=pre, keys=keys3, dig=serder4.dig, nxt=nxt4, sn=5)
+        event_digs.append(serder5.dig)
         assert serder5.ked["pre"] == pre
         assert serder5.ked["sn"] == '5'
         assert serder5.ked["keys"] == keys3
@@ -419,6 +427,7 @@ def test_keyeventsequence_0():
 
         # Event 6 Interaction
         serder6 = interact(pre=pre, dig=serder5.dig, sn=6)
+        event_digs.append(serder6.dig)
         assert serder6.ked["pre"] == pre
         assert serder6.ked["sn"] == '6'
         assert serder6.ked["dig"] == serder5.dig
@@ -438,6 +447,7 @@ def test_keyeventsequence_0():
         # Event 7 Rotation to null NonTransferable Abandon
         nxt5 = ""  # nxt digest is empty
         serder7 = rotate(pre=pre, keys=keys4, dig=serder6.dig, nxt=nxt5, sn=7)
+        event_digs.append(serder7.dig)
         assert serder7.ked["pre"] == pre
         assert serder7.ked["sn"] == '7'
         assert serder7.ked["keys"] == keys4
@@ -486,12 +496,15 @@ def test_keyeventsequence_0():
         with pytest.raises(ValidationError):  # nontransferable so reject update
             kever.update(serder=serder8, sigers=[sig8])
 
+        db_digs = [bytes(val).decode("utf-8") for val in kever.logger.getKelIter(pre)]
+        assert db_digs == event_digs
+
     """ Done Test """
 
 def test_keyeventsequence_1():
     """
     Test generation of a sequence of key events
-    Establishment only
+    Test when EstOnly trait in config of inception event. Establishment only
     """
 
     # Test sequence of events given set of secrets
@@ -524,6 +537,7 @@ def test_keyeventsequence_1():
 
     # New Sequence establishment only
     with openLogger(name="controller") as conlgr:
+        event_digs = [] # list of event digs in sequence
 
         # Event 0  Inception Transferable (nxt digest not empty)
         keys0 = [signers[0].verfer.qb64]
@@ -531,8 +545,9 @@ def test_keyeventsequence_1():
         keys1 = [signers[1].verfer.qb64]
         nexter1 = Nexter(keys=keys1)
         nxt1 = nexter1.qb64  # transferable so nxt is not empty
-        cnfg = [dict(trait=TraitDex.EstOnly)]
+        cnfg = [dict(trait=TraitDex.EstOnly)]  #  EstOnly
         serder0 = incept(keys=keys0, nxt=nxt1, cnfg=cnfg)
+        event_digs.append(serder0.dig)
         pre = serder0.ked["pre"]
         assert serder0.ked["pre"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
         assert serder0.ked["sn"] == '0'
@@ -555,7 +570,7 @@ def test_keyeventsequence_1():
         assert kever.estOnly == True
         assert kever.nonTrans == False
 
-        # Event 1 Interaction
+        # Event 1 Interaction. Because EstOnly, this event not included in KEL
         serder1 = interact(pre=pre, dig=serder0.dig, sn=1)
         assert serder1.ked["pre"] == pre
         assert serder1.ked["sn"] == '1'
@@ -567,33 +582,36 @@ def test_keyeventsequence_1():
         with pytest.raises(ValidationError):  # attempt ixn with estOnly
             kever.update(serder=serder1, sigers=[sig1])
 
-
         # Event 1 Rotation Transferable
-        # compute nxt digest from keys2
+        # compute nxt digest from keys2  but from event0
         keys2 = [signers[2].verfer.qb64]
         nexter2 = Nexter(keys=keys2)
         assert nexter2.sith == '1'
         nxt2 = nexter2.qb64  # transferable so nxt is not empty
         assert nxt2 == 'EoWDoTGQZ6lJ19LsaV4g42k5gccsB_-ttYHOft6kuYZk'
-        serder1 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
-        assert serder1.ked["pre"] == pre
-        assert serder1.ked["sn"] == '1'
-        assert serder1.ked["sith"] == '1'
-        assert serder1.ked["keys"] == keys1
-        assert serder1.ked["nxt"] == nxt2
-        assert serder1.ked["dig"] == serder0.dig
+        serder2 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
+        event_digs.append(serder2.dig)
+        assert serder2.ked["pre"] == pre
+        assert serder2.ked["sn"] == '1'
+        assert serder2.ked["sith"] == '1'
+        assert serder2.ked["keys"] == keys1
+        assert serder2.ked["nxt"] == nxt2
+        assert serder2.ked["dig"] == serder0.dig
 
         # sign serialization and verify signature
-        sig1 = signers[1].sign(serder1.raw, index=0)
-        assert signers[1].verfer.verify(sig1.raw, serder1.raw)
+        sig2 = signers[1].sign(serder2.raw, index=0)
+        assert signers[1].verfer.verify(sig2.raw, serder2.raw)
         # update key event verifier state
-        kever.update(serder=serder1, sigers=[sig1])
+        kever.update(serder=serder2, sigers=[sig2])
         assert kever.prefixer.qb64 == pre
         assert kever.sn == 1
-        assert kever.diger.qb64 == serder1.dig
+        assert kever.diger.qb64 == serder2.dig
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys1
         assert kever.nexter.qb64 == nxt2
+
+        db_digs = [bytes(val).decode("utf-8") for val in kever.logger.getKelIter(pre)]
+        assert db_digs == event_digs
 
     """ Done Test """
 
@@ -617,6 +635,7 @@ def test_kevery():
                 ]
 
     with openLogger("controller") as conlgr, openLogger("validator") as vallgr:
+        event_digs = [] # list of event digs in sequence
 
         # create event stream
         kes = bytearray()
@@ -628,6 +647,7 @@ def test_kevery():
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
                         nxt=Nexter(keys=[signers[1].verfer.qb64]).qb64)
+        event_digs.append(serder.dig)
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
@@ -652,6 +672,7 @@ def test_kevery():
                         dig=kever.diger.qb64,
                         nxt=Nexter(keys=[signers[2].verfer.qb64]).qb64,
                         sn=1)
+        event_digs.append(serder.dig)
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
@@ -669,6 +690,7 @@ def test_kevery():
                         dig=kever.diger.qb64,
                         nxt=Nexter(keys=[signers[3].verfer.qb64]).qb64,
                         sn=2)
+        event_digs.append(serder.dig)
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
@@ -684,6 +706,7 @@ def test_kevery():
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.diger.qb64,
                           sn=3)
+        event_digs.append(serder.dig)
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
@@ -699,6 +722,7 @@ def test_kevery():
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.diger.qb64,
                           sn=4)
+        event_digs.append(serder.dig)
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
@@ -716,6 +740,7 @@ def test_kevery():
                         dig=kever.diger.qb64,
                         nxt=Nexter(keys=[signers[4].verfer.qb64]).qb64,
                         sn=5)
+        event_digs.append(serder.dig)
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
@@ -731,6 +756,7 @@ def test_kevery():
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.diger.qb64,
                           sn=6)
+        event_digs.append(serder.dig)
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
@@ -749,6 +775,7 @@ def test_kevery():
                     dig=kever.diger.qb64,
                     nxt="",
                     sn=7)
+        event_digs.append(serder.dig)
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
@@ -796,15 +823,23 @@ def test_kevery():
 
         assert len(kes) == 3349
 
+        pre = kever.prefixer.qb64
+
+        db_digs = [bytes(val).decode("utf-8") for val in kever.logger.getKelIter(pre)]
+        assert db_digs == event_digs
+
         kevery = Kevery(logger=vallgr)
         kevery.processAll(kes=kes)
 
-        pre = kever.prefixer.qb64
         assert pre in kevery.kevers
         vkever = kevery.kevers[pre]
         assert vkever.sn == kever.sn
         assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
         assert vkever.verfers[0].qb64 == signers[4].verfer.qb64
+
+        db_digs = [bytes(val).decode("utf-8") for val in kevery.logger.getKelIter(pre)]
+        assert db_digs == event_digs
+
 
     assert not os.path.exists(kevery.logger.path)
     assert not os.path.exists(kever.logger.path)
