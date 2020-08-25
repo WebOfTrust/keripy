@@ -58,7 +58,7 @@ except ImportError:
     import json
 
 
-from  ..kering import  KeriError
+from  ..kering import KeriError
 
 class DatabaseError(KeriError):
     """
