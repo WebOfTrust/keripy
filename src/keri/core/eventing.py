@@ -22,7 +22,7 @@ from orderedset import OrderedSet as oset
 
 from ..kering import ValidationError, VersionError, EmptyMaterialError, DerivationError
 from ..kering import Versionage, Version
-from ..help.helping import mdict
+from ..help.helping import nowIso8601
 from ..db.dbing import dgKey, snKey, Logger
 
 from .coring import Versify, Serials, Ilks, CryOneDex
@@ -422,10 +422,8 @@ class Kever:
             if "trait" in d and d["trait"] == TraitDex.EstOnly:
                 self.estOnly = True
 
-        pre = self.prefixer.qb64
-        dig = self.diger.qb64
         # need this to recognize recovery events
-        self.lastEst = Location(sn=self.sn, dig=dig)  # last establishment event location
+        self.lastEst = Location(sn=self.sn, dig=self.diger.qb64)  # last establishment event location
 
         # verify signatures
         if not self.verifySigs(sigers=sigers, serder=serder):
@@ -434,19 +432,12 @@ class Kever:
 
         # verify sith given signatures verify
         if not self.verifySith(sigers=sigers):  # uses self.sith
-            dgkey = dgKey(pre, dig)
-            self.logger.putEvt(dgkey, serder.raw)
-            self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-            self.logger.addPses(snKey(pre, sn), dig)
+            self.escrowEvent(self, serder, sigers, self.prefixer.qb64b, self.sn)
 
             raise ValidationError("Failure verifying sith = {} on sigs for {}"
                                   "".format(self.sith, sigers))
 
-        # update logs
-        dgkey = dgKey(pre, dig)
-        self.logger.putEvt(dgkey, serder.raw)
-        self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.logger.addKe(snKey(pre, sn), dig.encode("utf-8"))
+        self.logEvent(serder, sigers)  # update logs
 
 
     def update(self, serder,  sigers):
@@ -514,7 +505,6 @@ class Kever:
                     raise ValidationError("Mismatch event dig = {} with"
                                           " state dig = {}.".format(dig, self.dig.qb64))
 
-
             # verify nxt from prior
             # also check derivation code of pre for non-transferable
             #  check and
@@ -539,8 +529,6 @@ class Kever:
             if not self.nexter.verify(sith=sith, keys=keys):
                 raise ValidationError("Mismatch nxt digest = {} with rotation"
                                       " sith = {}, keys = {}.".format(nexter.qb64))
-
-
 
             # compute wits from cuts and adds use set
             # verify set math
@@ -594,15 +582,9 @@ class Kever:
 
             # verify sith given signatures verify
             if not self.verifySith(sigers=sigers, sith=sith):  # uses new sith
-                dgkey = dgKey(pre, serder.digb)
-                self.logger.putEvt(dgkey, serder.raw)
-                self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-                self.logger.addPses(snKey(pre, sn), serder.digb)
-
+                self.escrowEvent(self, serder, sigers, self.prefixer.qb64b, sn)
                 raise ValidationError("Failure verifying sith = {} on sigs for {}"
                                       "".format(self.sith, sigers))
-
-
 
             # nxt and signatures verify so update state
             self.sn = sn
@@ -623,11 +605,7 @@ class Kever:
             # last establishment event location need this to recognize recovery events
             self.lastEst = Location(sn=self.sn, dig=self.diger.qb64)
 
-            # update logs
-            dgkey = dgKey(pre, serder.digb)
-            self.logger.putEvt(dgkey, serder.raw)
-            self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-            self.logger.addKe(snKey(pre, sn), serder.digb)
+            self.logEvent(serder, sigers)  # update logs
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -663,11 +641,7 @@ class Kever:
 
             # verify sith given signatures verify
             if not self.verifySith(sigers=sigers):  # uses self.sith
-                dgkey = dgKey(pre, serder.digb)
-                self.logger.putEvt(dgkey, serder.raw)
-                self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-                self.logger.addPses(snKey(pre, sn), serder.digb)
-
+                self.escrowEvent(self, serder, sigers, self.prefixer.qb64b, sn)
                 raise ValidationError("Failure verifying sith = {} on sigs for {}"
                                       "".format(self.sith, sigers))
 
@@ -676,13 +650,7 @@ class Kever:
             self.diger = serder.diger
             self.ilk = ilk
 
-
-            # update logs
-            dgkey = dgKey(pre, serder.digb)
-            self.logger.putEvt(dgkey, serder.raw)
-            self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-            self.logger.addKe(snKey(pre, sn), serder.digb)
-
+            self.logEvent(serder, sigers)  # update logs
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {}.".format(ilk))
@@ -726,6 +694,36 @@ class Kever:
             return False
 
         return True
+
+    def logEvent(self, serder, sigers):
+        """
+        Update associated logs for verified event
+
+        Parameters:
+            serder is Serder instance of current event
+            sigers is list of Siger instance for current event
+        """
+        dgkey = dgKey(self.prefixer.qb64b, self.diger.qb64b)
+        self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
+        self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.logger.putEvt(dgkey, serder.raw)
+        self.logger.addKe(snKey(self.prefixer.qb64b, self.sn), self.diger.qb64b)
+
+    def escrowEvent(self, serder, sigers, pre, sn):
+        """
+        Update associated logs for escrow of partially signed event
+
+        Parameters:
+            serder is Serder instance of  event
+            sigers is list of Siger instance for  event
+            pre is str qb64 ofidentifier prefix of event
+            sn is int sequence number of event
+        """
+        dgkey = dgKey(pre, serder.digb)
+        self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
+        self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.logger.putEvt(dgkey, serder.raw)
+        self.logger.addPses(snKey(pre, sn), serder.digb)
 
 
 class Kevery:
@@ -864,8 +862,9 @@ class Kevery:
             else:  # not inception so can't verify, add to escrow
                 # log escrowed
                 dgkey = dgKey(pre, dig)
-                self.logger.putEvt(dgkey, serder.raw)
+                self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
                 self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                self.logger.putEvt(dgkey, serder.raw)
                 self.logger.addOoes(snKey(pre, sn), dig)
 
 
@@ -873,8 +872,9 @@ class Kevery:
             if ilk == Ilks.icp:  # inception event so maybe duplicitous
                 # log duplicitous
                 dgkey = dgKey(pre, dig)
-                self.logger.putEvt(dgkey, serder.raw)
+                self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
                 self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                self.logger.putEvt(dgkey, serder.raw)
                 self.logger.addLdes(snKey(pre, sn), dig)
 
             else:  # rot or ixn, so sn matters
@@ -884,8 +884,9 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     #  log escrowed
                     dgkey = dgKey(pre, dig)
-                    self.logger.putEvt(dgkey, serder.raw)
+                    self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
                     self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                    self.logger.putEvt(dgkey, serder.raw)
                     self.logger.addOoes(snKey(pre, sn), dig)
 
                 elif ((sn == sno) or  # new inorder event
@@ -897,8 +898,9 @@ class Kevery:
                 else:  # maybe duplicitous
                     # log duplicitous
                     dgkey = dgKey(pre, dig)
-                    self.logger.putEvt(dgkey, serder.raw)
+                    self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
                     self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                    self.logger.putEvt(dgkey, serder.raw)
                     self.logger.addLdes(snKey(pre, sn), dig)
 
 
