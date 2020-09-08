@@ -388,6 +388,7 @@ class Databaser:
                 count = cursor.count()
             return count
 
+
     def delVals(self,db, key, dupdata=True):
         """
         Deletes all values at key in db.
