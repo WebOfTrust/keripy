@@ -775,7 +775,7 @@ class Kever:
 class Kevery:
     """
     Kevery is Kever (KERI key event verifier) instance factory which are
-    extracted from a key event stream of event and attached signatures
+    extracted from a key event stream of a series of event with attached signatures
 
     Only supports current version VERSION
 
@@ -831,7 +831,7 @@ class Kevery:
 
         del kes[:serder.size]  # strip off event from front of kes
 
-        # extact sig counter if any
+        # extract sig counter if any
         try:
             counter = SigCounter(qb64=kes)  # qb64
             nsigs = counter.count
@@ -952,7 +952,7 @@ class Kevery:
 
     def processAll(self, kes):
         """
-
+        Process all messages in key event stream
         """
         if not isinstance(kes, bytearray):  # destructive processing
             kes = bytearray(kes)
