@@ -31,7 +31,7 @@ from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
 from keri.core.eventing import TraitDex
-from keri.core.eventing import incept, rotate, interact, Kever, Kevery
+from keri.core.eventing import incept, rotate, interact, receipt, Kever, Kevery
 
 from keri.db.dbing import openLogger, Logger
 
@@ -39,7 +39,8 @@ def test_ilks():
     """
     Test Ilkage namedtuple instance Ilks
     """
-    assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt')
+    assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
+                          rct='rct')
 
     assert isinstance(Ilks, Ilkage)
 
@@ -111,6 +112,7 @@ def test_keyeventfuncs():
     pre = serder0.ked["pre"]
     assert serder0.ked["pre"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     assert serder0.ked["sn"] == '0'
+    assert serder0.ked["ilk"] == Ilks.icp
     assert serder0.ked["nxt"] == nxt1
     assert serder0.raw == (b'{"vs":"KERI10JSON0000fb_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
                            b'c","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
@@ -135,6 +137,7 @@ def test_keyeventfuncs():
     serder1 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
     assert serder1.ked["pre"] == pre
     assert serder1.ked["sn"] == '1'
+    assert serder1.ked["ilk"] == Ilks.rot
     assert serder1.ked["nxt"] == nxt2
     assert serder1.ked["dig"] == serder0.dig
     assert serder1.raw == (b'{"vs":"KERI10JSON00013a_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
@@ -147,10 +150,22 @@ def test_keyeventfuncs():
     serder2 = interact(pre=pre, dig=serder1.dig, sn=2)
     assert serder2.ked["pre"] == pre
     assert serder2.ked["sn"] == '2'
+    assert serder2.ked["ilk"] == Ilks.ixn
     assert serder2.ked["dig"] == serder1.dig
     assert serder2.raw == (b'{"vs":"KERI10JSON0000a3_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
                            b'c","sn":"2","ilk":"ixn","dig":"EJj1B3VAcS74VBDlJeCWWOYX5X1h0n_I1gtgzcViGPCk"'
                            b',"data":[]}')
+
+
+
+    serder3 = receipt(pre=pre, dig=serder2.dig, sn=2)
+    assert serder2.ked["pre"] == pre
+    assert serder3.ked["sn"] == '2'
+    assert serder3.ked["ilk"] == Ilks.rct
+    assert serder3.ked["dig"] == serder2.dig
+    assert serder3.raw == (b'{"vs":"KERI10JSON000099_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                           b'c","sn":"2","ilk":"rct","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"'
+                           b'}')
 
 
     """ Done Test """
@@ -1551,4 +1566,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_recovery()
+    test_keyeventfuncs()

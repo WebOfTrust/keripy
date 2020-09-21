@@ -82,9 +82,9 @@ def Deversify(vs):
 
     raise ValueError("Invalid version string = {}".format(vs))
 
-Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt')  # Event ilk (type of event)
+Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct')  # Event ilk (type of event)
 
-Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt')
+Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct')
 
 @dataclass(frozen=True)
 class CrySelectCodex:
