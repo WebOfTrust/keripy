@@ -497,7 +497,13 @@ class Kever:
                     psn = sn - 1 # sn of prior event
                     # fetch raw serialization of last inserted  event at psn
                     pdig = self.logger.getKeLast(key=snKey(pre=pre, sn=psn))
+                    if pdig is None:
+                        raise ValidationError("Invalid recovery attempt: "
+                                              "Bad sn = {}.".format(psn))
                     praw = self.logger.getEvt(key=dgKey(pre=pre, dig=pdig))
+                    if praw is None:
+                        raise ValidationError("Invalid recovery attempt: "
+                                              " Bad dig = {}.".format(pdig))
                     pserder = Serder(raw=praw)  # deserialize prior event raw
                     if dig != pserder.dig:  # bad recovery event
                         raise ValidationError("Invalid recovery attempt:"
