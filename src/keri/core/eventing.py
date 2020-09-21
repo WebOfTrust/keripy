@@ -504,11 +504,6 @@ class Kever:
                                               "Mismatch recovery event prior dig"
                                               "= {} with dig = {} of event sn = {}."
                                               "".format(dig, pserder.dig, psn))
-                    # restore cuurent state to prior event state, previously verified.
-                    pked = pserder.ked
-
-
-
 
             else:  # sn == self.sn + 1   new non-recovery event
                 if dig != self.diger.qb64:  # prior event dig not match
