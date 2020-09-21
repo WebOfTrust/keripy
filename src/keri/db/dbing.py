@@ -67,6 +67,9 @@ class DatabaseError(KeriError):
         raise DatabaseError("error message")
     """
 
+MaxHexDigits =  6
+MaxForks = int("f"*MaxHexDigits, 16)  # 16777215
+
 
 def dgKey(pre, dig):
     """
@@ -433,6 +436,9 @@ class Databaser:
             result = False
             for val in vals:
                 if val not in dups:
+                    if cnt > MaxForks:
+                        raise DatabaseError("Too many recovery forks at key = "
+                                            "{}.".format(key))
                     result = True
                     val = (b'%06x.' % (cnt)) +  val  # prepend ordering prefix
                     txn.put(key, val, dupdata=True)
@@ -446,7 +452,7 @@ class Databaser:
         Adds to existing values at key if any
         Returns True if written else False if val is already a dup
 
-        DDuplicates preserve insertion order.
+        Duplicates preserve insertion order.
 
         Parameters:
             db is opened named sub db with dupsort=False
@@ -461,6 +467,9 @@ class Databaser:
                 cnt = cursor.count()
             result = False
             if val not in dups:
+                if cnt > MaxForks:
+                    raise DatabaseError("Too many recovery forks at key = "
+                                        "{}.".format(key))
                 val = (b'%06x.' % (cnt)) +  val  # prepend ordering prefix
                 result = txn.put(key, val, dupdata=True)
             return result
