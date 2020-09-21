@@ -72,7 +72,7 @@ def incept(
           ):
 
     """
-    Returns serder of inception event.
+    Returns serder of inception event message.
     Utility function to automate creation of inception events.
 
      Parameters:
@@ -142,10 +142,9 @@ def incept(
 
 def rotate( pre,
             keys,
-            dig,
+            dig,sn=1,
             version=Version,
             kind=Serials.json,
-            sn=1,
             sith=None,
             nxt="",
             toad=None,
@@ -156,7 +155,7 @@ def rotate( pre,
           ):
 
     """
-    Returns serder of rotation event.
+    Returns serder of rotation event message.
     Utility function to automate creation of rotation events.
 
      Parameters:
@@ -237,10 +236,10 @@ def rotate( pre,
     data = data if data is not None else []
 
     ked = dict(vs=vs,  # version string
-               pre=pre,  # ab64 prefix
+               pre=pre,  # qb64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=ilk,
-               dig=dig,
+               dig=dig,  #  qb64 digest of prior event
                sith="{:x}".format(sith), # hex string no leading zeros lowercase
                keys=keys,  # list of qb64
                nxt=nxt,  # hash qual Base64
@@ -255,22 +254,22 @@ def rotate( pre,
 
 def interact( pre,
               dig,
+              sn=1,
               version=Version,
               kind=Serials.json,
-              sn=1,
               data=None,
           ):
 
     """
-    Returns serder of interaction event.
+    Returns serder of interaction event message.
     Utility function to automate creation of interaction events.
 
      Parameters:
         pre
         dig
+        sn
         version
         kind
-        sn
         data
     """
     vs = Versify(version=version, kind=kind, size=0)
@@ -282,14 +281,50 @@ def interact( pre,
     data = data if data is not None else []
 
     ked = dict(vs=vs,  # version string
-               pre=pre,  # ab64 prefix
+               pre=pre,  # qb64 prefix
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                ilk=ilk,
-               dig=dig,
+               dig=dig,  #  qb64 digest of prior event
                data=data,  # list of seals
                )
 
     return Serder(ked=ked)  # return serialized ked
+
+def receipt( pre,
+             dig,
+             sn=0,
+             version=Version,
+             kind=Serials.json
+          ):
+
+    """
+    Returns serder of event receipt message.
+    Utility function to automate creation of interaction events.
+
+     Parameters:
+        pre
+        dig
+        sn
+        version
+        kind
+
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.rct
+
+    if sn < 0:
+        raise ValueError("Invalid sn = {} for rct.".format(sn))
+
+    ked = dict(vs=vs,  # version string
+               pre=pre,  # qb64 prefix
+               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,
+               dig=dig,  # qb64 digest of receipted event
+               )
+
+    return Serder(ked=ked)  # return serialized ked
+
+
 
 class Kever:
     """

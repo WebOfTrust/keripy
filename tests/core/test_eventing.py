@@ -17,7 +17,8 @@ from keri.kering import ValidationError, EmptyMaterialError, DerivationError
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, Verfer, Signer, Diger, Nexter, Prefixer
+from keri.core.coring import CryMat, CryCounter
+from keri.core.coring import Verfer, Signer, Diger, Nexter, Prefixer
 from keri.core.coring import generateSigners
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
@@ -31,7 +32,7 @@ from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
 from keri.core.eventing import TraitDex
-from keri.core.eventing import incept, rotate, interact, Kever, Kevery
+from keri.core.eventing import incept, rotate, interact, receipt, Kever, Kevery
 
 from keri.db.dbing import openLogger, Logger
 
@@ -39,7 +40,8 @@ def test_ilks():
     """
     Test Ilkage namedtuple instance Ilks
     """
-    assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt')
+    assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
+                          rct='rct')
 
     assert isinstance(Ilks, Ilkage)
 
@@ -111,6 +113,7 @@ def test_keyeventfuncs():
     pre = serder0.ked["pre"]
     assert serder0.ked["pre"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     assert serder0.ked["sn"] == '0'
+    assert serder0.ked["ilk"] == Ilks.icp
     assert serder0.ked["nxt"] == nxt1
     assert serder0.raw == (b'{"vs":"KERI10JSON0000fb_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
                            b'c","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
@@ -135,6 +138,7 @@ def test_keyeventfuncs():
     serder1 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
     assert serder1.ked["pre"] == pre
     assert serder1.ked["sn"] == '1'
+    assert serder1.ked["ilk"] == Ilks.rot
     assert serder1.ked["nxt"] == nxt2
     assert serder1.ked["dig"] == serder0.dig
     assert serder1.raw == (b'{"vs":"KERI10JSON00013a_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
@@ -147,10 +151,22 @@ def test_keyeventfuncs():
     serder2 = interact(pre=pre, dig=serder1.dig, sn=2)
     assert serder2.ked["pre"] == pre
     assert serder2.ked["sn"] == '2'
+    assert serder2.ked["ilk"] == Ilks.ixn
     assert serder2.ked["dig"] == serder1.dig
     assert serder2.raw == (b'{"vs":"KERI10JSON0000a3_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
                            b'c","sn":"2","ilk":"ixn","dig":"EJj1B3VAcS74VBDlJeCWWOYX5X1h0n_I1gtgzcViGPCk"'
                            b',"data":[]}')
+
+
+
+    serder3 = receipt(pre=pre, dig=serder2.dig, sn=2)
+    assert serder2.ked["pre"] == pre
+    assert serder3.ked["sn"] == '2'
+    assert serder3.ked["ilk"] == Ilks.rct
+    assert serder3.ked["dig"] == serder2.dig
+    assert serder3.raw == (b'{"vs":"KERI10JSON000099_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                           b'c","sn":"2","ilk":"rct","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"'
+                           b'}')
 
 
     """ Done Test """
@@ -1251,6 +1267,281 @@ def test_recovery():
 
     """ Done Test """
 
+def test_receipt():
+    """
+    Test event receipt message and attached couplets
+    """
+    # set of secrets
+    secrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
+
+    #  create signers
+    signers = [Signer(qb64=secret) for secret in secrets]  # faster
+    assert [signer.qb64 for signer in signers] == secrets
+
+    # create receipt signer prefixer  default code is non-transferable
+    resigner = Signer(qb64=secrets[7], transferable=False)
+    reprefixer = Prefixer(qb64=resigner.verfer.qb64, )
+    assert reprefixer.code == CryOneDex.Ed25519N
+    repre = reprefixer.qb64
+    assert repre == 'BT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg'
+
+    with openLogger("controller") as conlgr, openLogger("validator") as vallgr:
+        event_digs = [] # list of event digs in sequence to verify against database
+
+        # create event stream
+        kes = bytearray()
+        sn = esn = 0  # sn and last establishment sn = esn
+
+        # Event 0  Inception Transferable (nxt digest not empty)
+        serder = incept(keys=[signers[esn].verfer.qb64],
+                        nxt=Nexter(keys=[signers[esn+1].verfer.qb64]).qb64)
+
+        assert sn == int(serder.ked["sn"], 16) == 0
+
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = signers[esn].sign(serder.raw, index=0)  # return Siger if index
+        # create key event verifier state
+        kever = Kever(serder=serder, sigers=[siger], logger=conlgr)
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+
+        #create receipt pretend another entity with reprefixer
+        pre = serder.ked["pre"]
+        reserder = receipt(pre=kever.prefixer.qb64,
+                           dig=kever.diger.qb64,
+                           sn=kever.sn)
+        resig = resigner.sign(ser=reserder.raw)  # return Sigver if no index
+        assert resig.qb64 == '0BnkBImbg0Ac6_F1OjLme8PDs1IGwv4KJbswk7ci7i4B9FZqEO9LuuGC6Qt4maNZwCF8rzLOt_os2fkGcYxsTzDg'
+        recouplet = reprefixer.qb64 + resig.qb64
+        assert recouplet == 'BT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg0BnkBImbg0Ac6_F1OjLme8PDs1IGwv4KJbswk7ci7i4B9FZqEO9LuuGC6Qt4maNZwCF8rzLOt_os2fkGcYxsTzDg'
+        recnt = CryCounter(count=1)
+        assert recnt.qb64 == '-AAB'
+        #create receipt msg stream
+        rms = bytearray()
+        rms.extend(reserder.raw)
+        rms.extend(recnt.qb64b)
+        rms.extend(reprefixer.qb64b)
+        rms.extend(resig.qb64b)
+        assert rms == bytearray(b'{"vs":"KERI10JSON000099_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
+                                b'ZOoeKtWTOunRA","sn":"0","ilk":"rct","dig":"EgCvROg0cKXF_u_K0WH33'
+                                b'PPB77bjZpIlgLy99xmYrHlM"}-AABBT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_m'
+          b'W-2HJY1hg0BnkBImbg0Ac6_F1OjLme8PDs1IGwv4KJbswk7ci7i4B9FZqEO9LuuG'
+          b'C6Qt4maNZwCF8rzLOt_os2fkGcYxsTzDg')
+
+
+
+        # Next Event Rotation Transferable
+        sn += 1
+        esn += 1
+        assert sn == esn == 1
+        serder = rotate(pre=kever.prefixer.qb64,
+                        keys=[signers[esn].verfer.qb64],
+                        dig=kever.diger.qb64,
+                        nxt=Nexter(keys=[signers[esn+1].verfer.qb64]).qb64,
+                        sn=sn)
+
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = signers[esn].sign(serder.raw, index=0)  # returns siger
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+
+        # Next Event Interaction
+        sn += 1  #  do not increment esn
+        assert sn == 2
+        assert esn == 1
+        serder = interact(pre=kever.prefixer.qb64,
+                              dig=kever.diger.qb64,
+                              sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = signers[esn].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+
+        # Next Event Rotation Transferable
+        sn += 1
+        esn += 1
+        assert sn == 3
+        assert esn == 2
+        serder = rotate(pre=kever.prefixer.qb64,
+                        keys=[signers[esn].verfer.qb64],
+                        dig=kever.diger.qb64,
+                        nxt=Nexter(keys=[signers[esn+1].verfer.qb64]).qb64,
+                        sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = signers[esn].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+
+        # Next Event Interaction
+        sn += 1  #  do not increment esn
+        assert sn == 4
+        assert esn == 2
+        serder = interact(pre=kever.prefixer.qb64,
+                          dig=kever.diger.qb64,
+                          sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = signers[esn].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+
+        # Next Event Interaction
+        sn += 1  #  do not increment esn
+        assert sn == 5
+        assert esn == 2
+        serder = interact(pre=kever.prefixer.qb64,
+                          dig=kever.diger.qb64,
+                          sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = signers[esn].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+
+        # Next Event Interaction
+        sn += 1  #  do not increment esn
+        assert sn == 6
+        assert esn == 2
+        serder = interact(pre=kever.prefixer.qb64,
+                              dig=kever.diger.qb64,
+                              sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = signers[esn].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+
+
+        # Next Event Rotation Recovery at sn = 5
+        sn = 5
+        esn += 1
+        assert sn == 5
+        assert esn == 3
+
+        serder = rotate(pre=kever.prefixer.qb64,
+                        keys=[signers[esn].verfer.qb64],
+                        dig=event_digs[sn-1],
+                        nxt=Nexter(keys=[signers[esn+1].verfer.qb64]).qb64,
+                        sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = signers[esn].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+
+        # Next Event Interaction
+        sn += 1  #  do not increment esn
+        assert sn == 6
+        assert esn == 3
+        serder = interact(pre=kever.prefixer.qb64,
+                          dig=kever.diger.qb64,
+                          sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = signers[esn].sign(serder.raw, index=0)
+        # update key event verifier state
+        kever.update(serder=serder, sigers=[siger])
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+
+        assert kever.verfers[0].qb64 == signers[esn].verfer.qb64
+
+
+        pre = kever.prefixer.qb64
+
+        db_digs = [bytes(val).decode("utf-8") for val in kever.logger.getKelIter(pre)]
+        assert len(db_digs) == len(event_digs) == 9
+        assert db_digs[0:6] ==  event_digs[0:6]
+        assert db_digs[-1] == event_digs[-1]
+        assert db_digs[7] ==  event_digs[6]
+        assert db_digs[6] ==  event_digs[7]
+
+        db_est_digs = [bytes(val).decode("utf-8") for val in kever.logger.getKelEstIter(pre)]
+        assert len(db_est_digs) == 7
+        assert db_est_digs[0:5] ==  event_digs[0:5]
+        assert db_est_digs[5:7] ==  event_digs[7:9]
+
+        kevery = Kevery(logger=vallgr)
+        kevery.processAll(kes=kes)
+
+        assert pre in kevery.kevers
+        vkever = kevery.kevers[pre]
+        assert vkever.sn == kever.sn
+        assert vkever.verfers[0].qb64 == kever.verfers[0].qb64 == signers[esn].verfer.qb64
+
+
+        y_db_digs = [bytes(val).decode("utf-8") for val in kevery.logger.getKelIter(pre)]
+        assert db_digs == y_db_digs
+        y_db_est_digs = [bytes(val).decode("utf-8") for val in kevery.logger.getKelEstIter(pre)]
+        assert db_est_digs == y_db_est_digs
+
+    assert not os.path.exists(kevery.logger.path)
+    assert not os.path.exists(kever.logger.path)
+
+    """ Done Test """
 
 
 def test_process_nontransferable():
@@ -1551,4 +1842,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_recovery()
+    test_receipt()
