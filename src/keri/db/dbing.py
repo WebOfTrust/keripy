@@ -67,6 +67,9 @@ class DatabaseError(KeriError):
         raise DatabaseError("error message")
     """
 
+MaxHexDigits =  6
+MaxForks = int("f"*MaxHexDigits, 16)  # 16777215
+
 
 def dgKey(pre, dig):
     """
@@ -388,6 +391,7 @@ class Databaser:
                 count = cursor.count()
             return count
 
+
     def delVals(self,db, key, dupdata=True):
         """
         Deletes all values at key in db.
@@ -432,6 +436,9 @@ class Databaser:
             result = False
             for val in vals:
                 if val not in dups:
+                    if cnt > MaxForks:
+                        raise DatabaseError("Too many recovery forks at key = "
+                                            "{}.".format(key))
                     result = True
                     val = (b'%06x.' % (cnt)) +  val  # prepend ordering prefix
                     txn.put(key, val, dupdata=True)
@@ -445,7 +452,7 @@ class Databaser:
         Adds to existing values at key if any
         Returns True if written else False if val is already a dup
 
-        DDuplicates preserve insertion order.
+        Duplicates preserve insertion order.
 
         Parameters:
             db is opened named sub db with dupsort=False
@@ -460,6 +467,9 @@ class Databaser:
                 cnt = cursor.count()
             result = False
             if val not in dups:
+                if cnt > MaxForks:
+                    raise DatabaseError("Too many recovery forks at key = "
+                                        "{}.".format(key))
                 val = (b'%06x.' % (cnt)) +  val  # prepend ordering prefix
                 result = txn.put(key, val, dupdata=True)
             return result
@@ -667,20 +677,24 @@ class Logger(Databaser):
         see superclass Databaser for inherited attributes
 
         .evts is named sub DB whose values are serialized events
+            dgKey
             DB is keyed by identifer prefix plus digest of serialized event
             Only one value per DB key is allowed
 
         .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
+            dgKey
             the datetime when the event was first seen by log.
             Used for escrows timeouts and extended validation.
             DB is keyed by identifer prefix plus digest of serialized event
 
         .sigs is named sub DB of fully qualified event signatures
+            dgKey
             DB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .rcts is named sub DB of event receipt couplets. Each couplet is
             concatenation of fully qualified witness or validator prefix plus
+            dgKey
             fully qualified event signature by witness or validator
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
@@ -689,35 +703,41 @@ class Logger(Databaser):
             Each couplet is concatenation of fully qualified identfier prefix
             for corresponding event plus fully qualified event signature
             by witness or validator
+            dgKey
             SB is keyed by witness or validator prefix plus digest of serialized event
             Only one value per DB key is allowed
 
         .kels is named sub DB of key event log tables that map sequence numbers
             to serialized event digests.
+            snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
 
         .pses is named sub DB of partially signed escrowed event tables
             that map sequence numbers to serialized event digests.
+            snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
 
         .ooes is named sub DB of out of order escrowed event tables
             that map sequence numbers to serialized event digests.
+            snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
 
         .dels is named sub DB of deplicitous event log tables that map sequence numbers
             to serialized event digests.
+            snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
 
         .ldes is named sub DB of likely deplicitous escrowed event tables
             that map sequence numbers to serialized event digests.
+            snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
@@ -765,6 +785,7 @@ class Logger(Databaser):
 
     def putEvt(self, key, val):
         """
+        Use dgKey()
         Write serialized event bytes val to key
         Does not overwrite existing val if any
         Returns True If val successfully written Else False
@@ -774,6 +795,7 @@ class Logger(Databaser):
 
     def setEvt(self, key, val):
         """
+        Use dgKey()
         Write serialized event bytes val to key
         Overwrites existing val if any
         Returns True If val successfully written Else False
@@ -782,6 +804,7 @@ class Logger(Databaser):
 
     def getEvt(self, key):
         """
+        Use dgKey()
         Return event at key
         Returns None if no entry at key
         """
@@ -790,6 +813,7 @@ class Logger(Databaser):
 
     def delEvt(self, key):
         """
+        Use dgKey()
         Deletes value at key.
         Returns True If key exists in database Else False
         """
@@ -798,6 +822,7 @@ class Logger(Databaser):
 
     def putDts(self, key, val):
         """
+        Use dgKey()
         Write serialized event datetime stamp val to key
         Does not overwrite existing val if any
         Returns True If val successfully written Else False
@@ -808,6 +833,7 @@ class Logger(Databaser):
 
     def setDts(self, key, val):
         """
+        Use dgKey()
         Write serialized event datetime stamp val to key
         Overwrites existing val if any
         Returns True If val successfully written Else False
@@ -817,6 +843,7 @@ class Logger(Databaser):
 
     def getDts(self, key):
         """
+        Use dgKey()
         Return datetime stamp at key
         Returns None if no entry at key
         """
@@ -825,6 +852,7 @@ class Logger(Databaser):
 
     def delDts(self, key):
         """
+        Use dgKey()
         Deletes value at key.
         Returns True If key exists in database Else False
         """
@@ -833,6 +861,7 @@ class Logger(Databaser):
 
     def getSigs(self, key):
         """
+        Use dgKey()
         Return list of signatures at key
         Returns empty list if no entry at key
         Duplicates are retrieved in lexocographic order not insertion order.
@@ -842,6 +871,7 @@ class Logger(Databaser):
 
     def getSigsIter(self, key):
         """
+        Use dgKey()
         Return iterator of signatures at key
         Raises StopIteration Error when empty
         Duplicates are retrieved in lexocographic order not insertion order.
@@ -851,6 +881,7 @@ class Logger(Databaser):
 
     def putSigs(self, key, vals):
         """
+        Use dgKey()
         Write each entry from list of bytes signatures vals to key
         Adds to existing signatures at key if any
         Returns True If no error
@@ -862,6 +893,7 @@ class Logger(Databaser):
 
     def addSig(self, key, val):
         """
+        Use dgKey()
         Add signature val bytes as dup to key in db
         Adds to existing values at key if any
         Returns True if written else False if dup val already exists
@@ -872,6 +904,7 @@ class Logger(Databaser):
 
     def getSigs(self, key):
         """
+        Use dgKey()
         Return list of signatures at key
         Returns empty list if no entry at key
         Duplicates are retrieved in lexocographic order not insertion order.
@@ -881,6 +914,7 @@ class Logger(Databaser):
 
     def cntSigs(self, key):
         """
+        Use dgKey()
         Return count of signatures at key
         Returns zero if no entry at key
         """
@@ -889,6 +923,7 @@ class Logger(Databaser):
 
     def delSigs(self, key):
         """
+        Use dgKey()
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
@@ -897,6 +932,7 @@ class Logger(Databaser):
 
     def putRcts(self, key, vals):
         """
+        Use dgKey()
         Write each entry from list of bytes receipt couplets vals to key
         Adds to existing receipts at key if any
         Returns True If no error
@@ -908,6 +944,7 @@ class Logger(Databaser):
 
     def addRct(self, key, val):
         """
+        Use dgKey()
         Add receipt couplet val bytes as dup to key in db
         Adds to existing values at key if any
         Returns True if written else False if dup val already exists
@@ -918,6 +955,7 @@ class Logger(Databaser):
 
     def getRcts(self, key):
         """
+        Use dgKey()
         Return list of receipt couplets at key
         Returns empty list if no entry at key
         Duplicates are retrieved in lexocographic order not insertion order.
@@ -927,6 +965,7 @@ class Logger(Databaser):
 
     def getRctsIter(self, key):
         """
+        Use dgKey()
         Return iterator of receipt couplets at key
         Raises StopIteration Error when empty
         Duplicates are retrieved in lexocographic order not insertion order.
@@ -936,6 +975,7 @@ class Logger(Databaser):
 
     def cntRcts(self, key):
         """
+        Use dgKey()
         Return count of receipt couplets at key
         Returns zero if no entry at key
         """
@@ -944,6 +984,7 @@ class Logger(Databaser):
 
     def delRcts(self, key):
         """
+        Use dgKey()
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
@@ -952,6 +993,7 @@ class Logger(Databaser):
 
     def putUre(self, key, val):
         """
+        Use dgKey()
         Write prefix plus signature couplet val to key
         Does not overwrite existing val if any
         Returns True If val successfully written Else False
@@ -962,6 +1004,7 @@ class Logger(Databaser):
 
     def setUre(self, key, val):
         """
+        Use dgKey()
         Write prefix plus signature couplet val to key
         Overwrites existing val if any
         Returns True If val successfully written Else False
@@ -971,6 +1014,7 @@ class Logger(Databaser):
 
     def getUre(self, key):
         """
+        Use dgKey()
         Return prefix plus signature couplet val at key
         Returns None if no entry at key
         """
@@ -979,6 +1023,7 @@ class Logger(Databaser):
 
     def delUre(self, key):
         """
+        Use dgKey()
         Deletes value at key.
         Returns True If key exists in database Else False
         """
@@ -987,6 +1032,7 @@ class Logger(Databaser):
 
     def putKes(self, key, vals):
         """
+        Use snKey()
         Write each key event dig entry from list of bytes vals to key
         Adds to existing event indexes at key if any
         Returns True If at least one of vals is added as dup, False otherwise
@@ -997,6 +1043,7 @@ class Logger(Databaser):
 
     def addKe(self, key, val):
         """
+        Use snKey()
         Add key event val bytes as dup to key in db
         Adds to existing event indexes at key if any
         Returns True if written else False if dup val already exists
@@ -1007,6 +1054,7 @@ class Logger(Databaser):
 
     def getKes(self, key):
         """
+        Use snKey()
         Return list of key event dig vals at key
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1016,6 +1064,7 @@ class Logger(Databaser):
 
     def getKeLast(self, key):
         """
+        Use snKey()
         Return last inserted dup key event dig vals at key
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1025,6 +1074,7 @@ class Logger(Databaser):
 
     def cntKes(self, key):
         """
+        Use snKey()
         Return count of dup key event dig val at key
         Returns zero if no entry at key
         """
@@ -1033,6 +1083,7 @@ class Logger(Databaser):
 
     def delKes(self, key):
         """
+        Use snKey()
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
@@ -1082,6 +1133,7 @@ class Logger(Databaser):
 
     def putPses(self, key, vals):
         """
+        Use snKey()
         Write each partial signed escrow event entry from list of bytes dig vals to key
         Adds to existing event indexes at key if any
         Returns True If at least one of vals is added as dup, False otherwise
@@ -1092,6 +1144,7 @@ class Logger(Databaser):
 
     def addPse(self, key, val):
         """
+        Use snKey()
         Add Partial signed escrow val bytes as dup to key in db
         Adds to existing event indexes at key if any
         Returns True if written else False if dup val already exists
@@ -1102,6 +1155,7 @@ class Logger(Databaser):
 
     def getPses(self, key):
         """
+        Use snKey()
         Return list of partial signed escrowed event dig vals at key
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1111,6 +1165,7 @@ class Logger(Databaser):
 
     def getPsesLast(self, key):
         """
+        Use snKey()
         Return last inserted dup partial signed escrowed event dig val at key
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1120,6 +1175,7 @@ class Logger(Databaser):
 
     def cntPses(self, key):
         """
+        Use snKey()
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
@@ -1128,6 +1184,7 @@ class Logger(Databaser):
 
     def delPses(self, key):
         """
+        Use snKey()
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
@@ -1136,6 +1193,7 @@ class Logger(Databaser):
 
     def putOoes(self, key, vals):
         """
+        Use snKey()
         Write each out of order escrow event dig entry from list of bytes vals to key
         Adds to existing event indexes at key if any
         Returns True If at least one of vals is added as dup, False otherwise
@@ -1146,6 +1204,7 @@ class Logger(Databaser):
 
     def addOoe(self, key, val):
         """
+        Use snKey()
         Add out of order escrow val bytes as dup to key in db
         Adds to existing event indexes at key if any
         Returns True if written else False if dup val already exists
@@ -1156,6 +1215,7 @@ class Logger(Databaser):
 
     def getOoes(self, key):
         """
+        Use snKey()
         Return list of out of order escrow event dig vals at key
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1165,6 +1225,7 @@ class Logger(Databaser):
 
     def getOoesLast(self, key):
         """
+        Use snKey()
         Return last inserted dup out of order escrow event dig at key
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1174,6 +1235,7 @@ class Logger(Databaser):
 
     def cntOoes(self, key):
         """
+        Use snKey()
         Return count of dup event dig at key
         Returns zero if no entry at key
         """
@@ -1182,6 +1244,7 @@ class Logger(Databaser):
 
     def delOoes(self, key):
         """
+        Use snKey()
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
@@ -1190,6 +1253,7 @@ class Logger(Databaser):
 
     def putDes(self, key, vals):
         """
+        Use snKey()
         Write each duplicitous event entry dig from list of bytes vals to key
         Adds to existing event indexes at key if any
         Returns True If at least one of vals is added as dup, False otherwise
@@ -1200,6 +1264,7 @@ class Logger(Databaser):
 
     def addDe(self, key, val):
         """
+        Use snKey()
         Add duplicate event index val bytes as dup to key in db
         Adds to existing event indexes at key if any
         Returns True if written else False if dup val already exists
@@ -1210,6 +1275,7 @@ class Logger(Databaser):
 
     def getDes(self, key):
         """
+        Use snKey()
         Return list of duplicitous event dig vals at key
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1219,6 +1285,7 @@ class Logger(Databaser):
 
     def getDesLast(self, key):
         """
+        Use snKey()
         Return last inserted dup duplicitous event dig vals at key
         Returns None if no entry at key
 
@@ -1229,6 +1296,7 @@ class Logger(Databaser):
 
     def cntDes(self, key):
         """
+        Use snKey()
         Return count of dup event dig vals at key
         Returns zero if no entry at key
         """
@@ -1237,6 +1305,7 @@ class Logger(Databaser):
 
     def delDes(self, key):
         """
+        Use snKey()
         Deletes all values at key.
         Returns True If key exists in database Else False
         """
@@ -1265,6 +1334,7 @@ class Logger(Databaser):
 
     def putLdes(self, key, vals):
         """
+        Use snKey()
         Write each likely duplicitous event entry dig from list of bytes vals to key
         Adds to existing event indexes at key if any
         Returns True If at least one of vals is added as dup, False otherwise
@@ -1275,6 +1345,7 @@ class Logger(Databaser):
 
     def addLde(self, key, val):
         """
+        Use snKey()
         Add likely duplicitous escrow val bytes as dup to key in db
         Adds to existing event indexes at key if any
         Returns True if written else False if dup val already exists
@@ -1285,6 +1356,7 @@ class Logger(Databaser):
 
     def getLdes(self, key):
         """
+        Use snKey()
         Return list of likely duplicitous event dig vals at key
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1294,6 +1366,7 @@ class Logger(Databaser):
 
     def getLdesLast(self, key):
         """
+        Use snKey()
         Return last inserted dup likely duplicitous event dig at key
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1303,6 +1376,7 @@ class Logger(Databaser):
 
     def cntLdes(self, key):
         """
+        Use snKey()
         Return count of dup event dig at key
         Returns zero if no entry at key
         """
@@ -1311,6 +1385,7 @@ class Logger(Databaser):
 
     def delLdes(self, key):
         """
+        Use snKey()
         Deletes all values at key.
         Returns True If key exists in database Else False
         """

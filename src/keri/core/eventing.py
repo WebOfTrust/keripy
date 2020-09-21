@@ -462,7 +462,7 @@ class Kever:
         if sn == 0:
             raise ValidationError("Zero sn = {} for non=inception ked = {}."
                                               "".format(sn, ked))
-        dig = ked["dig"]  # prior dig
+        dig = ked["dig"]  # dig of prior event to this update event
         ilk = ked["ilk"]
 
         if pre != self.prefixer.qb64:
@@ -482,25 +482,36 @@ class Kever:
 
             elif sn <= self.sn:  #  stale or recovery
                 #  stale events could be duplicitous
-                #  duplicity detection should happend before .update called
-                if sn <= self.lastEst.sn :  # stale
+                #  duplicity detection should have happend before .update called
+                #  so raise exception if stale
+                if sn <= self.lastEst.sn :  # stale  event
                     raise ValidationError("Stale event sn = {} expecting"
                                           " = {}.".format(sn, self.sn+1))
 
-                else:  # sn > self.lastEst.sn  recovery event
-                    # fetch last entry of prior events at prior sn = sn -1
-                    # need KEL for generator use and KERL for validator
-                    pass
+                else:  # sn > self.lastEst.sn  #  recovery event
+                    if self.ilk != Ilks.ixn:  #  recovery only override ixn event
+                        raise ValidationError("Invalid recovery attempt: Recovery"
+                                              "at ilk = {} not ilk = {}."
+                                              "".format(self.ilk, Ilks.ixn))
 
-                    #entry = self.logs.kels[pre].nabone("{:x}".format(sn - 1))
-                    #if dig == entry.serder.dig:
-                        #raise ValidationError("Mismatch event dig = {} with dig "
-                                              #"= {} at event sn = {}."
-                                              #"".format(dig,
-                                                        #entry.serder.dig,
-                                                        #psn))
+                    psn = sn - 1 # sn of prior event
+                    # fetch raw serialization of last inserted  event at psn
+                    pdig = self.logger.getKeLast(key=snKey(pre=pre, sn=psn))
+                    if pdig is None:
+                        raise ValidationError("Invalid recovery attempt: "
+                                              "Bad sn = {}.".format(psn))
+                    praw = self.logger.getEvt(key=dgKey(pre=pre, dig=pdig))
+                    if praw is None:
+                        raise ValidationError("Invalid recovery attempt: "
+                                              " Bad dig = {}.".format(pdig))
+                    pserder = Serder(raw=bytes(praw))  # deserialize prior event raw
+                    if dig != pserder.dig:  # bad recovery event
+                        raise ValidationError("Invalid recovery attempt:"
+                                              "Mismatch recovery event prior dig"
+                                              "= {} with dig = {} of event sn = {}."
+                                              "".format(dig, pserder.dig, psn))
 
-            else:  # sn == self.sn +1   new event
+            else:  # sn == self.sn + 1   new non-recovery event
                 if dig != self.diger.qb64:  # prior event dig not match
                     raise ValidationError("Mismatch event dig = {} with"
                                           " state dig = {}.".format(dig, self.dig.qb64))
