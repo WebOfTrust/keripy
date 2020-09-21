@@ -504,7 +504,7 @@ class Kever:
                     if praw is None:
                         raise ValidationError("Invalid recovery attempt: "
                                               " Bad dig = {}.".format(pdig))
-                    pserder = Serder(raw=praw)  # deserialize prior event raw
+                    pserder = Serder(raw=bytes(praw))  # deserialize prior event raw
                     if dig != pserder.dig:  # bad recovery event
                         raise ValidationError("Invalid recovery attempt:"
                                               "Mismatch recovery event prior dig"
