@@ -802,7 +802,24 @@ class Kevery:
         self.logger = logger
 
 
-    def extractOne(self, kes, framed=True):
+    def processAll(self, kes):
+        """
+        Process all messages in key event stream
+        """
+        if not isinstance(kes, bytearray):  # destructive processing
+            kes = bytearray(kes)
+
+        while kes:
+            try:
+                self.processOne(kes=kes, framed=self.framed)
+            except Exception as ex:
+                # log diagnostics errors etc
+                # error extracting means bad key event stream
+                del kes[:]  #  delete rest of stream
+                continue
+
+
+    def processOne(self, kes, framed=True):
         """
         Extract one event with attached signatures from key event stream kes
         Returns: (serder, sigers)
@@ -859,10 +876,11 @@ class Kevery:
         if not sigers:
             raise ValidationError("Missing attached signature(s).")
 
-        return (serder, sigers)
+        self.processEvent(serder, sigers)
 
 
-    def processOne(self, serder, sigers):
+
+    def processEvent(self, serder, sigers):
         """
         Process one event serder with attached indexd signatures sigers
 
@@ -949,28 +967,6 @@ class Kevery:
                     self.logger.putEvt(dgkey, serder.raw)
                     self.logger.addLdes(snKey(pre, sn), dig)
 
-
-    def processAll(self, kes):
-        """
-        Process all messages in key event stream
-        """
-        if not isinstance(kes, bytearray):  # destructive processing
-            kes = bytearray(kes)
-
-        while kes:
-            try:
-                serder, sigers = self.extractOne(kes=kes, framed=self.framed)
-            except Exception as ex:
-                # log diagnostics errors etc
-                # error extracting means bad key event stream
-                del kes[:]  #  delete rest of stream
-                continue
-
-            try:
-                self.processOne(serder=serder, sigers=sigers)
-            except Exception as  ex:
-                # log diagnostics errors etc
-                continue
 
 
     def duplicity(self, serder, sigers):
