@@ -772,7 +772,7 @@ def generateSigners(root=None, count=8, transferable=True):
             in list are derived
             random root created if not provided
         count is number of signers in list
-        transferable is boolean true means verfers codes are transferable
+        transferable is boolean true means signer.verfer code is transferable
                                 non-transferable otherwise
     """
     if not root:
@@ -793,19 +793,17 @@ def generateSigners(root=None, count=8, transferable=True):
 
     return signers
 
-def generateSecrets(root=None, count=8, transferable=True):
+def generateSecrets(root=None, count=8):
     """
-    Returns list of fully qualified Base64 secret seeds for Ed25519
+    Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
 
     Parameters:
         root is bytes 16 byte long root key (salt/seed) from which seeds for Signers
             in list are derived
             random root created if not provided
         count is number of signers in list
-        transferable is boolean true means verfers codes are transferable
-                                non-transferable otherwise
     """
-    signers = generateSigners(root=root, count=count, transferable=transferable)
+    signers = generateSigners(root=root, count=count)
 
     return [signer.qb64 for signer in signers]  #  fetch the qb64
 

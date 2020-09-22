@@ -851,7 +851,7 @@ class Kevery:
         ilk = serder.ked['ilk']  # dispatch abased on ilk
 
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
-            # extract sig counter if any
+            # extract sig counter if any for attached sigs
             try:
                 counter = SigCounter(qb64=kes)  # qb64
                 nsigs = counter.count
@@ -882,19 +882,52 @@ class Kevery:
             self.processEvent(serder, sigers)
 
         elif ilk in [Ilks.rct]:  # event receipt msg
-            pass
+            # extract cry counter if any for attached receipt couplets
+            try:
+                counter = CryCounter(qb64=kes)  # qb64
+                ncpts = counter.count
+                del kes[:len(counter.qb64)]  # strip off counter
+            except ValidationError as ex:
+                ncpts = 0  # no couplets count
+
+            # extract attached rct couplets into list of sigvers
+            # verfer property of sigver is the identifier prefix
+            # sigver itself is teh attached signature
+            sigvers = []  # List of sigvers to hold couplets
+            if ncpts:
+                for i in range(ncpts): # extract each attached couplet
+                    # check here for type of attached couplets qb64 or qb2
+                    verfer = Verfer(qb64=kes)  # qb64
+                    del kes[:len(verfer.qb64)]  # strip off identifier prefix
+                    sigver = Sigver(qb64=kes, verfer=verfer)  # qb64
+                    sigvers.append(sigver)
+                    del kes[:len(sigver.qb64)]  # strip off signature
+
+            else:  # no info on attached receipt couplets
+                if framed:  # parse for receipts until end-of-stream
+                    while kes:
+                        # check here for type of attached receipts qb64 or qb2
+                        verfer = Verfer(qb64=kes)  # qb64
+                    del kes[:len(verfer.qb64)]  # strip off identifier prefix
+                    sigver = Sigver(qb64=kes, verfer=verfer)  # qb64
+                    sigvers.append(sigver)
+                    del kes[:len(sigver.qb64)]  # strip off signature
+
+            if not sigvers:
+                raise ValidationError("Missing attached receipt couplet(s).")
+
+            self.processReceipt(serder, sigvers)
 
         else:
             raise ValidationError("Unexpected message ilk = {}.".format(ilk))
+
 
     def processEvent(self, serder, sigers):
         """
         Process one event serder with attached indexd signatures sigers
 
         Parameters:
-            kes is bytearray of serialized key event stream.
-                May contain one or more sets each of a serialized event with
-                attached signatures.
+
 
         """
         # fetch ked ilk  pre, sn, dig to see how to process
@@ -973,6 +1006,19 @@ class Kevery:
                     self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
                     self.logger.putEvt(dgkey, serder.raw)
                     self.logger.addLdes(snKey(pre, sn), dig)
+
+
+    def processReceipt(self, serder, sigvers):
+        """
+        Process one receipt serder with attached sigvers
+
+        Parameters:
+            serder is
+            sigvers is list of Sigver instances that contain receipt couplet
+
+        """
+        # fetch ked ilk  pre, sn, dig to see how to process
+        ked = serder.ked
 
 
 

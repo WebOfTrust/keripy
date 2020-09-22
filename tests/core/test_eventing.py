@@ -19,7 +19,7 @@ from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRaw
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import CryMat, CryCounter
 from keri.core.coring import Verfer, Signer, Diger, Nexter, Prefixer
-from keri.core.coring import generateSigners
+from keri.core.coring import generateSigners, generateSecrets
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
 from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
@@ -1271,8 +1271,15 @@ def test_receipt():
     """
     Test event receipt message and attached couplets
     """
-    # set of secrets
-    secrets = [
+    # manual process to generate a list of secrets
+    # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    # secrets = generateSecrets(root=root, count=8)
+
+
+    #  Direct Mode coe is controller, val is validator
+
+    # set of secrets  (seeds for private keys)
+    coeSecrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
                 'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
                 'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
@@ -1284,15 +1291,32 @@ def test_receipt():
                 ]
 
     #  create signers
-    signers = [Signer(qb64=secret) for secret in secrets]  # faster
-    assert [signer.qb64 for signer in signers] == secrets
+    coeSigners = [Signer(qb64=secret) for secret in coeSecrets]
+    assert [signer.qb64 for signer in coeSigners] == coeSecrets
+
+    # set of secrets (seeds for private keys)
+    valSecrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                  'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                  'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
+                  'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
+                  'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                  'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                  'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
+                  'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
+
+    #  create signers
+    valSigners = [Signer(qb64=secret) for secret in valSecrets]
+    assert [signer.qb64 for signer in valSigners] == valSecrets
+
+
+
 
     # create receipt signer prefixer  default code is non-transferable
-    resigner = Signer(qb64=secrets[7], transferable=False)
-    reprefixer = Prefixer(qb64=resigner.verfer.qb64, )
-    assert reprefixer.code == CryOneDex.Ed25519N
-    repre = reprefixer.qb64
-    assert repre == 'BT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg'
+    valSigner = Signer(qb64=valSecrets[0], transferable=False)
+    valPrefixer = Prefixer(qb64=valSigner.verfer.qb64, )
+    assert valPrefixer.code == CryOneDex.Ed25519N
+    valpre = valPrefixer.qb64
+    assert valpre == 'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
 
     with openLogger("controller") as conlgr, openLogger("validator") as vallgr:
         event_digs = [] # list of event digs in sequence to verify against database
@@ -1302,8 +1326,8 @@ def test_receipt():
         sn = esn = 0  # sn and last establishment sn = esn
 
         # Event 0  Inception Transferable (nxt digest not empty)
-        serder = incept(keys=[signers[esn].verfer.qb64],
-                        nxt=Nexter(keys=[signers[esn+1].verfer.qb64]).qb64)
+        serder = incept(keys=[coeSigners[esn].verfer.qb64],
+                        nxt=Nexter(keys=[coeSigners[esn+1].verfer.qb64]).qb64)
 
         assert sn == int(serder.ked["sn"], 16) == 0
 
@@ -1311,7 +1335,7 @@ def test_receipt():
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
-        siger = signers[esn].sign(serder.raw, index=0)  # return Siger if index
+        siger = coeSigners[esn].sign(serder.raw, index=0)  # return Siger if index
         # create key event verifier state
         kever = Kever(serder=serder, sigers=[siger], logger=conlgr)
         #extend key event stream
@@ -1324,23 +1348,21 @@ def test_receipt():
         reserder = receipt(pre=kever.prefixer.qb64,
                            dig=kever.diger.qb64,
                            sn=kever.sn)
-        resig = resigner.sign(ser=reserder.raw)  # return Sigver if no index
-        assert resig.qb64 == '0BnkBImbg0Ac6_F1OjLme8PDs1IGwv4KJbswk7ci7i4B9FZqEO9LuuGC6Qt4maNZwCF8rzLOt_os2fkGcYxsTzDg'
-        recouplet = reprefixer.qb64 + resig.qb64
-        assert recouplet == 'BT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg0BnkBImbg0Ac6_F1OjLme8PDs1IGwv4KJbswk7ci7i4B9FZqEO9LuuGC6Qt4maNZwCF8rzLOt_os2fkGcYxsTzDg'
+        valsig = valSigner.sign(ser=reserder.raw)  # return Sigver if no index
+        assert valsig.qb64 == '0BITlulyapi_5HotG0u3MjPulfOe1IjKN1Xv1Rr081DdzPVSgUYePwKmyoOS63ig08bx4DrpEFRoftU0FDClIYDA'
         recnt = CryCounter(count=1)
         assert recnt.qb64 == '-AAB'
         #create receipt msg stream
         rms = bytearray()
         rms.extend(reserder.raw)
         rms.extend(recnt.qb64b)
-        rms.extend(reprefixer.qb64b)
-        rms.extend(resig.qb64b)
+        rms.extend(valPrefixer.qb64b)
+        rms.extend(valsig.qb64b)
         assert rms == bytearray(b'{"vs":"KERI10JSON000099_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
                                 b'ZOoeKtWTOunRA","sn":"0","ilk":"rct","dig":"EgCvROg0cKXF_u_K0WH33'
-                                b'PPB77bjZpIlgLy99xmYrHlM"}-AABBT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_m'
-          b'W-2HJY1hg0BnkBImbg0Ac6_F1OjLme8PDs1IGwv4KJbswk7ci7i4B9FZqEO9LuuG'
-          b'C6Qt4maNZwCF8rzLOt_os2fkGcYxsTzDg')
+                                b'PPB77bjZpIlgLy99xmYrHlM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzh'
+                                b'DNZlEKiMc0BITlulyapi_5HotG0u3MjPulfOe1IjKN1Xv1Rr081DdzPVSgUYePwK'
+                                b'myoOS63ig08bx4DrpEFRoftU0FDClIYDA')
 
 
 
@@ -1349,16 +1371,16 @@ def test_receipt():
         esn += 1
         assert sn == esn == 1
         serder = rotate(pre=kever.prefixer.qb64,
-                        keys=[signers[esn].verfer.qb64],
+                        keys=[coeSigners[esn].verfer.qb64],
                         dig=kever.diger.qb64,
-                        nxt=Nexter(keys=[signers[esn+1].verfer.qb64]).qb64,
+                        nxt=Nexter(keys=[coeSigners[esn+1].verfer.qb64]).qb64,
                         sn=sn)
 
         event_digs.append(serder.dig)
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
-        siger = signers[esn].sign(serder.raw, index=0)  # returns siger
+        siger = coeSigners[esn].sign(serder.raw, index=0)  # returns siger
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
         #extend key event stream
@@ -1377,7 +1399,7 @@ def test_receipt():
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
-        siger = signers[esn].sign(serder.raw, index=0)
+        siger = coeSigners[esn].sign(serder.raw, index=0)
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
         #extend key event stream
@@ -1391,15 +1413,15 @@ def test_receipt():
         assert sn == 3
         assert esn == 2
         serder = rotate(pre=kever.prefixer.qb64,
-                        keys=[signers[esn].verfer.qb64],
+                        keys=[coeSigners[esn].verfer.qb64],
                         dig=kever.diger.qb64,
-                        nxt=Nexter(keys=[signers[esn+1].verfer.qb64]).qb64,
+                        nxt=Nexter(keys=[coeSigners[esn+1].verfer.qb64]).qb64,
                         sn=sn)
         event_digs.append(serder.dig)
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
-        siger = signers[esn].sign(serder.raw, index=0)
+        siger = coeSigners[esn].sign(serder.raw, index=0)
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
         #extend key event stream
@@ -1418,7 +1440,7 @@ def test_receipt():
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
-        siger = signers[esn].sign(serder.raw, index=0)
+        siger = coeSigners[esn].sign(serder.raw, index=0)
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
         #extend key event stream
@@ -1437,7 +1459,7 @@ def test_receipt():
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
-        siger = signers[esn].sign(serder.raw, index=0)
+        siger = coeSigners[esn].sign(serder.raw, index=0)
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
         #extend key event stream
@@ -1456,7 +1478,7 @@ def test_receipt():
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
-        siger = signers[esn].sign(serder.raw, index=0)
+        siger = coeSigners[esn].sign(serder.raw, index=0)
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
         #extend key event stream
@@ -1472,15 +1494,15 @@ def test_receipt():
         assert esn == 3
 
         serder = rotate(pre=kever.prefixer.qb64,
-                        keys=[signers[esn].verfer.qb64],
+                        keys=[coeSigners[esn].verfer.qb64],
                         dig=event_digs[sn-1],
-                        nxt=Nexter(keys=[signers[esn+1].verfer.qb64]).qb64,
+                        nxt=Nexter(keys=[coeSigners[esn+1].verfer.qb64]).qb64,
                         sn=sn)
         event_digs.append(serder.dig)
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
-        siger = signers[esn].sign(serder.raw, index=0)
+        siger = coeSigners[esn].sign(serder.raw, index=0)
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
         #extend key event stream
@@ -1499,7 +1521,7 @@ def test_receipt():
         # create sig counter
         counter = SigCounter()  # default is count = 1
         # sign serialization
-        siger = signers[esn].sign(serder.raw, index=0)
+        siger = coeSigners[esn].sign(serder.raw, index=0)
         # update key event verifier state
         kever.update(serder=serder, sigers=[siger])
         #extend key event stream
@@ -1507,7 +1529,7 @@ def test_receipt():
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
 
-        assert kever.verfers[0].qb64 == signers[esn].verfer.qb64
+        assert kever.verfers[0].qb64 == coeSigners[esn].verfer.qb64
 
 
         pre = kever.prefixer.qb64
@@ -1530,7 +1552,7 @@ def test_receipt():
         assert pre in kevery.kevers
         vkever = kevery.kevers[pre]
         assert vkever.sn == kever.sn
-        assert vkever.verfers[0].qb64 == kever.verfers[0].qb64 == signers[esn].verfer.qb64
+        assert vkever.verfers[0].qb64 == kever.verfers[0].qb64 == coeSigners[esn].verfer.qb64
 
 
         y_db_digs = [bytes(val).decode("utf-8") for val in kevery.logger.getKelIter(pre)]
