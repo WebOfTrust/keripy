@@ -814,7 +814,7 @@ class Kevery:
                 self.processOne(kes=kes, framed=self.framed)
             except Exception as ex:
                 # log diagnostics errors etc
-                # error extracting means bad key event stream
+                #
                 del kes[:]  #  delete rest of stream
                 continue
 
@@ -822,7 +822,7 @@ class Kevery:
     def processOne(self, kes, framed=True):
         """
         Extract one event with attached signatures from key event stream kes
-        Returns: (serder, sigers)
+        And dispatch processing of event, receipt, etc
 
         Parameters:
             kes is bytearray of serialized key event stream.
@@ -848,37 +848,44 @@ class Kevery:
 
         del kes[:serder.size]  # strip off event from front of kes
 
-        # extract sig counter if any
-        try:
-            counter = SigCounter(qb64=kes)  # qb64
-            nsigs = counter.count
-            del kes[:len(counter.qb64)]  # strip off counter
-        except ValidationError as ex:
-            nsigs = 0  # no signature count
+        ilk = serder.ked['ilk']  # dispatch abased on ilk
 
-        # extract attached sigs as Sigers
-        sigers = []  # list of Siger instances for attached indexed signatures
-        if nsigs:
-            for i in range(nsigs): # extract each attached signature
-                # check here for type of attached signatures qb64 or qb2
-                siger = Siger(qb64=kes)  # qb64
-                sigers.append(siger)
-                del kes[:len(siger.qb64)]  # strip off signature
+        if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
+            # extract sig counter if any
+            try:
+                counter = SigCounter(qb64=kes)  # qb64
+                nsigs = counter.count
+                del kes[:len(counter.qb64)]  # strip off counter
+            except ValidationError as ex:
+                nsigs = 0  # no signature count
 
-        else:  # no info on attached sigs
-            if framed:  # parse for signatures until end-of-stream
-                while kes:
+            # extract attached sigs as Sigers
+            sigers = []  # list of Siger instances for attached indexed signatures
+            if nsigs:
+                for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
                     siger = Siger(qb64=kes)  # qb64
                     sigers.append(siger)
                     del kes[:len(siger.qb64)]  # strip off signature
 
-        if not sigers:
-            raise ValidationError("Missing attached signature(s).")
+            else:  # no info on attached sigs
+                if framed:  # parse for signatures until end-of-stream
+                    while kes:
+                        # check here for type of attached signatures qb64 or qb2
+                        siger = Siger(qb64=kes)  # qb64
+                        sigers.append(siger)
+                        del kes[:len(siger.qb64)]  # strip off signature
 
-        self.processEvent(serder, sigers)
+            if not sigers:
+                raise ValidationError("Missing attached signature(s).")
 
+            self.processEvent(serder, sigers)
 
+        elif ilk in [Ilks.rct]:  # event receipt msg
+            pass
+
+        else:
+            raise ValidationError("Unexpected message ilk = {}.".format(ilk))
 
     def processEvent(self, serder, sigers):
         """
