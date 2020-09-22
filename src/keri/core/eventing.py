@@ -27,6 +27,7 @@ from ..db.dbing import dgKey, snKey, Logger
 
 from .coring import Versify, Serials, Ilks, CryOneDex
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder
+from .coring import CryCounter, Sigver
 from .coring import SigCounter, Siger
 
 ICP_LABELS = ["vs", "pre", "sn", "ilk", "sith", "keys", "nxt",
