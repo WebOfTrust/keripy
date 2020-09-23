@@ -34,7 +34,7 @@ from keri.core.coring import Ilkage, Ilks
 from keri.core.eventing import TraitDex
 from keri.core.eventing import incept, rotate, interact, receipt, Kever, Kevery
 
-from keri.db.dbing import openLogger, Logger
+from keri.db.dbing import dgKey, snKey, openLogger, Logger
 
 def test_ilks():
     """
@@ -1375,8 +1375,12 @@ def test_receipt():
                                 b'DNZlEKiMc0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ'
                                 b'3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg')
 
-
         coeKevery.processAll(kes=res)  #  coe process the receipt from val
+        #  check if in receipt database
+        result = coeKevery.logger.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
+                                                    dig=coeKever.diger.qb64))
+        assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
+
 
         # create receipt to escrow use invalid dig so not in db
         fake = reserder.dig  # some other dig
@@ -1393,7 +1397,10 @@ def test_receipt():
         res.extend(valSigver.qb64b)
 
         coeKevery.processAll(kes=res)  #  coe process the escrow receipt from val
-
+        #  check if in escrow database
+        result = coeKevery.logger.getUre(key=dgKey(pre=valPrefixer.qb64b,
+                                     dig=fake))
+        assert bytes(result) == valPrefixer.qb64b + valSigver.qb64b
 
         # Next Event Rotation Transferable
         sn += 1

@@ -1016,7 +1016,7 @@ class Logger(Databaser):
     def getUre(self, key):
         """
         Use dgKey()
-        Return prefix plus signature couplet val at key
+        Return val recipt couplet of prefix plus signature at key
         Returns None if no entry at key
         """
         return self.getVal(self.ures, key)

@@ -1017,15 +1017,12 @@ class Kevery:
             serder is
             sigvers is list of Sigver instances that contain receipt couplet
 
-
+        Receipt dict labels
             vs  # version string
             pre  # qb64 prefix
             sn  # hex string no leading zeros lowercase
             ilk
-            dig,  # qb64 digest of receipted event
-
-
-
+            dig  # qb64 digest of receipted event
         """
         # fetch  pre, sn, ilk  dig to process
         ked = serder.ked
@@ -1037,7 +1034,8 @@ class Kevery:
         eraw = self.logger.getEvt(key=key)
         if eraw is None:  # escrow each couplet
             for sigver in sigvers:
-                # check that verfer is non-transferable
+                if not sigver.verfer.nontrans:# check that verfer is non-transferable
+                    contine  # skip invalid couplets
                 couplet = sigver.verfer.qb64b + sigver.qb64b
                 self.logger.setUre(key=dgKey(pre=sigver.verfer.qb64b, dig=dig),
                                    val=couplet)
@@ -1045,7 +1043,8 @@ class Kevery:
             eserder = Serder(raw=bytes(eraw))  # deserialize event raw
             # process each couplet verify sig and write to db
             for sigver in sigvers:
-                #  check that verfer prefix is non-transferable
+                if not sigver.verfer.nontrans:# check that verfer is non-transferable
+                    contine  # skip invalid couplets
                 if sigver.verfer.verify(sigver.raw, eserder.raw):
                     # write receipt couplet to database
                     couplet = sigver.verfer.qb64b + sigver.qb64b
