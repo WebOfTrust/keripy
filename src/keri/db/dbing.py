@@ -694,8 +694,8 @@ class Logger(Databaser):
 
         .rcts is named sub DB of event receipt couplets. Each couplet is
             concatenation of fully qualified witness or validator prefix plus
-            dgKey
             fully qualified event signature by witness or validator
+            dgKey
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
@@ -704,7 +704,8 @@ class Logger(Databaser):
             for corresponding event plus fully qualified event signature
             by witness or validator
             dgKey
-            SB is keyed by witness or validator prefix plus digest of serialized event
+            SB is keyed by witness or epheral validator prefix plus digest
+            of serialized event
             Only one value per DB key is allowed
 
         .kels is named sub DB of key event log tables that map sequence numbers
@@ -1015,7 +1016,7 @@ class Logger(Databaser):
     def getUre(self, key):
         """
         Use dgKey()
-        Return prefix plus signature couplet val at key
+        Return val recipt couplet of prefix plus signature at key
         Returns None if no entry at key
         """
         return self.getVal(self.ures, key)

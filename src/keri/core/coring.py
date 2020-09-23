@@ -232,6 +232,9 @@ class CryFourCodex:
     """
     ECDSA_256k1N:  str = "1AAA"  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:   str = "1AAB"  # Ed25519 public verification or encryption key, basic derivation
+    Ed448N:        str = "1AAC"  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
+    Ed448:         str = "1AAD"  # Ed448 public signing verification key. Basic derivation.
+    Ed448_Sig:      str = "1AAE"  # Ed448 signature. Self-signing derivation.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -242,11 +245,17 @@ CryFourDex = CryFourCodex()  #  Make instance
 CryFourSizes = {
                 "1AAA": 48,
                 "1AAB": 48,
+                "1AAC": 80,
+                "1AAD": 80,
+                "1AAE": 156,
                }
 
 CryFourRawSizes = {
                    "1AAA": 33,
                    "1AAB": 33,
+                   "1AAC": 57,
+                   "1AAD": 57,
+                   "1AAE": 114,
                   }
 
 # all sizes in one dict
@@ -263,6 +272,22 @@ CryRawSizes.update(CryFourRawSizes)
 
 # all sizes in one dict
 CryIdxSizes = dict(CryCntIdxSizes)
+
+@dataclass(frozen=True)
+class CryNonTransCodex:
+    """
+    CryNonTransCodex is codex all non-transferable derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519N:      str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
+    ECDSA_256k1N:  str = "1AAA"  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    Ed448N:        str = "1AAC"  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+CryNonTransDex = CryNonTransCodex()  #  Make instance
 
 
 class CryMat:
@@ -498,6 +523,16 @@ class CryMat:
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil().encode("utf-8"))
 
+    @property
+    def nontrans(self):
+        """
+        Property transferable:
+        Returns True if identifier has non-transferable derivation code,
+                False otherwise
+        """
+        return(self.code in CryNonTransDex)
+
+
 
 class CryCounter(CryMat):
     """
@@ -611,7 +646,7 @@ class Verfer(CryMat):
             key is bytes public key
         """
         try:  # verify returns None if valid else raises ValueError
-            result = pysodium.crypto_sign_verify_detached(sig, ser, key)
+            pysodium.crypto_sign_verify_detached(sig, ser, key)
         except Exception as ex:
             return False
 
@@ -772,7 +807,7 @@ def generateSigners(root=None, count=8, transferable=True):
             in list are derived
             random root created if not provided
         count is number of signers in list
-        transferable is boolean true means verfers codes are transferable
+        transferable is boolean true means signer.verfer code is transferable
                                 non-transferable otherwise
     """
     if not root:
@@ -793,19 +828,17 @@ def generateSigners(root=None, count=8, transferable=True):
 
     return signers
 
-def generateSecrets(root=None, count=8, transferable=True):
+def generateSecrets(root=None, count=8):
     """
-    Returns list of fully qualified Base64 secret seeds for Ed25519
+    Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
 
     Parameters:
         root is bytes 16 byte long root key (salt/seed) from which seeds for Signers
             in list are derived
             random root created if not provided
         count is number of signers in list
-        transferable is boolean true means verfers codes are transferable
-                                non-transferable otherwise
     """
-    signers = generateSigners(root=root, count=count, transferable=transferable)
+    signers = generateSigners(root=root, count=count)
 
     return [signer.qb64 for signer in signers]  #  fetch the qb64
 

@@ -27,6 +27,7 @@ from ..db.dbing import dgKey, snKey, Logger
 
 from .coring import Versify, Serials, Ilks, CryOneDex
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder
+from .coring import CryCounter, Sigver
 from .coring import SigCounter, Siger
 
 ICP_LABELS = ["vs", "pre", "sn", "ilk", "sith", "keys", "nxt",
@@ -775,7 +776,7 @@ class Kever:
 class Kevery:
     """
     Kevery is Kever (KERI key event verifier) instance factory which are
-    extracted from a key event stream of event and attached signatures
+    extracted from a key event stream of a series of event with attached signatures
 
     Only supports current version VERSION
 
@@ -802,10 +803,27 @@ class Kevery:
         self.logger = logger
 
 
-    def extractOne(self, kes, framed=True):
+    def processAll(self, kes):
+        """
+        Process all messages in key event stream
+        """
+        if not isinstance(kes, bytearray):  # destructive processing
+            kes = bytearray(kes)
+
+        while kes:
+            try:
+                self.processOne(kes=kes, framed=self.framed)
+            except Exception as ex:
+                # log diagnostics errors etc
+                #
+                del kes[:]  #  delete rest of stream
+                continue
+
+
+    def processOne(self, kes, framed=True):
         """
         Extract one event with attached signatures from key event stream kes
-        Returns: (serder, sigers)
+        And dispatch processing of event, receipt, etc
 
         Parameters:
             kes is bytearray of serialized key event stream.
@@ -831,45 +849,86 @@ class Kevery:
 
         del kes[:serder.size]  # strip off event from front of kes
 
-        # extact sig counter if any
-        try:
-            counter = SigCounter(qb64=kes)  # qb64
-            nsigs = counter.count
-            del kes[:len(counter.qb64)]  # strip off counter
-        except ValidationError as ex:
-            nsigs = 0  # no signature count
+        ilk = serder.ked['ilk']  # dispatch abased on ilk
 
-        # extract attached sigs as Sigers
-        sigers = []  # list of Siger instances for attached indexed signatures
-        if nsigs:
-            for i in range(nsigs): # extract each attached signature
-                # check here for type of attached signatures qb64 or qb2
-                siger = Siger(qb64=kes)  # qb64
-                sigers.append(siger)
-                del kes[:len(siger.qb64)]  # strip off signature
+        if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
+            # extract sig counter if any for attached sigs
+            try:
+                counter = SigCounter(qb64=kes)  # qb64
+                nsigs = counter.count
+                del kes[:len(counter.qb64)]  # strip off counter
+            except ValidationError as ex:
+                nsigs = 0  # no signature count
 
-        else:  # no info on attached sigs
-            if framed:  # parse for signatures until end-of-stream
-                while kes:
+            # extract attached sigs as Sigers
+            sigers = []  # list of Siger instances for attached indexed signatures
+            if nsigs:
+                for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
                     siger = Siger(qb64=kes)  # qb64
                     sigers.append(siger)
                     del kes[:len(siger.qb64)]  # strip off signature
 
-        if not sigers:
-            raise ValidationError("Missing attached signature(s).")
+            else:  # no info on attached sigs
+                if framed:  # parse for signatures until end-of-stream
+                    while kes:
+                        # check here for type of attached signatures qb64 or qb2
+                        siger = Siger(qb64=kes)  # qb64
+                        sigers.append(siger)
+                        del kes[:len(siger.qb64)]  # strip off signature
 
-        return (serder, sigers)
+            if not sigers:
+                raise ValidationError("Missing attached signature(s).")
+
+            self.processEvent(serder, sigers)
+
+        elif ilk in [Ilks.rct]:  # event receipt msg
+            # extract cry counter if any for attached receipt couplets
+            try:
+                counter = CryCounter(qb64=kes)  # qb64
+                ncpts = counter.count
+                del kes[:len(counter.qb64)]  # strip off counter
+            except ValidationError as ex:
+                ncpts = 0  # no couplets count
+
+            # extract attached rct couplets into list of sigvers
+            # verfer property of sigver is the identifier prefix
+            # sigver itself is teh attached signature
+            sigvers = []  # List of sigvers to hold couplets
+            if ncpts:
+                for i in range(ncpts): # extract each attached couplet
+                    # check here for type of attached couplets qb64 or qb2
+                    verfer = Verfer(qb64=kes)  # qb64
+                    del kes[:len(verfer.qb64)]  # strip off identifier prefix
+                    sigver = Sigver(qb64=kes, verfer=verfer)  # qb64
+                    sigvers.append(sigver)
+                    del kes[:len(sigver.qb64)]  # strip off signature
+
+            else:  # no info on attached receipt couplets
+                if framed:  # parse for receipts until end-of-stream
+                    while kes:
+                        # check here for type of attached receipts qb64 or qb2
+                        verfer = Verfer(qb64=kes)  # qb64
+                    del kes[:len(verfer.qb64)]  # strip off identifier prefix
+                    sigver = Sigver(qb64=kes, verfer=verfer)  # qb64
+                    sigvers.append(sigver)
+                    del kes[:len(sigver.qb64)]  # strip off signature
+
+            if not sigvers:
+                raise ValidationError("Missing attached receipt couplet(s).")
+
+            self.processReceipt(serder, sigvers)
+
+        else:
+            raise ValidationError("Unexpected message ilk = {}.".format(ilk))
 
 
-    def processOne(self, serder, sigers):
+    def processEvent(self, serder, sigers):
         """
         Process one event serder with attached indexd signatures sigers
 
         Parameters:
-            kes is bytearray of serialized key event stream.
-                May contain one or more sets each of a serialized event with
-                attached signatures.
+
 
         """
         # fetch ked ilk  pre, sn, dig to see how to process
@@ -950,27 +1009,49 @@ class Kevery:
                     self.logger.addLdes(snKey(pre, sn), dig)
 
 
-    def processAll(self, kes):
+    def processReceipt(self, serder, sigvers):
         """
+        Process one receipt serder with attached sigvers
 
+        Parameters:
+            serder is
+            sigvers is list of Sigver instances that contain receipt couplet
+
+        Receipt dict labels
+            vs  # version string
+            pre  # qb64 prefix
+            sn  # hex string no leading zeros lowercase
+            ilk
+            dig  # qb64 digest of receipted event
         """
-        if not isinstance(kes, bytearray):  # destructive processing
-            kes = bytearray(kes)
+        # fetch  pre, sn, ilk  dig to process
+        ked = serder.ked
+        pre = ked["pre"]
+        # ilk = ked["ilk"]
+        dig = ked["dig"]
+        # retrieve event
+        key = dgKey(pre=pre, dig=dig)
+        eraw = self.logger.getEvt(key=key)
+        if eraw is None:  # escrow each couplet
+            for sigver in sigvers:
+                if not sigver.verfer.nontrans:# check that verfer is non-transferable
+                    contine  # skip invalid couplets
+                couplet = sigver.verfer.qb64b + sigver.qb64b
+                self.logger.setUre(key=dgKey(pre=sigver.verfer.qb64b, dig=dig),
+                                   val=couplet)
+        else:
+            eserder = Serder(raw=bytes(eraw))  # deserialize event raw
+            # process each couplet verify sig and write to db
+            for sigver in sigvers:
+                if not sigver.verfer.nontrans:# check that verfer is non-transferable
+                    contine  # skip invalid couplets
+                if sigver.verfer.verify(sigver.raw, eserder.raw):
+                    # write receipt couplet to database
+                    couplet = sigver.verfer.qb64b + sigver.qb64b
+                    self.logger.addRct(key=key, val=couplet)
 
-        while kes:
-            try:
-                serder, sigers = self.extractOne(kes=kes, framed=self.framed)
-            except Exception as ex:
-                # log diagnostics errors etc
-                # error extracting means bad key event stream
-                del kes[:]  #  delete rest of stream
-                continue
 
-            try:
-                self.processOne(serder=serder, sigers=sigers)
-            except Exception as  ex:
-                # log diagnostics errors etc
-                continue
+
 
 
     def duplicity(self, serder, sigers):

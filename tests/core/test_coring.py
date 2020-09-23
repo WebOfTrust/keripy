@@ -163,6 +163,7 @@ def test_crymat():
     assert crymat.code == CryOneDex.Ed25519N
     assert crymat.qb64 == prefix
     assert crymat.qb2 == prebin
+    assert crymat.nontrans == True
 
     assert crymat.qb64 == encodeB64(crymat.qb2).decode("utf-8")
     assert crymat.qb2 == decodeB64(crymat.qb64.encode("utf-8"))
@@ -227,6 +228,7 @@ def test_crymat():
     assert crymat.code == CryTwoDex.Ed25519
     assert crymat.qb64 == qsig64
     assert crymat.qb2 == qbin
+    assert crymat.nontrans == False
 
     crymat = CryMat(qb64=qsig64)
     assert crymat.raw == sig
