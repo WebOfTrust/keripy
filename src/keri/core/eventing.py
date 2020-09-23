@@ -1017,9 +1017,56 @@ class Kevery:
             serder is
             sigvers is list of Sigver instances that contain receipt couplet
 
+
+            vs  # version string
+            pre  # qb64 prefix
+            sn  # hex string no leading zeros lowercase
+            ilk
+            dig,  # qb64 digest of receipted event
+
+
+
         """
-        # fetch ked ilk  pre, sn, dig to see how to process
+        # fetch  pre, sn, ilk  dig to process
         ked = serder.ked
+        pre = ked["pre"]
+        # ilk = ked["ilk"]
+        dig = ked["dig"]
+        # retrieve event
+        eraw = self.logger.getEvt(key=dgKey(pre=pre, dig=dig))
+        if eraw is None:  # escrow receipt
+            pass
+
+        else:
+            # verify pre, sn
+            eserder = Serder(raw=bytes(eraw))  # deserialize event raw
+            eked = eserder.ked
+            if pre != eked["pre"]:
+                raise ValidationError("Mismatch receipt pre = {} not {}."
+                                      "".format(pre, eked["pre"]))
+            if ked["sn"] != eked["sn"]:
+                raise ValidationError("Mismatch receipt sn = {} not {}."
+                                      "".format(ked["sn"], eked["sn"]))
+
+            # verify sigs
+            for sigver in sigvers:
+
+                if not sigver.verfer.verify(sigver.raw, eserder.raw):
+                    raise ValidationError("Invalid receipter = {}, signature"
+                                          " = {}.".format(sigver.verfer.qb64,
+                                                          sigver.qb64))
+
+            # write receipt couplet to database
+
+            sn = ked["sn"]
+            if len(sn) > 32:
+                raise ValidationError("Invalid sn = {} too large.".format(sn))
+            try:
+                sn = int(sn, 16)
+            except Exception as ex:
+                raise ValidationError("Invalid sn = {}".format(sn))
+
+
 
 
 

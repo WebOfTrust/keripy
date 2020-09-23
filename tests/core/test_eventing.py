@@ -1357,8 +1357,9 @@ def test_receipt():
         reserder = receipt(pre=coeKever.prefixer.qb64,
                            dig=coeKever.diger.qb64,
                            sn=coeKever.sn)
-        valsig = valSigner.sign(ser=reserder.raw)  # return Sigver if no index
-        assert valsig.qb64 == '0BITlulyapi_5HotG0u3MjPulfOe1IjKN1Xv1Rr081DdzPVSgUYePwKmyoOS63ig08bx4DrpEFRoftU0FDClIYDA'
+        # sign event not receipt
+        valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
+        assert valSigver.qb64 == '0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg'
         recnt = CryCounter(count=1)
         assert recnt.qb64 == '-AAB'
         #create receipt msg stream
@@ -1366,12 +1367,13 @@ def test_receipt():
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
         res.extend(valPrefixer.qb64b)
-        res.extend(valsig.qb64b)
+        res.extend(valSigver.qb64b)
         assert res == bytearray(b'{"vs":"KERI10JSON000099_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
                                 b'ZOoeKtWTOunRA","sn":"0","ilk":"rct","dig":"EgCvROg0cKXF_u_K0WH33'
                                 b'PPB77bjZpIlgLy99xmYrHlM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzh'
-                                b'DNZlEKiMc0BITlulyapi_5HotG0u3MjPulfOe1IjKN1Xv1Rr081DdzPVSgUYePwK'
-                                b'myoOS63ig08bx4DrpEFRoftU0FDClIYDA')
+                                b'DNZlEKiMc0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ'
+                                b'3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg')
+
 
         coeKevery.processAll(kes=res)  #  coe process the receipt from val
 

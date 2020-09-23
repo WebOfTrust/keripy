@@ -611,7 +611,7 @@ class Verfer(CryMat):
             key is bytes public key
         """
         try:  # verify returns None if valid else raises ValueError
-            result = pysodium.crypto_sign_verify_detached(sig, ser, key)
+            pysodium.crypto_sign_verify_detached(sig, ser, key)
         except Exception as ex:
             return False
 
