@@ -1324,6 +1324,9 @@ def test_receipt():
         kes = bytearray()
         sn = esn = 0  # sn and last establishment sn = esn
 
+        #create receipt msg stream
+        res = bytearray()
+
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[coeSigners[esn].verfer.qb64],
                         nxt=Nexter(keys=[coeSigners[esn+1].verfer.qb64]).qb64)
@@ -1352,8 +1355,7 @@ def test_receipt():
         assert len(kes) ==  0
 
 
-        #create receipt from val to coe
-
+        # create receipt from val to coe
         reserder = receipt(pre=coeKever.prefixer.qb64,
                            dig=coeKever.diger.qb64,
                            sn=coeKever.sn)
@@ -1362,8 +1364,7 @@ def test_receipt():
         assert valSigver.qb64 == '0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg'
         recnt = CryCounter(count=1)
         assert recnt.qb64 == '-AAB'
-        #create receipt msg stream
-        res = bytearray()
+
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
         res.extend(valPrefixer.qb64b)
@@ -1377,6 +1378,21 @@ def test_receipt():
 
         coeKevery.processAll(kes=res)  #  coe process the receipt from val
 
+        # create receipt to escrow use invalid dig so not in db
+        fake = reserder.dig  # some other dig
+        reserder = receipt(pre=coeKever.prefixer.qb64,
+                           dig=fake,
+                           sn=coeKever.sn)
+        # sign event not receipt
+        valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
+        recnt = CryCounter(count=1)
+        # attach to receipt msg stream
+        res.extend(reserder.raw)
+        res.extend(recnt.qb64b)
+        res.extend(valPrefixer.qb64b)
+        res.extend(valSigver.qb64b)
+
+        coeKevery.processAll(kes=res)  #  coe process the escrow receipt from val
 
 
         # Next Event Rotation Transferable

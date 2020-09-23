@@ -1033,38 +1033,23 @@ class Kevery:
         # ilk = ked["ilk"]
         dig = ked["dig"]
         # retrieve event
-        eraw = self.logger.getEvt(key=dgKey(pre=pre, dig=dig))
-        if eraw is None:  # escrow receipt
-            pass
-
-        else:
-            # verify pre, sn
-            eserder = Serder(raw=bytes(eraw))  # deserialize event raw
-            eked = eserder.ked
-            if pre != eked["pre"]:
-                raise ValidationError("Mismatch receipt pre = {} not {}."
-                                      "".format(pre, eked["pre"]))
-            if ked["sn"] != eked["sn"]:
-                raise ValidationError("Mismatch receipt sn = {} not {}."
-                                      "".format(ked["sn"], eked["sn"]))
-
-            # verify sigs
+        key = dgKey(pre=pre, dig=dig)
+        eraw = self.logger.getEvt(key=key)
+        if eraw is None:  # escrow each couplet
             for sigver in sigvers:
-
-                if not sigver.verfer.verify(sigver.raw, eserder.raw):
-                    raise ValidationError("Invalid receipter = {}, signature"
-                                          " = {}.".format(sigver.verfer.qb64,
-                                                          sigver.qb64))
-
-            # write receipt couplet to database
-
-            sn = ked["sn"]
-            if len(sn) > 32:
-                raise ValidationError("Invalid sn = {} too large.".format(sn))
-            try:
-                sn = int(sn, 16)
-            except Exception as ex:
-                raise ValidationError("Invalid sn = {}".format(sn))
+                # check that verfer is non-transferable
+                couplet = sigver.verfer.qb64b + sigver.qb64b
+                self.logger.setUre(key=dgKey(pre=sigver.verfer.qb64b, dig=dig),
+                                   val=couplet)
+        else:
+            eserder = Serder(raw=bytes(eraw))  # deserialize event raw
+            # process each couplet verify sig and write to db
+            for sigver in sigvers:
+                #  check that verfer prefix is non-transferable
+                if sigver.verfer.verify(sigver.raw, eserder.raw):
+                    # write receipt couplet to database
+                    couplet = sigver.verfer.qb64b + sigver.qb64b
+                    self.logger.addRct(key=key, val=couplet)
 
 
 
