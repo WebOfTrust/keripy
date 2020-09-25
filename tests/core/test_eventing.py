@@ -1395,9 +1395,9 @@ def test_receipt():
 
         coeKevery.processAll(kes=res)  #  coe process the escrow receipt from val
         #  check if in escrow database
-        result = coeKevery.logger.getUre(key=dgKey(pre=valPrefixer.qb64b,
-                                     dig=fake))
-        assert bytes(result) == valPrefixer.qb64b + valSigver.qb64b
+        result = coeKevery.logger.getUres(key=dgKey(pre=coeKever.prefixer.qb64,
+                                                 dig=fake))
+        assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
 
         # Next Event Rotation Transferable
         sn += 1

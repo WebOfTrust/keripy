@@ -1031,8 +1031,7 @@ class Kevery:
                 if not sigver.verfer.nontrans:# check that verfer is non-transferable
                     contine  # skip invalid couplets
                 couplet = sigver.verfer.qb64b + sigver.qb64b
-                self.logger.setUre(key=dgKey(pre=sigver.verfer.qb64b, dig=dig),
-                                   val=couplet)
+                self.logger.addUre(key=key, val=couplet)
         else:
             eserder = Serder(raw=bytes(eraw))  # deserialize event raw
             # process each couplet verify sig and write to db
