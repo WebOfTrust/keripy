@@ -159,14 +159,13 @@ def test_keyeventfuncs():
 
 
 
-    serder3 = receipt(pre=pre, dig=serder2.dig, sn=2)
+    serder3 = receipt(pre=pre, dig=serder2.dig)
     assert serder2.ked["pre"] == pre
-    assert serder3.ked["sn"] == '2'
     assert serder3.ked["ilk"] == Ilks.rct
     assert serder3.ked["dig"] == serder2.dig
-    assert serder3.raw == (b'{"vs":"KERI10JSON000099_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","sn":"2","ilk":"rct","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"'
-                           b'}')
+    assert serder3.raw == (b'{"vs":"KERI10JSON000090_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                           b'c","ilk":"rct","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"}')
+
 
 
     """ Done Test """
@@ -1357,8 +1356,7 @@ def test_receipt():
 
         # create receipt from val to coe
         reserder = receipt(pre=coeKever.prefixer.qb64,
-                           dig=coeKever.diger.qb64,
-                           sn=coeKever.sn)
+                           dig=coeKever.diger.qb64)
         # sign event not receipt
         valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
         assert valSigver.qb64 == '0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg'
@@ -1369,11 +1367,11 @@ def test_receipt():
         res.extend(recnt.qb64b)
         res.extend(valPrefixer.qb64b)
         res.extend(valSigver.qb64b)
-        assert res == bytearray(b'{"vs":"KERI10JSON000099_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
-                                b'ZOoeKtWTOunRA","sn":"0","ilk":"rct","dig":"EgCvROg0cKXF_u_K0WH33'
-                                b'PPB77bjZpIlgLy99xmYrHlM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzh'
-                                b'DNZlEKiMc0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ'
-                                b'3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg')
+        assert res == bytearray(b'{"vs":"KERI10JSON000090_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
+                                b'ZOoeKtWTOunRA","ilk":"rct","dig":"EgCvROg0cKXF_u_K0WH33PPB77bjZp'
+                                b'IlgLy99xmYrHlM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
+                                b'0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ3r_b-X6FB'
+                                b'8HaEIv-TPtaTmFg78yhv8lCg')
 
         coeKevery.processAll(kes=res)  #  coe process the receipt from val
         #  check if in receipt database
@@ -1385,8 +1383,7 @@ def test_receipt():
         # create receipt to escrow use invalid dig so not in db
         fake = reserder.dig  # some other dig
         reserder = receipt(pre=coeKever.prefixer.qb64,
-                           dig=fake,
-                           sn=coeKever.sn)
+                           dig=fake)
         # sign event not receipt
         valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
         recnt = CryCounter(count=1)
@@ -1398,9 +1395,9 @@ def test_receipt():
 
         coeKevery.processAll(kes=res)  #  coe process the escrow receipt from val
         #  check if in escrow database
-        result = coeKevery.logger.getUre(key=dgKey(pre=valPrefixer.qb64b,
-                                     dig=fake))
-        assert bytes(result) == valPrefixer.qb64b + valSigver.qb64b
+        result = coeKevery.logger.getUres(key=dgKey(pre=coeKever.prefixer.qb64,
+                                                 dig=fake))
+        assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
 
         # Next Event Rotation Transferable
         sn += 1

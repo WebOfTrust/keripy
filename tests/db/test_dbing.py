@@ -229,6 +229,7 @@ def test_logger():
     assert isinstance(logger.sigs, lmdb._Database)
     assert isinstance(logger.dtss, lmdb._Database)
     assert isinstance(logger.rcts, lmdb._Database)
+    assert isinstance(logger.ures, lmdb._Database)
     assert isinstance(logger.kels, lmdb._Database)
     assert isinstance(logger.ooes, lmdb._Database)
     assert isinstance(logger.pses, lmdb._Database)
@@ -252,6 +253,7 @@ def test_logger():
         assert isinstance(logger.sigs, lmdb._Database)
         assert isinstance(logger.dtss, lmdb._Database)
         assert isinstance(logger.rcts, lmdb._Database)
+        assert isinstance(logger.ures, lmdb._Database)
         assert isinstance(logger.kels, lmdb._Database)
         assert isinstance(logger.ooes, lmdb._Database)
         assert isinstance(logger.pses, lmdb._Database)
@@ -372,21 +374,29 @@ def test_logger():
         assert lgr.delRcts(key) == True
         assert lgr.getRcts(key) == []
 
-        # test .ures sub db methods
-        key = dgKey(wit0b, digb)
-        val1 = preb + sig0b
-        val2 = preb + sig1b
+        # test .ures sub db methods dgKey
+        # dup vals are lexocographic
+        assert lgr.putUres(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert lgr.getUres(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.cntUres(key) == 4
+        assert lgr.putUres(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getUres(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.addUre(key, b'a') == False   # duplicate
+        assert lgr.addUre(key, b'b') == True
+        assert lgr.getUres(key) == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in lgr.getUresIter(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert lgr.delUres(key) == True
+        assert lgr.getUres(key) == []
 
-        assert lgr.getUre(key) == None
-        assert lgr.delUre(key) == False
-        assert lgr.putUre(key, val1) == True
-        assert lgr.getUre(key) == val1
-        assert lgr.putUre(key, val2) == False
-        assert lgr.getUre(key) == val1
-        assert lgr.setUre(key, val2) == True
-        assert lgr.getUre(key) == val2
-        assert lgr.delUre(key) == True
-        assert lgr.getUre(key) == None
+        assert lgr.putUres(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
+        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.putUres(key, vals=[wit1b + wsig1b]) == True
+        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.delUres(key) == True
+        assert lgr.putUres(key, vals=[wit1b + wsig1b, wit0b + wsig0b]) == True
+        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.delUres(key) == True
+        assert lgr.getUres(key) == []
 
 
         # test .kels insertion order dup methods.  dup vals are insertion order
@@ -672,4 +682,4 @@ def test_uselogger():
     """ End Test """
 
 if __name__ == "__main__":
-    test_fetchkeldel()
+    test_logger()

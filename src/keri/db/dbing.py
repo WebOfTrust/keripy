@@ -704,9 +704,9 @@ class Logger(Databaser):
             for corresponding event plus fully qualified event signature
             by witness or validator
             dgKey
-            SB is keyed by witness or epheral validator prefix plus digest
+            SB is keyed by controller prefix plus digest
             of serialized event
-            Only one value per DB key is allowed
+            More than one value per DB key is allowed
 
         .kels is named sub DB of key event log tables that map sequence numbers
             to serialized event digests.
@@ -776,7 +776,7 @@ class Logger(Databaser):
         self.dtss = self.env.open_db(key=b'dtss.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
-        self.ures = self.env.open_db(key=b'ures.')
+        self.ures = self.env.open_db(key=b'ures.', dupsort=True)
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
@@ -992,43 +992,65 @@ class Logger(Databaser):
         return self.delVals(self.rcts, key)
 
 
-    def putUre(self, key, val):
+    def putUres(self, key, vals):
         """
         Use dgKey()
-        Write prefix plus signature couplet val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Returns False if key already exists
+        Write each entry from list of bytes receipt couplets vals to key
+        Adds to existing receipts at key if any
+        Returns True If no error
+        Apparently always returns True (is this how .put works with dupsort=True)
+        Duplicates are inserted in lexocographic order not insertion order.
         """
-        return self.putVal(self.ures, key, val)
+        return self.putVals(self.ures, key, vals)
 
 
-    def setUre(self, key, val):
-        """
-        Use dgKey()
-        Write prefix plus signature couplet val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.ures, key, val)
-
-
-    def getUre(self, key):
+    def addUre(self, key, val):
         """
         Use dgKey()
-        Return val recipt couplet of prefix plus signature at key
-        Returns None if no entry at key
+        Add receipt couplet val bytes as dup to key in db
+        Adds to existing values at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in lexocographic order not insertion order.
         """
-        return self.getVal(self.ures, key)
+        return self.addVal(self.ures, key, val)
 
 
-    def delUre(self, key):
+    def getUres(self, key):
         """
         Use dgKey()
-        Deletes value at key.
+        Return list of receipt couplets at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getVals(self.ures, key)
+
+
+    def getUresIter(self, key):
+        """
+        Use dgKey()
+        Return iterator of receipt couplets at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getValsIter(self.ures, key)
+
+
+    def cntUres(self, key):
+        """
+        Use dgKey()
+        Return count of receipt couplets at key
+        Returns zero if no entry at key
+        """
+        return self.cntVals(self.ures, key)
+
+
+    def delUres(self, key):
+        """
+        Use dgKey()
+        Deletes all values at key.
         Returns True If key exists in database Else False
         """
-        return self.delVal(self.ures, key)
+        return self.delVals(self.ures, key)
 
 
     def putKes(self, key, vals):
