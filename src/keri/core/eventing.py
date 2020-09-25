@@ -293,7 +293,6 @@ def interact( pre,
 
 def receipt( pre,
              dig,
-             sn=0,
              version=Version,
              kind=Serials.json
           ):
@@ -305,7 +304,6 @@ def receipt( pre,
      Parameters:
         pre
         dig
-        sn
         version
         kind
 
@@ -313,13 +311,9 @@ def receipt( pre,
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.rct
 
-    if sn < 0:
-        raise ValueError("Invalid sn = {} for rct.".format(sn))
-
     ked = dict(vs=vs,  # version string
                pre=pre,  # qb64 prefix
-               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-               ilk=ilk,
+               ilk=ilk,  #  Ilks.rct
                dig=dig,  # qb64 digest of receipted event
                )
 
