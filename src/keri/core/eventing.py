@@ -59,6 +59,16 @@ TraitDex = TraitCodex()  # Make instance
 
 Location = namedtuple("Location", 'sn dig')  # Location of key event
 
+SealDigest = namedtuple("SealDigest", 'dig')  # Digest Seal
+
+SealRoot = namedtuple("SealRoot", 'root')  # Root Seal
+
+SealEvent = namedtuple("SealEvent", 'pre dig')  # Event Seal
+
+SealLocation = namedtuple("SealLocation", 'pre sn ilk dig')  # Event Location Seal
+
+
+
 
 def incept(
             keys,
@@ -319,7 +329,35 @@ def receipt( pre,
 
     return Serder(ked=ked)  # return serialized ked
 
+def valreceipt( pre,
+                dig,
+                seal,
+                version=Version,
+                kind=Serials.json
+                ):
 
+    """
+    Returns serder of event receipt message.
+    Utility function to automate creation of interaction events.
+
+     Parameters:
+        pre
+        dig
+        seal
+        version
+        kind
+
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.vrc
+
+    ked = dict(vs=vs,  # version string
+               pre=pre,  # qb64 prefix
+               ilk=ilk,  #  Ilks.rct
+               dig=dig,  # qb64 digest of receipted event
+               )
+
+    return Serder(ked=ked)  # return serialized ked
 
 class Kever:
     """

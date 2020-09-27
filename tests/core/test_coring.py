@@ -37,6 +37,37 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
+def test_ilks():
+    """
+    Test Ilkage namedtuple instance Ilks
+    """
+    assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
+                          rct='rct', vrc='vrc')
+
+    assert isinstance(Ilks, Ilkage)
+
+    assert 'icp' in Ilks
+    assert Ilks.icp == 'icp'
+
+    assert 'rot' in Ilks
+    assert Ilks.rot == 'rot'
+
+    assert 'ixn' in Ilks
+    assert Ilks.ixn == 'ixn'
+
+    assert 'dip' in Ilks
+    assert Ilks.dip == 'dip'
+
+    assert 'drt' in Ilks
+    assert Ilks.drt == 'drt'
+
+    assert 'rct' in Ilks
+    assert Ilks.rct == 'rct'
+
+    assert 'vrc' in Ilks
+    assert Ilks.vrc == 'vrc'
+
+    """End Test """
 
 
 def test_cryderivationcodes():

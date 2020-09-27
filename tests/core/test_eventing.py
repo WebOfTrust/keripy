@@ -36,26 +36,6 @@ from keri.core.eventing import incept, rotate, interact, receipt, Kever, Kevery
 
 from keri.db.dbing import dgKey, snKey, openLogger, Logger
 
-def test_ilks():
-    """
-    Test Ilkage namedtuple instance Ilks
-    """
-    assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
-                          rct='rct')
-
-    assert isinstance(Ilks, Ilkage)
-
-    assert Ilks.icp == 'icp'
-    assert Ilks.rot == 'rot'
-    assert Ilks.ixn == 'ixn'
-    assert Ilks.dip == 'dip'
-    assert Ilks.drt == 'drt'
-
-    assert 'icp' in Ilks
-    assert 'rot' in Ilks
-    assert 'ixn' in Ilks
-    assert 'dip' in Ilks
-    assert 'drt' in Ilks
 
 def test_keyeventfuncs():
     """
@@ -1539,6 +1519,279 @@ def test_receipt():
 
     """ Done Test """
 
+def test_val_receipt():
+    """
+    Test event receipt message and attached couplets
+    """
+    # manual process to generate a list of secrets
+    # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    # secrets = generateSecrets(root=root, count=8)
+
+
+    #  Direct Mode coe is controller, val is validator
+
+    # set of secrets  (seeds for private keys)
+    coeSecrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
+
+    #  create signers
+    coeSigners = [Signer(qb64=secret) for secret in coeSecrets]
+    assert [signer.qb64 for signer in coeSigners] == coeSecrets
+
+    # set of secrets (seeds for private keys)
+    valSecrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                  'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                  'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
+                  'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
+                  'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                  'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                  'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
+                  'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
+
+    #  create signers
+    valSigners = [Signer(qb64=secret) for secret in valSecrets]
+    assert [signer.qb64 for signer in valSigners] == valSecrets
+
+    # create receipt signer prefixer  default code is non-transferable
+    valSigner = Signer(qb64=valSecrets[0], transferable=False)
+    valPrefixer = Prefixer(qb64=valSigner.verfer.qb64, )
+    assert valPrefixer.code == CryOneDex.Ed25519N
+    valpre = valPrefixer.qb64
+    assert valpre == 'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
+
+    with openLogger("controller") as coeLogger, openLogger("validator") as valLogger:
+        coeKevery = Kevery(logger=coeLogger)
+        valKevery = Kevery(logger=valLogger)
+        event_digs = [] # list of event digs in sequence to verify against database
+
+        # create event stream
+        kes = bytearray()
+        sn = esn = 0  # sn and last establishment sn = esn
+
+        #create receipt msg stream
+        res = bytearray()
+
+        # Event 0  Inception Transferable (nxt digest not empty)
+        serder = incept(keys=[coeSigners[esn].verfer.qb64],
+                        nxt=Nexter(keys=[coeSigners[esn+1].verfer.qb64]).qb64)
+
+        assert sn == int(serder.ked["sn"], 16) == 0
+        coepre = serder.ked['pre']
+        assert coepre == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = coeSigners[esn].sign(serder.raw, index=0)  # return Siger if index
+
+        #  attach to key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+        # make copy of kes so can use again for valKevery
+        coeKevery.processAll(kes=bytearray(kes))  # create Kever using Kevery
+        coeKever = coeKevery.kevers[coepre]
+        assert coeKever.prefixer.qb64 == coepre
+        valKevery.processAll(kes=kes)
+        assert coepre in valKevery.kevers
+        valKever = valKevery.kevers[coepre]
+        assert len(kes) ==  0
+
+
+        # create receipt from val to coe
+        reserder = receipt(pre=coeKever.prefixer.qb64,
+                           dig=coeKever.diger.qb64)
+        # sign event not receipt
+        valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
+        assert valSigver.qb64 == '0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg'
+        recnt = CryCounter(count=1)
+        assert recnt.qb64 == '-AAB'
+
+        res.extend(reserder.raw)
+        res.extend(recnt.qb64b)
+        res.extend(valPrefixer.qb64b)
+        res.extend(valSigver.qb64b)
+        assert res == bytearray(b'{"vs":"KERI10JSON000090_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
+                                b'ZOoeKtWTOunRA","ilk":"rct","dig":"EgCvROg0cKXF_u_K0WH33PPB77bjZp'
+                                b'IlgLy99xmYrHlM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
+                                b'0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ3r_b-X6FB'
+                                b'8HaEIv-TPtaTmFg78yhv8lCg')
+
+        coeKevery.processAll(kes=res)  #  coe process the receipt from val
+        #  check if in receipt database
+        result = coeKevery.logger.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
+                                                    dig=coeKever.diger.qb64))
+        assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
+
+
+        # create receipt to escrow use invalid dig so not in db
+        fake = reserder.dig  # some other dig
+        reserder = receipt(pre=coeKever.prefixer.qb64,
+                           dig=fake)
+        # sign event not receipt
+        valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
+        recnt = CryCounter(count=1)
+        # attach to receipt msg stream
+        res.extend(reserder.raw)
+        res.extend(recnt.qb64b)
+        res.extend(valPrefixer.qb64b)
+        res.extend(valSigver.qb64b)
+
+        coeKevery.processAll(kes=res)  #  coe process the escrow receipt from val
+        #  check if in escrow database
+        result = coeKevery.logger.getUres(key=dgKey(pre=coeKever.prefixer.qb64,
+                                                 dig=fake))
+        assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
+
+        # Next Event Rotation Transferable
+        sn += 1
+        esn += 1
+        assert sn == esn == 1
+        serder = rotate(pre=coeKever.prefixer.qb64,
+                        keys=[coeSigners[esn].verfer.qb64],
+                        dig=coeKever.diger.qb64,
+                        nxt=Nexter(keys=[coeSigners[esn+1].verfer.qb64]).qb64,
+                        sn=sn)
+
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = coeSigners[esn].sign(serder.raw, index=0)  # returns siger
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+        coeKevery.processAll(kes=bytearray(kes))  # update key event verifier state
+        valKevery.processAll(kes=kes)
+
+        # Next Event Interaction
+        sn += 1  #  do not increment esn
+        assert sn == 2
+        assert esn == 1
+        serder = interact(pre=coeKever.prefixer.qb64,
+                              dig=coeKever.diger.qb64,
+                              sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = coeSigners[esn].sign(serder.raw, index=0)
+
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+        coeKevery.processAll(kes=bytearray(kes))  # update key event verifier state
+        valKevery.processAll(kes=kes)
+
+        # Next Event Rotation Transferable
+        sn += 1
+        esn += 1
+        assert sn == 3
+        assert esn == 2
+        serder = rotate(pre=coeKever.prefixer.qb64,
+                        keys=[coeSigners[esn].verfer.qb64],
+                        dig=coeKever.diger.qb64,
+                        nxt=Nexter(keys=[coeSigners[esn+1].verfer.qb64]).qb64,
+                        sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = coeSigners[esn].sign(serder.raw, index=0)
+
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+        coeKevery.processAll(kes=bytearray(kes))  # update key event verifier state
+        valKevery.processAll(kes=kes)
+
+        # Next Event Interaction
+        sn += 1  #  do not increment esn
+        assert sn == 4
+        assert esn == 2
+        serder = interact(pre=coeKever.prefixer.qb64,
+                          dig=coeKever.diger.qb64,
+                          sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = coeSigners[esn].sign(serder.raw, index=0)
+
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+        coeKevery.processAll(kes=bytearray(kes))  # update key event verifier state
+        valKevery.processAll(kes=kes)
+
+        # Next Event Interaction
+        sn += 1  #  do not increment esn
+        assert sn == 5
+        assert esn == 2
+        serder = interact(pre=coeKever.prefixer.qb64,
+                          dig=coeKever.diger.qb64,
+                          sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = coeSigners[esn].sign(serder.raw, index=0)
+
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+        coeKevery.processAll(kes=bytearray(kes))  # update key event verifier state
+        valKevery.processAll(kes=kes)
+
+        # Next Event Interaction
+        sn += 1  #  do not increment esn
+        assert sn == 6
+        assert esn == 2
+        serder = interact(pre=coeKever.prefixer.qb64,
+                              dig=coeKever.diger.qb64,
+                              sn=sn)
+        event_digs.append(serder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = coeSigners[esn].sign(serder.raw, index=0)
+
+        #extend key event stream
+        kes.extend(serder.raw)
+        kes.extend(counter.qb64b)
+        kes.extend(siger.qb64b)
+        coeKevery.processAll(kes=bytearray(kes))  # update key event verifier state
+        valKevery.processAll(kes=kes)
+
+
+        assert coeKever.verfers[0].qb64 == coeSigners[esn].verfer.qb64
+
+        db_digs = [bytes(val).decode("utf-8") for val in coeKever.logger.getKelIter(coepre)]
+        assert len(db_digs) == len(event_digs) == 7
+
+
+        assert valKever.sn == coeKever.sn
+        assert valKever.verfers[0].qb64 == coeKever.verfers[0].qb64 == coeSigners[esn].verfer.qb64
+
+    assert not os.path.exists(valKevery.logger.path)
+    assert not os.path.exists(coeKever.logger.path)
+
+    """ Done Test """
+
 
 def test_process_nontransferable():
     """
@@ -1838,4 +2091,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_receipt()
+    test_val_receipt()
