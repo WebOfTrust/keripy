@@ -692,20 +692,41 @@ class Logger(Databaser):
             DB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .rcts is named sub DB of event receipt couplets. Each couplet is
-            concatenation of fully qualified witness or validator prefix plus
-            fully qualified event signature by witness or validator
+        .rcts is named sub DB of event receipt couplets from nontransferable
+            signers. Each couplet is concatenation of fully qualified
+            non-transferale prefix plus fully qualified event signature
+            by witness, watcher, or validator.
             dgKey
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .ures is named sub DB of unverified event receipt escrowed couplets.
-            Each couplet is concatenation of fully qualified identfier prefix
-            for corresponding event plus fully qualified event signature
-            by witness or validator
+        .ures is named sub DB of unverified event receipt escrowed couplets from
+            non-transferable signers. Each couplet is concatenation of fully
+            qualified non-transferable identfier prefix plus fully qualified
+            event signature by witness, watcher, or validator
             dgKey
             SB is keyed by controller prefix plus digest
             of serialized event
+            More than one value per DB key is allowed
+
+        .vrcs is named sub DB of event validator receipt triplets from transferable
+            signers. Each triplet is concatenation of  three fully qualified items
+            of validator. These are transferable prefix, plus latest establishment
+            event digest, plus event signature.
+            When latest establishment event is multisig then there will
+            be multiple triplets one per signing key, each a dup at same db key.
+            dgKey
+            SB is keyed by identifer prefix plus digest of serialized event
+            More than one value per DB key is allowed
+
+        .vres is named sub DB of unverified event validator receipt escrowed
+            triplets from transferable signers. Each triplet is concatenation of
+            three fully qualified items of validator. These are transferable
+            prefix, plus latest establishment event digest, plus event signature.
+            When latest establishment event is multisig then there will
+            be multiple triplets one per signing key, each a dup at same db key.
+            dgKey
+            SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .kels is named sub DB of key event log tables that map sequence numbers
@@ -777,6 +798,8 @@ class Logger(Databaser):
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
         self.ures = self.env.open_db(key=b'ures.', dupsort=True)
+        self.vrcs = self.env.open_db(key=b'vrcs.', dupsort=True)
+        self.vres = self.env.open_db(key=b'vres.', dupsort=True)
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
@@ -1051,6 +1074,128 @@ class Logger(Databaser):
         Returns True If key exists in database Else False
         """
         return self.delVals(self.ures, key)
+
+
+    def putVrcs(self, key, vals):
+        """
+        Use dgKey()
+        Write each entry from list of bytes receipt triplets vals to key
+        Adds to existing receipts at key if any
+        Returns True If no error
+        Apparently always returns True (is this how .put works with dupsort=True)
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        return self.putVals(self.vrcs, key, vals)
+
+
+    def addVrc(self, key, val):
+        """
+        Use dgKey()
+        Add receipt triplet val bytes as dup to key in db
+        Adds to existing values at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        return self.addVal(self.vrcs, key, val)
+
+
+    def getVrcs(self, key):
+        """
+        Use dgKey()
+        Return list of receipt triplet at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getVals(self.vrcs, key)
+
+
+    def getVrcsIter(self, key):
+        """
+        Use dgKey()
+        Return iterator of receipt triplets at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getValsIter(self.vrcs, key)
+
+
+    def cntVrcs(self, key):
+        """
+        Use dgKey()
+        Return count of receipt triplets at key
+        Returns zero if no entry at key
+        """
+        return self.cntVals(self.vrcs, key)
+
+
+    def delVrcs(self, key):
+        """
+        Use dgKey()
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVals(self.vrcs, key)
+
+
+    def putVres(self, key, vals):
+        """
+        Use dgKey()
+        Write each entry from list of bytes receipt triplets vals to key
+        Adds to existing receipts at key if any
+        Returns True If no error
+        Apparently always returns True (is this how .put works with dupsort=True)
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        return self.putVals(self.vres, key, vals)
+
+
+    def addVre(self, key, val):
+        """
+        Use dgKey()
+        Add receipt triplet val bytes as dup to key in db
+        Adds to existing values at key if any
+        Returns True if written else False if dup val already exists
+        Duplicates are inserted in lexocographic order not insertion order.
+        """
+        return self.addVal(self.vres, key, val)
+
+
+    def getVres(self, key):
+        """
+        Use dgKey()
+        Return list of receipt triplet at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getVals(self.vres, key)
+
+
+    def getVresIter(self, key):
+        """
+        Use dgKey()
+        Return iterator of receipt triplets at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in lexocographic order not insertion order.
+        """
+        return self.getValsIter(self.vres, key)
+
+
+    def cntVres(self, key):
+        """
+        Use dgKey()
+        Return count of receipt triplets at key
+        Returns zero if no entry at key
+        """
+        return self.cntVals(self.vres, key)
+
+
+    def delVres(self, key):
+        """
+        Use dgKey()
+        Deletes all values at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVals(self.vres, key)
 
 
     def putKes(self, key, vals):

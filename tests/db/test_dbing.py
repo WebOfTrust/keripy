@@ -263,7 +263,7 @@ def test_logger():
 
     assert not os.path.exists(logger.path)
 
-    preb = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
+    preb = 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
     digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
     sn = 3
     vs = Versify(kind=Serials.json, size=20)
@@ -274,22 +274,28 @@ def test_logger():
                ilk="rot",
                dig=digb.decode("utf-8"))
     skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert skedb == (b'{"vs":"KERI10JSON000014_","pre":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+    assert skedb == (b'{"vs":"KERI10JSON000014_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
                      b'c","sn":"3","ilk":"rot","dig":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4"'
                      b'}')
-
 
     sig0b = 'AAz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'.encode("utf-8")
     sig1b = 'AB_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z'.encode("utf-8")
 
     wit0b = 'BmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGwT'.encode("utf-8")
     wit1b = 'BjhccWzwEHHzq7K0gzmuupUhPx5_yZ-Wk1x4eQPYGGwT'.encode("utf-8")
-    wsig0b = '0A1Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ9'.encode("utf-8")
-    wsig1b = '0A5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2zJ91Timrykocna6Z'.encode("utf-8")
+    wsig0b = '0B1Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ9'.encode("utf-8")
+    wsig1b = '0B5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2zJ91Timrykocna6Z'.encode("utf-8")
+
+    valb = 'EHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhccWzwEH'.encode("utf-8")
+    vdigb = 'EQiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-'.encode("utf-8")
+    vsig0b = 'AAKAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe81Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1yQJmiu5AzJ9'.encode("utf-8")
+    vsig1b = 'AB1KAV2zJ91Timrykocna6Z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz'.encode("utf-8")
+
+
 
     with openLogger() as lgr:
         key = dgKey(preb, digb)
-        assert key == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
+        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
                        b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
 
         #  test .evts sub db methods
@@ -346,7 +352,7 @@ def test_logger():
         assert lgr.delSigs(key) == True
         assert lgr.getSigs(key) == []
 
-        # test .rcts sub db methods
+        # test .rcts sub db methods dgkey
         assert lgr.getRcts(key) == []
         assert lgr.cntRcts(key) == 0
         assert lgr.delRcts(key) == False
@@ -365,16 +371,20 @@ def test_logger():
         assert lgr.getRcts(key) == []
 
         assert lgr.putRcts(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
-        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
         assert lgr.putRcts(key, vals=[wit1b + wsig1b]) == True
-        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
         assert lgr.delRcts(key) == True
         assert lgr.putRcts(key, vals=[wit1b + wsig1b, wit0b + wsig0b]) == True
-        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  # lex order
         assert lgr.delRcts(key) == True
         assert lgr.getRcts(key) == []
 
         # test .ures sub db methods dgKey
+        assert lgr.getUres(key) == []
+        assert lgr.cntUres(key) == 0
+        assert lgr.delUres(key) == False
+
         # dup vals are lexocographic
         assert lgr.putUres(key, vals=[b"z", b"m", b"x", b"a"]) == True
         assert lgr.getUres(key) == [b'a', b'm', b'x', b'z']
@@ -389,14 +399,70 @@ def test_logger():
         assert lgr.getUres(key) == []
 
         assert lgr.putUres(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
-        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
         assert lgr.putUres(key, vals=[wit1b + wsig1b]) == True
-        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
         assert lgr.delUres(key) == True
         assert lgr.putUres(key, vals=[wit1b + wsig1b, wit0b + wsig0b]) == True
-        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]
+        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
         assert lgr.delUres(key) == True
         assert lgr.getUres(key) == []
+
+        # test .vrcs sub db methods dgkey
+        assert lgr.getVrcs(key) == []
+        assert lgr.cntVrcs(key) == 0
+        assert lgr.delVrcs(key) == False
+
+        # dup vals are lexocographic
+        assert lgr.putVrcs(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert lgr.getVrcs(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.cntVrcs(key) == 4
+        assert lgr.putVrcs(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getVrcs(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.addVrc(key, b'a') == False   # duplicate
+        assert lgr.addVrc(key, b'b') == True
+        assert lgr.getVrcs(key) == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in lgr.getVrcsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert lgr.delVrcs(key) == True
+        assert lgr.getVrcs(key) == []
+
+        assert lgr.putVrcs(key, vals=[valb + vdigb + vsig0b, valb + vdigb + vsig1b]) == True
+        assert lgr.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert lgr.putVrcs(key, vals=[valb + vdigb + vsig1b]) == True
+        assert lgr.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert lgr.delVrcs(key) == True
+        assert lgr.putVrcs(key, vals=[ valb + vdigb + vsig1b, valb + vdigb + vsig0b]) == True
+        assert lgr.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert lgr.delVrcs(key) == True
+        assert lgr.getVrcs(key) == []
+
+        # test .vres sub db methods dgKey
+        assert lgr.getVres(key) == []
+        assert lgr.cntVres(key) == 0
+        assert lgr.delVres(key) == False
+
+        # dup vals are lexocographic
+        assert lgr.putVres(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert lgr.getVres(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.cntVres(key) == 4
+        assert lgr.putVres(key, vals=[b'a']) == True   # duplicate
+        assert lgr.getVres(key) == [b'a', b'm', b'x', b'z']
+        assert lgr.addVre(key, b'a') == False   # duplicate
+        assert lgr.addVre(key, b'b') == True
+        assert lgr.getVres(key) == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in lgr.getVresIter(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert lgr.delVres(key) == True
+        assert lgr.getVres(key) == []
+
+        assert lgr.putVres(key, vals=[valb + vdigb + vsig0b, valb + vdigb + vsig1b]) == True
+        assert lgr.getVres(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert lgr.putVres(key, vals=[valb + vdigb + vsig1b]) == True
+        assert lgr.getVres(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert lgr.delVres(key) == True
+        assert lgr.putVres(key, vals=[ valb + vdigb + vsig1b, valb + vdigb + vsig0b]) == True
+        assert lgr.getVres(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert lgr.delVres(key) == True
+        assert lgr.getVres(key) == []
 
 
         # test .kels insertion order dup methods.  dup vals are insertion order
