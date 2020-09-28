@@ -820,8 +820,9 @@ class Kever:
 
 class Kevery:
     """
-    Kevery is Kever (KERI key event verifier) instance factory which are
-    extracted from a key event stream of a series of event with attached signatures
+    Kevery processes an incoming message stream and when appropriate generates
+    an outgoing steam. When the incoming streams includes key event messages
+    then Kevery acts a Kever (KERI key event verifier) factory.
 
     Only supports current version VERSION
 
@@ -855,8 +856,8 @@ class Kevery:
 
     def processAll(self, ims=None):
         """
-        Process all messages in key event stream kes when provided
-        Otherwise process all messages in .ims
+        Process all messages from incoming message stream, ims, when provided
+        Otherwise process all messages from .ims
         """
         if ims is not None:
             if not isinstance(ims, bytearray):  # destructive processing
@@ -889,11 +890,11 @@ class Kevery:
                 one event and one set of attached signatures per invocation.
 
         """
-        # deserialize packet from kes
+        # deserialize packet from ims
         try:
             serder = Serder(raw=ims)
         except Exception as ex:
-            raise ValidationError("Error while processing key event stream"
+            raise ValidationError("Error while processing message stream"
                                   " = {}".format(ex))
 
         version = serder.version
@@ -901,7 +902,7 @@ class Kevery:
             raise VersionError("Unsupported version = {}, expected {}."
                                   "".format(version, Version))
 
-        del ims[:serder.size]  # strip off event from front of kes
+        del ims[:serder.size]  # strip off event from front of ims
 
         ilk = serder.ked['ilk']  # dispatch abased on ilk
 
