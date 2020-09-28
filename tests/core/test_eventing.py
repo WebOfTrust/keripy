@@ -1781,6 +1781,13 @@ def test_direct_mode():
         vmsg = bytearray(reserder.raw)
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
+        assert vmsg == bytearray(b'{"vs":"KERI10JSON000103_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLy'
+                                 b'DsojFXotBXdSo","ilk":"vrc","dig":"E3hXDlXQIo72y6QIXrmDF_LMujuD9x'
+                                 b'Tmik-1WwARKUOk","seal":{"pre":"EwBwUb2eZcA5GDcN7g-87wpreM0nNkLqz'
+                                 b'kwviBHTcV1A","dig":"E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA'
+                                 b'"}}-AABAAOYor4MvfRJACjzGlcQzSIjapymNyjqimNJfuKpyMCBkoQwr0utASvCz'
+                                 b'gKxEAI8B8yXhO2spi-7i94_dh2ZD4CQ')
+
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if in escrow database
@@ -1789,6 +1796,9 @@ def test_direct_mode():
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
                                     valKever.diger.qb64b +
                                     siger.qb64b)
+
+
+        # Send receipt from coe to val
 
 
 
