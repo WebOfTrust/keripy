@@ -33,7 +33,8 @@ from keri.core.coring import Ilkage, Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
-from keri.core.eventing import incept, rotate, interact, receipt, Kever, Kevery
+from keri.core.eventing import incept, rotate, interact, receipt, chit
+from keri.core.eventing import Kever, Kevery
 
 from keri.db.dbing import dgKey, snKey, openLogger, Logger
 
@@ -195,15 +196,30 @@ def test_keyeventfuncs():
                            b',"data":[]}')
 
 
-
+    # Receipt
     serder3 = receipt(pre=pre, dig=serder2.dig)
-    assert serder2.ked["pre"] == pre
+    assert serder3.ked["pre"] == pre
     assert serder3.ked["ilk"] == Ilks.rct
     assert serder3.ked["dig"] == serder2.dig
     assert serder3.raw == (b'{"vs":"KERI10JSON000090_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
                            b'c","ilk":"rct","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"}')
 
 
+    # ValReceipt
+    serderA = incept(keys=keys0, nxt=nxt1, code=CryOneDex.Blake3_256)
+    seal = SealEvent(pre=serderA.ked["pre"], dig=serderA.dig)
+    assert seal.pre == serderA.ked["pre"] == 'EyqftoqSC_ANDHdx9v4sygNas8Wvy3szYSuTxjT0lvzs'
+    assert seal.dig == serderA.dig == 'EBk2aGuL5oHsF64QNAeEPEal-JBYJLe5GvXqp3mLMFKw'
+
+    serder4 = chit(pre=pre, dig=serder2.dig, seal=seal)
+    assert serder4.ked["pre"] == pre
+    assert serder4.ked["ilk"] == Ilks.vrc
+    assert serder4.ked["dig"] == serder2.dig
+    assert serder4.ked["seal"] == seal._asdict()
+    assert serder4.raw == (b'{"vs":"KERI10JSON000103_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                           b'c","ilk":"vrc","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E","seal":{'
+                           b'"pre":"EyqftoqSC_ANDHdx9v4sygNas8Wvy3szYSuTxjT0lvzs","dig":"EBk2aGuL5oHsF64Q'
+                           b'NAeEPEal-JBYJLe5GvXqp3mLMFKw"}}')
 
     """ Done Test """
 
@@ -2148,4 +2164,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_seals()
+    test_keyeventfuncs()

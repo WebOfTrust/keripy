@@ -317,7 +317,7 @@ def receipt( pre,
           ):
 
     """
-    Returns serder of event receipt message.
+    Returns serder of event receipt message for non-transferable receipter prefix.
     Utility function to automate creation of interaction events.
 
      Parameters:
@@ -338,7 +338,7 @@ def receipt( pre,
 
     return Serder(ked=ked)  # return serialized ked
 
-def valreceipt( pre,
+def chit( pre,
                 dig,
                 seal,
                 version=Version,
@@ -346,7 +346,8 @@ def valreceipt( pre,
                 ):
 
     """
-    Returns serder of event receipt message.
+    Returns serder of validator event receipt message for transferable receipter
+    prefix.
     Utility function to automate creation of interaction events.
 
      Parameters:
@@ -366,7 +367,7 @@ def valreceipt( pre,
                pre=pre,  # qb64 prefix
                ilk=ilk,  #  Ilks.rct
                dig=dig,  # qb64 digest of receipted event
-               seal=seal._asdict()
+               seal=seal._asdict()  # event seal: pre, dig
                )
 
     return Serder(ked=ked)  # return serialized ked
