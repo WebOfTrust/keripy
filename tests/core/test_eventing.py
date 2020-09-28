@@ -1732,10 +1732,11 @@ def test_direct_mode():
                              b'o","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_Z'
                              b'OoeKtWTOunRA"],"nxt":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4","toad":"'
                              b'0","wits":[],"cnfg":[]}')
-        siger = valSigners[vesn].sign(coeIcpRaw, index=0)  # return Siger if index
-        assert siger.qb64 == 'AAOYor4MvfRJACjzGlcQzSIjapymNyjqimNJfuKpyMCBkoQwr0utASvCzgKxEAI8B8yXhO2spi-7i94_dh2ZD4CQ'
         counter = SigCounter(count=1)
         assert counter.qb64 == '-AAB'
+        siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
+        assert siger.qb64 == 'AAOYor4MvfRJACjzGlcQzSIjapymNyjqimNJfuKpyMCBkoQwr0utASvCzgKxEAI8B8yXhO2spi-7i94_dh2ZD4CQ'
+
 
         # attach reciept message to existing message with val's incept message
         vmsg.extend(reserder.raw)
@@ -1773,19 +1774,21 @@ def test_direct_mode():
                         dig=fake,
                         seal=seal)
         # sign event not receipt
-        siger = valSigners[vesn].sign(ser=coeIcpSerder.raw, index=0)  # return Siger if index
         counter = SigCounter(count=1)
+        siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
 
-        # attach to key event stream
-        val2coe.extend(reserder.raw)
-        val2coe.extend(counter.qb64b)
-        val2coe.extend(siger.qb64b)
+        # create message
+        vmsg = bytearray(reserder.raw)
+        vmsg.extend(counter.qb64b)
+        vmsg.extend(siger.qb64b)
 
-        coeKevery.processAll(ims=val2coe)  #  coe process the escrow receipt from val
+        coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if in escrow database
         result = coeKevery.logger.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                 dig=fake))
-        assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
+                                                   dig=fake))
+        assert bytes(result[0]) == (valKever.prefixer.qb64b +
+                                    valKever.diger.qb64b +
+                                    siger.qb64b)
 
 
 
