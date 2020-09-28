@@ -828,18 +828,23 @@ class Kevery:
     Has the following public attributes and properties:
 
     Attributes:
+        .ims is bytearray incoming message stream
+        .oms is bytearray outgoing message stream
         .kevers is dict of existing kevers indexed by pre (qb64) of each Kever
         .logs is named tuple of logs
         .framed is Boolean stream is packet framed If True Else not framed
 
+
     Properties:
 
     """
-    def __init__(self, kevers=None, logger=None, framed=True):
+    def __init__(self, ims=None, oms=None, kevers=None, logger=None, framed=True):
         """
         Set up event stream and logs
 
         """
+        self.ims = ims if ims is not None else bytearray()
+        self.oms = oms if oms is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream
         self.kevers = kevers if kevers is not None else dict()
 
@@ -848,32 +853,36 @@ class Kevery:
         self.logger = logger
 
 
-    def processAll(self, kes):
+    def processAll(self, ims=None):
         """
-        Process all messages in key event stream
+        Process all messages in key event stream kes when provided
+        Otherwise process all messages in .ims
         """
-        if not isinstance(kes, bytearray):  # destructive processing
-            kes = bytearray(kes)
+        if ims is not None:
+            if not isinstance(ims, bytearray):  # destructive processing
+                ims = bytearray(ims)
+        else:
+            ims = self.ims
 
-        while kes:
+        while ims:
             try:
-                self.processOne(kes=kes, framed=self.framed)
+                self.processOne(ims=ims, framed=self.framed)
             except Exception as ex:
                 # log diagnostics errors etc
                 #
-                del kes[:]  #  delete rest of stream
+                del ims[:]  #  delete rest of stream
                 continue
 
 
-    def processOne(self, kes, framed=True):
+    def processOne(self, ims, framed=True):
         """
-        Extract one event with attached signatures from key event stream kes
-        And dispatch processing of event, receipt, etc
+        Extract one msg with attached signatures from incoming message stream, ims
+        And dispatch processing of message
 
         Parameters:
-            kes is bytearray of serialized key event stream.
-                May contain one or more sets each of a serialized event with
-                attached signatures.
+            ims is bytearray of serialized incoming message stream.
+                May contain one or more sets each of a serialized message with
+                attached cryptographic material such as signatures or receipts.
 
             framed is Boolean, If True and no sig counter then extract signatures
                 until end-of-stream. This is useful for framed packets with
@@ -882,7 +891,7 @@ class Kevery:
         """
         # deserialize packet from kes
         try:
-            serder = Serder(raw=kes)
+            serder = Serder(raw=ims)
         except Exception as ex:
             raise ValidationError("Error while processing key event stream"
                                   " = {}".format(ex))
@@ -892,16 +901,16 @@ class Kevery:
             raise VersionError("Unsupported version = {}, expected {}."
                                   "".format(version, Version))
 
-        del kes[:serder.size]  # strip off event from front of kes
+        del ims[:serder.size]  # strip off event from front of kes
 
         ilk = serder.ked['ilk']  # dispatch abased on ilk
 
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
             # extract sig counter if any for attached sigs
             try:
-                counter = SigCounter(qb64=kes)  # qb64
+                counter = SigCounter(qb64=ims)  # qb64
                 nsigs = counter.count
-                del kes[:len(counter.qb64)]  # strip off counter
+                del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
                 nsigs = 0  # no signature count
 
@@ -910,17 +919,17 @@ class Kevery:
             if nsigs:
                 for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
-                    siger = Siger(qb64=kes)  # qb64
+                    siger = Siger(qb64=ims)  # qb64
                     sigers.append(siger)
-                    del kes[:len(siger.qb64)]  # strip off signature
+                    del ims[:len(siger.qb64)]  # strip off signature
 
             else:  # no info on attached sigs
                 if framed:  # parse for signatures until end-of-stream
-                    while kes:
+                    while ims:
                         # check here for type of attached signatures qb64 or qb2
-                        siger = Siger(qb64=kes)  # qb64
+                        siger = Siger(qb64=ims)  # qb64
                         sigers.append(siger)
-                        del kes[:len(siger.qb64)]  # strip off signature
+                        del ims[:len(siger.qb64)]  # strip off signature
 
             if not sigers:
                 raise ValidationError("Missing attached signature(s).")
@@ -930,9 +939,9 @@ class Kevery:
         elif ilk in [Ilks.rct]:  # event receipt msg
             # extract cry counter if any for attached receipt couplets
             try:
-                counter = CryCounter(qb64=kes)  # qb64
+                counter = CryCounter(qb64=ims)  # qb64
                 ncpts = counter.count
-                del kes[:len(counter.qb64)]  # strip off counter
+                del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
                 ncpts = 0  # no couplets count
 
@@ -943,21 +952,21 @@ class Kevery:
             if ncpts:
                 for i in range(ncpts): # extract each attached couplet
                     # check here for type of attached couplets qb64 or qb2
-                    verfer = Verfer(qb64=kes)  # qb64
-                    del kes[:len(verfer.qb64)]  # strip off identifier prefix
-                    sigver = Sigver(qb64=kes, verfer=verfer)  # qb64
+                    verfer = Verfer(qb64=ims)  # qb64
+                    del ims[:len(verfer.qb64)]  # strip off identifier prefix
+                    sigver = Sigver(qb64=ims, verfer=verfer)  # qb64
                     sigvers.append(sigver)
-                    del kes[:len(sigver.qb64)]  # strip off signature
+                    del ims[:len(sigver.qb64)]  # strip off signature
 
             else:  # no info on attached receipt couplets
                 if framed:  # parse for receipts until end-of-stream
-                    while kes:
+                    while ims:
                         # check here for type of attached receipts qb64 or qb2
-                        verfer = Verfer(qb64=kes)  # qb64
-                    del kes[:len(verfer.qb64)]  # strip off identifier prefix
-                    sigver = Sigver(qb64=kes, verfer=verfer)  # qb64
+                        verfer = Verfer(qb64=ims)  # qb64
+                    del ims[:len(verfer.qb64)]  # strip off identifier prefix
+                    sigver = Sigver(qb64=ims, verfer=verfer)  # qb64
                     sigvers.append(sigver)
-                    del kes[:len(sigver.qb64)]  # strip off signature
+                    del ims[:len(sigver.qb64)]  # strip off signature
 
             if not sigvers:
                 raise ValidationError("Missing attached receipt couplet(s).")
