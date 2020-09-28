@@ -57,19 +57,37 @@ class TraitCodex:
 
 TraitDex = TraitCodex()  # Make instance
 
-Location = namedtuple("Location", 'sn dig')  # Location of key event
 
 
-def incept(
-            keys,
-            code=None,
-            version=Version,
-            kind=Serials.json,
-            sith=None,
-            nxt="",
-            toad=None,
-            wits=None,
-            cnfg=None,
+# Location of last establishment key event: sn is int, dig is qb64 digest
+LastEstLoc = namedtuple("LastEstLoc", 'sn dig')
+
+#  for the following Seal namedtuples use the ._asdict() method to convert to dict
+#  when using in events
+
+# Digest Seal: dig is qb64 digest of data
+SealDigest = namedtuple("SealDigest", 'dig')
+
+# Root Seal: root is qb64 digest that is merkle tree root of data tree
+SealRoot = namedtuple("SealRoot", 'root')
+
+# Event Seal: pre is qb64 of identifier prefix of KEL, dig is qb64 digest of event
+SealEvent = namedtuple("SealEvent", 'pre dig')
+
+# Event Location Seal: pre is qb64 of identifier prefix of KEL,
+# sn is hex string, ilk is str, dig is qb64 of prior event digest
+SealLocation = namedtuple("SealLocation", 'pre sn ilk dig')
+
+
+def incept(keys,
+           code=None,
+           version=Version,
+           kind=Serials.json,
+           sith=None,
+           nxt="",
+           toad=None,
+           wits=None,
+           cnfg=None,
           ):
 
     """
@@ -141,18 +159,18 @@ def incept(
     return Serder(ked=ked)  # return serialized ked
 
 
-def rotate( pre,
-            keys,
-            dig,sn=1,
-            version=Version,
-            kind=Serials.json,
-            sith=None,
-            nxt="",
-            toad=None,
-            wits=None, # prior existing wits
-            cuts=None,
-            adds=None,
-            data=None,
+def rotate(pre,
+           keys,
+           dig,sn=1,
+           version=Version,
+           kind=Serials.json,
+           sith=None,
+           nxt="",
+           toad=None,
+           wits=None, # prior existing wits
+           cuts=None,
+           adds=None,
+           data=None,
           ):
 
     """
@@ -253,13 +271,13 @@ def rotate( pre,
     return Serder(ked=ked)  # return serialized ked
 
 
-def interact( pre,
-              dig,
-              sn=1,
-              version=Version,
-              kind=Serials.json,
-              data=None,
-          ):
+def interact(pre,
+             dig,
+             sn=1,
+             version=Version,
+             kind=Serials.json,
+             data=None,
+            ):
 
     """
     Returns serder of interaction event message.
@@ -291,14 +309,14 @@ def interact( pre,
 
     return Serder(ked=ked)  # return serialized ked
 
-def receipt( pre,
-             dig,
-             version=Version,
-             kind=Serials.json
-          ):
+def receipt(pre,
+            dig,
+            version=Version,
+            kind=Serials.json
+           ):
 
     """
-    Returns serder of event receipt message.
+    Returns serder of event receipt message for non-transferable receipter prefix.
     Utility function to automate creation of interaction events.
 
      Parameters:
@@ -319,7 +337,39 @@ def receipt( pre,
 
     return Serder(ked=ked)  # return serialized ked
 
+def chit(pre,
+         dig,
+         seal,
+         version=Version,
+         kind=Serials.json
+        ):
 
+    """
+    Returns serder of validator event receipt message for transferable receipter
+    prefix.
+    Utility function to automate creation of interaction events.
+
+     Parameters:
+        pre is qb64 of prefix of event being receipted
+        dig is qb64 of digest of event being receipted
+        seal is namedTuple of SealEvent of receipter's last Est event
+            pre is qb64 of receipter's prefix
+            dig is qb64 digest of receipter's last Est event
+        version is version string of receipt
+        kind  is serialization kind
+
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.vrc
+
+    ked = dict(vs=vs,  # version string
+               pre=pre,  # qb64 prefix
+               ilk=ilk,  #  Ilks.rct
+               dig=dig,  # qb64 digest of receipted event
+               seal=seal._asdict()  # event seal: pre, dig
+               )
+
+    return Serder(ked=ked)  # return serialized ked
 
 class Kever:
     """
@@ -348,6 +398,7 @@ class Kever:
         .data is list of current seals
         .estOnly is boolean
         .nonTrans is boolean
+        .lastEst is LastEstLoc namedtuple of int .sn and qb64 .dig of last est event
 
     Properties:
 
@@ -452,8 +503,8 @@ class Kever:
             if "trait" in d and d["trait"] == TraitDex.EstOnly:
                 self.estOnly = True
 
-        # need this to recognize recovery events
-        self.lastEst = Location(sn=self.sn, dig=self.diger.qb64)  # last establishment event location
+        # need this to recognize recovery events and transferable receipts
+        self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)  # last establishment event location
 
         # verify signatures
         if not self.verifySigs(sigers=sigers, serder=serder):
@@ -644,7 +695,7 @@ class Kever:
             self.data = ked["data"]
 
             # last establishment event location need this to recognize recovery events
-            self.lastEst = Location(sn=self.sn, dig=self.diger.qb64)
+            self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)
 
             self.logEvent(serder, sigers)  # update logs
 
@@ -769,26 +820,32 @@ class Kever:
 
 class Kevery:
     """
-    Kevery is Kever (KERI key event verifier) instance factory which are
-    extracted from a key event stream of a series of event with attached signatures
+    Kevery processes an incoming message stream and when appropriate generates
+    an outgoing steam. When the incoming streams includes key event messages
+    then Kevery acts a Kever (KERI key event verifier) factory.
 
     Only supports current version VERSION
 
     Has the following public attributes and properties:
 
     Attributes:
+        .ims is bytearray incoming message stream
+        .oms is bytearray outgoing message stream
         .kevers is dict of existing kevers indexed by pre (qb64) of each Kever
         .logs is named tuple of logs
         .framed is Boolean stream is packet framed If True Else not framed
 
+
     Properties:
 
     """
-    def __init__(self, kevers=None, logger=None, framed=True):
+    def __init__(self, ims=None, oms=None, kevers=None, logger=None, framed=True):
         """
         Set up event stream and logs
 
         """
+        self.ims = ims if ims is not None else bytearray()
+        self.oms = oms if oms is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream
         self.kevers = kevers if kevers is not None else dict()
 
@@ -797,43 +854,47 @@ class Kevery:
         self.logger = logger
 
 
-    def processAll(self, kes):
+    def processAll(self, ims=None):
         """
-        Process all messages in key event stream
+        Process all messages from incoming message stream, ims, when provided
+        Otherwise process all messages from .ims
         """
-        if not isinstance(kes, bytearray):  # destructive processing
-            kes = bytearray(kes)
+        if ims is not None:
+            if not isinstance(ims, bytearray):  # destructive processing
+                ims = bytearray(ims)
+        else:
+            ims = self.ims
 
-        while kes:
+        while ims:
             try:
-                self.processOne(kes=kes, framed=self.framed)
+                self.processOne(ims=ims, framed=self.framed)
             except Exception as ex:
                 # log diagnostics errors etc
                 #
-                del kes[:]  #  delete rest of stream
+                del ims[:]  #  delete rest of stream
                 continue
 
 
-    def processOne(self, kes, framed=True):
+    def processOne(self, ims, framed=True):
         """
-        Extract one event with attached signatures from key event stream kes
-        And dispatch processing of event, receipt, etc
+        Extract one msg with attached signatures from incoming message stream, ims
+        And dispatch processing of message
 
         Parameters:
-            kes is bytearray of serialized key event stream.
-                May contain one or more sets each of a serialized event with
-                attached signatures.
+            ims is bytearray of serialized incoming message stream.
+                May contain one or more sets each of a serialized message with
+                attached cryptographic material such as signatures or receipts.
 
             framed is Boolean, If True and no sig counter then extract signatures
                 until end-of-stream. This is useful for framed packets with
                 one event and one set of attached signatures per invocation.
 
         """
-        # deserialize packet from kes
+        # deserialize packet from ims
         try:
-            serder = Serder(raw=kes)
+            serder = Serder(raw=ims)
         except Exception as ex:
-            raise ValidationError("Error while processing key event stream"
+            raise ValidationError("Error while processing message stream"
                                   " = {}".format(ex))
 
         version = serder.version
@@ -841,16 +902,16 @@ class Kevery:
             raise VersionError("Unsupported version = {}, expected {}."
                                   "".format(version, Version))
 
-        del kes[:serder.size]  # strip off event from front of kes
+        del ims[:serder.size]  # strip off event from front of ims
 
         ilk = serder.ked['ilk']  # dispatch abased on ilk
 
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
             # extract sig counter if any for attached sigs
             try:
-                counter = SigCounter(qb64=kes)  # qb64
+                counter = SigCounter(qb64=ims)  # qb64
                 nsigs = counter.count
-                del kes[:len(counter.qb64)]  # strip off counter
+                del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
                 nsigs = 0  # no signature count
 
@@ -859,29 +920,29 @@ class Kevery:
             if nsigs:
                 for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
-                    siger = Siger(qb64=kes)  # qb64
+                    siger = Siger(qb64=ims)  # qb64
                     sigers.append(siger)
-                    del kes[:len(siger.qb64)]  # strip off signature
+                    del ims[:len(siger.qb64)]  # strip off signature
 
             else:  # no info on attached sigs
                 if framed:  # parse for signatures until end-of-stream
-                    while kes:
+                    while ims:
                         # check here for type of attached signatures qb64 or qb2
-                        siger = Siger(qb64=kes)  # qb64
+                        siger = Siger(qb64=ims)  # qb64
                         sigers.append(siger)
-                        del kes[:len(siger.qb64)]  # strip off signature
+                        del ims[:len(siger.qb64)]  # strip off signature
 
             if not sigers:
                 raise ValidationError("Missing attached signature(s).")
 
             self.processEvent(serder, sigers)
 
-        elif ilk in [Ilks.rct]:  # event receipt msg
+        elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
             # extract cry counter if any for attached receipt couplets
             try:
-                counter = CryCounter(qb64=kes)  # qb64
+                counter = CryCounter(qb64=ims)  # qb64
                 ncpts = counter.count
-                del kes[:len(counter.qb64)]  # strip off counter
+                del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
                 ncpts = 0  # no couplets count
 
@@ -892,26 +953,57 @@ class Kevery:
             if ncpts:
                 for i in range(ncpts): # extract each attached couplet
                     # check here for type of attached couplets qb64 or qb2
-                    verfer = Verfer(qb64=kes)  # qb64
-                    del kes[:len(verfer.qb64)]  # strip off identifier prefix
-                    sigver = Sigver(qb64=kes, verfer=verfer)  # qb64
+                    verfer = Verfer(qb64=ims)  # qb64
+                    del ims[:len(verfer.qb64)]  # strip off identifier prefix
+                    sigver = Sigver(qb64=ims, verfer=verfer)  # qb64
                     sigvers.append(sigver)
-                    del kes[:len(sigver.qb64)]  # strip off signature
+                    del ims[:len(sigver.qb64)]  # strip off signature
 
             else:  # no info on attached receipt couplets
                 if framed:  # parse for receipts until end-of-stream
-                    while kes:
+                    while ims:
                         # check here for type of attached receipts qb64 or qb2
-                        verfer = Verfer(qb64=kes)  # qb64
-                    del kes[:len(verfer.qb64)]  # strip off identifier prefix
-                    sigver = Sigver(qb64=kes, verfer=verfer)  # qb64
+                        verfer = Verfer(qb64=ims)  # qb64
+                    del ims[:len(verfer.qb64)]  # strip off identifier prefix
+                    sigver = Sigver(qb64=ims, verfer=verfer)  # qb64
                     sigvers.append(sigver)
-                    del kes[:len(sigver.qb64)]  # strip off signature
+                    del ims[:len(sigver.qb64)]  # strip off signature
 
             if not sigvers:
                 raise ValidationError("Missing attached receipt couplet(s).")
 
             self.processReceipt(serder, sigvers)
+
+        elif ilk in [Ilks.vrc]:  # validator event receipt msg (transferable)
+            # extract sig counter if any for attached sigs
+            try:
+                counter = SigCounter(qb64=ims)  # qb64
+                nsigs = counter.count
+                del ims[:len(counter.qb64)]  # strip off counter
+            except ValidationError as ex:
+                nsigs = 0  # no signature count
+
+            # extract attached sigs as Sigers
+            sigers = []  # list of Siger instances for attached indexed signatures
+            if nsigs:
+                for i in range(nsigs): # extract each attached signature
+                    # check here for type of attached signatures qb64 or qb2
+                    siger = Siger(qb64=ims)  # qb64
+                    sigers.append(siger)
+                    del ims[:len(siger.qb64)]  # strip off signature
+
+            else:  # no info on attached sigs
+                if framed:  # parse for signatures until end-of-stream
+                    while ims:
+                        # check here for type of attached signatures qb64 or qb2
+                        siger = Siger(qb64=ims)  # qb64
+                        sigers.append(siger)
+                        del ims[:len(siger.qb64)]  # strip off signature
+
+            if not sigers:
+                raise ValidationError("Missing attached signature(s) to receipt.")
+
+            self.processChit(serder, sigers)
 
         else:
             raise ValidationError("Unexpected message ilk = {}.".format(ilk))
@@ -1014,14 +1106,12 @@ class Kevery:
         Receipt dict labels
             vs  # version string
             pre  # qb64 prefix
-            sn  # hex string no leading zeros lowercase
-            ilk
+            ilk  # rct
             dig  # qb64 digest of receipted event
         """
-        # fetch  pre, sn, ilk  dig to process
+        # fetch  pre dig to process
         ked = serder.ked
         pre = ked["pre"]
-        # ilk = ked["ilk"]
         dig = ked["dig"]
         # retrieve event
         key = dgKey(pre=pre, dig=dig)
@@ -1029,7 +1119,7 @@ class Kevery:
         if eraw is None:  # escrow each couplet
             for sigver in sigvers:
                 if not sigver.verfer.nontrans:# check that verfer is non-transferable
-                    contine  # skip invalid couplets
+                    continue  # skip invalid couplets
                 couplet = sigver.verfer.qb64b + sigver.qb64b
                 self.logger.addUre(key=key, val=couplet)
         else:
@@ -1037,12 +1127,67 @@ class Kevery:
             # process each couplet verify sig and write to db
             for sigver in sigvers:
                 if not sigver.verfer.nontrans:# check that verfer is non-transferable
-                    contine  # skip invalid couplets
+                    continue  # skip invalid couplets
                 if sigver.verfer.verify(sigver.raw, eserder.raw):
                     # write receipt couplet to database
                     couplet = sigver.verfer.qb64b + sigver.qb64b
                     self.logger.addRct(key=key, val=couplet)
 
+
+    def processChit(self, serder, sigers):
+        """
+        Process one transferable validator receipt (chit) serder with attached sigers
+
+        Parameters:
+            serder is chit serder (transferable validator receipt message)
+            sigers is list of Siger instances that contain signature
+
+        Chit dict labels
+            vs  # version string
+            pre  # qb64 prefix
+            ilk  # vrc
+            dig  # qb64 digest of receipted event
+            seal # event seal of last est event pre dig
+        """
+        # fetch  pre, dig,seal to process
+        ked = serder.ked
+        pre = ked["pre"]
+        dig = ked["dig"]
+        seal = SealEvent(**ked["seal"])
+        sealet = seal.pre.encode("utf-8") + seal.dig.encode("utf-8")
+
+        key = dgKey(pre=pre, dig=dig)  # retrieve receipted event
+        raw = self.logger.getEvt(key=key)
+
+        if (raw is None or  # receipted event not yet exist
+            seal.pre not in self.kevers):  # receipter not yet in database
+
+            for siger in sigers:  # escrow triplets one for each sig
+                triplet = sealet + siger.qb64b
+                self.logger.addVre(key=key, val=triplet)
+
+        else:  # both receipted event and receipter in database
+            rekever = self.kevers[seal.pre]
+            if rekever.lastEst.dig == seal.dig:  #  receipt from last est event
+                raw = bytes(raw)
+                for siger in sigers:
+                    if siger.index >= len(rekever.verfers):
+                        raise ValidationError("Index = {} to large for keys."
+                                              "".format(siger.index))
+                    siger.verfer = rekever.verfers[siger.index]  # assign verfer
+
+                    if siger.verfer.verify(siger.raw, raw):
+                        # write receipt truplet to database
+                        triplet = sealet + siger.qb64b
+                        self.logger.addVrc(key=key, val=triplet)
+
+                    else:
+                        # log bad sig
+                        pass
+
+            else:  #  discard receipt as stale
+                raise ValidationError("Stale validator = {} receipt for pre = "
+                                      "{} dig ={}.".format(seal.pre, pre, dig))
 
 
 
