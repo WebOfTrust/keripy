@@ -31,11 +31,68 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import TraitDex
+from keri.core.eventing import TraitDex, LastEstLoc
+from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import incept, rotate, interact, receipt, Kever, Kevery
 
 from keri.db.dbing import dgKey, snKey, openLogger, Logger
 
+
+def test_lastestloc():
+    """
+    Test LastEstLoc namedtuple
+    """
+    lastEst = LastEstLoc(sn=1, dig='E12345')
+
+    assert isinstance(lastEst, LastEstLoc)
+
+    assert 1 in lastEst
+    assert lastEst.sn == 1
+    assert 'E12345' in lastEst
+    assert lastEst.dig == 'E12345'
+
+    """End Test """
+
+def test_seals():
+    """
+    Test seal namedtuples
+
+    """
+    seal = SealDigest(dig='E12345')
+    assert isinstance(seal, SealDigest)
+    assert 'E12345' in seal
+    assert seal.dig == 'E12345'
+    assert seal._asdict() == dict(dig='E12345')
+
+    seal = SealRoot(root='EABCDE')
+    assert isinstance(seal, SealRoot)
+    assert 'EABCDE' in seal
+    assert seal.root == 'EABCDE'
+    assert seal._asdict() == dict(root='EABCDE')
+
+    seal = SealEvent(pre='B4321', dig='Eabcd')
+    assert isinstance(seal, SealEvent)
+    assert 'B4321' in seal
+    assert seal.pre == 'B4321'
+    assert 'Eabcd' in seal
+    assert seal.dig == 'Eabcd'
+    assert seal._asdict() == dict(pre='B4321', dig='Eabcd')
+    assert seal._fields == ('pre', 'dig')
+
+    seal = SealLocation(pre='B4321', sn='1', ilk='ixn', dig='Eabcd')
+    assert isinstance(seal, SealLocation)
+    assert 'B4321' in seal
+    assert seal.pre == 'B4321'
+    assert '1' in seal
+    assert seal.sn == '1'
+    assert 'ixn' in seal
+    assert seal.ilk == 'ixn'
+    assert 'Eabcd' in seal
+    assert seal.dig == 'Eabcd'
+    assert seal._asdict() == dict(pre='B4321', sn='1', ilk='ixn', dig='Eabcd')
+    assert seal._fields == ('pre', 'sn', 'ilk', 'dig')
+
+    """End Test """
 
 def test_keyeventfuncs():
     """
@@ -2091,4 +2148,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_val_receipt()
+    test_seals()

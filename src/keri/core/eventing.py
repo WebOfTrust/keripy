@@ -57,17 +57,26 @@ class TraitCodex:
 
 TraitDex = TraitCodex()  # Make instance
 
-Location = namedtuple("Location", 'sn dig')  # Location of key event
-
-SealDigest = namedtuple("SealDigest", 'dig')  # Digest Seal
-
-SealRoot = namedtuple("SealRoot", 'root')  # Root Seal
-
-SealEvent = namedtuple("SealEvent", 'pre dig')  # Event Seal
-
-SealLocation = namedtuple("SealLocation", 'pre sn ilk dig')  # Event Location Seal
 
 
+# Location of last establishment key event: sn is int, dig is qb64 digest
+LastEstLoc = namedtuple("LastEstLoc", 'sn dig')
+
+#  for the following Seal namedtuples use the ._asdict() method to convert to dict
+#  when using in events
+
+# Digest Seal: dig is qb64 digest of data
+SealDigest = namedtuple("SealDigest", 'dig')
+
+# Root Seal: root is qb64 digest that is merkle tree root of data tree
+SealRoot = namedtuple("SealRoot", 'root')
+
+# Event Seal: pre is qb64 of identifier prefix of KEL, dig is qb64 digest of event
+SealEvent = namedtuple("SealEvent", 'pre dig')
+
+# Event Location Seal: pre is qb64 of identifier prefix of KEL,
+# sn is hex string, ilk is str, dig is qb64 of prior event digest
+SealLocation = namedtuple("SealLocation", 'pre sn ilk dig')
 
 
 def incept(
@@ -341,11 +350,13 @@ def valreceipt( pre,
     Utility function to automate creation of interaction events.
 
      Parameters:
-        pre
-        dig
-        seal
-        version
-        kind
+        pre is qb64 of prefix of event being receipted
+        dig is qb64 of digest of event being receipted
+        seal is namedTuple of SealEvent of receipter's last Est event
+            pre is qb64 of receipter's prefix
+            dig is qb64 digest of receipter's last Est event
+        version is version string of receipt
+        kind  is serialization kind
 
     """
     vs = Versify(version=version, kind=kind, size=0)
@@ -355,6 +366,7 @@ def valreceipt( pre,
                pre=pre,  # qb64 prefix
                ilk=ilk,  #  Ilks.rct
                dig=dig,  # qb64 digest of receipted event
+               seal=seal._asdict()
                )
 
     return Serder(ked=ked)  # return serialized ked
@@ -491,7 +503,7 @@ class Kever:
                 self.estOnly = True
 
         # need this to recognize recovery events
-        self.lastEst = Location(sn=self.sn, dig=self.diger.qb64)  # last establishment event location
+        self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)  # last establishment event location
 
         # verify signatures
         if not self.verifySigs(sigers=sigers, serder=serder):
@@ -682,7 +694,7 @@ class Kever:
             self.data = ked["data"]
 
             # last establishment event location need this to recognize recovery events
-            self.lastEst = Location(sn=self.sn, dig=self.diger.qb64)
+            self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)
 
             self.logEvent(serder, sigers)  # update logs
 
