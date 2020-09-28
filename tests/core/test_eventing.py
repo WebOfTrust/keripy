@@ -1725,9 +1725,15 @@ def test_direct_mode():
                         seal=seal)
         # sign coe's event not receipt
         # look up event to sign from valKevery.logger
-        coeIcpRaw = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=0)))
+        coeIcpDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=0)))
+        assert coeIcpDig == coeK.diger.qb64b == b'EixO2SBNow3tYDfYX6NRt1O9ZSMx2IsBeWkh8YJRp5VI'
+        coeIcpRaw = bytes(valKevery.logger.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
+        assert coeIcpRaw == (b'{"vs":"KERI10JSON0000fb_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdS'
+                             b'o","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_Z'
+                             b'OoeKtWTOunRA"],"nxt":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4","toad":"'
+                             b'0","wits":[],"cnfg":[]}')
         siger = valSigners[vesn].sign(coeIcpRaw, index=0)  # return Siger if index
-        assert siger.qb64 == 'AAfjWezCNYSYXs3-Hblq6LSqQXMBW5yqs2fVDt_JD4xUojAYYicE4mEYit0E6ow2_O06x992Y_gTshRA9ngE6nBg'
+        assert siger.qb64 == 'AAOYor4MvfRJACjzGlcQzSIjapymNyjqimNJfuKpyMCBkoQwr0utASvCzgKxEAI8B8yXhO2spi-7i94_dh2ZD4CQ'
         counter = SigCounter(count=1)
         assert counter.qb64 == '-AAB'
 
@@ -1744,8 +1750,8 @@ def test_direct_mode():
                                  b'Gn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdSo","ilk":"vrc","dig":"EixO2SB'
                                  b'Now3tYDfYX6NRt1O9ZSMx2IsBeWkh8YJRp5VI","seal":{"pre":"EwBwUb2eZc'
                                  b'A5GDcN7g-87wpreM0nNkLqzkwviBHTcV1A","dig":"E0CxRRD8SSBHZlSt-gblJ'
-                                 b'5_PL6JskFaaHsnSiAgX5vrA"}}-AABAAfjWezCNYSYXs3-Hblq6LSqQXMBW5yqs2'
-                                 b'fVDt_JD4xUojAYYicE4mEYit0E6ow2_O06x992Y_gTshRA9ngE6nBg')
+                                 b'5_PL6JskFaaHsnSiAgX5vrA"}}-AABAAOYor4MvfRJACjzGlcQzSIjapymNyjqim'
+                                 b'NJfuKpyMCBkoQwr0utASvCzgKxEAI8B8yXhO2spi-7i94_dh2ZD4CQ')
 
 
         # Simulate send to coe of vals inception msg and coe's inception message receipt

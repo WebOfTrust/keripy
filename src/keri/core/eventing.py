@@ -79,16 +79,15 @@ SealEvent = namedtuple("SealEvent", 'pre dig')
 SealLocation = namedtuple("SealLocation", 'pre sn ilk dig')
 
 
-def incept(
-            keys,
-            code=None,
-            version=Version,
-            kind=Serials.json,
-            sith=None,
-            nxt="",
-            toad=None,
-            wits=None,
-            cnfg=None,
+def incept(keys,
+           code=None,
+           version=Version,
+           kind=Serials.json,
+           sith=None,
+           nxt="",
+           toad=None,
+           wits=None,
+           cnfg=None,
           ):
 
     """
@@ -160,18 +159,18 @@ def incept(
     return Serder(ked=ked)  # return serialized ked
 
 
-def rotate( pre,
-            keys,
-            dig,sn=1,
-            version=Version,
-            kind=Serials.json,
-            sith=None,
-            nxt="",
-            toad=None,
-            wits=None, # prior existing wits
-            cuts=None,
-            adds=None,
-            data=None,
+def rotate(pre,
+           keys,
+           dig,sn=1,
+           version=Version,
+           kind=Serials.json,
+           sith=None,
+           nxt="",
+           toad=None,
+           wits=None, # prior existing wits
+           cuts=None,
+           adds=None,
+           data=None,
           ):
 
     """
@@ -272,13 +271,13 @@ def rotate( pre,
     return Serder(ked=ked)  # return serialized ked
 
 
-def interact( pre,
-              dig,
-              sn=1,
-              version=Version,
-              kind=Serials.json,
-              data=None,
-          ):
+def interact(pre,
+             dig,
+             sn=1,
+             version=Version,
+             kind=Serials.json,
+             data=None,
+            ):
 
     """
     Returns serder of interaction event message.
@@ -310,11 +309,11 @@ def interact( pre,
 
     return Serder(ked=ked)  # return serialized ked
 
-def receipt( pre,
-             dig,
-             version=Version,
-             kind=Serials.json
-          ):
+def receipt(pre,
+            dig,
+            version=Version,
+            kind=Serials.json
+           ):
 
     """
     Returns serder of event receipt message for non-transferable receipter prefix.
@@ -338,12 +337,12 @@ def receipt( pre,
 
     return Serder(ked=ked)  # return serialized ked
 
-def chit( pre,
-                dig,
-                seal,
-                version=Version,
-                kind=Serials.json
-                ):
+def chit(pre,
+         dig,
+         seal,
+         version=Version,
+         kind=Serials.json
+        ):
 
     """
     Returns serder of validator event receipt message for transferable receipter
@@ -399,6 +398,7 @@ class Kever:
         .data is list of current seals
         .estOnly is boolean
         .nonTrans is boolean
+        .lastEst is LastEstLoc namedtuple of int .sn and qb64 .dig of last est event
 
     Properties:
 
@@ -503,7 +503,7 @@ class Kever:
             if "trait" in d and d["trait"] == TraitDex.EstOnly:
                 self.estOnly = True
 
-        # need this to recognize recovery events
+        # need this to recognize recovery events and transferable receipts
         self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)  # last establishment event location
 
         # verify signatures
@@ -937,7 +937,7 @@ class Kevery:
 
             self.processEvent(serder, sigers)
 
-        elif ilk in [Ilks.rct]:  # event receipt msg
+        elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
             # extract cry counter if any for attached receipt couplets
             try:
                 counter = CryCounter(qb64=ims)  # qb64
@@ -973,6 +973,37 @@ class Kevery:
                 raise ValidationError("Missing attached receipt couplet(s).")
 
             self.processReceipt(serder, sigvers)
+
+        elif ilk in [Ilks.vrc]:  # validator event receipt msg (transferable)
+            # extract sig counter if any for attached sigs
+            try:
+                counter = SigCounter(qb64=ims)  # qb64
+                nsigs = counter.count
+                del ims[:len(counter.qb64)]  # strip off counter
+            except ValidationError as ex:
+                nsigs = 0  # no signature count
+
+            # extract attached sigs as Sigers
+            sigers = []  # list of Siger instances for attached indexed signatures
+            if nsigs:
+                for i in range(nsigs): # extract each attached signature
+                    # check here for type of attached signatures qb64 or qb2
+                    siger = Siger(qb64=ims)  # qb64
+                    sigers.append(siger)
+                    del ims[:len(siger.qb64)]  # strip off signature
+
+            else:  # no info on attached sigs
+                if framed:  # parse for signatures until end-of-stream
+                    while ims:
+                        # check here for type of attached signatures qb64 or qb2
+                        siger = Siger(qb64=ims)  # qb64
+                        sigers.append(siger)
+                        del ims[:len(siger.qb64)]  # strip off signature
+
+            if not sigers:
+                raise ValidationError("Missing attached signature(s) to receipt.")
+
+            self.processChit(serder, sigers)
 
         else:
             raise ValidationError("Unexpected message ilk = {}.".format(ilk))
@@ -1075,14 +1106,12 @@ class Kevery:
         Receipt dict labels
             vs  # version string
             pre  # qb64 prefix
-            sn  # hex string no leading zeros lowercase
-            ilk
+            ilk  # rct
             dig  # qb64 digest of receipted event
         """
-        # fetch  pre, sn, ilk  dig to process
+        # fetch  pre dig to process
         ked = serder.ked
         pre = ked["pre"]
-        # ilk = ked["ilk"]
         dig = ked["dig"]
         # retrieve event
         key = dgKey(pre=pre, dig=dig)
@@ -1090,7 +1119,7 @@ class Kevery:
         if eraw is None:  # escrow each couplet
             for sigver in sigvers:
                 if not sigver.verfer.nontrans:# check that verfer is non-transferable
-                    contine  # skip invalid couplets
+                    continue  # skip invalid couplets
                 couplet = sigver.verfer.qb64b + sigver.qb64b
                 self.logger.addUre(key=key, val=couplet)
         else:
@@ -1098,12 +1127,67 @@ class Kevery:
             # process each couplet verify sig and write to db
             for sigver in sigvers:
                 if not sigver.verfer.nontrans:# check that verfer is non-transferable
-                    contine  # skip invalid couplets
+                    continue  # skip invalid couplets
                 if sigver.verfer.verify(sigver.raw, eserder.raw):
                     # write receipt couplet to database
                     couplet = sigver.verfer.qb64b + sigver.qb64b
                     self.logger.addRct(key=key, val=couplet)
 
+
+    def processChit(self, serder, sigers):
+        """
+        Process one transferable validator receipt (chit) serder with attached sigers
+
+        Parameters:
+            serder is chit serder (transferable validator receipt message)
+            sigers is list of Siger instances that contain signature
+
+        Chit dict labels
+            vs  # version string
+            pre  # qb64 prefix
+            ilk  # vrc
+            dig  # qb64 digest of receipted event
+            seal # event seal of last est event pre dig
+        """
+        # fetch  pre, dig,seal to process
+        ked = serder.ked
+        pre = ked["pre"]
+        dig = ked["dig"]
+        seal = SealEvent(**ked["seal"])
+        sealet = seal.pre.encode("utf-8") + seal.dig.encode("utf-8")
+
+        key = dgKey(pre=pre, dig=dig)  # retrieve receipted event
+        raw = self.logger.getEvt(key=key)
+
+        if (raw is None or  # receipted event not yet exist
+            seal.pre not in self.kevers):  # receipter not yet in database
+
+            for siger in sigers:  # escrow triplets one for each sig
+                triplet = sealet + siger.qb64b
+                self.logger.addVre(key=key, val=triplet)
+
+        else:  # both receipted event and receipter in database
+            rekever = self.kevers[seal.pre]
+            if rekever.lastEst.dig == seal.dig:  #  receipt from last est event
+                raw = bytes(raw)
+                for siger in sigers:
+                    if siger.index >= len(rekever.verfers):
+                        raise ValidationError("Index = {} to large for keys."
+                                              "".format(siger.index))
+                    siger.verfer = rekever.verfers[siger.index]  # assign verfer
+
+                    if siger.verfer.verify(siger.raw, raw):
+                        # write receipt truplet to database
+                        triplet = sealet + siger.qb64b
+                        self.logger.addVrc(key=key, val=triplet)
+
+                    else:
+                        # log bad sig
+                        pass
+
+            else:  #  discard receipt as stale
+                raise ValidationError("Stale validator = {} receipt for pre = "
+                                      "{} dig ={}.".format(seal.pre, pre, dig))
 
 
 
