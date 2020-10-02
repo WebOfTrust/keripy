@@ -1683,8 +1683,6 @@ class SigMat:
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
         elif qb64 is not None:
-            if hasattr(qb64, "decode"):  # converts bytes like to str
-                qb64 = qb64.decode("utf-8")
             self._exfil(qb64)
 
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
@@ -1766,6 +1764,8 @@ class SigMat:
         """
         cs = 1  # code size  initially 1 to extract selector or one char code
         code = qb64[:cs]  # get front code
+        if hasattr(code, "decode"):  # converts bytes like to str
+            code = code.decode("utf-8")
         index = 0
 
         # need to map code to length so can only consume proper number of chars
@@ -1773,31 +1773,41 @@ class SigMat:
 
         if code in SigTwoDex:  # 2 char = 1 code + 1 index
             qb64 = qb64[:SigTwoSizes[code]]  # strip of full sigmat
+            if hasattr(qb64, "decode"):  # converts bytes like to str
+                qb64 = qb64.decode("utf-8")
             cs += 1
             index = B64IdxByChr[qb64[cs-1:cs]]  # last one character for index
 
         elif code == SigSelDex.four:  #  '0'
             cs += 1
             code = qb64[0:cs]  # get front code
+            if hasattr(code, "decode"):  # converts bytes like to str
+                code = code.decode("utf-8")
             if code not in SigFourDex:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:SigFourSizes[code]]  # strip of full sigmat
+            if hasattr(qb64, "decode"):  # converts bytes like to str
+                qb64 = qb64.decode("utf-8")
             cs += 2
             index = B64ToInt(qb64[cs-2:cs])  # last two characters for index
 
         elif code == SigSelDex.dash:  #  '-'
             cs += 1
             code = qb64[0:cs]  # get front code
+            if hasattr(code, "decode"):  # converts bytes like to str
+                code = code.decode("utf-8")
             if code not in SigCntDex:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:SigCntSizes[code]]  # strip of full sigmat
+            if hasattr(qb64, "decode"):  # converts bytes like to str
+                qb64 = qb64.decode("utf-8")
             cs += 2
             index = B64ToInt(qb64[cs-2:cs])  # last two characters for index
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64))
 
-        if len(qb64) != SigSizes[code]:  # forbit shorter
+        if len(qb64) != SigSizes[code]:  # forbid shorter
             raise ValidationError("Unexpected qb64 size={} for code={}"
                                   " not size={}.".format(len(qb64),
                                                          code,

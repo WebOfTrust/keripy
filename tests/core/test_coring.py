@@ -895,6 +895,14 @@ def test_sigmat():
     assert sigmat.qb64 == qsc
     assert sigmat.qb2 == b'\xf8\x00\x00'
 
+    qscb = qsc.encode("utf-8")  # test with bytes not str input
+    sigmat = SigMat(qb64=qscb)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb2 == b'\xf8\x00\x00'
+
     idx = 5
     qsc = SigCntDex.Base64 + IntToB64(idx, l=2)
     assert qsc == '-AAF'
@@ -941,6 +949,12 @@ def test_sigmat():
         sigmat = SigMat(raw=shortsig)
 
     sigmat = SigMat(qb64=qsig64)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.index == 0
+
+    qsig64b = qsig64.encode("utf-8")  # test with bytes not str
+    sigmat = SigMat(qb64=qsig64b)
     assert sigmat.raw == sig
     assert sigmat.code == SigTwoDex.Ed25519
     assert sigmat.index == 0
@@ -1428,4 +1442,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_crycounter()
+    test_sigmat()
