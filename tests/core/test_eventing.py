@@ -1648,7 +1648,6 @@ def test_direct_mode():
         csn = cesn = 0  # sn and last establishment sn = esn
         vsn = vesn = 0  # sn and last establishment sn = esn
 
-
         # Coe Event 0  Inception Transferable (nxt digest not empty)
         coeSerder = incept(keys=[coeSigners[cesn].verfer.qb64],
                         nxt=Nexter(keys=[coeSigners[cesn+1].verfer.qb64]).qb64,
@@ -1843,29 +1842,45 @@ def test_direct_mode():
                                     coeKever.diger.qb64b +
                                     siger.qb64b)
 
+        # Coe RotationTransferable
+        csn += 1
+        cesn += 1
+        assert csn == cesn == 1
+        coeSerder = rotate(pre=coeKever.prefixer.qb64,
+                           keys=[coeSigners[cesn].verfer.qb64],
+                           dig=coeKever.diger.qb64,
+                           nxt=Nexter(keys=[coeSigners[cesn+1].verfer.qb64]).qb64,
+                           sn=csn)
+        coe_event_digs.append(coeSerder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # returns siger
 
+        #  create serialized message
+        cmsg = bytearray(coeSerder.raw)
+        cmsg.extend(counter.qb64b)
+        cmsg.extend(siger.qb64b)
+        assert cmsg == bytearray(b'{"vs":"KERI10JSON00013a_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLy'
+                                 b'DsojFXotBXdSo","sn":"1","ilk":"rot","dig":"EixO2SBNow3tYDfYX6NRt'
+                                 b'1O9ZSMx2IsBeWkh8YJRp5VI","sith":"1","keys":["DVcuJOOJF1IE8svqEtr'
+                                 b'SuyQjGTd2HhfAkt9y2QkUtFJI"],"nxt":"EoWDoTGQZ6lJ19LsaV4g42k5gccsB'
+                                 b'_-ttYHOft6kuYZk","toad":"0","cuts":[],"adds":[],"data":[]}-AABAA'
+                                 b'mdbrvHJk-JwrB3PfMADBKhUwA9sDa9I7E7bfqIXDX6fPk3rV9mAW2EH_mCWTh2Co'
+                                 b'jAcpDlWOT3hhBY0KgkXpAA')
 
-        # Next Event Rotation Transferable
-        #csn += 1
-        #cesn += 1
-        #assert csn == cesn == 1
-        #coeSerder = rotate(pre=coeKever.prefixer.qb64,
-                        #keys=[coeSigners[cesn].verfer.qb64],
-                        #dig=coeKever.diger.qb64,
-                        #nxt=Nexter(keys=[coeSigners[cesn+1].verfer.qb64]).qb64,
-                        #sn=csn)
+        # update coe's key event verifier state
+        coeKevery.processAll(ims=bytearray(cmsg))  # make copy
+        # verify coe's copy of coe's event stream is updated
+        assert coeKever.sn == csn
+        assert coeKever.diger.qb64 == coeSerder.dig
 
-        #coe_event_digs.append(coeSerder.dig)
-        ## create sig counter
-        #counter = SigCounter()  # default is count = 1
-        ## sign serialization
-        #siger = coeSigners[cesn].sign(coeSerder.raw, index=0)  # returns siger
-        ##extend key event stream
-        #coe2val.extend(coeSerder.raw)
-        #coe2val.extend(counter.qb64b)
-        #coe2val.extend(siger.qb64b)
-        #coeKevery.processAll(ims=bytearray(coe2val))  # update key event verifier state
-        #valKevery.processAll(ims=coe2val)
+        # simulate send message from coe to val
+        valKevery.processAll(ims=cmsg)
+        # verify val's copy of coe's event stream is updated
+        assert coeK.sn == csn
+        assert coeK.diger.qb64 == coeSerder.dig
+
 
         ## Next Event Interaction
         #csn += 1  #  do not increment esn
@@ -1889,10 +1904,10 @@ def test_direct_mode():
 
 
 
-        #assert coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
+        assert coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
 
-        #db_digs = [bytes(val).decode("utf-8") for val in coeKever.logger.getKelIter(coepre)]
-        #assert len(db_digs) == len(coe_event_digs) == 7
+        db_digs = [bytes(val).decode("utf-8") for val in coeKever.logger.getKelIter(coepre)]
+        # assert len(db_digs) == len(coe_event_digs) == 7
 
 
         #assert valKever.sn == coeKever.sn
