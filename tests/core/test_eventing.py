@@ -1724,7 +1724,7 @@ def test_direct_mode():
                         seal=seal)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeIcpDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=0)))
+        coeIcpDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIcpDig == coeK.diger.qb64b == b'EixO2SBNow3tYDfYX6NRt1O9ZSMx2IsBeWkh8YJRp5VI'
         coeIcpRaw = bytes(valKevery.logger.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
         assert coeIcpRaw == (b'{"vs":"KERI10JSON0000fb_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdS'
@@ -1810,7 +1810,7 @@ def test_direct_mode():
                         seal=seal)
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
-        valIcpDig = bytes(coeKevery.logger.getKeLast(key=snKey(pre=valpre, sn=0)))
+        valIcpDig = bytes(coeKevery.logger.getKeLast(key=snKey(pre=valpre, sn=vsn)))
         assert valIcpDig == valK.diger.qb64b == b'E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA'
         valIcpRaw = bytes(coeKevery.logger.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
         assert valIcpRaw == (b'{"vs":"KERI10JSON0000fb_","pre":"EwBwUb2eZcA5GDcN7g-87wpreM0nNkLqzkwviBHTcV1'
@@ -1895,7 +1895,7 @@ def test_direct_mode():
                         seal=seal)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeRotDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=1)))
+        coeRotDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeRotDig == coeK.diger.qb64b == b'E7MC1Sr7igW4JEDdvZu_HtmNoyBn4_Th-TcfKwwFBYR4'
         coeRotRaw = bytes(valKevery.logger.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
         assert coeRotRaw == (b'{"vs":"KERI10JSON00013a_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdS'
@@ -1932,7 +1932,7 @@ def test_direct_mode():
                                     b'HsnSiAgX5vrAAAciKcK5F0a0p5eQr1jG61KtIYP-7qhqmEtMLiDTShRAOqOMo0leInt1pI60goLV'
                                     b'XGXatvIfdEc2tO41FbfZFtCg')
 
-        ## Next Event Interaction
+        # Next Event Coe Interaction
         csn += 1  #  do not increment esn
         assert csn == 2
         assert cesn == 1
@@ -1966,6 +1966,52 @@ def test_direct_mode():
         # verify val's copy of coe's event stream is updated
         assert coeK.sn == csn
         assert coeK.diger.qb64 == coeSerder.dig
+
+
+        # create receipt of coe's interaction
+        # create seal of val's last est event
+        seal = SealEvent(pre=valpre, dig=valKever.lastEst.dig)
+        # create validator receipt
+        reserder = chit(pre=coeK.prefixer.qb64,
+                        dig=coeK.diger.qb64,
+                        seal=seal)
+        # sign coe's event not receipt
+        # look up event to sign from val's kever for coe
+        coeRotDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=csn)))
+        assert coeRotDig == coeK.diger.qb64b == b'Ec9ivQTiqBXBhx4d2HCA7qfUksJyB6sKSHz5cHufFiyo'
+        coeRotRaw = bytes(valKevery.logger.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
+        assert coeRotRaw == (b'{"vs":"KERI10JSON0000a3_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdS'
+                             b'o","sn":"2","ilk":"ixn","dig":"E7MC1Sr7igW4JEDdvZu_HtmNoyBn4_Th-TcfKwwFBYR4"'
+                             b',"data":[]}')
+        counter = SigCounter(count=1)
+        siger = valSigners[vesn].sign(ser=coeRotRaw, index=0)  # return Siger if index
+        assert siger.qb64 == 'AAJvbiMOYhH2GzJbncaol_qWDZkwF7WRi5DOWVnQIlY1emMawGFcD7r62DTKGR6zd1gjsMdose_Qmt_IFshFPPAg'
+
+        # create receipt message
+        vmsg = bytearray(reserder.raw)
+        vmsg.extend(counter.qb64b)
+        vmsg.extend(siger.qb64b)
+        assert vmsg == bytearray(b'{"vs":"KERI10JSON000103_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLy'
+                                 b'DsojFXotBXdSo","ilk":"vrc","dig":"Ec9ivQTiqBXBhx4d2HCA7qfUksJyB6'
+                                 b'sKSHz5cHufFiyo","seal":{"pre":"EwBwUb2eZcA5GDcN7g-87wpreM0nNkLqz'
+                                 b'kwviBHTcV1A","dig":"E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA'
+                                 b'"}}-AABAAJvbiMOYhH2GzJbncaol_qWDZkwF7WRi5DOWVnQIlY1emMawGFcD7r62'
+                                 b'DTKGR6zd1gjsMdose_Qmt_IFshFPPAg')
+
+        # Simulate send to coe of val's receipt of coe's rotation message
+        coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
+
+        #  check if receipt from val in receipt database
+        result = coeKevery.logger.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+                                                        dig=coeKever.diger.qb64))
+        assert bytes(result[0]) == (valKever.prefixer.qb64b +
+                                    valKever.diger.qb64b +
+                                    siger.qb64b)
+
+        assert bytes(result[0]) == (b'EwBwUb2eZcA5GDcN7g-87wpreM0nNkLqzkwviBHTcV1AE0CxRRD8SSBHZlSt-gblJ5_PL6JskFaa'
+                                    b'HsnSiAgX5vrAAAJvbiMOYhH2GzJbncaol_qWDZkwF7WRi5DOWVnQIlY1emMawGFcD7r62DTKGR6z'
+                                    b'd1gjsMdose_Qmt_IFshFPPAg')
+
 
         #  verify final coe event state
         assert coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
