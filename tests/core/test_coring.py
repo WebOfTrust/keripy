@@ -260,6 +260,11 @@ def test_crymat():
     assert crymat.raw == sig
     assert crymat.code == CryTwoDex.Ed25519
 
+    qsig64b  = qsig64.encode("utf-8")  #  test bytes input
+    crymat = CryMat(qb64=qsig64b)
+    assert crymat.raw == sig
+    assert crymat.code == CryTwoDex.Ed25519
+
     crymat = CryMat(qb2=qbin)
     assert crymat.raw == sig
     assert crymat.code == CryTwoDex.Ed25519

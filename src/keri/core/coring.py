@@ -351,8 +351,6 @@ class CryMat:
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
         elif qb64 is not None:
-            if hasattr(qb64, "decode"):  # converts bytes like to str
-                qb64 = qb64.decode("utf-8")
             self._exfil(qb64)
 
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
@@ -440,6 +438,8 @@ class CryMat:
         """
         cs = 1  # code size  initially 1 to extract selector
         code = qb64[:cs]
+        if hasattr(code, "decode"):  # converts bytes like to str
+            code = code.decode("utf-8")
         index = 0
 
         # need to map code to length so can only consume proper number of chars
@@ -447,27 +447,41 @@ class CryMat:
 
         if code in CryOneDex:  # One Char code
             qb64 = qb64[:CryOneSizes[code]]  # strip of full crymat
+            if hasattr(qb64, "decode"):  # converts bytes like to str
+                qb64 = qb64.decode("utf-8")
 
         elif code == CrySelDex.two: # first char of two char code
             cs += 1  # increase code size
             code = qb64[0:cs]  #  get full code
+            if hasattr(code, "decode"):  # converts bytes like to str
+                code = code.decode("utf-8")
             if code not in CryTwoDex:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:CryTwoSizes[code]]  # strip of full crymat
+            if hasattr(qb64, "decode"):  # converts bytes like to str
+                qb64 = qb64.decode("utf-8")
 
         elif code == CrySelDex.four: # first char of four char cnt code
             cs += 3  # increase code size
             code = qb64[0:cs]  #  get full code
+            if hasattr(code, "decode"):  # converts bytes like to str
+                code = code.decode("utf-8")
             if code not in CryFourDex:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:CryFourSizes[code]]  # strip of full crymat
+            if hasattr(qb64, "decode"):  # converts bytes like to str
+                qb64 = qb64.decode("utf-8")
 
         elif code == CrySelDex.dash:  #  '-' 2 char code + 2 char index count
             cs += 1  # increase code size
             code = qb64[0:cs]  # get front code
+            if hasattr(code, "decode"):  # converts bytes like to str
+                code = code.decode("utf-8")
             if code not in CryCntDex:  # 4 char = 2 code + 2 index
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
             qb64 = qb64[:CryCntSizes[code]]  # strip of full crymat
+            if hasattr(qb64, "decode"):  # converts bytes like to str
+                qb64 = qb64.decode("utf-8")
             cs += 2  # increase code size
             index = B64ToInt(qb64[cs-2:cs])  # last two characters for index
 
