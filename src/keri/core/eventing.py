@@ -395,7 +395,6 @@ class Kever:
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
         .cnfg is list of inception configuration data mappings
-        .data is list of current seals (not sure if this needs to be in current event state)
         .estOnly is boolean
         .nonTrans is boolean
         .lastEst is LastEstLoc namedtuple of int .sn and qb64 .dig of last est event
@@ -494,7 +493,6 @@ class Kever:
         self.toad = toad
 
         self.cnfg = ked["cnfg"]
-        self.data = None
 
         # ensure boolean
         self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
@@ -692,7 +690,6 @@ class Kever:
 
             self.toad = toad
             self.wits = wits
-            self.data = ked["data"]  # not sure if this should be in state
 
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)
@@ -741,7 +738,6 @@ class Kever:
             self.sn = sn
             self.diger = serder.diger
             self.ilk = ilk
-            self.data = ked["data"]  # not sure if this should be in state
 
             self.logEvent(serder, sigers)  # update logs
 
