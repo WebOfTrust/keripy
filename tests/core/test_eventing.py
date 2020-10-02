@@ -1933,35 +1933,69 @@ def test_direct_mode():
                                     b'XGXatvIfdEc2tO41FbfZFtCg')
 
         ## Next Event Interaction
-        #csn += 1  #  do not increment esn
-        #assert csn == 2
-        #assert cesn == 1
-        #coeSerder = interact(pre=coeKever.prefixer.qb64,
-                              #dig=coeKever.diger.qb64,
-                              #sn=csn)
-        #coe_event_digs.append(coeSerder.dig)
-        ## create sig counter
-        #counter = SigCounter()  # default is count = 1
-        ## sign serialization
-        #siger = coeSigners[cesn].sign(coeSerder.raw, index=0)
+        csn += 1  #  do not increment esn
+        assert csn == 2
+        assert cesn == 1
+        coeSerder = interact(pre=coeKever.prefixer.qb64,
+                              dig=coeKever.diger.qb64,
+                              sn=csn)
+        coe_event_digs.append(coeSerder.dig)
+        # create sig counter
+        counter = SigCounter()  # default is count = 1
+        # sign serialization
+        siger = coeSigners[cesn].sign(coeSerder.raw, index=0)
 
-        ##extend key event stream
-        #coe2val.extend(coeSerder.raw)
-        #coe2val.extend(counter.qb64b)
-        #coe2val.extend(siger.qb64b)
-        #coeKevery.processAll(ims=bytearray(coe2val))  # update key event verifier state
-        #valKevery.processAll(ims=coe2val)
+        # create msg
+        cmsg = bytearray(coeSerder.raw)
+        cmsg.extend(counter.qb64b)
+        cmsg.extend(siger.qb64b)
+        assert cmsg == bytearray(b'{"vs":"KERI10JSON0000a3_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLy'
+                                 b'DsojFXotBXdSo","sn":"2","ilk":"ixn","dig":"E7MC1Sr7igW4JEDdvZu_H'
+                                 b'tmNoyBn4_Th-TcfKwwFBYR4","data":[]}-AABAAy0fxup1pAatbj9IneWbFLp2'
+                                 b'qcozBVOFnmjlbf4Sr8QNL2byHOth3M3r-_3Eu5C9xmywPHZtixt-wc5eFqXxhAw')
 
 
+        # update coe's key event verifier state
+        coeKevery.processAll(ims=bytearray(cmsg))  # make copy
+        # verify coe's copy of coe's event stream is updated
+        assert coeKever.sn == csn
+        assert coeKever.diger.qb64 == coeSerder.dig
 
+        # simulate send message from coe to val
+        valKevery.processAll(ims=cmsg)
+        # verify val's copy of coe's event stream is updated
+        assert coeK.sn == csn
+        assert coeK.diger.qb64 == coeSerder.dig
+
+        #  verify final coe event state
         assert coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
+        assert coeKever.sn == coeK.sn == csn
 
-        db_digs = [bytes(val).decode("utf-8") for val in coeKever.logger.getKelIter(coepre)]
-        # assert len(db_digs) == len(coe_event_digs) == 7
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.logger.getKelIter(coepre)]
+        assert len(db_digs) == len(coe_event_digs) == csn+1
+        assert db_digs == coe_event_digs == ['EixO2SBNow3tYDfYX6NRt1O9ZSMx2IsBeWkh8YJRp5VI',
+                                             'E7MC1Sr7igW4JEDdvZu_HtmNoyBn4_Th-TcfKwwFBYR4',
+                                             'Ec9ivQTiqBXBhx4d2HCA7qfUksJyB6sKSHz5cHufFiyo']
 
 
-        #assert valKever.sn == coeKever.sn
-        #assert valKever.verfers[0].qb64 == coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.logger.getKelIter(coepre)]
+        assert len(db_digs) == len(coe_event_digs) == csn+1
+        assert db_digs == coe_event_digs == ['EixO2SBNow3tYDfYX6NRt1O9ZSMx2IsBeWkh8YJRp5VI',
+                                             'E7MC1Sr7igW4JEDdvZu_HtmNoyBn4_Th-TcfKwwFBYR4',
+                                             'Ec9ivQTiqBXBhx4d2HCA7qfUksJyB6sKSHz5cHufFiyo']
+
+
+        #  verify final val event state
+        assert valKever.verfers[0].qb64 == valSigners[vesn].verfer.qb64
+        assert valKever.sn == valK.sn == vsn
+
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.logger.getKelIter(valpre)]
+        assert len(db_digs) == len(val_event_digs) == vsn+1
+        assert db_digs == val_event_digs == ['E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA']
+
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.logger.getKelIter(valpre)]
+        assert len(db_digs) == len(val_event_digs) == vsn+1
+        assert db_digs == val_event_digs == ['E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA']
 
     assert not os.path.exists(valKevery.logger.path)
     assert not os.path.exists(coeKever.logger.path)
