@@ -1765,7 +1765,9 @@ def test_direct_mode():
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
                                     valKever.diger.qb64b +
                                     siger.qb64b)
-
+        assert bytes(result[0]) == (b'EwBwUb2eZcA5GDcN7g-87wpreM0nNkLqzkwviBHTcV1AE0CxRRD8SSBHZlSt-gblJ5_PL6JskFaa'
+                                    b'HsnSiAgX5vrAAAOYor4MvfRJACjzGlcQzSIjapymNyjqimNJfuKpyMCBkoQwr0utASvCzgKxEAI8'
+                                    b'B8yXhO2spi-7i94_dh2ZD4CQ')
 
         # create receipt to escrow use invalid dig so not in coe's db
         fake = reserder.dig  # some other dig
@@ -1841,6 +1843,9 @@ def test_direct_mode():
         assert bytes(result[0]) == (coeKever.prefixer.qb64b +
                                     coeKever.diger.qb64b +
                                     siger.qb64b)
+        assert bytes(result[0]) == (b'ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdSoEixO2SBNow3tYDfYX6NRt1O9ZSMx2IsB'
+                                    b'eWkh8YJRp5VIAAWsB5GblCXs43fNPPGqAlx5FWyEzdBSRb9wGqwwDen3Qq4yxaXVmEn9dZdK3Cq6'
+                                    b'l5Iq6CHxWiKCoUR5A3kG1LBg')
 
         # Coe RotationTransferable
         csn += 1
@@ -1881,6 +1886,51 @@ def test_direct_mode():
         assert coeK.sn == csn
         assert coeK.diger.qb64 == coeSerder.dig
 
+        # create receipt of coe's rotation
+        # create seal of val's last est event
+        seal = SealEvent(pre=valpre, dig=valKever.lastEst.dig)
+        # create validator receipt
+        reserder = chit(pre=coeK.prefixer.qb64,
+                        dig=coeK.diger.qb64,
+                        seal=seal)
+        # sign coe's event not receipt
+        # look up event to sign from val's kever for coe
+        coeRotDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=1)))
+        assert coeRotDig == coeK.diger.qb64b == b'E7MC1Sr7igW4JEDdvZu_HtmNoyBn4_Th-TcfKwwFBYR4'
+        coeRotRaw = bytes(valKevery.logger.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
+        assert coeRotRaw == (b'{"vs":"KERI10JSON00013a_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdS'
+                             b'o","sn":"1","ilk":"rot","dig":"EixO2SBNow3tYDfYX6NRt1O9ZSMx2IsBeWkh8YJRp5VI"'
+                             b',"sith":"1","keys":["DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI"],"nxt":"E'
+                             b'oWDoTGQZ6lJ19LsaV4g42k5gccsB_-ttYHOft6kuYZk","toad":"0","cuts":[],"adds":[],'
+                             b'"data":[]}')
+        counter = SigCounter(count=1)
+        siger = valSigners[vesn].sign(ser=coeRotRaw, index=0)  # return Siger if index
+        assert siger.qb64 == 'AAciKcK5F0a0p5eQr1jG61KtIYP-7qhqmEtMLiDTShRAOqOMo0leInt1pI60goLVXGXatvIfdEc2tO41FbfZFtCg'
+
+        # create receipt message
+        vmsg = bytearray(reserder.raw)
+        vmsg.extend(counter.qb64b)
+        vmsg.extend(siger.qb64b)
+        assert vmsg == bytearray(b'{"vs":"KERI10JSON000103_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLy'
+                                 b'DsojFXotBXdSo","ilk":"vrc","dig":"E7MC1Sr7igW4JEDdvZu_HtmNoyBn4_'
+                                 b'Th-TcfKwwFBYR4","seal":{"pre":"EwBwUb2eZcA5GDcN7g-87wpreM0nNkLqz'
+                                 b'kwviBHTcV1A","dig":"E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA'
+                                 b'"}}-AABAAciKcK5F0a0p5eQr1jG61KtIYP-7qhqmEtMLiDTShRAOqOMo0leInt1p'
+                                 b'I60goLVXGXatvIfdEc2tO41FbfZFtCg')
+
+        # Simulate send to coe of val's receipt of coe's rotation message
+        coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
+
+        #  check if receipt from val in receipt database
+        result = coeKevery.logger.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+                                                        dig=coeKever.diger.qb64))
+        assert bytes(result[0]) == (valKever.prefixer.qb64b +
+                                    valKever.diger.qb64b +
+                                    siger.qb64b)
+
+        assert bytes(result[0]) == (b'EwBwUb2eZcA5GDcN7g-87wpreM0nNkLqzkwviBHTcV1AE0CxRRD8SSBHZlSt-gblJ5_PL6JskFaa'
+                                    b'HsnSiAgX5vrAAAciKcK5F0a0p5eQr1jG61KtIYP-7qhqmEtMLiDTShRAOqOMo0leInt1pI60goLV'
+                                    b'XGXatvIfdEc2tO41FbfZFtCg')
 
         ## Next Event Interaction
         #csn += 1  #  do not increment esn
