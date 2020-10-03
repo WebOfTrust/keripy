@@ -565,8 +565,8 @@ class CryCounter(CryMat):
 
 
     """
-    def __init__(self, raw=None, qb64=None, qb2=None, code=CryCntDex.Base64,
-                 index=None, count=None, **kwa):
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=CryCntDex.Base64, index=None, count=None, **kwa):
         """
 
         Parameters:  See CryMat for inherted parameters
@@ -575,7 +575,7 @@ class CryCounter(CryMat):
         """
         raw = b'' if raw is not None else raw  # force raw to be empty is
 
-        if raw is None and qb64 is None and qb2 is None:
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
             raw = b''
 
         # accept either index or count to init index
@@ -585,7 +585,7 @@ class CryCounter(CryMat):
             index = 1  # most common case
 
         # force raw empty
-        super(CryCounter, self).__init__(raw=raw, qb64=qb64, qb2=qb2,
+        super(CryCounter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                          code=code, index=index, **kwa)
 
         if self.code not in CryCntDex:
@@ -1885,8 +1885,8 @@ class SigCounter(SigMat):
 
 
     """
-    def __init__(self, raw=None, qb64=None, qb2=None, code=SigCntDex.Base64,
-                 index=None, count=None, **kwa):
+    def __init__(self, raw=None, qb64b =None, qb64=None, qb2=None,
+                 code=SigCntDex.Base64, index=None, count=None, **kwa):
         """
 
         Parameters:  See CryMat for inherted parameters
@@ -1895,7 +1895,7 @@ class SigCounter(SigMat):
         """
         raw = b'' if raw is not None else raw  # force raw to be empty is
 
-        if raw is None and qb64 is None and qb2 is None:
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
             raw = b''
 
         # accept either index or count to init index
@@ -1905,7 +1905,7 @@ class SigCounter(SigMat):
             index = 1  # most common case
 
         # force raw empty
-        super(SigCounter, self).__init__(raw=raw, qb64=qb64, qb2=qb2,
+        super(SigCounter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                          code=code, index=index, **kwa)
 
         if self.code not in SigCntDex:

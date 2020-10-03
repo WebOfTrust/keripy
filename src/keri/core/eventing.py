@@ -906,7 +906,7 @@ class Kevery:
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
             # extract sig counter if any for attached sigs
             try:
-                counter = SigCounter(qb64=ims)  # qb64
+                counter = SigCounter(qb64b=ims)  # qb64b
                 nsigs = counter.count
                 del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
@@ -917,7 +917,7 @@ class Kevery:
             if nsigs:
                 for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
-                    siger = Siger(qb64=ims)  # qb64
+                    siger = Siger(qb64b=ims)  # qb64
                     sigers.append(siger)
                     del ims[:len(siger.qb64)]  # strip off signature
 
@@ -925,7 +925,7 @@ class Kevery:
                 if framed:  # parse for signatures until end-of-stream
                     while ims:
                         # check here for type of attached signatures qb64 or qb2
-                        siger = Siger(qb64=ims)  # qb64
+                        siger = Siger(qb64b=ims)  # qb64
                         sigers.append(siger)
                         del ims[:len(siger.qb64)]  # strip off signature
 
@@ -937,7 +937,7 @@ class Kevery:
         elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
             # extract cry counter if any for attached receipt couplets
             try:
-                counter = CryCounter(qb64=ims)  # qb64
+                counter = CryCounter(qb64b=ims)  # qb64
                 ncpts = counter.count
                 del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
@@ -950,9 +950,9 @@ class Kevery:
             if ncpts:
                 for i in range(ncpts): # extract each attached couplet
                     # check here for type of attached couplets qb64 or qb2
-                    verfer = Verfer(qb64=ims)  # qb64
+                    verfer = Verfer(qb64b=ims)  # qb64
                     del ims[:len(verfer.qb64)]  # strip off identifier prefix
-                    sigver = Sigver(qb64=ims, verfer=verfer)  # qb64
+                    sigver = Sigver(qb64b=ims, verfer=verfer)  # qb64
                     sigvers.append(sigver)
                     del ims[:len(sigver.qb64)]  # strip off signature
 
@@ -960,9 +960,9 @@ class Kevery:
                 if framed:  # parse for receipts until end-of-stream
                     while ims:
                         # check here for type of attached receipts qb64 or qb2
-                        verfer = Verfer(qb64=ims)  # qb64
+                        verfer = Verfer(qb64b=ims)  # qb64
                     del ims[:len(verfer.qb64)]  # strip off identifier prefix
-                    sigver = Sigver(qb64=ims, verfer=verfer)  # qb64
+                    sigver = Sigver(qb64b=ims, verfer=verfer)  # qb64
                     sigvers.append(sigver)
                     del ims[:len(sigver.qb64)]  # strip off signature
 
@@ -974,7 +974,7 @@ class Kevery:
         elif ilk in [Ilks.vrc]:  # validator event receipt msg (transferable)
             # extract sig counter if any for attached sigs
             try:
-                counter = SigCounter(qb64=ims)  # qb64
+                counter = SigCounter(qb64b=ims)  # qb64
                 nsigs = counter.count
                 del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
@@ -985,7 +985,7 @@ class Kevery:
             if nsigs:
                 for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
-                    siger = Siger(qb64=ims)  # qb64
+                    siger = Siger(qb64b=ims)  # qb64
                     sigers.append(siger)
                     del ims[:len(siger.qb64)]  # strip off signature
 
@@ -993,7 +993,7 @@ class Kevery:
                 if framed:  # parse for signatures until end-of-stream
                     while ims:
                         # check here for type of attached signatures qb64 or qb2
-                        siger = Siger(qb64=ims)  # qb64
+                        siger = Siger(qb64b=ims)  # qb64
                         sigers.append(siger)
                         del ims[:len(siger.qb64)]  # strip off signature
 
