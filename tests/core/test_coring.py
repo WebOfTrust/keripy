@@ -1207,9 +1207,6 @@ def test_sigcounter():
     assert counter.count == cnt
     assert counter.qb64 == qsc
     assert counter.qb2 == b'\xf8\x10\x05'
-
-
-
     """ Done Test """
 
 
