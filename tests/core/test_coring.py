@@ -1221,8 +1221,23 @@ def test_siger():
         siger = Siger()
 
     qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qsig64b = qsig64.encode("utf-8")
+    assert qsig64b == b'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    siger = Siger(qb64b=qsig64b)
+    assert siger.code == SigTwoDex.Ed25519
+    assert siger.index == 0
+    assert siger.qb64 == qsig64
+    assert siger.verfer == None
+
 
     siger = Siger(qb64=qsig64)
+    assert siger.code == SigTwoDex.Ed25519
+    assert siger.index == 0
+    assert siger.qb64 == qsig64
+    assert siger.verfer == None
+
+    siger = Siger(qb64=qsig64b)  #  also bytes
     assert siger.code == SigTwoDex.Ed25519
     assert siger.index == 0
     assert siger.qb64 == qsig64
