@@ -305,17 +305,21 @@ class CryMat:
         .code  str derivation code to indicate cypher suite
         .raw   bytes crypto material only without code
         .pad  int number of pad chars given raw
-        .qb64 str in Base64 with derivation code and crypto material
-        .qb2  bytes in binary with derivation code and crypto material
+        .qb64 str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  bytes in binary with derivation code + crypto material
+        .nontrans True when non-transferable derivation code False otherwise
 
     """
 
-    def __init__(self, raw=None, qb64=None, qb2=None, code=CryOneDex.Ed25519N, index=0):
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=CryOneDex.Ed25519N, index=0):
         """
         Validate as fully qualified
         Parameters:
             raw is bytes of unqualified crypto material usable for crypto operations
-            qb64 is str of fully qualified crypto material
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
             code is str of derivation code
             index is int of count of attached receipts for CryCntDex codes
@@ -350,13 +354,16 @@ class CryMat:
             self._index = index
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
+        elif qb64b is not None:
+            self._exfil(qb64b)
+
         elif qb64 is not None:
-            if hasattr(qb64, "decode"):  # converts bytes like to str
-                qb64 = qb64.decode("utf-8")
+            if hasattr(qb64, "encode"):  #  ._exfil expects bytes not str
+                qb64 = qb64.encode("utf-8")  #  greedy so do not use on stream
             self._exfil(qb64)
 
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
-            self._exfil(encodeB64(qb2).decode("utf-8"))
+            self._exfil(encodeB64(qb2))
 
         else:
             raise EmptyMaterialError("Improper initialization need raw or b64 or b2.")
@@ -434,59 +441,59 @@ class CryMat:
         return (full + encodeB64(self._raw).decode("utf-8")[:-pad])
 
 
-    def _exfil(self, qb64):
+    def _exfil(self, qb64b):
         """
-        Extracts self.code and self.raw from qualified base64 qb64
+        Extracts self.code and self.raw from qualified base64 bytes qb64b
         """
         cs = 1  # code size  initially 1 to extract selector
-        code = qb64[:cs]
+        code = qb64b[:cs].decode("utf-8")  #  convert to str
         index = 0
 
         # need to map code to length so can only consume proper number of chars
         #  from front of qb64 so can use with full identifiers not just prefixes
 
         if code in CryOneDex:  # One Char code
-            qb64 = qb64[:CryOneSizes[code]]  # strip of full crymat
+            qb64b = qb64b[:CryOneSizes[code]]  # strip of full crymat
 
         elif code == CrySelDex.two: # first char of two char code
             cs += 1  # increase code size
-            code = qb64[0:cs]  #  get full code
+            code = qb64b[0:cs].decode("utf-8")  #  get full code, convert to str
             if code not in CryTwoDex:
-                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:CryTwoSizes[code]]  # strip of full crymat
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
+            qb64b = qb64b[:CryTwoSizes[code]]  # strip of full crymat
 
         elif code == CrySelDex.four: # first char of four char cnt code
             cs += 3  # increase code size
-            code = qb64[0:cs]  #  get full code
+            code = qb64b[0:cs].decode("utf-8")  #  get full code, convert to str
             if code not in CryFourDex:
-                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:CryFourSizes[code]]  # strip of full crymat
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
+            qb64b = qb64b[:CryFourSizes[code]]  # strip of full crymat
 
         elif code == CrySelDex.dash:  #  '-' 2 char code + 2 char index count
             cs += 1  # increase code size
-            code = qb64[0:cs]  # get front code
+            code = qb64b[0:cs].decode("utf-8")  #  get full code, convert to str
             if code not in CryCntDex:  # 4 char = 2 code + 2 index
-                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:CryCntSizes[code]]  # strip of full crymat
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
+            qb64b = qb64b[:CryCntSizes[code]]  # strip of full crymat
             cs += 2  # increase code size
-            index = B64ToInt(qb64[cs-2:cs])  # last two characters for index
+            index = B64ToInt(qb64b[cs-2:cs].decode("utf-8"))  # last two characters for index
 
         else:
-            raise ValueError("Improperly coded material = {}".format(qb64))
+            raise ValueError("Improperly coded material = {}".format(qb64b))
 
-        if len(qb64) != CrySizes[code]:  # forbids shorter
+        if len(qb64b) != CrySizes[code]:  # forbids shorter
             raise ValidationError("Unexpected qb64 size={} for code={}"
-                                  " not size={}.".format(len(qb64),
+                                  " not size={}.".format(len(qb64b),
                                                          code,
                                                          CrySizes[code]))
 
         pad = cs % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters
-        base = qb64[cs:] + pad * BASE64_PAD
-        raw = decodeB64(base.encode("utf-8"))
+        base = qb64b[cs:] + pad * BASE64_PAD
+        raw = decodeB64(base)
 
-        if len(raw) != (len(qb64) - cs) * 3 // 4:  # exact lengths
-            raise ValueError("Improperly qualified material = {}".format(qb64))
+        if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
+            raise ValueError("Improperly qualified material = {}".format(qb64b))
 
         self._code = code
         self._index = index
@@ -558,8 +565,8 @@ class CryCounter(CryMat):
 
 
     """
-    def __init__(self, raw=None, qb64=None, qb2=None, code=CryCntDex.Base64,
-                 index=None, count=None, **kwa):
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=CryCntDex.Base64, index=None, count=None, **kwa):
         """
 
         Parameters:  See CryMat for inherted parameters
@@ -568,7 +575,7 @@ class CryCounter(CryMat):
         """
         raw = b'' if raw is not None else raw  # force raw to be empty is
 
-        if raw is None and qb64 is None and qb2 is None:
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
             raw = b''
 
         # accept either index or count to init index
@@ -578,7 +585,7 @@ class CryCounter(CryMat):
             index = 1  # most common case
 
         # force raw empty
-        super(CryCounter, self).__init__(raw=raw, qb64=qb64, qb2=qb2,
+        super(CryCounter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                          code=code, index=index, **kwa)
 
         if self.code not in CryCntDex:
@@ -1392,7 +1399,8 @@ class Prefixer(CryMat):
 
 
 
-BASE64_PAD = '='
+BASE64_PAD = b'='
+
 
 # Mappings between Base64 Encode Index and Decode Characters
 #  B64ChrByIdx is dict where each key is a B64 index and each value is the B64 char
@@ -1634,15 +1642,18 @@ class SigMat:
                or if from SigCntDex then its count of attached signatures
         .raw   bytes crypto material only without code
         .pad  int number of pad chars given .raw
-        .qb64 str in Base64 with derivation code and signature crypto material
-        .qb2  bytes in binary with derivation code and signature crypto material
+        .qb64 str in Base64 fully qualified with derivation code and signature crypto material
+        .qb64b bytes in Base64 fully qualified with derivation code and signature crypto material
+        .qb2  bytes in binary fully qualified with derivation code and signature crypto material
     """
-    def __init__(self, raw=None, qb64=None, qb2=None, code=SigTwoDex.Ed25519, index=0):
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=SigTwoDex.Ed25519, index=0):
         """
         Validate as fully qualified
         Parameters:
             raw is bytes of unqualified crypto material usable for crypto operations
-            qb64 is str of fully qualified crypto material
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
             code is str of derivation code cipher suite
             index is int of offset index into current signing key list
@@ -1682,13 +1693,16 @@ class SigMat:
             self._index = index
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
+        elif qb64b is not None:
+            self._exfil(qb64b)
+
         elif qb64 is not None:
-            if hasattr(qb64, "decode"):  # converts bytes like to str
-                qb64 = qb64.decode("utf-8")
+            if hasattr(qb64, "encode"):  #  ._exfil expects bytes not str
+                qb64 = qb64.encode("utf-8")  #  greedy so do not use on stream
             self._exfil(qb64)
 
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
-            self._exfil(encodeB64(qb2).decode("utf-8"))
+            self._exfil(encodeB64(qb2))
 
         else:
             raise EmptyMaterialError("Improper initialization need raw or b64 or b2.")
@@ -1760,56 +1774,58 @@ class SigMat:
         return (full + encodeB64(self._raw).decode("utf-8")[:-pad])
 
 
-    def _exfil(self, qb64):
+    def _exfil(self, qb64b):
         """
         Extracts self.code,self.index, and self.raw from qualified base64 qb64
         """
         cs = 1  # code size  initially 1 to extract selector or one char code
-        code = qb64[:cs]  # get front code
+        code = qb64b[:cs].decode("utf-8")  # get front code, convert to str
+        if hasattr(code, "decode"):  # converts bytes like to str
+            code = code.decode("utf-8")
         index = 0
 
         # need to map code to length so can only consume proper number of chars
         # from front of qb64 so can use with full identifiers not just prefixes
 
         if code in SigTwoDex:  # 2 char = 1 code + 1 index
-            qb64 = qb64[:SigTwoSizes[code]]  # strip of full sigmat
+            qb64b = qb64b[:SigTwoSizes[code]]  # strip of full sigmat
             cs += 1
-            index = B64IdxByChr[qb64[cs-1:cs]]  # last one character for index
+            index = B64IdxByChr[qb64b[cs-1:cs].decode("utf-8")]  # one character for index
 
         elif code == SigSelDex.four:  #  '0'
             cs += 1
-            code = qb64[0:cs]  # get front code
+            code = qb64b[0:cs].decode("utf-8")  # get front code, convert to str
             if code not in SigFourDex:  # 4 char = 2 code + 2 index
-                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:SigFourSizes[code]]  # strip of full sigmat
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
+            qb64b = qb64b[:SigFourSizes[code]]  # strip of full sigmat
             cs += 2
-            index = B64ToInt(qb64[cs-2:cs])  # last two characters for index
+            index = B64ToInt(qb64b[cs-2:cs].decode("utf-8"))  # two characters for index
 
         elif code == SigSelDex.dash:  #  '-'
             cs += 1
-            code = qb64[0:cs]  # get front code
+            code = qb64b[0:cs].decode("utf-8")  # get front code, convert to str
             if code not in SigCntDex:  # 4 char = 2 code + 2 index
-                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64))
-            qb64 = qb64[:SigCntSizes[code]]  # strip of full sigmat
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
+            qb64b = qb64b[:SigCntSizes[code]]  # strip of full sigmat
             cs += 2
-            index = B64ToInt(qb64[cs-2:cs])  # last two characters for index
+            index = B64ToInt(qb64b[cs-2:cs].decode("utf-8"))  # two characters for index
 
         else:
-            raise ValueError("Improperly coded material = {}".format(qb64))
+            raise ValueError("Improperly coded material = {}".format(qb64b))
 
-        if len(qb64) != SigSizes[code]:  # forbit shorter
+        if len(qb64b) != SigSizes[code]:  # forbid shorter
             raise ValidationError("Unexpected qb64 size={} for code={}"
-                                  " not size={}.".format(len(qb64),
+                                  " not size={}.".format(len(qb64b),
                                                          code,
                                                          SigSizes[code]))
 
         pad = cs % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters
-        base = qb64[cs:] + pad * BASE64_PAD
-        raw = decodeB64(base.encode("utf-8"))
+        base = qb64b[cs:] + pad * BASE64_PAD
+        raw = decodeB64(base)
 
-        if len(raw) != (len(qb64) - cs) * 3 // 4:  # exact lengths
-            raise ValueError("Improperly qualified material = {}".format(qb64))
+        if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
+            raise ValueError("Improperly qualified material = {}".format(qb64b))
 
         self._code = code
         self._index = index
@@ -1869,8 +1885,8 @@ class SigCounter(SigMat):
 
 
     """
-    def __init__(self, raw=None, qb64=None, qb2=None, code=SigCntDex.Base64,
-                 index=None, count=None, **kwa):
+    def __init__(self, raw=None, qb64b =None, qb64=None, qb2=None,
+                 code=SigCntDex.Base64, index=None, count=None, **kwa):
         """
 
         Parameters:  See CryMat for inherted parameters
@@ -1879,7 +1895,7 @@ class SigCounter(SigMat):
         """
         raw = b'' if raw is not None else raw  # force raw to be empty is
 
-        if raw is None and qb64 is None and qb2 is None:
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
             raw = b''
 
         # accept either index or count to init index
@@ -1889,7 +1905,7 @@ class SigCounter(SigMat):
             index = 1  # most common case
 
         # force raw empty
-        super(SigCounter, self).__init__(raw=raw, qb64=qb64, qb2=qb2,
+        super(SigCounter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                          code=code, index=index, **kwa)
 
         if self.code not in SigCntDex:

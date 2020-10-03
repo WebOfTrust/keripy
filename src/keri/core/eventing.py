@@ -395,7 +395,6 @@ class Kever:
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
         .cnfg is list of inception configuration data mappings
-        .data is list of current seals
         .estOnly is boolean
         .nonTrans is boolean
         .lastEst is LastEstLoc namedtuple of int .sn and qb64 .dig of last est event
@@ -494,7 +493,6 @@ class Kever:
         self.toad = toad
 
         self.cnfg = ked["cnfg"]
-        self.data = None
 
         # ensure boolean
         self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
@@ -692,7 +690,6 @@ class Kever:
 
             self.toad = toad
             self.wits = wits
-            self.data = ked["data"]
 
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)
@@ -909,7 +906,7 @@ class Kevery:
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
             # extract sig counter if any for attached sigs
             try:
-                counter = SigCounter(qb64=ims)  # qb64
+                counter = SigCounter(qb64b=ims)  # qb64b
                 nsigs = counter.count
                 del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
@@ -920,7 +917,7 @@ class Kevery:
             if nsigs:
                 for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
-                    siger = Siger(qb64=ims)  # qb64
+                    siger = Siger(qb64b=ims)  # qb64
                     sigers.append(siger)
                     del ims[:len(siger.qb64)]  # strip off signature
 
@@ -928,7 +925,7 @@ class Kevery:
                 if framed:  # parse for signatures until end-of-stream
                     while ims:
                         # check here for type of attached signatures qb64 or qb2
-                        siger = Siger(qb64=ims)  # qb64
+                        siger = Siger(qb64b=ims)  # qb64
                         sigers.append(siger)
                         del ims[:len(siger.qb64)]  # strip off signature
 
@@ -940,7 +937,7 @@ class Kevery:
         elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
             # extract cry counter if any for attached receipt couplets
             try:
-                counter = CryCounter(qb64=ims)  # qb64
+                counter = CryCounter(qb64b=ims)  # qb64
                 ncpts = counter.count
                 del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
@@ -953,9 +950,9 @@ class Kevery:
             if ncpts:
                 for i in range(ncpts): # extract each attached couplet
                     # check here for type of attached couplets qb64 or qb2
-                    verfer = Verfer(qb64=ims)  # qb64
+                    verfer = Verfer(qb64b=ims)  # qb64
                     del ims[:len(verfer.qb64)]  # strip off identifier prefix
-                    sigver = Sigver(qb64=ims, verfer=verfer)  # qb64
+                    sigver = Sigver(qb64b=ims, verfer=verfer)  # qb64
                     sigvers.append(sigver)
                     del ims[:len(sigver.qb64)]  # strip off signature
 
@@ -963,9 +960,9 @@ class Kevery:
                 if framed:  # parse for receipts until end-of-stream
                     while ims:
                         # check here for type of attached receipts qb64 or qb2
-                        verfer = Verfer(qb64=ims)  # qb64
+                        verfer = Verfer(qb64b=ims)  # qb64
                     del ims[:len(verfer.qb64)]  # strip off identifier prefix
-                    sigver = Sigver(qb64=ims, verfer=verfer)  # qb64
+                    sigver = Sigver(qb64b=ims, verfer=verfer)  # qb64
                     sigvers.append(sigver)
                     del ims[:len(sigver.qb64)]  # strip off signature
 
@@ -977,7 +974,7 @@ class Kevery:
         elif ilk in [Ilks.vrc]:  # validator event receipt msg (transferable)
             # extract sig counter if any for attached sigs
             try:
-                counter = SigCounter(qb64=ims)  # qb64
+                counter = SigCounter(qb64b=ims)  # qb64
                 nsigs = counter.count
                 del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
@@ -988,7 +985,7 @@ class Kevery:
             if nsigs:
                 for i in range(nsigs): # extract each attached signature
                     # check here for type of attached signatures qb64 or qb2
-                    siger = Siger(qb64=ims)  # qb64
+                    siger = Siger(qb64b=ims)  # qb64
                     sigers.append(siger)
                     del ims[:len(siger.qb64)]  # strip off signature
 
@@ -996,7 +993,7 @@ class Kevery:
                 if framed:  # parse for signatures until end-of-stream
                     while ims:
                         # check here for type of attached signatures qb64 or qb2
-                        siger = Siger(qb64=ims)  # qb64
+                        siger = Siger(qb64b=ims)  # qb64
                         sigers.append(siger)
                         del ims[:len(siger.qb64)]  # strip off signature
 

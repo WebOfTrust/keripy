@@ -177,9 +177,10 @@ def test_crymat():
     """
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
-    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'
+    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  #  str
+    prefixb = prefix.encode("utf-8")  # bytes
     prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
-              b'IS\xf3\x874\xbao\x90\x8c')
+              b'IS\xf3\x874\xbao\x90\x8c')  # pure base 2 binary qb2
 
     with pytest.raises(EmptyMaterialError):
         crymat = CryMat()
@@ -194,13 +195,22 @@ def test_crymat():
     assert crymat.qb64 == encodeB64(crymat.qb2).decode("utf-8")
     assert crymat.qb2 == decodeB64(crymat.qb64.encode("utf-8"))
 
-    crymat._exfil(prefix)
+    crymat._exfil(prefixb)
+    assert crymat.code == CryOneDex.Ed25519N
+    assert crymat.raw == verkey
+
+    crymat = CryMat(qb64b=prefixb)
     assert crymat.code == CryOneDex.Ed25519N
     assert crymat.raw == verkey
 
     crymat = CryMat(qb64=prefix)
     assert crymat.code == CryOneDex.Ed25519N
     assert crymat.raw == verkey
+
+    crymat = CryMat(qb64=prefixb)  #  works for either
+    assert crymat.code == CryOneDex.Ed25519N
+    assert crymat.raw == verkey
+
 
     # test wrong size of qb64
     longprefix = prefix + "ABCD"
@@ -215,7 +225,7 @@ def test_crymat():
     assert crymat.code == CryOneDex.Ed25519N
     assert crymat.raw == verkey
 
-    crymat = CryMat(qb64=prefix.encode("utf-8"))  # test auto convert bytes to str
+    crymat = CryMat(qb64=prefix.encode("utf-8"))  # test bytes not str
     assert crymat.code == CryOneDex.Ed25519N
     assert crymat.raw == verkey
     assert crymat.qb64 == prefix
@@ -237,15 +247,26 @@ def test_crymat():
     assert crymat.qb64 == prefix
     assert crymat.qb2 == prebin
 
+    # test nongreedy prefixb on full identifier
+    full = prefixb + b":mystuff/mypath/toresource?query=what#fragment"
+    crymat = CryMat(qb64b=full)
+    assert crymat.code == CryOneDex.Ed25519N
+    assert crymat.raw == verkey
+    assert crymat.qb64 == prefix
+    assert crymat.qb2 == prebin
+
     sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
            b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
            b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
 
-    sig64 = encodeB64(sig).decode("utf-8")
+    sig64b = encodeB64(sig)
+    assert sig64b == b'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
+    sig64 =  sig64b.decode("utf-8")
     assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
 
     qsig64 = '0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-    qbin = (b'\xd0\x19\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+    qsig64b = b'0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qsigB2 = (b'\xd0\x19\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
             b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
             b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
 
@@ -253,14 +274,24 @@ def test_crymat():
     assert crymat.raw == sig
     assert crymat.code == CryTwoDex.Ed25519
     assert crymat.qb64 == qsig64
-    assert crymat.qb2 == qbin
+    assert crymat.qb64b == qsig64b
+    assert crymat.qb2 == qsigB2
     assert crymat.nontrans == False
+
+    crymat = CryMat(qb64b=qsig64b)
+    assert crymat.raw == sig
+    assert crymat.code == CryTwoDex.Ed25519
 
     crymat = CryMat(qb64=qsig64)
     assert crymat.raw == sig
     assert crymat.code == CryTwoDex.Ed25519
 
-    crymat = CryMat(qb2=qbin)
+    qsig64b  = qsig64.encode("utf-8")  #  test bytes input
+    crymat = CryMat(qb64=qsig64b)
+    assert crymat.raw == sig
+    assert crymat.code == CryTwoDex.Ed25519
+
+    crymat = CryMat(qb2=qsigB2)
     assert crymat.raw == sig
     assert crymat.code == CryTwoDex.Ed25519
 
@@ -275,6 +306,8 @@ def test_crycounter():
 
     qsc = CryCntDex.Base64 + IntToB64(1, l=2)
     assert qsc == '-AAB'
+    qscb = qsc.encode("utf-8")
+    assert qscb == b'-AAB'
 
     counter = CryCounter()
     assert counter.raw == b''
@@ -282,6 +315,7 @@ def test_crycounter():
     assert counter.index == 1
     assert counter.count == 1
     assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
     assert counter.qb2 == b'\xf8\x00\x01'
 
     counter = CryCounter(raw=b'')
@@ -290,6 +324,16 @@ def test_crycounter():
     assert counter.index == 1
     assert counter.count == 1
     assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
+    assert counter.qb2 == b'\xf8\x00\x01'
+
+    counter = CryCounter(qb64b=qscb)
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base64
+    assert counter.index == 1
+    assert counter.count == 1
+    assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
     assert counter.qb2 == b'\xf8\x00\x01'
 
     counter = CryCounter(qb64=qsc)
@@ -298,6 +342,16 @@ def test_crycounter():
     assert counter.index == 1
     assert counter.count == 1
     assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
+    assert counter.qb2 == b'\xf8\x00\x01'
+
+    counter = CryCounter(qb64=qscb)  #  also works with bytes
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base64
+    assert counter.index == 1
+    assert counter.count == 1
+    assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
     assert counter.qb2 == b'\xf8\x00\x01'
 
     counter = CryCounter(raw=b'', count=1)
@@ -305,6 +359,7 @@ def test_crycounter():
     assert counter.code == CryCntDex.Base64
     assert counter.index == 1
     assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
     assert counter.qb2 == b'\xf8\x00\x01'
 
     counter = CryCounter(raw=b'', count=0)
@@ -312,17 +367,31 @@ def test_crycounter():
     assert counter.code == CryCntDex.Base64
     assert counter.index == 0
     assert counter.qb64 == '-AAA'
+    assert counter.qb64b == b'-AAA'
     assert counter.qb2 == b'\xf8\x00\x00'
 
 
     cnt = 5
     qsc = SigCntDex.Base64 + IntToB64(cnt, l=2)
     assert qsc == '-AAF'
+    qscb = qsc.encode("utf-8")
+    assert qscb == b'-AAF'
+
     counter = CryCounter(count=cnt)
     assert counter.raw == b''
     assert counter.code == CryCntDex.Base64
     assert counter.index == cnt
     assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
+    assert counter.qb2 == b'\xf8\x00\x05'
+
+    counter = CryCounter(qb64b=qscb)
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base64
+    assert counter.index == cnt
+    assert counter.count == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
     assert counter.qb2 == b'\xf8\x00\x05'
 
     counter = CryCounter(qb64=qsc)
@@ -331,16 +400,39 @@ def test_crycounter():
     assert counter.index == cnt
     assert counter.count == cnt
     assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
+    assert counter.qb2 == b'\xf8\x00\x05'
+
+    counter = CryCounter(qb64=qscb)  #  bytes also
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base64
+    assert counter.index == cnt
+    assert counter.count == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
     assert counter.qb2 == b'\xf8\x00\x05'
 
     cnt = 5
     qsc = CryCntDex.Base2 + IntToB64(cnt, l=2)
     assert qsc == '-BAF'
+    qscb = qsc.encode("utf-8")
+    assert qscb == b'-BAF'
+
     counter = CryCounter(code=CryCntDex.Base2, count=cnt)
     assert counter.raw == b''
     assert counter.code == CryCntDex.Base2
     assert counter.index == cnt
     assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
+    assert counter.qb2 == b'\xf8\x10\x05'
+
+    counter = CryCounter(qb64b=qscb)
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base2
+    assert counter.index == cnt
+    assert counter.count == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
     assert counter.qb2 == b'\xf8\x10\x05'
 
     counter = CryCounter(qb64=qsc)
@@ -349,6 +441,16 @@ def test_crycounter():
     assert counter.index == cnt
     assert counter.count == cnt
     assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
+    assert counter.qb2 == b'\xf8\x10\x05'
+
+    counter = CryCounter(qb64=qscb)  #  bytes also
+    assert counter.raw == b''
+    assert counter.code == CryCntDex.Base2
+    assert counter.index == cnt
+    assert counter.count == cnt
+    assert counter.qb64 == qsc
+    assert counter.qb64b == qscb
     assert counter.qb2 == b'\xf8\x10\x05'
 
 
@@ -881,11 +983,22 @@ def test_sigmat():
     # Test attached signature code (empty raw)
     qsc = SigCntDex.Base64 + IntToB64(0, l=2)
     assert qsc == '-AAA'
+
+    qscb = qsc.encode("utf-8")
     sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=0)
     assert sigmat.raw == b''
     assert sigmat.code == SigCntDex.Base64
     assert sigmat.index == 0
     assert sigmat.qb64 == qsc
+    assert sigmat.qb64b == qscb
+    assert sigmat.qb2 == b'\xf8\x00\x00'
+
+    sigmat = SigMat(qb64b=qscb)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb64b == qscb
     assert sigmat.qb2 == b'\xf8\x00\x00'
 
     sigmat = SigMat(qb64=qsc)
@@ -893,16 +1006,27 @@ def test_sigmat():
     assert sigmat.code == SigCntDex.Base64
     assert sigmat.index == 0
     assert sigmat.qb64 == qsc
+    assert sigmat.qb64b == qscb
+    assert sigmat.qb2 == b'\xf8\x00\x00'
+
+    sigmat = SigMat(qb64=qscb)  #  also works for bytes
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb64b == qscb
     assert sigmat.qb2 == b'\xf8\x00\x00'
 
     idx = 5
     qsc = SigCntDex.Base64 + IntToB64(idx, l=2)
     assert qsc == '-AAF'
+    qscb = qsc.encode("utf-8")
     sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=idx)
     assert sigmat.raw == b''
     assert sigmat.code == SigCntDex.Base64
     assert sigmat.index == 5
     assert sigmat.qb64 == qsc
+    assert sigmat.qb64b == qscb
     assert sigmat.qb2 == b'\xf8\x00\x05'
 
     # Test signatures
@@ -912,13 +1036,15 @@ def test_sigmat():
 
     assert len(sig) == 64
 
-    sig64 = encodeB64(sig).decode("utf-8")
+    sig64b = encodeB64(sig)
+    sig64 = sig64b.decode("utf-8")
     assert len(sig64) == 88
     assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
 
     qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
     assert len(qsig64) == 88
-    qbin = decodeB64(qsig64.encode("utf-8"))
+    qsig64b = qsig64.encode("utf-8")
+    qbin = decodeB64(qsig64b)
     assert len(qbin) == 66
     assert qbin == (b'\x00\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
                     b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
@@ -940,7 +1066,17 @@ def test_sigmat():
     with pytest.raises(ValidationError):
         sigmat = SigMat(raw=shortsig)
 
+    sigmat = SigMat(qb64b=qsig64b)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.index == 0
+
     sigmat = SigMat(qb64=qsig64)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.index == 0
+
+    sigmat = SigMat(qb64=qsig64b)  # test with bytes not str
     assert sigmat.raw == sig
     assert sigmat.code == SigTwoDex.Ed25519
     assert sigmat.index == 0
@@ -954,7 +1090,7 @@ def test_sigmat():
     with pytest.raises(ValidationError):
         oksigmat = SigMat(qb64=shortqsig64)
 
-    sigmat = SigMat(qb64=qsig64.encode("utf-8"))  # test auto convert bytes to str
+    sigmat = SigMat(qb64=qsig64.encode("utf-8"))  # test bytes not str
     assert sigmat.code == SigTwoDex.Ed25519
     assert sigmat.raw == sig
     assert sigmat.qb64 == qsig64
@@ -1071,9 +1207,6 @@ def test_sigcounter():
     assert counter.count == cnt
     assert counter.qb64 == qsc
     assert counter.qb2 == b'\xf8\x10\x05'
-
-
-
     """ Done Test """
 
 
@@ -1085,8 +1218,23 @@ def test_siger():
         siger = Siger()
 
     qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qsig64b = qsig64.encode("utf-8")
+    assert qsig64b == b'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    siger = Siger(qb64b=qsig64b)
+    assert siger.code == SigTwoDex.Ed25519
+    assert siger.index == 0
+    assert siger.qb64 == qsig64
+    assert siger.verfer == None
+
 
     siger = Siger(qb64=qsig64)
+    assert siger.code == SigTwoDex.Ed25519
+    assert siger.index == 0
+    assert siger.qb64 == qsig64
+    assert siger.verfer == None
+
+    siger = Siger(qb64=qsig64b)  #  also bytes
     assert siger.code == SigTwoDex.Ed25519
     assert siger.index == 0
     assert siger.qb64 == qsig64
@@ -1428,4 +1576,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_crycounter()
+    test_sigmat()
