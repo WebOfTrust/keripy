@@ -1087,8 +1087,8 @@ def test_sigmat():
     oksigmat = SigMat(qb64=longqsig64)
     assert len(oksigmat.qb64) == SigSizes[oksigmat.code]
 
-    shortqsig64 = qsig64[:-4]
-    with pytest.raises(ValidationError):
+    shortqsig64 = qsig64[:-4]  # too short
+    with pytest.raises(ShortageError):
         oksigmat = SigMat(qb64=shortqsig64)
 
     sigmat = SigMat(qb64=qsig64.encode("utf-8"))  # test bytes not str

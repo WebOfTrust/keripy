@@ -1813,10 +1813,8 @@ class SigMat:
             raise ValueError("Improperly coded material = {}".format(qb64b))
 
         if len(qb64b) != SigSizes[code]:  # forbid shorter
-            raise ValidationError("Unexpected qb64 size={} for code={}"
-                                  " not size={}.".format(len(qb64b),
-                                                         code,
-                                                         SigSizes[code]))
+            raise ShortageError("Short {} chars or bytes.".format(SigSizes[code]-len(qb64b)))
+
 
         pad = cs % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters
