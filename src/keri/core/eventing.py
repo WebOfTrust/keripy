@@ -20,7 +20,8 @@ import blake3
 
 from orderedset import OrderedSet as oset
 
-from ..kering import ValidationError, VersionError, EmptyMaterialError, DerivationError
+from ..kering import (ValidationError, VersionError, EmptyMaterialError,
+                      DerivationError, ShortageError)
 from ..kering import Versionage, Version
 from ..help.helping import nowIso8601
 from ..db.dbing import dgKey, snKey, Logger
@@ -865,6 +866,10 @@ class Kevery:
         while ims:
             try:
                 self.processOne(ims=ims, framed=self.framed)
+
+            except ShortageError as ex:  # need more bytes
+                raise  ex  # reraise
+
             except Exception as ex:
                 # log diagnostics errors etc
                 #
@@ -890,6 +895,10 @@ class Kevery:
         # deserialize packet from ims
         try:
             serder = Serder(raw=ims)
+
+        except ShortageError as ex:  # need more bytes
+            raise ex  # reraise
+
         except Exception as ex:
             raise ValidationError("Error while processing message stream"
                                   " = {}".format(ex))

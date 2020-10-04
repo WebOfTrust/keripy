@@ -16,24 +16,26 @@ from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage
-from keri.kering import ValidationError, EmptyMaterialError, DerivationError
-from keri.core.coring import CrySelDex, CryCntDex, CryOneDex, CryTwoDex, CryFourDex
-from keri.core.coring import CryCntSizes, CryCntRawSizes, CryCntIdxSizes
-from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
-from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, CryCounter, Verfer, Sigver, Signer
-from keri.core.coring import Diger, Nexter, Prefixer
+from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
+                         ShortageError)
+from keri.core.coring import (CrySelDex, CryCntDex,
+                              CryCntSizes, CryCntRawSizes, CryCntIdxSizes,
+                              CryOneDex, CryOneSizes, CryOneRawSizes,
+                              CryTwoDex, CryTwoSizes, CryTwoRawSizes,
+                              CryFourDex, CryFourSizes, CryFourRawSizes,
+                              CrySizes, CryRawSizes, MINCRYSIZE)
+from keri.core.coring import (CryMat, CryCounter, Verfer, Sigver, Signer,
+                              Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
-from keri.core.coring import SigSelDex
-from keri.core.coring import SigCntDex, SigCntSizes, SigCntRawSizes
-from keri.core.coring import SigTwoDex, SigTwoSizes, SigTwoRawSizes
-from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
-from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
-from keri.core.coring import SigSizes, SigRawSizes
+from keri.core.coring import (SigSelDex, SigCntDex, SigCntSizes, SigCntRawSizes,
+                              SigTwoDex, SigTwoSizes, SigTwoRawSizes,
+                              SigFourDex, SigFourSizes, SigFourRawSizes,
+                              SigFiveDex, SigFiveSizes, SigFiveRawSizes,
+                              SigSizes, SigRawSizes, MINSIGSIZE)
 from keri.core.coring import IntToB64, B64ToInt
 from keri.core.coring import SigMat, SigCounter, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
-from keri.core.coring import Versify, Deversify, Rever
+from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
@@ -124,6 +126,9 @@ def test_cryderivationcodes():
               '1AAA', '1AAB']:
         assert x in CrySizes
         assert x in CryRawSizes
+
+    assert MINCRYSIZE == 4
+
     """Done Test"""
 
 def test_sigderivationcodes():
@@ -169,6 +174,8 @@ def test_sigderivationcodes():
     for x in ['A', 'B', '0A']:
         assert x in SigSizes
         assert x in SigRawSizes
+
+    assert MINSIGSIZE == 4
     """Done Test"""
 
 def test_crymat():
@@ -218,7 +225,7 @@ def test_crymat():
     assert len(okcrymat.qb64) == CrySizes[okcrymat.code]
 
     shortprefix = prefix[:-4]
-    with pytest.raises(ValidationError):
+    with pytest.raises(ShortageError):
         okcrymat = CryMat(qb64=shortprefix)
 
     crymat = CryMat(qb2=prebin)
@@ -1086,8 +1093,8 @@ def test_sigmat():
     oksigmat = SigMat(qb64=longqsig64)
     assert len(oksigmat.qb64) == SigSizes[oksigmat.code]
 
-    shortqsig64 = qsig64[:-4]
-    with pytest.raises(ValidationError):
+    shortqsig64 = qsig64[:-4]  # too short
+    with pytest.raises(ShortageError):
         oksigmat = SigMat(qb64=shortqsig64)
 
     sigmat = SigMat(qb64=qsig64.encode("utf-8"))  # test bytes not str
@@ -1376,36 +1383,92 @@ def test_serials():
     assert match.group() == Vstrings.cbor.encode("utf-8")
     """Done Test"""
 
-def test_serder():
+def test_versify():
     """
-    Test the support functionality for Serder key event serialization deserialization
+    Test Versify support
     """
     vs = Versify(kind=Serials.json, size=0)
     assert vs == "KERI10JSON000000_"
+    assert len(vs) == VERFULLSIZE
     kind, version, size = Deversify(vs)
     assert kind == Serials.json
     assert version == Version
     assert size == 0
 
+    vs = Versify(kind=Serials.json, size=65)
+    assert vs == "KERI10JSON000041_"
+    assert len(vs) == VERFULLSIZE
+    kind, version, size = Deversify(vs)
+    assert kind == Serials.json
+    assert version == Version
+    assert size == 65
+
+    vs = Versify(kind=Serials.mgpk, size=0)
+    assert vs == "KERI10MGPK000000_"
+    assert len(vs) == VERFULLSIZE
+    kind, version, size = Deversify(vs)
+    assert kind == Serials.mgpk
+    assert version == Version
+    assert size == 0
+
     vs = Versify(kind=Serials.mgpk, size=65)
     assert vs == "KERI10MGPK000041_"
+    assert len(vs) == VERFULLSIZE
     kind, version, size = Deversify(vs)
     assert kind == Serials.mgpk
     assert version == Version
     assert size == 65
 
+    vs = Versify(kind=Serials.cbor, size=0)
+    assert vs == "KERI10CBOR000000_"
+    assert len(vs) == VERFULLSIZE
+    kind, version, size = Deversify(vs)
+    assert kind == Serials.cbor
+    assert version == Version
+    assert size == 0
+
+    vs = Versify(kind=Serials.cbor, size=65)
+    assert vs == "KERI10CBOR000041_"
+    assert len(vs) == VERFULLSIZE
+    kind, version, size = Deversify(vs)
+    assert kind == Serials.cbor
+    assert version == Version
+    assert size == 65
+    """End Test"""
+
+
+def test_serder():
+    """
+    Test the support functionality for Serder key event serialization deserialization
+    """
     with pytest.raises(ValueError):
         serder = Serder()
 
-
     e1 = dict(vs=Vstrings.json, pre="ABCDEFG", sn="0001", ilk="rot")
     serder = Serder(ked=e1)
+    assert serder.ked == e1
+    assert serder.kind == Serials.json
+    assert serder.version == Versionage(major=1, minor=0)
+    assert serder.dig == 'EaDVEkrFdx8W0ZZAsfwf9mjxhgBt6PvfCmFPdr7RIcfY'
+    assert serder.digb == b'EaDVEkrFdx8W0ZZAsfwf9mjxhgBt6PvfCmFPdr7RIcfY'
+    assert serder.size == 66
+    assert serder.verfers == []
+    assert serder.raw == b'{"vs":"KERI10JSON000042_","pre":"ABCDEFG","sn":"0001","ilk":"rot"}'
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    assert e1s == b'{"vs":"KERI10JSON000042_","pre":"ABCDEFG","sn":"0001","ilk":"rot"}'
     vs = Versify(kind=Serials.json, size=len(e1s))  # use real length
     assert vs == 'KERI10JSON000042_'
     e1["vs"] = vs  # has real length
+
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    with pytest.raises(ShortageError):  # test too short
+        kind1, vers1, size1 = serder._sniff(e1s[:VERFULLSIZE])
+
+    kind1, vers1, size1 = serder._sniff(e1s[:MINSNIFFSIZE])
+    assert kind1 == Serials.json
+    assert size1 == 66
+
     kind1, vers1, size1 = serder._sniff(e1s)
     assert kind1 == Serials.json
     assert size1 == 66
@@ -1416,6 +1479,9 @@ def test_serder():
     assert vrs1 == vers1
     assert siz1 == size1
 
+    with pytest.raises(ShortageError):  # test too short
+        ked1, knd1, vrs1, siz1 = serder._inhale(e1ss[:size1-1])
+
     raw1, knd1, ked1, ver1 = serder._exhale(ked=e1)
     assert raw1 == e1s
     assert knd1 == kind1
@@ -1425,10 +1491,19 @@ def test_serder():
     e2 = dict(e1)
     e2["vs"] = Vstrings.mgpk
     e2s = msgpack.dumps(e2)
+    assert e2s == b'\x84\xa2vs\xb1KERI10MGPK000000_\xa3pre\xa7ABCDEFG\xa2sn\xa40001\xa3ilk\xa3rot'
     vs = Versify(kind=Serials.mgpk, size=len(e2s))  # use real length
     assert vs == 'KERI10MGPK000032_'
     e2["vs"] = vs  # has real length
     e2s = msgpack.dumps(e2)
+
+    with pytest.raises(ShortageError):  # test too short
+        kind2, vers2, size2 = serder._sniff(e2s[:VERFULLSIZE])
+
+    kind2, vers2, size2 = serder._sniff(e2s[:MINSNIFFSIZE])
+    assert kind2 == Serials.mgpk
+    assert size2 == 50
+
     kind2, vers2, size2 = serder._sniff(e2s)
     assert kind2 == Serials.mgpk
     assert size2 == 50
@@ -1439,6 +1514,9 @@ def test_serder():
     assert vrs2 == vers2
     assert siz2 == size2
 
+    with pytest.raises(ShortageError):  # test too short
+        ked2, knd2, vrs2, siz2 = serder._inhale(e2ss[:size2-1])
+
     raw2, knd2, ked2, ver2 = serder._exhale(ked=e2)
     assert raw2 == e2s
     assert knd2 == kind2
@@ -1448,10 +1526,19 @@ def test_serder():
     e3 = dict(e1)
     e3["vs"] = Vstrings.cbor
     e3s = cbor.dumps(e3)
+    assert e3s == b'\xa4bvsqKERI10CBOR000000_cpregABCDEFGbsnd0001cilkcrot'
     vs = Versify(kind=Serials.cbor, size=len(e3s))  # use real length
     assert vs == 'KERI10CBOR000032_'
     e3["vs"] = vs  # has real length
     e3s = cbor.dumps(e3)
+
+    with pytest.raises(ShortageError):  # test too short
+        kind3, vers3, size3 = serder._sniff(e3s[:VERFULLSIZE])
+
+    kind3, vers3, size3 = serder._sniff(e3s[:MINSNIFFSIZE])
+    assert kind3 == Serials.cbor
+    assert size3 == 50
+
     kind3, vers3, size3 = serder._sniff(e3s)
     assert kind3 == Serials.cbor
     assert size3 == 50
@@ -1461,6 +1548,9 @@ def test_serder():
     assert knd3 == kind3
     assert vrs3 == vers3
     assert siz3 == size3
+
+    with pytest.raises(ShortageError):  # test too short
+        ked3, knd3, vrs3, siz3 = serder._inhale(e3ss[:size3-1])
 
     raw3, knd3, ked3, ver3 = serder._exhale(ked=e3)
     assert raw3 == e3s
@@ -1576,4 +1666,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_sigmat()
+    test_serder()
