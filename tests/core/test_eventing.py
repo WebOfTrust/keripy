@@ -12,7 +12,8 @@ import blake3
 from math import ceil
 
 from keri.kering import Version
-from keri.kering import ValidationError, EmptyMaterialError, DerivationError
+from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
+                         ShortageError)
 
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
@@ -897,6 +898,10 @@ def test_kevery():
         assert db_digs == event_digs
 
         kevery = Kevery(logger=vallgr)
+
+        with pytest.raises(ShortageError):  # test for incomplete event in stream
+            kevery.processAll(ims=kes[:20])
+
         kevery.processAll(ims=kes)
 
         assert pre in kevery.kevers
@@ -2808,4 +2813,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_multisig_digprefix()
+    test_kevery()
