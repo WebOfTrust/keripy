@@ -22,7 +22,7 @@ class KeriError(Exception):
 
 class ShortageError(KeriError):
     """
-    Not Enough Characters or Bytes in buffer for complete message or material
+    Not Enough bytes in buffer for complete message or material
     Usage:
         raise ShortageError("error message")
     """

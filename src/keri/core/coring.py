@@ -36,6 +36,7 @@ VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
 # '00012c'
 VERFMT = "KERI{:x}{:x}{}{:0{}x}_"  #  version format string
+VERFULLSIZE = 17  # number of characters in full versions string
 
 def Versify(version=None, kind=Serials.json, size=0):
     """
@@ -53,6 +54,7 @@ Vstrings = Serialage(json=Versify(kind=Serials.json, size=0),
 
 VEREX = b'KERI(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
 Rever = re.compile(VEREX) #compile is faster
+MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
 
 def Deversify(vs):
     """
@@ -266,6 +268,8 @@ CrySizes.update(CryOneSizes)
 CrySizes.update(CryTwoSizes)
 CrySizes.update(CryFourSizes)
 
+MINCRYSIZE = min(CrySizes.values())
+
 # all sizes in one dict
 CryRawSizes = dict(CryCntRawSizes)
 CryRawSizes.update(CryOneRawSizes)
@@ -446,6 +450,9 @@ class CryMat:
         """
         Extracts self.code and self.raw from qualified base64 bytes qb64b
         """
+        if len(qb64b) < MINCRYSIZE:  # Need more bytes
+            raise ShortageError("Need more bytes.")
+
         cs = 1  # code size  initially 1 to extract selector
         code = qb64b[:cs].decode("utf-8")  #  convert to str
         index = 0
@@ -482,9 +489,13 @@ class CryMat:
         else:
             raise ValueError("Improperly coded material = {}".format(qb64b))
 
-        if len(qb64b) != CrySizes[code]:  # forbids shorter
-            raise ShortageError("Short {} chars or bytes.".format(CrySizes[code]-len(qb64b)))
-
+        if len(qb64b) != CrySizes[code]:  # must be correct length
+            if len(qb64b) <  CrySizes[code]:  #  need more bytes
+                raise ShortageError("Need more bytes.")
+            else:
+                raise ValidationError("Bad qb64b size expected {}, got {} "
+                                      "bytes.".format(CrySizes[code],
+                                                      len(qb64b)))
 
         pad = cs % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters
@@ -1615,6 +1626,8 @@ SigSizes.update(SigTwoSizes)
 SigSizes.update(SigFourSizes)
 SigSizes.update(SigFiveSizes)
 
+MINSIGSIZE = min(SigSizes.values())
+
 SigIdxSizes = dict(SigCntIdxSizes)
 SigIdxSizes.update(SigTwoIdxSizes)
 SigIdxSizes.update(SigFourIdxSizes)
@@ -1777,6 +1790,9 @@ class SigMat:
         """
         Extracts self.code,self.index, and self.raw from qualified base64 qb64
         """
+        if len(qb64b) < MINSIGSIZE:  # Need more bytes
+            raise ShortageError("Need more bytes.")
+
         cs = 1  # code size  initially 1 to extract selector or one char code
         code = qb64b[:cs].decode("utf-8")  # get front code, convert to str
         if hasattr(code, "decode"):  # converts bytes like to str
@@ -1812,9 +1828,13 @@ class SigMat:
         else:
             raise ValueError("Improperly coded material = {}".format(qb64b))
 
-        if len(qb64b) != SigSizes[code]:  # forbid shorter
-            raise ShortageError("Short {} chars or bytes.".format(SigSizes[code]-len(qb64b)))
-
+        if len(qb64b) != SigSizes[code]:  # not correct length
+            if len(qb64b) <  SigSizes[code]:  #  need more bytes
+                raise ShortageError("Need more bytes.")
+            else:
+                raise ValidationError("Bad qb64b size expected {}, got {} "
+                                      "bytes.".format(SigSizes[code],
+                                                      len(qb64b)))
 
         pad = cs % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters
@@ -2039,6 +2059,9 @@ class Serder:
           raw is bytes of serialized event
 
         """
+        if len(raw) < MINSNIFFSIZE:
+            raise ShortageError("Need more bytes.")
+
         match = Rever.search(raw)  #  Rever's regex takes bytes
         if not match or match.start() > 12:
             raise ValueError("Invalid version string in raw = {}".format(raw))
@@ -2070,6 +2093,9 @@ class Serder:
         if version != Version:
             raise VersionError("Unsupported version = {}.{}".format(version.major,
                                                                     version.minor))
+
+        if len(raw) < size:
+            raise ShortageError("Need more bytes.")
 
         if kind == Serials.json:
             try:
