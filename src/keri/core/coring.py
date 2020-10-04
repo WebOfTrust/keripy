@@ -18,7 +18,8 @@ import msgpack
 import pysodium
 import blake3
 
-from ..kering import ValidationError, VersionError, EmptyMaterialError, DerivationError
+from ..kering import (ValidationError, VersionError, EmptyMaterialError,
+                      DerivationError, ShortageError)
 from ..kering import Versionage, Version
 from ..help.helping import extractValues
 
@@ -482,10 +483,8 @@ class CryMat:
             raise ValueError("Improperly coded material = {}".format(qb64b))
 
         if len(qb64b) != CrySizes[code]:  # forbids shorter
-            raise ValidationError("Unexpected qb64 size={} for code={}"
-                                  " not size={}.".format(len(qb64b),
-                                                         code,
-                                                         CrySizes[code]))
+            raise ShortageError("Short {} chars or bytes.".format(CrySizes[code]-len(qb64b)))
+
 
         pad = cs % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters

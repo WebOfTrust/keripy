@@ -16,7 +16,8 @@ from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
 from keri.kering import Version, Versionage
-from keri.kering import ValidationError, EmptyMaterialError, DerivationError
+from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
+                         ShortageError)
 from keri.core.coring import CrySelDex, CryCntDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryCntSizes, CryCntRawSizes, CryCntIdxSizes
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
@@ -218,7 +219,7 @@ def test_crymat():
     assert len(okcrymat.qb64) == CrySizes[okcrymat.code]
 
     shortprefix = prefix[:-4]
-    with pytest.raises(ValidationError):
+    with pytest.raises(ShortageError):
         okcrymat = CryMat(qb64=shortprefix)
 
     crymat = CryMat(qb2=prebin)

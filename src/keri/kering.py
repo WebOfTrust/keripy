@@ -20,6 +20,13 @@ class KeriError(Exception):
     To use   raise KeriError("Error: message")
     """
 
+class ShortageError(KeriError):
+    """
+    Not Enough Characters or Bytes in buffer for complete message or material
+    Usage:
+        raise ShortageError("error message")
+    """
+
 class ValidationError(KeriError):
     """
     Validation related errors
