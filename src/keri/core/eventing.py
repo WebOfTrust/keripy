@@ -322,12 +322,11 @@ def receipt(pre,
     Utility function to automate creation of interaction events.
 
      Parameters:
-        pre is str fully qualified qb64 identifier prefix for event
-        sn  is int sequence number of event
-        dig is str fully qualified qb64 digest of event
-        version is Verison instance
-        kind is serialization kind
-
+        pre is qb64 str of prefix of event being receipted
+        sn  is int sequence number of event being receipted
+        dig is qb64 of digest of event being receipted
+        version is Version instance of receipt
+        kind  is serialization kind of receipt
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.rct
@@ -345,6 +344,7 @@ def receipt(pre,
     return Serder(ked=ked)  # return serialized ked
 
 def chit(pre,
+         sn,
          dig,
          seal,
          version=Version,
@@ -357,21 +357,25 @@ def chit(pre,
     Utility function to automate creation of interaction events.
 
      Parameters:
-        pre is qb64 of prefix of event being receipted
+        pre is qb64 str of prefix of event being receipted
+        sn  is int sequence number of event being receipted
         dig is qb64 of digest of event being receipted
         seal is namedTuple of SealEvent of receipter's last Est event
             pre is qb64 of receipter's prefix
             dig is qb64 digest of receipter's last Est event
-        version is version string of receipt
-        kind  is serialization kind
+        version is Version instance of receipt
+        kind  is serialization kind of receipt
 
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.vrc
+    if sn < 0:
+        raise ValueError("Invalid sn = {} for rct.".format(sn))
 
     ked = dict(vs=vs,  # version string
                pre=pre,  # qb64 prefix
                ilk=ilk,  #  Ilks.rct
+               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                dig=dig,  # qb64 digest of receipted event
                seal=seal._asdict()  # event seal: pre, dig
                )
@@ -1134,32 +1138,21 @@ class Kevery:
         dig = ked["dig"]
 
         # Only accept receipt if for last seen version of event at sn
-        # retrieve dig of last event at sn.
         snkey = snKey(pre=pre, sn=sn)
-        ldig = self.logger.getKeLast(key=snkey)
+        ldig = self.logger.getKeLast(key=snkey)   # retrieve dig of last event at sn.
 
         # retrieve event by dig
         dgkey = dgKey(pre=pre, dig=dig)
-        eraw = self.logger.getEvt(key=dgkey)
+        raw = self.logger.getEvt(key=dgkey)  # retrieve receipted event at dig
 
-        if ldig is None:  # no event at sn maybe bad or escrow
-            if eraw is not None:  # bad receipt
-                raise ValidationError("Bad receipt for sn = {} and dig = {}."
-                                      "".format(ked["sn"]), dig)
 
-            for sigver in sigvers:  # escrow each couplet
-                if not sigver.verfer.nontrans:# check that verfer is non-transferable
-                    continue  # skip invalid couplets
-                couplet = sigver.verfer.qb64b + sigver.qb64b
-                self.logger.addUre(key=dgkey, val=couplet)
-
-        else:  # found event at sn maybe stale or good
+        if ldig is not None:  #  verify digs match
             ldig = bytes(ldig).decode("utf-8")
-            if ldig != dig:  # stale receipt discard
-                raise ValidationError("Stale receipt for sn = {}".format(ked["sn"]))
+            if ldig != dig:  # stale receipt at sn discard
+                raise ValidationError("Stale receipt at sn = {}".format(ked["sn"]))
 
-            # assumes that if ldig == dig then eraw must not be none
-            eserder = Serder(raw=bytes(eraw))  # deserialize event raw
+            # assumes db ensures that if ldig == dig then raw must not be none
+            eserder = Serder(raw=bytes(raw))  # deserialize event raw
             # process each couplet verify sig and write to db
             for sigver in sigvers:
                 if not sigver.verfer.nontrans:# check that verfer is non-transferable
@@ -1168,6 +1161,17 @@ class Kevery:
                     # write receipt couplet to database
                     couplet = sigver.verfer.qb64b + sigver.qb64b
                     self.logger.addRct(key=dgkey, val=couplet)
+
+        else:  # verify that dig not for some other event
+            if raw is not None:  # bad receipt dig matches some other event
+                raise ValidationError("Bad receipt for sn = {} and dig = {}."
+                                  "".format(ked["sn"]), dig)
+
+            for sigver in sigvers:  # escrow each couplet
+                if not sigver.verfer.nontrans:# check that verfer is non-transferable
+                    continue  # skip invalid couplets
+                couplet = sigver.verfer.qb64b + sigver.qb64b
+                self.logger.addUre(key=dgkey, val=couplet)
 
 
     def processChit(self, serder, sigers):
@@ -1188,44 +1192,61 @@ class Kevery:
         # fetch  pre, dig,seal to process
         ked = serder.ked
         pre = ked["pre"]
+        sn = ked["sn"]
+        if len(sn) > 32:
+            raise ValidationError("Invalid sn = {} too large.".format(sn))
+        try:
+            sn = int(sn, 16)
+        except Exception as ex:
+            raise ValidationError("Invalid sn = {}".format(sn))
         dig = ked["dig"]
         seal = SealEvent(**ked["seal"])
         sealet = seal.pre.encode("utf-8") + seal.dig.encode("utf-8")
 
-        key = dgKey(pre=pre, dig=dig)  # retrieve receipted event
-        raw = self.logger.getEvt(key=key)
+        # Only accept receipt if for last seen version of event at sn
+        snkey = snKey(pre=pre, sn=sn)
+        ldig = self.logger.getKeLast(key=snkey)  # retrieve dig of last event at sn.
 
-        if (raw is None or  # receipted event not yet exist
-            seal.pre not in self.kevers):  # receipter not yet in database
+        dgkey = dgKey(pre=pre, dig=dig)
+        raw = self.logger.getEvt(key=dgkey)  # retrieve receipted event at dig
 
+        if ldig is not None:  #  verify digs match
+            ldig = bytes(ldig).decode("utf-8")
+            if ldig != dig:  # stale receipt at sn discard
+                raise ValidationError("Stale receipt at sn = {}".format(ked["sn"]))
+
+        else:  # verify that dig not for some other event
+            if raw is not None:  # bad receipt dig matches some other event
+                raise ValidationError("Bad receipt for sn = {} and dig = {}."
+                                  "".format(ked["sn"]), dig)
+
+        # assumes db ensures that:
+        # if ldig is not None then raw is not None and vice versa
+        # if ldig == dig then eraw must not be none
+        if (ldig is not None and raw is not None and seal.pre in self.kevers):
+            # both receipted event and receipter in database
+            rekever = self.kevers[seal.pre]
+            if rekever.lastEst.dig != seal.dig:  # receipt not from last est event
+                #  discard receipt from validator as stale
+                raise ValidationError("Stale receipt for pre = {} dig ={} from "
+                                      "validator = {}.".format(pre, dig, seal.pre))
+
+            raw = bytes(raw)
+            for siger in sigers:  # verify sigs
+                if siger.index >= len(rekever.verfers):
+                    raise ValidationError("Index = {} to large for keys."
+                                          "".format(siger.index))
+
+                siger.verfer = rekever.verfers[siger.index]  # assign verfer
+                if siger.verfer.verify(siger.raw, raw):  # verify sig
+                    # good sig so write receipt truplet to database
+                    triplet = sealet + siger.qb64b
+                    self.logger.addVrc(key=dgkey, val=triplet)
+
+        else:  # escrow  either receiptor or event not yet in database
             for siger in sigers:  # escrow triplets one for each sig
                 triplet = sealet + siger.qb64b
-                self.logger.addVre(key=key, val=triplet)
-
-        else:  # both receipted event and receipter in database
-            rekever = self.kevers[seal.pre]
-            if rekever.lastEst.dig == seal.dig:  #  receipt from last est event
-                raw = bytes(raw)
-                for siger in sigers:
-                    if siger.index >= len(rekever.verfers):
-                        raise ValidationError("Index = {} to large for keys."
-                                              "".format(siger.index))
-                    siger.verfer = rekever.verfers[siger.index]  # assign verfer
-
-                    if siger.verfer.verify(siger.raw, raw):
-                        # write receipt truplet to database
-                        triplet = sealet + siger.qb64b
-                        self.logger.addVrc(key=key, val=triplet)
-
-                    else:
-                        # log bad sig
-                        pass
-
-            else:  #  discard receipt as stale
-                raise ValidationError("Stale validator = {} receipt for pre = "
-                                      "{} dig ={}.".format(seal.pre, pre, dig))
-
-
+                self.logger.addVre(key=dgkey, val=triplet)
 
 
     def duplicity(self, serder, sigers):
