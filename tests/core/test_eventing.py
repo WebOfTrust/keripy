@@ -237,10 +237,7 @@ def test_kever():
     with pytest.raises(TypeError):
         kever = Kever()
 
-
-
-    with openLogger() as lgr:
-        # Transferable case
+    with openLogger() as lgr:  # Transferable case
         # Setup inception key event dict
         # create current key
         sith = 1  #  one signer
@@ -294,6 +291,103 @@ def test_kever():
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
         kever = Kever(serder=tser0, sigers=[tsig0], logger=lgr)  # no error
+
+    with openLogger() as lgr:  # Non-Transferable case
+        # Setup inception key event dict
+        # create current key
+        sith = 1  #  one signer
+        skp0 = Signer(transferable=False)  #  original signing keypair non-transferable
+        assert skp0.code == CryOneDex.Ed25519_Seed
+        assert skp0.verfer.code == CryOneDex.Ed25519N
+        keys = [skp0.verfer.qb64]
+
+        # create next key Error case
+        nxtsith = 1 #  one signer
+        skp1 = Signer()  #  next signing keypair transferable is default
+        assert skp1.code == CryOneDex.Ed25519_Seed
+        assert skp1.verfer.code == CryOneDex.Ed25519
+        nxtkeys = [skp1.verfer.qb64]
+        # compute nxt digest
+        nexter = Nexter(sith=nxtsith, keys=nxtkeys)
+        nxt = nexter.qb64  # nxt is not empty so error
+
+        sn = 0  #  inception event so 0
+        toad = 0  # no witnesses
+        nsigs = 1  #  one attached signature unspecified index
+
+        ked0 = dict(vs=Versify(kind=Serials.json, size=0),
+                    pre="",  # qual base 64 prefix
+                    sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+                    ilk=Ilks.icp,
+                    sith="{:x}".format(sith), # hex string no leading zeros lowercase
+                    keys=keys,  # list of signing keys each qual Base64
+                    nxt=nxt,  # hash qual Base64
+                    toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+                    wits=[],  # list of qual Base64 may be empty
+                    cnfg=[],  # list of config ordered mappings may be empty
+                   )
+
+
+        # Derive AID from ked
+        with pytest.raises(DerivationError):
+            aid0 = Prefixer(ked=ked0, code = CryOneDex.Ed25519N)
+
+        # assert aid0.code == CryOneDex.Ed25519N
+        # assert aid0.qb64 == skp0.verfer.qb64
+
+        # update ked with pre
+        ked0["pre"] =skp0.verfer.qb64
+
+        # Serialize ked0
+        tser0 = Serder(ked=ked0)
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        with pytest.raises(ValidationError):
+            kever = Kever(serder=tser0, sigers=[tsig0], logger=lgr)
+
+        #retry with valid empty nxt
+        nxt = ""  # nxt is empty so no error
+        sn = 0  #  inception event so 0
+        toad = 0  # no witnesses
+        nsigs = 1  #  one attached signature unspecified index
+
+        ked0 = dict(vs=Versify(kind=Serials.json, size=0),
+                        pre="",  # qual base 64 prefix
+                        sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+                        ilk=Ilks.icp,
+                        sith="{:x}".format(sith), # hex string no leading zeros lowercase
+                        keys=keys,  # list of signing keys each qual Base64
+                        nxt=nxt,  # hash qual Base64
+                        toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+                        wits=[],  # list of qual Base64 may be empty
+                        cnfg=[],  # list of config ordered mappings may be empty
+                        )
+
+
+        # Derive AID from ked
+        aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519N)
+
+        assert aid0.code == CryOneDex.Ed25519N
+        assert aid0.qb64 == skp0.verfer.qb64
+
+        # update ked with pre
+        ked0["pre"] = aid0.qb64
+
+        # Serialize ked0
+        tser0 = Serder(ked=ked0)
+
+        # sign serialization
+        tsig0 = skp0.sign(tser0.raw, index=0)
+
+        # verify signature
+        assert skp0.verfer.verify(tsig0.raw, tser0.raw)
+
+        kever = Kever(serder=tser0, sigers=[tsig0], logger=lgr)  # valid so no error
 
 
     """ Done Test """
@@ -2887,4 +2981,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_direct_mode_cbor_mgpk()
+    test_kever()
