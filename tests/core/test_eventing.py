@@ -2149,7 +2149,7 @@ def test_direct_mode_cbor_mgpk():
                                   b'wzdttIWiBH09HjJdXYG-4w4MSECHAPtp0MJKr1No3D6dM3eI-QKDw')
 
         # create own Coe Kever in  Coe's Kevery
-        coeKevery.processAll(ims=bytearray(cmsg))  # send copy of cmsg
+        coeKevery.processOne(ims=bytearray(cmsg))  # send copy of cmsg
         coeKever = coeKevery.kevers[coepre]
         assert coeKever.prefixer.qb64 == coepre
 
@@ -2181,7 +2181,7 @@ def test_direct_mode_cbor_mgpk():
                                  b'Hnx7HS2YmT3nZU-oU8cQIEGkE4uMgO5iLVRu6WfDWHchbK4plEuBA')
 
         # create own Val Kever in  Val's Kevery
-        valKevery.processAll(ims=bytearray(vmsg))  # send copy of vmsg
+        valKevery.processOne(ims=bytearray(vmsg))  # send copy of vmsg
         valKever = valKevery.kevers[valpre]
         assert valKever.prefixer.qb64 == valpre
 
@@ -2212,11 +2212,14 @@ def test_direct_mode_cbor_mgpk():
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
         assert siger.qb64 == 'AAy4aujLv4hbfZ1eiJVpsvSFc5kNViUWi-4lZvP-eKZk7A6ouYYBPGjRQcmuBS8GpPsjRhz9lhHxzjbKPIhioHDA'
 
+        # process own Val receipt in Val's Kevery so have copy in own log
+        rmsg = bytearray(reserder.raw)
+        rmsg.extend(counter.qb64b)
+        rmsg.extend(siger.qb64b)
+        valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach reciept message to existing message with val's incept message
-        vmsg.extend(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
+        vmsg.extend(rmsg)
         assert vmsg == bytearray(b'\x8a\xa2vs\xb1KERI10MGPK0000d5_\xa3pre\xd9,EMrnHBFhp0mTBS12BVvU4C6z'
                                  b'NuMcK6QxeF6iiTiYzkuI\xa2sn\xa10\xa3ilk\xa3icp\xa4sith\xa11\xa4key'
                                  b's\x91\xd9,D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc\xa3nxt'
@@ -2313,6 +2316,9 @@ def test_direct_mode_cbor_mgpk():
                                  b'MIjoSATiz_XOVT1EieQraXNc8CXw_Hs5irQJYiiZ5C2S8DNQsd-sEo4vKDX5OLjz'
                                  b'-inZ83DQ')
 
+        # coe process own receipt in own Kevery so have copy in own log
+        coeKevery.processOne(ims=bytearray(cmsg))  # make copy
+
         # Simulate send to val of coe's receipt of val's inception message
         valKevery.processAll(ims=cmsg)  #  coe process val's incept and receipt
 
@@ -2354,7 +2360,7 @@ def test_direct_mode_cbor_mgpk():
                                   b'ZvTva4DSLlzz7Nn8LoaYOg1ZzR_VNtwfcKghHkVO7VQiVSeAg')
 
         # update coe's key event verifier state
-        coeKevery.processAll(ims=bytearray(cmsg))  # make copy
+        coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.diger.qb64 == coeSerder.dig
@@ -2398,6 +2404,9 @@ def test_direct_mode_cbor_mgpk():
                                  b'z312a_p6KbP2rssViIKY-AABAAl7CJPBNT4x_kg4a5PScnnDIUM1bVg1ivirnfds'
                                  b'W8CX0z1j-xmeyoiAbYQ7vGKJ4AGzj-NBA7ZE3AmjSirKKyCA')
 
+        # val process own receipt in own kevery so have copy in own log
+        valKevery.processOne(ims=bytearray(vmsg))  # make copy
+
         # Simulate send to coe of val's receipt of coe's rotation message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
@@ -2436,7 +2445,7 @@ def test_direct_mode_cbor_mgpk():
                          b'tv-9CqRG8QY96p9C_TcXlTQ5Cfj6dfQVGNlsqngDA')
 
         # update coe's key event verifier state
-        coeKevery.processAll(ims=bytearray(cmsg))  # make copy
+        coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.diger.qb64 == coeSerder.dig
@@ -2477,6 +2486,9 @@ def test_direct_mode_cbor_mgpk():
                                  b'12BVvU4C6zNuMcK6QxeF6iiTiYzkuI\xa3dig\xd9,EzaxSHOQ3O9qsZ00QWq9aB-2'
                                  b'z312a_p6KbP2rssViIKY-AABAAjHPlszyiS_0GKfWmnqPKOSTbwfiw2DdqxTTrpv'
                                  b'dY7Gz_FCmQ5lfZB4SBe6387SEU3tb_TZktf9VEKWj1EviBAA')
+
+        # val process own receipt in own kevery so have copy in own log
+        valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
@@ -2825,4 +2837,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_direct_mode()
+    test_direct_mode_cbor_mgpk()
