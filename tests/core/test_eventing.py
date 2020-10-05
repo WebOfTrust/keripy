@@ -1680,7 +1680,7 @@ def test_direct_mode():
                                   b'mh8cJncRkef1PgxFavDKqDQ')
 
         # create own Coe Kever in  Coe's Kevery
-        coeKevery.processAll(ims=bytearray(cmsg))  # send copy of cmsg
+        coeKevery.processOne(ims=bytearray(cmsg))  # send copy of cmsg
         coeKever = coeKevery.kevers[coepre]
         assert coeKever.prefixer.qb64 == coepre
 
@@ -1711,7 +1711,7 @@ def test_direct_mode():
                                  b'RJDc7mAlnlPVHdvDXajdkBw')
 
         # create own Val Kever in  Val's Kevery
-        valKevery.processAll(ims=bytearray(vmsg))  # send copy of vmsg
+        valKevery.processOne(ims=bytearray(vmsg))  # send copy of vmsg
         valKever = valKevery.kevers[valpre]
         assert valKever.prefixer.qb64 == valpre
 
@@ -1741,11 +1741,14 @@ def test_direct_mode():
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
         assert siger.qb64 == 'AAOYor4MvfRJACjzGlcQzSIjapymNyjqimNJfuKpyMCBkoQwr0utASvCzgKxEAI8B8yXhO2spi-7i94_dh2ZD4CQ'
 
+        # process own Val receipt in Val's Kevery so have copy in own log
+        rmsg = bytearray(reserder.raw)
+        rmsg.extend(counter.qb64b)
+        rmsg.extend(siger.qb64b)
+        valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach reciept message to existing message with val's incept message
-        vmsg.extend(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
+        vmsg.extend(rmsg)
         assert vmsg == bytearray(b'{"vs":"KERI10JSON0000fb_","pre":"EwBwUb2eZcA5GDcN7g-87wpreM0nNkL'
                                  b'qzkwviBHTcV1A","sn":"0","ilk":"icp","sith":"1","keys":["D8KY1sKm'
                                  b'gyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc"],"nxt":"E29akD_tuTrdFXNHBQ'
@@ -1759,7 +1762,7 @@ def test_direct_mode():
                                  b'NJfuKpyMCBkoQwr0utASvCzgKxEAI8B8yXhO2spi-7i94_dh2ZD4CQ')
 
 
-        # Simulate send to coe of val's receipt of coe's inception message
+        # Simulate send to coe of val's incept and val's receipt of coe's inception message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
         # check if val Kever in coe's .kevers
@@ -1839,6 +1842,9 @@ def test_direct_mode():
                                  b'"}}-AABAAWsB5GblCXs43fNPPGqAlx5FWyEzdBSRb9wGqwwDen3Qq4yxaXVmEn9d'
                                  b'ZdK3Cq6l5Iq6CHxWiKCoUR5A3kG1LBg')
 
+        # coe process own receipt in own Kevery so have copy in own log
+        coeKevery.processOne(ims=bytearray(cmsg))  # make copy
+
         # Simulate send to val of coe's receipt of val's inception message
         valKevery.processAll(ims=cmsg)  #  coe process val's incept and receipt
 
@@ -1880,7 +1886,7 @@ def test_direct_mode():
                                  b'jAcpDlWOT3hhBY0KgkXpAA')
 
         # update coe's key event verifier state
-        coeKevery.processAll(ims=bytearray(cmsg))  # make copy
+        coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.diger.qb64 == coeSerder.dig
@@ -1912,7 +1918,7 @@ def test_direct_mode():
         siger = valSigners[vesn].sign(ser=coeRotRaw, index=0)  # return Siger if index
         assert siger.qb64 == 'AAciKcK5F0a0p5eQr1jG61KtIYP-7qhqmEtMLiDTShRAOqOMo0leInt1pI60goLVXGXatvIfdEc2tO41FbfZFtCg'
 
-        # create receipt message
+        # val create receipt message
         vmsg = bytearray(reserder.raw)
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
@@ -1922,6 +1928,9 @@ def test_direct_mode():
                                  b'kwviBHTcV1A","dig":"E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA'
                                  b'"}}-AABAAciKcK5F0a0p5eQr1jG61KtIYP-7qhqmEtMLiDTShRAOqOMo0leInt1p'
                                  b'I60goLVXGXatvIfdEc2tO41FbfZFtCg')
+
+        # val process own receipt in own kevery so have copy in own log
+        valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
@@ -1961,7 +1970,7 @@ def test_direct_mode():
 
 
         # update coe's key event verifier state
-        coeKevery.processAll(ims=bytearray(cmsg))  # make copy
+        coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.diger.qb64 == coeSerder.dig
@@ -2002,6 +2011,9 @@ def test_direct_mode():
                                  b'kwviBHTcV1A","dig":"E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA'
                                  b'"}}-AABAAJvbiMOYhH2GzJbncaol_qWDZkwF7WRi5DOWVnQIlY1emMawGFcD7r62'
                                  b'DTKGR6zd1gjsMdose_Qmt_IFshFPPAg')
+
+        # val process own receipt in own kevery so have copy in own log
+        valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
@@ -2813,4 +2825,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_kevery()
+    test_direct_mode()
