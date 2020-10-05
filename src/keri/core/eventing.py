@@ -311,6 +311,7 @@ def interact(pre,
     return Serder(ked=ked)  # return serialized ked
 
 def receipt(pre,
+            sn,
             dig,
             version=Version,
             kind=Serials.json
@@ -321,18 +322,23 @@ def receipt(pre,
     Utility function to automate creation of interaction events.
 
      Parameters:
-        pre
-        dig
-        version
-        kind
+        pre is str fully qualified qb64 identifier prefix for event
+        sn  is int sequence number of event
+        dig is str fully qualified qb64 digest of event
+        version is Verison instance
+        kind is serialization kind
 
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.rct
 
+    if sn < 0:
+        raise ValueError("Invalid sn = {} for rct.".format(sn))
+
     ked = dict(vs=vs,  # version string
                pre=pre,  # qb64 prefix
                ilk=ilk,  #  Ilks.rct
+               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
                dig=dig,  # qb64 digest of receipted event
                )
 
@@ -1118,17 +1124,41 @@ class Kevery:
         # fetch  pre dig to process
         ked = serder.ked
         pre = ked["pre"]
+        sn = ked["sn"]
+        if len(sn) > 32:
+            raise ValidationError("Invalid sn = {} too large.".format(sn))
+        try:
+            sn = int(sn, 16)
+        except Exception as ex:
+            raise ValidationError("Invalid sn = {}".format(sn))
         dig = ked["dig"]
-        # retrieve event
-        key = dgKey(pre=pre, dig=dig)
-        eraw = self.logger.getEvt(key=key)
-        if eraw is None:  # escrow each couplet
-            for sigver in sigvers:
+
+        # Only accept receipt if for last seen version of event at sn
+        # retrieve dig of last event at sn.
+        snkey = snKey(pre=pre, sn=sn)
+        ldig = self.logger.getKeLast(key=snkey)
+
+        # retrieve event by dig
+        dgkey = dgKey(pre=pre, dig=dig)
+        eraw = self.logger.getEvt(key=dgkey)
+
+        if ldig is None:  # no event at sn maybe bad or escrow
+            if eraw is not None:  # bad receipt
+                raise ValidationError("Bad receipt for sn = {} and dig = {}."
+                                      "".format(ked["sn"]), dig)
+
+            for sigver in sigvers:  # escrow each couplet
                 if not sigver.verfer.nontrans:# check that verfer is non-transferable
                     continue  # skip invalid couplets
                 couplet = sigver.verfer.qb64b + sigver.qb64b
-                self.logger.addUre(key=key, val=couplet)
-        else:
+                self.logger.addUre(key=dgkey, val=couplet)
+
+        else:  # found event at sn maybe stale or good
+            ldig = bytes(ldig).decode("utf-8")
+            if ldig != dig:  # stale receipt discard
+                raise ValidationError("Stale receipt for sn = {}".format(ked["sn"]))
+
+            # assumes that if ldig == dig then eraw must not be none
             eserder = Serder(raw=bytes(eraw))  # deserialize event raw
             # process each couplet verify sig and write to db
             for sigver in sigvers:
@@ -1137,7 +1167,7 @@ class Kevery:
                 if sigver.verfer.verify(sigver.raw, eserder.raw):
                     # write receipt couplet to database
                     couplet = sigver.verfer.qb64b + sigver.qb64b
-                    self.logger.addRct(key=key, val=couplet)
+                    self.logger.addRct(key=dgkey, val=couplet)
 
 
     def processChit(self, serder, sigers):

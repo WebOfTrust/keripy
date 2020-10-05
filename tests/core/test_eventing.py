@@ -198,12 +198,13 @@ def test_keyeventfuncs():
 
 
     # Receipt
-    serder3 = receipt(pre=pre, dig=serder2.dig)
+    serder3 = receipt(pre=pre, sn=0, dig=serder2.dig)
     assert serder3.ked["pre"] == pre
     assert serder3.ked["ilk"] == Ilks.rct
     assert serder3.ked["dig"] == serder2.dig
-    assert serder3.raw == (b'{"vs":"KERI10JSON000090_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","ilk":"rct","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"}')
+    assert serder3.raw == (b'{"vs":"KERI10JSON000099_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                           b'c","ilk":"rct","sn":"0","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"'
+                           b'}')
 
 
     # ValReceipt
@@ -1414,6 +1415,7 @@ def test_receipt():
 
         # create receipt from val to coe
         reserder = receipt(pre=coeKever.prefixer.qb64,
+                           sn=coeKever.sn,
                            dig=coeKever.diger.qb64)
         # sign event not receipt
         valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
@@ -1425,11 +1427,12 @@ def test_receipt():
         res.extend(recnt.qb64b)
         res.extend(valPrefixer.qb64b)
         res.extend(valSigver.qb64b)
-        assert res == bytearray(b'{"vs":"KERI10JSON000090_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
-                                b'ZOoeKtWTOunRA","ilk":"rct","dig":"EgCvROg0cKXF_u_K0WH33PPB77bjZp'
-                                b'IlgLy99xmYrHlM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
-                                b'0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ3r_b-X6FB'
-                                b'8HaEIv-TPtaTmFg78yhv8lCg')
+        assert res == bytearray(b'{"vs":"KERI10JSON000099_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
+                                b'ZOoeKtWTOunRA","ilk":"rct","sn":"0","dig":"EgCvROg0cKXF_u_K0WH33'
+                                b'PPB77bjZpIlgLy99xmYrHlM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzh'
+                                b'DNZlEKiMc0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ'
+                                b'3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg')
+
 
         coeKevery.processAll(ims=res)  #  coe process the receipt from val
         #  check if in receipt database
@@ -1438,9 +1441,10 @@ def test_receipt():
         assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
 
 
-        # create receipt to escrow use invalid dig so not in db
+        # create receipt to escrow use invalid dig and sn so not in db
         fake = reserder.dig  # some other dig
         reserder = receipt(pre=coeKever.prefixer.qb64,
+                           sn=2,
                            dig=fake)
         # sign event not receipt
         valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
@@ -1454,8 +1458,27 @@ def test_receipt():
         coeKevery.processAll(ims=res)  #  coe process the escrow receipt from val
         #  check if in escrow database
         result = coeKevery.logger.getUres(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                 dig=fake))
+                                                        dig=fake))
         assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
+
+
+        # create receipt stale use invalid dig and valid sn so bad receipt
+        fake = reserder.dig  # some other dig
+        reserder = receipt(pre=coeKever.prefixer.qb64,
+                               sn=coeKever.sn,
+                               dig=fake)
+        # sign event not receipt
+        valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
+        recnt = CryCounter(count=1)
+        # attach to receipt msg stream
+        res.extend(reserder.raw)
+        res.extend(recnt.qb64b)
+        res.extend(valPrefixer.qb64b)
+        res.extend(valSigver.qb64b)
+
+        with pytest.raises(ValidationError):
+            coeKevery.processOne(ims=res)  #  coe process the escrow receipt from val
+
 
         # Next Event Rotation Transferable
         sn += 1
@@ -2837,4 +2860,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_direct_mode_cbor_mgpk()
+    test_receipt()
