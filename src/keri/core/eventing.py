@@ -485,6 +485,10 @@ class Kever:
         self.diger = serder.diger
 
         nxt = ked["nxt"]
+        if self.prefixer.nontrans and nxt:  # nxt must be empty for nontrans prefix
+            raise ValidationError("Invalid inception nxt not empty for "
+                                  "non-transferable prefix = {}."
+                                  "".format(self.prefixer.qb64))
         self.nexter = Nexter(qb64=nxt) if nxt else None
         self.nonTrans = True if self.nexter is None else False
 
