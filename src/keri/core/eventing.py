@@ -336,8 +336,8 @@ def receipt(pre,
 
     ked = dict(vs=vs,  # version string
                pre=pre,  # qb64 prefix
-               ilk=ilk,  #  Ilks.rct
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,  #  Ilks.rct
                dig=dig,  # qb64 digest of receipted event
                )
 
@@ -374,8 +374,8 @@ def chit(pre,
 
     ked = dict(vs=vs,  # version string
                pre=pre,  # qb64 prefix
-               ilk=ilk,  #  Ilks.rct
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,  #  Ilks.rct
                dig=dig,  # qb64 digest of receipted event
                seal=seal._asdict()  # event seal: pre, dig
                )
