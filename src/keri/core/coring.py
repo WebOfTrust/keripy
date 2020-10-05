@@ -424,7 +424,7 @@ class CryMat:
 
     def _infil(self):
         """
-        Returns fully qualified base64 given self.pad, self.code, self.count
+        Returns fully qualified base64 bytes given self.pad, self.code, self.count
         and self.raw
         code is Codex value
         count is attached receipt couplet count when applicable for CryCntDex codes
@@ -443,7 +443,7 @@ class CryMat:
             raise ValidationError("Invalid code = {} for converted raw pad = {}."
                                   .format(full, self.pad))
         # prepending derivation code and strip off trailing pad characters
-        return (full + encodeB64(self._raw).decode("utf-8")[:-pad])
+        return (full.encode("utf-8") + encodeB64(self._raw)[:-pad])
 
 
     def _exfil(self, qb64b):
@@ -517,7 +517,7 @@ class CryMat:
         Returns Fully Qualified Base64 Version
         Assumes self.raw and self.code are correctly populated
         """
-        return self._infil()
+        return self.qb64b.decode("utf-8")
 
 
     @property
@@ -527,7 +527,7 @@ class CryMat:
         Returns Fully Qualified Base64 Version encoded as bytes
         Assumes self.raw and self.code are correctly populated
         """
-        return self.qb64.encode("utf-8")
+        return self._infil()
 
 
     @property
@@ -539,7 +539,7 @@ class CryMat:
         """
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
-        return decodeB64(self._infil().encode("utf-8"))
+        return decodeB64(self._infil())
 
     @property
     def nontrans(self):
@@ -1770,7 +1770,7 @@ class SigMat:
 
     def _infil(self):
         """
-        Returns fully qualified attached sig base64 computed from
+        Returns fully qualified attached sig base64 bytes computed from
         self.raw, self.code and self.index.
         """
         l = SigIdxSizes[self._code]  # index length b64 characters
@@ -1783,7 +1783,7 @@ class SigMat:
             raise ValidationError("Invalid code + index = {} for converted raw pad = {}."
                                   .format(full, self.pad))
         # prepending full derivation code with index and strip off trailing pad characters
-        return (full + encodeB64(self._raw).decode("utf-8")[:-pad])
+        return (full.encode("utf-8") + encodeB64(self._raw)[:-pad])
 
 
     def _exfil(self, qb64b):
@@ -1856,7 +1856,7 @@ class SigMat:
         Returns Fully Qualified Base64 Version
         Assumes self.raw and self.code are correctly populated
         """
-        return self._infil()
+        return self.qb64b.decode("utf-8")
 
 
     @property
@@ -1866,7 +1866,7 @@ class SigMat:
         Returns Fully Qualified Base64 Version encoded as bytes
         Assumes self.raw and self.code are correctly populated
         """
-        return self.qb64.encode("utf-8")
+        return self._infil()
 
 
     @property
@@ -1878,7 +1878,7 @@ class SigMat:
         """
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
-        return decodeB64(self._infil().encode("utf-8"))
+        return decodeB64(self._infil())
 
 
 class SigCounter(SigMat):
