@@ -45,7 +45,7 @@ def test_opendatabaser():
 
     assert not os.path.exists(databaser.path)
 
-    with openDatabaser(name="red") as redbaser,  openDatabaser(name="gray") as graybaser:
+    with openDatabaser(name="red") as redbaser, openDatabaser(name="gray") as graybaser:
         assert isinstance(redbaser, Databaser)
         assert redbaser.name == "red"
         assert redbaser.env.path() == redbaser.path
