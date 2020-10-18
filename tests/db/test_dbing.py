@@ -3,6 +3,8 @@
 tests.db.dbing module
 
 """
+import pytest
+
 import os
 import json
 
