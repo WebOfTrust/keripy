@@ -8,6 +8,8 @@ simple directmode demo
 
 import hio
 from hio.base import doing
+from keri.db import dbing
+
 
 
 
@@ -41,7 +43,7 @@ class Director(doing.Doer):
        ._tock is hidden attribute for .tock property
     """
 
-    def __init__(self, name="bob", temp=True, **kwa):
+    def __init__(self, kevery, name="uno", **kwa):
         """
         Initialize instance.
 
@@ -55,8 +57,7 @@ class Director(doing.Doer):
         """
         super(Director, self).__init__(**kwa)
         self.name = name
-        self.temp = True if temp else False
-        self.db = None  # create and open in enter
+        self.kevery = kevery  # create and open in enter
 
 
     def do(self, tymist, tock=0.0):
@@ -66,7 +67,6 @@ class Director(doing.Doer):
         """
         try:
             # enter context
-            self.db = dbing.Logger(name=self.name, temp=self.temp)
 
             while (True):  # recur context
                 feed = (yield (tock))  # yields tock then waits for next send
@@ -79,7 +79,7 @@ class Director(doing.Doer):
             raise
 
         finally:  # exit context,  unforced exit due to normal exit of try
-            self.db.clearDirPath()
+            pass
 
         return True # return value of yield from, or yield ex.value of StopIteration
 
@@ -136,11 +136,9 @@ class ServerDirector(Director):
         """
         try:
             # enter context
-            self.db = dbing.Logger(name=self.name, temp=self.temp)
 
             while (True):  # recur context
                 feed = (yield (tock))  # yields tock then waits for next send
-
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -149,7 +147,7 @@ class ServerDirector(Director):
             raise
 
         finally:  # exit context,  unforced exit due to normal exit of try
-            self.db.clearDirPath()
+           pass
 
         return True # return value of yield from, or yield ex.value of StopIteration
 
@@ -195,7 +193,7 @@ class ClientDirector(Director):
             client is TCP client instance. Assumes run elsewhere
 
         """
-        super(ServerDirector, self).__init__(**kwa)
+        super(ClientDirector, self).__init__(**kwa)
         self.client = client
 
 
@@ -206,11 +204,9 @@ class ClientDirector(Director):
         """
         try:
             # enter context
-            self.db = dbing.Logger(name=self.name, temp=self.temp)
 
             while (True):  # recur context
                 feed = (yield (tock))  # yields tock then waits for next send
-
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -219,9 +215,11 @@ class ClientDirector(Director):
             raise
 
         finally:  # exit context,  unforced exit due to normal exit of try
-            self.db.clearDirPath()
+            pass
 
         return True # return value of yield from, or yield ex.value of StopIteration
+
+
 
 
 def setupDemo():

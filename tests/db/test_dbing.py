@@ -70,6 +70,7 @@ def test_databaser():
     databaser = Databaser()
     assert isinstance(databaser, Databaser)
     assert databaser.name == "main"
+    assert databaser.temp == False
     assert isinstance(databaser.env, lmdb.Environment)
     assert databaser.path.endswith("keri/db/main")
     assert databaser.env.path() == databaser.path
@@ -88,6 +89,7 @@ def test_databaser():
     assert not os.path.exists(databaser.path)
 
     with openDatabaser() as dber:
+        assert dber.temp == True
         #test Val methods
         key = b'A'
         val = b'whatever'
@@ -222,6 +224,7 @@ def test_logger():
     logger = Logger()
     assert isinstance(logger, Logger)
     assert logger.name == "main"
+    assert logger.temp == False
     assert isinstance(logger.env, lmdb.Environment)
     assert logger.path.endswith("keri/db/main")
     assert logger.env.path() == logger.path
@@ -245,6 +248,7 @@ def test_logger():
     with openDatabaser(cls=Logger) as logger:
         assert isinstance(logger, Logger)
         assert logger.name == "test"
+        assert logger.temp == True
         assert isinstance(logger.env, lmdb.Environment)
         assert logger.path.startswith("/tmp/keri_lmdb_")
         assert logger.path.endswith("_test/keri/db/test")

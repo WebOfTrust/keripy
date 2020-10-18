@@ -169,6 +169,7 @@ class Databaser:
                 headDirPath if any or default headDirPath
         """
         self.name = name
+        self.temp = True if temp else False
 
         if temp:
             headDirPath = tempfile.mkdtemp(prefix="keri_lmdb_", suffix="_test", dir="/tmp")
