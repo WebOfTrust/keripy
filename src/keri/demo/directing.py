@@ -7,6 +7,7 @@ simple direct mode demo support classes
 """
 import hio
 from hio.base import doing, tyming
+from keri import kering
 from keri.db import dbing
 from keri.core import coring, eventing
 
@@ -262,6 +263,7 @@ class Directant(doing.Doer):
             while (True):  # recur context
                 tyme = (yield (tock))  # yields tock then waits for next send
                 self.serviceConnects()
+                self.serviceRants()
 
 
         except GeneratorExit:  # close context, forced exit due to .close
@@ -302,6 +304,32 @@ class Directant(doing.Doer):
             if ix.timeout > 0.0 and ix.tymer.expired:
                 self.closeConnection(ca)
 
+    def serviceRants(self):
+        """
+        Service pending reactants
+        """
+        for ca, reactant in self.rants.items():
+            if reactant.kevery:
+                try:
+                    reactant.kevery.processAll()
+                except kering.ShortageError as ex:
+                    pass  # keep trying
+
+                if reactant.kevery.ims:
+                    pass
+
+                while reactant.kevery.cues:  # process any cues
+                    # process each cue
+                    cue = reactant.kever.cues.popleft()
+
+
+            if not reactant.persistent:  # not persistent so close and remove
+                ix = self.server.ixes[ca]
+                if not ix.txes:  # wait for outgoing txes to be empty
+                    self.closeConnection(ca)
+
+
+
 
 class Reactant(tyming.Tymee):
     """
@@ -314,6 +342,7 @@ class Reactant(tyming.Tymee):
         .hab is Habitat instance of local controller's context
         .incomer is TCP Incomer instance.
         .kevery is Kevery instance
+        .persistent is boolean, True means keep connection open. Otherwise close
 
     Inherited Properties:
         .tyme is float relative cycle time, .tyme is artificial time
@@ -328,7 +357,7 @@ class Reactant(tyming.Tymee):
        ._tymist is Tymist instance reference
     """
 
-    def __init__(self, hab, incomer,  **kwa):
+    def __init__(self, hab, incomer,  persistent =True, **kwa):
         """
         Initialize instance.
 
@@ -346,6 +375,8 @@ class Reactant(tyming.Tymee):
                                       kevers=self.hab.kevers,
                                       logger=self.hab.db,
                                       framed=False)
+        self.persistent = True if persistent else False
+
 
 
 

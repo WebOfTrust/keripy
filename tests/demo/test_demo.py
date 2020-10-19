@@ -486,14 +486,17 @@ def test_direct_mode():
         assert eveHab.pre in eveHab.kevers
 
         assert not bobClient.txes
-        ca, ix = list(eveServer.ixes.items())[0]
-        eveMsgRx = bytes(ix.rxbs)
-        assert eveMsgRx == bytearray(b'{"vs":"KERI10JSON0000fb_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLy'
-                                     b'DsojFXotBXdSo","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
-                                     b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EGAPkzNZMtX-QiVgbR'
-                                     b'byAIZGoXvbGv9IPb0foWTZvI_4","toad":"0","wits":[],"cnfg":[]}-AABA'
-                                     b'Atf0OqrkGmK3vdMcS5E3mLxeFh14SbvCNjZnZrxAazgYTemZc1S-Pr0ge9IQuHes'
-                                     b'mh8cJncRkef1PgxFavDKqDQ')
+
+        assert bobHab.pre in eveHab.kevers
+
+        #ca, ix = list(eveServer.ixes.items())[0]
+        #eveMsgRx = bytes(ix.rxbs)
+        #assert eveMsgRx == bytearray(b'{"vs":"KERI10JSON0000fb_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLy'
+                                     #b'DsojFXotBXdSo","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
+                                     #b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EGAPkzNZMtX-QiVgbR'
+                                     #b'byAIZGoXvbGv9IPb0foWTZvI_4","toad":"0","wits":[],"cnfg":[]}-AABA'
+                                     #b'Atf0OqrkGmK3vdMcS5E3mLxeFh14SbvCNjZnZrxAazgYTemZc1S-Pr0ge9IQuHes'
+                                     #b'mh8cJncRkef1PgxFavDKqDQ')
 
 
         #assert not eveClient.txes

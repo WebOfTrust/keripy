@@ -998,8 +998,9 @@ def test_kevery():
 
         kevery = Kevery(logger=vallgr)
 
-        with pytest.raises(ShortageError):  # test for incomplete event in stream
-            kevery.processAll(ims=kes[:20])
+        # test for incomplete event in stream
+        kevery.processAll(ims=kes[:20])
+        assert pre not in kevery.kevers  # shortage so gives up
 
         kevery.processAll(ims=kes)
 

@@ -874,9 +874,9 @@ class Kevery:
         Process all messages from incoming message stream, ims, when provided
         Otherwise process all messages from .ims
         """
-        if ims is not None:
-            if not isinstance(ims, bytearray):  # destructive processing
-                ims = bytearray(ims)
+        if ims is not None:  # needs bytearray not bytes since deletes as processes
+            if not isinstance(ims, bytearray):
+                ims = bytearray(ims)  # so make bytearray copy
         else:
             ims = self.ims
 
@@ -885,13 +885,13 @@ class Kevery:
                 self.processOne(ims=ims, framed=self.framed)
 
             except ShortageError as ex:  # need more bytes
-                raise  ex  # reraise
+                break  # break out of while loop
 
             except Exception as ex:
                 # log diagnostics errors etc
                 #
                 del ims[:]  #  delete rest of stream
-                continue
+                break
 
 
     def processOne(self, ims, framed=True):
