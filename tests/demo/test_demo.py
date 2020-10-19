@@ -18,59 +18,6 @@ def test_directmode():
     """
     Test directmode demo
 
-    The univeral unique objects are Kevers and database for each Controller
-    Multiple keverys are allowed but each should have the same Kevers and database
-    the system state is held in those two objects. Kevers is the current in memory
-    key state and database is the persentent set of events.
-
-    Only need one kevery for multiple connections because processall can take
-    a different ims but then need to also keep track of different cues per connection
-    Better to just have kevery per connection
-
-    So sending messages locally uses same Kevers and same database but different kevery
-    because the kevery input is an message stream so can't mix or cross streams
-    from local to tcp.
-
-    Object hierarchy
-
-    Controller base class .pre .kevers .db
-
-    Directant on server side manages Reactors does not initiate
-       has server creates reactants one per connection
-    Reactant on server sidereacts to initiated messages from client and sends response
-       has incomer and kevery per connection
-
-    Director on client side client initiates stuff
-       has client and kevery
-    Reactor on client side  reacts to responses from server from client initation
-       has client and kevery
-
-    Reactant bse class inherits from director adds kevery and processes its cues
-    So logic of Reactant is to process cues and then Tx to
-    (need to fix ims and cues later)
-
-    Director has  client for outgoing  and local kevery
-    ClientReactant inhereits from reactant adds client and fixes up kevery to
-    attach to client rxbs.  cues is for Reactant
-
-    Reactor base class has server for incoming and .keveries one for each connection
-    ServerReactant inherits from Reactor h
-
-    So each controller has a Director and one or more Reactants.
-    Each Director has a kevery for local events.
-    .kevery. The Director .kevery is for local validation of locally generated
-    events.
-
-    ServerReactants have .keveries with one kevery for each connnection.
-    The ServerReactant's .keverys are for remotely generated events.
-
-    ClientReactants have only one .kevery beause only one client connection
-
-    Each kevery has a output deque cues of notices to be handles.
-    Kevery's filter events for cues based on prefix. The controller prefix does
-    require receipts to remotes so for now the same. The local kevery would not
-    receive any remote requests for kels etc so it would never generate notices
-    in its cues. Only the reactants.
 
     """
 

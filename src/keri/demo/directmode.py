@@ -12,9 +12,10 @@ from keri.db import dbing
 from keri.core import eventing
 
 
-class Director(doing.Doer):
+class Contextor(doing.Doer):
     """
-    Direct Mode KERI Controller Doer class with lmdb Logger as .db
+    Direct Mode KERI Contextor Doer class with lmdb Logger as .db
+    Provides local shared context
 
     Attributes:
 
@@ -32,6 +33,8 @@ class Director(doing.Doer):
         .pre is qb64 prefix of local controller
         .kevers is dict of Kevers keyed by qb64 prefix
         .db is s lmdb db Logger instance
+        .secrets is list of secrets (replace later with keep interface)
+        .signers is dict  of signers for each secret indexed by verfer qb64
 
 
     Methods:
@@ -43,7 +46,7 @@ class Director(doing.Doer):
        ._tock is hidden attribute for .tock property
     """
 
-    def __init__(self, pre, kevers, db,  **kwa):
+    def __init__(self, pre, kevers, db, secrects, **kwa):
         """
         Initialize instance.
 
@@ -55,11 +58,15 @@ class Director(doing.Doer):
             pre is qb64 prefix of local controller
             db is lmdb db Logger instance
             kevers is dict of Kever instance keyed by qb64 prefix
+
+
         """
-        super(Director, self).__init__(**kwa)
+        super(Controller, self).__init__(**kwa)
         self.pre = pre
         self.kevers = kevers
         self.db = db
+        self.secrets = secrets
+        self.signers = dict()
 
 
     def do(self, tymist, tock=0.0):
@@ -86,7 +93,305 @@ class Director(doing.Doer):
         return True # return value of yield from, or yield ex.value of StopIteration
 
 
-class ServerDirector(Director):
+class Director(Contextor):
+    """
+    Direct Mode KERI Director Contextor with TCP Client and Kevery and Reactor
+
+    Attributes:
+
+    Inherited Properties:
+        .tyme is float relative cycle time, .tyme is artificial time
+        .tock is desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Inherited Attributes:
+        .tymist is Tymist instance that provides relative cycle time as .tymist.tyme
+        .pre is qb64 prefix of local controller
+        .kevers is dict of Kevers keyed by qb64 prefix
+        .db is s lmdb db Logger instance
+        .secrets is list of secrets (replace later with keep interface)
+        .signers is dict  of signers for each secret indexed by verfer qb64
+
+    Properties:
+
+    Attributes:
+
+
+
+    Methods:
+        .__call__ makes instance callable return generator
+        .do is generator function returns generator
+
+    Hidden:
+       ._tymist is Tymist instance reference
+       ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, pre, kevers, db,  **kwa):
+        """
+        Initialize instance.
+
+        Inherited Parameters:
+            tymist is  Tymist instance
+            tock is float seconds initial value of .tock
+
+        Parameters:
+            pre is qb64 prefix of local controller
+            db is lmdb db Logger instance
+            kevers is dict of Kever instance keyed by qb64 prefix
+
+
+        """
+        super(ClientContextor, self).__init__(**kwa)
+        self.client = client  #  use client for tx only
+        self.kevery = eventing.Kevery(kevers=self.kevers, logger=self.db)
+
+
+    def do(self, tymist, tock=0.0):
+        """
+        Generator method to run this doer
+        Calling this method returns generator
+        """
+        try:
+            # enter context
+
+            while (True):  # recur context
+                feed = (yield (tock))  # yields tock then waits for next send
+
+
+        except GeneratorExit:  # close context, forced exit due to .close
+            pass
+
+        except Exception:  # abort context, forced exit due to uncaught exception
+            raise
+
+        finally:  # exit context,  unforced exit due to normal exit of try
+            pass
+
+        return True # return value of yield from, or yield ex.value of StopIteration
+
+
+
+class Director(Contextor):
+    """
+    Direct Mode KERI Director Doer class with TCP Client and Kevery for comms
+    Does local initiation of events
+
+    Inherited Properties:
+        .tyme is float relative cycle time, .tyme is artificial time
+        .tock is desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Inherited Attributes:
+        .tymist is Tymist instance that provides relative cycle time as .tymist.tyme
+        .pre is qb64 prefix of local controller
+        .kevers is dict of Kevers keyed by qb64 prefix
+        .db is s lmdb db Logger instance
+
+    Attributes:
+        .client is TCP Client instance. Assumes run elsewhere
+        .kevery is Kevery instance
+        .secrets is list of secrets (replace later with keep interface)
+        .signers is list of signers for each secret
+
+    Methods:
+        .__call__ makes instance callable return generator
+        .do is generator function returns generator
+
+    Hidden:
+       ._tymist is Tymist instance reference
+       ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, client, **kwa):
+        """
+        Initialize instance.
+
+        Inherited Parameters:
+            tymist is  Tymist instance
+            tock is float seconds initial value of .tock
+            pre is qb64 prefix of local controller
+            db is lmdb db Logger instance
+
+        Parameters:
+            client is TCP client instance. Assumes run elsewhere
+
+        """
+        super(ClientDirector, self).__init__(**kwa)
+
+
+
+    def do(self, tymist, tock=0.0):
+        """
+        Generator method to run this doer
+        Calling this method returns generator
+        """
+        try:
+            # enter context
+
+            while (True):  # recur context
+                feed = (yield (tock))  # yields tock then waits for next send
+
+        except GeneratorExit:  # close context, forced exit due to .close
+            pass
+
+        except Exception:  # abort context, forced exit due to uncaught exception
+            raise
+
+        finally:  # exit context,  unforced exit due to normal exit of try
+            pass
+
+        return True # return value of yield from, or yield ex.value of StopIteration
+
+
+class Reactor(Contextor):
+    """
+    Direct Mode KERI Reactor Doer class with TCP Client and Kevery for comms
+    Logic to respond
+
+    Inherited Properties:
+        .tyme is float relative cycle time, .tyme is artificial time
+        .tock is desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Inherited Attributes:
+        .tymist is Tymist instance that provides relative cycle time as .tymist.tyme
+        .pre is qb64 prefix of local controller
+        .kevers is dict of Kevers keyed by qb64 prefix
+        .db is s lmdb db Logger instance
+
+    Attributes:
+        .client is TCP Client instance. Assumes run elsewhere
+        .kevery is Kevery instance
+
+    Methods:
+        .__call__ makes instance callable return generator
+        .do is generator function returns generator
+
+    Hidden:
+       ._tymist is Tymist instance reference
+       ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, client, **kwa):
+        """
+        Initialize instance.
+
+        Inherited Parameters:
+            tymist is  Tymist instance
+            tock is float seconds initial value of .tock
+            pre is qb64 prefix of local controller
+            db is lmdb db Logger instance
+
+        Parameters:
+            client is TCP client instance. Assumes run elsewhere
+
+        """
+        super(ClientDirector, self).__init__(**kwa)
+        self.client = client
+        self.kevery = eventing.Kevery(ims=self.client.rxbs,
+                                      kevers=self.kevers,
+                                      logger=self.db,
+                                      framed=False)
+
+
+    def do(self, tymist, tock=0.0):
+        """
+        Generator method to run this doer
+        Calling this method returns generator
+        """
+        try:
+            # enter context
+
+            while (True):  # recur context
+                feed = (yield (tock))  # yields tock then waits for next send
+
+        except GeneratorExit:  # close context, forced exit due to .close
+            pass
+
+        except Exception:  # abort context, forced exit due to uncaught exception
+            raise
+
+        finally:  # exit context,  unforced exit due to normal exit of try
+            pass
+
+        return True # return value of yield from, or yield ex.value of StopIteration
+
+class ClientReactant(ClientDirector):
+    """
+    Direct Mode KERI Controller Doer class with TCP Server for comms
+
+    Inherited Properties:
+        .tyme is float relative cycle time, .tyme is artificial time
+        .tock is desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Inherited Attributes:
+        .tymist is Tymist instance that provides relative cycle time as .tymist.tyme
+        .pre is qb64 prefix of local controller
+        .kevers is dict of Kevers keyed by qb64 prefix
+        .db is s lmdb db Logger instance
+        .client is TCP Client instance. Assumes run elsewhere
+        .kevery is Kevery instance
+
+    Attributes:
+
+
+    Methods:
+        .__call__ makes instance callable return generator
+        .do is generator function returns generator
+
+    Hidden:
+       ._tymist is Tymist instance reference
+       ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, **kwa):
+        """
+        Initialize instance.
+
+        Inherited Parameters:
+            tymist is  Tymist instance
+            tock is float seconds initial value of .tock
+            db is lmdb db Logger instance
+            kevers is dict of Kever instance keyed by qb64 prefix
+            name is str unique name alias of director
+            client is TCP client instance. Assumes run elsewhere
+
+        Parameters:
+
+        """
+        super(ClientReactant, self).__init__(**kwa)
+
+
+    def do(self, tymist, tock=0.0):
+        """
+        Generator method to run this doer
+        Calling this method returns generator
+        """
+        try:
+            # enter context
+
+            while (True):  # recur context
+                feed = (yield (tock))  # yields tock then waits for next send
+                self.kevery.processAll()  # kevery.ims is connected to client.rxbs
+                # handle notices in self.kevery.cues here
+
+        except GeneratorExit:  # close context, forced exit due to .close
+            pass
+
+        except Exception:  # abort context, forced exit due to uncaught exception
+            raise
+
+        finally:  # exit context,  unforced exit due to normal exit of try
+           pass
+
+        return True # return value of yield from, or yield ex.value of StopIteration
+
+
+
+
+class ServerDirector(Controller):
     """
     Direct Mode KERI Controller Doer class with TCP Server for comms
 
@@ -228,151 +533,6 @@ class ServerReactant(ServerDirector):
         return True # return value of yield from, or yield ex.value of StopIteration
 
 
-
-class ClientDirector(Director):
-    """
-    Direct Mode KERI Controller Doer class with TCP Client for comms
-
-    Inherited Properties:
-        .tyme is float relative cycle time, .tyme is artificial time
-        .tock is desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Inherited Attributes:
-        .tymist is Tymist instance that provides relative cycle time as .tymist.tyme
-        .pre is qb64 prefix of local controller
-        .kevers is dict of Kevers keyed by qb64 prefix
-        .db is s lmdb db Logger instance
-
-    Attributes:
-        .client is TCP Client instance. Assumes run elsewhere
-        .kevery is Kevery instance
-
-    Methods:
-        .__call__ makes instance callable return generator
-        .do is generator function returns generator
-
-    Hidden:
-       ._tymist is Tymist instance reference
-       ._tock is hidden attribute for .tock property
-    """
-
-    def __init__(self, client, **kwa):
-        """
-        Initialize instance.
-
-        Inherited Parameters:
-            tymist is  Tymist instance
-            tock is float seconds initial value of .tock
-            pre is qb64 prefix of local controller
-            db is lmdb db Logger instance
-
-        Parameters:
-            client is TCP client instance. Assumes run elsewhere
-
-        """
-        super(ClientDirector, self).__init__(**kwa)
-        self.client = client
-        self.kevery = eventing.Kevery(ims=self.client.rxbs,
-                                      kevers=self.kevers,
-                                      logger=self.db,
-                                      framed=False)
-
-
-    def do(self, tymist, tock=0.0):
-        """
-        Generator method to run this doer
-        Calling this method returns generator
-        """
-        try:
-            # enter context
-
-            while (True):  # recur context
-                feed = (yield (tock))  # yields tock then waits for next send
-
-        except GeneratorExit:  # close context, forced exit due to .close
-            pass
-
-        except Exception:  # abort context, forced exit due to uncaught exception
-            raise
-
-        finally:  # exit context,  unforced exit due to normal exit of try
-            pass
-
-        return True # return value of yield from, or yield ex.value of StopIteration
-
-
-
-class ClientReactant(ClientDirector):
-    """
-    Direct Mode KERI Controller Doer class with TCP Server for comms
-
-    Inherited Properties:
-        .tyme is float relative cycle time, .tyme is artificial time
-        .tock is desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Inherited Attributes:
-        .tymist is Tymist instance that provides relative cycle time as .tymist.tyme
-        .pre is qb64 prefix of local controller
-        .kevers is dict of Kevers keyed by qb64 prefix
-        .db is s lmdb db Logger instance
-        .client is TCP Client instance. Assumes run elsewhere
-        .kevery is Kevery instance
-
-    Attributes:
-
-
-    Methods:
-        .__call__ makes instance callable return generator
-        .do is generator function returns generator
-
-    Hidden:
-       ._tymist is Tymist instance reference
-       ._tock is hidden attribute for .tock property
-    """
-
-    def __init__(self, **kwa):
-        """
-        Initialize instance.
-
-        Inherited Parameters:
-            tymist is  Tymist instance
-            tock is float seconds initial value of .tock
-            db is lmdb db Logger instance
-            kevers is dict of Kever instance keyed by qb64 prefix
-            name is str unique name alias of director
-            client is TCP client instance. Assumes run elsewhere
-
-        Parameters:
-
-        """
-        super(ClientReactant, self).__init__(**kwa)
-
-
-    def do(self, tymist, tock=0.0):
-        """
-        Generator method to run this doer
-        Calling this method returns generator
-        """
-        try:
-            # enter context
-
-            while (True):  # recur context
-                feed = (yield (tock))  # yields tock then waits for next send
-                self.kevery.processAll()  # kevery.ims is connected to client.rxbs
-                # handle notices in self.kevery.cues here
-
-        except GeneratorExit:  # close context, forced exit due to .close
-            pass
-
-        except Exception:  # abort context, forced exit due to uncaught exception
-            raise
-
-        finally:  # exit context,  unforced exit due to normal exit of try
-           pass
-
-        return True # return value of yield from, or yield ex.value of StopIteration
 
 
 def setupDemo():
