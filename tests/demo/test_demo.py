@@ -147,21 +147,31 @@ def test_direct_mode():
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
+        bobMsgTx = b"Hi Eve I am  Bob"
+        bobDirector.client.tx(bobMsgTx)
 
-        msgTx = b"Hi Eve its Bob"
-        bobD.client.tx(msgTx)
+        eveMsgTx = b"Hi Bob its me Eve"
+        eveDirector.client.tx(eveMsgTx)
 
-        doers = [serDoer, cliDoer, eveR, bobR, eveD, bobD]
+        doers = [bobClientDoer, bobDirector, bobReactor, bobServerDoer, bobDirectant,
+                 eveClientDoer, eveDirector, eveReactor, eveServerDoer, eveDirectant]
         doist.do(doers=doers)
         assert doist.tyme == limit
 
-        assert eveD.server.opened == False
-        assert bobD.client.opened == False
+        assert bobClient.opened == False
+        assert bobServer.opened == False
+        assert eveClient.opened == False
+        assert eveServer.opened == False
 
-        assert not bobD.client.txes
-        ca, ix = list(eveD.server.ixes.items())[0]
-        msgRx = bytes(ix.rxbs)
-        assert msgRx == msgTx
+        assert not bobClient.txes
+        ca, ix = list(eveServer.ixes.items())[0]
+        eveMsgRx = bytes(ix.rxbs)
+        assert eveMsgRx == bobMsgTx
+
+        assert not eveClient.txes
+        ca, ix = list(bobServer.ixes.items())[0]
+        bobMsgRx = bytes(ix.rxbs)
+        assert bobMsgRx == eveMsgTx
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
