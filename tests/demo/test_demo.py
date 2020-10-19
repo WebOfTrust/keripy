@@ -10,18 +10,16 @@ import os
 from hio.base import doing
 from hio.core.tcp import clienting, serving
 
-from keri.demo import demoing, directmode
+from keri.demo import demoing, directing
 from keri.db import dbing
 from keri.core import eventing, coring
 
-def test_directmode():
+def test_direct_mode():
     """
-    Test directmode demo
+    Test direct mode demo
 
 
     """
-
-
     # set of secrets  (seeds for private keys)
     bobSecrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
@@ -74,27 +72,80 @@ def test_directmode():
     with dbing.openLogger(name="eve") as eveDB, \
          dbing.openLogger(name="bob") as bobDB:
 
+        bobPort = 5620  # bob's TCP listening port for server
+        evePort = 5621  # eve's TCP listneing port for server
+        bobKevers = dict()
+        eveKevers = dict()
+
+        # setup bob
+        bobHab = directing.Habitat(secrets=bobSecrets, kevers=bobKevers, db=bobDB)
+        assert bobHab.db == bobDB
+        assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
+                [signer.verfer.qb64 for signer in bobSigners])
+        assert bobHab.inception.dig == bobSerder.dig
+        assert bobHab.pre == bob
+
+        bobClient = clienting.Client(host='127.0.0.1', port=evePort)
+        bobClientDoer = doing.ClientDoer(client=bobClient)
+
+        bobDirector = directing.Director(hab=bobHab, client=bobClient)
+        assert bobDirector.hab == bobHab
+        assert bobDirector.client == bobClient
+        assert bobDirector.kevery.kevers == bobKevers
+        assert bobDirector.kevery.logger == bobDB
+
+        bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
+        assert bobReactor.hab == bobHab
+        assert bobReactor.client == bobClient
+        assert bobReactor.kevery.kevers == bobKevers
+        assert bobReactor.kevery.logger == bobDB
+        assert bobReactor.kevery.ims == bobReactor.client.rxbs
+
+        bobServer = serving.Server(host="", port=bobPort)
+        bobServerDoer = doing.ServerDoer(server=bobServer)
+
+        bobDirectant = directing.Directant(hab=bobHab, server=bobServer)
+        assert bobDirectant.hab == bobHab
+        assert bobDirectant.server == bobServer
+        # Bob's Reactants created on demand
+
+        # setup eve
+        eveHab = directing.Habitat(secrets=eveSecrets, kevers=eveKevers, db=eveDB)
+        assert eveHab.db == eveDB
+        assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
+                    [signer.verfer.qb64 for signer in eveSigners])
+        assert eveHab.inception.dig == eveSerder.dig
+        assert eveHab.pre == eve
+
+        eveClient = clienting.Client(host='127.0.0.1', port=bobPort)
+        eveClientDoer = doing.ClientDoer(client=eveClient)
+
+        eveDirector = directing.Director(hab=eveHab, client=eveClient)
+        assert eveDirector.hab == eveHab
+        assert eveDirector.client == eveClient
+        assert eveDirector.kevery.kevers == eveKevers
+        assert eveDirector.kevery.logger == eveDB
+
+        eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
+        assert eveReactor.hab == eveHab
+        assert eveReactor.client == eveClient
+        assert eveReactor.kevery.kevers == eveKevers
+        assert eveReactor.kevery.logger == eveDB
+        assert eveReactor.kevery.ims == eveReactor.client.rxbs
+
+        eveServer = serving.Server(host="", port=evePort)
+        eveServerDoer = doing.ServerDoer(server=eveServer)
+
+        eveDirectant = directing.Directant(hab=eveHab, server=eveServer)
+        assert eveDirectant.hab == eveHab
+        assert eveDirectant.server == eveServer
+        # Eve's Reactants created on demand
+
+
+
         limit = 0.25
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
-
-
-        client = clienting.Client(tymist=doist, host='127.0.0.1', port=5620)
-        cliDoer = doing.ClientDoer(client=client)
-        bobKevers = dict()
-        bobD = directmode.ClientDirector(pre=bob, kevers=bobKevers, db=bobDB, client=client)
-        assert bobD.kevery.kevers == bobKevers
-        assert bobD.kevery.logger == bobDB
-        bobR = directmode.ClientReactant(pre=bob, kevers=bobKevers, db=bobDB, client=client)
-        assert bobR.kevery.kevers == bobKevers
-        assert bobR.kevery.logger == bobDB
-
-        server = serving.Server(tymist=doist, host="", port=5620)
-        serDoer = doing.ServerDoer(server=server)
-        eveKevers = dict()
-        eveD = directmode.ServerDirector(pre=eve, kevers=eveKevers, db=eveDB, server=server)
-        eveR = directmode.ServerReactant(pre=eve, kevers=eveKevers, db=eveDB, server=server)
-
 
 
         msgTx = b"Hi Eve its Bob"
@@ -120,4 +171,4 @@ def test_directmode():
 
 
 if __name__ == "__main__":
-    test_directmode()
+    test_direct_mode()
