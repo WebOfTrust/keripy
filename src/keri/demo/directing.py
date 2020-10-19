@@ -261,6 +261,7 @@ class Directant(doing.Doer):
 
             while (True):  # recur context
                 tyme = (yield (tock))  # yields tock then waits for next send
+                self.serviceConnects()
 
 
         except GeneratorExit:  # close context, forced exit due to .close
@@ -273,6 +274,33 @@ class Directant(doing.Doer):
             pass
 
         return True # return value of yield from, or yield ex.value of StopIteration
+
+
+    def closeConnection(self, ca):
+        """
+        Close and remove connection given by ca
+        """
+        if ca in self.rants:
+            del self.rants[ca]
+        if ca in self.server.ixes:  #  incomer still there
+            self.server.ixes[ca].serviceTxes()  #  send final bytes to socket
+        self.server.removeIx(ca)
+
+
+    def serviceConnects(self):
+        """
+        New connections get Reactant added to .rants
+        """
+        for ca, ix in self.server.ixes.items():
+            if ix.cutoff:
+                self.closeConnection(ca)
+                continue
+
+            if ca not in self.rants:  # create Reactant
+                self.rants[ca] = Reactant(hab=self.hab, incomer=ix)
+
+            if ix.timeout > 0.0 and ix.tymer.expired:
+                self.closeConnection(ca)
 
 
 class Reactant(tyming.Tymee):
