@@ -185,6 +185,8 @@ class Reactor(doing.Doer):
 
             while (True):  # recur context
                 tyme = (yield (tock))  # yields tock then waits for next send
+                self.service()
+
 
 
         except GeneratorExit:  # close context, forced exit due to .close
@@ -198,6 +200,112 @@ class Reactor(doing.Doer):
 
         return True # return value of yield from, or yield ex.value of StopIteration
 
+
+    def service(self):
+        """
+        Service responses
+        """
+        if self.kevery:
+            self.kevery.processAll()
+            self.processCues()
+
+
+    def processCues(self):
+        """
+        Process all cues in .kevery
+        """
+        while self.kevery.cues:  # process any cues
+            # process each cue
+            cue = self.kevery.cues.popleft()
+            # print("cue = {}".format(cue))
+            self.processCue(cue=cue)
+
+
+    def processCue(self, cue):
+        """
+        Process a cue in direct mode assumes chits
+        """
+        cuePre = cue["pre"]
+        cueSerder = cue["serder"]
+        cueKed = cueSerder.ked
+        cueIlk = cueKed["ilk"]
+
+        if cueIlk == coring.Ilks.icp:
+            # check for chit from remote pre for own inception
+            dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+            found = False
+            for triplet in self.hab.db.getVrcsIter(dgkey):
+                if bytes(triplet).decode("utf-8").startswith(cuePre):
+                    found = True
+                    break
+
+            if not found:  # no chit from remote so send own inception
+                self.sendOwnInception()
+
+        self.sendOwnChit(cuePre, cueSerder)
+
+
+    def sendOwnChit(self, cuePre, cueSerder):
+        """
+        Send chit of event indicated by cuePre and cueSerder
+        """
+        # send own chit of event
+        # create seal of own last est event
+        kever = self.hab.kevers[self.hab.pre]
+        seal = eventing.SealEvent(pre=self.hab.pre,
+                                  dig=kever.lastEst.dig)
+
+        cueKed = cueSerder.ked
+        # create validator receipt
+        reserder = eventing.chit(pre=cuePre,
+                                 sn=int(cueKed["sn"], 16),
+                                 dig=cueSerder.dig,
+                                 seal=seal)
+        # sign cueSerder event not receipt
+        counter = coring.SigCounter(count=1)
+        # use signer that matcher current verfer  # not multisig
+        verfer = kever.verfers[0]
+        siger = None
+        for signer in self.hab.signers:
+            if signer.verfer.qb64 == verfer.qb64:
+                siger = signer.sign(ser=cueSerder.raw, index=0)  # return Siger if index
+                break
+        if siger:
+            # process own chit so have copy in own log
+            msg = bytearray(reserder.raw)
+            msg.extend(counter.qb64b)
+            msg.extend(siger.qb64b)
+            self.kevery.processOne(ims=bytearray(msg), framed=True)  # make copy
+
+            # send to remote
+            self.client.tx(bytes(msg))  #  make copy because tx uses deque
+            print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
+            del msg[:]
+
+
+    def sendOwnInception(self):
+        """
+        Utility to send own inception on client
+        """
+        # send own inception
+        esn = 0
+        counter = coring.SigCounter()  # default is count = 1
+        # sign serialization, returns Siger if index provided
+        siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
+        #  create serialized message
+        msg = bytearray(self.hab.inception.raw)
+        msg.extend(counter.qb64b)
+        msg.extend(siger.qb64b)
+
+        # check valid by creating own Kever using own Kevery
+        #self.kevery.processOne(ims=bytearray(msg))  # copy of msg
+        #kever = self.kevery.kevers[self.hab.pre]
+        #assert kever.prefixer.qb64 == self.hab.pre
+
+        # send to connected remote
+        self.client.tx(bytes(msg))  # make copy for now fix later
+        print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
+        del msg[:]  #  clear msg
 
 
 class Directant(doing.Doer):
@@ -310,24 +418,17 @@ class Directant(doing.Doer):
         """
         for ca, reactant in self.rants.items():
             if reactant.kevery:
-                try:
-                    reactant.kevery.processAll()
-                except kering.ShortageError as ex:
-                    pass  # keep trying
+                reactant.kevery.processAll()
 
                 if reactant.kevery.ims:
-                    pass
+                    print("{}".format(reactant.kevery.ims))
 
-                while reactant.kevery.cues:  # process any cues
-                    # process each cue
-                    cue = reactant.kever.cues.popleft()
-
+                reactant.processCues()
 
             if not reactant.persistent:  # not persistent so close and remove
                 ix = self.server.ixes[ca]
                 if not ix.txes:  # wait for outgoing txes to be empty
                     self.closeConnection(ca)
-
 
 
 
@@ -378,6 +479,102 @@ class Reactant(tyming.Tymee):
         self.persistent = True if persistent else False
 
 
+    def processCues(self):
+        """
+        Process any cues in .kevery
+        """
+
+        while self.kevery.cues:  # process any cues
+            # process each cue
+            cue = self.kevery.cues.popleft()
+            # print("cue = {}".format(cue))
+            self.processCue(cue=cue)
+
+
+    def processCue(self, cue):
+        """
+        Process a cue in direct mode assumes chits
+        """
+        cuePre = cue["pre"]
+        cueSerder = cue["serder"]
+        cueKed = cueSerder.ked
+        cueIlk = cueKed["ilk"]
+
+        if cueIlk == coring.Ilks.icp:
+            # check for chit from remote pre for own inception
+            dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+            found = False
+            for triplet in self.hab.db.getVrcsIter(dgkey):
+                if triplet.startswith(bytes(cuePre)):
+                    found = True
+                    break
+
+            if not found:  # no chit from remote so send own inception
+                self.sendOwnInception()
+
+        self.sendOwnChit(cuePre, cueSerder)
+
+    def sendOwnChit(self, cuePre, cueSerder):
+        """
+        Send chit of event indicated by cuePre and cueSerder
+        """
+        # send own chit of event
+        # create seal of own last est event
+        kever = self.hab.kevers[self.hab.pre]
+        seal = eventing.SealEvent(pre=self.hab.pre,
+                                  dig=kever.lastEst.dig)
+
+        cueKed = cueSerder.ked
+        # create validator receipt
+        reserder = eventing.chit(pre=cuePre,
+                                 sn=int(cueKed["sn"], 16),
+                                 dig=cueSerder.dig,
+                                 seal=seal)
+        # sign cueSerder event not receipt
+        counter = coring.SigCounter(count=1)
+        # use signer that matcher current verfer  # not multisig
+        verfer = kever.verfers[0]
+        siger = None
+        for signer in self.hab.signers:
+            if signer.verfer.qb64 == verfer.qb64:
+                siger = signer.sign(ser=cueSerder.raw, index=0)  # return Siger if index
+                break
+        if siger:
+            # process own chit so have copy in own log
+            msg = bytearray(reserder.raw)
+            msg.extend(counter.qb64b)
+            msg.extend(siger.qb64b)
+            self.kevery.processOne(ims=bytearray(msg), framed=True)  # make copy
+
+            # send to remote
+            self.incomer.tx(bytes(msg))  #  make copy because tx uses deque
+            print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
+            del msg[:]
+
+
+    def sendOwnInception(self):
+        """
+        Utility to send own inception on client
+        """
+        # send own inception
+        esn = 0
+        counter = coring.SigCounter()  # default is count = 1
+        # sign serialization, returns Siger if index provided
+        siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
+        #  create serialized message
+        msg = bytearray(self.hab.inception.raw)
+        msg.extend(counter.qb64b)
+        msg.extend(siger.qb64b)
+
+        # check valid by creating own Kever using own Kevery
+        #self.kevery.processOne(ims=bytearray(msg))  # copy of msg
+        #kever = self.kevery.kevers[self.hab.pre]
+        #assert kever.prefixer.qb64 == self.hab.pre
+
+        # send to connected remote
+        self.incomer.tx(bytes(msg))  # make copy for now fix later
+        print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
+        del msg[:]  #  clear msg
 
 
 def setupDemo():
@@ -388,16 +585,9 @@ def setupDemo():
 
 
 
-    # coe and zoe
-
-    coeDB = dbing.Logger(name='coe', temp=True)
-    coeClient = ''
 
 
-    zoeDB = dbing.Logger(name='zoe', temp=True)
 
-    coeDB.clearDirPath()
-    coeDB.clearDirPath()
 
 if __name__ == "__main__":
     setupDemo()

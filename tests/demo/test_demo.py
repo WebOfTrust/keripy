@@ -77,6 +77,7 @@ class BobDirector(directing.Director):
 
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
+            print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
             del msg[:]  #  clear msg
 
             tyme = (yield (tock))
@@ -469,8 +470,8 @@ def test_direct_mode():
         doist = doing.Doist(limit=limit, tock=tock)
 
 
-        # eveMsgTx = b"Hi Bob its me Eve"
-        # eveDirector.client.tx(eveMsgTx)
+        #eveMsgTx = b"Hi Bob its me Eve"
+        #eveDirector.client.tx(eveMsgTx)
 
         doers = [bobClientDoer, bobDirector, bobReactor, bobServerDoer, bobDirectant,
                  eveClientDoer, eveDirector, eveReactor, eveServerDoer, eveDirectant]
@@ -511,5 +512,5 @@ def test_direct_mode():
 
 
 if __name__ == "__main__":
-    test_directing_basic()
+    # test_directing_basic()
     test_direct_mode()

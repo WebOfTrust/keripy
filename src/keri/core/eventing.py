@@ -1066,12 +1066,16 @@ class Kevery:
         if pre not in self.kevers:  #  first seen event for pre
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures
-                # raises exception if problem adds to KEL Kevers
+                # raises exception if problem
+                # otherwise adds to KEL
                 # create kever from serder
                 kever = Kever(serder=serder,
                               sigers=sigers,
                               logger=self.logger)
-                self.kevers[pre] = kever
+                self.kevers[pre] = kever  # not exception so add to kevers
+
+                # create cue for receipt   direct mode for now
+                self.cues.append(dict(pre=pre, serder=serder))
 
             else:  # not inception so can't verify, add to escrow
                 # log escrowed
