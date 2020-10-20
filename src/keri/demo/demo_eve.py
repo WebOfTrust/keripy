@@ -38,8 +38,8 @@ def runDemo(name="eve", remote=5620, local=5621, expire=0.0):
 
 
 def parseArgs(version=__version__):
-    d = "Runs KERI direct mode demo controller. "
-    d += "Example: demo_keri_eve --remote 5620 --local 5621 --limit 10.0'\n"
+    d = "Runs KERI direct mode demo controller.\n"
+    d += "Example:\nkeri_eve -r 5620 -l 5621 --e 10.0\n"
     p = argparse.ArgumentParser(description=d)
     p.add_argument('-V', '--version',
                    action='version',
