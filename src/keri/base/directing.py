@@ -401,7 +401,7 @@ class Directant(doing.Doer):
         """
         New connections get Reactant added to .rants
         """
-        for ca, ix in self.server.ixes.items():
+        for ca, ix in list(self.server.ixes.items()):
             if ix.cutoff:
                 self.closeConnection(ca)
                 continue
