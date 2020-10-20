@@ -206,6 +206,8 @@ class Reactor(doing.Doer):
         Service responses
         """
         if self.kevery:
+            if self.kevery.ims:
+                print("{} received {}".format(self.hab.pre, self.kevery.ims))
             self.kevery.processAll()
             self.processCues()
 
@@ -217,7 +219,7 @@ class Reactor(doing.Doer):
         while self.kevery.cues:  # process any cues
             # process each cue
             cue = self.kevery.cues.popleft()
-            # print("cue = {}".format(cue))
+            print("{} cue = {}".format(self.hab.pre, cue))
             self.processCue(cue=cue)
 
 
@@ -418,11 +420,10 @@ class Directant(doing.Doer):
         """
         for ca, reactant in self.rants.items():
             if reactant.kevery:
-                reactant.kevery.processAll()
-
                 if reactant.kevery.ims:
-                    print("{}".format(reactant.kevery.ims))
+                    print("{} received {}".format(self.hab.pre, reactant.kevery.ims))
 
+                reactant.kevery.processAll()
                 reactant.processCues()
 
             if not reactant.persistent:  # not persistent so close and remove
@@ -487,7 +488,7 @@ class Reactant(tyming.Tymee):
         while self.kevery.cues:  # process any cues
             # process each cue
             cue = self.kevery.cues.popleft()
-            # print("cue = {}".format(cue))
+            print("{} cue = {}".format(self.hab.pre, cue))
             self.processCue(cue=cue)
 
 
@@ -831,7 +832,7 @@ def runController(secrets,  name="who", role="initiator",
         if role == "initiator":
             director = BobDirector(hab=hab, client=client, tock=0.125)
         else:
-            director = EveDirector(hab=hab, client=client, tock=0.125)
+            director = EveDirector(hab=hab, client=client, tock=1.0)
         reactor = Reactor(hab=hab, client=client)
         server = serving.Server(host="", port=localPort)
         serverDoer = doing.ServerDoer(server=server)
