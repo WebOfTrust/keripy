@@ -1110,8 +1110,12 @@ class Kevery:
                 elif ((sn == sno) or  # new inorder event
                       (ilk == Ilks.rot and kever.lastEst.sn < sn <= sno )):  # recovery
                     # verify signatures etc and update state if valid
-                    # raise exception if problem. adds to KELs
+                    # raise exception if problem.
+                    # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers)
+
+                    # create cue for receipt   direct mode for now
+                    self.cues.append(dict(pre=pre, serder=serder))
 
                 else:  # maybe duplicitous
                     # log duplicitous
