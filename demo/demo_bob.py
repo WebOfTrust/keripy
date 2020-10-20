@@ -7,9 +7,8 @@ Utilities for demos
 """
 import os
 
-from keri.db import dbing
-from keri.core import coring, eventing
-from keri.demo import directing
+
+from keri.base import directing
 
 
 def runDemo():
