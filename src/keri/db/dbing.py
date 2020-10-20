@@ -57,7 +57,6 @@ try:
 except ImportError:
     import json
 
-
 from  ..kering import KeriError
 
 class DatabaseError(KeriError):

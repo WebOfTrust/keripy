@@ -5,11 +5,10 @@ keri.demo.directing module
 
 simple direct mode demo support classes
 """
-import hio
 from hio.base import doing, tyming
-from keri import kering
-from keri.db import dbing
-from keri.core import coring, eventing
+from .. import kering
+from ..db import dbing
+from ..core import coring, eventing
 
 
 class Habitat():
@@ -799,17 +798,3 @@ class EveDirector(Director):
 
 
 
-def setupDemo():
-    """
-    Setup the demo
-    """
-    print("Setting up Direct Mode demo.\n")
-
-
-
-
-
-
-
-if __name__ == "__main__":
-    setupDemo()
