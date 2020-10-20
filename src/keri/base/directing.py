@@ -625,6 +625,11 @@ class BobDirector(Director):
             # recur context
             tyme = (yield (self.tock))  # yields tock then waits for next send
 
+            while (not self.client.connected):
+                print("{} waiting for connection to remote.\n".format(self.hab.pre))
+                tyme = (yield (self.tock))
+
+            print("{} connected to {}.\n".format(self.hab.pre, self.client.ha))
 
             # Inception Event 0
             sn =  0
@@ -782,6 +787,13 @@ class EveDirector(Director):
 
 
             tyme = (yield (tock))
+
+            while (not self.client.connected):
+                print("{} waiting for connection to remote.\n".format(self.hab.pre))
+                tyme = (yield (self.tock))
+
+            print("{} connected to {}.\n".format(self.hab.pre, self.client.ha))
+            tyme = (yield (self.tock))
 
 
 
