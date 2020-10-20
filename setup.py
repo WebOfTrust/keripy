@@ -91,7 +91,9 @@ setup(
     entry_points={
         'console_scripts': [
             'keri = keri.cli:main',
-            'kerid = keri.daemon:main'
+            'kerid = keri.daemon:main',
+            'keri_bob = keri.demo.demo_bob:main',
+            'keri_eve = keri.demo.demo_eve:main',
         ]
     },
 )
