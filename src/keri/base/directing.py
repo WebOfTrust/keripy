@@ -627,7 +627,7 @@ class BobDirector(Director):
             tyme = (yield (self.tock))  # yields tock then waits for next send
 
             while (not self.client.connected):
-                print("{} waiting for connection to remote.\n".format(self.hab.pre))
+                # print("{} waiting for connection to remote.\n".format(self.hab.pre))
                 tyme = (yield (self.tock))
 
             print("{} connected to {}.\n".format(self.hab.pre, self.client.ha))
@@ -790,7 +790,7 @@ class EveDirector(Director):
             tyme = (yield (tock))
 
             while (not self.client.connected):
-                print("{} waiting for connection to remote.\n".format(self.hab.pre))
+                # print("{} waiting for connection to remote.\n".format(self.hab.pre))
                 tyme = (yield (self.tock))
 
             print("{} connected to {}.\n".format(self.hab.pre, self.client.ha))
@@ -824,9 +824,10 @@ def runController(secrets,  name="who", role="initiator",
           "".format(name,role, localPort, remotePort))
 
     with dbing.openLogger(name=name) as db:
+         # setup components
         kevers = dict()
-        # setup components
         hab = Habitat(secrets=secrets, kevers=kevers, db=db)
+
         client = clienting.Client(host='127.0.0.1', port=remotePort)
         clientDoer = doing.ClientDoer(client=client)
         if role == "initiator":
@@ -834,13 +835,14 @@ def runController(secrets,  name="who", role="initiator",
         else:
             director = EveDirector(hab=hab, client=client, tock=1.0)
         reactor = Reactor(hab=hab, client=client)
+
         server = serving.Server(host="", port=localPort)
         serverDoer = doing.ServerDoer(server=server)
         directant = Directant(hab=hab, server=server)
         # Reactants created on demand
 
-
+        # run components
         tock = 0.03125
-        doist = doing.Doist(limit=limit, tock=tock)
+        doist = doing.Doist(limit=limit, tock=tock, real=True)
         doers = [clientDoer, director, reactor, serverDoer, directant]
         doist.do(doers=doers)
