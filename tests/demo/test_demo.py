@@ -10,7 +10,7 @@ import os
 from hio.base import doing
 from hio.core.tcp import clienting, serving
 
-from keri.demo import demoing, directing
+from keri.base import directing
 from keri.db import dbing
 from keri.core import eventing, coring
 

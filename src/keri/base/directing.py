@@ -6,6 +6,7 @@ keri.demo.directing module
 simple direct mode demo support classes
 """
 from hio.base import doing, tyming
+from hio.core.tcp import clienting, serving
 from .. import kering
 from ..db import dbing
 from ..core import coring, eventing
@@ -798,3 +799,35 @@ class EveDirector(Director):
 
 
 
+
+def runController(secrets,  name="who", role="initiator",
+                  remotePort=5621, localPort=5620, limit=0.0):
+    """
+    Setup and run the demo for name
+    """
+
+
+    print("Setting up Direct Mode demo for {} as {} on tcp port {} to port {}.\n"
+          "".format(name,role, localPort, remotePort))
+
+    with dbing.openLogger(name=name) as db:
+        kevers = dict()
+        # setup components
+        hab = Habitat(secrets=secrets, kevers=kevers, db=db)
+        client = clienting.Client(host='127.0.0.1', port=remotePort)
+        clientDoer = doing.ClientDoer(client=client)
+        if role == "initiator":
+            director = BobDirector(hab=hab, client=client, tock=0.125)
+        else:
+            director = EveDirector(hab=hab, client=client, tock=0.125)
+        reactor = Reactor(hab=hab, client=client)
+        server = serving.Server(host="", port=localPort)
+        serverDoer = doing.ServerDoer(server=server)
+        directant = Directant(hab=hab, server=server)
+        # Reactants created on demand
+
+
+        tock = 0.03125
+        doist = doing.Doist(limit=limit, tock=tock)
+        doers = [clientDoer, director, reactor, serverDoer, directant]
+        doist.do(doers=doers)

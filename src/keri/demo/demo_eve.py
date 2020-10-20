@@ -7,7 +7,7 @@ Utilities for demos
 """
 import os
 
-from keri.demo import  demoing
+
 from keri.db import dbing
 from keri.core import coring, eventing
 from keri.demo import directing
@@ -32,7 +32,7 @@ def runDemo():
                 'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
                 'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
 
-    demoing.runController(secrets=secrets,
+    directing.runController(secrets=secrets,
                            name=name,
                            role="validator",
                            remotePort=remotePort,
