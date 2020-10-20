@@ -207,7 +207,7 @@ class Reactor(doing.Doer):
         """
         if self.kevery:
             if self.kevery.ims:
-                print("{} received {}".format(self.hab.pre, self.kevery.ims))
+                print("{} received:\n{}\n\n".format(self.hab.pre, self.kevery.ims))
             self.kevery.processAll()
             self.processCues()
 
@@ -219,7 +219,7 @@ class Reactor(doing.Doer):
         while self.kevery.cues:  # process any cues
             # process each cue
             cue = self.kevery.cues.popleft()
-            print("{} cue = {}".format(self.hab.pre, cue))
+            print("{} sent cue:\n{}\n\n".format(self.hab.pre, cue))
             self.processCue(cue=cue)
 
 
@@ -281,7 +281,7 @@ class Reactor(doing.Doer):
 
             # send to remote
             self.client.tx(bytes(msg))  #  make copy because tx uses deque
-            print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
+            print("{} sent chit:\n{}\n\n".format(self.hab.pre, bytes(msg)))
             del msg[:]
 
 
@@ -306,7 +306,7 @@ class Reactor(doing.Doer):
 
         # send to connected remote
         self.client.tx(bytes(msg))  # make copy for now fix later
-        print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
+        print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
         del msg[:]  #  clear msg
 
 
@@ -421,7 +421,7 @@ class Directant(doing.Doer):
         for ca, reactant in self.rants.items():
             if reactant.kevery:
                 if reactant.kevery.ims:
-                    print("{} received {}".format(self.hab.pre, reactant.kevery.ims))
+                    print("{} received:\n{}\n\n".format(self.hab.pre, reactant.kevery.ims))
 
                 reactant.kevery.processAll()
                 reactant.processCues()
@@ -488,7 +488,7 @@ class Reactant(tyming.Tymee):
         while self.kevery.cues:  # process any cues
             # process each cue
             cue = self.kevery.cues.popleft()
-            print("{} cue = {}".format(self.hab.pre, cue))
+            print("{} sent cue:\n{}\n\n".format(self.hab.pre, cue))
             self.processCue(cue=cue)
 
 
@@ -549,7 +549,7 @@ class Reactant(tyming.Tymee):
 
             # send to remote
             self.incomer.tx(bytes(msg))  #  make copy because tx uses deque
-            print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
+            print("{} sent chit:\n{}\n\n".format(self.hab.pre, bytes(msg)))
             del msg[:]
 
 
@@ -574,7 +574,7 @@ class Reactant(tyming.Tymee):
 
         # send to connected remote
         self.incomer.tx(bytes(msg))  # make copy for now fix later
-        print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
+        print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
         del msg[:]  #  clear msg
 
 
@@ -630,7 +630,7 @@ class BobDirector(Director):
                 # print("{} waiting for connection to remote.\n".format(self.hab.pre))
                 tyme = (yield (self.tock))
 
-            print("{} connected to {}.\n".format(self.hab.pre, self.client.ha))
+            print("{}:\n connected to {}.\n\n".format(self.hab.pre, self.client.ha))
 
             # Inception Event 0
             sn =  0
@@ -650,7 +650,7 @@ class BobDirector(Director):
 
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
-            print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
+            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
             del msg[:]  #  clear msg
 
             tyme = (yield (self.tock))
@@ -681,7 +681,7 @@ class BobDirector(Director):
 
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
-            print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
+            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
             del msg[:]  #  clear msg
 
             tyme = (yield (self.tock))
@@ -708,7 +708,7 @@ class BobDirector(Director):
 
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
-            print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
+            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
             del msg[:]  #  clear msg
 
             tyme = (yield (self.tock))
@@ -793,7 +793,7 @@ class EveDirector(Director):
                 # print("{} waiting for connection to remote.\n".format(self.hab.pre))
                 tyme = (yield (self.tock))
 
-            print("{} connected to {}.\n".format(self.hab.pre, self.client.ha))
+            print("{}:\n connected to {}.\n\n".format(self.hab.pre, self.client.ha))
             tyme = (yield (self.tock))
 
 
@@ -820,8 +820,8 @@ def runController(secrets,  name="who", role="initiator",
     """
 
 
-    print("Setting up Direct Mode demo for {} as {} on tcp port {} to port {}.\n"
-          "".format(name,role, localPort, remotePort))
+    print("Direct Mode demo of {} as {} on TCP port {} to port {}.\n\n"
+          "".format(name, role, localPort, remotePort))
 
     with dbing.openLogger(name=name) as db:
          # setup components
