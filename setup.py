@@ -31,7 +31,7 @@ from setuptools import setup
 
 setup(
     name='keri',
-    version='0.1.0',  #  also change in src/keri/__init__.py
+    version='0.1.1',  #  also change in src/keri/__init__.py
     license='Apache Software License 2.0',
     description='Key Event Receipt Infrastructure',
     long_description="KERI Decentralized Key Management Infrastructure",
@@ -94,6 +94,7 @@ setup(
             'kerid = keri.daemon:main',
             'keri_bob = keri.demo.demo_bob:main',
             'keri_eve = keri.demo.demo_eve:main',
+            'keri_sam = keri.demo.demo_sam:main',
         ]
     },
 )

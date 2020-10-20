@@ -686,7 +686,7 @@ class BobDirector(Director):
 
             tyme = (yield (self.tock))
 
-            # Next Event 2 Coe Interaction
+            # Next Event 2 Interaction
             sn += 1  #  do not increment esn
 
             serder = eventing.interact(pre=kever.prefixer.qb64,
@@ -724,6 +724,156 @@ class BobDirector(Director):
             pass
 
         return True # return value of yield from, or yield ex.value of StopIteration
+
+
+
+class SamDirector(Director):
+    """
+    Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
+    Generator logic is to iterate through initiation of events for demo
+
+    Inherited Attributes:
+        .hab is Habitat instance of local controller's context
+        .client is TCP client instance. Assumes operated by another doer.
+        .kevery is Kevery instance
+
+
+    Attributes:
+
+    Inherited Properties:
+        .tyme is float relative cycle time, .tyme is artificial time
+        .tock is desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Inherited Methods:
+        .__call__ makes instance callable return generator
+        .do is generator function returns generator
+
+    Methods:
+
+    Hidden:
+       ._tymist is Tymist instance reference
+       ._tock is hidden attribute for .tock property
+    """
+
+
+    def do(self, tymist, tock=0.0):
+        """
+        Generator method to run this doer
+        Calling this method returns generator
+        """
+        try:
+            # enter context
+            self.wind(tymist)  # change tymist and dependencies
+            self.tock = tock
+            tyme = self.tyme
+
+            # recur context
+            tyme = (yield (self.tock))  # yields tock then waits for next send
+
+            while (not self.client.connected):
+                # print("{} waiting for connection to remote.\n".format(self.hab.pre))
+                tyme = (yield (self.tock))
+
+            print("{}:\n connected to {}.\n\n".format(self.hab.pre, self.client.ha))
+
+            # Inception Event 0
+            sn =  0
+            esn = 0
+            counter = coring.SigCounter()  # default is count = 1
+            # sign serialization, returns Siger if index provided
+            siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
+            #  create serialized message
+            msg = bytearray(self.hab.inception.raw)
+            msg.extend(counter.qb64b)
+            msg.extend(siger.qb64b)
+
+            # check valid by creating own Kever using own Kevery
+            self.kevery.processOne(ims=bytearray(msg))  # copy of msg
+            kever = self.kevery.kevers[self.hab.pre]
+            assert kever.prefixer.qb64 == self.hab.pre
+
+            # send to connected remote
+            self.client.tx(bytes(msg))  # make copy for now fix later
+            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+            del msg[:]  #  clear msg
+
+            tyme = (yield (self.tock))
+
+
+            # Next Event 1 Interaction
+            sn += 1  #  do not increment esn
+
+            serder = eventing.interact(pre=kever.prefixer.qb64,
+                                       dig=kever.diger.qb64,
+                                       sn=sn)
+
+            # create sig counter
+            counter = coring.SigCounter()  # default is count = 1
+            # sign serialization
+            siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
+
+            # create msg
+            msg = bytearray(serder.raw)
+            msg.extend(counter.qb64b)
+            msg.extend(siger.qb64b)
+
+            # update ownkey event verifier state
+            self.kevery.processOne(ims=bytearray(msg))  # make copy
+
+            # send to connected remote
+            self.client.tx(bytes(msg))  # make copy for now fix later
+            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+            del msg[:]  #  clear msg
+
+            tyme = (yield (self.tock))
+
+            # Rotation Event 2
+            sn += 1
+            esn += 1
+
+            kever = self.hab.kevers[self.hab.pre]  # have to do here after own inception
+
+            serder = eventing.rotate(pre=kever.prefixer.qb64,
+                                             keys=[self.hab.signers[esn].verfer.qb64],
+                                dig=kever.diger.qb64,
+                                nxt=coring.Nexter(keys=[self.hab.signers[esn+1].verfer.qb64]).qb64,
+                                sn=sn)
+            # create sig counter
+            counter = coring.SigCounter()  # default is count = 1
+            # sign serialization
+            siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
+
+            #  create serialized message
+            msg = bytearray(serder.raw)
+            msg.extend(counter.qb64b)
+            msg.extend(siger.qb64b)
+
+            # update ownkey event verifier state
+            self.kevery.processOne(ims=bytearray(msg))  # make copy
+
+            # send to connected remote
+            self.client.tx(bytes(msg))  # make copy for now fix later
+            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+            del msg[:]  #  clear msg
+
+            tyme = (yield (self.tock))
+
+
+
+        except GeneratorExit:  # close context, forced exit due to .close
+            pass
+
+        except Exception:  # abort context, forced exit due to uncaught exception
+            raise
+
+        finally:  # exit context,  unforced exit due to normal exit of try
+            pass
+
+        return True # return value of yield from, or yield ex.value of StopIteration
+
 
 
 class EveDirector(Director):
@@ -832,8 +982,10 @@ def runController(secrets,  name="who", role="initiator",
         clientDoer = doing.ClientDoer(client=client)
         if role == "initiator":
             director = BobDirector(hab=hab, client=client, tock=0.125)
+        elif role == "other":
+            director = SamDirector(hab=hab, client=client, tock=0.125)
         else:
-            director = EveDirector(hab=hab, client=client, tock=1.0)
+            director = EveDirector(hab=hab, client=client, tock=0.125)
         reactor = Reactor(hab=hab, client=client)
 
         server = serving.Server(host="", port=localPort)
