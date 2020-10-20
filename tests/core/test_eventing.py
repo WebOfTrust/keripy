@@ -1990,7 +1990,7 @@ def test_direct_mode():
                                     b'eWkh8YJRp5VIAAWsB5GblCXs43fNPPGqAlx5FWyEzdBSRb9wGqwwDen3Qq4yxaXVmEn9dZdK3Cq6'
                                     b'l5Iq6CHxWiKCoUR5A3kG1LBg')
 
-        # Coe RotationTransferable
+        # Coe Event 1 RotationTransferable
         csn += 1
         cesn += 1
         assert csn == cesn == 1
@@ -2079,7 +2079,7 @@ def test_direct_mode():
                                     b'HsnSiAgX5vrAAAciKcK5F0a0p5eQr1jG61KtIYP-7qhqmEtMLiDTShRAOqOMo0leInt1pI60goLV'
                                     b'XGXatvIfdEc2tO41FbfZFtCg')
 
-        # Next Event Coe Interaction
+        # Next Event 2 Coe Interaction
         csn += 1  #  do not increment esn
         assert csn == 2
         assert cesn == 1

@@ -15,164 +15,6 @@ from keri.db import dbing
 from keri.core import eventing, coring
 
 
-class BobDirector(directing.Director):
-    """
-    Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
-    Generator logic is to iterate through initiation of events for demo
-
-    Inherited Attributes:
-        .hab is Habitat instance of local controller's context
-        .client is TCP client instance. Assumes operated by another doer.
-        .kevery is Kevery instance
-
-
-    Attributes:
-
-    Inherited Properties:
-        .tyme is float relative cycle time, .tyme is artificial time
-        .tock is desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Properties:
-
-    Inherited Methods:
-        .__call__ makes instance callable return generator
-        .do is generator function returns generator
-
-    Methods:
-
-    Hidden:
-       ._tymist is Tymist instance reference
-       ._tock is hidden attribute for .tock property
-    """
-
-
-    def do(self, tymist, tock=0.0):
-        """
-        Generator method to run this doer
-        Calling this method returns generator
-        """
-        try:
-            # enter context
-            self.wind(tymist)  # change tymist and dependencies
-            self.tock = tock
-            tyme = self.tyme
-
-            # recur context
-            tyme = (yield (tock))  # yields tock then waits for next send
-
-            esn = 0
-            counter = coring.SigCounter()  # default is count = 1
-            # sign serialization, returns Siger if index provided
-            siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
-            #  create serialized message
-            msg = bytearray(self.hab.inception.raw)
-            msg.extend(counter.qb64b)
-            msg.extend(siger.qb64b)
-
-            # check valid by creating own Kever using own Kevery
-            self.kevery.processOne(ims=bytearray(msg))  # copy of msg
-            kever = self.kevery.kevers[self.hab.pre]
-            assert kever.prefixer.qb64 == self.hab.pre
-
-            # send to connected remote
-            self.client.tx(bytes(msg))  # make copy for now fix later
-            print("{} sent:\n{}\n".format(self.hab.pre, bytes(msg)))
-            del msg[:]  #  clear msg
-
-            tyme = (yield (tock))
-
-
-
-        except GeneratorExit:  # close context, forced exit due to .close
-            pass
-
-        except Exception:  # abort context, forced exit due to uncaught exception
-            raise
-
-        finally:  # exit context,  unforced exit due to normal exit of try
-            pass
-
-        return True # return value of yield from, or yield ex.value of StopIteration
-
-
-class EveDirector(directing.Director):
-    """
-    Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
-    Generator logic is to iterate through initiation of events for demo
-
-    Inherited Attributes:
-        .hab is Habitat instance of local controller's context
-        .client is TCP client instance. Assumes operated by another doer.
-        .kevery is Kevery instance
-
-
-    Attributes:
-
-    Inherited Properties:
-        .tyme is float relative cycle time, .tyme is artificial time
-        .tock is desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Properties:
-
-    Inherited Methods:
-        .__call__ makes instance callable return generator
-        .do is generator function returns generator
-
-    Methods:
-
-    Hidden:
-       ._tymist is Tymist instance reference
-       ._tock is hidden attribute for .tock property
-    """
-
-
-    def do(self, tymist, tock=0.0):
-        """
-        Generator method to run this doer
-        Calling this method returns generator
-        """
-        try:
-            # enter context
-            self.wind(tymist)  # change tymist and dependencies
-            self.tock = tock
-            tyme = self.tyme
-
-            # recur context
-            tyme = (yield (tock))  # yields tock then waits for next send
-
-            esn = 0
-            counter = coring.SigCounter()  # default is count = 1
-            # sign serialization, returns Siger if index provided
-            siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
-            #  create serialized message
-            msg = bytearray(self.hab.inception.raw)
-            msg.extend(counter.qb64b)
-            msg.extend(siger.qb64b)
-
-            # check valid by creating own Kever using own Kevery
-            self.kevery.processOne(ims=bytearray(msg))  # copy of msg
-            kever = self.kevery.kevers[self.hab.pre]
-            assert kever.prefixer.qb64 == self.hab.pre
-
-
-            tyme = (yield (tock))
-
-
-
-        except GeneratorExit:  # close context, forced exit due to .close
-            pass
-
-        except Exception:  # abort context, forced exit due to uncaught exception
-            raise
-
-        finally:  # exit context,  unforced exit due to normal exit of try
-            pass
-
-        return True # return value of yield from, or yield ex.value of StopIteration
-
-
 
 def test_directing_basic():
     """
@@ -412,11 +254,12 @@ def test_direct_mode():
         bobClient = clienting.Client(host='127.0.0.1', port=evePort)
         bobClientDoer = doing.ClientDoer(client=bobClient)
 
-        bobDirector = BobDirector(hab=bobHab, client=bobClient)
+        bobDirector = directing.BobDirector(hab=bobHab, client=bobClient, tock=0.125)
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
         assert bobDirector.kevery.kevers == bobKevers
         assert bobDirector.kevery.logger == bobDB
+        assert bobDirector.tock == 0.125
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
@@ -444,7 +287,7 @@ def test_direct_mode():
         eveClient = clienting.Client(host='127.0.0.1', port=bobPort)
         eveClientDoer = doing.ClientDoer(client=eveClient)
 
-        eveDirector = EveDirector(hab=eveHab, client=eveClient)
+        eveDirector = directing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert eveDirector.kevery.kevers == eveKevers
@@ -465,7 +308,7 @@ def test_direct_mode():
         assert eveDirectant.server == eveServer
         # Eve's Reactants created on demand
 
-        limit = 0.25
+        limit = 1.0
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
@@ -490,20 +333,11 @@ def test_direct_mode():
 
         assert bobHab.pre in eveHab.kevers
 
-        #ca, ix = list(eveServer.ixes.items())[0]
-        #eveMsgRx = bytes(ix.rxbs)
-        #assert eveMsgRx == bytearray(b'{"vs":"KERI10JSON0000fb_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLy'
-                                     #b'DsojFXotBXdSo","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
-                                     #b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EGAPkzNZMtX-QiVgbR'
-                                     #b'byAIZGoXvbGv9IPb0foWTZvI_4","toad":"0","wits":[],"cnfg":[]}-AABA'
-                                     #b'Atf0OqrkGmK3vdMcS5E3mLxeFh14SbvCNjZnZrxAazgYTemZc1S-Pr0ge9IQuHes'
-                                     #b'mh8cJncRkef1PgxFavDKqDQ')
+        #  verify final bob event state
 
 
-        #assert not eveClient.txes
-        #ca, ix = list(bobServer.ixes.items())[0]
-        #bobMsgRx = bytes(ix.rxbs)
-        #assert bobMsgRx == eveMsgTx
+        #  verify final val event state
+
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
