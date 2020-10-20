@@ -200,12 +200,14 @@ def test_keyeventfuncs():
     # Receipt
     serder3 = receipt(pre=pre, sn=0, dig=serder2.dig)
     assert serder3.ked["pre"] == pre
-    assert serder3.ked["ilk"] == Ilks.rct
     assert serder3.ked["sn"] == "0"
+    assert serder3.ked["ilk"] == Ilks.rct
     assert serder3.ked["dig"] == serder2.dig
     assert serder3.raw == (b'{"vs":"KERI10JSON000099_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","ilk":"rct","sn":"0","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"'
+                           b'c","sn":"0","ilk":"rct","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"'
                            b'}')
+
+
 
 
     # ValReceipt  chit
@@ -216,14 +218,15 @@ def test_keyeventfuncs():
 
     serder4 = chit(pre=pre, sn=2, dig=serder2.dig, seal=seal)
     assert serder4.ked["pre"] == pre
-    assert serder4.ked["ilk"] == Ilks.vrc
     assert serder4.ked["sn"] == "2"
+    assert serder4.ked["ilk"] == Ilks.vrc
     assert serder4.ked["dig"] == serder2.dig
     assert serder4.ked["seal"] == seal._asdict()
     assert serder4.raw == (b'{"vs":"KERI10JSON00010c_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","ilk":"vrc","sn":"2","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"'
+                           b'c","sn":"2","ilk":"vrc","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"'
                            b',"seal":{"pre":"EyqftoqSC_ANDHdx9v4sygNas8Wvy3szYSuTxjT0lvzs","dig":"EBk2aGu'
                            b'L5oHsF64QNAeEPEal-JBYJLe5GvXqp3mLMFKw"}}')
+
     """ Done Test """
 
 
@@ -995,8 +998,9 @@ def test_kevery():
 
         kevery = Kevery(logger=vallgr)
 
-        with pytest.raises(ShortageError):  # test for incomplete event in stream
-            kevery.processAll(ims=kes[:20])
+        # test for incomplete event in stream
+        kevery.processAll(ims=kes[:20])
+        assert pre not in kevery.kevers  # shortage so gives up
 
         kevery.processAll(ims=kes)
 
@@ -1523,7 +1527,7 @@ def test_receipt():
         res.extend(valPrefixer.qb64b)
         res.extend(valSigver.qb64b)
         assert res == bytearray(b'{"vs":"KERI10JSON000099_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
-                                b'ZOoeKtWTOunRA","ilk":"rct","sn":"0","dig":"EgCvROg0cKXF_u_K0WH33'
+                                b'ZOoeKtWTOunRA","sn":"0","ilk":"rct","dig":"EgCvROg0cKXF_u_K0WH33'
                                 b'PPB77bjZpIlgLy99xmYrHlM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzh'
                                 b'DNZlEKiMc0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ'
                                 b'3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg')
@@ -1865,7 +1869,7 @@ def test_direct_mode():
         rmsg.extend(counter.qb64b)
         rmsg.extend(siger.qb64b)
         assert rmsg == bytearray(b'{"vs":"KERI10JSON00010c_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLy'
-                                 b'DsojFXotBXdSo","ilk":"vrc","sn":"0","dig":"EixO2SBNow3tYDfYX6NRt'
+                                 b'DsojFXotBXdSo","sn":"0","ilk":"vrc","dig":"EixO2SBNow3tYDfYX6NRt'
                                  b'1O9ZSMx2IsBeWkh8YJRp5VI","seal":{"pre":"EwBwUb2eZcA5GDcN7g-87wpr'
                                  b'eM0nNkLqzkwviBHTcV1A","dig":"E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsn'
                                  b'SiAgX5vrA"}}-AABAAOYor4MvfRJACjzGlcQzSIjapymNyjqimNJfuKpyMCBkoQw'
@@ -1881,7 +1885,7 @@ def test_direct_mode():
                                  b'Wdo6qPVXsoOu8K2A4LssoCunwc","toad":"0","wits":[],"cnfg":[]}-AABA'
                                  b'AFAqBGJzjOseKjq-pnWg-SWkGlzSXQFWWJm1NGT3K3eSWBdypwfI7iUQ_xBgUri6'
                                  b'RJDc7mAlnlPVHdvDXajdkBw{"vs":"KERI10JSON00010c_","pre":"ETT9n-TC'
-                                 b'Gn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdSo","ilk":"vrc","sn":"0","dig"'
+                                 b'Gn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdSo","sn":"0","ilk":"vrc","dig"'
                                  b':"EixO2SBNow3tYDfYX6NRt1O9ZSMx2IsBeWkh8YJRp5VI","seal":{"pre":"E'
                                  b'wBwUb2eZcA5GDcN7g-87wpreM0nNkLqzkwviBHTcV1A","dig":"E0CxRRD8SSBH'
                                  b'ZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA"}}-AABAAOYor4MvfRJACjzGlcQzSIja'
@@ -1963,7 +1967,7 @@ def test_direct_mode():
         cmsg.extend(counter.qb64b)
         cmsg.extend(siger.qb64b)
         assert cmsg == bytearray(b'{"vs":"KERI10JSON00010c_","pre":"EwBwUb2eZcA5GDcN7g-87wpreM0nNkL'
-                                 b'qzkwviBHTcV1A","ilk":"vrc","sn":"0","dig":"E0CxRRD8SSBHZlSt-gblJ'
+                                 b'qzkwviBHTcV1A","sn":"0","ilk":"vrc","dig":"E0CxRRD8SSBHZlSt-gblJ'
                                  b'5_PL6JskFaaHsnSiAgX5vrA","seal":{"pre":"ETT9n-TCGn8XfkGkcNeNmZgd'
                                  b'ZSwHPLyDsojFXotBXdSo","dig":"EixO2SBNow3tYDfYX6NRt1O9ZSMx2IsBeWk'
                                  b'h8YJRp5VI"}}-AABAAWsB5GblCXs43fNPPGqAlx5FWyEzdBSRb9wGqwwDen3Qq4y'
@@ -1986,7 +1990,7 @@ def test_direct_mode():
                                     b'eWkh8YJRp5VIAAWsB5GblCXs43fNPPGqAlx5FWyEzdBSRb9wGqwwDen3Qq4yxaXVmEn9dZdK3Cq6'
                                     b'l5Iq6CHxWiKCoUR5A3kG1LBg')
 
-        # Coe RotationTransferable
+        # Coe Event 1 RotationTransferable
         csn += 1
         cesn += 1
         assert csn == cesn == 1
@@ -2052,7 +2056,7 @@ def test_direct_mode():
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
         assert vmsg == bytearray(b'{"vs":"KERI10JSON00010c_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLy'
-                                 b'DsojFXotBXdSo","ilk":"vrc","sn":"1","dig":"E7MC1Sr7igW4JEDdvZu_H'
+                                 b'DsojFXotBXdSo","sn":"1","ilk":"vrc","dig":"E7MC1Sr7igW4JEDdvZu_H'
                                  b'tmNoyBn4_Th-TcfKwwFBYR4","seal":{"pre":"EwBwUb2eZcA5GDcN7g-87wpr'
                                  b'eM0nNkLqzkwviBHTcV1A","dig":"E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsn'
                                  b'SiAgX5vrA"}}-AABAAciKcK5F0a0p5eQr1jG61KtIYP-7qhqmEtMLiDTShRAOqOM'
@@ -2075,7 +2079,7 @@ def test_direct_mode():
                                     b'HsnSiAgX5vrAAAciKcK5F0a0p5eQr1jG61KtIYP-7qhqmEtMLiDTShRAOqOMo0leInt1pI60goLV'
                                     b'XGXatvIfdEc2tO41FbfZFtCg')
 
-        # Next Event Coe Interaction
+        # Next Event 2 Coe Interaction
         csn += 1  #  do not increment esn
         assert csn == 2
         assert cesn == 1
@@ -2136,11 +2140,12 @@ def test_direct_mode():
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
         assert vmsg == bytearray(b'{"vs":"KERI10JSON00010c_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLy'
-                                 b'DsojFXotBXdSo","ilk":"vrc","sn":"2","dig":"Ec9ivQTiqBXBhx4d2HCA7'
+                                 b'DsojFXotBXdSo","sn":"2","ilk":"vrc","dig":"Ec9ivQTiqBXBhx4d2HCA7'
                                  b'qfUksJyB6sKSHz5cHufFiyo","seal":{"pre":"EwBwUb2eZcA5GDcN7g-87wpr'
                                  b'eM0nNkLqzkwviBHTcV1A","dig":"E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsn'
                                  b'SiAgX5vrA"}}-AABAAJvbiMOYhH2GzJbncaol_qWDZkwF7WRi5DOWVnQIlY1emMa'
                                  b'wGFcD7r62DTKGR6zd1gjsMdose_Qmt_IFshFPPAg')
+
 
         # val process own receipt in own kevery so have copy in own log
         valKevery.processOne(ims=bytearray(vmsg))  # make copy
@@ -2348,7 +2353,7 @@ def test_direct_mode_cbor_mgpk():
         rmsg.extend(counter.qb64b)
         rmsg.extend(siger.qb64b)
         assert rmsg == bytearray(b'\x86\xa2vs\xb1KERI10MGPK0000f1_\xa3pre\xd9,EWTB8L66ol4_mthA1N4YokgI'
-                                 b'Epu--yRi4rbeGQH7rsX4\xa3ilk\xa3vrc\xa2sn\xa10\xa3dig\xd9,EIdWNucQx'
+                                 b'Epu--yRi4rbeGQH7rsX4\xa2sn\xa10\xa3ilk\xa3vrc\xa3dig\xd9,EIdWNucQx'
                                  b'Rqw30PmUQ17MzjG9lGyKEjszAg3-VgjRCus\xa4seal\x82\xa3pre\xd9,EMrnH'
                                  b'BFhp0mTBS12BVvU4C6zNuMcK6QxeF6iiTiYzkuI\xa3dig\xd9,EzaxSHOQ3O9qsZ0'
                                  b'0QWq9aB-2z312a_p6KbP2rssViIKY-AABAAy4aujLv4hbfZ1eiJVpsvSFc5kNViU'
@@ -2365,7 +2370,7 @@ def test_direct_mode_cbor_mgpk():
                                  b'0\xa4wits\x90\xa4cnfg\x90-AABAAWmlqqBuiEudkCCQVTGQ9G-jHqknV4PeXN'
                                  b'Hnx7HS2YmT3nZU-oU8cQIEGkE4uMgO5iLVRu6WfDWHchbK4plEuBA\x86\xa2v'
                                  b's\xb1KERI10MGPK0000f1_\xa3pre\xd9,EWTB8L66ol4_mthA1N4YokgIEpu--yR'
-                                 b'i4rbeGQH7rsX4\xa3ilk\xa3vrc\xa2sn\xa10\xa3dig\xd9,EIdWNucQxRqw30Pm'
+                                 b'i4rbeGQH7rsX4\xa2sn\xa10\xa3ilk\xa3vrc\xa3dig\xd9,EIdWNucQxRqw30Pm'
                                  b'UQ17MzjG9lGyKEjszAg3-VgjRCus\xa4seal\x82\xa3pre\xd9,EMrnHBFhp0mT'
                                  b'BS12BVvU4C6zNuMcK6QxeF6iiTiYzkuI\xa3dig\xd9,EzaxSHOQ3O9qsZ00QWq9aB'
                                  b'-2z312a_p6KbP2rssViIKY-AABAAy4aujLv4hbfZ1eiJVpsvSFc5kNViUWi-4lZv'
@@ -2403,12 +2408,12 @@ def test_direct_mode_cbor_mgpk():
         vmsg = bytearray(reserder.raw)
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'\x86\xa2vs\xb1KERI10MGPK0000f1_\xa3pre\xd9,EWTB8L66ol4_mthA1N4YokgI'
-                                 b'Epu--yRi4rbeGQH7rsX4\xa3ilk\xa3vrc\xa2sn\xa1a\xa3dig\xd9,EO-IN0OpB'
-                                 b'cCUbStl_F5nWP35mzAvw_kTBOA6u_g6H-VM\xa4seal\x82\xa3pre\xd9,EMrnH'
-                                 b'BFhp0mTBS12BVvU4C6zNuMcK6QxeF6iiTiYzkuI\xa3dig\xd9,EzaxSHOQ3O9qsZ0'
-                                 b'0QWq9aB-2z312a_p6KbP2rssViIKY-AABAAy4aujLv4hbfZ1eiJVpsvSFc5kNViU'
-                                 b'Wi-4lZvP-eKZk7A6ouYYBPGjRQcmuBS8GpPsjRhz9lhHxzjbKPIhioHDA')
+        assert bytearray(b'\x86\xa2vs\xb1KERI10MGPK0000f1_\xa3pre\xd9,EWTB8L66ol4_mthA1N4YokgI'
+                         b'Epu--yRi4rbeGQH7rsX4\xa2sn\xa1a\xa3ilk\xa3vrc\xa3dig\xd9,E-GWqgB-O'
+                         b'A030xSHuqH54JxZM-NlKNRhftcYdUw7_l40\xa4seal\x82\xa3pre\xd9,EMrnH'
+                         b'BFhp0mTBS12BVvU4C6zNuMcK6QxeF6iiTiYzkuI\xa3dig\xd9,EzaxSHOQ3O9qsZ0'
+                         b'0QWq9aB-2z312a_p6KbP2rssViIKY-AABAAy4aujLv4hbfZ1eiJVpsvSFc5kNViU'
+                         b'Wi-4lZvP-eKZk7A6ouYYBPGjRQcmuBS8GpPsjRhz9lhHxzjbKPIhioHDA')
 
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
@@ -2451,7 +2456,7 @@ def test_direct_mode_cbor_mgpk():
         cmsg.extend(counter.qb64b)
         cmsg.extend(siger.qb64b)
         assert cmsg == bytearray(b'\xa6bvsqKERI10CBOR0000f1_cprex,EMrnHBFhp0mTBS12BVvU4C6zNuMcK6QxeF6i'
-                                 b'iTiYzkuIcilkcvrcbsna0cdigx,EzaxSHOQ3O9qsZ00QWq9aB-2z312a_p6KbP2r'
+                                 b'iTiYzkuIbsna0cilkcvrccdigx,EzaxSHOQ3O9qsZ00QWq9aB-2z312a_p6KbP2r'
                                  b'ssViIKYdseal\xa2cprex,EWTB8L66ol4_mthA1N4YokgIEpu--yRi4rbeGQH7rsX4c'
                                  b'digx,EIdWNucQxRqw30PmUQ17MzjG9lGyKEjszAg3-VgjRCus-AABAAIlEFNAY0m'
                                  b'yGYAyMIjoSATiz_XOVT1EieQraXNc8CXw_Hs5irQJYiiZ5C2S8DNQsd-sEo4vKDX'
@@ -2540,7 +2545,7 @@ def test_direct_mode_cbor_mgpk():
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
         assert vmsg == bytearray(b'\x86\xa2vs\xb1KERI10MGPK0000f1_\xa3pre\xd9,EWTB8L66ol4_mthA1N4YokgI'
-                                 b'Epu--yRi4rbeGQH7rsX4\xa3ilk\xa3vrc\xa2sn\xa11\xa3dig\xd9,Eo1KPX3bI'
+                                 b'Epu--yRi4rbeGQH7rsX4\xa2sn\xa11\xa3ilk\xa3vrc\xa3dig\xd9,Eo1KPX3bI'
                                  b'kTaJPU0jY_FFe-I4MVGw2UiseS9Ku8w3GFo\xa4seal\x82\xa3pre\xd9,EMrnH'
                                  b'BFhp0mTBS12BVvU4C6zNuMcK6QxeF6iiTiYzkuI\xa3dig\xd9,EzaxSHOQ3O9qsZ0'
                                  b'0QWq9aB-2z312a_p6KbP2rssViIKY-AABAAl7CJPBNT4x_kg4a5PScnnDIUM1bVg'
@@ -2624,11 +2629,12 @@ def test_direct_mode_cbor_mgpk():
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
         assert vmsg == bytearray(b'\x86\xa2vs\xb1KERI10MGPK0000f1_\xa3pre\xd9,EWTB8L66ol4_mthA1N4YokgI'
-                                 b'Epu--yRi4rbeGQH7rsX4\xa3ilk\xa3vrc\xa2sn\xa12\xa3dig\xd9,EBLT2nUX2'
+                                 b'Epu--yRi4rbeGQH7rsX4\xa2sn\xa12\xa3ilk\xa3vrc\xa3dig\xd9,EBLT2nUX2'
                                  b'wHrwgF0WJFFwNzGTl_yOM7Eokq08WAHbxIs\xa4seal\x82\xa3pre\xd9,EMrnH'
                                  b'BFhp0mTBS12BVvU4C6zNuMcK6QxeF6iiTiYzkuI\xa3dig\xd9,EzaxSHOQ3O9qsZ0'
                                  b'0QWq9aB-2z312a_p6KbP2rssViIKY-AABAAjHPlszyiS_0GKfWmnqPKOSTbwfiw2'
                                  b'DdqxTTrpvdY7Gz_FCmQ5lfZB4SBe6387SEU3tb_TZktf9VEKWj1EviBAA')
+
 
 
         # val process own receipt in own kevery so have copy in own log

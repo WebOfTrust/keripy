@@ -8,7 +8,7 @@ import re
 import json
 
 from dataclasses import dataclass, astuple
-from collections import namedtuple
+from collections import namedtuple, deque
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from math import ceil
@@ -78,6 +78,9 @@ SealEvent = namedtuple("SealEvent", 'pre dig')
 # Event Location Seal: pre is qb64 of identifier prefix of KEL,
 # sn is hex string, ilk is str, dig is qb64 of prior event digest
 SealLocation = namedtuple("SealLocation", 'pre sn ilk dig')
+
+# Cues are dataclasses may be converted tofrom dicts easily
+
 
 
 def incept(keys,
@@ -336,8 +339,8 @@ def receipt(pre,
 
     ked = dict(vs=vs,  # version string
                pre=pre,  # qb64 prefix
-               ilk=ilk,  #  Ilks.rct
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,  #  Ilks.rct
                dig=dig,  # qb64 digest of receipted event
                )
 
@@ -374,8 +377,8 @@ def chit(pre,
 
     ked = dict(vs=vs,  # version string
                pre=pre,  # qb64 prefix
-               ilk=ilk,  #  Ilks.rct
                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,  #  Ilks.rct
                dig=dig,  # qb64 digest of receipted event
                seal=seal._asdict()  # event seal: pre, dig
                )
@@ -842,7 +845,7 @@ class Kevery:
 
     Attributes:
         .ims is bytearray incoming message stream
-        .oms is bytearray outgoing message stream
+        .cues is deque of Cues i.e. notices of events or requests to respond to
         .kevers is dict of existing kevers indexed by pre (qb64) of each Kever
         .logs is named tuple of logs
         .framed is Boolean stream is packet framed If True Else not framed
@@ -851,13 +854,13 @@ class Kevery:
     Properties:
 
     """
-    def __init__(self, ims=None, oms=None, kevers=None, logger=None, framed=True):
+    def __init__(self, ims=None, cues=None, kevers=None, logger=None, framed=True):
         """
         Set up event stream and logs
 
         """
         self.ims = ims if ims is not None else bytearray()
-        self.oms = oms if oms is not None else bytearray()
+        self.cues = cues if cues is not None else deque()
         self.framed = True if framed else False  # extract until end-of-stream
         self.kevers = kevers if kevers is not None else dict()
 
@@ -871,9 +874,9 @@ class Kevery:
         Process all messages from incoming message stream, ims, when provided
         Otherwise process all messages from .ims
         """
-        if ims is not None:
-            if not isinstance(ims, bytearray):  # destructive processing
-                ims = bytearray(ims)
+        if ims is not None:  # needs bytearray not bytes since deletes as processes
+            if not isinstance(ims, bytearray):
+                ims = bytearray(ims)  # so make bytearray copy
         else:
             ims = self.ims
 
@@ -882,13 +885,13 @@ class Kevery:
                 self.processOne(ims=ims, framed=self.framed)
 
             except ShortageError as ex:  # need more bytes
-                raise  ex  # reraise
+                break  # break out of while loop
 
             except Exception as ex:
                 # log diagnostics errors etc
                 #
                 del ims[:]  #  delete rest of stream
-                continue
+                break
 
 
     def processOne(self, ims, framed=True):
@@ -1063,12 +1066,16 @@ class Kevery:
         if pre not in self.kevers:  #  first seen event for pre
             if ilk == Ilks.icp:  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures
-                # raises exception if problem adds to KEL Kevers
+                # raises exception if problem
+                # otherwise adds to KEL
                 # create kever from serder
                 kever = Kever(serder=serder,
                               sigers=sigers,
                               logger=self.logger)
-                self.kevers[pre] = kever
+                self.kevers[pre] = kever  # not exception so add to kevers
+
+                # create cue for receipt   direct mode for now
+                self.cues.append(dict(pre=pre, serder=serder))
 
             else:  # not inception so can't verify, add to escrow
                 # log escrowed
@@ -1103,8 +1110,12 @@ class Kevery:
                 elif ((sn == sno) or  # new inorder event
                       (ilk == Ilks.rot and kever.lastEst.sn < sn <= sno )):  # recovery
                     # verify signatures etc and update state if valid
-                    # raise exception if problem. adds to KELs
+                    # raise exception if problem.
+                    # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers)
+
+                    # create cue for receipt   direct mode for now
+                    self.cues.append(dict(pre=pre, serder=serder))
 
                 else:  # maybe duplicitous
                     # log duplicitous
