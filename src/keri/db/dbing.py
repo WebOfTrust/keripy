@@ -153,24 +153,49 @@ class Databaser:
     AltTailDirPath = ".keri/db"
     MaxNamedDBs = 16
 
-    def __init__(self, headDirPath=None, name='main', temp=False, opened=True):
+    def __init__(self, name='main', opened=True, temp=False, headDirPath=None):
         """
         Setup main database directory at .dirpath.
         Create main database environment at .env using .dirpath.
 
         Parameters:
-            headDirPath is str head of the pathname of directory for main database
-                If not provided use default headDirpath
-            name is str pathname differentiator for directory for main database
-                When system employs more than one keri databse name allows
+            name is str directory path name differentiator for main database
+                When system employs more than one keri database, name allows
                 differentiating each instance by name
-            temp is boolean If True then use temporary head pathname  instead of
-                headDirPath if any or default headDirPath
+            opened is boolean, IF True then database will be opened by this init
+            temp is boolean, assign to .temp
+                True then open in temporary directory
+                Othewise then open persistent directory
+            headDirPath is optional str head directory pathname for main database
+                If not provided use default .HeadDirpath
         """
         self.name = name
         self.temp = True if temp else False
+        self.path = None
+        self.env = None
 
-        if temp:
+        if opened:
+            self.open(headDirPath=headDirPath)
+
+
+    def open(self, temp=None, headDirPath=None):
+        """
+        Create directory path for lmdb at .path.
+        Open lmdb and assign to .env
+
+        Parameters:
+            temp is optional boolean:
+                If None ignore Otherwise
+                    Assign to .temp
+                    If True then open temporary directory,
+                    If False then open persistent directory
+            headDirPath is optional str head directory pathname of main database
+                If not provided use default .HeadDirpath
+        """
+        if temp is not None:
+            self.temp = True if temp else False
+
+        if self.temp:
             headDirPath = tempfile.mkdtemp(prefix="keri_lmdb_", suffix="_test", dir="/tmp")
             self.path = os.path.abspath(
                                 os.path.join(headDirPath,
