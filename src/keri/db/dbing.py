@@ -103,7 +103,7 @@ def clearDatabaserDir(path):
 
 
 @contextmanager
-def openDatabaser(name="test", cls=None):
+def openDatabaser(cls=None, name="test",  temp=True):
     """
     Wrapper to enable temporary (test) Databaser instances
     When used in with statement calls .clearDirPath() on exit of with block
@@ -124,7 +124,7 @@ def openDatabaser(name="test", cls=None):
     if cls is None:
         cls = Databaser
     try:
-        databaser = cls(name=name, temp=True)
+        databaser = cls(name=name, temp=temp)
 
         yield databaser
 
@@ -142,6 +142,8 @@ class Databaser:
         .name is LMDB database name did2offer
         .env is LMDB main (super) database environment
         .path is LMDB main (super) database directory path
+        .opened is Boolean, True means LMDB .env at .path is opened.
+                            Otherwise LMDB .env is closed
 
     Properties:
 
@@ -173,6 +175,7 @@ class Databaser:
         self.temp = True if temp else False
         self.path = None
         self.env = None
+        self.opened = False
 
         if opened:
             self.open(headDirPath=headDirPath)
@@ -239,6 +242,7 @@ class Databaser:
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs)
+        self.opened = True
 
 
     def close(self, clear=False):
@@ -252,6 +256,9 @@ class Databaser:
                 self.env.close()
             except:
                 pass
+
+        self.env = None
+        self.opened = False
 
         if clear or self.temp:
             self.clearDirPath()
