@@ -33,8 +33,10 @@ def test_opendatabaser():
         assert databaser.path.endswith("_test/keri/db/test")
         assert databaser.env.path() == databaser.path
         assert os.path.exists(databaser.path)
+        assert databaser.opened
 
     assert not os.path.exists(databaser.path)
+    assert not databaser.opened
 
     with openDatabaser(name="blue") as databaser:
         assert isinstance(databaser, Databaser)
@@ -44,22 +46,28 @@ def test_opendatabaser():
         assert databaser.path.endswith("_test/keri/db/blue")
         assert databaser.env.path() == databaser.path
         assert os.path.exists(databaser.path)
+        assert databaser.opened
 
     assert not os.path.exists(databaser.path)
+    assert not databaser.opened
 
-    with openDatabaser(name="red") as redbaser, openDatabaser(name="gray") as graybaser:
+    with openDatabaser(name="red") as redbaser, openDatabaser(name="tan") as tanbaser:
         assert isinstance(redbaser, Databaser)
         assert redbaser.name == "red"
         assert redbaser.env.path() == redbaser.path
         assert os.path.exists(redbaser.path)
+        assert redbaser.opened
 
-        assert isinstance(graybaser, Databaser)
-        assert graybaser.name == "gray"
-        assert graybaser.env.path() == graybaser.path
-        assert os.path.exists(graybaser.path)
+        assert isinstance(tanbaser, Databaser)
+        assert tanbaser.name == "tan"
+        assert tanbaser.env.path() == tanbaser.path
+        assert os.path.exists(tanbaser.path)
+        assert tanbaser.opened
 
     assert not os.path.exists(redbaser.path)
-    assert not os.path.exists(graybaser.path)
+    assert not redbaser.opened
+    assert not os.path.exists(tanbaser.path)
+    assert not tanbaser.opened
 
     """ End Test """
 
@@ -71,6 +79,36 @@ def test_databaser():
     assert isinstance(databaser, Databaser)
     assert databaser.name == "main"
     assert databaser.temp == False
+    assert isinstance(databaser.env, lmdb.Environment)
+    assert databaser.path.endswith("keri/db/main")
+    assert databaser.env.path() == databaser.path
+    assert os.path.exists(databaser.path)
+    assert databaser.opened
+
+    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    dig = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    sn = 3
+
+    assert snKey(pre, sn) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                        b'.00000000000000000000000000000003')
+    assert dgKey(pre, dig) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                         b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+
+    databaser.close(clear=True)
+    assert not os.path.exists(databaser.path)
+    assert not databaser.opened
+
+    # test not opened on init
+    databaser = Databaser(opened=False)
+    assert isinstance(databaser, Databaser)
+    assert databaser.name == "main"
+    assert databaser.temp == False
+    assert databaser.opened == False
+    assert databaser.path == None
+    assert databaser.env == None
+
+    databaser.open()
+    assert databaser.opened
     assert isinstance(databaser.env, lmdb.Environment)
     assert databaser.path.endswith("keri/db/main")
     assert databaser.env.path() == databaser.path
@@ -87,6 +125,7 @@ def test_databaser():
 
     databaser.close(clear=True)
     assert not os.path.exists(databaser.path)
+    assert not databaser.opened
 
     with openDatabaser() as dber:
         assert dber.temp == True
