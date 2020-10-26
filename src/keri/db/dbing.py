@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.core.dbing module
+keri.db.dbing module
 
 
 import lmdb
@@ -57,7 +57,10 @@ try:
 except ImportError:
     import json
 
+from hio.base import doing
+
 from  ..kering import KeriError
+
 
 class DatabaseError(KeriError):
     """
@@ -128,7 +131,7 @@ def openDatabaser(cls=None, name="test", temp=True, opened=True, **kwa):
     if cls is None:
         cls = Databaser
     try:
-        databaser = cls(name=name, temp=temp, opened=True, **kwa)
+        databaser = cls(name=name, temp=temp, reopen=True, **kwa)
         yield databaser
 
     finally:
@@ -157,7 +160,7 @@ class Databaser:
     AltTailDirPath = ".keri/db"
     MaxNamedDBs = 16
 
-    def __init__(self, name='main', temp=False, headDirPath=None, opened=True):
+    def __init__(self, name='main', temp=False, headDirPath=None, reopen=True):
         """
         Setup main database directory at .dirpath.
         Create main database environment at .env using .dirpath.
@@ -171,7 +174,7 @@ class Databaser:
                 Othewise then open persistent directory, do not clear on close
             headDirPath is optional str head directory pathname for main database
                 If not provided use default .HeadDirpath
-            opened is boolean, IF True then database will be opened by this init
+            reopen is boolean, IF True then database will be reopened by this init
         """
         self.name = name
         self.temp = True if temp else False
@@ -179,13 +182,13 @@ class Databaser:
         self.env = None
         self.opened = False
 
-        if opened:
-            self.open(headDirPath=headDirPath)
+        if reopen:
+            self.reopen(headDirPath=headDirPath)
 
 
-    def open(self, temp=None, headDirPath=None):
+    def reopen(self, temp=None, headDirPath=None):
         """
-        Create directory path for lmdb at .path.
+        Use or Create if not preexistent, directory path for lmdb at .path
         Open lmdb and assign to .env
 
         Parameters:
@@ -813,11 +816,20 @@ class Logger(Databaser):
 
 
     """
-    def __init__(self, **kwa):
+    def __init__(self, headDirPath=None, reopen=True, **kwa):
         """
         Setup named sub databases.
 
-        Parameters:
+        Inherited Parameters:
+            name is str directory path name differentiator for main database
+                When system employs more than one keri database, name allows
+                differentiating each instance by name
+            temp is boolean, assign to .temp
+                True then open in temporary directory, clear on close
+                Othewise then open persistent directory, do not clear on close
+            headDirPath is optional str head directory pathname for main database
+                If not provided use default .HeadDirpath
+            reopen is boolean, IF True then database will be reopened by this init
 
         Notes:
 
@@ -831,7 +843,17 @@ class Logger(Databaser):
         Duplicates are inserted in lexocographic order by value, insertion order.
 
         """
-        super(Logger, self).__init__(**kwa)
+        super(Logger, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
+
+        if reopen:
+            self.reopen(headDirPath=headDirPath)
+
+
+    def reopen(self, temp=None, headDirPath=None):
+        """
+        Open sub databases
+        """
+        super(Logger, self).reopen(temp=temp, headDirPath=headDirPath)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character
@@ -1604,3 +1626,59 @@ class Logger(Databaser):
         return self.delIoVals(self.ldes, key)
 
 
+class LoggerDoer(doing.Doer):
+    """
+    Basic Logger Doer ( LMDB Database )
+
+    Inherited Attributes:
+        .done is Boolean completion state:
+            True means completed
+            Otherwise incomplete. Incompletion maybe due to close or abort.
+
+    Attributes:
+        .logger is Logger or Databaser subclass
+
+    Inherited Properties:
+        .tyme is float ._tymist.tyme, relative cycle or artificial time
+        .tock is float, desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Methods:
+        .wind  injects ._tymist dependency
+        .__call__ makes instance callable
+            Appears as generator function that returns generator
+        .do is generator method that returns generator
+        .enter is enter context action method
+        .recur is recur context action method or generator method
+        .exit is exit context method
+        .close is close context method
+        .abort is abort context method
+
+    Hidden:
+       ._tymist is Tymist instance reference
+       ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, logger, **kwa):
+        """
+        Inherited Parameters:
+           tymist is Tymist instance
+           tock is float seconds initial value of .tock
+
+        Parameters:
+           server is TCP Server instance
+        """
+        super(LoggerDoer, self).__init__(**kwa)
+        self.logger = logger
+
+
+    def enter(self):
+        """"""
+        self.logger.reopen()
+
+
+    def exit(self):
+        """"""
+        self.logger.close()

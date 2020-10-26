@@ -99,7 +99,7 @@ def test_databaser():
     assert not databaser.opened
 
     # test not opened on init
-    databaser = Databaser(opened=False)
+    databaser = Databaser(reopen=False)
     assert isinstance(databaser, Databaser)
     assert databaser.name == "main"
     assert databaser.temp == False
@@ -107,7 +107,7 @@ def test_databaser():
     assert databaser.path == None
     assert databaser.env == None
 
-    databaser.open()
+    databaser.reopen()
     assert databaser.opened
     assert isinstance(databaser.env, lmdb.Environment)
     assert databaser.path.endswith("keri/db/main")
@@ -282,6 +282,40 @@ def test_logger():
 
     logger.close(clear=True)
     assert not os.path.exists(logger.path)
+    assert not logger.opened
+
+    # test not opened on init
+    logger = Logger(reopen=False)
+    assert isinstance(logger, Logger)
+    assert logger.name == "main"
+    assert logger.temp == False
+    assert logger.opened == False
+    assert logger.path == None
+    assert logger.env == None
+
+    logger.reopen()
+    assert logger.opened
+    assert isinstance(logger.env, lmdb.Environment)
+    assert logger.path.endswith("keri/db/main")
+    assert logger.env.path() == logger.path
+    assert os.path.exists(logger.path)
+
+    assert isinstance(logger.evts, lmdb._Database)
+    assert isinstance(logger.sigs, lmdb._Database)
+    assert isinstance(logger.dtss, lmdb._Database)
+    assert isinstance(logger.rcts, lmdb._Database)
+    assert isinstance(logger.ures, lmdb._Database)
+    assert isinstance(logger.kels, lmdb._Database)
+    assert isinstance(logger.ooes, lmdb._Database)
+    assert isinstance(logger.pses, lmdb._Database)
+    assert isinstance(logger.dels, lmdb._Database)
+    assert isinstance(logger.ldes, lmdb._Database)
+
+    logger.close(clear=True)
+    assert not os.path.exists(logger.path)
+    assert not logger.opened
+
+
 
     # Test using context manager
     with openDatabaser(cls=Logger) as logger:
