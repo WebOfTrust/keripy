@@ -130,7 +130,7 @@ def openDatabaser(name="test", cls=None):
 
     finally:
 
-        databaser.clearDirPath()
+        databaser.close()
 
 
 class Databaser:
@@ -153,7 +153,7 @@ class Databaser:
     AltTailDirPath = ".keri/db"
     MaxNamedDBs = 16
 
-    def __init__(self, headDirPath=None, name='main', temp=False):
+    def __init__(self, headDirPath=None, name='main', temp=False, opened=True):
         """
         Setup main database directory at .dirpath.
         Create main database environment at .env using .dirpath.
@@ -216,9 +216,11 @@ class Databaser:
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs)
 
 
-    def clearDirPath(self):
+    def close(self, clear=False):
         """
-        Remove .dirPath
+        Close lmdb at .env and if clear or .temp then remove lmdb directory at .path
+        Parameters:
+           clear is boolean, True means clear lmdb directory
         """
         if self.env:
             try:
@@ -226,6 +228,14 @@ class Databaser:
             except:
                 pass
 
+        if clear or self.temp:
+            self.clearDirPath()
+
+
+    def clearDirPath(self):
+        """
+        Remove lmdb directory at .path
+        """
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
 

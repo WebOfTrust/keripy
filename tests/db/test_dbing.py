@@ -85,7 +85,7 @@ def test_databaser():
     assert dgKey(pre, dig) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                          b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
 
-    databaser.clearDirPath()
+    databaser.close(clear=True)
     assert not os.path.exists(databaser.path)
 
     with openDatabaser() as dber:
@@ -241,7 +241,7 @@ def test_logger():
     assert isinstance(logger.dels, lmdb._Database)
     assert isinstance(logger.ldes, lmdb._Database)
 
-    logger.clearDirPath()
+    logger.close(clear=True)
     assert not os.path.exists(logger.path)
 
     # Test using context manager
