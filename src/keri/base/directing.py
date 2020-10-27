@@ -94,7 +94,7 @@ class Director(doing.Doer):
                                       logger=self.hab.db)
 
 
-    def do(self, tymist, tock=0.0):
+    def do(self, tymist, tock=0.0, **args):
         """
         Generator method to run this doer
         Calling this method returns generator
@@ -172,7 +172,7 @@ class Reactor(doing.Doer):
                                       framed=False)
 
 
-    def do(self, tymist, tock=0.0):
+    def do(self, tymist, tock=0.0, **args):
         """
         Generator method to run this doer
         Calling this method returns generator
@@ -359,7 +359,7 @@ class Directant(doing.Doer):
         self.rants = dict()
 
 
-    def do(self, tymist, tock=0.0):
+    def do(self, tymist, tock=0.0, **args):
         """
         Generator method to run this doer
         Calling this method returns generator
@@ -612,7 +612,7 @@ class BobDirector(Director):
     """
 
 
-    def do(self, tymist, tock=0.0):
+    def do(self, tymist, tock=0.0, **args):
         """
         Generator method to run this doer
         Calling this method returns generator
@@ -759,7 +759,7 @@ class SamDirector(Director):
     """
 
 
-    def do(self, tymist, tock=0.0):
+    def do(self, tymist, tock=0.0, **args):
         """
         Generator method to run this doer
         Calling this method returns generator
@@ -908,7 +908,7 @@ class EveDirector(Director):
     """
 
 
-    def do(self, tymist, tock=0.0):
+    def do(self, tymist, tock=0.0, **args):
         """
         Generator method to run this doer
         Calling this method returns generator
