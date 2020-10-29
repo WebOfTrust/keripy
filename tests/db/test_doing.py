@@ -57,7 +57,7 @@ def test_loggerdoer():
     for doer in doers:
         assert doer.logger.opened == True
 
-    for dog, retyme in dogs:
+    for dog, retyme, index in dogs:
         dog.close()
 
     for doer in doers:
