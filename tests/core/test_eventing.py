@@ -240,7 +240,7 @@ def test_kever():
     with pytest.raises(TypeError):
         kever = Kever()
 
-    with openDB() as lgr:  # Transferable case
+    with openDB() as db:  # Transferable case
         # Setup inception key event dict
         # create current key
         sith = 1  #  one signer
@@ -293,9 +293,9 @@ def test_kever():
         # verify signature
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
-        kever = Kever(serder=tser0, sigers=[tsig0], baser=lgr)  # no error
+        kever = Kever(serder=tser0, sigers=[tsig0], baser=db)  # no error
 
-    with openDB() as lgr:  # Non-Transferable case
+    with openDB() as db:  # Non-Transferable case
         # Setup inception key event dict
         # create current key
         sith = 1  #  one signer
@@ -351,7 +351,7 @@ def test_kever():
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
         with pytest.raises(ValidationError):
-            kever = Kever(serder=tser0, sigers=[tsig0], baser=lgr)
+            kever = Kever(serder=tser0, sigers=[tsig0], baser=db)
 
         #retry with valid empty nxt
         nxt = ""  # nxt is empty so no error
@@ -390,7 +390,7 @@ def test_kever():
         # verify signature
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
-        kever = Kever(serder=tser0, sigers=[tsig0], baser=lgr)  # valid so no error
+        kever = Kever(serder=tser0, sigers=[tsig0], baser=db)  # valid so no error
 
 
     """ Done Test """
