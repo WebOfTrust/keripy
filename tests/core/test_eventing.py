@@ -1517,15 +1517,15 @@ def test_receipt():
                            sn=coeKever.sn,
                            dig=coeKever.diger.qb64)
         # sign event not receipt
-        valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
-        assert valSigver.qb64 == '0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg'
+        valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
+        assert valCigar.qb64 == '0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg'
         recnt = CryCounter(count=1)
         assert recnt.qb64 == '-AAB'
 
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
         res.extend(valPrefixer.qb64b)
-        res.extend(valSigver.qb64b)
+        res.extend(valCigar.qb64b)
         assert res == bytearray(b'{"vs":"KERI10JSON000099_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
                                 b'ZOoeKtWTOunRA","sn":"0","ilk":"rct","dig":"EgCvROg0cKXF_u_K0WH33'
                                 b'PPB77bjZpIlgLy99xmYrHlM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzh'
@@ -1537,7 +1537,7 @@ def test_receipt():
         #  check if in receipt database
         result = coeKevery.baser.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.diger.qb64))
-        assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
+        assert bytes(result[0]) == valPrefixer.qb64b + valCigar.qb64b
 
 
         # create receipt to escrow use invalid dig and sn so not in db
@@ -1546,19 +1546,19 @@ def test_receipt():
                            sn=2,
                            dig=fake)
         # sign event not receipt
-        valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
+        valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
         recnt = CryCounter(count=1)
         # attach to receipt msg stream
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
         res.extend(valPrefixer.qb64b)
-        res.extend(valSigver.qb64b)
+        res.extend(valCigar.qb64b)
 
         coeKevery.processAll(ims=res)  #  coe process the escrow receipt from val
         #  check if in escrow database
         result = coeKevery.baser.getUres(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=fake))
-        assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
+        assert bytes(result[0]) == valPrefixer.qb64b + valCigar.qb64b
 
 
         # create receipt stale use invalid dig and valid sn so bad receipt
@@ -1567,13 +1567,13 @@ def test_receipt():
                                sn=coeKever.sn,
                                dig=fake)
         # sign event not receipt
-        valSigver = valSigner.sign(ser=serder.raw)  # return Sigver if no index
+        valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
         recnt = CryCounter(count=1)
         # attach to receipt msg stream
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
         res.extend(valPrefixer.qb64b)
-        res.extend(valSigver.qb64b)
+        res.extend(valCigar.qb64b)
 
         with pytest.raises(ValidationError):
             coeKevery.processOne(ims=res)  #  coe process the escrow receipt from val
