@@ -94,7 +94,7 @@ class Director(doing.Doer):
                                       baser=self.hab.db)
 
 
-    def do(self, tymist, tock=0.0, **args):
+    def do(self, tymist, tock=0.0, **opts):
         """
         Generator method to run this doer
         Calling this method returns generator
@@ -172,7 +172,7 @@ class Reactor(doing.Doer):
                                       framed=False)
 
 
-    def do(self, tymist, tock=0.0, **args):
+    def do(self, tymist, tock=0.0, **opts):
         """
         Generator method to run this doer
         Calling this method returns generator
@@ -359,7 +359,7 @@ class Directant(doing.Doer):
         self.rants = dict()
 
 
-    def do(self, tymist, tock=0.0, **args):
+    def do(self, tymist, tock=0.0, **opts):
         """
         Generator method to run this doer
         Calling this method returns generator
@@ -612,7 +612,7 @@ class BobDirector(Director):
     """
 
 
-    def do(self, tymist, tock=0.0, **args):
+    def do(self, tymist, tock=0.0, **opts):
         """
         Generator method to run this doer
         Calling this method returns generator
@@ -759,7 +759,7 @@ class SamDirector(Director):
     """
 
 
-    def do(self, tymist, tock=0.0, **args):
+    def do(self, tymist, tock=0.0, **opts):
         """
         Generator method to run this doer
         Calling this method returns generator
@@ -908,7 +908,7 @@ class EveDirector(Director):
     """
 
 
-    def do(self, tymist, tock=0.0, **args):
+    def do(self, tymist, tock=0.0, **opts):
         """
         Generator method to run this doer
         Calling this method returns generator
@@ -963,38 +963,44 @@ class EveDirector(Director):
 
 
 
-def runController(secrets,  name="who", role="initiator",
-                  remotePort=5621, localPort=5620, limit=0.0):
+def runController(doers, limit=0.0):
     """
-    Setup and run the demo for name
+    run the doers for limit time. 0.0 means no limit.
     """
+    # run components
+    tock = 0.03125
+    doist = doing.Doist(limit=limit, tock=tock, real=True, doers=doers)
+    doist.do()
 
+
+def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
+    """
+    Setup and return doers list to run controller
+    """
+    # setup components
+    db = dbing.Baser(name=name, temp=True, reopen=False)
+    dbDoer = dbing.BaserDoer(baser=db)
+
+    kevers = dict()
+    hab = Habitat(secrets=secrets, kevers=kevers, db=db)
 
     print("Direct Mode demo of {} as {} on TCP port {} to port {}.\n\n"
-          "".format(name, role, localPort, remotePort))
+          "".format(name, hab.pre, localPort, remotePort))
 
-    with dbing.openDB(name=name) as db:
-         # setup components
-        kevers = dict()
-        hab = Habitat(secrets=secrets, kevers=kevers, db=db)
+    client = clienting.Client(host='127.0.0.1', port=remotePort)
+    clientDoer = doing.ClientDoer(client=client)
 
-        client = clienting.Client(host='127.0.0.1', port=remotePort)
-        clientDoer = doing.ClientDoer(client=client)
-        if role == "initiator":
-            director = BobDirector(hab=hab, client=client, tock=0.125)
-        elif role == "other":
-            director = SamDirector(hab=hab, client=client, tock=0.125)
-        else:
-            director = EveDirector(hab=hab, client=client, tock=0.125)
-        reactor = Reactor(hab=hab, client=client)
+    if name == 'bob':
+        director = BobDirector(hab=hab, client=client, tock=0.125)
+    elif name == "sam":
+        director = SamDirector(hab=hab, client=client, tock=0.125)
+    else:
+        director = EveDirector(hab=hab, client=client, tock=0.125)
+    reactor = Reactor(hab=hab, client=client)
 
-        server = serving.Server(host="", port=localPort)
-        serverDoer = doing.ServerDoer(server=server)
-        directant = Directant(hab=hab, server=server)
-        # Reactants created on demand
+    server = serving.Server(host="", port=localPort)
+    serverDoer = doing.ServerDoer(server=server)
+    directant = Directant(hab=hab, server=server)
+    # Reactants created on demand
 
-        # run components
-        tock = 0.03125
-        doist = doing.Doist(limit=limit, tock=tock, real=True)
-        doers = [clientDoer, director, reactor, serverDoer, directant]
-        doist.do(doers=doers)
+    return [dbDoer, clientDoer, director, reactor, serverDoer, directant]

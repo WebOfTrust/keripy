@@ -313,9 +313,6 @@ def test_direct_mode():
         doist = doing.Doist(limit=limit, tock=tock)
 
 
-        #eveMsgTx = b"Hi Bob its me Eve"
-        #eveDirector.client.tx(eveMsgTx)
-
         doers = [bobClientDoer, bobDirector, bobReactor, bobServerDoer, bobDirectant,
                  eveClientDoer, eveDirector, eveReactor, eveServerDoer, eveDirectant]
         doist.do(doers=doers)
@@ -333,11 +330,7 @@ def test_direct_mode():
 
         assert bobHab.pre in eveHab.kevers
 
-        #  verify final bob event state
-
-
-        #  verify final val event state
-
+        #  verify final event states
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
@@ -475,10 +468,6 @@ def test_direct_mode_sam():
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
-
-        #eveMsgTx = b"Hi Bob its me Eve"
-        #eveDirector.client.tx(eveMsgTx)
-
         doers = [bobClientDoer, bobDirector, bobReactor, bobServerDoer, bobDirectant,
                  eveClientDoer, eveDirector, eveReactor, eveServerDoer, eveDirectant]
         doist.do(doers=doers)
@@ -496,10 +485,7 @@ def test_direct_mode_sam():
 
         assert bobHab.pre in eveHab.kevers
 
-        #  verify final bob event state
-
-
-        #  verify final val event state
+        #  verify final event states
 
 
     assert not os.path.exists(eveDB.path)
@@ -507,6 +493,91 @@ def test_direct_mode_sam():
     """End Test"""
 
 
+def test_runcontroller_demo():
+    """
+    Test demo runController function
+    """
+    name = "bob"
+    remote = 5621
+    local = 5620
+    expire =  1.0
+
+
+    secrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
+
+    doers = directing.setupController(secrets=secrets,
+                                     name=name,
+                                     remotePort=remote,
+                                     localPort=local)
+
+    directing.runController(doers=doers, limit=expire)
+
+
+def test_run_demo():
+    """
+    Test demo setupController and run with DoDoers and Doist
+    """
+    name = "bob"
+    remote = 5621
+    local = 5620
+
+
+    secrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
+
+    # bobs is list of Doers
+    bobs = directing.setupController(secrets=secrets,
+                                     name=name,
+                                     remotePort=remote,
+                                     localPort=local)
+
+    name = "eve"
+    remote = 5620
+    local = 5621
+
+
+    # set of secrets (seeds for private keys)
+    secrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
+                'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
+                'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
+                'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
+
+    eves = directing.setupController(secrets=secrets,
+                                     name=name,
+                                     remotePort=remote,
+                                     localPort=local)
+
+    bobDoer = doing.DoDoer(doers=bobs)
+    eveDoer = doing.DoDoer(doers=eves)
+
+    # run components
+    tock = 0.03125
+    expire =  1.0
+    doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, bobDoer])
+    doist.do()
+    """End Test"""
+
+
 if __name__ == "__main__":
-    # test_directing_basic()
-    test_direct_mode_sam()
+    test_run_demo()
