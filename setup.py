@@ -31,7 +31,7 @@ from setuptools import setup
 
 setup(
     name='keri',
-    version='0.1.1',  #  also change in src/keri/__init__.py
+    version='0.1.3',  #  also change in src/keri/__init__.py
     license='Apache Software License 2.0',
     description='Key Event Receipt Infrastructure',
     long_description="KERI Decentralized Key Management Infrastructure",
@@ -78,7 +78,7 @@ setup(
         'cbor2>=5.1.2',
         'multidict>=4.7.6',
         'orderedset>=2.0.3',
-        'hio>=0.1.0',
+        'hio>=0.1.1',
 
     ],
     extras_require={

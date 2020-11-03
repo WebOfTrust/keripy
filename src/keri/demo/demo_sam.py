@@ -28,13 +28,12 @@ def runDemo(name="sam", remote=5621, local=5620, expire=0.0):
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
-    directing.runController(secrets=secrets,
-                           name=name,
-                           role="other",
-                           remotePort=remote,
-                           localPort=local,
-                           limit=expire)
+    doers = directing.setupController(secrets=secrets,
+                                      name=name,
+                                      remotePort=remote,
+                                      localPort=local)
 
+    directing.runController(doers=doers, limit=expire)
 
 
 
@@ -60,8 +59,8 @@ def parseArgs(version=__version__):
                    help="Expire time for demo. 0.0 means not expire. Default is 0.0.")
     p.add_argument('-n', '--name',
                    action='store',
-                   default="bob",
-                   help="Name of controller. Default is bob.")
+                   default="sam",
+                   help="Name of controller. Default is sam. Choices are bob, sam, or eve.")
 
 
     args = p.parse_args()

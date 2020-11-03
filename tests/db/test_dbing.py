@@ -10,8 +10,8 @@ import json
 
 import lmdb
 
-from keri.db.dbing import clearDatabaserDir, openDatabaser, openLogger
-from keri.db.dbing import dgKey, snKey, Databaser, Logger
+from keri.db.dbing import clearDatabaserDir, openLMDB, openDB
+from keri.db.dbing import dgKey, snKey, LMDBer, Baser
 
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
 from keri.core.coring import CryCntDex, CryOneDex, CryTwoDex, CryFourDex
@@ -25,52 +25,90 @@ def test_opendatabaser():
     """
     test contextmanager decorator for test databases
     """
-    with openDatabaser() as databaser:
-        assert isinstance(databaser, Databaser)
+    with openLMDB() as databaser:
+        assert isinstance(databaser, LMDBer)
         assert databaser.name == "test"
         assert isinstance(databaser.env, lmdb.Environment)
         assert databaser.path.startswith("/tmp/keri_lmdb_")
         assert databaser.path.endswith("_test/keri/db/test")
         assert databaser.env.path() == databaser.path
         assert os.path.exists(databaser.path)
+        assert databaser.opened
 
     assert not os.path.exists(databaser.path)
+    assert not databaser.opened
 
-    with openDatabaser(name="blue") as databaser:
-        assert isinstance(databaser, Databaser)
+    with openLMDB(name="blue") as databaser:
+        assert isinstance(databaser, LMDBer)
         assert databaser.name == "blue"
         assert isinstance(databaser.env, lmdb.Environment)
         assert databaser.path.startswith("/tmp/keri_lmdb_")
         assert databaser.path.endswith("_test/keri/db/blue")
         assert databaser.env.path() == databaser.path
         assert os.path.exists(databaser.path)
+        assert databaser.opened
 
     assert not os.path.exists(databaser.path)
+    assert not databaser.opened
 
-    with openDatabaser(name="red") as redbaser, openDatabaser(name="gray") as graybaser:
-        assert isinstance(redbaser, Databaser)
+    with openLMDB(name="red") as redbaser, openLMDB(name="tan") as tanbaser:
+        assert isinstance(redbaser, LMDBer)
         assert redbaser.name == "red"
         assert redbaser.env.path() == redbaser.path
         assert os.path.exists(redbaser.path)
+        assert redbaser.opened
 
-        assert isinstance(graybaser, Databaser)
-        assert graybaser.name == "gray"
-        assert graybaser.env.path() == graybaser.path
-        assert os.path.exists(graybaser.path)
+        assert isinstance(tanbaser, LMDBer)
+        assert tanbaser.name == "tan"
+        assert tanbaser.env.path() == tanbaser.path
+        assert os.path.exists(tanbaser.path)
+        assert tanbaser.opened
 
     assert not os.path.exists(redbaser.path)
-    assert not os.path.exists(graybaser.path)
+    assert not redbaser.opened
+    assert not os.path.exists(tanbaser.path)
+    assert not tanbaser.opened
 
     """ End Test """
 
-def test_databaser():
+def test_lmdber():
     """
-    Test Databaser creation
+    Test LMDBer creation
     """
-    databaser = Databaser()
-    assert isinstance(databaser, Databaser)
+    databaser = LMDBer()
+    assert isinstance(databaser, LMDBer)
     assert databaser.name == "main"
     assert databaser.temp == False
+    assert isinstance(databaser.env, lmdb.Environment)
+    assert databaser.path.endswith("keri/db/main")
+    assert databaser.env.path() == databaser.path
+    assert os.path.exists(databaser.path)
+    assert databaser.opened
+
+    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    dig = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    sn = 3
+
+    assert snKey(pre, sn) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                        b'.00000000000000000000000000000003')
+    assert dgKey(pre, dig) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                         b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+
+    databaser.close(clear=True)
+    assert not os.path.exists(databaser.path)
+    assert not databaser.opened
+
+    # test not opened on init
+    databaser = LMDBer(reopen=False)
+    assert isinstance(databaser, LMDBer)
+    assert databaser.name == "main"
+    assert databaser.temp == False
+    assert databaser.opened == False
+    assert databaser.path == None
+    assert databaser.env == None
+
+    databaser.reopen()
+    assert databaser.opened
     assert isinstance(databaser.env, lmdb.Environment)
     assert databaser.path.endswith("keri/db/main")
     assert databaser.env.path() == databaser.path
@@ -85,10 +123,11 @@ def test_databaser():
     assert dgKey(pre, dig) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                          b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
 
-    databaser.clearDirPath()
+    databaser.close(clear=True)
     assert not os.path.exists(databaser.path)
+    assert not databaser.opened
 
-    with openDatabaser() as dber:
+    with openLMDB() as dber:
         assert dber.temp == True
         #test Val methods
         key = b'A'
@@ -217,57 +256,91 @@ def test_databaser():
     """ End Test """
 
 
-def test_logger():
+def test_baser():
     """
-    Test Logger class
+    Test Baser class
     """
-    logger = Logger()
-    assert isinstance(logger, Logger)
-    assert logger.name == "main"
-    assert logger.temp == False
-    assert isinstance(logger.env, lmdb.Environment)
-    assert logger.path.endswith("keri/db/main")
-    assert logger.env.path() == logger.path
-    assert os.path.exists(logger.path)
+    baser = Baser()
+    assert isinstance(baser, Baser)
+    assert baser.name == "main"
+    assert baser.temp == False
+    assert isinstance(baser.env, lmdb.Environment)
+    assert baser.path.endswith("keri/db/main")
+    assert baser.env.path() == baser.path
+    assert os.path.exists(baser.path)
 
-    assert isinstance(logger.evts, lmdb._Database)
-    assert isinstance(logger.sigs, lmdb._Database)
-    assert isinstance(logger.dtss, lmdb._Database)
-    assert isinstance(logger.rcts, lmdb._Database)
-    assert isinstance(logger.ures, lmdb._Database)
-    assert isinstance(logger.kels, lmdb._Database)
-    assert isinstance(logger.ooes, lmdb._Database)
-    assert isinstance(logger.pses, lmdb._Database)
-    assert isinstance(logger.dels, lmdb._Database)
-    assert isinstance(logger.ldes, lmdb._Database)
+    assert isinstance(baser.evts, lmdb._Database)
+    assert isinstance(baser.sigs, lmdb._Database)
+    assert isinstance(baser.dtss, lmdb._Database)
+    assert isinstance(baser.rcts, lmdb._Database)
+    assert isinstance(baser.ures, lmdb._Database)
+    assert isinstance(baser.kels, lmdb._Database)
+    assert isinstance(baser.ooes, lmdb._Database)
+    assert isinstance(baser.pses, lmdb._Database)
+    assert isinstance(baser.dels, lmdb._Database)
+    assert isinstance(baser.ldes, lmdb._Database)
 
-    logger.clearDirPath()
-    assert not os.path.exists(logger.path)
+    baser.close(clear=True)
+    assert not os.path.exists(baser.path)
+    assert not baser.opened
+
+    # test not opened on init
+    baser = Baser(reopen=False)
+    assert isinstance(baser, Baser)
+    assert baser.name == "main"
+    assert baser.temp == False
+    assert baser.opened == False
+    assert baser.path == None
+    assert baser.env == None
+
+    baser.reopen()
+    assert baser.opened
+    assert isinstance(baser.env, lmdb.Environment)
+    assert baser.path.endswith("keri/db/main")
+    assert baser.env.path() == baser.path
+    assert os.path.exists(baser.path)
+
+    assert isinstance(baser.evts, lmdb._Database)
+    assert isinstance(baser.sigs, lmdb._Database)
+    assert isinstance(baser.dtss, lmdb._Database)
+    assert isinstance(baser.rcts, lmdb._Database)
+    assert isinstance(baser.ures, lmdb._Database)
+    assert isinstance(baser.kels, lmdb._Database)
+    assert isinstance(baser.ooes, lmdb._Database)
+    assert isinstance(baser.pses, lmdb._Database)
+    assert isinstance(baser.dels, lmdb._Database)
+    assert isinstance(baser.ldes, lmdb._Database)
+
+    baser.close(clear=True)
+    assert not os.path.exists(baser.path)
+    assert not baser.opened
+
+
 
     # Test using context manager
-    with openDatabaser(cls=Logger) as logger:
-        assert isinstance(logger, Logger)
-        assert logger.name == "test"
-        assert logger.temp == True
-        assert isinstance(logger.env, lmdb.Environment)
-        assert logger.path.startswith("/tmp/keri_lmdb_")
-        assert logger.path.endswith("_test/keri/db/test")
-        assert logger.env.path() == logger.path
-        assert os.path.exists(logger.path)
+    with openLMDB(cls=Baser) as baser:
+        assert isinstance(baser, Baser)
+        assert baser.name == "test"
+        assert baser.temp == True
+        assert isinstance(baser.env, lmdb.Environment)
+        assert baser.path.startswith("/tmp/keri_lmdb_")
+        assert baser.path.endswith("_test/keri/db/test")
+        assert baser.env.path() == baser.path
+        assert os.path.exists(baser.path)
 
-        assert isinstance(logger.evts, lmdb._Database)
-        assert isinstance(logger.sigs, lmdb._Database)
-        assert isinstance(logger.dtss, lmdb._Database)
-        assert isinstance(logger.rcts, lmdb._Database)
-        assert isinstance(logger.ures, lmdb._Database)
-        assert isinstance(logger.kels, lmdb._Database)
-        assert isinstance(logger.ooes, lmdb._Database)
-        assert isinstance(logger.pses, lmdb._Database)
-        assert isinstance(logger.dels, lmdb._Database)
-        assert isinstance(logger.ldes, lmdb._Database)
+        assert isinstance(baser.evts, lmdb._Database)
+        assert isinstance(baser.sigs, lmdb._Database)
+        assert isinstance(baser.dtss, lmdb._Database)
+        assert isinstance(baser.rcts, lmdb._Database)
+        assert isinstance(baser.ures, lmdb._Database)
+        assert isinstance(baser.kels, lmdb._Database)
+        assert isinstance(baser.ooes, lmdb._Database)
+        assert isinstance(baser.pses, lmdb._Database)
+        assert isinstance(baser.dels, lmdb._Database)
+        assert isinstance(baser.ldes, lmdb._Database)
 
 
-    assert not os.path.exists(logger.path)
+    assert not os.path.exists(baser.path)
 
     preb = 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
     digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
@@ -299,283 +372,283 @@ def test_logger():
 
 
 
-    with openLogger() as lgr:
+    with openDB() as db:
         key = dgKey(preb, digb)
         assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
                        b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
 
         #  test .evts sub db methods
-        assert lgr.getEvt(key) == None
-        assert lgr.delEvt(key) == False
-        assert lgr.putEvt(key, val=skedb) == True
-        assert lgr.getEvt(key) == skedb
-        assert lgr.putEvt(key, val=skedb) == False
-        assert lgr.setEvt(key, val=skedb) == True
-        assert lgr.getEvt(key) == skedb
-        assert lgr.delEvt(key) == True
-        assert lgr.getEvt(key) == None
+        assert db.getEvt(key) == None
+        assert db.delEvt(key) == False
+        assert db.putEvt(key, val=skedb) == True
+        assert db.getEvt(key) == skedb
+        assert db.putEvt(key, val=skedb) == False
+        assert db.setEvt(key, val=skedb) == True
+        assert db.getEvt(key) == skedb
+        assert db.delEvt(key) == True
+        assert db.getEvt(key) == None
 
         # test .dtss sub db methods
         val1 = b'2020-08-22T17:50:09.988921+00:00'
         val2 = b'2020-08-22T17:50:09.988921+00:00'
 
-        assert lgr.getDts(key) == None
-        assert lgr.delDts(key) == False
-        assert lgr.putDts(key, val1) == True
-        assert lgr.getDts(key) == val1
-        assert lgr.putDts(key, val2) == False
-        assert lgr.getDts(key) == val1
-        assert lgr.setDts(key, val2) == True
-        assert lgr.getDts(key) == val2
-        assert lgr.delDts(key) == True
-        assert lgr.getDts(key) == None
+        assert db.getDts(key) == None
+        assert db.delDts(key) == False
+        assert db.putDts(key, val1) == True
+        assert db.getDts(key) == val1
+        assert db.putDts(key, val2) == False
+        assert db.getDts(key) == val1
+        assert db.setDts(key, val2) == True
+        assert db.getDts(key) == val2
+        assert db.delDts(key) == True
+        assert db.getDts(key) == None
 
         # test .sigs sub db methods
-        assert lgr.getSigs(key) == []
-        assert lgr.cntSigs(key) == 0
-        assert lgr.delSigs(key) == False
+        assert db.getSigs(key) == []
+        assert db.cntSigs(key) == 0
+        assert db.delSigs(key) == False
 
         # dup vals are lexocographic
-        assert lgr.putSigs(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert lgr.getSigs(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.cntSigs(key) == 4
-        assert lgr.putSigs(key, vals=[b'a']) == True   # duplicate but True
-        assert lgr.getSigs(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.addSig(key, b'a') == False   # duplicate
-        assert lgr.addSig(key, b'b') == True
-        assert lgr.getSigs(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in lgr.getSigsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert lgr.delSigs(key) == True
-        assert lgr.getSigs(key) == []
+        assert db.putSigs(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert db.getSigs(key) == [b'a', b'm', b'x', b'z']
+        assert db.cntSigs(key) == 4
+        assert db.putSigs(key, vals=[b'a']) == True   # duplicate but True
+        assert db.getSigs(key) == [b'a', b'm', b'x', b'z']
+        assert db.addSig(key, b'a') == False   # duplicate
+        assert db.addSig(key, b'b') == True
+        assert db.getSigs(key) == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in db.getSigsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert db.delSigs(key) == True
+        assert db.getSigs(key) == []
 
-        assert lgr.putSigs(key, vals=[sig0b]) == True
-        assert lgr.getSigs(key) == [sig0b]
-        assert lgr.putSigs(key, vals=[sig1b]) == True
-        assert lgr.getSigs(key) == [sig0b, sig1b]
-        assert lgr.delSigs(key) == True
-        assert lgr.putSigs(key, vals=[sig1b, sig0b]) == True
-        assert lgr.getSigs(key) == [sig0b, sig1b]
-        assert lgr.delSigs(key) == True
-        assert lgr.getSigs(key) == []
+        assert db.putSigs(key, vals=[sig0b]) == True
+        assert db.getSigs(key) == [sig0b]
+        assert db.putSigs(key, vals=[sig1b]) == True
+        assert db.getSigs(key) == [sig0b, sig1b]
+        assert db.delSigs(key) == True
+        assert db.putSigs(key, vals=[sig1b, sig0b]) == True
+        assert db.getSigs(key) == [sig0b, sig1b]
+        assert db.delSigs(key) == True
+        assert db.getSigs(key) == []
 
         # test .rcts sub db methods dgkey
-        assert lgr.getRcts(key) == []
-        assert lgr.cntRcts(key) == 0
-        assert lgr.delRcts(key) == False
+        assert db.getRcts(key) == []
+        assert db.cntRcts(key) == 0
+        assert db.delRcts(key) == False
 
         # dup vals are lexocographic
-        assert lgr.putRcts(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert lgr.getRcts(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.cntRcts(key) == 4
-        assert lgr.putRcts(key, vals=[b'a']) == True   # duplicate
-        assert lgr.getRcts(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.addRct(key, b'a') == False   # duplicate
-        assert lgr.addRct(key, b'b') == True
-        assert lgr.getRcts(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in lgr.getRctsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert lgr.delRcts(key) == True
-        assert lgr.getRcts(key) == []
+        assert db.putRcts(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert db.getRcts(key) == [b'a', b'm', b'x', b'z']
+        assert db.cntRcts(key) == 4
+        assert db.putRcts(key, vals=[b'a']) == True   # duplicate
+        assert db.getRcts(key) == [b'a', b'm', b'x', b'z']
+        assert db.addRct(key, b'a') == False   # duplicate
+        assert db.addRct(key, b'b') == True
+        assert db.getRcts(key) == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in db.getRctsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert db.delRcts(key) == True
+        assert db.getRcts(key) == []
 
-        assert lgr.putRcts(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
-        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert lgr.putRcts(key, vals=[wit1b + wsig1b]) == True
-        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert lgr.delRcts(key) == True
-        assert lgr.putRcts(key, vals=[wit1b + wsig1b, wit0b + wsig0b]) == True
-        assert lgr.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  # lex order
-        assert lgr.delRcts(key) == True
-        assert lgr.getRcts(key) == []
+        assert db.putRcts(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
+        assert db.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
+        assert db.putRcts(key, vals=[wit1b + wsig1b]) == True
+        assert db.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
+        assert db.delRcts(key) == True
+        assert db.putRcts(key, vals=[wit1b + wsig1b, wit0b + wsig0b]) == True
+        assert db.getRcts(key) == [wit1b + wsig1b, wit0b + wsig0b]  # lex order
+        assert db.delRcts(key) == True
+        assert db.getRcts(key) == []
 
         # test .ures sub db methods dgKey
-        assert lgr.getUres(key) == []
-        assert lgr.cntUres(key) == 0
-        assert lgr.delUres(key) == False
+        assert db.getUres(key) == []
+        assert db.cntUres(key) == 0
+        assert db.delUres(key) == False
 
         # dup vals are lexocographic
-        assert lgr.putUres(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert lgr.getUres(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.cntUres(key) == 4
-        assert lgr.putUres(key, vals=[b'a']) == True   # duplicate
-        assert lgr.getUres(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.addUre(key, b'a') == False   # duplicate
-        assert lgr.addUre(key, b'b') == True
-        assert lgr.getUres(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in lgr.getUresIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert lgr.delUres(key) == True
-        assert lgr.getUres(key) == []
+        assert db.putUres(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert db.getUres(key) == [b'a', b'm', b'x', b'z']
+        assert db.cntUres(key) == 4
+        assert db.putUres(key, vals=[b'a']) == True   # duplicate
+        assert db.getUres(key) == [b'a', b'm', b'x', b'z']
+        assert db.addUre(key, b'a') == False   # duplicate
+        assert db.addUre(key, b'b') == True
+        assert db.getUres(key) == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in db.getUresIter(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert db.delUres(key) == True
+        assert db.getUres(key) == []
 
-        assert lgr.putUres(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
-        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert lgr.putUres(key, vals=[wit1b + wsig1b]) == True
-        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert lgr.delUres(key) == True
-        assert lgr.putUres(key, vals=[wit1b + wsig1b, wit0b + wsig0b]) == True
-        assert lgr.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert lgr.delUres(key) == True
-        assert lgr.getUres(key) == []
+        assert db.putUres(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
+        assert db.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
+        assert db.putUres(key, vals=[wit1b + wsig1b]) == True
+        assert db.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
+        assert db.delUres(key) == True
+        assert db.putUres(key, vals=[wit1b + wsig1b, wit0b + wsig0b]) == True
+        assert db.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
+        assert db.delUres(key) == True
+        assert db.getUres(key) == []
 
         # test .vrcs sub db methods dgkey
-        assert lgr.getVrcs(key) == []
-        assert lgr.cntVrcs(key) == 0
-        assert lgr.delVrcs(key) == False
+        assert db.getVrcs(key) == []
+        assert db.cntVrcs(key) == 0
+        assert db.delVrcs(key) == False
 
         # dup vals are lexocographic
-        assert lgr.putVrcs(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert lgr.getVrcs(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.cntVrcs(key) == 4
-        assert lgr.putVrcs(key, vals=[b'a']) == True   # duplicate
-        assert lgr.getVrcs(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.addVrc(key, b'a') == False   # duplicate
-        assert lgr.addVrc(key, b'b') == True
-        assert lgr.getVrcs(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in lgr.getVrcsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert lgr.delVrcs(key) == True
-        assert lgr.getVrcs(key) == []
+        assert db.putVrcs(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert db.getVrcs(key) == [b'a', b'm', b'x', b'z']
+        assert db.cntVrcs(key) == 4
+        assert db.putVrcs(key, vals=[b'a']) == True   # duplicate
+        assert db.getVrcs(key) == [b'a', b'm', b'x', b'z']
+        assert db.addVrc(key, b'a') == False   # duplicate
+        assert db.addVrc(key, b'b') == True
+        assert db.getVrcs(key) == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in db.getVrcsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert db.delVrcs(key) == True
+        assert db.getVrcs(key) == []
 
-        assert lgr.putVrcs(key, vals=[valb + vdigb + vsig0b, valb + vdigb + vsig1b]) == True
-        assert lgr.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        assert lgr.putVrcs(key, vals=[valb + vdigb + vsig1b]) == True
-        assert lgr.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        assert lgr.delVrcs(key) == True
-        assert lgr.putVrcs(key, vals=[ valb + vdigb + vsig1b, valb + vdigb + vsig0b]) == True
-        assert lgr.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        assert lgr.delVrcs(key) == True
-        assert lgr.getVrcs(key) == []
+        assert db.putVrcs(key, vals=[valb + vdigb + vsig0b, valb + vdigb + vsig1b]) == True
+        assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert db.putVrcs(key, vals=[valb + vdigb + vsig1b]) == True
+        assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert db.delVrcs(key) == True
+        assert db.putVrcs(key, vals=[ valb + vdigb + vsig1b, valb + vdigb + vsig0b]) == True
+        assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert db.delVrcs(key) == True
+        assert db.getVrcs(key) == []
 
         # test .vres sub db methods dgKey
-        assert lgr.getVres(key) == []
-        assert lgr.cntVres(key) == 0
-        assert lgr.delVres(key) == False
+        assert db.getVres(key) == []
+        assert db.cntVres(key) == 0
+        assert db.delVres(key) == False
 
         # dup vals are lexocographic
-        assert lgr.putVres(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert lgr.getVres(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.cntVres(key) == 4
-        assert lgr.putVres(key, vals=[b'a']) == True   # duplicate
-        assert lgr.getVres(key) == [b'a', b'm', b'x', b'z']
-        assert lgr.addVre(key, b'a') == False   # duplicate
-        assert lgr.addVre(key, b'b') == True
-        assert lgr.getVres(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in lgr.getVresIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert lgr.delVres(key) == True
-        assert lgr.getVres(key) == []
+        assert db.putVres(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert db.getVres(key) == [b'a', b'm', b'x', b'z']
+        assert db.cntVres(key) == 4
+        assert db.putVres(key, vals=[b'a']) == True   # duplicate
+        assert db.getVres(key) == [b'a', b'm', b'x', b'z']
+        assert db.addVre(key, b'a') == False   # duplicate
+        assert db.addVre(key, b'b') == True
+        assert db.getVres(key) == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in db.getVresIter(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert db.delVres(key) == True
+        assert db.getVres(key) == []
 
-        assert lgr.putVres(key, vals=[valb + vdigb + vsig0b, valb + vdigb + vsig1b]) == True
-        assert lgr.getVres(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        assert lgr.putVres(key, vals=[valb + vdigb + vsig1b]) == True
-        assert lgr.getVres(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        assert lgr.delVres(key) == True
-        assert lgr.putVres(key, vals=[ valb + vdigb + vsig1b, valb + vdigb + vsig0b]) == True
-        assert lgr.getVres(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
-        assert lgr.delVres(key) == True
-        assert lgr.getVres(key) == []
+        assert db.putVres(key, vals=[valb + vdigb + vsig0b, valb + vdigb + vsig1b]) == True
+        assert db.getVres(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert db.putVres(key, vals=[valb + vdigb + vsig1b]) == True
+        assert db.getVres(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert db.delVres(key) == True
+        assert db.putVres(key, vals=[ valb + vdigb + vsig1b, valb + vdigb + vsig0b]) == True
+        assert db.getVres(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
+        assert db.delVres(key) == True
+        assert db.getVres(key) == []
 
 
         # test .kels insertion order dup methods.  dup vals are insertion order
         key = snKey(preb, 0)
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert lgr.getKes(key) == []
-        assert lgr.getKeLast(key) == None
-        assert lgr.cntKes(key) == 0
-        assert lgr.delKes(key) == False
-        assert lgr.putKes(key, vals) == True
-        assert lgr.getKes(key) == vals  # preserved insertion order
-        assert lgr.cntKes(key) == len(vals) == 4
-        assert lgr.getKeLast(key) == vals[-1]
-        assert lgr.putKes(key, vals=[b'a']) == False   # duplicate
-        assert lgr.getKes(key) == vals  #  no change
-        assert lgr.addKe(key, b'a') == False   # duplicate
-        assert lgr.addKe(key, b'b') == True
-        assert lgr.getKes(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert lgr.delKes(key) == True
-        assert lgr.getKes(key) == []
+        assert db.getKes(key) == []
+        assert db.getKeLast(key) == None
+        assert db.cntKes(key) == 0
+        assert db.delKes(key) == False
+        assert db.putKes(key, vals) == True
+        assert db.getKes(key) == vals  # preserved insertion order
+        assert db.cntKes(key) == len(vals) == 4
+        assert db.getKeLast(key) == vals[-1]
+        assert db.putKes(key, vals=[b'a']) == False   # duplicate
+        assert db.getKes(key) == vals  #  no change
+        assert db.addKe(key, b'a') == False   # duplicate
+        assert db.addKe(key, b'b') == True
+        assert db.getKes(key) == [b"z", b"m", b"x", b"a", b"b"]
+        assert db.delKes(key) == True
+        assert db.getKes(key) == []
 
         # test .pses insertion order dup methods.  dup vals are insertion order
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert lgr.getPses(key) == []
-        assert lgr.getPsesLast(key) == None
-        assert lgr.cntPses(key) == 0
-        assert lgr.delPses(key) == False
-        assert lgr.putPses(key, vals) == True
-        assert lgr.getPses(key) == vals  # preserved insertion order
-        assert lgr.cntPses(key) == len(vals) == 4
-        assert lgr.getPsesLast(key) == vals[-1]
-        assert lgr.putPses(key, vals=[b'a']) == False   # duplicate
-        assert lgr.getPses(key) == vals  #  no change
-        assert lgr.addPse(key, b'a') == False   # duplicate
-        assert lgr.addPse(key, b'b') == True
-        assert lgr.getPses(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert lgr.delPses(key) == True
-        assert lgr.getPses(key) == []
+        assert db.getPses(key) == []
+        assert db.getPsesLast(key) == None
+        assert db.cntPses(key) == 0
+        assert db.delPses(key) == False
+        assert db.putPses(key, vals) == True
+        assert db.getPses(key) == vals  # preserved insertion order
+        assert db.cntPses(key) == len(vals) == 4
+        assert db.getPsesLast(key) == vals[-1]
+        assert db.putPses(key, vals=[b'a']) == False   # duplicate
+        assert db.getPses(key) == vals  #  no change
+        assert db.addPse(key, b'a') == False   # duplicate
+        assert db.addPse(key, b'b') == True
+        assert db.getPses(key) == [b"z", b"m", b"x", b"a", b"b"]
+        assert db.delPses(key) == True
+        assert db.getPses(key) == []
 
         # test .ooes insertion order dup methods.  dup vals are insertion order
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert lgr.getOoes(key) == []
-        assert lgr.getOoesLast(key) == None
-        assert lgr.cntOoes(key) == 0
-        assert lgr.delOoes(key) == False
-        assert lgr.putOoes(key, vals) == True
-        assert lgr.getOoes(key) == vals  # preserved insertion order
-        assert lgr.cntOoes(key) == len(vals) == 4
-        assert lgr.getOoesLast(key) == vals[-1]
-        assert lgr.putOoes(key, vals=[b'a']) == False   # duplicate
-        assert lgr.getOoes(key) == vals  #  no change
-        assert lgr.addOoe(key, b'a') == False   # duplicate
-        assert lgr.addOoe(key, b'b') == True
-        assert lgr.getOoes(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert lgr.delOoes(key) == True
-        assert lgr.getOoes(key) == []
+        assert db.getOoes(key) == []
+        assert db.getOoesLast(key) == None
+        assert db.cntOoes(key) == 0
+        assert db.delOoes(key) == False
+        assert db.putOoes(key, vals) == True
+        assert db.getOoes(key) == vals  # preserved insertion order
+        assert db.cntOoes(key) == len(vals) == 4
+        assert db.getOoesLast(key) == vals[-1]
+        assert db.putOoes(key, vals=[b'a']) == False   # duplicate
+        assert db.getOoes(key) == vals  #  no change
+        assert db.addOoe(key, b'a') == False   # duplicate
+        assert db.addOoe(key, b'b') == True
+        assert db.getOoes(key) == [b"z", b"m", b"x", b"a", b"b"]
+        assert db.delOoes(key) == True
+        assert db.getOoes(key) == []
 
         # test .dels insertion order dup methods.  dup vals are insertion order
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert lgr.getDes(key) == []
-        assert lgr.getDesLast(key) == None
-        assert lgr.cntDes(key) == 0
-        assert lgr.delDes(key) == False
-        assert lgr.putDes(key, vals) == True
-        assert lgr.getDes(key) == vals  # preserved insertion order
-        assert lgr.cntDes(key) == len(vals) == 4
-        assert lgr.getDesLast(key) == vals[-1]
-        assert lgr.putDes(key, vals=[b'a']) == False   # duplicate
-        assert lgr.getDes(key) == vals  #  no change
-        assert lgr.addDe(key, b'a') == False   # duplicate
-        assert lgr.addDe(key, b'b') == True
-        assert lgr.getDes(key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert lgr.delDes(key) == True
-        assert lgr.getDes(key) == []
+        assert db.getDes(key) == []
+        assert db.getDesLast(key) == None
+        assert db.cntDes(key) == 0
+        assert db.delDes(key) == False
+        assert db.putDes(key, vals) == True
+        assert db.getDes(key) == vals  # preserved insertion order
+        assert db.cntDes(key) == len(vals) == 4
+        assert db.getDesLast(key) == vals[-1]
+        assert db.putDes(key, vals=[b'a']) == False   # duplicate
+        assert db.getDes(key) == vals  #  no change
+        assert db.addDe(key, b'a') == False   # duplicate
+        assert db.addDe(key, b'b') == True
+        assert db.getDes(key) == [b"z", b"m", b"x", b"a", b"b"]
+        assert db.delDes(key) == True
+        assert db.getDes(key) == []
 
         # test .ldes insertion order dup methods.  dup vals are insertion order
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
 
-        assert lgr.getLdes(key) == []
-        assert lgr.getLdesLast(key) == None
-        assert lgr.cntLdes(key) == 0
-        assert lgr.delLdes(key) == False
-        assert lgr.putLdes(key, vals) == True
-        assert lgr.getLdes(key) == vals  # preserved insertion order
-        assert lgr.cntLdes(key) == len(vals) == 4
-        assert lgr.getLdesLast(key) == vals[-1]
-        assert lgr.putLdes(key, vals=[b'a']) == False   # duplicate
-        assert lgr.getLdes(key) == vals  #  no change
-        assert lgr.delLdes(key) == True
-        assert lgr.getLdes(key) == []
+        assert db.getLdes(key) == []
+        assert db.getLdesLast(key) == None
+        assert db.cntLdes(key) == 0
+        assert db.delLdes(key) == False
+        assert db.putLdes(key, vals) == True
+        assert db.getLdes(key) == vals  # preserved insertion order
+        assert db.cntLdes(key) == len(vals) == 4
+        assert db.getLdesLast(key) == vals[-1]
+        assert db.putLdes(key, vals=[b'a']) == False   # duplicate
+        assert db.getLdes(key) == vals  #  no change
+        assert db.delLdes(key) == True
+        assert db.getLdes(key) == []
 
 
-    assert not os.path.exists(lgr.path)
+    assert not os.path.exists(db.path)
 
     """ End Test """
 
 def test_fetchkeldel():
     """
-    Test fetching full KEL and full DEL from Logger
+    Test fetching full KEL and full DEL from Baser
     """
     # Test using context manager
     preb = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
@@ -602,28 +675,28 @@ def test_fetchkeldel():
     wsig0b = '0A1Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ9'.encode("utf-8")
     wsig1b = '0A5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2zJ91Timrykocna6Z'.encode("utf-8")
 
-    with openLogger() as lgr:
+    with openDB() as db:
         # test getKelIter
         sn = 0
         key = snKey(preb, sn)
         assert key == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
                        b'00000000000000000000000000000000')
         vals0 = [skedb]
-        assert lgr.addKe(key, vals0[0]) == True
+        assert db.addKe(key, vals0[0]) == True
 
         vals1 = [b"mary", b"peter", b"john", b"paul"]
         sn += 1
         key = snKey(preb, sn)
         for val in vals1:
-            assert lgr.addKe(key, val) == True
+            assert db.addKe(key, val) == True
 
         vals2 = [b"dog", b"cat", b"bird"]
         sn += 1
         key = snKey(preb, sn)
         for val in vals2:
-            assert lgr.addKe(key, val) == True
+            assert db.addKe(key, val) == True
 
-        vals = [bytes(val) for val in lgr.getKelIter(preb)]
+        vals = [bytes(val) for val in db.getKelIter(preb)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
 
@@ -634,21 +707,21 @@ def test_fetchkeldel():
         assert key == (b'B4ejhccWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x.'
                        b'00000000000000000000000000000000')
         vals0 = [skedb]
-        assert lgr.addKe(key, vals0[0]) == True
+        assert db.addKe(key, vals0[0]) == True
 
         vals1 = [b"mary", b"peter", b"john", b"paul"]
         sn += 1
         key = snKey(preb, sn)
         for val in vals1:
-            assert lgr.addKe(key, val) == True
+            assert db.addKe(key, val) == True
 
         vals2 = [b"dog", b"cat", b"bird"]
         sn += 1
         key = snKey(preb, sn)
         for val in vals2:
-            assert lgr.addKe(key, val) == True
+            assert db.addKe(key, val) == True
 
-        vals = [bytes(val) for val in lgr.getKelEstIter(preb)]
+        vals = [bytes(val) for val in db.getKelEstIter(preb)]
         lastvals = [vals0[-1], vals1[-1], vals2[-1]]
         assert vals == lastvals
 
@@ -660,32 +733,32 @@ def test_fetchkeldel():
         assert key == (b'BTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGw.'
                        b'00000000000000000000000000000001')
         vals0 = [skedb]
-        assert lgr.addDe(key, vals0[0]) == True
+        assert db.addDe(key, vals0[0]) == True
 
         vals1 = [b"mary", b"peter", b"john", b"paul"]
         sn += 1
         key = snKey(preb, sn)
         for val in vals1:
-            assert lgr.addDe(key, val) == True
+            assert db.addDe(key, val) == True
 
         vals2 = [b"dog", b"cat", b"bird"]
         sn += 3  # skip make gap in SN
         key = snKey(preb, sn)
         for val in vals2:
-            assert lgr.addDe(key, val) == True
+            assert db.addDe(key, val) == True
 
-        vals = [bytes(val) for val in lgr.getDelIter(preb)]
+        vals = [bytes(val) for val in db.getDelIter(preb)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
 
-    assert not os.path.exists(lgr.path)
+    assert not os.path.exists(db.path)
     """ End Test """
 
 
 
-def test_uselogger():
+def test_usebaser():
     """
-    Test using logger to
+    Test using Baser
     """
     # Some secrets to use on the events
     secrets = [
@@ -705,7 +778,7 @@ def test_uselogger():
 
 
 
-    with openLogger() as lgr:
+    with openDB() as db:
         # Event 0  Inception Transferable (nxt digest not empty) 2 0f 3 multisig
         keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
         count = len(keys)
@@ -721,7 +794,7 @@ def test_uselogger():
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i) for i in range(count)]
         # create key event verifier state
-        kever = Kever(serder=serder, sigers=sigers, logger=lgr)
+        kever = Kever(serder=serder, sigers=sigers, baser=db)
 
         # Event 1 Rotation Transferable
         keys = nxtkeys
@@ -749,9 +822,9 @@ def test_uselogger():
         # update key event verifier state
         kever.update(serder=serder, sigers=sigers)
 
-    assert not os.path.exists(lgr.path)
+    assert not os.path.exists(db.path)
 
     """ End Test """
 
 if __name__ == "__main__":
-    test_logger()
+    test_baser()

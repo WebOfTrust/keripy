@@ -24,7 +24,7 @@ from keri.core.coring import (CrySelDex, CryCntDex,
                               CryTwoDex, CryTwoSizes, CryTwoRawSizes,
                               CryFourDex, CryFourSizes, CryFourRawSizes,
                               CrySizes, CryRawSizes, MINCRYSIZE)
-from keri.core.coring import (CryMat, CryCounter, Verfer, Sigver, Signer,
+from keri.core.coring import (CryMat, CryCounter, Verfer, Cigar, Signer,
                               Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import (SigSelDex, SigCntDex, SigCntSizes, SigCntRawSizes,
@@ -503,28 +503,28 @@ def test_verfer():
         verfer = Verfer(raw=verkey, code=CryOneDex.Blake3_256)
     """ Done Test """
 
-def test_sigver():
+def test_cigar():
     """
-    Test Sigver subclass of CryMat
+    Test Cigar subclass of CryMat
     """
     with pytest.raises(EmptyMaterialError):
-        sigver = Sigver()
+        cigar = Cigar()
 
     qsig64 = '0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    sigver = Sigver(qb64=qsig64)
-    assert sigver.code == CryTwoDex.Ed25519
-    assert sigver.qb64 == qsig64
-    assert sigver.verfer == None
+    cigar = Cigar(qb64=qsig64)
+    assert cigar.code == CryTwoDex.Ed25519
+    assert cigar.qb64 == qsig64
+    assert cigar.verfer == None
 
     verkey,  sigkey = pysodium.crypto_sign_keypair()
     verfer = Verfer(raw=verkey)
 
-    sigver.verfer = verfer
-    assert  sigver.verfer == verfer
+    cigar.verfer = verfer
+    assert  cigar.verfer == verfer
 
-    sigver = Sigver(qb64=qsig64, verfer=verfer)
-    assert  sigver.verfer == verfer
+    cigar = Cigar(qb64=qsig64, verfer=verfer)
+    assert  cigar.verfer == verfer
     """ Done Test """
 
 

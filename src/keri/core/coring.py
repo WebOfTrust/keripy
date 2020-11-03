@@ -671,9 +671,9 @@ class Verfer(CryMat):
         return True
 
 
-class Sigver(CryMat):
+class Cigar(CryMat):
     """
-    Sigver is CryMat subclass holding a signature with verfer property.
+    Cigar is CryMat subclass holding a nonindexed signature with verfer property.
         From CryMat .raw is signature and .code is signature cipher suite
     Adds .verfer property to hold Verfer instance of associated verifier public key
         Verfer's .raw as verifier key and .code is verifier cipher suite.
@@ -693,7 +693,7 @@ class Sigver(CryMat):
         Assign verfer to ._verfer attribute
 
         """
-        super(Sigver, self).__init__(**kwa)
+        super(Cigar, self).__init__(**kwa)
 
         self._verfer = verfer
 
@@ -775,11 +775,11 @@ class Signer(CryMat):
 
     def sign(self, ser, index=None):
         """
-        Returns either Sigver or Siger (indexed) instance of cryptographic
+        Returns either Cigar or Siger (indexed) instance of cryptographic
         signature material on bytes serialization ser
 
         If index is None
-            return Sigver instance
+            return Cigar instance
         Else
             return Siger instance
 
@@ -807,7 +807,7 @@ class Signer(CryMat):
         """
         sig = pysodium.crypto_sign_detached(ser, seed + verfer.raw)
         if index is None:
-            return Sigver(raw=sig, code=CryTwoDex.Ed25519, verfer=verfer)
+            return Cigar(raw=sig, code=CryTwoDex.Ed25519, verfer=verfer)
         else:
             return Siger(raw=sig,
                           code=SigTwoDex.Ed25519,
@@ -1338,11 +1338,11 @@ class Prefixer(CryMat):
         if verfer.raw != signer.verfer.raw:
             raise DerivationError("Key in ked not match seed.")
 
-        sigver = signer.sign(ser=ser)
+        cigar = signer.sign(ser=ser)
 
         # sig = pysodium.crypto_sign_detached(ser, signer.raw + verfer.raw)
 
-        return (sigver.raw, CryTwoDex.Ed25519)
+        return (cigar.raw, CryTwoDex.Ed25519)
 
 
     def _VerifySigEd25519(self, ked, pre):
@@ -1390,9 +1390,9 @@ class Prefixer(CryMat):
                 raise DerivationError("Invalid derivation code = {}"
                                       "".format(verfer.code))
 
-            sigver = Sigver(qb64=pre, verfer=verfer)
+            cigar = Cigar(qb64=pre, verfer=verfer)
 
-            result = sigver.verfer.verify(sig=sigver.raw, ser=ser)
+            result = cigar.verfer.verify(sig=cigar.raw, ser=ser)
             return result
 
             #try:  # verify returns None if valid else raises ValueError

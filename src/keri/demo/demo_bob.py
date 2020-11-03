@@ -28,13 +28,12 @@ def runDemo(name="bob", remote=5621, local=5620, expire=0.0):
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
-    directing.runController(secrets=secrets,
-                           name=name,
-                           role="initiator",
-                           remotePort=remote,
-                           localPort=local,
-                           limit=expire)
+    doers = directing.setupController(secrets=secrets,
+                                      name=name,
+                                      remotePort=remote,
+                                      localPort=local)
 
+    directing.runController(doers=doers, limit=expire)
 
 
 
@@ -61,7 +60,7 @@ def parseArgs(version=__version__):
     p.add_argument('-n', '--name',
                    action='store',
                    default="bob",
-                   help="Name of controller. Default is bob.")
+                   help="Name of controller. Default is bob. Choices are bob, sam, or eve.")
 
 
     args = p.parse_args()

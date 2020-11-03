@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.core.dbing module
+keri.db.dbing module
 
 
 import lmdb
@@ -57,7 +57,10 @@ try:
 except ImportError:
     import json
 
+from hio.base import doing
+
 from  ..kering import KeriError
+
 
 class DatabaseError(KeriError):
     """
@@ -103,45 +106,49 @@ def clearDatabaserDir(path):
 
 
 @contextmanager
-def openDatabaser(name="test", cls=None):
+def openLMDB(cls=None, name="test", temp=True, opened=True, **kwa):
     """
-    Wrapper to enable temporary (test) Databaser instances
-    When used in with statement calls .clearDirPath() on exit of with block
+    Context manager wrapper LMDBer instances.
+    Defaults to temporary databases.
+    Context 'with' statements call .close on exit of 'with' block
 
     Parameters:
-        name is str name of temporary Databaser dirPath  extended name so
-                 can have multiple temporary databasers is use differen name
         cls is Class instance of subclass instance
+        name is str name of LMDBer dirPath so can have multiple databasers
+             at different directory path names thar each use different name
+        temp is Boolean, True means open in temporary directory, clear on close
+                        Otherwise open in persistent directory, do not clear on close
+        opened overrides opened parameter to force open
 
     Usage:
 
     with openDatabaser(name="gen1") as baser1:
         baser1.env  ....
 
-    with openDatabaser(name="gen2, cls=Logger)
+    with openDatabaser(name="gen2, cls=Baser)
 
     """
     if cls is None:
-        cls = Databaser
+        cls = LMDBer
     try:
-        databaser = cls(name=name, temp=True)
-
+        databaser = cls(name=name, temp=temp, reopen=True, **kwa)
         yield databaser
 
     finally:
+        databaser.close()
 
-        databaser.clearDirPath()
 
-
-class Databaser:
+class LMDBer:
     """
-    Databaser base class for LMDB instances.
+    LBDBer base class for LMDB manager instances.
     Creates a specific instance of an LMDB database directory and environment.
 
     Attributes:
         .name is LMDB database name did2offer
         .env is LMDB main (super) database environment
         .path is LMDB main (super) database directory path
+        .opened is Boolean, True means LMDB .env at .path is opened.
+                            Otherwise LMDB .env is closed
 
     Properties:
 
@@ -153,24 +160,50 @@ class Databaser:
     AltTailDirPath = ".keri/db"
     MaxNamedDBs = 16
 
-    def __init__(self, headDirPath=None, name='main', temp=False):
+    def __init__(self, name='main', temp=False, headDirPath=None, reopen=True):
         """
         Setup main database directory at .dirpath.
         Create main database environment at .env using .dirpath.
 
         Parameters:
-            headDirPath is str head of the pathname of directory for main database
-                If not provided use default headDirpath
-            name is str pathname differentiator for directory for main database
-                When system employs more than one keri databse name allows
+            name is str directory path name differentiator for main database
+                When system employs more than one keri database, name allows
                 differentiating each instance by name
-            temp is boolean If True then use temporary head pathname  instead of
-                headDirPath if any or default headDirPath
+            temp is boolean, assign to .temp
+                True then open in temporary directory, clear on close
+                Othewise then open persistent directory, do not clear on close
+            headDirPath is optional str head directory pathname for main database
+                If not provided use default .HeadDirpath
+            reopen is boolean, IF True then database will be reopened by this init
         """
         self.name = name
         self.temp = True if temp else False
+        self.path = None
+        self.env = None
+        self.opened = False
 
-        if temp:
+        if reopen:
+            self.reopen(headDirPath=headDirPath)
+
+
+    def reopen(self, temp=None, headDirPath=None):
+        """
+        Use or Create if not preexistent, directory path for lmdb at .path
+        Open lmdb and assign to .env
+
+        Parameters:
+            temp is optional boolean:
+                If None ignore Otherwise
+                    Assign to .temp
+                    If True then open temporary directory, clear on close
+                    If False then open persistent directory, do not clear on close
+            headDirPath is optional str head directory pathname of main database
+                If not provided use default .HeadDirpath
+        """
+        if temp is not None:
+            self.temp = True if temp else False
+
+        if self.temp:
             headDirPath = tempfile.mkdtemp(prefix="keri_lmdb_", suffix="_test", dir="/tmp")
             self.path = os.path.abspath(
                                 os.path.join(headDirPath,
@@ -214,11 +247,14 @@ class Databaser:
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs)
+        self.opened = True
 
 
-    def clearDirPath(self):
+    def close(self, clear=False):
         """
-        Remove .dirPath
+        Close lmdb at .env and if clear or .temp then remove lmdb directory at .path
+        Parameters:
+           clear is boolean, True means clear lmdb directory
         """
         if self.env:
             try:
@@ -226,6 +262,17 @@ class Databaser:
             except:
                 pass
 
+        self.env = None
+        self.opened = False
+
+        if clear or self.temp:
+            self.clearDirPath()
+
+
+    def clearDirPath(self):
+        """
+        Remove lmdb directory at .path
+        """
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
 
@@ -662,19 +709,19 @@ class Databaser:
 
 
 
-def openLogger(name="test"):
+def openDB(name="test", **kwa):
     """
-    Returns contextmanager generated by openDatabaser but with Logger instance
+    Returns contextmanager generated by openLMDB but with Baser instance
     """
-    return openDatabaser(name=name, cls=Logger)
+    return openLMDB(cls=Baser, name=name, **kwa)
 
 
-class Logger(Databaser):
+class Baser(LMDBer):
     """
-    Logger sets up named sub databases with Keri Event Logs within main database
+    Baser sets up named sub databases with Keri Event Logs within main database
 
     Attributes:
-        see superclass Databaser for inherited attributes
+        see superclass LMDBer for inherited attributes
 
         .evts is named sub DB whose values are serialized events
             dgKey
@@ -769,11 +816,20 @@ class Logger(Databaser):
 
 
     """
-    def __init__(self, **kwa):
+    def __init__(self, headDirPath=None, reopen=True, **kwa):
         """
         Setup named sub databases.
 
-        Parameters:
+        Inherited Parameters:
+            name is str directory path name differentiator for main database
+                When system employs more than one keri database, name allows
+                differentiating each instance by name
+            temp is boolean, assign to .temp
+                True then open in temporary directory, clear on close
+                Othewise then open persistent directory, do not clear on close
+            headDirPath is optional str head directory pathname for main database
+                If not provided use default .HeadDirpath
+            reopen is boolean, IF True then database will be reopened by this init
 
         Notes:
 
@@ -787,7 +843,17 @@ class Logger(Databaser):
         Duplicates are inserted in lexocographic order by value, insertion order.
 
         """
-        super(Logger, self).__init__(**kwa)
+        super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
+
+        if reopen:
+            self.reopen(headDirPath=headDirPath)
+
+
+    def reopen(self, temp=None, headDirPath=None):
+        """
+        Open sub databases
+        """
+        super(Baser, self).reopen(temp=temp, headDirPath=headDirPath)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character
@@ -1560,3 +1626,59 @@ class Logger(Databaser):
         return self.delIoVals(self.ldes, key)
 
 
+class BaserDoer(doing.Doer):
+    """
+    Basic Baser Doer ( LMDB Database )
+
+    Inherited Attributes:
+        .done is Boolean completion state:
+            True means completed
+            Otherwise incomplete. Incompletion maybe due to close or abort.
+
+    Attributes:
+        .baser is Baser or LMDBer subclass
+
+    Inherited Properties:
+        .tyme is float ._tymist.tyme, relative cycle or artificial time
+        .tock is float, desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Methods:
+        .wind  injects ._tymist dependency
+        .__call__ makes instance callable
+            Appears as generator function that returns generator
+        .do is generator method that returns generator
+        .enter is enter context action method
+        .recur is recur context action method or generator method
+        .exit is exit context method
+        .close is close context method
+        .abort is abort context method
+
+    Hidden:
+       ._tymist is Tymist instance reference
+       ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, baser, **kwa):
+        """
+        Inherited Parameters:
+           tymist is Tymist instance
+           tock is float seconds initial value of .tock
+
+        Parameters:
+           server is TCP Server instance
+        """
+        super(BaserDoer, self).__init__(**kwa)
+        self.baser = baser
+
+
+    def enter(self):
+        """"""
+        self.baser.reopen()
+
+
+    def exit(self):
+        """"""
+        self.baser.close()
