@@ -293,7 +293,7 @@ def test_kever():
         # verify signature
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
-        kever = Kever(serder=tser0, sigers=[tsig0], logger=lgr)  # no error
+        kever = Kever(serder=tser0, sigers=[tsig0], baser=lgr)  # no error
 
     with openDB() as lgr:  # Non-Transferable case
         # Setup inception key event dict
@@ -351,7 +351,7 @@ def test_kever():
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
         with pytest.raises(ValidationError):
-            kever = Kever(serder=tser0, sigers=[tsig0], logger=lgr)
+            kever = Kever(serder=tser0, sigers=[tsig0], baser=lgr)
 
         #retry with valid empty nxt
         nxt = ""  # nxt is empty so no error
@@ -390,7 +390,7 @@ def test_kever():
         # verify signature
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
-        kever = Kever(serder=tser0, sigers=[tsig0], logger=lgr)  # valid so no error
+        kever = Kever(serder=tser0, sigers=[tsig0], baser=lgr)  # valid so no error
 
 
     """ Done Test """
@@ -466,7 +466,7 @@ def test_keyeventsequence_0():
         sig0 = signers[0].sign(serder0.raw, index=0)
         assert signers[0].verfer.verify(sig0.raw, serder0.raw)
         # create key event verifier state
-        kever = Kever(serder=serder0, sigers=[sig0], logger=conlgr)
+        kever = Kever(serder=serder0, sigers=[sig0], baser=conlgr)
         assert kever.prefixer.qb64 == pre
         assert kever.sn == 0
         assert kever.diger.qb64 == serder0.dig
@@ -664,7 +664,7 @@ def test_keyeventsequence_0():
         with pytest.raises(ValidationError):  # nontransferable so reject update
             kever.update(serder=serder8, sigers=[sig8])
 
-        db_digs = [bytes(val).decode("utf-8") for val in kever.logger.getKelIter(pre)]
+        db_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelIter(pre)]
         assert db_digs == event_digs
 
     """ Done Test """
@@ -727,7 +727,7 @@ def test_keyeventsequence_1():
         sig0 = signers[0].sign(serder0.raw, index=0)
         assert signers[0].verfer.verify(sig0.raw, serder0.raw)
         # create key event verifier state
-        kever = Kever(serder=serder0, sigers=[sig0], logger=conlgr)
+        kever = Kever(serder=serder0, sigers=[sig0], baser=conlgr)
         assert kever.prefixer.qb64 == pre
         assert kever.sn == 0
         assert kever.diger.qb64 == serder0.dig
@@ -778,7 +778,7 @@ def test_keyeventsequence_1():
         assert [verfer.qb64 for verfer in kever.verfers] == keys1
         assert kever.nexter.qb64 == nxt2
 
-        db_digs = [bytes(val).decode("utf-8") for val in kever.logger.getKelIter(pre)]
+        db_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelIter(pre)]
         assert db_digs == event_digs
 
     """ Done Test """
@@ -821,7 +821,7 @@ def test_kevery():
         # sign serialization
         siger = signers[0].sign(serder.raw, index=0)  # return siger
         # create key event verifier state
-        kever = Kever(serder=serder, sigers=[siger], logger=conlgr)
+        kever = Kever(serder=serder, sigers=[siger], baser=conlgr)
         #extend key event stream
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
@@ -993,10 +993,10 @@ def test_kevery():
 
         pre = kever.prefixer.qb64
 
-        db_digs = [bytes(val).decode("utf-8") for val in kever.logger.getKelIter(pre)]
+        db_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelIter(pre)]
         assert db_digs == event_digs
 
-        kevery = Kevery(logger=vallgr)
+        kevery = Kevery(baser=vallgr)
 
         # test for incomplete event in stream
         kevery.processAll(ims=kes[:20])
@@ -1010,12 +1010,12 @@ def test_kevery():
         assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
         assert vkever.verfers[0].qb64 == signers[4].verfer.qb64
 
-        db_digs = [bytes(val).decode("utf-8") for val in kevery.logger.getKelIter(pre)]
+        db_digs = [bytes(val).decode("utf-8") for val in kevery.baser.getKelIter(pre)]
         assert db_digs == event_digs
 
 
-    assert not os.path.exists(kevery.logger.path)
-    assert not os.path.exists(kever.logger.path)
+    assert not os.path.exists(kevery.baser.path)
+    assert not os.path.exists(kever.baser.path)
 
     """ Done Test """
 
@@ -1066,7 +1066,7 @@ def test_multisig_digprefix():
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i) for i in range(count)]
         # create key event verifier state
-        kever = Kever(serder=serder, sigers=sigers, logger=conlgr)
+        kever = Kever(serder=serder, sigers=sigers, baser=conlgr)
         #extend key event stream
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
@@ -1165,7 +1165,7 @@ def test_multisig_digprefix():
 
         assert len(kes) == 2783
 
-        kevery = Kevery(logger=vallgr)
+        kevery = Kevery(baser=vallgr)
         kevery.processAll(ims=kes)
 
         pre = kever.prefixer.qb64
@@ -1175,7 +1175,7 @@ def test_multisig_digprefix():
         assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
         assert vkever.verfers[0].qb64 == signers[5].verfer.qb64
 
-    assert not os.path.exists(kevery.logger.path)
+    assert not os.path.exists(kevery.baser.path)
 
     """ Done Test """
 
@@ -1219,7 +1219,7 @@ def test_recovery():
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)  # return siger
         # create key event verifier state
-        kever = Kever(serder=serder, sigers=[siger], logger=conlgr)
+        kever = Kever(serder=serder, sigers=[siger], baser=conlgr)
         #extend key event stream
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
@@ -1393,19 +1393,19 @@ def test_recovery():
 
         pre = kever.prefixer.qb64
 
-        db_digs = [bytes(val).decode("utf-8") for val in kever.logger.getKelIter(pre)]
+        db_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelIter(pre)]
         assert len(db_digs) == len(event_digs) == 9
         assert db_digs[0:6] ==  event_digs[0:6]
         assert db_digs[-1] == event_digs[-1]
         assert db_digs[7] ==  event_digs[6]
         assert db_digs[6] ==  event_digs[7]
 
-        db_est_digs = [bytes(val).decode("utf-8") for val in kever.logger.getKelEstIter(pre)]
+        db_est_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelEstIter(pre)]
         assert len(db_est_digs) == 7
         assert db_est_digs[0:5] ==  event_digs[0:5]
         assert db_est_digs[5:7] ==  event_digs[7:9]
 
-        kevery = Kevery(logger=vallgr)
+        kevery = Kevery(baser=vallgr)
         kevery.processAll(ims=kes)
 
         assert pre in kevery.kevers
@@ -1414,13 +1414,13 @@ def test_recovery():
         assert vkever.verfers[0].qb64 == kever.verfers[0].qb64 == signers[esn].verfer.qb64
 
 
-        y_db_digs = [bytes(val).decode("utf-8") for val in kevery.logger.getKelIter(pre)]
+        y_db_digs = [bytes(val).decode("utf-8") for val in kevery.baser.getKelIter(pre)]
         assert db_digs == y_db_digs
-        y_db_est_digs = [bytes(val).decode("utf-8") for val in kevery.logger.getKelEstIter(pre)]
+        y_db_est_digs = [bytes(val).decode("utf-8") for val in kevery.baser.getKelEstIter(pre)]
         assert db_est_digs == y_db_est_digs
 
-    assert not os.path.exists(kevery.logger.path)
-    assert not os.path.exists(kever.logger.path)
+    assert not os.path.exists(kevery.baser.path)
+    assert not os.path.exists(kever.baser.path)
 
     """ Done Test """
 
@@ -1473,8 +1473,8 @@ def test_receipt():
     assert valpre == 'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
 
     with openDB("controller") as coeLogger, openDB("validator") as valLogger:
-        coeKevery = Kevery(logger=coeLogger)
-        valKevery = Kevery(logger=valLogger)
+        coeKevery = Kevery(baser=coeLogger)
+        valKevery = Kevery(baser=valLogger)
         event_digs = [] # list of event digs in sequence to verify against database
 
         # create event stream
@@ -1535,7 +1535,7 @@ def test_receipt():
 
         coeKevery.processAll(ims=res)  #  coe process the receipt from val
         #  check if in receipt database
-        result = coeKevery.logger.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.baser.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.diger.qb64))
         assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
 
@@ -1556,7 +1556,7 @@ def test_receipt():
 
         coeKevery.processAll(ims=res)  #  coe process the escrow receipt from val
         #  check if in escrow database
-        result = coeKevery.logger.getUres(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.baser.getUres(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=fake))
         assert bytes(result[0]) == valPrefixer.qb64b + valSigver.qb64b
 
@@ -1707,15 +1707,15 @@ def test_receipt():
 
         assert coeKever.verfers[0].qb64 == coeSigners[esn].verfer.qb64
 
-        db_digs = [bytes(val).decode("utf-8") for val in coeKever.logger.getKelIter(coepre)]
+        db_digs = [bytes(val).decode("utf-8") for val in coeKever.baser.getKelIter(coepre)]
         assert len(db_digs) == len(event_digs) == 7
 
 
         assert valKever.sn == coeKever.sn
         assert valKever.verfers[0].qb64 == coeKever.verfers[0].qb64 == coeSigners[esn].verfer.qb64
 
-    assert not os.path.exists(valKevery.logger.path)
-    assert not os.path.exists(coeKever.logger.path)
+    assert not os.path.exists(valKevery.baser.path)
+    assert not os.path.exists(coeKever.baser.path)
 
     """ Done Test """
 
@@ -1765,8 +1765,8 @@ def test_direct_mode():
 
     with openDB("controller") as coeLogger, openDB("validator") as valLogger:
         #  init Keverys
-        coeKevery = Kevery(logger=coeLogger)
-        valKevery = Kevery(logger=valLogger)
+        coeKevery = Kevery(baser=coeLogger)
+        valKevery = Kevery(baser=valLogger)
 
         coe_event_digs = [] # list of coe's own event log digs to verify against database
         val_event_digs = [] # list of val's own event log digs to verify against database
@@ -1852,9 +1852,9 @@ def test_direct_mode():
                         seal=seal)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeIcpDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=csn)))
+        coeIcpDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIcpDig == coeK.diger.qb64b == b'EixO2SBNow3tYDfYX6NRt1O9ZSMx2IsBeWkh8YJRp5VI'
-        coeIcpRaw = bytes(valKevery.logger.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
+        coeIcpRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
         assert coeIcpRaw == (b'{"vs":"KERI10JSON0000fb_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdS'
                              b'o","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_Z'
                              b'OoeKtWTOunRA"],"nxt":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4","toad":"'
@@ -1897,7 +1897,7 @@ def test_direct_mode():
         # check if val Kever in coe's .kevers
         assert valpre in coeKevery.kevers
         #  check if receipt from val in receipt database
-        result = coeKevery.logger.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
                                     valKever.diger.qb64b +
@@ -1930,7 +1930,7 @@ def test_direct_mode():
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if in escrow database
-        result = coeKevery.logger.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.baser.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
                                                    dig=fake))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
                                     valKever.diger.qb64b +
@@ -1949,9 +1949,9 @@ def test_direct_mode():
                         seal=seal)
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
-        valIcpDig = bytes(coeKevery.logger.getKeLast(key=snKey(pre=valpre, sn=vsn)))
+        valIcpDig = bytes(coeKevery.baser.getKeLast(key=snKey(pre=valpre, sn=vsn)))
         assert valIcpDig == valK.diger.qb64b == b'E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA'
-        valIcpRaw = bytes(coeKevery.logger.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
+        valIcpRaw = bytes(coeKevery.baser.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
         assert valIcpRaw == (b'{"vs":"KERI10JSON0000fb_","pre":"EwBwUb2eZcA5GDcN7g-87wpreM0nNkLqzkwviBHTcV1'
                              b'A","sn":"0","ilk":"icp","sith":"1","keys":["D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9'
                              b'yzhDNZlEKiMc"],"nxt":"E29akD_tuTrdFXNHBQWdo6qPVXsoOu8K2A4LssoCunwc","toad":"'
@@ -1981,7 +1981,7 @@ def test_direct_mode():
         valKevery.processAll(ims=cmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from coe in val's receipt database
-        result = valKevery.logger.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
+        result = valKevery.baser.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
                                                     dig=valKever.diger.qb64))
         assert bytes(result[0]) == (coeKever.prefixer.qb64b +
                                     coeKever.diger.qb64b +
@@ -2039,9 +2039,9 @@ def test_direct_mode():
                         seal=seal)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeRotDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=csn)))
+        coeRotDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeRotDig == coeK.diger.qb64b == b'E7MC1Sr7igW4JEDdvZu_HtmNoyBn4_Th-TcfKwwFBYR4'
-        coeRotRaw = bytes(valKevery.logger.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
+        coeRotRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
         assert coeRotRaw == (b'{"vs":"KERI10JSON00013a_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdS'
                              b'o","sn":"1","ilk":"rot","dig":"EixO2SBNow3tYDfYX6NRt1O9ZSMx2IsBeWkh8YJRp5VI"'
                              b',"sith":"1","keys":["DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI"],"nxt":"E'
@@ -2069,7 +2069,7 @@ def test_direct_mode():
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from val in receipt database
-        result = coeKevery.logger.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
                                     valKever.diger.qb64b +
@@ -2125,9 +2125,9 @@ def test_direct_mode():
                         seal=seal)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeIxnDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=csn)))
+        coeIxnDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIxnDig == coeK.diger.qb64b == b'Ec9ivQTiqBXBhx4d2HCA7qfUksJyB6sKSHz5cHufFiyo'
-        coeIxnRaw = bytes(valKevery.logger.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
+        coeIxnRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
         assert coeIxnRaw == (b'{"vs":"KERI10JSON0000a3_","pre":"ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdS'
                              b'o","sn":"2","ilk":"ixn","dig":"E7MC1Sr7igW4JEDdvZu_HtmNoyBn4_Th-TcfKwwFBYR4"'
                              b',"data":[]}')
@@ -2154,7 +2154,7 @@ def test_direct_mode():
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from val in receipt database
-        result = coeKevery.logger.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
                                     valKever.diger.qb64b +
@@ -2169,14 +2169,14 @@ def test_direct_mode():
         assert coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
         assert coeKever.sn == coeK.sn == csn
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.logger.getKelIter(coepre)]
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
         assert db_digs == coe_event_digs == ['EixO2SBNow3tYDfYX6NRt1O9ZSMx2IsBeWkh8YJRp5VI',
                                              'E7MC1Sr7igW4JEDdvZu_HtmNoyBn4_Th-TcfKwwFBYR4',
                                              'Ec9ivQTiqBXBhx4d2HCA7qfUksJyB6sKSHz5cHufFiyo']
 
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.logger.getKelIter(coepre)]
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
         assert db_digs == coe_event_digs == ['EixO2SBNow3tYDfYX6NRt1O9ZSMx2IsBeWkh8YJRp5VI',
                                              'E7MC1Sr7igW4JEDdvZu_HtmNoyBn4_Th-TcfKwwFBYR4',
@@ -2187,16 +2187,16 @@ def test_direct_mode():
         assert valKever.verfers[0].qb64 == valSigners[vesn].verfer.qb64
         assert valKever.sn == valK.sn == vsn
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.logger.getKelIter(valpre)]
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
         assert db_digs == val_event_digs == ['E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA']
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.logger.getKelIter(valpre)]
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
         assert db_digs == val_event_digs == ['E0CxRRD8SSBHZlSt-gblJ5_PL6JskFaaHsnSiAgX5vrA']
 
-    assert not os.path.exists(valKevery.logger.path)
-    assert not os.path.exists(coeKever.logger.path)
+    assert not os.path.exists(valKevery.baser.path)
+    assert not os.path.exists(coeKever.baser.path)
 
     """ Done Test """
 
@@ -2247,8 +2247,8 @@ def test_direct_mode_cbor_mgpk():
 
     with openDB("controller") as coeLogger, openDB("validator") as valLogger:
         #  init Keverys
-        coeKevery = Kevery(logger=coeLogger)
-        valKevery = Kevery(logger=valLogger)
+        coeKevery = Kevery(baser=coeLogger)
+        valKevery = Kevery(baser=valLogger)
 
         coe_event_digs = [] # list of coe's own event log digs to verify against database
         val_event_digs = [] # list of val's own event log digs to verify against database
@@ -2336,9 +2336,9 @@ def test_direct_mode_cbor_mgpk():
                         kind=Serials.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeIcpDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=csn)))
+        coeIcpDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIcpDig == coeK.diger.qb64b == b'EIdWNucQxRqw30PmUQ17MzjG9lGyKEjszAg3-VgjRCus'
-        coeIcpRaw = bytes(valKevery.logger.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
+        coeIcpRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
         assert coeIcpRaw == (b'\xaabvsqKERI10CBOR0000d5_cprex,EWTB8L66ol4_mthA1N4YokgIEpu--yRi4rbeGQH7rsX4'
                              b'bsna0cilkcicpdsitha1dkeys\x81x,DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
                              b'cnxtx,EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4dtoada0dwits\x80dcnfg\x80')
@@ -2384,7 +2384,7 @@ def test_direct_mode_cbor_mgpk():
         # check if val Kever in coe's .kevers
         assert valpre in coeKevery.kevers
         #  check if receipt from val in receipt database
-        result = coeKevery.logger.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
                                     valKever.diger.qb64b +
@@ -2418,7 +2418,7 @@ def test_direct_mode_cbor_mgpk():
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if in escrow database
-        result = coeKevery.logger.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.baser.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
                                                    dig=fake))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
                                     valKever.diger.qb64b +
@@ -2438,9 +2438,9 @@ def test_direct_mode_cbor_mgpk():
                         kind=Serials.cbor)
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
-        valIcpDig = bytes(coeKevery.logger.getKeLast(key=snKey(pre=valpre, sn=vsn)))
+        valIcpDig = bytes(coeKevery.baser.getKeLast(key=snKey(pre=valpre, sn=vsn)))
         assert valIcpDig == valK.diger.qb64b == b'EzaxSHOQ3O9qsZ00QWq9aB-2z312a_p6KbP2rssViIKY'
-        valIcpRaw = bytes(coeKevery.logger.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
+        valIcpRaw = bytes(coeKevery.baser.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
         assert valIcpRaw == (b'\x8a\xa2vs\xb1KERI10MGPK0000d5_\xa3pre\xd9,EMrnHBFhp0mTBS12BVvU4C6zNuMcK6Qx'
                              b'eF6iiTiYzkuI\xa2sn\xa10\xa3ilk\xa3icp\xa4sith\xa11\xa4keys\x91\xd9,D8KY1sKm'
                              b'gyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc\xa3nxt\xd9,E29akD_tuTrdFXNHBQWdo6qPVX'
@@ -2469,7 +2469,7 @@ def test_direct_mode_cbor_mgpk():
         valKevery.processAll(ims=cmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from coe in val's receipt database
-        result = valKevery.logger.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
+        result = valKevery.baser.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
                                                     dig=valKever.diger.qb64))
         assert bytes(result[0]) == (coeKever.prefixer.qb64b +
                                     coeKever.diger.qb64b +
@@ -2528,9 +2528,9 @@ def test_direct_mode_cbor_mgpk():
                         kind=Serials.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeRotDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=csn)))
+        coeRotDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeRotDig == coeK.diger.qb64b == b'Eo1KPX3bIkTaJPU0jY_FFe-I4MVGw2UiseS9Ku8w3GFo'
-        coeRotRaw = bytes(valKevery.logger.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
+        coeRotRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
         assert coeRotRaw == (b'\xacbvsqKERI10CBOR00010d_cprex,EWTB8L66ol4_mthA1N4YokgIEpu--yRi4rbeGQH7rsX4'
                              b'bsna1cilkcrotcdigx,EIdWNucQxRqw30PmUQ17MzjG9lGyKEjszAg3-VgjRCusdsitha1dk'
                              b'eys\x81x,DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJIcnxtx,EoWDoTGQZ6lJ19Ls'
@@ -2558,7 +2558,7 @@ def test_direct_mode_cbor_mgpk():
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from val in receipt database
-        result = coeKevery.logger.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
                                     valKever.diger.qb64b +
@@ -2615,9 +2615,9 @@ def test_direct_mode_cbor_mgpk():
                         kind=Serials.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
-        coeIxnDig = bytes(valKevery.logger.getKeLast(key=snKey(pre=coepre, sn=csn)))
+        coeIxnDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIxnDig == coeK.diger.qb64b == b'EBLT2nUX2wHrwgF0WJFFwNzGTl_yOM7Eokq08WAHbxIs'
-        coeIxnRaw = bytes(valKevery.logger.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
+        coeIxnRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
         assert coeIxnRaw == (b'\xa6bvsqKERI10CBOR00008d_cprex,EWTB8L66ol4_mthA1N4YokgIEpu--yRi4rbeGQH7rsX4'
                              b'bsna2cilkcixncdigx,Eo1KPX3bIkTaJPU0jY_FFe-I4MVGw2UiseS9Ku8w3GFoddata\x80')
         counter = SigCounter(count=1)
@@ -2644,7 +2644,7 @@ def test_direct_mode_cbor_mgpk():
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from val in receipt database
-        result = coeKevery.logger.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
+        result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
                                     valKever.diger.qb64b +
@@ -2658,13 +2658,13 @@ def test_direct_mode_cbor_mgpk():
         assert coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
         assert coeKever.sn == coeK.sn == csn
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.logger.getKelIter(coepre)]
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
         assert db_digs == coe_event_digs == ['EIdWNucQxRqw30PmUQ17MzjG9lGyKEjszAg3-VgjRCus',
                                              'Eo1KPX3bIkTaJPU0jY_FFe-I4MVGw2UiseS9Ku8w3GFo',
                                              'EBLT2nUX2wHrwgF0WJFFwNzGTl_yOM7Eokq08WAHbxIs']
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.logger.getKelIter(coepre)]
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
         assert db_digs == coe_event_digs == ['EIdWNucQxRqw30PmUQ17MzjG9lGyKEjszAg3-VgjRCus',
                                              'Eo1KPX3bIkTaJPU0jY_FFe-I4MVGw2UiseS9Ku8w3GFo',
@@ -2675,16 +2675,16 @@ def test_direct_mode_cbor_mgpk():
         assert valKever.verfers[0].qb64 == valSigners[vesn].verfer.qb64
         assert valKever.sn == valK.sn == vsn
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.logger.getKelIter(valpre)]
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
         assert db_digs == val_event_digs == ['EzaxSHOQ3O9qsZ00QWq9aB-2z312a_p6KbP2rssViIKY']
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.logger.getKelIter(valpre)]
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
         assert db_digs == val_event_digs == ['EzaxSHOQ3O9qsZ00QWq9aB-2z312a_p6KbP2rssViIKY']
 
-    assert not os.path.exists(valKevery.logger.path)
-    assert not os.path.exists(coeKever.logger.path)
+    assert not os.path.exists(valKevery.baser.path)
+    assert not os.path.exists(coeKever.baser.path)
 
     """ Done Test """
 

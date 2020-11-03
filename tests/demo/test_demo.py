@@ -94,13 +94,13 @@ def test_directing_basic():
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
         assert bobDirector.kevery.kevers == bobKevers
-        assert bobDirector.kevery.logger == bobDB
+        assert bobDirector.kevery.baser == bobDB
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
         assert bobReactor.kevery.kevers == bobKevers
-        assert bobReactor.kevery.logger == bobDB
+        assert bobReactor.kevery.baser == bobDB
         assert bobReactor.kevery.ims == bobReactor.client.rxbs
 
         bobServer = serving.Server(host="", port=bobPort)
@@ -126,13 +126,13 @@ def test_directing_basic():
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert eveDirector.kevery.kevers == eveKevers
-        assert eveDirector.kevery.logger == eveDB
+        assert eveDirector.kevery.baser == eveDB
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
         assert eveReactor.kevery.kevers == eveKevers
-        assert eveReactor.kevery.logger == eveDB
+        assert eveReactor.kevery.baser == eveDB
         assert eveReactor.kevery.ims == eveReactor.client.rxbs
 
         eveServer = serving.Server(host="", port=evePort)
@@ -258,14 +258,14 @@ def test_direct_mode():
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
         assert bobDirector.kevery.kevers == bobKevers
-        assert bobDirector.kevery.logger == bobDB
+        assert bobDirector.kevery.baser == bobDB
         assert bobDirector.tock == 0.125
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
         assert bobReactor.kevery.kevers == bobKevers
-        assert bobReactor.kevery.logger == bobDB
+        assert bobReactor.kevery.baser == bobDB
         assert bobReactor.kevery.ims == bobReactor.client.rxbs
 
         bobServer = serving.Server(host="", port=bobPort)
@@ -291,13 +291,13 @@ def test_direct_mode():
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert eveDirector.kevery.kevers == eveKevers
-        assert eveDirector.kevery.logger == eveDB
+        assert eveDirector.kevery.baser == eveDB
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
         assert eveReactor.kevery.kevers == eveKevers
-        assert eveReactor.kevery.logger == eveDB
+        assert eveReactor.kevery.baser == eveDB
         assert eveReactor.kevery.ims == eveReactor.client.rxbs
 
         eveServer = serving.Server(host="", port=evePort)
@@ -421,14 +421,14 @@ def test_direct_mode_sam():
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
         assert bobDirector.kevery.kevers == bobKevers
-        assert bobDirector.kevery.logger == bobDB
+        assert bobDirector.kevery.baser == bobDB
         assert bobDirector.tock == 0.125
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
         assert bobReactor.kevery.kevers == bobKevers
-        assert bobReactor.kevery.logger == bobDB
+        assert bobReactor.kevery.baser == bobDB
         assert bobReactor.kevery.ims == bobReactor.client.rxbs
 
         bobServer = serving.Server(host="", port=bobPort)
@@ -454,13 +454,13 @@ def test_direct_mode_sam():
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert eveDirector.kevery.kevers == eveKevers
-        assert eveDirector.kevery.logger == eveDB
+        assert eveDirector.kevery.baser == eveDB
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
         assert eveReactor.kevery.kevers == eveKevers
-        assert eveReactor.kevery.logger == eveDB
+        assert eveReactor.kevery.baser == eveDB
         assert eveReactor.kevery.ims == eveReactor.client.rxbs
 
         eveServer = serving.Server(host="", port=evePort)

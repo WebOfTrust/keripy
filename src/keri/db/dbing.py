@@ -1636,7 +1636,7 @@ class BaserDoer(doing.Doer):
             Otherwise incomplete. Incompletion maybe due to close or abort.
 
     Attributes:
-        .logger is Baser or LMDBer subclass
+        .baser is Baser or LMDBer subclass
 
     Inherited Properties:
         .tyme is float ._tymist.tyme, relative cycle or artificial time

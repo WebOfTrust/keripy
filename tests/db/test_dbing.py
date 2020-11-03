@@ -794,7 +794,7 @@ def test_uselogger():
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i) for i in range(count)]
         # create key event verifier state
-        kever = Kever(serder=serder, sigers=sigers, logger=lgr)
+        kever = Kever(serder=serder, sigers=sigers, baser=lgr)
 
         # Event 1 Rotation Transferable
         keys = nxtkeys

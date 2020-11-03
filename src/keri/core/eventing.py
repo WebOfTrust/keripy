@@ -420,7 +420,7 @@ class Kever:
     """
     EstOnly = False
 
-    def __init__(self, serder, sigers, estOnly=None, logger=None):
+    def __init__(self, serder, sigers, estOnly=None, baser=None):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -433,9 +433,9 @@ class Kever:
         """
         # update state as we go because if invalid we fail to finish init
 
-        if logger is None:
-            logger = Baser()  # default name = "main"
-        self.logger = logger
+        if baser is None:
+            baser = Baser()  # default name = "main"
+        self.baser = baser
 
         self.version = serder.version  # version dispatch ?
         self.verfers = serder.verfers  # converts keys to verifiers
@@ -593,11 +593,11 @@ class Kever:
 
                     psn = sn - 1 # sn of prior event
                     # fetch raw serialization of last inserted  event at psn
-                    pdig = self.logger.getKeLast(key=snKey(pre=pre, sn=psn))
+                    pdig = self.baser.getKeLast(key=snKey(pre=pre, sn=psn))
                     if pdig is None:
                         raise ValidationError("Invalid recovery attempt: "
                                               "Bad sn = {}.".format(psn))
-                    praw = self.logger.getEvt(key=dgKey(pre=pre, dig=pdig))
+                    praw = self.baser.getEvt(key=dgKey(pre=pre, dig=pdig))
                     if praw is None:
                         raise ValidationError("Invalid recovery attempt: "
                                               " Bad dig = {}.".format(pdig))
@@ -811,10 +811,10 @@ class Kever:
             sigers is list of Siger instance for current event
         """
         dgkey = dgKey(self.prefixer.qb64b, self.diger.qb64b)
-        self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
-        self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.logger.putEvt(dgkey, serder.raw)
-        self.logger.addKe(snKey(self.prefixer.qb64b, self.sn), self.diger.qb64b)
+        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.baser.putEvt(dgkey, serder.raw)
+        self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.diger.qb64b)
 
     def escrowEvent(self, serder, sigers, pre, sn):
         """
@@ -827,10 +827,10 @@ class Kever:
             sn is int sequence number of event
         """
         dgkey = dgKey(pre, serder.digb)
-        self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
-        self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.logger.putEvt(dgkey, serder.raw)
-        self.logger.addPses(snKey(pre, sn), serder.digb)
+        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.baser.putEvt(dgkey, serder.raw)
+        self.baser.addPses(snKey(pre, sn), serder.digb)
 
 
 class Kevery:
@@ -854,7 +854,7 @@ class Kevery:
     Properties:
 
     """
-    def __init__(self, ims=None, cues=None, kevers=None, logger=None, framed=True):
+    def __init__(self, ims=None, cues=None, kevers=None, baser=None, framed=True):
         """
         Set up event stream and logs
 
@@ -864,9 +864,9 @@ class Kevery:
         self.framed = True if framed else False  # extract until end-of-stream
         self.kevers = kevers if kevers is not None else dict()
 
-        if logger is None:
-            logger = Baser()  # default name = "main"
-        self.logger = logger
+        if baser is None:
+            baser = Baser()  # default name = "main"
+        self.baser = baser
 
 
     def processAll(self, ims=None):
@@ -1059,7 +1059,7 @@ class Kevery:
             raise ValidationError("Invalid sn = {}".format(sn))
         dig = serder.dig
 
-        if self.logger.getEvt(dgKey(pre, dig)) is not None:
+        if self.baser.getEvt(dgKey(pre, dig)) is not None:
             # performance log duplicate event
             return  # discard duplicate
 
@@ -1071,7 +1071,7 @@ class Kevery:
                 # create kever from serder
                 kever = Kever(serder=serder,
                               sigers=sigers,
-                              logger=self.logger)
+                              baser=self.baser)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
                 # create cue for receipt   direct mode for now
@@ -1080,20 +1080,20 @@ class Kevery:
             else:  # not inception so can't verify, add to escrow
                 # log escrowed
                 dgkey = dgKey(pre, dig)
-                self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
-                self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-                self.logger.putEvt(dgkey, serder.raw)
-                self.logger.addOoes(snKey(pre, sn), dig)
+                self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+                self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                self.baser.putEvt(dgkey, serder.raw)
+                self.baser.addOoes(snKey(pre, sn), dig)
 
 
         else:  # already accepted inception event for pre
             if ilk == Ilks.icp:  # inception event so maybe duplicitous
                 # log duplicitous
                 dgkey = dgKey(pre, dig)
-                self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
-                self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-                self.logger.putEvt(dgkey, serder.raw)
-                self.logger.addLdes(snKey(pre, sn), dig)
+                self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+                self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                self.baser.putEvt(dgkey, serder.raw)
+                self.baser.addLdes(snKey(pre, sn), dig)
 
             else:  # rot or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
@@ -1102,10 +1102,10 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     #  log escrowed
                     dgkey = dgKey(pre, dig)
-                    self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
-                    self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-                    self.logger.putEvt(dgkey, serder.raw)
-                    self.logger.addOoes(snKey(pre, sn), dig)
+                    self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+                    self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                    self.baser.putEvt(dgkey, serder.raw)
+                    self.baser.addOoes(snKey(pre, sn), dig)
 
                 elif ((sn == sno) or  # new inorder event
                       (ilk == Ilks.rot and kever.lastEst.sn < sn <= sno )):  # recovery
@@ -1120,10 +1120,10 @@ class Kevery:
                 else:  # maybe duplicitous
                     # log duplicitous
                     dgkey = dgKey(pre, dig)
-                    self.logger.putDts(dgkey, nowIso8601().encode("utf-8"))
-                    self.logger.putSigs(dgkey, [siger.qb64b for siger in sigers])
-                    self.logger.putEvt(dgkey, serder.raw)
-                    self.logger.addLdes(snKey(pre, sn), dig)
+                    self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+                    self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+                    self.baser.putEvt(dgkey, serder.raw)
+                    self.baser.addLdes(snKey(pre, sn), dig)
 
 
     def processReceipt(self, serder, sigvers):
@@ -1154,11 +1154,11 @@ class Kevery:
 
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)
-        ldig = self.logger.getKeLast(key=snkey)   # retrieve dig of last event at sn.
+        ldig = self.baser.getKeLast(key=snkey)   # retrieve dig of last event at sn.
 
         # retrieve event by dig
         dgkey = dgKey(pre=pre, dig=dig)
-        raw = self.logger.getEvt(key=dgkey)  # retrieve receipted event at dig
+        raw = self.baser.getEvt(key=dgkey)  # retrieve receipted event at dig
 
 
         if ldig is not None:  #  verify digs match
@@ -1175,7 +1175,7 @@ class Kevery:
                 if sigver.verfer.verify(sigver.raw, eserder.raw):
                     # write receipt couplet to database
                     couplet = sigver.verfer.qb64b + sigver.qb64b
-                    self.logger.addRct(key=dgkey, val=couplet)
+                    self.baser.addRct(key=dgkey, val=couplet)
 
         else:  # verify that dig not for some other event
             if raw is not None:  # bad receipt dig matches some other event
@@ -1186,7 +1186,7 @@ class Kevery:
                 if not sigver.verfer.nontrans:# check that verfer is non-transferable
                     continue  # skip invalid couplets
                 couplet = sigver.verfer.qb64b + sigver.qb64b
-                self.logger.addUre(key=dgkey, val=couplet)
+                self.baser.addUre(key=dgkey, val=couplet)
 
 
     def processChit(self, serder, sigers):
@@ -1220,10 +1220,10 @@ class Kevery:
 
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)
-        ldig = self.logger.getKeLast(key=snkey)  # retrieve dig of last event at sn.
+        ldig = self.baser.getKeLast(key=snkey)  # retrieve dig of last event at sn.
 
         dgkey = dgKey(pre=pre, dig=dig)
-        raw = self.logger.getEvt(key=dgkey)  # retrieve receipted event at dig
+        raw = self.baser.getEvt(key=dgkey)  # retrieve receipted event at dig
 
         if ldig is not None:  #  verify digs match
             ldig = bytes(ldig).decode("utf-8")
@@ -1256,12 +1256,12 @@ class Kevery:
                 if siger.verfer.verify(siger.raw, raw):  # verify sig
                     # good sig so write receipt truplet to database
                     triplet = sealet + siger.qb64b
-                    self.logger.addVrc(key=dgkey, val=triplet)
+                    self.baser.addVrc(key=dgkey, val=triplet)
 
         else:  # escrow  either receiptor or event not yet in database
             for siger in sigers:  # escrow triplets one for each sig
                 triplet = sealet + siger.qb64b
-                self.logger.addVre(key=dgkey, val=triplet)
+                self.baser.addVre(key=dgkey, val=triplet)
 
 
     def duplicity(self, serder, sigers):
@@ -1296,7 +1296,7 @@ class Kevery:
             # Using Kever for cheap duplicity detection of inception events
             # kever init verifies basic inception stuff and signatures
             # raises exception if problem.
-            kever = Kever(serder=serder, sigers=siger, logger=self.logger)  # create kever from serder
+            kever = Kever(serder=serder, sigers=siger, baser=self.baser)  # create kever from serder
             # No exception above so verified duplicitous event
             # log it and add to DELS if first time
             #if pre not in DELs:  #  add to DELS

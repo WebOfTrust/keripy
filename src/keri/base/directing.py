@@ -91,7 +91,7 @@ class Director(doing.Doer):
         self.hab = hab
         self.client = client  #  use client for tx only
         self.kevery = eventing.Kevery(kevers=self.hab.kevers,
-                                      logger=self.hab.db)
+                                      baser=self.hab.db)
 
 
     def do(self, tymist, tock=0.0, **args):
@@ -168,7 +168,7 @@ class Reactor(doing.Doer):
         self.client = client  #  use client for both rx and tx
         self.kevery = eventing.Kevery(ims=self.client.rxbs,
                                       kevers=self.hab.kevers,
-                                      logger=self.hab.db,
+                                      baser=self.hab.db,
                                       framed=False)
 
 
@@ -475,7 +475,7 @@ class Reactant(tyming.Tymee):
         self.incomer = incomer  #  use incomer for both rx and tx
         self.kevery = eventing.Kevery(ims=self.incomer.rxbs,
                                       kevers=self.hab.kevers,
-                                      logger=self.hab.db,
+                                      baser=self.hab.db,
                                       framed=False)
         self.persistent = True if persistent else False
 
