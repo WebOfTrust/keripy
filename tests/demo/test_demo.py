@@ -71,8 +71,8 @@ def test_directing_basic():
 
 
 
-    with dbing.openLogger(name="eve") as eveDB, \
-         dbing.openLogger(name="bob") as bobDB:
+    with dbing.openDB(name="eve") as eveDB, \
+         dbing.openDB(name="bob") as bobDB:
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
@@ -235,8 +235,8 @@ def test_direct_mode():
 
 
 
-    with dbing.openLogger(name="eve") as eveDB, \
-         dbing.openLogger(name="bob") as bobDB:
+    with dbing.openDB(name="eve") as eveDB, \
+         dbing.openDB(name="bob") as bobDB:
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
@@ -398,8 +398,8 @@ def test_direct_mode_sam():
 
 
 
-    with dbing.openLogger(name="eve") as eveDB, \
-         dbing.openLogger(name="bob") as bobDB:
+    with dbing.openDB(name="eve") as eveDB, \
+         dbing.openDB(name="bob") as bobDB:
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server

@@ -10,8 +10,8 @@ import json
 
 import lmdb
 
-from keri.db.dbing import clearDatabaserDir, openDatabaser, openLogger
-from keri.db.dbing import dgKey, snKey, Databaser, Logger
+from keri.db.dbing import clearDatabaserDir, openLMDB, openDB
+from keri.db.dbing import dgKey, snKey, LMDBer, Baser
 
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
 from keri.core.coring import CryCntDex, CryOneDex, CryTwoDex, CryFourDex
@@ -25,8 +25,8 @@ def test_opendatabaser():
     """
     test contextmanager decorator for test databases
     """
-    with openDatabaser() as databaser:
-        assert isinstance(databaser, Databaser)
+    with openLMDB() as databaser:
+        assert isinstance(databaser, LMDBer)
         assert databaser.name == "test"
         assert isinstance(databaser.env, lmdb.Environment)
         assert databaser.path.startswith("/tmp/keri_lmdb_")
@@ -38,8 +38,8 @@ def test_opendatabaser():
     assert not os.path.exists(databaser.path)
     assert not databaser.opened
 
-    with openDatabaser(name="blue") as databaser:
-        assert isinstance(databaser, Databaser)
+    with openLMDB(name="blue") as databaser:
+        assert isinstance(databaser, LMDBer)
         assert databaser.name == "blue"
         assert isinstance(databaser.env, lmdb.Environment)
         assert databaser.path.startswith("/tmp/keri_lmdb_")
@@ -51,14 +51,14 @@ def test_opendatabaser():
     assert not os.path.exists(databaser.path)
     assert not databaser.opened
 
-    with openDatabaser(name="red") as redbaser, openDatabaser(name="tan") as tanbaser:
-        assert isinstance(redbaser, Databaser)
+    with openLMDB(name="red") as redbaser, openLMDB(name="tan") as tanbaser:
+        assert isinstance(redbaser, LMDBer)
         assert redbaser.name == "red"
         assert redbaser.env.path() == redbaser.path
         assert os.path.exists(redbaser.path)
         assert redbaser.opened
 
-        assert isinstance(tanbaser, Databaser)
+        assert isinstance(tanbaser, LMDBer)
         assert tanbaser.name == "tan"
         assert tanbaser.env.path() == tanbaser.path
         assert os.path.exists(tanbaser.path)
@@ -71,12 +71,12 @@ def test_opendatabaser():
 
     """ End Test """
 
-def test_databaser():
+def test_lmdber():
     """
-    Test Databaser creation
+    Test LMDBer creation
     """
-    databaser = Databaser()
-    assert isinstance(databaser, Databaser)
+    databaser = LMDBer()
+    assert isinstance(databaser, LMDBer)
     assert databaser.name == "main"
     assert databaser.temp == False
     assert isinstance(databaser.env, lmdb.Environment)
@@ -99,8 +99,8 @@ def test_databaser():
     assert not databaser.opened
 
     # test not opened on init
-    databaser = Databaser(reopen=False)
-    assert isinstance(databaser, Databaser)
+    databaser = LMDBer(reopen=False)
+    assert isinstance(databaser, LMDBer)
     assert databaser.name == "main"
     assert databaser.temp == False
     assert databaser.opened == False
@@ -127,7 +127,7 @@ def test_databaser():
     assert not os.path.exists(databaser.path)
     assert not databaser.opened
 
-    with openDatabaser() as dber:
+    with openLMDB() as dber:
         assert dber.temp == True
         #test Val methods
         key = b'A'
@@ -258,10 +258,10 @@ def test_databaser():
 
 def test_logger():
     """
-    Test Logger class
+    Test Baser class
     """
-    logger = Logger()
-    assert isinstance(logger, Logger)
+    logger = Baser()
+    assert isinstance(logger, Baser)
     assert logger.name == "main"
     assert logger.temp == False
     assert isinstance(logger.env, lmdb.Environment)
@@ -285,8 +285,8 @@ def test_logger():
     assert not logger.opened
 
     # test not opened on init
-    logger = Logger(reopen=False)
-    assert isinstance(logger, Logger)
+    logger = Baser(reopen=False)
+    assert isinstance(logger, Baser)
     assert logger.name == "main"
     assert logger.temp == False
     assert logger.opened == False
@@ -318,8 +318,8 @@ def test_logger():
 
 
     # Test using context manager
-    with openDatabaser(cls=Logger) as logger:
-        assert isinstance(logger, Logger)
+    with openLMDB(cls=Baser) as logger:
+        assert isinstance(logger, Baser)
         assert logger.name == "test"
         assert logger.temp == True
         assert isinstance(logger.env, lmdb.Environment)
@@ -372,7 +372,7 @@ def test_logger():
 
 
 
-    with openLogger() as lgr:
+    with openDB() as lgr:
         key = dgKey(preb, digb)
         assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
                        b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
@@ -648,7 +648,7 @@ def test_logger():
 
 def test_fetchkeldel():
     """
-    Test fetching full KEL and full DEL from Logger
+    Test fetching full KEL and full DEL from Baser
     """
     # Test using context manager
     preb = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
@@ -675,7 +675,7 @@ def test_fetchkeldel():
     wsig0b = '0A1Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ9'.encode("utf-8")
     wsig1b = '0A5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2zJ91Timrykocna6Z'.encode("utf-8")
 
-    with openLogger() as lgr:
+    with openDB() as lgr:
         # test getKelIter
         sn = 0
         key = snKey(preb, sn)
@@ -778,7 +778,7 @@ def test_uselogger():
 
 
 
-    with openLogger() as lgr:
+    with openDB() as lgr:
         # Event 0  Inception Transferable (nxt digest not empty) 2 0f 3 multisig
         keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
         count = len(keys)

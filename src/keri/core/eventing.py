@@ -24,7 +24,7 @@ from ..kering import (ValidationError, VersionError, EmptyMaterialError,
                       DerivationError, ShortageError)
 from ..kering import Versionage, Version
 from ..help.helping import nowIso8601
-from ..db.dbing import dgKey, snKey, Logger
+from ..db.dbing import dgKey, snKey, Baser
 
 from .coring import Versify, Serials, Ilks, CryOneDex
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder
@@ -434,7 +434,7 @@ class Kever:
         # update state as we go because if invalid we fail to finish init
 
         if logger is None:
-            logger = Logger()  # default name = "main"
+            logger = Baser()  # default name = "main"
         self.logger = logger
 
         self.version = serder.version  # version dispatch ?
@@ -865,7 +865,7 @@ class Kevery:
         self.kevers = kevers if kevers is not None else dict()
 
         if logger is None:
-            logger = Logger()  # default name = "main"
+            logger = Baser()  # default name = "main"
         self.logger = logger
 
 

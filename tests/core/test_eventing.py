@@ -37,7 +37,7 @@ from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import incept, rotate, interact, receipt, chit
 from keri.core.eventing import Kever, Kevery
 
-from keri.db.dbing import dgKey, snKey, openLogger, Logger
+from keri.db.dbing import dgKey, snKey, openDB, Baser
 
 
 def test_lastestloc():
@@ -240,7 +240,7 @@ def test_kever():
     with pytest.raises(TypeError):
         kever = Kever()
 
-    with openLogger() as lgr:  # Transferable case
+    with openDB() as lgr:  # Transferable case
         # Setup inception key event dict
         # create current key
         sith = 1  #  one signer
@@ -295,7 +295,7 @@ def test_kever():
 
         kever = Kever(serder=tser0, sigers=[tsig0], logger=lgr)  # no error
 
-    with openLogger() as lgr:  # Non-Transferable case
+    with openDB() as lgr:  # Non-Transferable case
         # Setup inception key event dict
         # create current key
         sith = 1  #  one signer
@@ -440,7 +440,7 @@ def test_keyeventsequence_0():
                         'DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg'
                      ]
 
-    with openLogger(name="controller") as conlgr:
+    with openDB(name="controller") as conlgr:
 
         event_digs = [] # list of event digs in sequence
 
@@ -704,7 +704,7 @@ def test_keyeventsequence_1():
                      ]
 
     # New Sequence establishment only
-    with openLogger(name="controller") as conlgr:
+    with openDB(name="controller") as conlgr:
         event_digs = [] # list of event digs in sequence
 
         # Event 0  Inception Transferable (nxt digest not empty)
@@ -802,7 +802,7 @@ def test_kevery():
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
-    with openLogger("controller") as conlgr, openLogger("validator") as vallgr:
+    with openDB("controller") as conlgr, openDB("validator") as vallgr:
         event_digs = [] # list of event digs in sequence
 
         # create event stream
@@ -1038,7 +1038,7 @@ def test_multisig_digprefix():
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
-    with openLogger("controller") as conlgr, openLogger("validator") as vallgr:
+    with openDB("controller") as conlgr, openDB("validator") as vallgr:
 
         # create event stream
         kes = bytearray()
@@ -1200,7 +1200,7 @@ def test_recovery():
     signers = [Signer(qb64=secret) for secret in secrets]  # faster
     assert [signer.qb64 for signer in signers] == secrets
 
-    with openLogger("controller") as conlgr, openLogger("validator") as vallgr:
+    with openDB("controller") as conlgr, openDB("validator") as vallgr:
         event_digs = [] # list of event digs in sequence to verify against database
 
         # create event stream
@@ -1472,7 +1472,7 @@ def test_receipt():
     valpre = valPrefixer.qb64
     assert valpre == 'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
 
-    with openLogger("controller") as coeLogger, openLogger("validator") as valLogger:
+    with openDB("controller") as coeLogger, openDB("validator") as valLogger:
         coeKevery = Kevery(logger=coeLogger)
         valKevery = Kevery(logger=valLogger)
         event_digs = [] # list of event digs in sequence to verify against database
@@ -1763,7 +1763,7 @@ def test_direct_mode():
     assert [signer.qb64 for signer in valSigners] == valSecrets
 
 
-    with openLogger("controller") as coeLogger, openLogger("validator") as valLogger:
+    with openDB("controller") as coeLogger, openDB("validator") as valLogger:
         #  init Keverys
         coeKevery = Kevery(logger=coeLogger)
         valKevery = Kevery(logger=valLogger)
@@ -2245,7 +2245,7 @@ def test_direct_mode_cbor_mgpk():
     assert [signer.qb64 for signer in valSigners] == valSecrets
 
 
-    with openLogger("controller") as coeLogger, openLogger("validator") as valLogger:
+    with openDB("controller") as coeLogger, openDB("validator") as valLogger:
         #  init Keverys
         coeKevery = Kevery(logger=coeLogger)
         valKevery = Kevery(logger=valLogger)

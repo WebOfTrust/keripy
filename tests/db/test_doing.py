@@ -13,57 +13,57 @@ from keri.db import dbing
 
 
 
-def test_loggerdoer():
+def test_baserdoer():
     """
-    Test LoggerDoer
+    Test BaserDoer
 
 
     """
-    lgr0 = dbing.Logger(name='test0', temp=True, reopen=False)
-    assert lgr0.opened == False
-    assert lgr0.path == None
-    assert lgr0.env == None
+    db0 = dbing.Baser(name='test0', temp=True, reopen=False)
+    assert db0.opened == False
+    assert db0.path == None
+    assert db0.env == None
 
-    lgrDoer0 = dbing.LoggerDoer(logger=lgr0)
-    assert lgrDoer0.logger == lgr0
-    assert lgrDoer0.logger.opened == False
+    dbdoer0 = dbing.BaserDoer(baser=db0)
+    assert dbdoer0.baser == db0
+    assert dbdoer0.baser.opened == False
 
-    lgr1 = dbing.Logger(name='test1', temp=True, reopen=False)
-    assert lgr1.opened == False
-    assert lgr1.path == None
-    assert lgr1.env == None
+    db1 = dbing.Baser(name='test1', temp=True, reopen=False)
+    assert db1.opened == False
+    assert db1.path == None
+    assert db1.env == None
 
-    lgrDoer1 = dbing.LoggerDoer(logger=lgr1)
-    assert lgrDoer1.logger == lgr1
-    assert lgrDoer1.logger.opened == False
+    dbDoer1 = dbing.BaserDoer(baser=db1)
+    assert dbDoer1.baser == db1
+    assert dbDoer1.baser.opened == False
 
     limit = 0.25
     tock = 0.03125
     doist = doing.Doist(limit=limit, tock=tock)
 
-    doers = [lgrDoer0, lgrDoer1]
+    doers = [dbdoer0, dbDoer1]
 
     dogs = doist.ready(doers=doers)
     assert len(dogs) == 2
     assert [val[1] for val in dogs] == [0.0, 0.0]  #  retymes
     for doer in doers:
         assert doer._tymist == doist
-        assert doer.logger.opened
-        assert "_test/keri/db/test" in doer.logger.path
+        assert doer.baser.opened
+        assert "_test/keri/db/test" in doer.baser.path
 
     doist.once(dogs)
     assert doist.tyme == 0.03125  # on next cycle
     assert len(dogs) == 2
     for doer in doers:
-        assert doer.logger.opened == True
+        assert doer.baser.opened == True
 
     for dog, retyme, index in dogs:
         dog.close()
 
     for doer in doers:
-        assert doer.logger.opened == False
-        assert doer.logger.env == None
-        assert not os.path.exists(doer.logger.path)
+        assert doer.baser.opened == False
+        assert doer.baser.env == None
+        assert not os.path.exists(doer.baser.path)
 
 
 
@@ -72,13 +72,13 @@ def test_loggerdoer():
     doist.do(doers=doers)
     assert doist.tyme == limit
     for doer in doers:
-        assert doer.logger.opened == False
-        assert doer.logger.env == None
-        assert not os.path.exists(doer.logger.path)
+        assert doer.baser.opened == False
+        assert doer.baser.env == None
+        assert not os.path.exists(doer.baser.path)
 
     """End Test"""
 
 
 
 if __name__ == "__main__":
-    test_loggerdoer()
+    test_basedoer()

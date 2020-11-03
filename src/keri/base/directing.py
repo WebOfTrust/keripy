@@ -20,7 +20,7 @@ class Habitat():
      Attributes:
         .secrets is list of secrets (replace later with keeper interface)
         .kevers is dict of Kevers keyed by qb64 prefix
-        .db is s lmdb db Logger instance
+        .db is s lmdb db Baser instance
         .signers is dict  of signers for each secret indexed by verfer qb64
         .inception is Serder of inception event
         .pre is qb64 prefix of local controller
@@ -32,7 +32,7 @@ class Habitat():
         Parameters:
             secrets is list of secrets (replace later with keeper interface)
             kevers is dict of Kever instance keyed by qb64 prefix
-            db is lmdb db Logger instance
+            db is lmdb db Baser instance
         """
         self.secrets = secrets
         self.kevers = kevers
@@ -973,7 +973,7 @@ def runController(secrets,  name="who", role="initiator",
     print("Direct Mode demo of {} as {} on TCP port {} to port {}.\n\n"
           "".format(name, role, localPort, remotePort))
 
-    with dbing.openLogger(name=name) as db:
+    with dbing.openDB(name=name) as db:
          # setup components
         kevers = dict()
         hab = Habitat(secrets=secrets, kevers=kevers, db=db)
