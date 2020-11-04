@@ -41,9 +41,9 @@ class Oglery():
         .level is logging severity level
         .logFilePath is path to log file
     """
-    HeadDirPath = "/var"  # default in /var
+    HeadDirPath = "/usr/local/var"  # default in /usr/local/var
     TailDirPath = "keri/log"
-    AltHeadDirPath = "~"  #  put in ~ when /var not permitted
+    AltHeadDirPath = "~"  #  put in ~ as fallback when desired not permitted
     AltTailDirPath = ".keri/log"
 
     def __init__(self, name='main', level=logging.ERROR, temp=False,
