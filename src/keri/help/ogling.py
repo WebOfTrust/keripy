@@ -69,24 +69,20 @@ class Oglery():
         self.path = None
         self.opened = False
 
-        if reopen:
-            self.reopen(headDirPath=self.headDirPath)
-
         #create formatters
         self.baseFormatter = logging.Formatter('%(message)s')  # basic format
         self.failFormatter = logging.Formatter('***Fail: %(message)s')  # failure format
 
-        #create handlers and formatters
+        #create console handlers and assign formatters
         self.baseConsoleHandler = logging.StreamHandler()  # sys.stderr
         self.baseConsoleHandler.setFormatter(self.baseFormatter)
         self.failConsoleHandler = logging.StreamHandler()  # sys.stderr
         self.failConsoleHandler.setFormatter(self.failFormatter)
 
-        if self.path:  # if empty then no handlers so no logging to file
-            self.baseFileHandler = logging.FileHandler(self.path)
-            self.baseFileHandler.setFormatter(self.baseFormatter)
-            self.failFileHandler = logging.FileHandler(self.path)
-            self.failFileHandler.setFormatter(self.failFormatter)
+        if reopen:
+            self.reopen(headDirPath=self.headDirPath)
+
+
 
     def reopen(self, temp=None, headDirPath=None):
         """
@@ -147,6 +143,13 @@ class Oglery():
 
         fileName = "{}.log".format(self.name)
         self.path = os.path.join(self.path, fileName)
+
+        #create file handlers and assign formatters
+        self.baseFileHandler = logging.FileHandler(self.path)
+        self.baseFileHandler.setFormatter(self.baseFormatter)
+        self.failFileHandler = logging.FileHandler(self.path)
+        self.failFileHandler.setFormatter(self.failFormatter)
+
         self.opened = True
 
 
@@ -179,7 +182,7 @@ class Oglery():
             self.level = level
         blogger.setLevel(self.level)
         blogger.addHandler(self.baseConsoleHandler)
-        if self.path:
+        if self.opened:
             blogger.addHandler(self.baseFileHandler)
         return blogger
 
@@ -195,7 +198,7 @@ class Oglery():
         flogger.propagate = False  # disable propagation of events
         flogger.setLevel(logging.ERROR)
         flogger.addHandler(self.failConsoleHandler)  # output to console
-        if self.path:
+        if self.opened:
             flogger.addHandler(self.failFileHandler)  # output to file
         return flogger
 
