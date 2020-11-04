@@ -3,10 +3,9 @@
 tests.help.test_helping module
 
 """
-import datetime
-
 import pytest
 
+import datetime
 import pysodium
 
 
