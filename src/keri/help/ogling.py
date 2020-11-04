@@ -8,10 +8,10 @@ from os import path
 import logging
 
 
-class Loggery():
+class Oglery():
     """
-    Loggery instances are logger factories that configure and build loggers
-    Only need one loggery per application
+    Olgery instances are logger factories that configure and build loggers
+    Only need one Oglery per application
 
     logging.getLogger(name). Multiple calls to getLogger() with the same name
     will always return a reference to the same Logger object.

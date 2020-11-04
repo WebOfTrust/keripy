@@ -8,41 +8,33 @@ import pytest
 import logging
 from keri.help import ogling
 
-def test_loggery():
+def test_oglery():
     """
     Test  Loggery class instance builds loggers
     """
 
-    loggery = ogling.Loggery()
+    oglery = ogling.Oglery()
 
-    blogger, flogger = loggery.getLoggers()
-    blogger.debug("Test wooding standard logger at debug level")
-    flogger.debug("Test wooding failure logger at debug level")
-    blogger.info("Test wooding standard logger at info level")
-    flogger.info("Test wooding failure logger at info level")
-    blogger.error("Test wooding standard logger at error level")
-    flogger.error("Test wooding failure logger at error level")
+    blogger, flogger = oglery.getLoggers()
+    blogger.debug("Test blogger at debug level")
+    flogger.debug("Test flogger at debug level")
+    blogger.info("Test blogger at info level")
+    flogger.info("Test flogger at info level")
+    blogger.error("Test blogger at error level")
+    flogger.error("Test flogger at error level")
 
-    loggery.level = logging.DEBUG
-    blogger, flogger = loggery.getLoggers()
-    blogger.debug("Test wooding standard logger at debug level")
-    flogger.debug("Test wooding failure logger at debug level")
-    blogger.info("Test wooding standard logger at info level")
-    flogger.info("Test wooding failure logger at info level")
-    blogger.error("Test wooding standard logger at error level")
-    flogger.error("Test wooding failure logger at error level")
+    oglery.level = logging.DEBUG
+    blogger, flogger = oglery.getLoggers()
+    blogger.debug("Test blogger at debug level")
+    flogger.debug("Test flogger at debug level")
+    blogger.info("Test blogger at info level")
+    flogger.info("Test flogger at info level")
+    blogger.error("Test blogger at error level")
+    flogger.error("Test flogger at error level")
 
-    #tlogger = logging.getLogger('Test_Wooding\n')
-    #tlogger.setLevel(logging.DEBUG)
-    #basicformatter = logging.Formatter('%(message)s')  # standard format
-    #basicConsoleHandler = logging.StreamHandler()  # sys.stderr
-    #basicConsoleHandler.setFormatter(basicformatter)
-    #tlogger.addHandler(basicConsoleHandler)
-
-    #tlogger.debug("Running Tests.")
     """End Test"""
 
 
 if __name__ == "__main__":
-    test_loggery()
+    test_oglery()
 
