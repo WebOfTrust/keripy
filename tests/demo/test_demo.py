@@ -6,6 +6,7 @@ tests.db.dbing module
 import pytest
 
 import os
+import logging
 
 from hio.base import doing
 from hio.core.tcp import clienting, serving
@@ -14,7 +15,7 @@ from keri.base import directing
 from keri.db import dbing
 from keri.core import eventing, coring
 
-
+from keri.help import ogling  # logger support
 
 def test_directing_basic():
     """
@@ -526,6 +527,8 @@ def test_run_demo():
     """
     Test demo setupController and run with DoDoers and Doist
     """
+    ogling.oglery.level = logging.DEBUG
+
     name = "bob"
     remote = 5621
     local = 5620
