@@ -71,11 +71,27 @@ def test_init_oglery():
     """
     Test initOglery function for oglery global
     """
-    assert ogling.oglery is None
+    #defined by default in help.__init__ on import of ogling
+    assert isinstance(ogling.oglery, ogling.Oglery)
+    assert not ogling.oglery.opened
+    assert ogling.oglery.level == logging.CRITICAL  # default
+
+    # nothing should log
+    blogger, flogger = ogling.oglery.getLoggers()
+    blogger.debug("Test blogger at debug level")
+    flogger.debug("Test flogger at debug level")
+    blogger.info("Test blogger at info level")
+    flogger.info("Test flogger at info level")
+    blogger.error("Test blogger at error level")
+    flogger.error("Test flogger at error level")
+
+    # force reinit
+    ogling.oglery =  None
     oglery = ogling.initOglery(name="test", level=logging.DEBUG, temp=True, reopen=True)
     assert oglery == ogling.oglery
-    assert isinstance(oglery, ogling.Oglery)
+    assert oglery.opened
     assert oglery.path.endswith("_test/keri/log/test.log")
+
     blogger, flogger = oglery.getLoggers()
     blogger.debug("Test blogger at debug level")
     flogger.debug("Test flogger at debug level")
@@ -86,8 +102,7 @@ def test_init_oglery():
 
     oglery.close()
     assert not os.path.exists(oglery.path)
-
-
+    oglery.level = logging.CRITICAL  # restore
     """End Test"""
 
 

@@ -10,13 +10,19 @@ import shutil
 
 oglery = None  # module global oglery instance used by all for keri console logging
 
-def initOglery(**kwa):
+
+def initOglery(level=logging.CRITICAL, **kwa):
     """
     Initialize the oglery global instance once
+    Critical is most severe to restrict logging by default
+
+    This should be called in package .__init__ to insure that global oglery is
+    define by default. Users and then reset level and reopen log file if need be
+    before calling oglery.getLoggers()
     """
     global oglery
     if oglery is None:
-        oglery = Oglery(**kwa)
+        oglery = Oglery(level=level, **kwa)
 
     return oglery
 
@@ -46,8 +52,9 @@ class Oglery():
         Parameters:
             name is application specific log file name
             level is int logging level from logging. Higher is more restrictive.
-                This sets the level of the baseLogger relative to the global level
-                logs output if severity level is at or above set level.
+                This sets the minimum level of the baseLogger and failLogger
+                relative to the global level.
+                Logs will output if action level is at or above set level.
 
                 Level    Numeric value
                 CRITICAL 50
@@ -56,6 +63,7 @@ class Oglery():
                 INFO     20
                 DEBUG    10
                 NOTSET    0
+
             file is Boolean True means create logfile Otherwise not
             temp is Boolean If file then True means use temp direction
                                          Otherwise use  headDirpath
@@ -178,15 +186,16 @@ class Oglery():
         """
         blogger = logging.getLogger(name)
         blogger.propagate = False  # disable propagation of events
-        if level is not None:
-            self.level = level
-        blogger.setLevel(self.level)
+        level = level if level is not None else self.level
+        blogger.setLevel(level)
+        for handler in blogger.handlers:  # remove so no duplicate handlers
+            blogger.removeHandler(handler)
         blogger.addHandler(self.baseConsoleHandler)
         if self.opened:
             blogger.addHandler(self.baseFileHandler)
         return blogger
 
-    def getFlogger(self, name=__name__):
+    def getFlogger(self, name=__name__, level=None):
         """
         Returns Failure Logger
         Since loggers are singletons by name we have to use unique name if
@@ -196,7 +205,10 @@ class Oglery():
         # want to use different log format
         flogger = logging.getLogger("%s.%s" % (name, 'fail'))
         flogger.propagate = False  # disable propagation of events
-        flogger.setLevel(logging.ERROR)
+        level = level if level is not None else self.level
+        flogger.setLevel(max(level, logging.ERROR))
+        for handler in flogger.handlers:  # remove so no duplicate handlers
+            flogger.removeHandler(handler)
         flogger.addHandler(self.failConsoleHandler)  # output to console
         if self.opened:
             flogger.addHandler(self.failFileHandler)  # output to file
