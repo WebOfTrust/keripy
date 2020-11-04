@@ -1109,7 +1109,7 @@ class Kevery:
 
         if self.baser.getEvt(dgKey(pre, dig)) is not None:
             # performance log duplicate event
-            blogger.debug("Kevery process: discarded duplicate event = %s\n", ked)
+            blogger.info("Kevery process: discarded duplicate event = %s\n", ked)
             return  # discard duplicate
 
         if pre not in self.kevers:  #  first seen event for pre
@@ -1133,7 +1133,7 @@ class Kevery:
                 self.baser.putEvt(dgkey, serder.raw)
                 self.baser.addOoes(snKey(pre, sn), dig)
                 # log escrowed
-                blogger.debug("Kevery process: escrowed out of order event = %s\n", ked)
+                blogger.info("Kevery process: escrowed out of order event = %s\n", ked)
 
 
         else:  # already accepted inception event for pre
@@ -1145,7 +1145,7 @@ class Kevery:
                 self.baser.putEvt(dgkey, serder.raw)
                 self.baser.addLdes(snKey(pre, sn), dig)
                 # log duplicitous
-                blogger.debug("Kevery process: escrowed likely duplicitous event = %s\n", ked)
+                blogger.info("Kevery process: escrowed likely duplicitous event = %s\n", ked)
 
             else:  # rot or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
@@ -1159,7 +1159,7 @@ class Kevery:
                     self.baser.putEvt(dgkey, serder.raw)
                     self.baser.addOoes(snKey(pre, sn), dig)
                     # log escrowed
-                    blogger.debug("Kevery process: escrowed out of order event = %s\n", ked)
+                    blogger.info("Kevery process: escrowed out of order event = %s\n", ked)
 
                 elif ((sn == sno) or  # new inorder event
                       (ilk == Ilks.rot and kever.lastEst.sn < sn <= sno )):  # recovery
@@ -1178,7 +1178,7 @@ class Kevery:
                     self.baser.putEvt(dgkey, serder.raw)
                     self.baser.addLdes(snKey(pre, sn), dig)
                     # log duplicitous
-                    blogger.debug("Kevery process: escrowed likely duplicitous event = %s\n", ked)
+                    blogger.info("Kevery process: escrowed likely duplicitous event = %s\n", ked)
 
 
     def processReceipt(self, serder, cigars):

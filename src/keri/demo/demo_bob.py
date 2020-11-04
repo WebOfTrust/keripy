@@ -7,10 +7,11 @@ Utilities for demos
 """
 import os
 import argparse
+import logging
 
 from keri import __version__
 from keri.base import directing
-
+from keri.help import ogling  # logger support
 
 def runDemo(name="bob", remote=5621, local=5620, expire=0.0):
     """
@@ -70,6 +71,8 @@ def parseArgs(version=__version__):
 
 def main():
     args = parseArgs(version=__version__)
+
+    ogling.oglery.level = logging.DEBUG  # default to debug level
 
     runDemo(name=args.name,
             remote=args.remote,
