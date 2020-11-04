@@ -1,6 +1,8 @@
 # -*- encoding: utf-8 -*-
 """
-keri.help.logging module
+keri.help.ogling module
+
+Provides python stdlib logging module support
 
 """
 import os
