@@ -3,9 +3,10 @@
 keri.help.logging module
 
 """
-
-from os import path
+import os
 import logging
+import tempfile
+import shutil
 
 
 class Oglery():
@@ -20,13 +21,18 @@ class Oglery():
         .level is logging severity level
         .logFilePath is path to log file
     """
+    HeadDirPath = "/var"  # default in /var
+    TailDirPath = "keri/log"
+    AltHeadDirPath = "~"  #  put in ~ when /var not permitted
+    AltTailDirPath = ".keri/log"
 
-    def __init__(self, level=logging.ERROR,  logFileDir="", logFileName="",
-                 default=False):
+    def __init__(self, name='main', level=logging.ERROR, file=False, temp=False,
+                 headDirPath=None):
         """
         Init Loggery factory instance
 
         Parameters:
+            name is application specific log file name
             level is int logging level from logging. Higher is more restrictive.
                 This sets the level of the baseLogger relative to the global level
                 logs output if severity level is at or above set level.
@@ -38,27 +44,58 @@ class Oglery():
                 INFO     20
                 DEBUG    10
                 NOTSET    0
-
-            logFileDir is str of directory path
-            logFileName is str of name of log file
-            default is Boolean False means create default logFileDir if empty
-                               Otherwise do not create a logFileDir if empty
+            file is Boolean True means create logfile Otherwise not
+            temp is Boolean If file then True means use temp direction
+                                         Otherwise use  headDirpath
+            headDirPath is str for custom headDirPath for log file
 
         """
+        self.name = name
         self.level = level  # basic logger level
+        self.path = None
+        self.file = True if file else False
+        self.temp = True if temp else False
 
-        if not logFileDir:
-            if default:  # use default
-                logFileDir = path.join(
-                            path.dirname(
-                                path.dirname(path.abspath(__file__))), 'logs')
-                if not logFileName:
-                    logFileName = 'keri.log'
+        if self.file:
+            if self.temp:
+                headDirPath = tempfile.mkdtemp(prefix="keri_log_", suffix="_test", dir="/tmp")
+                self.path = os.path.abspath(
+                                    os.path.join(headDirPath,
+                                                 self.TailDirPath))
+                os.makedirs(self.path)
 
-            else:  # do not create logFileDir
-                logFileName = ""  # force empty if empty logFiledir
+            else:
+                if not headDirPath:
+                    headDirPath = self.HeadDirPath
 
-        self.logFilePath = path.join(logFileDir, logFileName)  # empty means none
+                self.path = os.path.abspath(
+                                    os.path.expanduser(
+                                        os.path.join(headDirPath,
+                                                     self.TailDirPath)))
+
+                if not os.path.exists(self.path):
+                    try:
+                        os.makedirs(self.path)
+                    except OSError as ex:
+                        headDirPath = self.AltHeadDirPath
+                        self.path = os.path.abspath(
+                                            os.path.expanduser(
+                                                os.path.join(headDirPath,
+                                                             self.AltTailDirPath)))
+                        if not os.path.exists(self.path):
+                            os.makedirs(self.path)
+                else:
+                    if not os.access(self.path, os.R_OK | os.W_OK):
+                        headDirPath = self.AltHeadDirPath
+                        self.path = os.path.abspath(
+                                            os.path.expanduser(
+                                                os.path.join(headDirPath,
+                                                             self.AltTailDirPath)))
+                        if not os.path.exists(self.path):
+                            os.makedirs(self.path)
+
+            fileName = "{}.log".format(self.name)
+            self.path = os.path.join(self.path, fileName)
 
         #create formatters
         self.baseFormatter = logging.Formatter('%(message)s')  # basic format
@@ -70,11 +107,19 @@ class Oglery():
         self.failConsoleHandler = logging.StreamHandler()  # sys.stderr
         self.failConsoleHandler.setFormatter(self.failFormatter)
 
-        if self.logFilePath:  # if empty then no handlers so no logging to file
-            self.baseFileHandler = logging.FileHandler(self.logFilePath)
+        if self.path:  # if empty then no handlers so no logging to file
+            self.baseFileHandler = logging.FileHandler(self.path)
             self.baseFileHandler.setFormatter(self.baseFormatter)
-            self.failFileHandler = logging.FileHandler(self.logFilePath)
+            self.failFileHandler = logging.FileHandler(self.path)
             self.failFileHandler.setFormatter(self.failFormatter)
+
+
+    def clearDirPath(self):
+        """
+        Remove logfile directory at .path
+        """
+        if os.path.exists(self.path):
+            shutil.rmtree(os.path.dirname(self.path))
 
 
     def getBlogger(self, name=__name__, level=None):
@@ -88,7 +133,7 @@ class Oglery():
             self.level = level
         blogger.setLevel(self.level)
         blogger.addHandler(self.baseConsoleHandler)
-        if self.logFilePath:
+        if self.path:
             blogger.addHandler(self.baseFileHandler)
         return blogger
 
@@ -104,7 +149,7 @@ class Oglery():
         flogger.propagate = False  # disable propagation of events
         flogger.setLevel(logging.ERROR)
         flogger.addHandler(self.failConsoleHandler)  # output to console
-        if self.logFilePath:
+        if self.path:
             flogger.addHandler(self.failFileHandler)  # output to file
         return flogger
 
