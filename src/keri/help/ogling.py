@@ -26,8 +26,8 @@ class Oglery():
     AltHeadDirPath = "~"  #  put in ~ when /var not permitted
     AltTailDirPath = ".keri/log"
 
-    def __init__(self, name='main', level=logging.ERROR, file=False, temp=False,
-                 headDirPath=None):
+    def __init__(self, name='main', level=logging.ERROR, temp=False,
+                 headDirPath=None, reopen=False):
         """
         Init Loggery factory instance
 
@@ -52,50 +52,13 @@ class Oglery():
         """
         self.name = name
         self.level = level  # basic logger level
-        self.path = None
-        self.file = True if file else False
         self.temp = True if temp else False
+        self.headDirPath = headDirPath
+        self.path = None
+        self.opened = False
 
-        if self.file:
-            if self.temp:
-                headDirPath = tempfile.mkdtemp(prefix="keri_log_", suffix="_test", dir="/tmp")
-                self.path = os.path.abspath(
-                                    os.path.join(headDirPath,
-                                                 self.TailDirPath))
-                os.makedirs(self.path)
-
-            else:
-                if not headDirPath:
-                    headDirPath = self.HeadDirPath
-
-                self.path = os.path.abspath(
-                                    os.path.expanduser(
-                                        os.path.join(headDirPath,
-                                                     self.TailDirPath)))
-
-                if not os.path.exists(self.path):
-                    try:
-                        os.makedirs(self.path)
-                    except OSError as ex:
-                        headDirPath = self.AltHeadDirPath
-                        self.path = os.path.abspath(
-                                            os.path.expanduser(
-                                                os.path.join(headDirPath,
-                                                             self.AltTailDirPath)))
-                        if not os.path.exists(self.path):
-                            os.makedirs(self.path)
-                else:
-                    if not os.access(self.path, os.R_OK | os.W_OK):
-                        headDirPath = self.AltHeadDirPath
-                        self.path = os.path.abspath(
-                                            os.path.expanduser(
-                                                os.path.join(headDirPath,
-                                                             self.AltTailDirPath)))
-                        if not os.path.exists(self.path):
-                            os.makedirs(self.path)
-
-            fileName = "{}.log".format(self.name)
-            self.path = os.path.join(self.path, fileName)
+        if reopen:
+            self.reopen(headDirPath=self.headDirPath)
 
         #create formatters
         self.baseFormatter = logging.Formatter('%(message)s')  # basic format
@@ -113,6 +76,76 @@ class Oglery():
             self.failFileHandler = logging.FileHandler(self.path)
             self.failFileHandler.setFormatter(self.failFormatter)
 
+    def reopen(self, temp=None, headDirPath=None):
+        """
+        Use or Create if not preexistent, directory path for lmdb at .path
+        Open lmdb and assign to .env
+
+        Parameters:
+            temp is optional boolean:
+                If None ignore Otherwise
+                    Assign to .temp
+                    If True then open temporary directory, clear on close
+                    If False then open persistent directory, do not clear on close
+            headDirPath is optional str head directory pathname of main database
+                If not provided use default .HeadDirpath
+        """
+        if temp is not None:
+            self.temp = True if temp else False
+
+        if headDirPath is None:
+            headDirPath = self.headDirPath
+
+        if self.temp:
+            headDirPath = tempfile.mkdtemp(prefix="keri_log_", suffix="_test", dir="/tmp")
+            self.path = os.path.abspath(
+                                os.path.join(headDirPath,
+                                             self.TailDirPath))
+            os.makedirs(self.path)
+
+        else:
+            if not headDirPath:
+                headDirPath = self.HeadDirPath
+
+            self.path = os.path.abspath(
+                                os.path.expanduser(
+                                    os.path.join(headDirPath,
+                                                 self.TailDirPath)))
+
+            if not os.path.exists(self.path):
+                try:
+                    os.makedirs(self.path)
+                except OSError as ex:
+                    headDirPath = self.AltHeadDirPath
+                    self.path = os.path.abspath(
+                                        os.path.expanduser(
+                                            os.path.join(headDirPath,
+                                                         self.AltTailDirPath)))
+                    if not os.path.exists(self.path):
+                        os.makedirs(self.path)
+            else:
+                if not os.access(self.path, os.R_OK | os.W_OK):
+                    headDirPath = self.AltHeadDirPath
+                    self.path = os.path.abspath(
+                                        os.path.expanduser(
+                                            os.path.join(headDirPath,
+                                                         self.AltTailDirPath)))
+                    if not os.path.exists(self.path):
+                        os.makedirs(self.path)
+
+        fileName = "{}.log".format(self.name)
+        self.path = os.path.join(self.path, fileName)
+
+
+    def close(self, clear=False):
+        """
+        Close lmdb at .env and if clear or .temp then remove lmdb directory at .path
+        Parameters:
+           clear is boolean, True means clear lmdb directory
+        """
+        self.opened = False
+        if clear or self.temp:
+            self.clearDirPath()
 
     def clearDirPath(self):
         """

@@ -178,12 +178,13 @@ class LMDBer:
         """
         self.name = name
         self.temp = True if temp else False
+        self.headDirPath = headDirPath
         self.path = None
         self.env = None
         self.opened = False
 
         if reopen:
-            self.reopen(headDirPath=headDirPath)
+            self.reopen(headDirPath=self.headDirPath)
 
 
     def reopen(self, temp=None, headDirPath=None):
@@ -202,6 +203,9 @@ class LMDBer:
         """
         if temp is not None:
             self.temp = True if temp else False
+
+        if headDirPath is None:
+            headDirPath = self.headDirPath
 
         if self.temp:
             headDirPath = tempfile.mkdtemp(prefix="keri_lmdb_", suffix="_test", dir="/tmp")

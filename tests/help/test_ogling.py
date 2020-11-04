@@ -15,6 +15,7 @@ def test_oglery():
     """
 
     oglery = ogling.Oglery(name="test")
+    assert oglery.path is None
 
     blogger, flogger = oglery.getLoggers()
     blogger.debug("Test blogger at debug level")
@@ -33,7 +34,7 @@ def test_oglery():
     blogger.error("Test blogger at error level")
     flogger.error("Test flogger at error level")
 
-    oglery = ogling.Oglery(name="test", level=logging.DEBUG, file=True, temp=True)
+    oglery = ogling.Oglery(name="test", level=logging.DEBUG, temp=True, reopen=True)
     assert oglery.path.endswith("_test/keri/log/test.log")
     blogger, flogger = oglery.getLoggers()
     blogger.debug("Test blogger at debug level")
@@ -43,7 +44,20 @@ def test_oglery():
     blogger.error("Test blogger at error level")
     flogger.error("Test flogger at error level")
 
-    oglery.clearDirPath()
+    oglery.close()
+    assert not os.path.exists(oglery.path)
+
+    oglery.reopen(temp=True)
+    assert oglery.path.endswith("_test/keri/log/test.log")
+    blogger, flogger = oglery.getLoggers()
+    blogger.debug("Test blogger at debug level")
+    flogger.debug("Test flogger at debug level")
+    blogger.info("Test blogger at info level")
+    flogger.info("Test flogger at info level")
+    blogger.error("Test blogger at error level")
+    flogger.error("Test flogger at error level")
+
+    oglery.close()
     assert not os.path.exists(oglery.path)
 
     """End Test"""
