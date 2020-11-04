@@ -8,7 +8,7 @@ from os import path
 import logging
 
 
-class Loggery(object):
+class Loggery():
     """
     Loggery instances are logger factories that configure and build loggers
     Only need one loggery per application

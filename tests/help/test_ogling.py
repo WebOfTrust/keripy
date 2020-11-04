@@ -1,19 +1,19 @@
 # -*- encoding: utf-8 -*-
 """
-tests.help.test_logging module
+tests.help.test_ogling module
 
 """
 import pytest
 
 import logging
-from keri import help
+from keri.help import ogling
 
 def test_loggery():
     """
     Test  Loggery class instance builds loggers
     """
 
-    loggery = help.logging.Loggery()
+    loggery = ogling.Loggery()
 
     blogger, flogger = loggery.getLoggers()
     blogger.debug("Test wooding standard logger at debug level")
@@ -24,9 +24,13 @@ def test_loggery():
     flogger.error("Test wooding failure logger at error level")
 
     loggery.level = logging.DEBUG
-    blogger, flogger = self.wooder.getLoggers()
-    tlogger.debug("Set standard logger level to DEBUG.")
+    blogger, flogger = loggery.getLoggers()
     blogger.debug("Test wooding standard logger at debug level")
+    flogger.debug("Test wooding failure logger at debug level")
+    blogger.info("Test wooding standard logger at info level")
+    flogger.info("Test wooding failure logger at info level")
+    blogger.error("Test wooding standard logger at error level")
+    flogger.error("Test wooding failure logger at error level")
 
     #tlogger = logging.getLogger('Test_Wooding\n')
     #tlogger.setLevel(logging.DEBUG)
