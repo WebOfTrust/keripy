@@ -8,6 +8,18 @@ import logging
 import tempfile
 import shutil
 
+oglery = None  # module global oglery instance used by all for keri console logging
+
+def initOglery(**kwa):
+    """
+    Initialize the oglery global instance once
+    """
+    global oglery
+    if oglery is None:
+        oglery = Oglery(**kwa)
+
+    return oglery
+
 
 class Oglery():
     """
@@ -135,6 +147,7 @@ class Oglery():
 
         fileName = "{}.log".format(self.name)
         self.path = os.path.join(self.path, fileName)
+        self.opened = True
 
 
     def close(self, clear=False):
