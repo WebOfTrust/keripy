@@ -1,6 +1,8 @@
 # -*- encoding: utf-8 -*-
 """
-keri.help.logging module
+keri.help.ogling module
+
+Provides python stdlib logging module support
 
 """
 import os
@@ -8,29 +10,29 @@ import logging
 import tempfile
 import shutil
 
-oglery = None  # module global oglery instance used by all for keri console logging
+ogler = None  # module global ogler instance used by all for keri console logging
 
 
-def initOglery(level=logging.CRITICAL, **kwa):
+def initOgler(level=logging.CRITICAL, **kwa):
     """
-    Initialize the oglery global instance once
+    Initialize the ogler global instance once
     Critical is most severe to restrict logging by default
 
-    This should be called in package .__init__ to insure that global oglery is
+    This should be called in package .__init__ to insure that global ogler is
     define by default. Users and then reset level and reopen log file if need be
-    before calling oglery.getLoggers()
+    before calling ogler.getLoggers()
     """
-    global oglery
-    if oglery is None:
-        oglery = Oglery(level=level, **kwa)
+    global ogler
+    if ogler is None:
+        ogler = Ogler(level=level, **kwa)
 
-    return oglery
+    return ogler
 
 
-class Oglery():
+class Ogler():
     """
     Olgery instances are logger factories that configure and build loggers
-    Only need one Oglery per application
+    Only need one Ogler per application
 
     logging.getLogger(name). Multiple calls to getLogger() with the same name
     will always return a reference to the same Logger object.
@@ -39,9 +41,9 @@ class Oglery():
         .level is logging severity level
         .logFilePath is path to log file
     """
-    HeadDirPath = "/var"  # default in /var
+    HeadDirPath = "/usr/local/var"  # default in /usr/local/var
     TailDirPath = "keri/log"
-    AltHeadDirPath = "~"  #  put in ~ when /var not permitted
+    AltHeadDirPath = "~"  #  put in ~ as fallback when desired not permitted
     AltTailDirPath = ".keri/log"
 
     def __init__(self, name='main', level=logging.ERROR, temp=False,

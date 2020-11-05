@@ -41,7 +41,7 @@ from keri.db.dbing import dgKey, snKey, openDB, Baser
 
 from keri.help import ogling
 
-blogger, flogger = ogling.oglery.getLoggers()
+blogger, flogger = ogling.ogler.getLoggers()
 
 
 def test_lastestloc():

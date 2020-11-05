@@ -154,9 +154,9 @@ class LMDBer:
 
 
     """
-    HeadDirPath = "/var"  # default in /var
+    HeadDirPath = "/usr/local/var"  # default in /usr/local/var
     TailDirPath = "keri/db"
-    AltHeadDirPath = "~"  #  put in ~ when /var not permitted
+    AltHeadDirPath = "~"  #  put in ~ as fallback when desired not permitted
     AltTailDirPath = ".keri/db"
     MaxNamedDBs = 16
 

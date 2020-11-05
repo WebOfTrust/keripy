@@ -33,7 +33,7 @@ from .coring import SigCounter, Siger
 
 from ..help import ogling
 
-blogger, flogger = ogling.oglery.getLoggers()
+blogger, flogger = ogling.ogler.getLoggers()
 
 ICP_LABELS = ["vs", "pre", "sn", "ilk", "sith", "keys", "nxt",
               "toad", "wits", "cnfg"]
