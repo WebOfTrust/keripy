@@ -527,7 +527,7 @@ def test_run_demo():
     """
     Test demo setupController and run with DoDoers and Doist
     """
-    ogling.oglery.level = logging.DEBUG
+    ogling.ogler.level = logging.DEBUG
 
     name = "bob"
     remote = 5621

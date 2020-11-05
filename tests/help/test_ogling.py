@@ -9,16 +9,16 @@ import os
 import logging
 from keri.help import ogling
 
-def test_oglery():
+def test_ogler():
     """
-    Test Oglery class instance that builds loggers
+    Test Ogler class instance that builds loggers
     """
 
-    oglery = ogling.Oglery(name="test")
-    assert oglery.path is None
-    assert oglery.opened == False
+    ogler = ogling.Ogler(name="test")
+    assert ogler.path is None
+    assert ogler.opened == False
 
-    blogger, flogger = oglery.getLoggers()
+    blogger, flogger = ogler.getLoggers()
     blogger.debug("Test blogger at debug level")
     flogger.debug("Test flogger at debug level")
     blogger.info("Test blogger at info level")
@@ -26,8 +26,8 @@ def test_oglery():
     blogger.error("Test blogger at error level")
     flogger.error("Test flogger at error level")
 
-    oglery.level = logging.DEBUG
-    blogger, flogger = oglery.getLoggers()
+    ogler.level = logging.DEBUG
+    blogger, flogger = ogler.getLoggers()
     blogger.debug("Test blogger at debug level")
     flogger.debug("Test flogger at debug level")
     blogger.info("Test blogger at info level")
@@ -35,10 +35,10 @@ def test_oglery():
     blogger.error("Test blogger at error level")
     flogger.error("Test flogger at error level")
 
-    oglery = ogling.Oglery(name="test", level=logging.DEBUG, temp=True, reopen=True)
-    assert oglery.path.endswith("_test/keri/log/test.log")
-    assert oglery.opened == True
-    blogger, flogger = oglery.getLoggers()
+    ogler = ogling.Ogler(name="test", level=logging.DEBUG, temp=True, reopen=True)
+    assert ogler.path.endswith("_test/keri/log/test.log")
+    assert ogler.opened == True
+    blogger, flogger = ogler.getLoggers()
     blogger.debug("Test blogger at debug level")
     flogger.debug("Test flogger at debug level")
     blogger.info("Test blogger at info level")
@@ -46,14 +46,14 @@ def test_oglery():
     blogger.error("Test blogger at error level")
     flogger.error("Test flogger at error level")
 
-    oglery.close()
-    assert not os.path.exists(oglery.path)
-    assert oglery.opened == False
+    ogler.close()
+    assert not os.path.exists(ogler.path)
+    assert ogler.opened == False
 
-    oglery.reopen(temp=True)
-    assert oglery.path.endswith("_test/keri/log/test.log")
-    assert oglery.opened == True
-    blogger, flogger = oglery.getLoggers()
+    ogler.reopen(temp=True)
+    assert ogler.path.endswith("_test/keri/log/test.log")
+    assert ogler.opened == True
+    blogger, flogger = ogler.getLoggers()
     blogger.debug("Test blogger at debug level")
     flogger.debug("Test flogger at debug level")
     blogger.info("Test blogger at info level")
@@ -61,23 +61,23 @@ def test_oglery():
     blogger.error("Test blogger at error level")
     flogger.error("Test flogger at error level")
 
-    oglery.close()
-    assert not os.path.exists(oglery.path)
-    assert oglery.opened == False
+    ogler.close()
+    assert not os.path.exists(ogler.path)
+    assert ogler.opened == False
 
     """End Test"""
 
-def test_init_oglery():
+def test_init_ogler():
     """
-    Test initOglery function for oglery global
+    Test initOgler function for ogler global
     """
     #defined by default in help.__init__ on import of ogling
-    assert isinstance(ogling.oglery, ogling.Oglery)
-    assert not ogling.oglery.opened
-    assert ogling.oglery.level == logging.CRITICAL  # default
+    assert isinstance(ogling.ogler, ogling.Ogler)
+    assert not ogling.ogler.opened
+    assert ogling.ogler.level == logging.CRITICAL  # default
 
     # nothing should log
-    blogger, flogger = ogling.oglery.getLoggers()
+    blogger, flogger = ogling.ogler.getLoggers()
     blogger.debug("Test blogger at debug level")
     flogger.debug("Test flogger at debug level")
     blogger.info("Test blogger at info level")
@@ -86,13 +86,13 @@ def test_init_oglery():
     flogger.error("Test flogger at error level")
 
     # force reinit
-    ogling.oglery =  None
-    oglery = ogling.initOglery(name="test", level=logging.DEBUG, temp=True, reopen=True)
-    assert oglery == ogling.oglery
-    assert oglery.opened
-    assert oglery.path.endswith("_test/keri/log/test.log")
+    ogling.ogler =  None
+    ogler = ogling.initOgler(name="test", level=logging.DEBUG, temp=True, reopen=True)
+    assert ogler == ogling.ogler
+    assert ogler.opened
+    assert ogler.path.endswith("_test/keri/log/test.log")
 
-    blogger, flogger = oglery.getLoggers()
+    blogger, flogger = ogler.getLoggers()
     blogger.debug("Test blogger at debug level")
     flogger.debug("Test flogger at debug level")
     blogger.info("Test blogger at info level")
@@ -100,12 +100,12 @@ def test_init_oglery():
     blogger.error("Test blogger at error level")
     flogger.error("Test flogger at error level")
 
-    oglery.close()
-    assert not os.path.exists(oglery.path)
-    oglery.level = logging.CRITICAL  # restore
+    ogler.close()
+    assert not os.path.exists(ogler.path)
+    ogler.level = logging.CRITICAL  # restore
     """End Test"""
 
 
 if __name__ == "__main__":
-    test_init_oglery()
+    test_init_ogler()
 
