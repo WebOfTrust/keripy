@@ -62,6 +62,43 @@ def test_openkeep():
 
     """ End Test """
 
+def test_keyfuncs():
+    """
+    test the key generation functions
+    """
+    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    pub = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    pri = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
+
+    seed = '0AZxWJGkCkpDcHuVG4GM1KVw'
+    count = 0
+    seedLabel = b"seed"
+    countLabel = b"count"
+
+    pmKey = keeping.pmKey
+    pbKey = keeping.pbKey
+
+    pmky = pmKey(pre, seedLabel)
+    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.seed'
+    pmky = pmKey(pre, countLabel)
+    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.count'
+
+    pmky = pmKey(pre.decode("utf-8"), seedLabel.decode("utf-8"))
+    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.seed'
+    pmky = pmKey(pre.decode("utf-8"), countLabel.decode("utf-8"))
+    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.count'
+
+    pbky = pbKey(pre, pub)
+    assert pbky == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9'
+                    b'IPb0foWTZvI_4')
+    pbky = pbKey(pre.decode("utf-8"), pub.decode("utf-8"))
+    assert pbky == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9'
+                    b'IPb0foWTZvI_4')
+
+    """End Test"""
+
+
+
 def test_keeper():
     """
     Test Keeper creation
@@ -194,4 +231,4 @@ def test_keeperdoer():
 
 
 if __name__ == "__main__":
-    test_keeperdoer()
+    test_keyfuncs()

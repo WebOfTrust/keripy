@@ -21,6 +21,7 @@ from keri.core.eventing import incept, rotate, interact, Kever, Kevery
 
 from keri.help.helping import nowIso8601, toIso8601, fromIso8601
 
+
 def test_opendatabaser():
     """
     test contextmanager decorator for test databases
