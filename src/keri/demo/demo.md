@@ -58,3 +58,25 @@ optional arguments:
   -n NAME, --name NAME  Name of controller. Default is eve.
 
 ```
+
+
+
+## To Run from Development Repo Directory
+
+In order to run the demo commands directly from the deverlopment repository
+directly on must setup the shell PYTHONPATH environment variable to point to
+the keripy src directory that includes the keri package
+
+.zsh
+
+#PYTHONPATH
+export PYTHONPATH="..../keripy/src:$PYTHONPATH"
+
+
+
+Then
+% python3 -m keri.demo.demo_bob
+
+Works.
+Where demo_bob is in
+..../keripy/src/keri/demo/demo_bob.py

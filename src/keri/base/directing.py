@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.demo.directing module
+keri.base.directing module
 
 simple direct mode demo support classes
 """

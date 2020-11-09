@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.demo.indirecting module
+keri.base.indirecting module
 
 simple indirect mode demo support classes
 """
