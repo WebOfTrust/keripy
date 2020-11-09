@@ -6,6 +6,7 @@ keri.base.keeping module
 
 """
 
+from hio.base import doing
 
 from .. import kering
 from ..db import dbing
@@ -101,3 +102,62 @@ class Keeper(dbing.LMDBer):
         self.keys = self.env.open_db(key=b'keys.')
         self.dtss = self.env.open_db(key=b'dtss.')
 
+
+
+
+class KeeperDoer(doing.Doer):
+    """
+    Basic Keeper Doer ( LMDB Database )
+
+    Inherited Attributes:
+        .done is Boolean completion state:
+            True means completed
+            Otherwise incomplete. Incompletion maybe due to close or abort.
+
+    Attributes:
+        .keeper is Keeper or LMDBer subclass
+
+    Inherited Properties:
+        .tyme is float ._tymist.tyme, relative cycle or artificial time
+        .tock is float, desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Methods:
+        .wind  injects ._tymist dependency
+        .__call__ makes instance callable
+            Appears as generator function that returns generator
+        .do is generator method that returns generator
+        .enter is enter context action method
+        .recur is recur context action method or generator method
+        .exit is exit context method
+        .close is close context method
+        .abort is abort context method
+
+    Hidden:
+       ._tymist is Tymist instance reference
+       ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, keeper, **kwa):
+        """
+        Inherited Parameters:
+           tymist is Tymist instance
+           tock is float seconds initial value of .tock
+
+        Parameters:
+           keeper is Keeper instance
+        """
+        super(KeeperDoer, self).__init__(**kwa)
+        self.keeper = keeper
+
+
+    def enter(self):
+        """"""
+        self.keeper.reopen()
+
+
+    def exit(self):
+        """"""
+        self.keeper.close()

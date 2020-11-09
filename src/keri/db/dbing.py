@@ -1677,7 +1677,7 @@ class BaserDoer(doing.Doer):
            tock is float seconds initial value of .tock
 
         Parameters:
-           server is TCP Server instance
+           baser is Baser instance
         """
         super(BaserDoer, self).__init__(**kwa)
         self.baser = baser

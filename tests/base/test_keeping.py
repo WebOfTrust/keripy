@@ -8,6 +8,7 @@ import pytest
 import os
 import lmdb
 
+from hio.base import  doing
 from keri.base import keeping
 
 
@@ -128,5 +129,69 @@ def test_keeper():
 
     """ End Test """
 
+
+def test_keeperdoer():
+    """
+    KeeperDoer
+    """
+    keep0 = keeping.Keeper(name='test0', temp=True, reopen=False)
+    assert keep0.opened == False
+    assert keep0.path == None
+    assert keep0.env == None
+
+    kpDoer0 = keeping.KeeperDoer(keeper=keep0)
+    assert kpDoer0.keeper == keep0
+    assert kpDoer0.keeper.opened == False
+
+    keep1 = keeping.Keeper(name='test1', temp=True, reopen=False)
+    assert keep1.opened == False
+    assert keep1.path == None
+    assert keep1.env == None
+
+    kpDoer1 = keeping.KeeperDoer(keeper=keep1)
+    assert kpDoer1.keeper == keep1
+    assert kpDoer1.keeper.opened == False
+
+    limit = 0.25
+    tock = 0.03125
+    doist = doing.Doist(limit=limit, tock=tock)
+
+    doers = [kpDoer0, kpDoer1]
+
+    dogs = doist.ready(doers=doers)
+    assert len(dogs) == 2
+    assert [val[1] for val in dogs] == [0.0, 0.0]  #  retymes
+    for doer in doers:
+        assert doer._tymist == doist
+        assert doer.keeper.opened
+        assert "_test/keri/keep/test" in doer.keeper.path
+
+    doist.once(dogs)
+    assert doist.tyme == 0.03125  # on next cycle
+    assert len(dogs) == 2
+    for doer in doers:
+        assert doer.keeper.opened == True
+
+    for dog, retyme, index in dogs:
+        dog.close()
+
+    for doer in doers:
+        assert doer.keeper.opened == False
+        assert doer.keeper.env == None
+        assert not os.path.exists(doer.keeper.path)
+
+    #start over
+    doist.tyme = 0.0
+    doist.do(doers=doers)
+    assert doist.tyme == limit
+    for doer in doers:
+        assert doer.keeper.opened == False
+        assert doer.keeper.env == None
+        assert not os.path.exists(doer.keeper.path)
+
+    """End Test"""
+
+
+
 if __name__ == "__main__":
-    test_keeper()
+    test_keeperdoer()
