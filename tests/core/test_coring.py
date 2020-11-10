@@ -25,7 +25,7 @@ from keri.core.coring import (CrySelDex, CryCntDex,
                               CryFourDex, CryFourSizes, CryFourRawSizes,
                               CrySizes, CryRawSizes, MINCRYSIZE)
 from keri.core.coring import (CryMat, CryCounter, Verfer, Cigar, Signer,
-                              Diger, Nexter, Prefixer)
+                              Diger, Nexter, NexterNew, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import (SigSelDex, SigCntDex, SigCntSizes, SigCntRawSizes,
                               SigTwoDex, SigTwoSizes, SigTwoRawSizes,
@@ -759,6 +759,90 @@ def test_nexter():
     assert nexter.verify(ked=ked)
     """ Done Test """
 
+def test_nexternew():
+    """
+    Test the support functionality for Nexter subclass of Diger
+    """
+    with pytest.raises(EmptyMaterialError):
+        nexter = NexterNew()
+
+    #create something to digest and verify
+    # verkey, sigkey = pysodium.crypto_sign_keypair()
+    # verfer = Verfer(raw=verkey)
+    # assert verfer.qb64 == 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
+
+    sith = "{:x}".format(2)
+    sithdig = blake3.blake3(sith.encode("utf-8")).digest()
+    sithdiger = Diger(raw=sithdig, code=CryOneDex.Blake3_256)
+    assert sithdiger.qb64 == 'EgT6bcpFB5_OFr6Ci0N8-bDeJ5Cf_5K7vVmpWW8jy_j0'
+
+    keys = ['BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE',
+            'BujP_71bmWFVcvFmkE9uS8BTZ54GIstZ20nj_UloF8Rk',
+            'B8T4xkb8En6o0Uo5ZImco1_08gT5zcYnXzizUPVNzicw']
+
+    keydigs = [blake3.blake3(key.encode("utf-8")).digest() for key in keys]
+    digers = [Diger(raw=keydig, code=CryOneDex.Blake3_256) for keydig in keydigs]
+    digs = [diger.qb64 for diger in digers]
+
+    assert digs == ['EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                    'EO4CXp8gs0yJg1fFhJLs5hH6neqJwhFEY7vrJEdPe87I',
+                    'ELWWZEyBpjrfM1UU0n31KIyIXllrCoLEOI5UHD9x7WxI']
+
+    kints = [int.from_bytes(diger.raw,'big') for diger in digers]
+    sint = int.from_bytes(sithdiger.raw, 'big')
+    for kint in kints:
+        sint ^= kint  # xor together
+
+    raw = sint.to_bytes(CryRawSizes[CryOneDex.Blake3_256], 'big')
+
+    nexter = NexterNew(raw=raw)  # defaults provide Blake3_256 digest
+    assert nexter.code == CryOneDex.Blake3_256
+    assert nexter.qb64 == 'ED8YvDrXvGuaIVZ69XsBVA5YN2pNTfQOFwgeloVHeWKs'
+    assert nexter.sith == None  # not used by nexter for its  digest
+    assert nexter.keys == None  # not used by nexter for its  digest
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.verify(raw=raw)
+    assert nexter.verify(raw=raw+b'ABCDEF') == False
+
+    with pytest.raises(ValueError):  # bad code
+        nexter = NexterNew(raw=raw, code=CryOneDex.Ed25519)
+
+    nexter = NexterNew(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
+    assert nexter.code == CryOneDex.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.sith == sith
+    assert nexter.keys == keys
+    assert nexter.verify(raw=raw)
+    assert nexter.verify(raw=raw+b'ABCDEF') == False
+    assert nexter.verify(sith=sith, keys=keys)
+
+    with pytest.raises(EmptyMaterialError):
+        nexter = NexterNew(sith=sith)
+
+    nexter = NexterNew(keys=keys)  # compute sith from keys
+    assert nexter.keys == keys
+    assert nexter.sith == sith
+
+
+    nexter = NexterNew(sith=2, keys=keys)  # defaults provide Blake3_256 digester
+    assert nexter.code == CryOneDex.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.sith == sith
+    assert nexter.keys == keys
+    assert nexter.verify(raw=raw)
+    assert nexter.verify(raw=raw+b'ABCDEF') == False
+    assert nexter.verify(sith=2, keys=keys)
+
+    ked = dict(sith=sith, keys=keys)  #  subsequent event
+    nexter = NexterNew(ked=ked)  # defaults provide Blake3_256 digester
+    assert nexter.code == CryOneDex.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.sith == sith
+    assert nexter.keys == keys
+    assert nexter.verify(raw=raw)
+    assert nexter.verify(raw=raw+b'ABCDEF') == False
+    assert nexter.verify(ked=ked)
+    """ Done Test """
 
 
 def test_prefixer():
@@ -1666,4 +1750,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_crymat()
+    test_nexternew()
