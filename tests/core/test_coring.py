@@ -972,7 +972,7 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
-    assert prefixer.qb64 == 'EBv1R8a4iqdMsU7QmL0cRR9saFtAWPwP-yMRO532FxHo'
+    assert prefixer.qb64 == 'EgsBUrK4JIGh7o5rdcpLTg-NYy0WKelTUVlBhg_zIRiM'
     assert prefixer.verify(ked=ked) == True
 
     perm = []
@@ -995,7 +995,7 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
-    assert prefixer.qb64 == 'EzLLOofkapRBf7qbD835qX2ZGZJAOildwZTLfiVTIg04'
+    assert prefixer.qb64 == 'E_6sb9qnmw2cpSlmFTNQptnTG2r6XqEW3pcnJ420zCpM'
     assert prefixer.verify(ked=ked) == True
 
     #  Test signature derivation
@@ -1031,11 +1031,11 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, seed=seed)
-    assert prefixer.qb64 == '0B0uVeeaCtXTAj04_27g5pSKjXouQaC1mHcWswzkL7Jk0XC0yTyNnIvhaXnSxGbzY8WaPv63iAfWhJ81MKACRuAQ'
+    assert prefixer.qb64 == '0Bm9fvxatvQLVVsGzTaU2lh79kzd2zwMwKHggeSHx5Ri-wE7eRtyYPNoiLRGsQ3t6B9KDQL66lwP6I_GNym1-PAw'
     assert prefixer.verify(ked=ked) == True
 
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
-    assert prefixer.qb64 == '0B0uVeeaCtXTAj04_27g5pSKjXouQaC1mHcWswzkL7Jk0XC0yTyNnIvhaXnSxGbzY8WaPv63iAfWhJ81MKACRuAQ'
+    assert prefixer.qb64 == '0Bm9fvxatvQLVVsGzTaU2lh79kzd2zwMwKHggeSHx5Ri-wE7eRtyYPNoiLRGsQ3t6B9KDQL66lwP6I_GNym1-PAw'
     assert prefixer.verify(ked=ked) == True
 
     """ Done Test """
@@ -1768,4 +1768,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_nexternew()
+    test_prefixer()
