@@ -807,31 +807,49 @@ def test_nexternew():
     with pytest.raises(ValueError):  # bad code
         nexter = NexterNew(raw=raw, code=CryOneDex.Ed25519)
 
+    nexter = NexterNew(digs=digs)  # compute sith from digs using default sith
+    assert nexter.code == CryOneDex.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.sith == sith
+    assert nexter.keys == None
+    assert nexter.verify(digs=digs)
+    assert nexter.verify(raw=raw)
+
+    nexter = NexterNew(sith=sith, digs=digs)  # compute sith from digs using default sith
+    assert nexter.code == CryOneDex.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.sith == sith
+    assert nexter.keys == None
+    assert nexter.verify(sith=sith, digs=digs)
+    assert nexter.verify(raw=raw)
+
     nexter = NexterNew(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter.sith == sith
     assert nexter.keys == keys
+    assert nexter.verify(sith=sith, keys=keys)
     assert nexter.verify(raw=raw)
     assert nexter.verify(raw=raw+b'ABCDEF') == False
-    assert nexter.verify(sith=sith, keys=keys)
 
     with pytest.raises(EmptyMaterialError):
         nexter = NexterNew(sith=sith)
 
-    nexter = NexterNew(keys=keys)  # compute sith from keys
-    assert nexter.keys == keys
+    nexter = NexterNew(keys=keys)  # compute sith from keys default sith
+    assert nexter.code == CryOneDex.Blake3_256
+    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter.sith == sith
-
+    assert nexter.keys == keys
+    assert nexter.verify(keys=keys)
+    assert nexter.verify(raw=raw)
 
     nexter = NexterNew(sith=2, keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter.sith == sith
     assert nexter.keys == keys
-    assert nexter.verify(raw=raw)
-    assert nexter.verify(raw=raw+b'ABCDEF') == False
     assert nexter.verify(sith=2, keys=keys)
+    assert nexter.verify(raw=raw)
 
     ked = dict(sith=sith, keys=keys)  #  subsequent event
     nexter = NexterNew(ked=ked)  # defaults provide Blake3_256 digester
@@ -839,9 +857,9 @@ def test_nexternew():
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter.sith == sith
     assert nexter.keys == keys
-    assert nexter.verify(raw=raw)
-    assert nexter.verify(raw=raw+b'ABCDEF') == False
     assert nexter.verify(ked=ked)
+    assert nexter.verify(raw=raw)
+
     """ Done Test """
 
 

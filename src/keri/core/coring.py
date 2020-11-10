@@ -1073,7 +1073,7 @@ class NexterNew(CryMat):
 
 
     """
-    def __init__(self, sith=None, keys=None, ked=None,
+    def __init__(self, sith=None, digs=None, keys=None, ked=None,
                  code=CryOneDex.Blake3_256, **kwa):
         """
         Assign digest verification function to ._verify
@@ -1088,14 +1088,19 @@ class NexterNew(CryMat):
 
         Parameters:
            sith is int threshold or lowercase hex str no leading zeros
+           digs is list of qb64 digests of public keys
            keys is list of keys each is qb64 public key str
            ked is key event dict
 
-           Raises error if not any of raw, keys, ked
+           Raises error if not any of raw, digs,keys, ked
 
            if not raw
-               If keys not provided
-                  get keys from ked
+               use digs
+               If digs not provided
+                  use keys
+                  if keys not provided
+                     get keys from ked
+                  compute digs from keys
 
            If sith not provided
                get sith from ked
@@ -1105,14 +1110,14 @@ class NexterNew(CryMat):
         try:
             super(NexterNew, self).__init__(code=code, **kwa)
         except EmptyMaterialError as ex:
-            if not keys and not ked:
+            if not digs and not keys and not ked:
                 raise ex
             if code == CryOneDex.Blake3_256:
                 self._digest = self._digest_blake3_256
             else:
                 raise ValueError("Unsupported code = {} for nexter.".format(code))
 
-            raw = self._derive(code=code, sith=sith, keys=keys, ked=ked)  #  derive nxt raw
+            raw = self._derive(code=code, sith=sith, digs=digs, keys=keys, ked=ked)  #  derive nxt raw
             super(NexterNew, self).__init__(raw=raw, code=code, **kwa)  # attaches code etc
 
         else:
@@ -1138,7 +1143,7 @@ class NexterNew(CryMat):
         return self._keys
 
 
-    def verify(self, raw=b'', sith=None, keys=None, ked=None):
+    def verify(self, raw=b'', sith=None, digs=None, keys=None, ked=None):
         """
         Returns True if digest of bytes nxt raw matches .raw
         Uses .raw as reference nxt raw for ._verify algorithm determined by .code
@@ -1152,26 +1157,47 @@ class NexterNew(CryMat):
             ked is key event dict
         """
         if not raw:
-            raw = self._derive(code=self.code, sith=sith, keys=keys, ked=ked)
+            raw = self._derive(code=self.code, sith=sith, digs=digs, keys=keys, ked=ked)
 
         return (raw == self.raw)
 
 
-    def _derive(self, code, sith=None, keys=None, ked=None):
+    def _derive(self, code, sith=None, digs=None, keys=None, ked=None):
         """
         Returns ser where ser is serialization derived from code, sith, keys, or ked
         """
-        if sith is None:
+        if not digs:
+            if not keys:
+                try:
+                    keys = ked["keys"]
+                except KeyError as ex:
+                    raise DerivationError("Error extracting keys from"
+                                          " ked = {}".format(ex))
+
+            if not keys:  # empty keys
+                raise DerivationError("Empty keys.")
+
+            keydigs = [self._digest(key.encode("utf-8")) for key in keys]
+
+        else:
+            digers = [Diger(qb64=dig) for dig in digs]
+            for diger in digers:
+                if diger.code != code:
+                    raise DerivationError("Mismatch of public key digest "
+                                          "code = {} for next digest code = {}."
+                                          "".format(diger.code, code))
+            keydigs = [diger.raw for diger in digers]
+
+        if sith is None:  # need len keydigs to compute default sith
             try:
                 sith = ked["sith"]
             except Exception as ex:
-                sith = max(1, ceil(len(keys) / 2))  # default simple majority
+                sith = max(1, ceil(len(keydigs) / 2))  # default simple majority
 
         if isinstance(sith, list):
             # verify list expression against keys
             # serialize list here
             raise DerivationError("List form of sith = {} not yet supported".format(sith))
-
         else:
             try:
                 sith = int(sith, 16)  # convert to int
@@ -1180,23 +1206,13 @@ class NexterNew(CryMat):
             sith = max(1, sith)  # ensure sith at least 1
             sith = "{:x}".format(sith)  # convert back to lowercase hex no leading zeros
 
-        if not keys:
-            try:
-                keys = ked["keys"]
-            except KeyError as ex:
-                raise DerivationError("Error extracting keys from"
-                                      " ked = {}".format(ex))
-
-        if not keys:  # empty keys
-            raise DerivationError("Empty keys.")
-
-        kints = [int.from_bytes(self._digest(key.encode("utf-8")), 'big') for key in keys]
+        kints = [int.from_bytes(keydig, 'big') for keydig in keydigs]
         sint = int.from_bytes(self._digest(sith.encode("utf-8")), 'big')
         for kint in kints:
             sint ^= kint  # xor together
 
         self._sith = copy.deepcopy(sith)
-        self._keys = copy.deepcopy(keys)
+        self._keys = copy.deepcopy(keys) if keys is not None else None
 
         return (sint.to_bytes(CryRawSizes[code], 'big'))
 
