@@ -761,7 +761,7 @@ def test_keyeventsequence_1():
         nexter2 = Nexter(keys=keys2)
         assert nexter2.sith == '1'
         nxt2 = nexter2.qb64  # transferable so nxt is not empty
-        assert nxt2 == 'EoWDoTGQZ6lJ19LsaV4g42k5gccsB_-ttYHOft6kuYZk'
+        assert nxt2 == 'E-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI'
         serder2 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
         event_digs.append(serder2.dig)
         assert serder2.ked["pre"] == pre
@@ -1064,7 +1064,7 @@ def test_multisig_digprefix():
                         sith=sith,
                         nxt=Nexter(keys=nxtkeys).qb64)
 
-        assert serder.ked["pre"] == 'ECui-E44CqN2U7uffCikRCp_YKLkPrA4jsTZ_A0XRLzc'
+        assert serder.ked["pre"] == 'EUEtw_3JqBhrLtwwlP9QLnDXZGjJ3CIxq7QGP_dEQiwc'
         # create sig counter
         count = len(keys)
         counter = SigCounter(count=count)  # default is count = 1
@@ -1078,16 +1078,17 @@ def test_multisig_digprefix():
         for siger in sigers:
             kes.extend(siger.qb64b)
 
-        assert kes == bytearray(b'{"vs":"KERI10JSON000159_","pre":"ECui-E44CqN2U7uffCikRCp_YKLkPrA'
-                                b'4jsTZ_A0XRLzc","sn":"0","ilk":"icp","sith":"2","keys":["DSuhyBcP'
+        assert kes == bytearray(b'{"vs":"KERI10JSON000159_","pre":"EUEtw_3JqBhrLtwwlP9QLnDXZGjJ3CI'
+                                b'xq7QGP_dEQiwc","sn":"0","ilk":"icp","sith":"2","keys":["DSuhyBcP'
                                 b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA","DVcuJOOJF1IE8svqEtrSuyQjG'
                                 b'Td2HhfAkt9y2QkUtFJI","DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Gr'
-                                b'h8"],"nxt":"Evhf3437ZRRnVhT0zOxo_rBX_GxpGoAnLuzrVlDK8ZdM","toad"'
-                                b':"0","wits":[],"cnfg":[]}-AADAAJ66nrRaNjltE31FZ4mELVGUMc_XOqOAOX'
-                                b'ZQjZCEAvbeJQ8r3AnccIe1aepMwgoQUeFdIIQLeEDcH8veLdud_DQABTQYtYWKh3'
-                                b'ScYij7MOZz3oA6ZXdIDLRrv0ObeSb4oc6LYrR1LfkICfXiYDnp90tAdvaJX5siCL'
-                                b'jSD3vfEM9ADDAACQTgUl4zF6U8hfDy8wwUva-HCAiS8LQuP7elKAHqgS8qtqv5hE'
-                                b'j3aTjwE91UtgAX2oCgaw98BCYSeT5AuY1SpDA')
+                                b'h8"],"nxt":"E9izzBkXX76sqt0N-tfLzJeRqj0W56p4pDQ_ZqNCDpyw","toad"'
+                                b':"0","wits":[],"cnfg":[]}-AADAAh_trqX993WCZfZ2Mm8Rj2AnlpJzStsv2x'
+                                b'4M3gKOIpA740SCYGTDIU4L2Zokd8Krfakt98vy2vAYTjrJ7_UMnBQABNgYwwmein'
+                                b'upnrK8nIbVkz4iL7OgjAalNSNimZciYLCBRoKD5jbyXbHDxgycjl2vaw3roAzuaS'
+                                b'i4686OY4P0kDgACbz0tl-U_EBbSfdKmtJHkSNfbDjB7pw_k9C9MuTv1eP3XM4OFA'
+                                b'pLJyhshWDtWmUzb4uorpXWvqRKfkMIRCKyBDQ')
+
 
 
         # Event 1 Rotation Transferable
@@ -1523,7 +1524,7 @@ def test_receipt():
                            dig=coeKever.diger.qb64)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
-        assert valCigar.qb64 == '0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg'
+        assert valCigar.qb64 == '0Bi6u-ogCjhGeXMUV0Vls9RbefJ-W_daYc6aBVPY5fqMsBYhkl47TrhbpescYp-yBcfkEEKUQHEpZhoXgzw3IeDQ'
         recnt = CryCounter(count=1)
         assert recnt.qb64 == '-AAB'
 
@@ -1532,10 +1533,10 @@ def test_receipt():
         res.extend(valPrefixer.qb64b)
         res.extend(valCigar.qb64b)
         assert res == bytearray(b'{"vs":"KERI10JSON000099_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
-                                b'ZOoeKtWTOunRA","sn":"0","ilk":"rct","dig":"EgCvROg0cKXF_u_K0WH33'
-                                b'PPB77bjZpIlgLy99xmYrHlM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzh'
-                                b'DNZlEKiMc0BppZx1qHnifwaUjBRHtpsJFpixZuEmQa3hXex2udWtUPiOL-NLA8aQ'
-                                b'3r_b-X6FB8HaEIv-TPtaTmFg78yhv8lCg')
+                                b'ZOoeKtWTOunRA","sn":"0","ilk":"rct","dig":"Ew3MXaYk3VBkPAFyTZN6O'
+                                b'yev5sbKM_6ycHAds-A6znN8"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzh'
+                                b'DNZlEKiMc0Bi6u-ogCjhGeXMUV0Vls9RbefJ-W_daYc6aBVPY5fqMsBYhkl47Trh'
+                                b'bpescYp-yBcfkEEKUQHEpZhoXgzw3IeDQ')
 
 
         coeKevery.processAll(ims=res)  #  coe process the receipt from val
@@ -3000,4 +3001,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_keyeventfuncs()
+    test_receipt()
