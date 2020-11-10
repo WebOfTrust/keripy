@@ -158,6 +158,9 @@ class LMDBer:
     TailDirPath = "keri/db"
     AltHeadDirPath = "~"  #  put in ~ as fallback when desired not permitted
     AltTailDirPath = ".keri/db"
+    TempHeadDir = "/tmp"
+    TempPrefix = "keri_lmdb_"
+    TempSuffix = "_test"
     MaxNamedDBs = 16
 
     def __init__(self, name='main', temp=False, headDirPath=None, reopen=True):
@@ -208,7 +211,9 @@ class LMDBer:
             headDirPath = self.headDirPath
 
         if self.temp:
-            headDirPath = tempfile.mkdtemp(prefix="keri_lmdb_", suffix="_test", dir="/tmp")
+            headDirPath = tempfile.mkdtemp(prefix=self.TempPrefix,
+                                           suffix=self.TempSuffix,
+                                           dir=self.TempHeadDir)
             self.path = os.path.abspath(
                                 os.path.join(headDirPath,
                                              self.TailDirPath,
@@ -1672,7 +1677,7 @@ class BaserDoer(doing.Doer):
            tock is float seconds initial value of .tock
 
         Parameters:
-           server is TCP Server instance
+           baser is Baser instance
         """
         super(BaserDoer, self).__init__(**kwa)
         self.baser = baser

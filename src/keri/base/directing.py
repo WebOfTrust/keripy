@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.demo.directing module
+keri.base.directing module
 
 simple direct mode demo support classes
 """
@@ -960,19 +960,6 @@ class EveDirector(Director):
         return True # return value of yield from, or yield ex.value of StopIteration
 
 
-
-
-
-def runController(doers, limit=0.0):
-    """
-    run the doers for limit time. 0.0 means no limit.
-    """
-    # run components
-    tock = 0.03125
-    doist = doing.Doist(limit=limit, tock=tock, real=True, doers=doers)
-    doist.do()
-
-
 def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
     """
     Setup and return doers list to run controller
@@ -1004,3 +991,14 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
     # Reactants created on demand
 
     return [dbDoer, clientDoer, director, reactor, serverDoer, directant]
+
+
+
+def runController(doers, limit=0.0):
+    """
+    run the doers for limit time. 0.0 means no limit.
+    """
+    # run components
+    tock = 0.03125
+    doist = doing.Doist(limit=limit, tock=tock, real=True, doers=doers)
+    doist.do()

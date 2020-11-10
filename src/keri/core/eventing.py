@@ -416,6 +416,7 @@ class Kever:
         .estOnly is boolean
         .nonTrans is boolean
         .lastEst is LastEstLoc namedtuple of int .sn and qb64 .dig of last est event
+        .baser is reference for Baser instance that managers the
 
     Properties:
 

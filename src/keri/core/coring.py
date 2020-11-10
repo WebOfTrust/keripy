@@ -927,14 +927,23 @@ class Diger(CryMat):
         return(blake3.blake3(ser).digest() == dig)
 
 
-class Nexter(Diger):
+class Nexter(CryMat):
     """
-    Nexter is Diger subclass with support to create itself from
-    next sith and next keys
+    Nexter is CryMat subclass with support to derive itself from
+    next sith and next keys given code.
 
     See Diger for inherited attributes and properties:
 
     Attributes:
+
+    Inherited Properties:
+        .code  str derivation code to indicate cypher suite
+        .raw   bytes crypto material only without code
+        .pad  int number of pad chars given raw
+        .qb64 str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  bytes in binary with derivation code + crypto material
+        .nontrans True when non-transferable derivation code False otherwise
 
     Properties:
         .sith return copy of sith used to create digest. None otherwise.
@@ -944,22 +953,34 @@ class Nexter(Diger):
 
 
     """
-    def __init__(self, ser=None, sith=None, keys=None, ked=None, **kwa):
+    def __init__(self, sith=None, digs=None, keys=None, ked=None,
+                 code=CryOneDex.Blake3_256, **kwa):
         """
         Assign digest verification function to ._verify
 
-        See CryMat for inherited parameters
+        Inherited Parameters:
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
 
         Parameters:
-           ser is bytes serialization from which raw is computed if not raw
            sith is int threshold or lowercase hex str no leading zeros
+           digs is list of qb64 digests of public keys
            keys is list of keys each is qb64 public key str
+           ked is key event dict
 
-           Raises error if not any of raw, ser, keys, ked
+           Raises error if not any of raw, digs,keys, ked
 
-           if not raw and not ser
-               If keys not provided
-                  get keys from ked
+           if not raw
+               use digs
+               If digs not provided
+                  use keys
+                  if keys not provided
+                     get keys from ked
+                  compute digs from keys
 
            If sith not provided
                get sith from ked
@@ -967,52 +988,96 @@ class Nexter(Diger):
 
         """
         try:
-            super(Nexter, self).__init__(ser=ser, **kwa)
+            super(Nexter, self).__init__(code=code, **kwa)
         except EmptyMaterialError as ex:
-            if not keys and not ked:
+            if not digs and not keys and not ked:
                 raise ex
-            ser, sith, keys = self._derive(sith=sith, keys=keys, ked=ked)
-            super(Nexter, self).__init__(ser=ser, **kwa)
+            if code == CryOneDex.Blake3_256:
+                self._digest = self._digest_blake3_256
+            else:
+                raise ValueError("Unsupported code = {} for nexter.".format(code))
 
-        self._sith = copy.deepcopy(sith) if sith is not None else None
-        self._keys = copy.deepcopy(keys) if keys is not None else None
+            raw = self._derive(code=code, sith=sith, digs=digs, keys=keys, ked=ked)  #  derive nxt raw
+            super(Nexter, self).__init__(raw=raw, code=code, **kwa)  # attaches code etc
+
+        else:
+            if self.code == CryOneDex.Blake3_256:
+                self._digest = self._digest_blake3_256
+            else:
+                raise ValueError("Unsupported code = {} for nexter.".format(code))
+
+            self._sith = copy.deepcopy(sith) if sith is not None else None
+            self._keys = copy.deepcopy(keys) if keys is not None else None
+
+
 
     @property
     def sith(self):
         """ Property ._sith getter """
         return self._sith
 
+
     @property
     def keys(self):
         """ Property ._keys getter """
         return self._keys
 
-    @staticmethod
-    def _derive(sith=None, keys=None, ked=None):
-        """
-        Returns serialization derived from sith, keys, or ked
-        """
-        if not keys:
-            try:
-                keys = ked["keys"]
-            except KeyError as ex:
-                raise DerivationError("Error extracting keys from"
-                                      " ked = {}".format(ex))
 
-        if not keys:  # empty keys
-            raise DerivationError("Empty keys.")
+    def verify(self, raw=b'', sith=None, digs=None, keys=None, ked=None):
+        """
+        Returns True if digest of bytes nxt raw matches .raw
+        Uses .raw as reference nxt raw for ._verify algorithm determined by .code
 
-        if sith is None:
+        If raw not provided then extract raw from either (sith, keys) or ked
+
+        Parameters:
+            raw is bytes serialization
+            sith is str lowercase hex
+            keys is list of keys qb64
+            ked is key event dict
+        """
+        if not raw:
+            raw = self._derive(code=self.code, sith=sith, digs=digs, keys=keys, ked=ked)
+
+        return (raw == self.raw)
+
+
+    def _derive(self, code, sith=None, digs=None, keys=None, ked=None):
+        """
+        Returns ser where ser is serialization derived from code, sith, keys, or ked
+        """
+        if not digs:
+            if not keys:
+                try:
+                    keys = ked["keys"]
+                except KeyError as ex:
+                    raise DerivationError("Error extracting keys from"
+                                          " ked = {}".format(ex))
+
+            if not keys:  # empty keys
+                raise DerivationError("Empty keys.")
+
+            keydigs = [self._digest(key.encode("utf-8")) for key in keys]
+
+        else:
+            digers = [Diger(qb64=dig) for dig in digs]
+            for diger in digers:
+                if diger.code != code:
+                    raise DerivationError("Mismatch of public key digest "
+                                          "code = {} for next digest code = {}."
+                                          "".format(diger.code, code))
+            keydigs = [diger.raw for diger in digers]
+
+        if sith is None:  # need len keydigs to compute default sith
             try:
                 sith = ked["sith"]
             except Exception as ex:
-                sith = max(1, ceil(len(keys) / 2))  # default simple majority
+                sith = max(1, ceil(len(keydigs) / 2))  # default simple majority
 
         if isinstance(sith, list):
             # verify list expression against keys
             # serialize list here
             raise DerivationError("List form of sith = {} not yet supported".format(sith))
-
         else:
             try:
                 sith = int(sith, 16)  # convert to int
@@ -1021,29 +1086,27 @@ class Nexter(Diger):
             sith = max(1, sith)  # ensure sith at least 1
             sith = "{:x}".format(sith)  # convert back to lowercase hex no leading zeros
 
-        nxts = [sith.encode("utf-8")]  # create list to concatenate for hashing
-        for key in keys:
-            nxts.append(key.encode("utf-8"))
-        ser = b''.join(nxts)
+        kints = [int.from_bytes(keydig, 'big') for keydig in keydigs]
+        sint = int.from_bytes(self._digest(sith.encode("utf-8")), 'big')
+        for kint in kints:
+            sint ^= kint  # xor together
 
-        return (ser, sith, keys)
+        self._sith = copy.deepcopy(sith)
+        self._keys = copy.deepcopy(keys) if keys is not None else None
 
-    def verify(self, ser=b'', sith=None, keys=None, ked=None):
+        return (sint.to_bytes(CryRawSizes[code], 'big'))
+
+
+    @staticmethod
+    def _digest_blake3_256(raw):
         """
-        Returns True if digest of bytes serialization ser matches .raw
-        using .raw as reference digest for ._verify digest algorithm determined
-        by .code
-
-        If ser not provided then extract ser from either (sith, keys) or ked
+        Returns digest of raw using Blake3_256
 
         Parameters:
-            ser is bytes serialization
-            sith is str lowercase hex
+            raw is bytes serialization of nxt raw
         """
-        if not ser:
-            ser, sith, keys = self._derive(sith=sith, keys=keys, ked=ked)
+        return(blake3.blake3(raw).digest())
 
-        return (self._verify(ser=ser, dig=self.raw))
 
 
 class Prefixer(CryMat):
