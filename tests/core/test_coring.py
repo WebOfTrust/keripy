@@ -25,7 +25,7 @@ from keri.core.coring import (CrySelDex, CryCntDex,
                               CryFourDex, CryFourSizes, CryFourRawSizes,
                               CrySizes, CryRawSizes, MINCRYSIZE)
 from keri.core.coring import (CryMat, CryCounter, Verfer, Cigar, Signer,
-                              Diger, NexterOld, Nexter, Prefixer)
+                              Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import (SigSelDex, SigCntDex, SigCntSizes, SigCntRawSizes,
                               SigTwoDex, SigTwoSizes, SigTwoRawSizes,
@@ -643,6 +643,7 @@ def test_generatesigners():
 
     """ End Test """
 
+
 def test_diger():
     """
     Test the support functionality for Diger subclass of CryMat
@@ -681,83 +682,6 @@ def test_diger():
         diger = Diger(ser=ser, code=CryOneDex.Ed25519)
     """ Done Test """
 
-def test_nexterold():
-    """
-    Test the support functionality for Nexter subclass of Diger
-    """
-    with pytest.raises(EmptyMaterialError):
-        nexter = NexterOld()
-
-    #create something to digest and verify
-    # verkey, sigkey = pysodium.crypto_sign_keypair()
-    verkey = (b'\xacr\xda\xc83~\x99r\xaf\xeb`\xc0\x8cR\xd7\xd7\xf69\xc8E\x1e\xd2\xf0='
-              b'`\xf7\xbf\x8a\x18\x8a`q')
-    verfer = Verfer(raw=verkey)
-    assert verfer.qb64 == 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
-    sith = "{:x}".format(1)
-    keys = [verfer.qb64]
-    ser = (sith + verfer.qb64).encode("utf-8")
-
-    nexter = NexterOld(ser=ser)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOneDex.Blake3_256
-    assert nexter.qb64 == 'EEV6odWqE1wICGXtkKpOjDxPOWSrF4UAENqYT06C0ECU'
-    assert nexter.sith == None  # not used by nexter for its  digest
-    assert nexter.keys == None  # not used by nexter for its  digest
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.verify(ser=ser)
-    assert nexter.verify(ser=ser+b'ABCDEF') == False
-
-    with pytest.raises(ValueError):  # bad code
-        nexter = NexterOld(ser=ser, code=CryOneDex.Ed25519)
-
-    nexter = NexterOld(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == keys
-    nxtser, nxtsith, nxtkeys = nexter._derive(sith=sith, keys=keys)
-    assert nxtser == ser
-    assert nxtsith == sith
-    assert nxtkeys == keys
-    assert nexter.verify(ser=ser)
-    assert nexter.verify(ser=ser+b'ABCDEF') == False
-    assert nexter.verify(sith=sith, keys=keys)
-
-    with pytest.raises(EmptyMaterialError):
-        nexter = NexterOld(sith=sith)
-
-    nexter = NexterOld(keys=keys)  # compute sith from keys
-    assert nexter.keys == keys
-    assert nexter.sith == sith
-
-
-    nexter = NexterOld(sith=1, keys=keys)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == keys
-    nxtser, nxtsith, nxtkeys = nexter._derive(sith=sith, keys=keys)
-    assert nxtser == ser
-    assert nxtsith == sith
-    assert nxtkeys == keys
-    assert nexter.verify(ser=ser)
-    assert nexter.verify(ser=ser+b'ABCDEF') == False
-    assert nexter.verify(sith=1, keys=keys)
-
-    ked = dict(sith=sith, keys=keys)  #  subsequent event
-    nexter = NexterOld(ked=ked)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == keys
-    nxtser, nxtsith, nxtkeys = nexter._derive(sith=sith, keys=keys)
-    assert nxtser == ser
-    assert nxtsith == sith
-    assert nxtkeys == keys
-    assert nexter.verify(ser=ser)
-    assert nexter.verify(ser=ser+b'ABCDEF') == False
-    assert nexter.verify(ked=ked)
-    """ Done Test """
 
 def test_nexter():
     """
