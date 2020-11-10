@@ -927,7 +927,7 @@ class Diger(CryMat):
         return(blake3.blake3(ser).digest() == dig)
 
 
-class Nexter(Diger):
+class NexterOld(Diger):
     """
     Nexter is Diger subclass with support to create itself from
     next sith and next keys
@@ -968,12 +968,12 @@ class Nexter(Diger):
 
         """
         try:
-            super(Nexter, self).__init__(ser=ser, **kwa)
+            super(NexterOld, self).__init__(ser=ser, **kwa)
         except EmptyMaterialError as ex:
             if not keys and not ked:
                 raise ex
             ser, sith, keys = self._derive(sith=sith, keys=keys, ked=ked)
-            super(Nexter, self).__init__(ser=ser, **kwa)
+            super(NexterOld, self).__init__(ser=ser, **kwa)
 
         self._sith = copy.deepcopy(sith) if sith is not None else None
         self._keys = copy.deepcopy(keys) if keys is not None else None
@@ -1029,6 +1029,7 @@ class Nexter(Diger):
 
         return (ser, sith, keys)
 
+
     def verify(self, ser=b'', sith=None, keys=None, ked=None):
         """
         Returns True if digest of bytes serialization ser matches .raw
@@ -1047,7 +1048,8 @@ class Nexter(Diger):
         return (self._verify(ser=ser, dig=self.raw))
 
 
-class NexterNew(CryMat):
+
+class Nexter(CryMat):
     """
     Nexter is CryMat subclass with support to derive itself from
     next sith and next keys given code.
@@ -1108,7 +1110,7 @@ class NexterNew(CryMat):
 
         """
         try:
-            super(NexterNew, self).__init__(code=code, **kwa)
+            super(Nexter, self).__init__(code=code, **kwa)
         except EmptyMaterialError as ex:
             if not digs and not keys and not ked:
                 raise ex
@@ -1118,7 +1120,7 @@ class NexterNew(CryMat):
                 raise ValueError("Unsupported code = {} for nexter.".format(code))
 
             raw = self._derive(code=code, sith=sith, digs=digs, keys=keys, ked=ked)  #  derive nxt raw
-            super(NexterNew, self).__init__(raw=raw, code=code, **kwa)  # attaches code etc
+            super(Nexter, self).__init__(raw=raw, code=code, **kwa)  # attaches code etc
 
         else:
             if self.code == CryOneDex.Blake3_256:
