@@ -45,7 +45,7 @@ def test_directing_basic():
                                 code=coring.CryOneDex.Blake3_256)
 
     bob = bobSerder.ked['pre']
-    assert bob == 'ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdSo'
+    assert bob == 'EvEnZMhz52iTrJU8qKwtDxzmypyosgG70m6LIjkiCdoI'
 
 
     # set of secrets (seeds for private keys)
@@ -68,7 +68,7 @@ def test_directing_basic():
                                 code=coring.CryOneDex.Blake3_256)
 
     eve = eveSerder.ked['pre']
-    assert eve == 'EwBwUb2eZcA5GDcN7g-87wpreM0nNkLqzkwviBHTcV1A'
+    assert eve == 'E0uTVILY2KXdcxX40MSM9Fr8EpGwfjMNap6ulAAzVt0M'
 
 
 
@@ -209,7 +209,7 @@ def test_direct_mode():
                                 code=coring.CryOneDex.Blake3_256)
 
     bob = bobSerder.ked['pre']
-    assert bob == 'ETT9n-TCGn8XfkGkcNeNmZgdZSwHPLyDsojFXotBXdSo'
+    assert bob == 'EvEnZMhz52iTrJU8qKwtDxzmypyosgG70m6LIjkiCdoI'
 
 
     # set of secrets (seeds for private keys)
@@ -583,4 +583,4 @@ def test_run_demo():
 
 
 if __name__ == "__main__":
-    test_run_demo()
+    test_directing_basic()

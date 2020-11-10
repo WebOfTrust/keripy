@@ -151,7 +151,7 @@ def test_keyeventfuncs():
     nexter1 = Nexter(keys=keys1)  # dfault sith is 1
     assert nexter1.sith == '1'  # default from keys
     nxt1 = nexter1.qb64  # transferable so nxt is not empty
-    assert nxt1 == 'ERoAnIgbnFekiKsGwQFaPub2lnB6GU4I80702IKn4aPs'
+    assert nxt1 == 'EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4'
     serder0 = incept(keys=keys0, nxt=nxt1)
     pre = serder0.ked["pre"]
     assert serder0.ked["pre"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
@@ -160,9 +160,10 @@ def test_keyeventfuncs():
     assert serder0.ked["nxt"] == nxt1
     assert serder0.raw == (b'{"vs":"KERI10JSON0000fb_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
                            b'c","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
-                           b'Z-Wk1x4ejhcc"],"nxt":"ERoAnIgbnFekiKsGwQFaPub2lnB6GU4I80702IKn4aPs","toad":"'
+                           b'Z-Wk1x4ejhcc"],"nxt":"EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4","toad":"'
                            b'0","wits":[],"cnfg":[]}')
-    assert serder0.dig == 'Ey9BZP-aPB4DHtTDO7EJ1mRQok8S1J8henElY-lLnTOs'
+
+    assert serder0.dig == 'EIIUSTX04qnUbyuJiJc-udBgaKKoqK-XNUmA6eG7JKUA'
 
 
     # Rotation: Transferable not abandoned i.e. next not empty
@@ -177,7 +178,7 @@ def test_keyeventfuncs():
     nexter2 = Nexter(keys=keys2)
     assert nexter2.sith == '1'  # default from keys
     nxt2 = nexter2.qb64  # transferable so nxt is not empty
-    assert nxt2 == 'ECeM2JsaL9-ljwnIlsEYoPUJCv8zWcIeWmPSl2G14OP0'
+    assert nxt2 == 'EAXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U'
     serder1 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
     assert serder1.ked["pre"] == pre
     assert serder1.ked["sn"] == '1'
@@ -185,10 +186,11 @@ def test_keyeventfuncs():
     assert serder1.ked["nxt"] == nxt2
     assert serder1.ked["dig"] == serder0.dig
     assert serder1.raw == (b'{"vs":"KERI10JSON00013a_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","sn":"1","ilk":"rot","dig":"Ey9BZP-aPB4DHtTDO7EJ1mRQok8S1J8henElY-lLnTOs"'
+                           b'c","sn":"1","ilk":"rot","dig":"EIIUSTX04qnUbyuJiJc-udBgaKKoqK-XNUmA6eG7JKUA"'
                            b',"sith":"1","keys":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRiaf9FdA_-_49A"],"nxt":"E'
-                           b'CeM2JsaL9-ljwnIlsEYoPUJCv8zWcIeWmPSl2G14OP0","toad":"0","cuts":[],"adds":[],'
+                           b'AXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U","toad":"0","cuts":[],"adds":[],'
                            b'"data":[]}')
+
 
     # Interaction:
     serder2 = interact(pre=pre, dig=serder1.dig, sn=2)
@@ -197,8 +199,9 @@ def test_keyeventfuncs():
     assert serder2.ked["ilk"] == Ilks.ixn
     assert serder2.ked["dig"] == serder1.dig
     assert serder2.raw == (b'{"vs":"KERI10JSON0000a3_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","sn":"2","ilk":"ixn","dig":"EJj1B3VAcS74VBDlJeCWWOYX5X1h0n_I1gtgzcViGPCk"'
+                           b'c","sn":"2","ilk":"ixn","dig":"Ehl5-_BQFcAKqweFqEpqR6ClTAaJh3vrbHJPfOpISOOQ"'
                            b',"data":[]}')
+
 
 
     # Receipt
@@ -208,17 +211,16 @@ def test_keyeventfuncs():
     assert serder3.ked["ilk"] == Ilks.rct
     assert serder3.ked["dig"] == serder2.dig
     assert serder3.raw == (b'{"vs":"KERI10JSON000099_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","sn":"0","ilk":"rct","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"'
+                           b'c","sn":"0","ilk":"rct","dig":"EgWxcdJkGUDh08x02ZW9pc-7XhrLe-zXJp3Vv5M35tTQ"'
                            b'}')
-
 
 
 
     # ValReceipt  chit
     serderA = incept(keys=keys0, nxt=nxt1, code=CryOneDex.Blake3_256)
     seal = SealEvent(pre=serderA.ked["pre"], dig=serderA.dig)
-    assert seal.pre == serderA.ked["pre"] == 'EyqftoqSC_ANDHdx9v4sygNas8Wvy3szYSuTxjT0lvzs'
-    assert seal.dig == serderA.dig == 'EBk2aGuL5oHsF64QNAeEPEal-JBYJLe5GvXqp3mLMFKw'
+    assert seal.pre == serderA.ked["pre"] == 'EykXsFe4u9epTUQFCL7YdNdHxtdjCQUM-TVO8CgJAKb8'
+    assert seal.dig == serderA.dig == 'EaqN7zhqTEhkeDZ2zMuNWHss_H_kH4cG7Li1jn2DXfrE'
 
     serder4 = chit(pre=pre, sn=2, dig=serder2.dig, seal=seal)
     assert serder4.ked["pre"] == pre
@@ -227,10 +229,9 @@ def test_keyeventfuncs():
     assert serder4.ked["dig"] == serder2.dig
     assert serder4.ked["seal"] == seal._asdict()
     assert serder4.raw == (b'{"vs":"KERI10JSON00010c_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","sn":"2","ilk":"vrc","dig":"EEWroCdb9ARV9R35eM-gS4-5BPPvBXRQU_P89qlhET7E"'
-                           b',"seal":{"pre":"EyqftoqSC_ANDHdx9v4sygNas8Wvy3szYSuTxjT0lvzs","dig":"EBk2aGu'
-                           b'L5oHsF64QNAeEPEal-JBYJLe5GvXqp3mLMFKw"}}')
-
+                           b'c","sn":"2","ilk":"vrc","dig":"EgWxcdJkGUDh08x02ZW9pc-7XhrLe-zXJp3Vv5M35tTQ"'
+                           b',"seal":{"pre":"EykXsFe4u9epTUQFCL7YdNdHxtdjCQUM-TVO8CgJAKb8","dig":"EaqN7zh'
+                           b'qTEhkeDZ2zMuNWHss_H_kH4cG7Li1jn2DXfrE"}}')
     """ Done Test """
 
 
@@ -455,7 +456,7 @@ def test_keyeventsequence_0():
         nexter1 = Nexter(keys=keys1)
         assert nexter1.sith == '1'
         nxt1 = nexter1.qb64  # transferable so nxt is not empty
-        assert nxt1 == 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+        assert nxt1 == 'EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqU'
         serder0 = incept(keys=keys0, nxt=nxt1)
         pre = serder0.ked["pre"]
         event_digs.append(serder0.dig)
@@ -464,7 +465,7 @@ def test_keyeventsequence_0():
         assert serder0.ked["sith"] == '1'
         assert serder0.ked["keys"] == keys0
         assert serder0.ked["nxt"] == nxt1
-        assert serder0.dig == 'EgCvROg0cKXF_u_K0WH33PPB77bjZpIlgLy99xmYrHlM'
+        assert serder0.dig == 'Ew3MXaYk3VBkPAFyTZN6Oyev5sbKM_6ycHAds-A6znN8'
 
         # sign serialization and verify signature
         sig0 = signers[0].sign(serder0.raw, index=0)
@@ -487,7 +488,7 @@ def test_keyeventsequence_0():
         nexter2 = Nexter(keys=keys2)
         assert nexter2.sith == '1'
         nxt2 = nexter2.qb64  # transferable so nxt is not empty
-        assert nxt2 == 'EoWDoTGQZ6lJ19LsaV4g42k5gccsB_-ttYHOft6kuYZk'
+        assert nxt2 == 'E-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI'
         serder1 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
         event_digs.append(serder1.dig)
         assert serder1.ked["pre"] == pre
@@ -833,10 +834,10 @@ def test_kevery():
 
         assert kes == bytearray(b'{"vs":"KERI10JSON0000fb_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
                                 b'ZOoeKtWTOunRA","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
-                                b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EGAPkzNZMtX-QiVgbR'
-                                b'byAIZGoXvbGv9IPb0foWTZvI_4","toad":"0","wits":[],"cnfg":[]}-AABA'
-                                b'APcgkk6etAU3B-0zPX1ctRg0V2Bz26zH9yfOHiHyH46XF8gQWNkpcaPOSn9oZGJU'
-                                b'm0TZI-P_uEjcIN-Wu98YeAw')
+                                b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EPYuj8mq_PYYsoBKkz'
+                                b'X1kxSPGYBWaIya3slgCOyOtlqU","toad":"0","wits":[],"cnfg":[]}-AABA'
+                                b'Ab9HVtXGZWUssiJdEOVMTNNy9jVfinHmDGIJxkD22ogiBI1rvUxPpCATf66DvilG'
+                                b'QOhKbpumcrQRkZMe737QyBA')
 
         # Event 1 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
@@ -2999,4 +3000,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_direct_mode_cbor_mgpk()
+    test_keyeventfuncs()
