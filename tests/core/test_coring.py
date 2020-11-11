@@ -697,6 +697,8 @@ def test_nexter():
 
     sith = "{:x}".format(2)
     sithdig = blake3.blake3(sith.encode("utf-8")).digest()
+    assert sithdig == b"\x81>\x9br\x91A\xe7\xf3\x85\xaf\xa0\xa2\xd0\xdf>l7\x89\xe4'\xff\xe4\xae\xefVjV[\xc8\xf2\xfe="
+
     sithdiger = Diger(raw=sithdig, code=CryOneDex.Blake3_256)
     assert sithdiger.qb64 == 'EgT6bcpFB5_OFr6Ci0N8-bDeJ5Cf_5K7vVmpWW8jy_j0'
 
@@ -705,6 +707,10 @@ def test_nexter():
             'B8T4xkb8En6o0Uo5ZImco1_08gT5zcYnXzizUPVNzicw']
 
     keydigs = [blake3.blake3(key.encode("utf-8")).digest() for key in keys]
+    assert keydigs == [b'\x98\x1d\xba\xc8\xcc\xeb\xa0\x80\xa1\xfa\x8aJ5\xd9\x18\xc8\xfd4\xd2L\x1e\xbdM|Y\x02=\xe4\x96\x89\x0e6',
+                       b';\x80\x97\xa7\xc8,\xd3"`\xd5\xf1a$\xbb9\x84~\xa7z\xa2p\x84Q\x18\xee\xfa\xc9\x11\xd3\xde\xf3\xb2',
+                       b'-e\x99\x13 i\x8e\xb7\xcc\xd5E4\x9f}J#"\x17\x96Z\xc2\xa0\xb1\x0e#\x95\x07\x0f\xdc{[\x12']
+
     digers = [Diger(raw=keydig, code=CryOneDex.Blake3_256) for keydig in keydigs]
     digs = [diger.qb64 for diger in digers]
 
@@ -718,6 +724,7 @@ def test_nexter():
         sint ^= kint  # xor together
 
     raw = sint.to_bytes(CryRawSizes[CryOneDex.Blake3_256], 'big')
+    assert raw == (b'\x0f\xc6/\x0e\xb5\xef\x1a\xe6\x88U\x9e\xbd^\xc0U\x03\x96\r\xda\x93S}\x03\x85\xc2\x07\xa5\xa1Q\xdeX\xab')
 
     nexter = Nexter(raw=raw)  # defaults provide Blake3_256 digest
     assert nexter.code == CryOneDex.Blake3_256
@@ -1692,4 +1699,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_prefixer()
+    test_nexter()
