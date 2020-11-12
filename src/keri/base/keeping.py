@@ -175,12 +175,12 @@ class Keeper(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-
         self.pris = self.env.open_db(key=b'pris.')
         self.prms = self.env.open_db(key=b'prms.')
         self.idxs = self.env.open_db(key=b'idxs.')
         self.pubs = self.env.open_db(key=b'pubs.')
         self.rots = self.env.open_db(key=b'rots.')
+
 
     # .pris methods
     def putPri(self, key, val):
@@ -264,6 +264,140 @@ class Keeper(dbing.LMDBer):
 
 
     # .idxs methods
+    def putIdx(self, key, val):
+        """
+        Use ppKey(pre, pub)
+        Write serialized index dict as val to key
+        key is pre.pub (both fully qualified)
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        return self.putVal(self.idxs, key, val)
+
+
+    def setIdx(self, key, val):
+        """
+        Use ppKey(pre, pub)
+        Write serialized index dict as val to key
+        key is pre.pub (both fully qualified)
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.idxs, key, val)
+
+
+    def getIdx(self, key):
+        """
+        Use ppKey(pre, pub)
+        Return serialized index dict at key
+        key is pre.pub (both fully qualified)
+        Returns None if no entry at key
+        """
+        return self.getVal(self.idxs, key)
+
+
+    def delIdx(self, key):
+        """
+        Use ppKey(pre, pub)
+        Deletes value at key.
+        key is pre.pub (both fully qualified)
+        val is serialized parameter dict at key
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.idxs, key)
+
+
+    # .pubs methods
+    def putPub(self, key, val):
+        """
+        Use ixKey(pre, idx)
+        Write public key as val to key
+        key is pre.idx where pre is qb64 and idx is key index kidx int converted to hex str
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        return self.putVal(self.pubs, key, val)
+
+
+    def setPub(self, key, val):
+        """
+        Use ixKey(pre, idx)
+        Write publick key as val to key
+        key is pre.idx where pre is qb64 and idx is key index kidx int converted to hex str
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.pubs, key, val)
+
+
+    def getPub(self, key):
+        """
+        Use ixKey(pre, idx)
+        Return public key at key
+        key is pre.idx where pre is qb64 and idx is key index kidx int converted to hex str
+        Returns None if no entry at key
+        """
+        return self.getVal(self.pubs, key)
+
+
+    def delPub(self, key):
+        """
+        Use ixKey(pre, idx)
+        Deletes value at key.
+        key is pre.idx where pre is qb64 and idx is key index kidx int converted to hex str
+        val is serialized parameter dict at key
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.pubs, key)
+
+
+    # .rots methods
+    def putRot(self, key, val):
+        """
+        Use ixKey(pre, idx)
+        Write serialized rotation dict as val to key
+        key is pre.idx where pre is qb64 and idx is rotation index ridx int converted to hex str
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        return self.putVal(self.rots, key, val)
+
+
+    def setRot(self, key, val):
+        """
+        Use ixKey(pre, idx)
+        Write serialized rotation dict as val to key
+        key is pre.idx where pre is qb64 and idx is rotation index ridx int converted to hex str
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.rots, key, val)
+
+
+    def getRot(self, key):
+        """
+        Use ixKey(pre, idx)
+        Return serialized rotation dict at key
+        key is pre.idx where pre is qb64 and idx is rotation index ridx int converted to hex str
+        Returns None if no entry at key
+        """
+        return self.getVal(self.rots, key)
+
+
+    def delRot(self, key):
+        """
+        Use ixKey(pre, idx)
+        Deletes value at key.
+        key is pre.idx where pre is qb64 and idx is rotation index ridx int converted to hex str
+        val is serialized parameter dict at key
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.rots, key)
+
+
 
 
 class KeeperDoer(doing.Doer):

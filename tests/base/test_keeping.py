@@ -205,11 +205,12 @@ def test_keeper():
         seed = '0AZxWJGkCkpDcHuVG4GM1KVw'
         pria = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
         prib = b'AE2yPgBXiP6h_J2cZeCy4MaOa6eOCJQcgEozYb1GgV9z'
-        pub = b'DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+        puba = b'DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+        pubb = b'DoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-QiVgbRbyAIZG'
         pre = b'EWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
 
         #  test .pris sub db methods
-        key = pub
+        key = puba
         assert keeper.getPri(key) == None
         assert keeper.delPri(key) == False
         assert keeper.putPri(key, val=pria) == True
@@ -219,6 +220,19 @@ def test_keeper():
         assert keeper.getPri(key) == prib
         assert keeper.delPri(key) == True
         assert keeper.getPri(key) == None
+
+        #  test .pubs sub db methods
+        kidx =  3
+        key =  keeping.ixKey(pre, kidx)
+        assert keeper.getPub(key) == None
+        assert keeper.delPub(key) == False
+        assert keeper.putPub(key, val=puba) == True
+        assert keeper.getPub(key) == puba
+        assert keeper.putPub(key, val=pubb) == False
+        assert keeper.setPub(key, val=pubb) == True
+        assert keeper.getPub(key) == pubb
+        assert keeper.delPub(key) == True
+        assert keeper.getPub(key) == None
 
 
     assert not os.path.exists(keeper.path)
