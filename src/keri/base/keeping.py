@@ -3,8 +3,21 @@
 KERI
 keri.base.keeping module
 
+txn.put(
+            did.encode(),
+            json.dumps(certifiable_data).encode("utf-8")
+        )
+raw_data = txn.get(did.encode())
+    if raw_data is None:
+        return None
+    return json.loads(raw_data)
+
+ked = json.loads(raw[:size].decode("utf-8"))
+raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 """
+import os
+import stat
 
 from hio.base import doing
 
@@ -12,21 +25,7 @@ from .. import kering
 from ..db import dbing
 
 
-def pmKey(pre, prm):
-    """
-    Returns bytes for DB key from concatenation of qualified Base64:
-    pre is identifier prefix bytes or str
-    prm is parameter label bytes or str
-    If pre or prm are str then converts to bytes
-    """
-    if hasattr(pre, "encode"):
-        pre = pre.encode("utf-8")  # convert str to bytes
-    if hasattr(prm, "encode"):
-        prm = prm.encode("utf-8")  # convert str to bytvaes
-
-    return (b'%s.%s' %  (pre, prm))
-
-def pbKey(pre, pub):
+def ppKey(pre, pub):
     """
     Returns bytes for DB key from concatenation of qualified Base64:
     pre is identifier prefix bytes or str
@@ -39,6 +38,18 @@ def pbKey(pre, pub):
         pub = pub.encode("utf-8")  # convert str to bytes
 
     return (b'%s.%s' %  (pre, pub))
+
+
+def ixKey(pre, idx):
+    """
+    Returns bytes for DB key from concatenation of qualified Base64:
+    pre is identifier prefix bytes or str
+        If pre is str then converts to bytes
+    idx is index int this is converted to 32 char hex string
+    """
+    if hasattr(pre, "encode"):
+        pre = pre.encode("utf-8")  # convert str to bytes
+    return (b'%s.%032x' % (pre, idx))
 
 
 def openKeep(name="test", **kwa):
@@ -56,25 +67,51 @@ class Keeper(dbing.LMDBer):
     Attributes:
         see superclass LMDBer for inherited attributes
 
-        .prms is named sub DB whose values are parameters for keeper
-            pmKey
-            Keyed by identifer prefix plus parameter label
-            Only one value per DB key is allowed
-
         .keys is named sub DB whose values are private keys
-            pbKey
-            Keyed by identifer prefix plus public key (fully qualified qb64)
+            Keyed by public key (fully qualified qb64)
             Value is private key (fully qualified qb64)
 
-        .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
-            pbKey
-            Keyed by identifer prefix plus public key (fully qualified qb64)
-            Value is the datetime, nowIso8601(), when keypair first created,
+        .prms is named sub DB whose values are serialized dicts
+            Keyed by identifer prefix (fully qualified qb64)
+            Value is  serialized parameter dict (JSON)
+                {sgn: { ridx:, kidx, len:}, nxt: {ridx:,kidx:,len:}}
+
+        .idxs is named sub DB whose values are serialized dicts
+            Use ppKey() for key
+            Keyed by pre.pub where pre is identifier prefix and pub is public key
+                both fully qualified qb64
+            Value is serialized data dict (JSON)
+                {ridx:, kidx:,dt:} where dt is ISO 8601 format datetime
+                nowIso8601() when keypair first created
+
+        .pubs is named sub DB whose values are public keys
+            Use ixKey() for key
+            Keyed by pre.idx where pre is identifier prefix (qb64) and idx is
+                kidx, is key index in sequence of key pair for prefix. idx is
+                integer converted to 32 char hex str bytes for key.
+            Value is public key (fully qualified qb64) at kidx
+
+        .rots is named sub DB whose values are serialized dicts
+            Use ixKey() for key
+            Keyed by pre.idx where pre is identifier prefix (qb64) and idx is
+                ridx, is rotation index in sequence of rotation for prefix. idx is
+                integer converted to 32 char hex str bytes for key.
+            Value is serialized data dict (JSON)
+                {kidx:,len:}  where kidx is key index of starting key in rotation
+                set and line is number of keys in rotation set.
 
 
     Properties:
 
 
+    Directory Mode for Restricted Access Permissions
+    stat.S_ISVTX  is Sticky bit. When this bit is set on a directory it means
+        that a file in that directory can be renamed or deleted only by the
+        owner of the file, by the owner of the directory, or by a privileged process.
+
+    stat.S_IRUSR Owner has read permission.
+    stat.S_IWUSR Owner has write permission.
+    stat.S_IXUSR Owner has execute permission.
     """
     HeadDirPath = "/usr/local/var"  # default in /usr/local/var
     TailDirPath = "keri/keep"
@@ -84,8 +121,9 @@ class Keeper(dbing.LMDBer):
     TempPrefix = "keri_keep_"
     TempSuffix = "_test"
     MaxNamedDBs = 8
+    DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700
 
-    def __init__(self, headDirPath=None, reopen=True, **kwa):
+    def __init__(self, headDirPath=None, dirMode=None, reopen=True, **kwa):
         """
         Setup named sub databases.
 
@@ -93,12 +131,18 @@ class Keeper(dbing.LMDBer):
             name is str directory path name differentiator for main database
                 When system employs more than one keri database, name allows
                 differentiating each instance by name
+                default name='main'
             temp is boolean, assign to .temp
                 True then open in temporary directory, clear on close
                 Othewise then open persistent directory, do not clear on close
+                default temp=False
             headDirPath is optional str head directory pathname for main database
                 If not provided use default .HeadDirpath
+                default headDirPath=None so uses self.HeadDirPath
+            dirMode is numeric optional os dir permissions mode
+                default dirMode=None so do not set mode
             reopen is boolean, IF True then database will be reopened by this init
+                default reopen=True
 
         Notes:
 
@@ -112,25 +156,30 @@ class Keeper(dbing.LMDBer):
         Duplicates are inserted in lexocographic order by value, insertion order.
 
         """
-        super(Keeper, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
+        if dirMode is None:
+            dirMode = self.DirMode  # defaults to restricted permissions for non temp
 
-        if reopen:
-            self.reopen(headDirPath=headDirPath)
+        super(Keeper, self).__init__(headDirPath=headDirPath, dirMode=dirMode,
+                                     reopen=reopen, **kwa)
 
 
-    def reopen(self, temp=None, headDirPath=None):
+
+    def reopen(self, **kwa):
         """
         Open sub databases
         """
-        super(Keeper, self).reopen(temp=temp, headDirPath=headDirPath)
+        super(Keeper, self).reopen(**kwa)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.prms = self.env.open_db(key=b'prms.')
+
         self.keys = self.env.open_db(key=b'keys.')
-        self.dtss = self.env.open_db(key=b'dtss.')
+        self.prms = self.env.open_db(key=b'prms.')
+        self.idxs = self.env.open_db(key=b'idxs.')
+        self.pubs = self.env.open_db(key=b'pubs.')
+        self.rots = self.env.open_db(key=b'rots.')
 
 
 

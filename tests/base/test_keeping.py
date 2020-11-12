@@ -6,10 +6,47 @@ tests.base.keeping module
 import pytest
 
 import os
+import stat
 import lmdb
 
 from hio.base import  doing
 from keri.base import keeping
+
+
+
+def test_keyfuncs():
+    """
+    test the key generation functions
+    """
+    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    pub = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    pri = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
+    seed = '0AZxWJGkCkpDcHuVG4GM1KVw'
+
+    ppKey = keeping.ppKey
+
+    ppky = ppKey(pre, pub)
+    assert ppky == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9'
+                    b'IPb0foWTZvI_4')
+    ppky = ppKey(pre.decode("utf-8"), pub.decode("utf-8"))
+    assert ppky == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9'
+                    b'IPb0foWTZvI_4')
+
+    kidx = 6
+    ridx = 2
+    ixKey = keeping.ixKey
+
+    ixky = ixKey(pre, kidx)
+    assert ixky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.00000000000000000000000000000006'
+    ixky = ixKey(pre, ridx)
+    assert ixky ==b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.00000000000000000000000000000002'
+
+    ixky = ixKey(pre.decode("utf-8"), kidx)
+    assert ixky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.00000000000000000000000000000006'
+    ixky = ixKey(pre.decode("utf-8"), ridx)
+    assert ixky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.00000000000000000000000000000002'
+
+    """End Test"""
 
 
 def test_openkeep():
@@ -62,47 +99,24 @@ def test_openkeep():
 
     """ End Test """
 
-def test_keyfuncs():
-    """
-    test the key generation functions
-    """
-    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-    pub = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
-    pri = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
-
-    seed = '0AZxWJGkCkpDcHuVG4GM1KVw'
-    count = 0
-    seedLabel = b"seed"
-    countLabel = b"count"
-
-    pmKey = keeping.pmKey
-    pbKey = keeping.pbKey
-
-    pmky = pmKey(pre, seedLabel)
-    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.seed'
-    pmky = pmKey(pre, countLabel)
-    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.count'
-
-    pmky = pmKey(pre.decode("utf-8"), seedLabel.decode("utf-8"))
-    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.seed'
-    pmky = pmKey(pre.decode("utf-8"), countLabel.decode("utf-8"))
-    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.count'
-
-    pbky = pbKey(pre, pub)
-    assert pbky == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9'
-                    b'IPb0foWTZvI_4')
-    pbky = pbKey(pre.decode("utf-8"), pub.decode("utf-8"))
-    assert pbky == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9'
-                    b'IPb0foWTZvI_4')
-
-    """End Test"""
-
-
-
 def test_keeper():
     """
     Test Keeper creation
     """
+
+    """
+    stat.S_ISVTX  is Sticky bit. When this bit is set on a directory it means
+        that a file in that directory can be renamed or deleted only by the
+        owner of the file, by the owner of the directory, or by a privileged process.
+
+    stat.S_IRUSR Owner has read permission.
+    stat.S_IWUSR Owner has write permission.
+    stat.S_IXUSR Owner has execute permission.
+    """
+    dirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
+    assert dirMode == 0o1700
+
+    # set mode to sticky bit plus rwx only for owner/user
     keeper = keeping.Keeper()
     assert isinstance(keeper, keeping.Keeper)
     assert keeper.name == "main"
@@ -111,11 +125,35 @@ def test_keeper():
     assert keeper.path.endswith("keri/keep/main")
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
+    assert oct(os.stat(keeper.path).st_mode)[-4:] == "1700"
+    assert keeper.DirMode == dirMode
 
-    assert isinstance(keeper.prms, lmdb._Database)
     assert isinstance(keeper.keys, lmdb._Database)
-    assert isinstance(keeper.dtss, lmdb._Database)
+    assert isinstance(keeper.prms, lmdb._Database)
+    assert isinstance(keeper.idxs, lmdb._Database)
+    assert isinstance(keeper.pubs, lmdb._Database)
+    assert isinstance(keeper.rots, lmdb._Database)
 
+    keeper.close(clear=True)
+    assert not os.path.exists(keeper.path)
+    assert not keeper.opened
+
+    # set to unrestricted mode
+    keeper = keeping.Keeper(dirMode=0o775)
+    assert isinstance(keeper, keeping.Keeper)
+    assert keeper.name == "main"
+    assert keeper.temp == False
+    assert isinstance(keeper.env, lmdb.Environment)
+    assert keeper.path.endswith("keri/keep/main")
+    assert keeper.env.path() == keeper.path
+    assert os.path.exists(keeper.path)
+    assert oct(os.stat(keeper.path).st_mode)[-4:] == "0775"
+
+    assert isinstance(keeper.keys, lmdb._Database)
+    assert isinstance(keeper.prms, lmdb._Database)
+    assert isinstance(keeper.idxs, lmdb._Database)
+    assert isinstance(keeper.pubs, lmdb._Database)
+    assert isinstance(keeper.rots, lmdb._Database)
 
     keeper.close(clear=True)
     assert not os.path.exists(keeper.path)
@@ -137,15 +175,15 @@ def test_keeper():
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
 
-    assert isinstance(keeper.prms, lmdb._Database)
     assert isinstance(keeper.keys, lmdb._Database)
-    assert isinstance(keeper.dtss, lmdb._Database)
+    assert isinstance(keeper.prms, lmdb._Database)
+    assert isinstance(keeper.idxs, lmdb._Database)
+    assert isinstance(keeper.pubs, lmdb._Database)
+    assert isinstance(keeper.rots, lmdb._Database)
 
     keeper.close(clear=True)
     assert not os.path.exists(keeper.path)
     assert not keeper.opened
-
-
 
     # Test using context manager
     with keeping.openKeep() as keeper:
@@ -158,9 +196,11 @@ def test_keeper():
         assert keeper.env.path() == keeper.path
         assert os.path.exists(keeper.path)
 
-        assert isinstance(keeper.prms, lmdb._Database)
         assert isinstance(keeper.keys, lmdb._Database)
-        assert isinstance(keeper.dtss, lmdb._Database)
+        assert isinstance(keeper.prms, lmdb._Database)
+        assert isinstance(keeper.idxs, lmdb._Database)
+        assert isinstance(keeper.pubs, lmdb._Database)
+        assert isinstance(keeper.rots, lmdb._Database)
 
     assert not os.path.exists(keeper.path)
 
@@ -231,4 +271,4 @@ def test_keeperdoer():
 
 
 if __name__ == "__main__":
-    test_keyfuncs()
+    test_keeper()

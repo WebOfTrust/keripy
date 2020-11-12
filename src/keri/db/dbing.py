@@ -47,6 +47,7 @@ l
 import os
 import shutil
 import tempfile
+import stat
 
 from contextlib import contextmanager
 
@@ -145,8 +146,11 @@ class LMDBer:
 
     Attributes:
         .name is LMDB database name did2offer
-        .env is LMDB main (super) database environment
+        .temp is Boolean, True means open db in /tmp directory
+        .headDirPath is head directory path for db
+        .mode is numeric os dir permissions for db directory
         .path is LMDB main (super) database directory path
+        .env is LMDB main (super) database environment
         .opened is Boolean, True means LMDB .env at .path is opened.
                             Otherwise LMDB .env is closed
 
@@ -163,7 +167,8 @@ class LMDBer:
     TempSuffix = "_test"
     MaxNamedDBs = 16
 
-    def __init__(self, name='main', temp=False, headDirPath=None, reopen=True):
+    def __init__(self, name='main', temp=False, headDirPath=None, dirMode=None,
+                 reopen=True):
         """
         Setup main database directory at .dirpath.
         Create main database environment at .env using .dirpath.
@@ -177,20 +182,23 @@ class LMDBer:
                 Othewise then open persistent directory, do not clear on close
             headDirPath is optional str head directory pathname for main database
                 If not provided use default .HeadDirpath
+            dirMode is int numeric os dir permissions for database directory
             reopen is boolean, IF True then database will be reopened by this init
+
         """
         self.name = name
         self.temp = True if temp else False
         self.headDirPath = headDirPath
+        self.dirMode = dirMode
         self.path = None
         self.env = None
         self.opened = False
 
         if reopen:
-            self.reopen(headDirPath=self.headDirPath)
+            self.reopen(headDirPath=self.headDirPath, dirMode=dirMode)
 
 
-    def reopen(self, temp=None, headDirPath=None):
+    def reopen(self, temp=None, headDirPath=None, dirMode=None):
         """
         Use or Create if not preexistent, directory path for lmdb at .path
         Open lmdb and assign to .env
@@ -205,10 +213,13 @@ class LMDBer:
                 If not provided use default .HeadDirpath
         """
         if temp is not None:
-            self.temp = True if temp else False
+            self.temp = True if temp else False  # need .temp for clear on .close
 
         if headDirPath is None:
             headDirPath = self.headDirPath
+
+        if dirMode is None:
+            dirMode = self.dirMode
 
         if self.temp:
             headDirPath = tempfile.mkdtemp(prefix=self.TempPrefix,
@@ -252,6 +263,9 @@ class LMDBer:
                                                          self.name)))
                     if not os.path.exists(self.path):
                         os.makedirs(self.path)
+
+            if dirMode is not None:  # set mode if mode and not temp
+                os.chmod(self.path, dirMode)
 
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
@@ -838,6 +852,7 @@ class Baser(LMDBer):
                 Othewise then open persistent directory, do not clear on close
             headDirPath is optional str head directory pathname for main database
                 If not provided use default .HeadDirpath
+            mode is int numeric os dir permissions for database directory
             reopen is boolean, IF True then database will be reopened by this init
 
         Notes:
@@ -854,15 +869,12 @@ class Baser(LMDBer):
         """
         super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
-        if reopen:
-            self.reopen(headDirPath=headDirPath)
 
-
-    def reopen(self, temp=None, headDirPath=None):
+    def reopen(self, **kwa):
         """
         Open sub databases
         """
-        super(Baser, self).reopen(temp=temp, headDirPath=headDirPath)
+        super(Baser, self).reopen(**kwa)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character
