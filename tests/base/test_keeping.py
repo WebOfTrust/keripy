@@ -53,7 +53,7 @@ def test_openkeep():
     """
     test contextmanager decorator for test Keeper databases
     """
-    with keeping.openKeep() as keeper:
+    with keeping.openKeeper() as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "test"
         assert isinstance(keeper.env, lmdb.Environment)
@@ -66,7 +66,7 @@ def test_openkeep():
     assert not os.path.exists(keeper.path)
     assert not keeper.opened
 
-    with keeping.openKeep(name="blue") as keeper:
+    with keeping.openKeeper(name="blue") as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "blue"
         assert isinstance(keeper.env, lmdb.Environment)
@@ -79,7 +79,7 @@ def test_openkeep():
     assert not os.path.exists(keeper.path)
     assert not keeper.opened
 
-    with keeping.openKeep(name="red") as red, keeping.openKeep(name="tan") as tan:
+    with keeping.openKeeper(name="red") as red, keeping.openKeeper(name="tan") as tan:
         assert isinstance(red, keeping.Keeper)
         assert red.name == "red"
         assert red.env.path() == red.path
@@ -128,7 +128,7 @@ def test_keeper():
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "1700"
     assert keeper.DirMode == dirMode
 
-    assert isinstance(keeper.keys, lmdb._Database)
+    assert isinstance(keeper.pris, lmdb._Database)
     assert isinstance(keeper.prms, lmdb._Database)
     assert isinstance(keeper.idxs, lmdb._Database)
     assert isinstance(keeper.pubs, lmdb._Database)
@@ -149,7 +149,7 @@ def test_keeper():
     assert os.path.exists(keeper.path)
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "0775"
 
-    assert isinstance(keeper.keys, lmdb._Database)
+    assert isinstance(keeper.pris, lmdb._Database)
     assert isinstance(keeper.prms, lmdb._Database)
     assert isinstance(keeper.idxs, lmdb._Database)
     assert isinstance(keeper.pubs, lmdb._Database)
@@ -175,7 +175,7 @@ def test_keeper():
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
 
-    assert isinstance(keeper.keys, lmdb._Database)
+    assert isinstance(keeper.pris, lmdb._Database)
     assert isinstance(keeper.prms, lmdb._Database)
     assert isinstance(keeper.idxs, lmdb._Database)
     assert isinstance(keeper.pubs, lmdb._Database)
@@ -186,7 +186,7 @@ def test_keeper():
     assert not keeper.opened
 
     # Test using context manager
-    with keeping.openKeep() as keeper:
+    with keeping.openKeeper() as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "test"
         assert keeper.temp == True
@@ -196,11 +196,30 @@ def test_keeper():
         assert keeper.env.path() == keeper.path
         assert os.path.exists(keeper.path)
 
-        assert isinstance(keeper.keys, lmdb._Database)
+        assert isinstance(keeper.pris, lmdb._Database)
         assert isinstance(keeper.prms, lmdb._Database)
         assert isinstance(keeper.idxs, lmdb._Database)
         assert isinstance(keeper.pubs, lmdb._Database)
         assert isinstance(keeper.rots, lmdb._Database)
+
+        seed = '0AZxWJGkCkpDcHuVG4GM1KVw'
+        pria = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
+        prib = b'AE2yPgBXiP6h_J2cZeCy4MaOa6eOCJQcgEozYb1GgV9z'
+        pub = b'DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+        pre = b'EWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+
+        #  test .pris sub db methods
+        key = pub
+        assert keeper.getPri(key) == None
+        assert keeper.delPri(key) == False
+        assert keeper.putPri(key, val=pria) == True
+        assert keeper.getPri(key) == pria
+        assert keeper.putPri(key, val=prib) == False
+        assert keeper.setPri(key, val=prib) == True
+        assert keeper.getPri(key) == prib
+        assert keeper.delPri(key) == True
+        assert keeper.getPri(key) == None
+
 
     assert not os.path.exists(keeper.path)
 
