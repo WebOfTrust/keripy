@@ -8,6 +8,7 @@ import shutil
 import tempfile
 import base64
 import datetime
+import dataclasses
 
 from collections.abc import Iterable, Sequence,  Mapping
 
@@ -15,6 +16,20 @@ import pysodium
 
 from multidict import MultiDict  # base class for mdict defined below
 from orderedset import OrderedSet as oset
+
+
+def datify(cls, d):
+    """
+    Returns instance of dataclass cls converted from dict d
+    Parameters:
+    cls is dataclass class
+    d is dict
+    """
+    try:
+        fieldtypes = {f.name:f.type for f in dataclasses.fields(cls)}
+        return cls(**{f:datify(fieldtypes[f], d[f]) for f in d})  # recursive
+    except:
+        return d  # Not a dataclass field
 
 
 def keyToKey64u(key):

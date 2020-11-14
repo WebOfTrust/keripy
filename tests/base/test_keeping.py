@@ -7,46 +7,69 @@ import pytest
 
 import os
 import stat
+import json
+from dataclasses import asdict
+
 import lmdb
 
-from hio.base import  doing
+from hio.base import doing
+
+from keri.help import helping
 from keri.base import keeping
 
 
-
-def test_keyfuncs():
+def test_publot_pubsit():
     """
-    test the key generation functions
+    test key set tracking and creation parameters
     """
     pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     pub = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
     pri = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
     seed = '0AZxWJGkCkpDcHuVG4GM1KVw'
 
-    ppKey = keeping.ppKey
+    pl = keeping.Publot()
+    assert isinstance(pl, keeping.Publot)
+    assert pl.pubs == []
+    assert pl.ridx == 0
+    assert pl.kidx == 0
+    assert pl.dt == ''
 
-    ppky = ppKey(pre, pub)
-    assert ppky == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9'
-                    b'IPb0foWTZvI_4')
-    ppky = ppKey(pre.decode("utf-8"), pub.decode("utf-8"))
-    assert ppky == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9'
-                    b'IPb0foWTZvI_4')
+    assert asdict(pl) == dict(pubs=[], ridx=0, kidx=0, dt='')
+    pl = helping.datify(keeping.Publot, dict(pubs=[], ridx=0, kidx=0, dt=''))
+    assert pl.pubs == []
+    assert pl.ridx == 0
+    assert pl.kidx == 0
+    assert pl.dt == ''
 
-    kidx = 6
-    ridx = 2
-    ixKey = keeping.ixKey
+    ps = keeping.Pubsit()
+    assert isinstance(ps, keeping.Pubsit)
+    assert ps.seed == ''
+    assert ps.algo == 'seed'
+    assert isinstance(ps.old, keeping.Publot)
+    assert isinstance(ps.new, keeping.Publot)
+    assert isinstance(ps.nxt, keeping.Publot)
+    assert ps.old.pubs == []
+    assert ps.old.ridx ==  0
+    assert ps.old.kidx == 0
+    assert ps.old.dt == ''
+    assert asdict(ps) == dict(seed='',
+                              algo="seed",
+                              old=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                              new=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                              nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                              )
+    ps = helping.datify(keeping.Pubsit, dict(seed='',
+                                           algo="seed",
+                                           old=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                           new=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                           nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                          ))
 
-    ixky = ixKey(pre, kidx)
-    assert ixky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.00000000000000000000000000000006'
-    ixky = ixKey(pre, ridx)
-    assert ixky ==b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.00000000000000000000000000000002'
-
-    ixky = ixKey(pre.decode("utf-8"), kidx)
-    assert ixky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.00000000000000000000000000000006'
-    ixky = ixKey(pre.decode("utf-8"), ridx)
-    assert ixky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.00000000000000000000000000000002'
 
     """End Test"""
+
+
+
 
 
 def test_openkeep():
@@ -129,10 +152,8 @@ def test_keeper():
     assert keeper.DirMode == dirMode
 
     assert isinstance(keeper.pris, lmdb._Database)
-    assert isinstance(keeper.prms, lmdb._Database)
-    assert isinstance(keeper.idxs, lmdb._Database)
-    assert isinstance(keeper.pubs, lmdb._Database)
-    assert isinstance(keeper.rots, lmdb._Database)
+    assert isinstance(keeper.sits, lmdb._Database)
+
 
     keeper.close(clear=True)
     assert not os.path.exists(keeper.path)
@@ -150,10 +171,7 @@ def test_keeper():
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "0775"
 
     assert isinstance(keeper.pris, lmdb._Database)
-    assert isinstance(keeper.prms, lmdb._Database)
-    assert isinstance(keeper.idxs, lmdb._Database)
-    assert isinstance(keeper.pubs, lmdb._Database)
-    assert isinstance(keeper.rots, lmdb._Database)
+    assert isinstance(keeper.sits, lmdb._Database)
 
     keeper.close(clear=True)
     assert not os.path.exists(keeper.path)
@@ -176,10 +194,7 @@ def test_keeper():
     assert os.path.exists(keeper.path)
 
     assert isinstance(keeper.pris, lmdb._Database)
-    assert isinstance(keeper.prms, lmdb._Database)
-    assert isinstance(keeper.idxs, lmdb._Database)
-    assert isinstance(keeper.pubs, lmdb._Database)
-    assert isinstance(keeper.rots, lmdb._Database)
+    assert isinstance(keeper.sits, lmdb._Database)
 
     keeper.close(clear=True)
     assert not os.path.exists(keeper.path)
@@ -197,17 +212,16 @@ def test_keeper():
         assert os.path.exists(keeper.path)
 
         assert isinstance(keeper.pris, lmdb._Database)
-        assert isinstance(keeper.prms, lmdb._Database)
-        assert isinstance(keeper.idxs, lmdb._Database)
-        assert isinstance(keeper.pubs, lmdb._Database)
-        assert isinstance(keeper.rots, lmdb._Database)
+        assert isinstance(keeper.sits, lmdb._Database)
 
-        seed = '0AZxWJGkCkpDcHuVG4GM1KVw'
+        seed = b'0AZxWJGkCkpDcHuVG4GM1KVw'
         pria = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
         prib = b'AE2yPgBXiP6h_J2cZeCy4MaOa6eOCJQcgEozYb1GgV9z'
         puba = b'DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
         pubb = b'DoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-QiVgbRbyAIZG'
-        pre = b'EWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+        pubc = b'DAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4G'
+        prea = b'EWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+        preb = b'EQPYGGwTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gz'
 
         #  test .pris sub db methods
         key = puba
@@ -221,18 +235,31 @@ def test_keeper():
         assert keeper.delPri(key) == True
         assert keeper.getPri(key) == None
 
-        #  test .pubs sub db methods
-        kidx =  3
-        key =  keeping.ixKey(pre, kidx)
-        assert keeper.getPub(key) == None
-        assert keeper.delPub(key) == False
-        assert keeper.putPub(key, val=puba) == True
-        assert keeper.getPub(key) == puba
-        assert keeper.putPub(key, val=pubb) == False
-        assert keeper.setPub(key, val=pubb) == True
-        assert keeper.getPub(key) == pubb
-        assert keeper.delPub(key) == True
-        assert keeper.getPub(key) == None
+        #  test .sits sub db methods
+        key = prea
+        sita = json.dumps(
+                    dict(seed=seed.decode("utf-8"),
+                         algo='seed',
+                         old=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                         new=dict(pubs=[puba.decode("utf-8")], ridx=1, kidx=1, dt=helping.nowIso8601()),
+                         nxt=dict(pubs=[pubb.decode("utf-8")], ridx=2, kidx=2, dt=helping.nowIso8601())
+                    )).encode("utf-8")
+        sitb = json.dumps(
+                    dict(seed=seed.decode("utf-8"),
+                         algo='seed',
+                         old=dict(pubs=[puba.decode("utf-8")], ridx=0, kidx=0, dt=helping.nowIso8601()),
+                         new=dict(pubs=[pubb.decode("utf-8")], ridx=1, kidx=1, dt=helping.nowIso8601()),
+                         nxt=dict(pubs=[pubc.decode("utf-8")], ridx=2, kidx=2, dt=helping.nowIso8601())
+                    )).encode("utf-8")
+        assert keeper.getSit(key) == None
+        assert keeper.delSit(key) == False
+        assert keeper.putSit(key, val=sita) == True
+        assert keeper.getSit(key) == sita
+        assert keeper.putSit(key, val=sitb) == False
+        assert keeper.setSit(key, val=sitb) == True
+        assert keeper.getSit(key) == sitb
+        assert keeper.delSit(key) == True
+        assert keeper.getSit(key) == None
 
 
     assert not os.path.exists(keeper.path)
