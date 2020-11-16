@@ -859,8 +859,9 @@ class Salter(CryMat):
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
+    Level = SecLevels.low
 
-    def __init__(self,raw=None, code=CryTwoDex.Salt_128, level=SecLevels.low, **kwa):
+    def __init__(self,raw=None, code=CryTwoDex.Salt_128, level=None, **kwa):
         """
         Initialize salter's raw and code
 
@@ -887,7 +888,7 @@ class Salter(CryMat):
         if self.code not in (CryTwoDex.Salt_128, ):
             raise ValueError("Unsupported salter code = {}.".format(self.code))
 
-        self.level = level
+        self.level = level if level is not None else self.Level
 
 
     def signer(self, path="", level=None, code=CryOneDex.Ed25519_Seed,

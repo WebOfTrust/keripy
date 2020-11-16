@@ -15,8 +15,8 @@ import lmdb
 from hio.base import doing
 
 from keri.help import helping
-from keri.base import keeping
 from keri.core import coring
+from keri.base import keeping
 
 
 def test_publot_pubsit():
@@ -41,6 +41,15 @@ def test_publot_pubsit():
     assert pl.ridx == 0
     assert pl.kidx == 0
     assert pl.dt == ''
+
+    # dt = helping.nowIso8601()
+    dt = '2020-11-16T22:30:34.812526+00:00'
+    pl = keeping.Publot(pubs=[], ridx=1, kidx=3, dt=dt)
+    assert pl.pubs == []
+    assert pl.ridx == 1
+    assert pl.kidx == 3
+    assert pl.dt == dt
+
 
     ps = keeping.Pubsit()
     assert isinstance(ps, keeping.Pubsit)
@@ -96,10 +105,25 @@ def test_publot_pubsit():
     assert ps.nxt.ridx ==  0
     assert ps.nxt.kidx == 0
     assert ps.nxt.dt == ''
+
+    old = keeping.Publot(ridx=0, kidx=0)
+    new = keeping.Publot(ridx=1, kidx=3)
+    nxt = keeping.Publot(ridx=2, kidx=6)
+    ps = keeping.Pubsit(algo=keeping.Algos.novel, old=old, new=new, nxt=nxt)
+    assert ps.algo == keeping.Algos.novel
+    assert ps.salt == ''
+    assert ps.level == coring.SecLevels.low
+    assert ps.old.ridx == 0
+    assert ps.old.kidx == 0
+    assert ps.new.ridx == 1
+    assert ps.new.kidx == 3
+    assert ps.nxt.ridx == 2
+    assert ps.nxt.kidx == 6
+
     """End Test"""
 
 
-def test_openkeep():
+def test_openkeeper():
     """
     test contextmanager decorator for test Keeper databases
     """
@@ -357,7 +381,112 @@ def test_keeperdoer():
 
     """End Test"""
 
+def test_creator():
+    """
+    test Creator and Creatory classes
+    """
+    creator = keeping.Creator()
+    assert isinstance(creator, keeping.Creator)
+    assert creator.create() == []
 
+    creator = keeping.NovelCreator()
+    assert isinstance(creator, keeping.NovelCreator)
+    assert isinstance(creator, keeping.Creator)
+    signers = creator.create()
+    assert len(signers) == 1
+    signer = signers[0]
+    assert isinstance(signer, coring.Signer)
+    assert signer.code == coring.CryOneDex.Ed25519_Seed
+    assert signer.verfer.code == coring.CryOneDex.Ed25519
+    assert signer.verfer.code not in coring.CryNonTransDex
+
+    signers = creator.create(count=2, transferable=False)
+    assert len(signers) == 2
+    for signer in signers:
+        assert isinstance(signer, coring.Signer)
+        assert signer.code == coring.CryOneDex.Ed25519_Seed
+        assert signer.verfer.code == coring.CryOneDex.Ed25519N
+        assert signer.verfer.code in coring.CryNonTransDex
+
+    creator = keeping.SaltyCreator()
+    assert isinstance(creator, keeping.SaltyCreator)
+    assert isinstance(creator, keeping.Creator)
+    assert isinstance(creator.salter, coring.Salter)
+    assert creator.salter.code == coring.CryTwoDex.Salt_128
+    signers = creator.create()
+    assert len(signers) == 1
+    signer = signers[0]
+    assert isinstance(signer, coring.Signer)
+    assert signer.code == coring.CryOneDex.Ed25519_Seed
+    assert signer.verfer.code == coring.CryOneDex.Ed25519
+    assert signer.verfer.code not in coring.CryNonTransDex
+
+    signers = creator.create(count=2, transferable=False)
+    assert len(signers) == 2
+    for signer in signers:
+        assert isinstance(signer, coring.Signer)
+        assert signer.code == coring.CryOneDex.Ed25519_Seed
+        assert signer.verfer.code == coring.CryOneDex.Ed25519N
+        assert signer.verfer.code in coring.CryNonTransDex
+
+    raw = b'0123456789abcdef'
+    salt = coring.Salter(raw=raw).qb64
+    assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    creator = keeping.SaltyCreator(salt=salt)
+    assert isinstance(creator, keeping.SaltyCreator)
+    assert isinstance(creator, keeping.Creator)
+    assert isinstance(creator.salter, coring.Salter)
+    assert creator.salter.code == coring.CryTwoDex.Salt_128
+    assert creator.salter.raw == raw
+    assert creator.salter.qb64 == salt
+    signers = creator.create()
+    assert len(signers) == 1
+    signer = signers[0]
+    assert isinstance(signer, coring.Signer)
+    assert signer.code == coring.CryOneDex.Ed25519_Seed
+    assert signer.qb64 == 'AOl-Zoa4QyBMekecd7-nnujzwWhh2NoOppLoiSpwY-aY'
+    assert signer.verfer.code == coring.CryOneDex.Ed25519
+    assert signer.verfer.code not in coring.CryNonTransDex
+    assert signer.verfer.qb64 == 'DaaAoeCFUfxOPaZT9VSWTZ43kZ4Tm3aTnRAY3bxBIUBA'
+
+    signers = creator.create(count=1, transferable=False, temp=True)
+    assert len(signers) == 1
+    signer = signers[0]
+    assert isinstance(signer, coring.Signer)
+    assert signer.code == coring.CryOneDex.Ed25519_Seed
+    assert signer.qb64 == 'A4uaCOzTlfcLRgEBlSTYtUI-DfO78mJiGaux9TnRTj6g'
+    assert signer.verfer.code == coring.CryOneDex.Ed25519N
+    assert signer.verfer.code in coring.CryNonTransDex
+    assert signer.verfer.qb64 == 'B8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE'
+
+    creator = keeping.Creatory(algo=keeping.Algos.salty).make(salt=salt)
+    assert isinstance(creator, keeping.SaltyCreator)
+    assert creator.salter.qb64 == salt
+
+    creator = keeping.Creatory(algo=keeping.Algos.novel).make()
+    assert isinstance(creator, keeping.NovelCreator)
+    """End Test"""
+
+
+def test_manager():
+    """
+    test Manager class
+    """
+    manager = keeping.Manager()
+    assert isinstance(manager, keeping.Manager)
+    assert isinstance(manager.keeper, keeping.Keeper)
+    assert manager.keeper.opened
+
+    manager.keeper.close(clear=True)
+    assert not os.path.exists(manager.keeper.path)
+    assert not manager.keeper.opened
+
+    with keeping.openKeeper() as keeper:
+        manager = keeping.Manager(keeper=keeper)
+        assert manager.keeper.opened
+
+    assert not os.path.exists(manager.keeper.path)
+    assert not manager.keeper.opened
 
 if __name__ == "__main__":
-    test_publot_pubsit()
+    test_manager()

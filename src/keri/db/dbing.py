@@ -107,7 +107,7 @@ def clearDatabaserDir(path):
 
 
 @contextmanager
-def openLMDB(cls=None, name="test", temp=True, opened=True, **kwa):
+def openLMDB(cls=None, name="test", temp=True, **kwa):
     """
     Context manager wrapper LMDBer instances.
     Defaults to temporary databases.
@@ -119,7 +119,6 @@ def openLMDB(cls=None, name="test", temp=True, opened=True, **kwa):
              at different directory path names thar each use different name
         temp is Boolean, True means open in temporary directory, clear on close
                         Otherwise open in persistent directory, do not clear on close
-        opened overrides opened parameter to force open
 
     Usage:
 
@@ -132,11 +131,11 @@ def openLMDB(cls=None, name="test", temp=True, opened=True, **kwa):
     if cls is None:
         cls = LMDBer
     try:
-        databaser = cls(name=name, temp=temp, reopen=True, **kwa)
-        yield databaser
+        lmdber = cls(name=name, temp=temp, reopen=True, **kwa)
+        yield lmdber
 
     finally:
-        databaser.close()
+        lmdber.close()
 
 
 class LMDBer:
