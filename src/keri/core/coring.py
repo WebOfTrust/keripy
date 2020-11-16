@@ -886,8 +886,8 @@ class Salter(CryMat):
             raise ValueError("Unsupported salter code = {}.".format(self.code))
 
 
-    def signer(self, path="", code=CryOneDex.Ed25519_Seed, transferable=True,
-               level=SecLevels.low, temp=False):
+    def signer(self, path="", level=SecLevels.low, code=CryOneDex.Ed25519_Seed,
+               transferable=True, temp=False):
         """
         Returns Signer instance whose .raw secret is derived from path and
         salter's .raw and streched to size given by code. The signers public key

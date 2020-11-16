@@ -62,9 +62,9 @@ class Pubsit:
     """
     Public key situation and parameters for creating key lists and tracking them
     """
-    salt: str = ''  # empty salt.
-    level: str = coring.SecLevels.low  # security level for salt
     algo: str = Algos.index  # default use indices and salt  to create new key pairs
+    salt: str = ''  # empty salt  used for index algo.
+    level: str = coring.SecLevels.low  # stretch security level for index algo
     old: Publot =  field(default_factory=Publot)  # previous publot
     new: Publot =  field(default_factory=Publot)  # newly current publot
     nxt: Publot =  field(default_factory=Publot)  # next public publot
@@ -88,27 +88,33 @@ class Keeper(dbing.LMDBer):
     Keeper sets up named sub databases for key pair storage.  Methods provide
     key pair creation and data signing.
 
-    Attributes:
-        see superclass LMDBer for inherited attributes
+    Inherited Attributes:
+        .name is LMDB database name did2offer
+        .temp is Boolean, True means open db in /tmp directory
+        .headDirPath is head directory path for db
+        .mode is numeric os dir permissions for db directory
+        .path is LMDB main (super) database directory path
+        .env is LMDB main (super) database environment
+        .opened is Boolean, True means LMDB .env at .path is opened.
+                            Otherwise LMDB .env is closed
 
+    Attributes:
         .secs is named sub DB whose values are secrets (private keys)
             Keyed by public key (fully qualified qb64)
             Value is private key (fully qualified qb64) secret
-
         .sits is named sub DB whose values are serialized dicts of Pubsit instance
             Keyed by identifer prefix (fully qualified qb64)
             Value is  serialized parameter dict (JSON) of public key situation
                 {
+                  algo: ,
                   salt: ,
                   level: ,
-                  algo: ,
                   old: { pubs: ridx:, kidx,  dt:},
                   new: { pubs: ridx:, kidx:, dt:},
                   new: { pubs: ridx:, kidx:, dt:}
                 }
 
     Properties:
-
 
     Directory Mode for Restricted Access Permissions
     stat.S_ISVTX  is Sticky bit. When this bit is set on a directory it means
@@ -128,6 +134,7 @@ class Keeper(dbing.LMDBer):
     TempSuffix = "_test"
     MaxNamedDBs = 8
     DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700
+
 
     def __init__(self, headDirPath=None, dirMode=None, reopen=True, **kwa):
         """
@@ -264,8 +271,6 @@ class Keeper(dbing.LMDBer):
         return self.delVal(self.sits, key)
 
 
-
-
 class KeeperDoer(doing.Doer):
     """
     Basic Keeper Doer ( LMDB Database )
@@ -322,3 +327,211 @@ class KeeperDoer(doing.Doer):
     def exit(self):
         """"""
         self.keeper.close()
+
+
+class Creator:
+    """
+    Class for creating a key pair based on algorithm.
+
+    Attributes:
+
+    Properties:
+
+    Methods:
+        .create is method to create key pair
+
+    Hidden:
+
+    """
+
+    def __init__(self, **kwa):
+        """
+        Setup Creator.
+
+        Parameters:
+
+        """
+
+
+    def create(self, **kwa):
+        """
+        Returns tuple of signers one per key pair
+        """
+        return tuple()
+
+
+class NovelCreator:
+    """
+    Class for creating a key pair based on novel random seed algorithm.
+
+    Attributes:
+
+    Properties:
+
+    Methods:
+        .create is method to create key pair
+
+    Hidden:
+
+    """
+
+
+    def __init__(self, **kwa):
+        """
+        Setup Creator.
+
+        Parameters:
+
+        """
+        super(NovelCreator, self).__init__(**kwa)
+
+
+    def create(self, count=1, code=coring.CryOneDex.Ed25519_Seed,
+               transferable=True, **kwa):
+        """
+        Returns list of signers one per kidx in kidxs
+
+        Parameters:
+            ridx is int rotation index for key pair set
+            kidx is int starting key index for key pair set
+            count is into number of key pairs in set
+        """
+        signers = []
+        for idx in range(count):
+            signers.append(coring.Signer(code=code, transferable=transferable))
+        return signers
+
+
+
+class IndexCreator:
+    """
+    Class for creating a key pair based on index random salt  stretch algorithm.
+
+    Attributes:
+        .salter is salter instance
+
+    Properties:
+
+
+    Methods:
+        .create is method to create key pair
+
+    Hidden:
+        ._salter holds instance for .salter property
+    """
+
+    def __init__(self, salt=None, **kwa):
+        """
+        Setup Creator.
+
+        Parameters:
+
+        """
+        super(IndexCreator, self).__init__(**kwa)
+        self.salter = coring.Salter(qb64=salt)
+
+
+    def create(self, ridx=0, kidx=0, count=1, level=coring.SecLevels.low,
+               code=coring.CryOneDex.Ed25519_Seed, transferable=True, temp=False):
+        """
+        Returns list of signers one per kidx in kidxs
+
+        Parameters:
+            ridx is int rotation index for key pair set
+            kidx is int starting key index for key pair set
+            count is into number of key pairs in set
+        """
+        signers = []
+        for idx in range(count):
+            path = "{:x}{:x}".format(ridx,kidx + idx)
+            signers.append(self.salter.signer(path=path,
+                                              code=code,
+                                              transferable=transferable,
+                                              level=level,
+                                              temp=temp))
+        return signers
+
+
+class Creatory:
+    """
+    Factory class for creating Creator subclasses to create key pairs based on
+    the provided algorithm.
+
+    Attributes:
+
+    Properties:
+
+    Methods:
+        .create is method to create key pair
+
+    Hidden:
+        ._create is method reference set to one of algorithm methods
+        ._novelCreate
+        ._indexCreate
+    """
+
+    def __init__(self, algo=Algos.index):
+        """
+        Setup Creator.
+
+        Parameters:
+            algo is str code for algorithm
+
+        """
+        if algo == Algos.novel:
+            self._make = self._makeNovel
+        elif also == Algos.index:
+            self._make = self._makeIndex
+        else:
+            raise ValueError("Unsupported creation algorithm ={}.".format(algo))
+
+    def make(self, **kwa):
+        """
+
+        """
+        return (self._make(**kwa))
+
+
+    def _makeNovel(self, **kwa):
+        """
+
+        """
+        return NovelCreator(**kwa)
+
+    def _makeIndex(self, **kwa):
+        """
+
+        """
+        return IndexCreator(**kwa)
+
+
+
+class Manager:
+    """
+    Class for managing key pair creation, storage, retrieval, and message signing.
+
+    Attributes:
+        .keeper is Keeper instance (LMDB)
+        .creators is dict of Creator instances keyed by prefix of associated identifier
+
+    Properties:
+
+
+    Methods:
+
+
+    Hidden:
+    """
+    def __init__(self, keeper=None):
+        """
+        Setup Creator.
+
+        Parameters:
+            keeper is Keeper instance (LMDB)
+
+        """
+        if keeper is None:
+            keeper = Keeper()
+
+        self.keeper = keeper
+        self.creators = dict()

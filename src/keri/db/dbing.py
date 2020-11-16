@@ -183,6 +183,7 @@ class LMDBer:
             headDirPath is optional str head directory pathname for main database
                 If not provided use default .HeadDirpath
             dirMode is int numeric os dir permissions for database directory
+                default is use os defaults and not set the dirMode
             reopen is boolean, IF True then database will be reopened by this init
 
         """

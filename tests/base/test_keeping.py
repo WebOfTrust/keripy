@@ -44,9 +44,9 @@ def test_publot_pubsit():
 
     ps = keeping.Pubsit()
     assert isinstance(ps, keeping.Pubsit)
+    assert ps.algo == keeping.Algos.index == 'index'
     assert ps.salt == ''
     assert ps.level == coring.SecLevels.low
-    assert ps.algo == keeping.Algos.index == 'index'
     assert isinstance(ps.old, keeping.Publot)
     assert isinstance(ps.new, keeping.Publot)
     assert isinstance(ps.nxt, keeping.Publot)
@@ -62,25 +62,25 @@ def test_publot_pubsit():
     assert ps.nxt.ridx ==  0
     assert ps.nxt.kidx == 0
     assert ps.nxt.dt == ''
-    assert asdict(ps) == dict(salt='',
+    assert asdict(ps) == dict(algo=keeping.Algos.index,
+                              salt='',
                               level=coring.SecLevels.low,
-                              algo=keeping.Algos.index,
                               old=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               new=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               )
-    ps = helping.datify(keeping.Pubsit, dict(salt='',
+    ps = helping.datify(keeping.Pubsit, dict(algo=keeping.Algos.index,
+                                             salt='',
                                              level=coring.SecLevels.low,
-                                             algo=keeping.Algos.index,
                                              old=dict(pubs=[], ridx=0, kidx=0, dt=''),
                                              new=dict(pubs=[], ridx=0, kidx=0, dt=''),
                                              nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
                                           ))
 
     assert isinstance(ps, keeping.Pubsit)
+    assert ps.algo == keeping.Algos.index == 'index'
     assert ps.salt == ''
     assert ps.level == coring.SecLevels.low
-    assert ps.algo == keeping.Algos.index == 'index'
     assert isinstance(ps.old, keeping.Publot)
     assert isinstance(ps.new, keeping.Publot)
     assert isinstance(ps.nxt, keeping.Publot)
@@ -265,17 +265,17 @@ def test_keeper():
         #  test .sits sub db methods
         key = prea
         sita = json.dumps(
-                    dict(salt=seed.decode("utf-8"),
+                    dict(algo='index',
+                         salt=seed.decode("utf-8"),
                          level='low',
-                         algo='index',
                          old=dict(pubs=[], ridx=0, kidx=0, dt=''),
                          new=dict(pubs=[puba.decode("utf-8")], ridx=1, kidx=1, dt=helping.nowIso8601()),
                          nxt=dict(pubs=[pubb.decode("utf-8")], ridx=2, kidx=2, dt=helping.nowIso8601())
                     )).encode("utf-8")
         sitb = json.dumps(
-                    dict(salt='',
+                    dict(algo='novel',
+                         salt='',
                          level='low',
-                         algo='novel',
                          old=dict(pubs=[puba.decode("utf-8")], ridx=0, kidx=0, dt=helping.nowIso8601()),
                          new=dict(pubs=[pubb.decode("utf-8")], ridx=1, kidx=1, dt=helping.nowIso8601()),
                          nxt=dict(pubs=[pubc.decode("utf-8")], ridx=2, kidx=2, dt=helping.nowIso8601())
