@@ -4,10 +4,10 @@ KERI
 keri.base.keeping module
 
 Terminology:
-    salt is 128 bit 16 char random bytes used as root entropy
-    seed is crypto suite length dependent random bytes as private key
-    secret is fully qualified seed as private key
-    public is fully qualified public key
+    salt is 128 bit 16 char random bytes used as root entropy to derive seed or secret
+    seed or secret is crypto suite length dependent random bytes for private key
+    private key same as seed or secret
+    public key
 
 txn.put(
             did.encode(),
@@ -31,6 +31,7 @@ from collections import namedtuple
 from hio.base import doing
 
 from .. import kering
+from ..core import coring
 from ..db import dbing
 
 
@@ -62,6 +63,7 @@ class Pubsit:
     Public key situation and parameters for creating key lists and tracking them
     """
     salt: str = ''  # empty salt.
+    level: str = coring.SecLevels.low  # security level for salt
     algo: str = Algos.index  # default use indices and salt  to create new key pairs
     old: Publot =  field(default_factory=Publot)  # previous publot
     new: Publot =  field(default_factory=Publot)  # newly current publot
@@ -98,6 +100,7 @@ class Keeper(dbing.LMDBer):
             Value is  serialized parameter dict (JSON) of public key situation
                 {
                   salt: ,
+                  level: ,
                   algo: ,
                   old: { pubs: ridx:, kidx,  dt:},
                   new: { pubs: ridx:, kidx:, dt:},

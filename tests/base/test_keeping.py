@@ -16,6 +16,7 @@ from hio.base import doing
 
 from keri.help import helping
 from keri.base import keeping
+from keri.core import coring
 
 
 def test_publot_pubsit():
@@ -44,6 +45,7 @@ def test_publot_pubsit():
     ps = keeping.Pubsit()
     assert isinstance(ps, keeping.Pubsit)
     assert ps.salt == ''
+    assert ps.level == coring.SecLevels.low
     assert ps.algo == keeping.Algos.index == 'index'
     assert isinstance(ps.old, keeping.Publot)
     assert isinstance(ps.new, keeping.Publot)
@@ -61,20 +63,23 @@ def test_publot_pubsit():
     assert ps.nxt.kidx == 0
     assert ps.nxt.dt == ''
     assert asdict(ps) == dict(salt='',
+                              level=coring.SecLevels.low,
                               algo=keeping.Algos.index,
                               old=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               new=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               )
     ps = helping.datify(keeping.Pubsit, dict(salt='',
-                                           algo=keeping.Algos.index,
-                                           old=dict(pubs=[], ridx=0, kidx=0, dt=''),
-                                           new=dict(pubs=[], ridx=0, kidx=0, dt=''),
-                                           nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                             level=coring.SecLevels.low,
+                                             algo=keeping.Algos.index,
+                                             old=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                             new=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                             nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
                                           ))
 
     assert isinstance(ps, keeping.Pubsit)
     assert ps.salt == ''
+    assert ps.level == coring.SecLevels.low
     assert ps.algo == keeping.Algos.index == 'index'
     assert isinstance(ps.old, keeping.Publot)
     assert isinstance(ps.new, keeping.Publot)
@@ -260,14 +265,16 @@ def test_keeper():
         #  test .sits sub db methods
         key = prea
         sita = json.dumps(
-                    dict(seed=seed.decode("utf-8"),
+                    dict(salt=seed.decode("utf-8"),
+                         level='low',
                          algo='index',
                          old=dict(pubs=[], ridx=0, kidx=0, dt=''),
                          new=dict(pubs=[puba.decode("utf-8")], ridx=1, kidx=1, dt=helping.nowIso8601()),
                          nxt=dict(pubs=[pubb.decode("utf-8")], ridx=2, kidx=2, dt=helping.nowIso8601())
                     )).encode("utf-8")
         sitb = json.dumps(
-                    dict(seed='',
+                    dict(salt='',
+                         level='low',
                          algo='novel',
                          old=dict(pubs=[puba.decode("utf-8")], ridx=0, kidx=0, dt=helping.nowIso8601()),
                          new=dict(pubs=[pubb.decode("utf-8")], ridx=1, kidx=1, dt=helping.nowIso8601()),
