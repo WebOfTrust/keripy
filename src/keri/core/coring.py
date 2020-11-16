@@ -834,6 +834,7 @@ class Salter(CryMat):
     Its .raw is random salt, .code as cipher suite for salt
 
     Attributes:
+        .level is str security level code. Provides default level
 
     Inherited Properties
         .pad  is int number of pad chars given raw
@@ -858,7 +859,8 @@ class Salter(CryMat):
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
-    def __init__(self,raw=None, code=CryTwoDex.Salt_128, **kwa):
+
+    def __init__(self,raw=None, code=CryTwoDex.Salt_128, level=SecLevels.low, **kwa):
         """
         Initialize salter's raw and code
 
@@ -885,8 +887,10 @@ class Salter(CryMat):
         if self.code not in (CryTwoDex.Salt_128, ):
             raise ValueError("Unsupported salter code = {}.".format(self.code))
 
+        self.level = level
 
-    def signer(self, path="", level=SecLevels.low, code=CryOneDex.Ed25519_Seed,
+
+    def signer(self, path="", level=None, code=CryOneDex.Ed25519_Seed,
                transferable=True, temp=False):
         """
         Returns Signer instance whose .raw secret is derived from path and
@@ -900,6 +904,8 @@ class Salter(CryMat):
             temp is Boolean, True means use quick method to stretch salt
                     for testing only, Otherwise use more time to stretch
         """
+        level = level if level is not None else self.level
+
         if temp:
             opslimit = pysodium.crypto_pwhash_OPSLIMIT_MIN
             memlimit = pysodium.crypto_pwhash_MEMLIMIT_MIN

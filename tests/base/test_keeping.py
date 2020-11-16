@@ -44,7 +44,7 @@ def test_publot_pubsit():
 
     ps = keeping.Pubsit()
     assert isinstance(ps, keeping.Pubsit)
-    assert ps.algo == keeping.Algos.index == 'index'
+    assert ps.algo == keeping.Algos.salty == 'salty'
     assert ps.salt == ''
     assert ps.level == coring.SecLevels.low
     assert isinstance(ps.old, keeping.Publot)
@@ -62,14 +62,14 @@ def test_publot_pubsit():
     assert ps.nxt.ridx ==  0
     assert ps.nxt.kidx == 0
     assert ps.nxt.dt == ''
-    assert asdict(ps) == dict(algo=keeping.Algos.index,
+    assert asdict(ps) == dict(algo=keeping.Algos.salty,
                               salt='',
                               level=coring.SecLevels.low,
                               old=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               new=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               )
-    ps = helping.datify(keeping.Pubsit, dict(algo=keeping.Algos.index,
+    ps = helping.datify(keeping.Pubsit, dict(algo=keeping.Algos.salty,
                                              salt='',
                                              level=coring.SecLevels.low,
                                              old=dict(pubs=[], ridx=0, kidx=0, dt=''),
@@ -78,7 +78,7 @@ def test_publot_pubsit():
                                           ))
 
     assert isinstance(ps, keeping.Pubsit)
-    assert ps.algo == keeping.Algos.index == 'index'
+    assert ps.algo == keeping.Algos.salty == 'salty'
     assert ps.salt == ''
     assert ps.level == coring.SecLevels.low
     assert isinstance(ps.old, keeping.Publot)

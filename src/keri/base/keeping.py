@@ -35,9 +35,9 @@ from ..core import coring
 from ..db import dbing
 
 
-Algoage = namedtuple("Algoage", 'novel index')
+Algoage = namedtuple("Algoage", 'novel salty')
 
-Algos = Algoage(novel='novel', index='index')
+Algos = Algoage(novel='novel', salty='salty')
 
 
 
@@ -62,7 +62,7 @@ class Pubsit:
     """
     Public key situation and parameters for creating key lists and tracking them
     """
-    algo: str = Algos.index  # default use indices and salt  to create new key pairs
+    algo: str = Algos.salty  # default use indices and salt  to create new key pairs
     salt: str = ''  # empty salt  used for index algo.
     level: str = coring.SecLevels.low  # stretch security level for index algo
     old: Publot =  field(default_factory=Publot)  # previous publot
@@ -403,9 +403,9 @@ class NovelCreator:
 
 
 
-class IndexCreator:
+class SaltyCreator:
     """
-    Class for creating a key pair based on index random salt  stretch algorithm.
+    Class for creating a key pair based on random salt plus path stretch algorithm.
 
     Attributes:
         .salter is salter instance
@@ -420,18 +420,18 @@ class IndexCreator:
         ._salter holds instance for .salter property
     """
 
-    def __init__(self, salt=None, **kwa):
+    def __init__(self, salt=None, level=None, **kwa):
         """
         Setup Creator.
 
         Parameters:
 
         """
-        super(IndexCreator, self).__init__(**kwa)
-        self.salter = coring.Salter(qb64=salt)
+        super(SaltyCreator, self).__init__(**kwa)
+        self.salter = coring.Salter(qb64=salt, level=level)
 
 
-    def create(self, ridx=0, kidx=0, count=1, level=coring.SecLevels.low,
+    def create(self, ridx=0, kidx=0, count=1, level=None,
                code=coring.CryOneDex.Ed25519_Seed, transferable=True, temp=False):
         """
         Returns list of signers one per kidx in kidxs
@@ -470,7 +470,7 @@ class Creatory:
         ._indexCreate
     """
 
-    def __init__(self, algo=Algos.index):
+    def __init__(self, algo=Algos.salty):
         """
         Setup Creator.
 
@@ -480,8 +480,8 @@ class Creatory:
         """
         if algo == Algos.novel:
             self._make = self._makeNovel
-        elif also == Algos.index:
-            self._make = self._makeIndex
+        elif also == Algos.salty:
+            self._make = self._makeSalty
         else:
             raise ValueError("Unsupported creation algorithm ={}.".format(algo))
 
@@ -498,11 +498,11 @@ class Creatory:
         """
         return NovelCreator(**kwa)
 
-    def _makeIndex(self, **kwa):
+    def _makeSalty(self, **kwa):
         """
 
         """
-        return IndexCreator(**kwa)
+        return SaltyCreator(**kwa)
 
 
 
