@@ -816,20 +816,20 @@ class Signer(CryMat):
 
 
 
-def generateSigners(root=None, count=8, transferable=True):
+def generateSigners(salt=None, count=8, transferable=True):
     """
     Returns list of Signers for Ed25519
 
     Parameters:
-        root is bytes 16 byte long root key (salt/seed) from which seeds for Signers
+        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
             in list are derived
-            random root created if not provided
+            random salt created if not provided
         count is number of signers in list
         transferable is boolean true means signer.verfer code is transferable
                                 non-transferable otherwise
     """
-    if not root:
-        root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    if not salt:
+        salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
 
     signers = []
     for i in range(count):
@@ -837,7 +837,7 @@ def generateSigners(root=None, count=8, transferable=True):
         # algorithm default is argon2id
         seed = pysodium.crypto_pwhash(outlen=32,
                                       passwd=path,
-                                      salt=root,
+                                      salt=salt,
                                       opslimit=pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
                                       memlimit=pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
                                       alg=pysodium.crypto_pwhash_ALG_DEFAULT)
@@ -846,19 +846,19 @@ def generateSigners(root=None, count=8, transferable=True):
 
     return signers
 
-def generateSecrets(root=None, count=8):
+def generateSecrets(salt=None, count=8):
     """
     Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
 
     Parameters:
-        root is bytes 16 byte long root key (salt/seed) from which seeds for Signers
+        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
             in list are derived
-            random root created if not provided
+            random salt created if not provided
         count is number of signers in list
     """
-    signers = generateSigners(root=root, count=count)
+    signers = generateSigners(salt=salt, count=count)
 
-    return [signer.qb64 for signer in signers]  #  fetch the qb64
+    return [signer.qb64 for signer in signers]  #  fetch the qb64 as secret
 
 
 class Diger(CryMat):

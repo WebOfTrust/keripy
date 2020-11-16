@@ -626,7 +626,7 @@ def test_generatesigners():
     # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     root = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
     assert len(root) == 16
-    signers = generateSigners(root=root, count=4)  # default is transferable
+    signers = generateSigners(salt=root, count=4)  # default is transferable
     assert len(signers) == 4
     for signer in signers:
         assert signer.code == CryOneDex.Ed25519_Seed
@@ -638,7 +638,7 @@ def test_generatesigners():
                        'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
                        'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8']
 
-    secrets = generateSecrets(root=root, count=4)
+    secrets = generateSecrets(salt=root, count=4)
     assert secrets == sigkeys
 
     """ End Test """

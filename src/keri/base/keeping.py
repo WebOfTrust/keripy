@@ -3,6 +3,12 @@
 KERI
 keri.base.keeping module
 
+Terminology:
+    salt is 128 bit 16 char random bytes used as root entropy
+    seed is crypto suite length dependent random bytes as private key
+    secret is fully qualified seed as private key
+    public is fully qualified public key
+
 txn.put(
             did.encode(),
             json.dumps(certifiable_data).encode("utf-8")
@@ -20,11 +26,18 @@ import os
 import stat
 
 from dataclasses import dataclass, asdict, field
+from collections import namedtuple
 
 from hio.base import doing
 
 from .. import kering
 from ..db import dbing
+
+
+Algoage = namedtuple("Algoage", 'novel index')
+
+Algos = Algoage(novel='novel', index='index')
+
 
 
 @dataclass(frozen=True)
@@ -48,8 +61,8 @@ class Pubsit:
     """
     Public key situation and parameters for creating key lists and tracking them
     """
-    seed: str = ''  # empty seed.
-    algo: str = 'seed'  # use seed to create new key pairs
+    salt: str = ''  # empty salt.
+    algo: str = Algos.index  # default use indices and salt  to create new key pairs
     old: Publot =  field(default_factory=Publot)  # previous publot
     new: Publot =  field(default_factory=Publot)  # newly current publot
     nxt: Publot =  field(default_factory=Publot)  # next public publot
@@ -76,15 +89,15 @@ class Keeper(dbing.LMDBer):
     Attributes:
         see superclass LMDBer for inherited attributes
 
-        .pris is named sub DB whose values are private keys
+        .secs is named sub DB whose values are secrets (private keys)
             Keyed by public key (fully qualified qb64)
-            Value is private key (fully qualified qb64)
+            Value is private key (fully qualified qb64) secret
 
         .sits is named sub DB whose values are serialized dicts of Pubsit instance
             Keyed by identifer prefix (fully qualified qb64)
             Value is  serialized parameter dict (JSON) of public key situation
                 {
-                  seed: ,
+                  salt: ,
                   algo: ,
                   old: { pubs: ridx:, kidx,  dt:},
                   new: { pubs: ridx:, kidx:, dt:},
@@ -163,12 +176,12 @@ class Keeper(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.pris = self.env.open_db(key=b'pris.')
+        self.secs = self.env.open_db(key=b'secs.')
         self.sits = self.env.open_db(key=b'sits.')
 
 
-    # .pris methods
-    def putPri(self, key, val):
+    # .secs methods
+    def putSec(self, key, val):
         """
         Write fully qualified private key as val to key
         key is fully qualified public key
@@ -176,36 +189,36 @@ class Keeper(dbing.LMDBer):
         Returns True If val successfully written Else False
         Return False if key already exists
         """
-        return self.putVal(self.pris, key, val)
+        return self.putVal(self.secs, key, val)
 
 
-    def setPri(self, key, val):
+    def setSec(self, key, val):
         """
         Write fully qualified private key as val to key
         key is fully qualified public key
         Overwrites existing val if any
         Returns True If val successfully written Else False
         """
-        return self.setVal(self.pris, key, val)
+        return self.setVal(self.secs, key, val)
 
 
-    def getPri(self, key):
+    def getSec(self, key):
         """
         Return private key val at key
         key is fully qualified public key
         Returns None if no entry at key
         """
-        return self.getVal(self.pris, key)
+        return self.getVal(self.secs, key)
 
 
-    def delPri(self, key):
+    def delSec(self, key):
         """
         Deletes value at key.
         val is fully qualified private key
         key is fully qualified public key
         Returns True If key exists in database Else False
         """
-        return self.delVal(self.pris, key)
+        return self.delVal(self.secs, key)
 
     # .sits methods
     def putSit(self, key, val):
