@@ -443,6 +443,22 @@ class SaltyCreator(Creator):
         self.salter = coring.Salter(qb64=salt, level=level)
 
 
+    @property
+    def salt(self):
+        """
+        salt property getter
+        """
+        return self.salter.qb64
+
+
+    @property
+    def level(self):
+        """
+        level property getter
+        """
+        return self.salter.level
+
+
     def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
                ridx=0, kidx=0, level=None, transferable=True, temp=False, **kwa):
         """
@@ -556,7 +572,7 @@ class Manager:
     def incept(self, icodes=None, icount=1, icode=coring.CryOneDex.Ed25519_Seed,
                      ncodes=None, ncount=1, ncode=coring.CryOneDex.Ed25519_Seed,
                      dcode=coring.CryOneDex.Blake3_256,
-                     algo=Algos.salty, salt=None, level=coring.SecLevels.low,
+                     algo=Algos.salty, salt=None, level=None,
                      transferable=True, temp=False):
         """
         Returns duple (verfers, digers) for inception event where
@@ -590,6 +606,12 @@ class Manager:
                                   ridx=ridx+1, kidx=kidx+len(icodes),
                                   transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in nsigners]
+
+        if salt is None:  # assign proper default
+            salt = creator.salt if hasattr(creator, 'salt') else ''
+
+        if level is None:  # assign proper default
+            level = creator.level if hasattr(creator, 'level') else coring.SecLevels.low
 
         dt = helping.nowIso8601()
         ps = PubSit(algo=algo, salt=salt, level=level,

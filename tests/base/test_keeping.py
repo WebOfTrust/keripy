@@ -415,6 +415,8 @@ def test_creator():
     assert isinstance(creator, keeping.Creator)
     assert isinstance(creator.salter, coring.Salter)
     assert creator.salter.code == coring.CryTwoDex.Salt_128
+    assert creator.salt == creator.salter.qb64
+    assert creator.level == creator.salter.level
     signers = creator.create()
     assert len(signers) == 1
     signer = signers[0]
@@ -526,9 +528,41 @@ def test_manager():
             val = bytes(manager.keeper.getSec(key.encode("utf-8")))
             assert val == manager.signers[key].qb64b
 
+        with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
+            verfers, digers = manager.incept(salt=salt, temp=True)
+        assert ex.value.args[0] == 'Already incepted pre=D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE.'
 
+        # novel algo
+        verfers, digers = manager.incept(algo=keeping.Algos.novel)
+        assert len(verfers) == 1
+        assert len(digers) == 1
 
+        pre = verfers[0].qb64b
 
+        ps = json.loads(bytes(manager.keeper.getSit(key=pre)).decode("utf-8"))
+        ps = helping.datify(keeping.PubSit, ps)
+        assert ps.algo == keeping.Algos.novel
+        assert ps.salt == ''
+        assert ps.level == coring.SecLevels.low
+        assert ps.old.pubs == []
+        assert len(ps.new.pubs) == 1
+        assert ps.new.ridx == 0
+        assert ps.new.kidx == 0
+        assert len(ps.nxt.pubs) == 1
+        assert ps.nxt.ridx == 1
+        assert ps.nxt.kidx == 1
+
+        keys = [verfer.qb64 for verfer in verfers]
+        for key in keys:
+            assert key in manager.signers
+            assert manager.signers[key].verfer.qb64 == key
+
+        digs = [diger.qb64 for diger in  digers]
+        assert len(digs) == 1
+
+        for key in keys:
+            val = bytes(manager.keeper.getSec(key.encode("utf-8")))
+            assert val == manager.signers[key].qb64b
 
     assert not os.path.exists(manager.keeper.path)
     assert not manager.keeper.opened
