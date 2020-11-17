@@ -24,6 +24,7 @@ raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 """
 import os
 import stat
+import json
 
 from dataclasses import dataclass, asdict, field
 from collections import namedtuple
@@ -31,6 +32,7 @@ from collections import namedtuple
 from hio.base import doing
 
 from .. import kering
+from ..help import helping
 from ..core import coring
 from ..db import dbing
 
@@ -42,7 +44,7 @@ Algos = Algoage(novel='novel', salty='salty')
 
 
 @dataclass(frozen=True)
-class Publot:
+class PubLot:
     """
     Public key list with indexes and datetime created
     """
@@ -58,16 +60,16 @@ class Publot:
 
 
 @dataclass(frozen=True)
-class Pubsit:
+class PubSit:
     """
     Public key situation and parameters for creating key lists and tracking them
     """
     algo: str = Algos.salty  # default use indices and salt  to create new key pairs
     salt: str = ''  # empty salt  used for index algo.
     level: str = coring.SecLevels.low  # stretch security level for index algo
-    old: Publot =  field(default_factory=Publot)  # previous publot
-    new: Publot =  field(default_factory=Publot)  # newly current publot
-    nxt: Publot =  field(default_factory=Publot)  # next public publot
+    old: PubLot = field(default_factory=PubLot)  # previous publot
+    new: PubLot = field(default_factory=PubLot)  # newly current publot
+    nxt: PubLot = field(default_factory=PubLot)  # next public publot
 
 
     def __iter__(self):
@@ -109,7 +111,7 @@ class Keeper(dbing.LMDBer):
         .secs is named sub DB whose values are secrets (private keys)
             Keyed by public key (fully qualified qb64)
             Value is private key (fully qualified qb64) secret
-        .sits is named sub DB whose values are serialized dicts of Pubsit instance
+        .sits is named sub DB whose values are serialized dicts of PubSit instance
             Keyed by identifer prefix (fully qualified qb64)
             Value is  serialized parameter dict (JSON) of public key situation
                 {
@@ -240,7 +242,7 @@ class Keeper(dbing.LMDBer):
     # .sits methods
     def putSit(self, key, val):
         """
-        Write serialized dict of Pubsit as val to key
+        Write serialized dict of PubSit as val to key
         key is fully qualified prefix
         Does not overwrite existing val if any
         Returns True If val successfully written Else False
@@ -393,7 +395,7 @@ class NovelCreator(Creator):
         super(NovelCreator, self).__init__(**kwa)
 
 
-    def create(self, count=1, code=coring.CryOneDex.Ed25519_Seed,
+    def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
                transferable=True, **kwa):
         """
         Returns list of signers one per kidx in kidxs
@@ -404,7 +406,10 @@ class NovelCreator(Creator):
             count is into number of key pairs in set
         """
         signers = []
-        for idx in range(count):
+        if not codes:  # if not codes make list len count of same code
+            codes = [code for i in range(count)]
+
+        for code in codes:
             signers.append(coring.Signer(code=code, transferable=transferable))
         return signers
 
@@ -438,8 +443,8 @@ class SaltyCreator(Creator):
         self.salter = coring.Salter(qb64=salt, level=level)
 
 
-    def create(self, ridx=0, kidx=0, count=1, level=None,
-               code=coring.CryOneDex.Ed25519_Seed, transferable=True, temp=False):
+    def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
+               ridx=0, kidx=0, level=None, transferable=True, temp=False, **kwa):
         """
         Returns list of signers one per kidx in kidxs
 
@@ -449,8 +454,10 @@ class SaltyCreator(Creator):
             count is into number of key pairs in set
         """
         signers = []
-        for idx in range(count):
-            path = "{:x}{:x}".format(ridx,kidx + idx)
+        if not codes:  # if not codes make list len count of same code
+            codes = [code for i in range(count)]
+        for i, code in enumerate(codes):
+            path = "{:x}{:x}".format(ridx,kidx + i)
             signers.append(self.salter.signer(path=path,
                                               code=code,
                                               transferable=transferable,
@@ -521,7 +528,7 @@ class Manager:
 
     Attributes:
         .keeper is Keeper instance (LMDB)
-        .creators is dict of Creator instances keyed by prefix of associated identifier
+        .signers is dict of Signer instances keyed by public key cached signers
 
     Properties:
 
@@ -543,4 +550,75 @@ class Manager:
             keeper = Keeper()
 
         self.keeper = keeper
-        self.creators = dict()
+        self.signers = dict()
+
+
+    def incept(self, icodes=None, icount=1, icode=coring.CryOneDex.Ed25519_Seed,
+                     ncodes=None, ncount=1, ncode=coring.CryOneDex.Ed25519_Seed,
+                     dcode=coring.CryOneDex.Blake3_256,
+                     algo=Algos.salty, salt=None, level=coring.SecLevels.low,
+                     transferable=True, temp=False):
+        """
+        Returns duple (verfers, digers) for inception event where
+            verfers is list of current public key verfers
+                public key is verfer.qb64
+            digers is list of next public key digers
+                digest to xor is diger.raw
+
+        Incept a prefix. Use first public key as temporary prefix.
+        Must rename later.
+        Store the dictified PubSit in the keeper under the first public key
+
+        """
+        ridx = 0
+        kidx = 0
+
+        creator = Creatory(algo=algo).make(salt=salt, level=level)
+
+        if not icodes:  # all same code, make list icount code
+            icodes = [icode for i in range(icount)]
+
+        isigners = creator.create(codes=icodes, algo=algo, salt=salt, level=level,
+                                  ridx=ridx, kidx=kidx,
+                                  transferable=transferable, temp=temp)
+        verfers = [signer.verfer for signer in isigners]
+
+        if not ncodes:  # all same code, make list icount code
+            ncodes = [ncode for i in range(ncount)]
+
+        nsigners = creator.create(codes=icodes, algo=algo, salt=salt, level=level,
+                                  ridx=ridx+1, kidx=kidx+len(icodes),
+                                  transferable=transferable, temp=temp)
+        digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in nsigners]
+
+        dt = helping.nowIso8601()
+        ps = PubSit(algo=algo, salt=salt, level=level,
+                        new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
+                                   ridx=ridx, kidx=kidx, dt=dt),
+                        nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
+                                   ridx=ridx+1, kidx=kidx+len(icodes), dt=dt)
+                    )
+
+        pre = verfers[0].qb64b
+        result = self.keeper.putSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
+        if not result:
+            raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
+
+        for signer in isigners:  # store secrets (private key val keyed by public key)
+            self.keeper.putSec(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.signers[signer.verfer.qb64] = signer
+
+        for signer in nsigners:  # store secrets (private key val keyed by public key)
+            self.keeper.putSec(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.signers[signer.verfer.qb64] = signer
+
+        return (verfers, digers)
+
+
+    def repre(self, old, new):
+        """
+        """
+
+    def rotate(self):
+        """
+        """

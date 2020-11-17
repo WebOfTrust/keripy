@@ -28,15 +28,15 @@ def test_publot_pubsit():
     pri = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
     seed = '0AZxWJGkCkpDcHuVG4GM1KVw'
 
-    pl = keeping.Publot()
-    assert isinstance(pl, keeping.Publot)
+    pl = keeping.PubLot()
+    assert isinstance(pl, keeping.PubLot)
     assert pl.pubs == []
     assert pl.ridx == 0
     assert pl.kidx == 0
     assert pl.dt == ''
 
     assert asdict(pl) == dict(pubs=[], ridx=0, kidx=0, dt='')
-    pl = helping.datify(keeping.Publot, dict(pubs=[], ridx=0, kidx=0, dt=''))
+    pl = helping.datify(keeping.PubLot, dict(pubs=[], ridx=0, kidx=0, dt=''))
     assert pl.pubs == []
     assert pl.ridx == 0
     assert pl.kidx == 0
@@ -44,21 +44,21 @@ def test_publot_pubsit():
 
     # dt = helping.nowIso8601()
     dt = '2020-11-16T22:30:34.812526+00:00'
-    pl = keeping.Publot(pubs=[], ridx=1, kidx=3, dt=dt)
+    pl = keeping.PubLot(pubs=[], ridx=1, kidx=3, dt=dt)
     assert pl.pubs == []
     assert pl.ridx == 1
     assert pl.kidx == 3
     assert pl.dt == dt
 
 
-    ps = keeping.Pubsit()
-    assert isinstance(ps, keeping.Pubsit)
+    ps = keeping.PubSit()
+    assert isinstance(ps, keeping.PubSit)
     assert ps.algo == keeping.Algos.salty == 'salty'
     assert ps.salt == ''
     assert ps.level == coring.SecLevels.low
-    assert isinstance(ps.old, keeping.Publot)
-    assert isinstance(ps.new, keeping.Publot)
-    assert isinstance(ps.nxt, keeping.Publot)
+    assert isinstance(ps.old, keeping.PubLot)
+    assert isinstance(ps.new, keeping.PubLot)
+    assert isinstance(ps.nxt, keeping.PubLot)
     assert ps.old.pubs == []
     assert ps.old.ridx ==  0
     assert ps.old.kidx == 0
@@ -78,7 +78,7 @@ def test_publot_pubsit():
                               new=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               )
-    ps = helping.datify(keeping.Pubsit, dict(algo=keeping.Algos.salty,
+    ps = helping.datify(keeping.PubSit, dict(algo=keeping.Algos.salty,
                                              salt='',
                                              level=coring.SecLevels.low,
                                              old=dict(pubs=[], ridx=0, kidx=0, dt=''),
@@ -86,13 +86,13 @@ def test_publot_pubsit():
                                              nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
                                           ))
 
-    assert isinstance(ps, keeping.Pubsit)
+    assert isinstance(ps, keeping.PubSit)
     assert ps.algo == keeping.Algos.salty == 'salty'
     assert ps.salt == ''
     assert ps.level == coring.SecLevels.low
-    assert isinstance(ps.old, keeping.Publot)
-    assert isinstance(ps.new, keeping.Publot)
-    assert isinstance(ps.nxt, keeping.Publot)
+    assert isinstance(ps.old, keeping.PubLot)
+    assert isinstance(ps.new, keeping.PubLot)
+    assert isinstance(ps.nxt, keeping.PubLot)
     assert ps.old.pubs == []
     assert ps.old.ridx ==  0
     assert ps.old.kidx == 0
@@ -106,10 +106,10 @@ def test_publot_pubsit():
     assert ps.nxt.kidx == 0
     assert ps.nxt.dt == ''
 
-    old = keeping.Publot(ridx=0, kidx=0)
-    new = keeping.Publot(ridx=1, kidx=3)
-    nxt = keeping.Publot(ridx=2, kidx=6)
-    ps = keeping.Pubsit(algo=keeping.Algos.novel, old=old, new=new, nxt=nxt)
+    old = keeping.PubLot(ridx=0, kidx=0)
+    new = keeping.PubLot(ridx=1, kidx=3)
+    nxt = keeping.PubLot(ridx=2, kidx=6)
+    ps = keeping.PubSit(algo=keeping.Algos.novel, old=old, new=new, nxt=nxt)
     assert ps.algo == keeping.Algos.novel
     assert ps.salt == ''
     assert ps.level == coring.SecLevels.low
@@ -281,6 +281,7 @@ def test_keeper():
         assert keeper.putSec(key, val=pria) == True
         assert keeper.getSec(key) == pria
         assert keeper.putSec(key, val=prib) == False
+        assert keeper.getSec(key) == pria
         assert keeper.setSec(key, val=prib) == True
         assert keeper.getSec(key) == prib
         assert keeper.delSec(key) == True
@@ -309,6 +310,7 @@ def test_keeper():
         assert keeper.putSit(key, val=sita) == True
         assert keeper.getSit(key) == sita
         assert keeper.putSit(key, val=sitb) == False
+        assert keeper.getSit(key) == sita
         assert keeper.setSit(key, val=sitb) == True
         assert keeper.getSit(key) == sitb
         assert keeper.delSit(key) == True
@@ -481,9 +483,52 @@ def test_manager():
     assert not os.path.exists(manager.keeper.path)
     assert not manager.keeper.opened
 
+    raw = b'0123456789abcdef'
+    salt = coring.Salter(raw=raw).qb64
+    assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+
     with keeping.openKeeper() as keeper:
         manager = keeping.Manager(keeper=keeper)
         assert manager.keeper.opened
+        assert manager.signers == {}
+
+        verfers, digers = manager.incept(salt=salt, temp=True)  # algo default salty
+        assert len(verfers) == 1
+        assert len(digers) == 1
+
+        pre = verfers[0].qb64b
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=pre)).decode("utf-8"))
+        ps = helping.datify(keeping.PubSit, ps)
+        assert ps.algo == keeping.Algos.salty
+        assert ps.salt == salt
+        assert ps.level == coring.SecLevels.low
+        assert ps.old.pubs == []
+        assert len(ps.new.pubs) == 1
+        assert ps.new.pubs[0] == 'D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE'
+        assert ps.new.ridx == 0
+        assert ps.new.kidx == 0
+        assert len(ps.nxt.pubs) == 1
+        assert ps.nxt.pubs[0] == 'DtcqXbV0ilfOv0nT5muM2P8P5wMqmxt6gB8Uj_ap_qSQ'
+        assert ps.nxt.ridx == 1
+        assert ps.nxt.kidx == 1
+
+        keys = [verfer.qb64 for verfer in verfers]
+        assert keys == ['D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE']
+        for key in keys:
+            assert key in manager.signers
+            assert manager.signers[key].verfer.qb64 == key
+
+        digs = [diger.qb64 for diger in  digers]
+        assert digs == ['EY6IkiceSK5zJRogqnFCQpjPbgfBHddwx8CI_2W4rjvk']
+
+        for key in keys:
+            val = bytes(manager.keeper.getSec(key.encode("utf-8")))
+            assert val == manager.signers[key].qb64b
+
+
+
+
 
     assert not os.path.exists(manager.keeper.path)
     assert not manager.keeper.opened
