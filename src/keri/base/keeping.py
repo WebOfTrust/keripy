@@ -5,8 +5,8 @@ keri.base.keeping module
 
 Terminology:
     salt is 128 bit 16 char random bytes used as root entropy to derive seed or secret
-    seed or secret is crypto suite length dependent random bytes for private key
-    private key same as seed or secret
+    private key same as seed or secret for key pair
+    seed or secret or private key is crypto suite length dependent random bytes
     public key
 
 txn.put(
@@ -43,7 +43,7 @@ Algos = Algoage(novel='novel', salty='salty')
 
 
 
-@dataclass(frozen=True)
+@dataclass()
 class PubLot:
     """
     Public key list with indexes and datetime created
@@ -59,7 +59,7 @@ class PubLot:
 
 
 
-@dataclass(frozen=True)
+@dataclass()
 class PubSit:
     """
     Public key situation and parameters for creating key lists and tracking them
@@ -108,9 +108,9 @@ class Keeper(dbing.LMDBer):
                             Otherwise LMDB .env is closed
 
     Attributes:
-        .secs is named sub DB whose values are secrets (private keys)
+        .pris is named sub DB whose values are private keys
             Keyed by public key (fully qualified qb64)
-            Value is private key (fully qualified qb64) secret
+            Value is private key (fully qualified qb64)
         .sits is named sub DB whose values are serialized dicts of PubSit instance
             Keyed by identifer prefix (fully qualified qb64)
             Value is  serialized parameter dict (JSON) of public key situation
@@ -195,12 +195,12 @@ class Keeper(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.secs = self.env.open_db(key=b'secs.')
+        self.pris = self.env.open_db(key=b'pris.')
         self.sits = self.env.open_db(key=b'sits.')
 
 
-    # .secs methods
-    def putSec(self, key, val):
+    # .pris methods
+    def putPri(self, key, val):
         """
         Write fully qualified private key as val to key
         key is fully qualified public key
@@ -208,36 +208,36 @@ class Keeper(dbing.LMDBer):
         Returns True If val successfully written Else False
         Return False if key already exists
         """
-        return self.putVal(self.secs, key, val)
+        return self.putVal(self.pris, key, val)
 
 
-    def setSec(self, key, val):
+    def setPri(self, key, val):
         """
         Write fully qualified private key as val to key
         key is fully qualified public key
         Overwrites existing val if any
         Returns True If val successfully written Else False
         """
-        return self.setVal(self.secs, key, val)
+        return self.setVal(self.pris, key, val)
 
 
-    def getSec(self, key):
+    def getPri(self, key):
         """
         Return private key val at key
         key is fully qualified public key
         Returns None if no entry at key
         """
-        return self.getVal(self.secs, key)
+        return self.getVal(self.pris, key)
 
 
-    def delSec(self, key):
+    def delPri(self, key):
         """
         Deletes value at key.
         val is fully qualified private key
         key is fully qualified public key
         Returns True If key exists in database Else False
         """
-        return self.delVal(self.secs, key)
+        return self.delVal(self.pris, key)
 
     # .sits methods
     def putSit(self, key, val):
@@ -582,8 +582,33 @@ class Manager:
                 digest to xor is diger.raw
 
         Incept a prefix. Use first public key as temporary prefix.
-        Must rename later.
+        Must .repre later to move pubsit dict to correct permanent prefix.
         Store the dictified PubSit in the keeper under the first public key
+
+
+        Parameters:
+            icodes is list of private key derivation codes qb64 str
+                one per incepting key pair
+            icount is int count of incepting public keys when icodes not provided
+            icode is str derivation code qb64  of all icount incepting public keys
+                when icodes list not provided
+            ncodes is list of private key derivation codes qb64 str
+                one per next key pair
+            ncount is int count of next public keys when icodes not provided
+            ncode is str derivation code qb64  of all ncount next public keys
+                when ncodes not provided
+            dcode is str derivation code of next key digests
+            algo is str key creation algorithm code
+            salt is str qb64 random salt when salty algorithm used
+            level is str security level code with salty algorithm used
+            transferable is if each public key uses transferable code or not
+                default is transferable special case is non-transferable
+                not the same as if the derived identifier prefix is transferable
+                the derived prefix is set elsewhere
+            temp is temporary for testing it modifies level if salty algorithm
+
+        When both ncodes is empty and ncount is 0 then the nxt is null and will
+            not be rotatable (non-transferable prefix)
 
         """
         ridx = 0
@@ -591,18 +616,19 @@ class Manager:
 
         creator = Creatory(algo=algo).make(salt=salt, level=level)
 
-        if not icodes:  # all same code, make list icount code
+        if not icodes:  # all same code, make list of len icount of same code
             icodes = [icode for i in range(icount)]
 
-        isigners = creator.create(codes=icodes, algo=algo, salt=salt, level=level,
+        isigners = creator.create(codes=icodes,
                                   ridx=ridx, kidx=kidx,
                                   transferable=transferable, temp=temp)
         verfers = [signer.verfer for signer in isigners]
 
-        if not ncodes:  # all same code, make list icount code
+        if not ncodes:  # all same code, make list of len ncount of same code
             ncodes = [ncode for i in range(ncount)]
 
-        nsigners = creator.create(codes=icodes, algo=algo, salt=salt, level=level,
+        # count set to 0 to ensure does not create signers if ncodes is empty
+        nsigners = creator.create(codes=ncodes, count=0,
                                   ridx=ridx+1, kidx=kidx+len(icodes),
                                   transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in nsigners]
@@ -627,11 +653,11 @@ class Manager:
             raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
         for signer in isigners:  # store secrets (private key val keyed by public key)
-            self.keeper.putSec(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
             self.signers[signer.verfer.qb64] = signer
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
-            self.keeper.putSec(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
             self.signers[signer.verfer.qb64] = signer
 
         return (verfers, digers)
@@ -639,8 +665,98 @@ class Manager:
 
     def repre(self, old, new):
         """
+        Moves PubSit dict in keeper db from old pre to new pre db key
+        Paraameters:
+           old is str for old prefix of pubsit dict in keeper db
+           new is str for new prefix to move pubsit dict to in keeper db
         """
 
-    def rotate(self):
+
+    def rotate(self, pre, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
+                     dcode=coring.CryOneDex.Blake3_256,
+                     transferable=True, temp=False):
         """
+        Returns duple (verfers, digers) for rotation event of keys for pre where
+            verfers is list of current public key verfers
+                public key is verfer.qb64
+            digers is list of next public key digers
+                digest to xor is diger.raw
+
+        Rotate a prefix.
+        Store the updated dictified PubSit in the keeper under pre
+
+        Parameters:
+            pre is str qb64 of prefix
+            codes is list of private key derivation codes qb64 str
+                one per next key pair
+            count is int count of next public keys when icodes not provided
+            code is str derivation code qb64  of all ncount next public keys
+                when ncodes not provided
+            dcode is str derivation code of next key digests
+            transferable is if public key is transferable or not
+                default is transferable special case is non-transferable
+            temp is temporary for testing it modifies level if salty algorithm
+
         """
+        rawsit = self.keeper.getSit(key=pre.encode("utf-8"))
+        if rawsit is None:
+            raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
+
+        ps = helping.datify(PubSit, json.loads(bytes(rawsit).decode("utf-8")))
+
+        if not ps.nxt.pubs:  # empty nxt public keys so non-transferable prefix
+            raise ValueError("Attempt to rotate nontransferable pre={}.".format(pre))
+
+        old = ps.old  # save old so can clean out if rotate successful
+        ps.old = ps.new  # move new to old
+        ps.new = ps.nxt  # move nxt to new
+
+        verfers = []  #  assign verfers from old nxt now new.
+        for pub in ps.new.pubs:
+            if pub in self.signers:
+                verfers.append(self.signers[pub].verfer)
+            else:
+                verfer = coring.Verfer(qb64=pub)  # need for nontrans code
+                raw = self.keeper.getPri(key=pub.encode("utf-8"))
+                if raw is None:
+                    raise ValueError("Missing prikey in db for pubkey={}".format(pub))
+                pri = bytes(raw)
+                signer = coring.Signer(qb64b=pri,
+                                       transferable= not verfer.nontrans)
+                verfers.append(signer.verfer)
+                self.signers[pub] = signer
+
+
+        creator = Creatory(algo=ps.algo).make(salt=ps.salt, level=ps.level)
+
+        if not codes:  # all same code, make list of len count of same code
+            codes = [code for i in range(count)]
+
+        ridx = ps.new.ridx + 1
+        kidx = ps.nxt.kidx + len(ps.new.pubs)
+
+        # count set to 0 to ensure does not create signers if codes is empty
+        signers = creator.create(codes=codes, count=0,
+                                 ridx=ridx, kidx=kidx,
+                                 transferable=transferable, temp=temp)
+        digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in signers]
+
+        dt = helping.nowIso8601()
+        ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
+                              ridx=ridx, kidx=kidx, dt=dt)
+
+        result = self.keeper.setSit(key=pre.encode("utf-8"),
+                                    val=json.dumps(asdict(ps)).encode("utf-8"))
+        if not result:
+            raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
+
+        for pub in old.pubs:  # remove old signers and old prikeys
+            if pub in self.signers:
+                del self.signers[pub]
+                self.keeper.delPri(key=pub.encode("utf-8"))
+
+        for signer in signers:  # store secrets (private key val keyed by public key)
+            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.signers[signer.verfer.qb64] = signer
+
+        return (verfers, digers)

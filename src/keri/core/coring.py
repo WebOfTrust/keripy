@@ -557,7 +557,7 @@ class CryMat:
     @property
     def nontrans(self):
         """
-        Property transferable:
+        Property nontrans:
         Returns True if identifier has non-transferable derivation code,
                 False otherwise
         """

@@ -1218,7 +1218,6 @@ class Kevery:
         dgkey = dgKey(pre=pre, dig=dig)
         raw = self.baser.getEvt(key=dgkey)  # retrieve receipted event at dig
 
-
         if ldig is not None:  #  verify digs match
             ldig = bytes(ldig).decode("utf-8")
             if ldig != dig:  # stale receipt at sn discard

@@ -202,7 +202,7 @@ def test_keeper():
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "1700"
     assert keeper.DirMode == dirMode
 
-    assert isinstance(keeper.secs, lmdb._Database)
+    assert isinstance(keeper.pris, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
 
@@ -221,7 +221,7 @@ def test_keeper():
     assert os.path.exists(keeper.path)
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "0775"
 
-    assert isinstance(keeper.secs, lmdb._Database)
+    assert isinstance(keeper.pris, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
     keeper.close(clear=True)
@@ -244,7 +244,7 @@ def test_keeper():
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
 
-    assert isinstance(keeper.secs, lmdb._Database)
+    assert isinstance(keeper.pris, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
     keeper.close(clear=True)
@@ -262,7 +262,7 @@ def test_keeper():
         assert keeper.env.path() == keeper.path
         assert os.path.exists(keeper.path)
 
-        assert isinstance(keeper.secs, lmdb._Database)
+        assert isinstance(keeper.pris, lmdb._Database)
         assert isinstance(keeper.sits, lmdb._Database)
 
         seed = b'0AZxWJGkCkpDcHuVG4GM1KVw'
@@ -276,16 +276,16 @@ def test_keeper():
 
         #  test .secs sub db methods
         key = puba
-        assert keeper.getSec(key) == None
-        assert keeper.delSec(key) == False
-        assert keeper.putSec(key, val=pria) == True
-        assert keeper.getSec(key) == pria
-        assert keeper.putSec(key, val=prib) == False
-        assert keeper.getSec(key) == pria
-        assert keeper.setSec(key, val=prib) == True
-        assert keeper.getSec(key) == prib
-        assert keeper.delSec(key) == True
-        assert keeper.getSec(key) == None
+        assert keeper.getPri(key) == None
+        assert keeper.delPri(key) == False
+        assert keeper.putPri(key, val=pria) == True
+        assert keeper.getPri(key) == pria
+        assert keeper.putPri(key, val=prib) == False
+        assert keeper.getPri(key) == pria
+        assert keeper.setPri(key, val=prib) == True
+        assert keeper.getPri(key) == prib
+        assert keeper.delPri(key) == True
+        assert keeper.getPri(key) == None
 
         #  test .sits sub db methods
         key = prea
@@ -494,13 +494,14 @@ def test_manager():
         assert manager.keeper.opened
         assert manager.signers == {}
 
+        # salty algorithm incept
         verfers, digers = manager.incept(salt=salt, temp=True)  # algo default salty
         assert len(verfers) == 1
         assert len(digers) == 1
 
-        pre = verfers[0].qb64b
+        spre = verfers[0].qb64b
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=pre)).decode("utf-8"))
+        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
         ps = helping.datify(keeping.PubSit, ps)
         assert ps.algo == keeping.Algos.salty
         assert ps.salt == salt
@@ -520,26 +521,92 @@ def test_manager():
         for key in keys:
             assert key in manager.signers
             assert manager.signers[key].verfer.qb64 == key
+            val = bytes(manager.keeper.getPri(key.encode("utf-8")))
+            assert val == manager.signers[key].qb64b
 
         digs = [diger.qb64 for diger in  digers]
         assert digs == ['EY6IkiceSK5zJRogqnFCQpjPbgfBHddwx8CI_2W4rjvk']
 
-        for key in keys:
-            val = bytes(manager.keeper.getSec(key.encode("utf-8")))
-            assert val == manager.signers[key].qb64b
-
+        #  attempt to reincept same pre
         with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
             verfers, digers = manager.incept(salt=salt, temp=True)
         assert ex.value.args[0] == 'Already incepted pre=D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE.'
 
-        # novel algo
-        verfers, digers = manager.incept(algo=keeping.Algos.novel)
+
+        # salty algorithm rotate
+        oldpubs = [verfer.qb64 for verfer in verfers]
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
+
         assert len(verfers) == 1
         assert len(digers) == 1
 
-        pre = verfers[0].qb64b
+        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        ps = helping.datify(keeping.PubSit, ps)
+        assert ps.algo == keeping.Algos.salty
+        assert ps.salt == salt
+        assert ps.level == coring.SecLevels.low
+        assert ps.old.pubs == ['D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE']
+        assert len(ps.new.pubs) == 1
+        assert ps.new.pubs[0] == 'DtcqXbV0ilfOv0nT5muM2P8P5wMqmxt6gB8Uj_ap_qSQ'
+        assert ps.new.ridx == 1
+        assert ps.new.kidx == 1
+        assert len(ps.nxt.pubs) == 1
+        assert ps.nxt.pubs[0] == 'DU5BRykE9Z6mMa9letCBwoC7Tmkq39SUzS0aHMKqivho'
+        assert ps.nxt.ridx == 2
+        assert ps.nxt.kidx == 2
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=pre)).decode("utf-8"))
+        keys = [verfer.qb64 for verfer in verfers]
+        assert keys == ['DtcqXbV0ilfOv0nT5muM2P8P5wMqmxt6gB8Uj_ap_qSQ']
+        for key in keys:
+            assert key in manager.signers
+            assert manager.signers[key].verfer.qb64 == key
+            val = bytes(manager.keeper.getPri(key.encode("utf-8")))
+            assert val == manager.signers[key].qb64b
+
+        digs = [diger.qb64 for diger in  digers]
+        assert digs == ['EdMykDQUaIBJzuVlO8UjdHQ_ZCufG7o6sAC3cVket_XQ']
+
+        assert oldpubs == ps.old.pubs
+
+        # salty algorithm rotate
+        oldpubs = [verfer.qb64 for verfer in verfers]
+        deadpubs = ps.old.pubs
+
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        ps = helping.datify(keeping.PubSit, ps)
+
+        assert oldpubs == ps.old.pubs
+
+        for pub in deadpubs:
+            assert pub not in manager.signers
+            assert not manager.keeper.getPri(key=pub.encode("utf-8"))
+
+        # salty algorithm rotate to null
+
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"), count=0)
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        ps = helping.datify(keeping.PubSit, ps)
+
+        assert digers == []
+        assert ps.nxt.pubs == []
+
+        #  attempt to rotate after null
+        with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
+            verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
+        assert ex.value.args[0] == ('Attempt to rotate nontransferable '
+                                    'pre=D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE.')
+
+
+        # novel algo incept
+        verfers, digers = manager.incept(algo=keeping.Algos.novel)
+        assert len(verfers) == 1
+        assert len(digers) == 1
+        npre = verfers[0].qb64b
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=npre)).decode("utf-8"))
         ps = helping.datify(keeping.PubSit, ps)
         assert ps.algo == keeping.Algos.novel
         assert ps.salt == ''
@@ -556,16 +623,41 @@ def test_manager():
         for key in keys:
             assert key in manager.signers
             assert manager.signers[key].verfer.qb64 == key
+            val = bytes(manager.keeper.getPri(key.encode("utf-8")))
+            assert val == manager.signers[key].qb64b
 
         digs = [diger.qb64 for diger in  digers]
         assert len(digs) == 1
 
-        for key in keys:
-            val = bytes(manager.keeper.getSec(key.encode("utf-8")))
-            assert val == manager.signers[key].qb64b
+        # novel algorithm rotate
+        oldpubs = [verfer.qb64 for verfer in verfers]
+
+        verfers, digers = manager.rotate(pre=npre.decode("utf-8"))
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=npre)).decode("utf-8"))
+        ps = helping.datify(keeping.PubSit, ps)
+
+        assert oldpubs == ps.old.pubs
+
+        # novel algo incept with null nxt
+        verfers, digers = manager.incept(algo=keeping.Algos.novel, ncount=0)
+        npre = verfers[0].qb64b
+        ps = json.loads(bytes(manager.keeper.getSit(key=npre)).decode("utf-8"))
+        ps = helping.datify(keeping.PubSit, ps)
+
+        assert digers == []
+        assert ps.nxt.pubs == []
+
+        #  attempt to rotate after null
+        with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
+            verfers, digers = manager.rotate(pre=npre.decode("utf-8"))
+
+
 
     assert not os.path.exists(manager.keeper.path)
     assert not manager.keeper.opened
+    """End Test"""
+
 
 if __name__ == "__main__":
     test_manager()
