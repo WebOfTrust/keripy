@@ -540,6 +540,7 @@ def test_manager():
         assert manager.getPidx() == 1
 
         spre = verfers[0].qb64b
+        assert spre == b'DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
 
         ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
         ps = helping.datify(keeping.PubSit, ps)
@@ -566,6 +567,10 @@ def test_manager():
 
         digs = [diger.qb64 for diger in  digers]
         assert digs == ['E8UYvbKn7KYw9e4F2DR-iduGtdA1o16ePAYjpyCYSeYo']
+
+        oldspre = spre
+        spre = b'DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc'
+        manager.repre(old=oldspre, new=spre)
 
         #  attempt to reincept same pre
         #with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
@@ -643,9 +648,9 @@ def test_manager():
         assert len(verfers) == 1
         assert len(digers) == 1
         assert manager.getPidx() == 2
-        npre = verfers[0].qb64b
+        rpre = verfers[0].qb64b
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=npre)).decode("utf-8"))
+        ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
         ps = helping.datify(keeping.PubSit, ps)
         assert ps.algo == keeping.Algos.randy
         assert ps.salt == salt
@@ -668,12 +673,16 @@ def test_manager():
         digs = [diger.qb64 for diger in  digers]
         assert len(digs) == 1
 
+        oldrpre = rpre
+        rpre = b'DMqxMVG3IcCNK4lpFfCu5o5cxzv1lgpMM-9rfkY3XVUc'
+        manager.repre(old=oldrpre, new=rpre)
+
         # randy algorithm rotate
         oldpubs = [verfer.qb64 for verfer in verfers]
 
-        verfers, digers = manager.rotate(pre=npre.decode("utf-8"))
+        verfers, digers = manager.rotate(pre=rpre.decode("utf-8"))
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=npre)).decode("utf-8"))
+        ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
         ps = helping.datify(keeping.PubSit, ps)
 
         assert oldpubs == ps.old.pubs
@@ -681,8 +690,8 @@ def test_manager():
         # randy algo incept with null nxt
         verfers, digers = manager.incept(algo=keeping.Algos.randy, ncount=0)
         assert manager.getPidx() == 3
-        npre = verfers[0].qb64b
-        ps = json.loads(bytes(manager.keeper.getSit(key=npre)).decode("utf-8"))
+        rpre = verfers[0].qb64b
+        ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
         ps = helping.datify(keeping.PubSit, ps)
 
         assert digers == []
@@ -690,7 +699,7 @@ def test_manager():
 
         #  attempt to rotate after null
         with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
-            verfers, digers = manager.rotate(pre=npre.decode("utf-8"))
+            verfers, digers = manager.rotate(pre=rpre.decode("utf-8"))
 
 
 

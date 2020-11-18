@@ -807,11 +807,26 @@ class Manager:
 
     def repre(self, old, new):
         """
-        Moves PubSit dict in keeper db from old pre to new pre db key
+        Moves PubSit dict in keeper db from old default pre to new pre db key
+        The new pre is the newly derived prefix which may only be known some
+        time after the original creation of the associated key pairs.
+
         Paraameters:
            old is str for old prefix of pubsit dict in keeper db
            new is str for new prefix to move pubsit dict to in keeper db
         """
+        rawold = self.keeper.getSit(key=old)
+        if rawold is None:
+            raise ValueError("Nonexistent old pre={}, nothing to move.".format(old))
+
+        rawnew = self.keeper.getSit(key=new)
+        if rawnew is not None:
+            raise ValueError("Preexistent new pre={} may not clobber.".format(new))
+
+        if not self.keeper.putSit(key=new, val=bytes(rawold)):
+            raise ValueError("Failed moving old pre={} to new pre={}.".format(old, new))
+        else:
+            self.keeper.delSit(key=old)
 
 
     def rotate(self, pre, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
