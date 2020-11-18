@@ -109,8 +109,8 @@ def test_publot_pubsit():
     old = keeping.PubLot(ridx=0, kidx=0)
     new = keeping.PubLot(ridx=1, kidx=3)
     nxt = keeping.PubLot(ridx=2, kidx=6)
-    ps = keeping.PubSit(algo=keeping.Algos.novel, old=old, new=new, nxt=nxt)
-    assert ps.algo == keeping.Algos.novel
+    ps = keeping.PubSit(algo=keeping.Algos.randy, old=old, new=new, nxt=nxt)
+    assert ps.algo == keeping.Algos.randy
     assert ps.salt == ''
     assert ps.level == coring.SecLevels.low
     assert ps.old.ridx == 0
@@ -298,7 +298,7 @@ def test_keeper():
                          nxt=dict(pubs=[pubb.decode("utf-8")], ridx=2, kidx=2, dt=helping.nowIso8601())
                     )).encode("utf-8")
         sitb = json.dumps(
-                    dict(algo='novel',
+                    dict(algo='randy',
                          salt='',
                          level='low',
                          old=dict(pubs=[puba.decode("utf-8")], ridx=0, kidx=0, dt=helping.nowIso8601()),
@@ -391,8 +391,8 @@ def test_creator():
     assert isinstance(creator, keeping.Creator)
     assert creator.create() == []
 
-    creator = keeping.NovelCreator()
-    assert isinstance(creator, keeping.NovelCreator)
+    creator = keeping.RandyCreator()
+    assert isinstance(creator, keeping.RandyCreator)
     assert isinstance(creator, keeping.Creator)
     signers = creator.create()
     assert len(signers) == 1
@@ -467,8 +467,8 @@ def test_creator():
     assert isinstance(creator, keeping.SaltyCreator)
     assert creator.salter.qb64 == salt
 
-    creator = keeping.Creatory(algo=keeping.Algos.novel).make()
-    assert isinstance(creator, keeping.NovelCreator)
+    creator = keeping.Creatory(algo=keeping.Algos.randy).make()
+    assert isinstance(creator, keeping.RandyCreator)
     """End Test"""
 
 
@@ -600,15 +600,15 @@ def test_manager():
                                     'pre=D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE.')
 
 
-        # novel algo incept
-        verfers, digers = manager.incept(algo=keeping.Algos.novel)
+        # randy algo incept
+        verfers, digers = manager.incept(algo=keeping.Algos.randy)
         assert len(verfers) == 1
         assert len(digers) == 1
         npre = verfers[0].qb64b
 
         ps = json.loads(bytes(manager.keeper.getSit(key=npre)).decode("utf-8"))
         ps = helping.datify(keeping.PubSit, ps)
-        assert ps.algo == keeping.Algos.novel
+        assert ps.algo == keeping.Algos.randy
         assert ps.salt == ''
         assert ps.level == coring.SecLevels.low
         assert ps.old.pubs == []
@@ -629,7 +629,7 @@ def test_manager():
         digs = [diger.qb64 for diger in  digers]
         assert len(digs) == 1
 
-        # novel algorithm rotate
+        # randy algorithm rotate
         oldpubs = [verfer.qb64 for verfer in verfers]
 
         verfers, digers = manager.rotate(pre=npre.decode("utf-8"))
@@ -639,8 +639,8 @@ def test_manager():
 
         assert oldpubs == ps.old.pubs
 
-        # novel algo incept with null nxt
-        verfers, digers = manager.incept(algo=keeping.Algos.novel, ncount=0)
+        # randy algo incept with null nxt
+        verfers, digers = manager.incept(algo=keeping.Algos.randy, ncount=0)
         npre = verfers[0].qb64b
         ps = json.loads(bytes(manager.keeper.getSit(key=npre)).decode("utf-8"))
         ps = helping.datify(keeping.PubSit, ps)

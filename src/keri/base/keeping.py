@@ -37,9 +37,8 @@ from ..core import coring
 from ..db import dbing
 
 
-Algoage = namedtuple("Algoage", 'novel salty')
-
-Algos = Algoage(novel='novel', salty='salty')
+Algoage = namedtuple("Algoage", 'randy salty')
+Algos = Algoage(randy='randy', salty='salty')  # randy is rerandomize, salty is use salt
 
 
 
@@ -369,9 +368,9 @@ class Creator:
         return []
 
 
-class NovelCreator(Creator):
+class RandyCreator(Creator):
     """
-    Class for creating a key pair based on novel random seed algorithm.
+    Class for creating a key pair based on re-randomizing each seed algorithm.
 
     Attributes:
 
@@ -392,7 +391,7 @@ class NovelCreator(Creator):
         Parameters:
 
         """
-        super(NovelCreator, self).__init__(**kwa)
+        super(RandyCreator, self).__init__(**kwa)
 
 
     def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
@@ -510,7 +509,7 @@ class Creatory:
             algo is str code for algorithm
 
         """
-        if algo == Algos.novel:
+        if algo == Algos.randy:
             self._make = self._makeNovel
         elif algo == Algos.salty:
             self._make = self._makeSalty
@@ -528,7 +527,7 @@ class Creatory:
         """
 
         """
-        return NovelCreator(**kwa)
+        return RandyCreator(**kwa)
 
     def _makeSalty(self, **kwa):
         """
