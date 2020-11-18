@@ -213,7 +213,14 @@ class Keeper(dbing.LMDBer):
         Does not overwrite existing val if any
         Returns True If val successfully written Else False
         Return False if key already exists
+
+        b'%x' % pidx
+        "{:x}".format(pidx).encode("utf-8")
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.prms, key, val)
 
 
@@ -224,6 +231,10 @@ class Keeper(dbing.LMDBer):
         Overwrites existing val if any
         Returns True If val successfully written Else False
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.prms, key, val)
 
 
@@ -233,6 +244,8 @@ class Keeper(dbing.LMDBer):
         key is fully qualified public key
         Returns None if no entry at key
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.prms, key)
 
 
@@ -243,6 +256,8 @@ class Keeper(dbing.LMDBer):
         key is fully qualified public key
         Returns True If key exists in database Else False
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.prms, key)
 
 
@@ -255,6 +270,10 @@ class Keeper(dbing.LMDBer):
         Returns True If val successfully written Else False
         Return False if key already exists
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.pris, key, val)
 
 
@@ -265,6 +284,10 @@ class Keeper(dbing.LMDBer):
         Overwrites existing val if any
         Returns True If val successfully written Else False
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.pris, key, val)
 
 
@@ -274,6 +297,8 @@ class Keeper(dbing.LMDBer):
         key is fully qualified public key
         Returns None if no entry at key
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.pris, key)
 
 
@@ -284,6 +309,8 @@ class Keeper(dbing.LMDBer):
         key is fully qualified public key
         Returns True If key exists in database Else False
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.pris, key)
 
     # .sits methods
@@ -295,6 +322,10 @@ class Keeper(dbing.LMDBer):
         Returns True If val successfully written Else False
         Return False if key already exists
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.sits, key, val)
 
 
@@ -305,6 +336,10 @@ class Keeper(dbing.LMDBer):
         Overwrites existing val if any
         Returns True If val successfully written Else False
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.sits, key, val)
 
 
@@ -314,6 +349,8 @@ class Keeper(dbing.LMDBer):
         key is fully qualified prefix
         Returns None if no entry at key
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.sits, key)
 
 
@@ -324,6 +361,8 @@ class Keeper(dbing.LMDBer):
         val is serialized parameter dict at key
         Returns True If key exists in database Else False
         """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.sits, key)
 
 
