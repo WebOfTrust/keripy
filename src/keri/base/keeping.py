@@ -63,6 +63,7 @@ class PubSit:
     """
     Public key situation and parameters for creating key lists and tracking them
     """
+    pidx: int = 0  # prefix index for this keypair sequence
     algo: str = Algos.salty  # default use indices and salt  to create new key pairs
     salt: str = ''  # empty salt  used for index algo.
     level: str = coring.SecLevels.low  # stretch security level for index algo

@@ -53,6 +53,7 @@ def test_publot_pubsit():
 
     ps = keeping.PubSit()
     assert isinstance(ps, keeping.PubSit)
+    assert ps.pidx == 0
     assert ps.algo == keeping.Algos.salty == 'salty'
     assert ps.salt == ''
     assert ps.level == coring.SecLevels.low
@@ -71,14 +72,16 @@ def test_publot_pubsit():
     assert ps.nxt.ridx ==  0
     assert ps.nxt.kidx == 0
     assert ps.nxt.dt == ''
-    assert asdict(ps) == dict(algo=keeping.Algos.salty,
+    assert asdict(ps) == dict(pidx=0,
+                              algo=keeping.Algos.salty,
                               salt='',
                               level=coring.SecLevels.low,
                               old=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               new=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
                               )
-    ps = helping.datify(keeping.PubSit, dict(algo=keeping.Algos.salty,
+    ps = helping.datify(keeping.PubSit, dict(pidx=0,
+                                             algo=keeping.Algos.salty,
                                              salt='',
                                              level=coring.SecLevels.low,
                                              old=dict(pubs=[], ridx=0, kidx=0, dt=''),
@@ -87,6 +90,7 @@ def test_publot_pubsit():
                                           ))
 
     assert isinstance(ps, keeping.PubSit)
+    assert ps.pidx == 0
     assert ps.algo == keeping.Algos.salty == 'salty'
     assert ps.salt == ''
     assert ps.level == coring.SecLevels.low
@@ -109,7 +113,8 @@ def test_publot_pubsit():
     old = keeping.PubLot(ridx=0, kidx=0)
     new = keeping.PubLot(ridx=1, kidx=3)
     nxt = keeping.PubLot(ridx=2, kidx=6)
-    ps = keeping.PubSit(algo=keeping.Algos.randy, old=old, new=new, nxt=nxt)
+    ps = keeping.PubSit(pidx=1, algo=keeping.Algos.randy, old=old, new=new, nxt=nxt)
+    assert ps.pidx == 1
     assert ps.algo == keeping.Algos.randy
     assert ps.salt == ''
     assert ps.level == coring.SecLevels.low
