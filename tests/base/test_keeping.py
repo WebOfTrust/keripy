@@ -207,6 +207,7 @@ def test_keeper():
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "1700"
     assert keeper.DirMode == dirMode
 
+    assert isinstance(keeper.prms, lmdb._Database)
     assert isinstance(keeper.pris, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
@@ -226,6 +227,7 @@ def test_keeper():
     assert os.path.exists(keeper.path)
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "0775"
 
+    assert isinstance(keeper.prms, lmdb._Database)
     assert isinstance(keeper.pris, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
@@ -249,6 +251,7 @@ def test_keeper():
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
 
+    assert isinstance(keeper.prms, lmdb._Database)
     assert isinstance(keeper.pris, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
@@ -267,10 +270,12 @@ def test_keeper():
         assert keeper.env.path() == keeper.path
         assert os.path.exists(keeper.path)
 
+        assert isinstance(keeper.prms, lmdb._Database)
         assert isinstance(keeper.pris, lmdb._Database)
         assert isinstance(keeper.sits, lmdb._Database)
 
-        seed = b'0AZxWJGkCkpDcHuVG4GM1KVw'
+        salta = b'0AZxWJGkCkpDcHuVG4GM1KVw'
+        saltb = b'0AHuVG4GM1KVwZxWJGkCkpDc'
         pria = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
         prib = b'AE2yPgBXiP6h_J2cZeCy4MaOa6eOCJQcgEozYb1GgV9z'
         puba = b'DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
@@ -279,7 +284,34 @@ def test_keeper():
         prea = b'EWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
         preb = b'EQPYGGwTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gz'
 
-        #  test .secs sub db methods
+        #  test .prms sub db methods
+        key = b'pidx'
+        pidxa = b'%x' % 0  # "{:x}".format(pidx).encode("utf-8")
+        pidxb = b'%x' % 1  # "{:x}".format(pidx).encode("utf-8"
+        assert keeper.getPri(key) == None
+        assert keeper.delPri(key) == False
+        assert keeper.putPri(key, val=pidxa) == True
+        assert keeper.getPri(key) == pidxa
+        assert keeper.putPri(key, val=pidxb) == False
+        assert keeper.getPri(key) == pidxa
+        assert keeper.setPri(key, val=pidxb) == True
+        assert keeper.getPri(key) == pidxb
+        assert keeper.delPri(key) == True
+        assert keeper.getPri(key) == None
+
+        key = b'salt'
+        assert keeper.getPri(key) == None
+        assert keeper.delPri(key) == False
+        assert keeper.putPri(key, val=salta) == True
+        assert keeper.getPri(key) == salta
+        assert keeper.putPri(key, val=saltb) == False
+        assert keeper.getPri(key) == salta
+        assert keeper.setPri(key, val=saltb) == True
+        assert keeper.getPri(key) == saltb
+        assert keeper.delPri(key) == True
+        assert keeper.getPri(key) == None
+
+        #  test .pris sub db methods
         key = puba
         assert keeper.getPri(key) == None
         assert keeper.delPri(key) == False
@@ -296,7 +328,7 @@ def test_keeper():
         key = prea
         sita = json.dumps(
                     dict(algo='index',
-                         salt=seed.decode("utf-8"),
+                         salt=salta.decode("utf-8"),
                          level='low',
                          old=dict(pubs=[], ridx=0, kidx=0, dt=''),
                          new=dict(pubs=[puba.decode("utf-8")], ridx=1, kidx=1, dt=helping.nowIso8601()),

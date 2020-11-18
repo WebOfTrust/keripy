@@ -108,6 +108,12 @@ class Keeper(dbing.LMDBer):
                             Otherwise LMDB .env is closed
 
     Attributes:
+        .prms is named sub DB whose values are parameters
+            Keyed by parameter labels
+            Value is parameter
+               parameters:
+                   pidx is hex index of next prefix key-pair sequence to be incepted
+                   salt is root salt for  generating key pairs
         .pris is named sub DB whose values are private keys
             Keyed by public key (fully qualified qb64)
             Value is private key (fully qualified qb64)
@@ -195,8 +201,49 @@ class Keeper(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
+        self.prms = self.env.open_db(key=b'prms.')
         self.pris = self.env.open_db(key=b'pris.')
         self.sits = self.env.open_db(key=b'sits.')
+
+    # .prms methods
+    def putPrm(self, key, val):
+        """
+        Write parameter as val to key
+        key is parameter label
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        return self.putVal(self.prms, key, val)
+
+
+    def setPrm(self, key, val):
+        """
+        Write parameter as val to key
+        key is parameter label
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.prms, key, val)
+
+
+    def getPrm(self, key):
+        """
+        Return parameter val at key label
+        key is fully qualified public key
+        Returns None if no entry at key
+        """
+        return self.getVal(self.prms, key)
+
+
+    def delPrm(self, key):
+        """
+        Deletes value at key.
+        val is fully qualified private key
+        key is fully qualified public key
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.prms, key)
 
 
     # .pris methods
