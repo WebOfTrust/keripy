@@ -526,6 +526,13 @@ def test_manager():
     salt = coring.Salter(raw=raw).qb64
     assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
 
+    ser = bytes(b'{"vs":"KERI10JSON0000fb_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
+                    b'70m6LIjkiCdoI","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
+                    b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EPYuj8mq_PYYsoBKkz'
+                    b'X1kxSPGYBWaIya3slgCOyOtlqU","toad":"0","wits":[],"cnfg":[]}-AABA'
+                    b'ApYcYd1cppVg7Inh2YCslWKhUwh59TrPpIoqWxN2A38NCbTljvmBPBjSGIFDBNOv'
+                    b'VjHpdZlty3Hgk6ilF8pVpAQ')
+
     with keeping.openKeeper() as keeper:
         manager = keeping.Manager(keeper=keeper, salt=salt)
         assert manager.keeper.opened
@@ -571,6 +578,25 @@ def test_manager():
         oldspre = spre
         spre = b'DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc'
         manager.moveSit(old=oldspre, new=spre)
+
+        psigers = manager.sign(ser=ser, pubs=ps.new.pubs)
+        for siger in psigers:
+            assert isinstance(siger, coring.Siger)
+        vsigers = manager.sign(ser=ser, verfers=verfers)
+        psigs = [siger.qb64 for siger in psigers]
+        vsigs = [siger.qb64 for siger in vsigers]
+        assert psigs == vsigs
+        assert psigs == ['AAGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
+
+        pcigars = manager.sign(ser=ser, pubs=ps.new.pubs, indexed=False)
+        for cigar in pcigars:
+            assert isinstance(cigar, coring.Cigar)
+        vcigars = manager.sign(ser=ser, verfers=verfers, indexed=False)
+        psigs = [cigar.qb64 for cigar in pcigars]
+        vsigs = [cigar.qb64 for cigar in vcigars]
+        assert psigs == vsigs
+        assert psigs == ['0BGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
+
 
         #  attempt to reincept same pre
         #with pytest.raises(ValueError) as ex:  # attempt to reincept same pre

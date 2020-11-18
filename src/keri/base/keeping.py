@@ -871,19 +871,16 @@ class Manager:
 
         verfers = []  #  assign verfers from old nxt now new.
         for pub in ps.new.pubs:
-            if pub in self.signers:
-                verfers.append(self.signers[pub].verfer)
-            else:
-                verfer = coring.Verfer(qb64=pub)  # need for nontrans code
+            if pub not in self.signers:
+                verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
                 raw = self.keeper.getPri(key=pub.encode("utf-8"))
                 if raw is None:
                     raise ValueError("Missing prikey in db for pubkey={}".format(pub))
                 pri = bytes(raw)
                 signer = coring.Signer(qb64b=pri,
-                                       transferable= not verfer.nontrans)
-                verfers.append(signer.verfer)
+                                       transferable = not verfer.nontrans)
                 self.signers[pub] = signer
-
+            verfers.append(self.signers[pub].verfer)
 
         creator = Creatory(algo=ps.algo).make(salt=ps.salt, level=ps.level)
 
@@ -919,3 +916,61 @@ class Manager:
             self.signers[signer.verfer.qb64] = signer
 
         return (verfers, digers)
+
+
+    def sign(self, ser, pubs=None, verfers=None, indexed=True):
+        """
+        Returns list of signatures of ser if indexed as Sigers else as Cigars
+
+        Parameters:
+           ser is bytes serialization to sign
+           pubs is list of qb64 public keys to lookup private keys
+           verfers is list of Verfers for public keys
+
+        if neither pubs or verfers provided then returns empty list of signatures
+        If pubs then ignores verfers otherwise uses verferss
+
+        Manager implement .sign method and tests
+        sign(self,ser,pubs,indexed=True)
+        checks for pris for pubs in db is not raises error
+        then signs ser with eah pub
+        returns list of sigers indexed else list of cigars if not
+        """
+        signers = []
+
+        if pubs:
+            for pub in pubs:
+                if pub not in self.signers:
+                    verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
+                    raw = self.keeper.getPri(key=pub)
+                    if raw is None:
+                        raise ValueError("Missing prikey in db for pubkey={}".format(pub))
+                    signer = coring.Signer(qb64b=bytes(raw),
+                                           transferable= not verfer.nontrans)
+                    self.signers[pub] = signer
+
+                signers.append(self.signers[pub])
+
+        else:
+            for verfer in verfers:
+                pub = verfer.qb64
+                if pub not in self.signers:
+                    raw = self.keeper.getPri(key=pub)
+                    if raw is None:
+                        raise ValueError("Missing prikey in db for pubkey={}".format(pub))
+                    signer = coring.Signer(qb64b=bytes(raw),
+                                           transferable= not verfer.nontrans)
+                    self.signers[pub] = signer
+
+                signers.append(self.signers[pub])
+
+        if indexed:
+            sigers = []
+            for i, signer in enumerate(signers):
+                sigers.append(signer.sign(ser, index=i))
+            return sigers
+        else:
+            cigars = []
+            for signer in signers:
+                cigars.append(signer.sign(ser))
+            return cigars
