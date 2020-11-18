@@ -311,18 +311,6 @@ def test_keeper():
         assert keeper.delPri(key) == True
         assert keeper.getPri(key) == None
 
-        key = b'level'
-        assert keeper.getPri(key) == None
-        assert keeper.delPri(key) == False
-        assert keeper.putPri(key, val=coring.SecLevels.low) == True
-        assert keeper.getPri(key) == coring.SecLevels.low.encode("utf-8")
-        assert keeper.putPri(key, val=coring.SecLevels.med) == False
-        assert keeper.getPri(key) == coring.SecLevels.low.encode("utf-8")
-        assert keeper.setPri(key, val=coring.SecLevels.med) == True
-        assert keeper.getPri(key) == coring.SecLevels.med.encode("utf-8")
-        assert keeper.delPri(key) == True
-        assert keeper.getPri(key) == None
-
         #  test .pris sub db methods
         key = puba
         assert keeper.getPri(key) == None

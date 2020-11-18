@@ -114,7 +114,6 @@ class Keeper(dbing.LMDBer):
                parameters:
                    pidx is bytes hex index of next prefix key-pair sequence to be incepted
                    salt is bytes root salt for generating key pairs
-                   level is bytes security level for root salting
         .pris is named sub DB whose values are private keys
             Keyed by public key (fully qualified qb64)
             Value is private key (fully qualified qb64)
