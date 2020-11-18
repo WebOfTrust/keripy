@@ -684,6 +684,7 @@ class Manager:
         if raw is None:
             salt = self._salt
             self.keeper.putPrm('salt', salt)
+            self._salt = ''  # don't keep around
         else:
             salt = bytes(raw).decode("utf-8")
 
@@ -805,7 +806,7 @@ class Manager:
         return (verfers, digers)
 
 
-    def repre(self, old, new):
+    def moveSit(self, old, new):
         """
         Moves PubSit dict in keeper db from old default pre to new pre db key
         The new pre is the newly derived prefix which may only be known some

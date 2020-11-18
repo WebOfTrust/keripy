@@ -570,7 +570,7 @@ def test_manager():
 
         oldspre = spre
         spre = b'DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc'
-        manager.repre(old=oldspre, new=spre)
+        manager.moveSit(old=oldspre, new=spre)
 
         #  attempt to reincept same pre
         #with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
@@ -675,7 +675,7 @@ def test_manager():
 
         oldrpre = rpre
         rpre = b'DMqxMVG3IcCNK4lpFfCu5o5cxzv1lgpMM-9rfkY3XVUc'
-        manager.repre(old=oldrpre, new=rpre)
+        manager.moveSit(old=oldrpre, new=rpre)
 
         # randy algorithm rotate
         oldpubs = [verfer.qb64 for verfer in verfers]
