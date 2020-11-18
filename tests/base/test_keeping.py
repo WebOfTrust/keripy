@@ -642,6 +642,7 @@ def test_manager():
         verfers, digers = manager.incept(algo=keeping.Algos.randy)
         assert len(verfers) == 1
         assert len(digers) == 1
+        assert manager.getPidx() == 2
         npre = verfers[0].qb64b
 
         ps = json.loads(bytes(manager.keeper.getSit(key=npre)).decode("utf-8"))
@@ -679,6 +680,7 @@ def test_manager():
 
         # randy algo incept with null nxt
         verfers, digers = manager.incept(algo=keeping.Algos.randy, ncount=0)
+        assert manager.getPidx() == 3
         npre = verfers[0].qb64b
         ps = json.loads(bytes(manager.keeper.getSit(key=npre)).decode("utf-8"))
         ps = helping.datify(keeping.PubSit, ps)
