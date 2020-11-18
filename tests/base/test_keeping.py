@@ -311,6 +311,18 @@ def test_keeper():
         assert keeper.delPri(key) == True
         assert keeper.getPri(key) == None
 
+        key = b'level'
+        assert keeper.getPri(key) == None
+        assert keeper.delPri(key) == False
+        assert keeper.putPri(key, val=coring.SecLevels.low) == True
+        assert keeper.getPri(key) == coring.SecLevels.low.encode("utf-8")
+        assert keeper.putPri(key, val=coring.SecLevels.med) == False
+        assert keeper.getPri(key) == coring.SecLevels.low.encode("utf-8")
+        assert keeper.setPri(key, val=coring.SecLevels.med) == True
+        assert keeper.getPri(key) == coring.SecLevels.med.encode("utf-8")
+        assert keeper.delPri(key) == True
+        assert keeper.getPri(key) == None
+
         #  test .pris sub db methods
         key = puba
         assert keeper.getPri(key) == None
@@ -485,20 +497,20 @@ def test_creator():
     signer = signers[0]
     assert isinstance(signer, coring.Signer)
     assert signer.code == coring.CryOneDex.Ed25519_Seed
-    assert signer.qb64 == 'AOl-Zoa4QyBMekecd7-nnujzwWhh2NoOppLoiSpwY-aY'
+    assert signer.qb64 == 'A8wl7SXA6nCdf0-S9fWaHbq-XMZiXpFaBYZyVzwIBAn0'
     assert signer.verfer.code == coring.CryOneDex.Ed25519
     assert signer.verfer.code not in coring.CryNonTransDex
-    assert signer.verfer.qb64 == 'DaaAoeCFUfxOPaZT9VSWTZ43kZ4Tm3aTnRAY3bxBIUBA'
+    assert signer.verfer.qb64 == 'DxnLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ'
 
     signers = creator.create(count=1, transferable=False, temp=True)
     assert len(signers) == 1
     signer = signers[0]
     assert isinstance(signer, coring.Signer)
     assert signer.code == coring.CryOneDex.Ed25519_Seed
-    assert signer.qb64 == 'A4uaCOzTlfcLRgEBlSTYtUI-DfO78mJiGaux9TnRTj6g'
+    assert signer.qb64 == 'AwasAzSejEulG1472bEZP7LNhKsoXAky40jgqWZKTbp4'
     assert signer.verfer.code == coring.CryOneDex.Ed25519N
     assert signer.verfer.code in coring.CryNonTransDex
-    assert signer.verfer.qb64 == 'B8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE'
+    assert signer.verfer.qb64 == 'BVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
 
     creator = keeping.Creatory(algo=keeping.Algos.salty).make(salt=salt)
     assert isinstance(creator, keeping.SaltyCreator)
@@ -527,14 +539,17 @@ def test_manager():
     assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
 
     with keeping.openKeeper() as keeper:
-        manager = keeping.Manager(keeper=keeper)
+        manager = keeping.Manager(keeper=keeper, salt=salt)
         assert manager.keeper.opened
         assert manager.signers == {}
+        assert manager._pidx == 0
+        assert manager._salt == salt
 
         # salty algorithm incept
         verfers, digers = manager.incept(salt=salt, temp=True)  # algo default salty
         assert len(verfers) == 1
         assert len(digers) == 1
+        assert manager.getPidx() == 1
 
         spre = verfers[0].qb64b
 
@@ -545,16 +560,16 @@ def test_manager():
         assert ps.level == coring.SecLevels.low
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
-        assert ps.new.pubs[0] == 'D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE'
+        assert ps.new.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
         assert ps.new.ridx == 0
         assert ps.new.kidx == 0
         assert len(ps.nxt.pubs) == 1
-        assert ps.nxt.pubs[0] == 'DtcqXbV0ilfOv0nT5muM2P8P5wMqmxt6gB8Uj_ap_qSQ'
+        assert ps.nxt.pubs == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
         assert ps.nxt.ridx == 1
         assert ps.nxt.kidx == 1
 
         keys = [verfer.qb64 for verfer in verfers]
-        assert keys == ['D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE']
+        assert keys == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
         for key in keys:
             assert key in manager.signers
             assert manager.signers[key].verfer.qb64 == key
@@ -562,12 +577,12 @@ def test_manager():
             assert val == manager.signers[key].qb64b
 
         digs = [diger.qb64 for diger in  digers]
-        assert digs == ['EY6IkiceSK5zJRogqnFCQpjPbgfBHddwx8CI_2W4rjvk']
+        assert digs == ['E8UYvbKn7KYw9e4F2DR-iduGtdA1o16ePAYjpyCYSeYo']
 
         #  attempt to reincept same pre
-        with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
-            verfers, digers = manager.incept(salt=salt, temp=True)
-        assert ex.value.args[0] == 'Already incepted pre=D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE.'
+        #with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
+            #verfers, digers = manager.incept(salt=salt, temp=True)
+        #assert ex.value.args[0].startswith('Already incepted pre')
 
 
         # salty algorithm rotate
@@ -582,18 +597,18 @@ def test_manager():
         assert ps.algo == keeping.Algos.salty
         assert ps.salt == salt
         assert ps.level == coring.SecLevels.low
-        assert ps.old.pubs == ['D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE']
+        assert ps.old.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
         assert len(ps.new.pubs) == 1
-        assert ps.new.pubs[0] == 'DtcqXbV0ilfOv0nT5muM2P8P5wMqmxt6gB8Uj_ap_qSQ'
+        assert ps.new.pubs == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
         assert ps.new.ridx == 1
         assert ps.new.kidx == 1
         assert len(ps.nxt.pubs) == 1
-        assert ps.nxt.pubs[0] == 'DU5BRykE9Z6mMa9letCBwoC7Tmkq39SUzS0aHMKqivho'
+        assert ps.nxt.pubs == ['DRpGly44ejh01ur4ltL_LVrYcyqVCQyVLJnqWrVa57Yc']
         assert ps.nxt.ridx == 2
         assert ps.nxt.kidx == 2
 
         keys = [verfer.qb64 for verfer in verfers]
-        assert keys == ['DtcqXbV0ilfOv0nT5muM2P8P5wMqmxt6gB8Uj_ap_qSQ']
+        assert keys == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
         for key in keys:
             assert key in manager.signers
             assert manager.signers[key].verfer.qb64 == key
@@ -601,7 +616,7 @@ def test_manager():
             assert val == manager.signers[key].qb64b
 
         digs = [diger.qb64 for diger in  digers]
-        assert digs == ['EdMykDQUaIBJzuVlO8UjdHQ_ZCufG7o6sAC3cVket_XQ']
+        assert digs == ['EJUzDm_HbdIZDp94OlIoZH1gcaSdWLZhJwqKz2rVJZrc']
 
         assert oldpubs == ps.old.pubs
 
@@ -633,9 +648,7 @@ def test_manager():
         #  attempt to rotate after null
         with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
             verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
-        assert ex.value.args[0] == ('Attempt to rotate nontransferable '
-                                    'pre=D8LeyRP2oENS3w-yoJySLz6soBgY9oL_exqLh5ENWtRE.')
-
+        assert ex.value.args[0].startswith('Attempt to rotate nontransferable ')
 
         # randy algo incept
         verfers, digers = manager.incept(algo=keeping.Algos.randy)
@@ -646,7 +659,7 @@ def test_manager():
         ps = json.loads(bytes(manager.keeper.getSit(key=npre)).decode("utf-8"))
         ps = helping.datify(keeping.PubSit, ps)
         assert ps.algo == keeping.Algos.randy
-        assert ps.salt == ''
+        assert ps.salt == salt
         assert ps.level == coring.SecLevels.low
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1

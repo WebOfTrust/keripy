@@ -524,16 +524,6 @@ class CryMat:
 
 
     @property
-    def qb64(self):
-        """
-        Property qb64:
-        Returns Fully Qualified Base64 Version
-        Assumes self.raw and self.code are correctly populated
-        """
-        return self.qb64b.decode("utf-8")
-
-
-    @property
     def qb64b(self):
         """
         Property qb64b:
@@ -541,6 +531,16 @@ class CryMat:
         Assumes self.raw and self.code are correctly populated
         """
         return self._infil()
+
+
+    @property
+    def qb64(self):
+        """
+        Property qb64:
+        Returns Fully Qualified Base64 Version
+        Assumes self.raw and self.code are correctly populated
+        """
+        return self.qb64b.decode("utf-8")
 
 
     @property
@@ -553,6 +553,7 @@ class CryMat:
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil())
+
 
     @property
     def nontrans(self):
@@ -934,8 +935,6 @@ class Salter(CryMat):
         return (Signer(raw=seed, code=code, transferable=transferable))
 
 
-
-
 def generateSigners(salt=None, count=8, transferable=True):
     """
     Returns list of Signers for Ed25519
@@ -965,6 +964,7 @@ def generateSigners(salt=None, count=8, transferable=True):
         signers.append(Signer(raw=seed, transferable=transferable))
 
     return signers
+
 
 def generateSecrets(salt=None, count=8):
     """

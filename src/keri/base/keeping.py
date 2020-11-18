@@ -112,8 +112,9 @@ class Keeper(dbing.LMDBer):
             Keyed by parameter labels
             Value is parameter
                parameters:
-                   pidx is hex index of next prefix key-pair sequence to be incepted
-                   salt is root salt for  generating key pairs
+                   pidx is bytes hex index of next prefix key-pair sequence to be incepted
+                   salt is bytes root salt for generating key pairs
+                   level is bytes security level for root salting
         .pris is named sub DB whose values are private keys
             Keyed by public key (fully qualified qb64)
             Value is private key (fully qualified qb64)
@@ -546,20 +547,27 @@ class SaltyCreator(Creator):
 
 
     def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
-               ridx=0, kidx=0, level=None, transferable=True, temp=False, **kwa):
+               pidx=0, ridx=0, kidx=0, level=None,
+               transferable=True, temp=False, **kwa):
         """
         Returns list of signers one per kidx in kidxs
 
         Parameters:
+            codes is list of derivation codes one per key pair to create
+            count is count of key pairs to create is codes not provided
+            code is derivation code to use for count key pairs if codes not provided
+            pidx is int prefix index for key pair sequence
             ridx is int rotation index for key pair set
             kidx is int starting key index for key pair set
-            count is into number of key pairs in set
+            level is security level for salter
+            transferable is Boolean, True means use trans deriv code. Otherwise nontrans
+            temp is Boolean True means use temp level for testing
         """
         signers = []
         if not codes:  # if not codes make list len count of same code
             codes = [code for i in range(count)]
         for i, code in enumerate(codes):
-            path = "{:x}{:x}".format(ridx,kidx + i)
+            path = "{:x}{:x}{:x}".format(pidx, ridx, kidx + i)
             signers.append(self.salter.signer(path=path,
                                               code=code,
                                               transferable=transferable,
@@ -634,18 +642,22 @@ class Manager:
 
     Properties:
 
-
     Methods:
 
-
     Hidden:
+       ._pidx is initial pidx use attribute because keeper may not be open on init
+       ._salt is initial salt use attribute because keeper may not be open on init
     """
-    def __init__(self, keeper=None):
+
+    def __init__(self, keeper=None, pidx=None, salt=None):
         """
         Setup Creator.
 
         Parameters:
             keeper is Keeper instance (LMDB)
+            signers is dict of active signers keyed by pubkey
+            pidx is int index of next created key pair sequence
+            salt is qbb4 of root salt. Makes random salt if not provided
 
         """
         if keeper is None:
@@ -653,12 +665,49 @@ class Manager:
 
         self.keeper = keeper
         self.signers = dict()
+        self._pidx = pidx if pidx is not None else 0
+        self._salt = coring.Salter(qb64=salt).qb64
+
+
+    def initParms(self):
+        """
+        Return duple (pidx, salt) from .keeper.prms if keeper is setup
+        Otherwise if .keeper.prms not setup then initialize to ._pidx and ._salt
+        """
+        raw = self.keeper.getPrm('pidx')
+        if raw is None:
+            pidx = self._pidx
+            self.keeper.putPrm('pidx', b'%x' % pidx)
+        else:
+            pidx = int(bytes(raw), 16)
+
+        raw = self.keeper.getPrm('salt')
+        if raw is None:
+            salt = self._salt
+            self.keeper.putPrm('salt', salt)
+        else:
+            salt = bytes(raw).decode("utf-8")
+
+        return (pidx, salt)
+
+
+    def getPidx(self):
+        """
+        return pidx from .keeper. Assumes setup
+        """
+        return int(bytes(self.keeper.getPrm(b"pidx")), 16)
+
+    def setPidx(self, pidx):
+        """
+        Save .pidx to .keeper
+        """
+        self.keeper.setPrm(b"pidx", b"%x" % pidx)
 
 
     def incept(self, icodes=None, icount=1, icode=coring.CryOneDex.Ed25519_Seed,
                      ncodes=None, ncount=1, ncode=coring.CryOneDex.Ed25519_Seed,
                      dcode=coring.CryOneDex.Blake3_256,
-                     algo=Algos.salty, salt=None, level=None,
+                     algo=Algos.salty, salt=None, level=None, rooted=True,
                      transferable=True, temp=False):
         """
         Returns duple (verfers, digers) for inception event where
@@ -687,6 +736,8 @@ class Manager:
             algo is str key creation algorithm code
             salt is str qb64 random salt when salty algorithm used
             level is str security level code with salty algorithm used
+            rooted is Boolean true means derive incept salt from root salt if
+                salt not provide else generate random salt
             transferable is if each public key uses transferable code or not
                 default is transferable special case is non-transferable
                 not the same as if the derived identifier prefix is transferable
@@ -697,8 +748,12 @@ class Manager:
             not be rotatable (non-transferable prefix)
 
         """
+        pidx, root = self.initParms()
         ridx = 0
         kidx = 0
+
+        if rooted and salt is None:  # use root salt instead of random salt
+            salt = root
 
         creator = Creatory(algo=algo).make(salt=salt, level=level)
 
@@ -706,7 +761,7 @@ class Manager:
             icodes = [icode for i in range(icount)]
 
         isigners = creator.create(codes=icodes,
-                                  ridx=ridx, kidx=kidx,
+                                  pidx=pidx, ridx=ridx, kidx=kidx,
                                   transferable=transferable, temp=temp)
         verfers = [signer.verfer for signer in isigners]
 
@@ -715,7 +770,7 @@ class Manager:
 
         # count set to 0 to ensure does not create signers if ncodes is empty
         nsigners = creator.create(codes=ncodes, count=0,
-                                  ridx=ridx+1, kidx=kidx+len(icodes),
+                                  pidx=pidx, ridx=ridx+1, kidx=kidx+len(icodes),
                                   transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in nsigners]
 
@@ -745,6 +800,8 @@ class Manager:
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
             self.signers[signer.verfer.qb64] = signer
+
+        self.setPidx(pidx + 1)  # increment for next inception
 
         return (verfers, digers)
 
@@ -818,12 +875,13 @@ class Manager:
         if not codes:  # all same code, make list of len count of same code
             codes = [code for i in range(count)]
 
+        pidx = self.getPidx()
         ridx = ps.new.ridx + 1
         kidx = ps.nxt.kidx + len(ps.new.pubs)
 
         # count set to 0 to ensure does not create signers if codes is empty
         signers = creator.create(codes=codes, count=0,
-                                 ridx=ridx, kidx=kidx,
+                                 pidx=pidx, ridx=ridx, kidx=kidx,
                                  transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in signers]
 
