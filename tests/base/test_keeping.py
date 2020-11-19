@@ -493,10 +493,16 @@ def test_creator():
     creator = keeping.Creator()
     assert isinstance(creator, keeping.Creator)
     assert creator.create() == []
+    assert creator.salt == ''
+    assert creator.stem == ''
+    assert creator.tier == ''
 
     creator = keeping.RandyCreator()
     assert isinstance(creator, keeping.RandyCreator)
     assert isinstance(creator, keeping.Creator)
+    assert creator.salt == ''
+    assert creator.stem == ''
+    assert creator.tier == ''
     signers = creator.create()
     assert len(signers) == 1
     signer = signers[0]
@@ -519,7 +525,8 @@ def test_creator():
     assert isinstance(creator.salter, coring.Salter)
     assert creator.salter.code == coring.CryTwoDex.Salt_128
     assert creator.salt == creator.salter.qb64
-    assert creator.level == creator.salter.tier
+    assert creator.stem == ''
+    assert creator.tier == creator.salter.tier
     signers = creator.create()
     assert len(signers) == 1
     signer = signers[0]
@@ -590,6 +597,8 @@ def test_manager():
 
     raw = b'0123456789abcdef'
     salt = coring.Salter(raw=raw).qb64
+    stem = "red"
+    tier = coring.Tiers.low
     assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
 
     ser = bytes(b'{"vs":"KERI10JSON0000fb_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
@@ -602,9 +611,9 @@ def test_manager():
     with keeping.openKeeper() as keeper:
         manager = keeping.Manager(keeper=keeper, salt=salt)
         assert manager.keeper.opened
-        assert manager.signers == {}
         assert manager._pidx == 0
-        assert manager._salt == salt
+        assert manager._salt == ''  # zeroed out
+        assert manager._tier == coring.Tiers.low
 
         # salty algorithm incept
         verfers, digers = manager.incept(salt=salt, temp=True)  # algo default salty
@@ -615,11 +624,16 @@ def test_manager():
         spre = verfers[0].qb64b
         assert spre == b'DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
 
+        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 0
+        assert pp.algo == keeping.Algos.salty
+        assert pp.salt == salt
+        assert pp.stem == ''
+        assert pp.tier == coring.Tiers.low
+
         ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
         ps = helping.datify(keeping.PreSit, ps)
-        assert ps.algo == keeping.Algos.salty
-        assert ps.salt == salt
-        assert ps.tier == coring.Tiers.low
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
         assert ps.new.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
@@ -631,19 +645,14 @@ def test_manager():
         assert ps.nxt.kidx == 1
 
         keys = [verfer.qb64 for verfer in verfers]
-        assert keys == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
-        for key in keys:
-            assert key in manager.signers
-            assert manager.signers[key].verfer.qb64 == key
-            val = bytes(manager.keeper.getPri(key.encode("utf-8")))
-            assert val == manager.signers[key].qb64b
+        assert keys == ps.new.pubs
 
         digs = [diger.qb64 for diger in  digers]
         assert digs == ['E8UYvbKn7KYw9e4F2DR-iduGtdA1o16ePAYjpyCYSeYo']
 
         oldspre = spre
         spre = b'DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc'
-        manager.moveSit(old=oldspre, new=spre)
+        manager.move(old=oldspre, new=spre)
 
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs)
         for siger in psigers:
@@ -663,13 +672,6 @@ def test_manager():
         assert psigs == vsigs
         assert psigs == ['0BGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
 
-
-        #  attempt to reincept same pre
-        #with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
-            #verfers, digers = manager.incept(salt=salt, temp=True)
-        #assert ex.value.args[0].startswith('Already incepted pre')
-
-
         # salty algorithm rotate
         oldpubs = [verfer.qb64 for verfer in verfers]
         verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
@@ -677,11 +679,16 @@ def test_manager():
         assert len(verfers) == 1
         assert len(digers) == 1
 
+        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 0
+        assert pp.algo == keeping.Algos.salty
+        assert pp.salt == salt
+        assert pp.stem == ''
+        assert pp.tier == coring.Tiers.low
+
         ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
         ps = helping.datify(keeping.PreSit, ps)
-        assert ps.algo == keeping.Algos.salty
-        assert ps.salt == salt
-        assert ps.tier == coring.Tiers.low
         assert ps.old.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
         assert len(ps.new.pubs) == 1
         assert ps.new.pubs == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
@@ -693,12 +700,7 @@ def test_manager():
         assert ps.nxt.kidx == 2
 
         keys = [verfer.qb64 for verfer in verfers]
-        assert keys == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
-        for key in keys:
-            assert key in manager.signers
-            assert manager.signers[key].verfer.qb64 == key
-            val = bytes(manager.keeper.getPri(key.encode("utf-8")))
-            assert val == manager.signers[key].qb64b
+        assert keys == ps.new.pubs
 
         digs = [diger.qb64 for diger in  digers]
         assert digs == ['EJUzDm_HbdIZDp94OlIoZH1gcaSdWLZhJwqKz2rVJZrc']
@@ -711,18 +713,25 @@ def test_manager():
 
         verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
 
+        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 0
+
         ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
         ps = helping.datify(keeping.PreSit, ps)
 
         assert oldpubs == ps.old.pubs
 
         for pub in deadpubs:
-            assert pub not in manager.signers
             assert not manager.keeper.getPri(key=pub.encode("utf-8"))
 
         # salty algorithm rotate to null
 
         verfers, digers = manager.rotate(pre=spre.decode("utf-8"), count=0)
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 0
 
         ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
         ps = helping.datify(keeping.PreSit, ps)
@@ -742,11 +751,16 @@ def test_manager():
         assert manager.getPidx() == 2
         rpre = verfers[0].qb64b
 
+        pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 1
+        assert pp.algo == keeping.Algos.randy
+        assert pp.salt == ''
+        assert pp.stem == ''
+        assert pp.tier == ''
+
         ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
         ps = helping.datify(keeping.PreSit, ps)
-        assert ps.algo == keeping.Algos.randy
-        assert ps.salt == salt
-        assert ps.tier == coring.Tiers.low
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
         assert ps.new.ridx == 0
@@ -757,22 +771,23 @@ def test_manager():
 
         keys = [verfer.qb64 for verfer in verfers]
         for key in keys:
-            assert key in manager.signers
-            assert manager.signers[key].verfer.qb64 == key
             val = bytes(manager.keeper.getPri(key.encode("utf-8")))
-            assert val == manager.signers[key].qb64b
 
         digs = [diger.qb64 for diger in  digers]
         assert len(digs) == 1
 
         oldrpre = rpre
         rpre = b'DMqxMVG3IcCNK4lpFfCu5o5cxzv1lgpMM-9rfkY3XVUc'
-        manager.moveSit(old=oldrpre, new=rpre)
+        manager.move(old=oldrpre, new=rpre)
 
         # randy algorithm rotate
         oldpubs = [verfer.qb64 for verfer in verfers]
 
         verfers, digers = manager.rotate(pre=rpre.decode("utf-8"))
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 1
 
         ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
         ps = helping.datify(keeping.PreSit, ps)
@@ -783,6 +798,11 @@ def test_manager():
         verfers, digers = manager.incept(algo=keeping.Algos.randy, ncount=0)
         assert manager.getPidx() == 3
         rpre = verfers[0].qb64b
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 2
+
         ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
         ps = helping.datify(keeping.PreSit, ps)
 
@@ -793,6 +813,56 @@ def test_manager():
         with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
             verfers, digers = manager.rotate(pre=rpre.decode("utf-8"))
 
+        # salty algorithm incept with stem
+        verfers, digers = manager.incept(salt=salt, stem=stem, temp=True)  # algo default salty
+        assert len(verfers) == 1
+        assert len(digers) == 1
+        assert manager.getPidx() == 4
+
+        spre = verfers[0].qb64b
+        assert spre == b'D627iBfehzh966wPzBYjKQuGOSmIkdcR7b14nZv_ULIw'
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 3
+        assert pp.algo == keeping.Algos.salty
+        assert pp.salt == salt
+        assert pp.stem == stem == 'red'
+        assert pp.tier == coring.Tiers.low
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+        assert ps.old.pubs == []
+        assert len(ps.new.pubs) == 1
+        assert ps.new.pubs == ['D627iBfehzh966wPzBYjKQuGOSmIkdcR7b14nZv_ULIw']
+        assert ps.new.ridx == 0
+        assert ps.new.kidx == 0
+        assert len(ps.nxt.pubs) == 1
+        assert ps.nxt.pubs == ['DHNnq96NI0Bmle_VINGcgX8_VSpxbl3am7ZT6_66Fe8Q']
+        assert ps.nxt.ridx == 1
+        assert ps.nxt.kidx == 1
+
+        keys = [verfer.qb64 for verfer in verfers]
+        assert keys == ps.new.pubs
+
+        digs = [diger.qb64 for diger in  digers]
+        assert digs == ['EAQ7QvfBLj0OrGTqzJZGutLJowUht_zBA6213agRQ8hA']
+
+
+        #  attempt to reincept same first pub
+        with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
+            verfers, digers = manager.incept(salt=salt, stem=stem, temp=True)
+        assert ex.value.args[0].startswith('Already incepted pre')
+
+        oldspre = spre
+        spre = b'DCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxMVG3Ic'
+        manager.move(old=oldspre, new=spre)
+
+        #  attempt to reincept same first pub after move pre
+        with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
+            verfers, digers = manager.incept(salt=salt, stem=stem, temp=True)
+        assert ex.value.args[0].startswith('Already incepted pre')
+
 
 
     assert not os.path.exists(manager.keeper.path)
@@ -801,4 +871,4 @@ def test_manager():
 
 
 if __name__ == "__main__":
-    test_keeper()
+    test_manager()

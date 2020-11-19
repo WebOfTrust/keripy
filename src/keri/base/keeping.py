@@ -141,7 +141,7 @@ class Keeper(dbing.LMDBer):
                 {
                   algo: ,
                   salt: ,
-                  level: ,
+                  tier: ,
                   old: { pubs: ridx:, kidx,  dt:},
                   new: { pubs: ridx:, kidx:, dt:},
                   new: { pubs: ridx:, kidx:, dt:}
@@ -597,9 +597,9 @@ class Creator:
 
 
     @property
-    def level(self):
+    def tier(self):
         """
-        level property getter
+        tier property getter
         """
         return ''
 
@@ -667,7 +667,7 @@ class SaltyCreator(Creator):
         ._salter holds instance for .salter property
     """
 
-    def __init__(self, salt=None, stem=None, level=None, **kwa):
+    def __init__(self, salt=None, stem=None, tier=None, **kwa):
         """
         Setup Creator.
 
@@ -675,7 +675,7 @@ class SaltyCreator(Creator):
 
         """
         super(SaltyCreator, self).__init__(**kwa)
-        self.salter = coring.Salter(qb64=salt, level=level)
+        self.salter = coring.Salter(qb64=salt, tier=tier)
         self._stem = stem if stem is not None else ''
 
 
@@ -686,6 +686,7 @@ class SaltyCreator(Creator):
         """
         return self.salter.qb64
 
+
     @property
     def stem(self):
         """
@@ -695,9 +696,9 @@ class SaltyCreator(Creator):
 
 
     @property
-    def level(self):
+    def tier(self):
         """
-        level property getter
+        tier property getter
         """
         return self.salter.tier
 
@@ -722,13 +723,13 @@ class SaltyCreator(Creator):
         if not codes:  # if not codes make list len count of same code
             codes = [code for i in range(count)]
 
-        stem = self.stem if self.stem else pidx  # if not stem use pidx
+        stem = self.stem if self.stem else "{:x}".format(pidx)  # if not stem use pidx
         for i, code in enumerate(codes):
-            path = "{:x}{:x}{:x}".format(stem, ridx, kidx + i)
+            path = "{}{:x}{:x}".format(stem, ridx, kidx + i)
             signers.append(self.salter.signer(path=path,
                                               code=code,
                                               transferable=transferable,
-                                              tier=self.level,
+                                              tier=self.tier,
                                               temp=temp))
         return signers
 
@@ -795,7 +796,6 @@ class Manager:
 
     Attributes:
         .keeper is Keeper instance (LMDB)
-        .signers is dict of Signer instances keyed by public key cached signers
 
     Properties:
 
@@ -804,6 +804,7 @@ class Manager:
     Hidden:
        ._pidx is initial pidx use attribute because keeper may not be open on init
        ._salt is initial salt use attribute because keeper may not be open on init
+       ._tier is initial security tier use attribute because keeper may not be open on init
     """
 
     def __init__(self, keeper=None, pidx=None, salt=None, tier=None):
@@ -812,7 +813,6 @@ class Manager:
 
         Parameters:
             keeper is Keeper instance (LMDB)
-            signers is dict of active signers keyed by pubkey
             pidx is int index of next created key pair sequence
             salt is qb64 of root salt. Makes random root salt if not provided
             tier is default SecTier for root salt
@@ -822,9 +822,8 @@ class Manager:
             keeper = Keeper()
 
         self.keeper = keeper
-        self.signers = dict()
         self._pidx = pidx if pidx is not None else 0
-        self._salt = root if salt is not None else coring.Salter().qb64
+        self._salt = salt if salt is not None else coring.Salter().qb64
         self._tier = tier if tier is not None else coring.Tiers.low
 
         if self.keeper.opened:
@@ -882,7 +881,7 @@ class Manager:
     def incept(self, icodes=None, icount=1, icode=coring.CryOneDex.Ed25519_Seed,
                      ncodes=None, ncount=1, ncode=coring.CryOneDex.Ed25519_Seed,
                      dcode=coring.CryOneDex.Blake3_256,
-                     algo=Algos.salty, salt=None, stem=None, level=None, rooted=True,
+                     algo=Algos.salty, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
         """
         Returns duple (verfers, digers) for inception event where
@@ -910,14 +909,14 @@ class Manager:
             dcode is str derivation code of next key digests
             algo is str key creation algorithm code
             salt is str qb64 random salt when salty algorithm used
-            level is str security level code with salty algorithm used
+            tier is str security tier code with salty algorithm used
             rooted is Boolean true means derive incept salt from root salt if
                 salt not provide else generate random salt
             transferable is if each public key uses transferable code or not
                 default is transferable special case is non-transferable
                 not the same as if the derived identifier prefix is transferable
                 the derived prefix is set elsewhere
-            temp is temporary for testing it modifies level if salty algorithm
+            temp is temporary for testing it modifies tier if salty algorithm
 
         When both ncodes is empty and ncount is 0 then the nxt is null and will
             not be rotatable (non-transferable prefix)
@@ -933,8 +932,7 @@ class Manager:
         if rooted and tier is None: #  use root tier as default
             tier = rootTier
 
-
-        creator = Creatory(algo=algo).make(salt=salt, stem=stem, level=level)
+        creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
 
         if not icodes:  # all same code, make list of len icount of same code
             icodes = [icode for i in range(icount)]
@@ -953,38 +951,48 @@ class Manager:
                                   transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in nsigners]
 
+        pp = PrePrm(pidx=pidx,
+                    algo=algo,
+                    salt=creator.salt,
+                    stem=creator.stem,
+                    tier=creator.tier)
 
         dt = helping.nowIso8601()
-        ps = PreSit(pidx=pidx,
-                    algo=algo,
-                    salt=creator.salt, stem=creator.stem, level=creator.level,
+        ps = PreSit(
                     new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
                                    ridx=ridx, kidx=kidx, dt=dt),
                     nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
-                                   ridx=ridx+1, kidx=kidx+len(icodes), dt=dt)
-                    )
+                                   ridx=ridx+1, kidx=kidx+len(icodes), dt=dt))
 
         pre = verfers[0].qb64b
-        result = self.keeper.putSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
+        result = self.keeper.putPre(key=pre, val=pre)
         if not result:
             raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
+        result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
+        if not result:
+            raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
+
+        result = self.keeper.putSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
+        if not result:
+            raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
+
         for signer in isigners:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
-            self.signers[signer.verfer.qb64] = signer
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
-            self.signers[signer.verfer.qb64] = signer
 
         self.setPidx(pidx + 1)  # increment for next inception
 
         return (verfers, digers)
 
 
-    def moveSit(self, old, new):
+    def move(self, old, new):
         """
-        Moves PreSit dict in keeper db from old default pre to new pre db key
+        Assigns new pre to old default .pres at old
+
+        Moves PrePrm and PreSit dicts in keeper db from old default pre to new pre db key
         The new pre is the newly derived prefix which may only be known some
         time after the original creation of the associated key pairs.
 
@@ -992,18 +1000,48 @@ class Manager:
            old is str for old prefix of pubsit dict in keeper db
            new is str for new prefix to move pubsit dict to in keeper db
         """
-        rawold = self.keeper.getSit(key=old)
-        if rawold is None:
-            raise ValueError("Nonexistent old pre={}, nothing to move.".format(old))
+        rawoldpre = self.keeper.getPre(key=old)
+        if rawoldpre is None:
+            raise ValueError("Nonexistent old pre={}, nothing to assign.".format(old))
 
-        rawnew = self.keeper.getSit(key=new)
-        if rawnew is not None:
+        rawnewpre = self.keeper.getPre(key=new)
+        if rawnewpre is not None:
             raise ValueError("Preexistent new pre={} may not clobber.".format(new))
 
-        if not self.keeper.putSit(key=new, val=bytes(rawold)):
-            raise ValueError("Failed moving old pre={} to new pre={}.".format(old, new))
+        rawoldprm = self.keeper.getPrm(key=old)
+        if rawoldprm is None:
+            raise ValueError("Nonexistent old prm for pre={}, nothing to move.".format(old))
+
+        rawnewprm = self.keeper.getPrm(key=new)
+        if rawnewprm is not None:
+            raise ValueError("Preexistent new prm for pre={} may not clobber.".format(new))
+
+        rawoldsit = self.keeper.getSit(key=old)
+        if rawoldsit is None:
+            raise ValueError("Nonexistent old sit for pre={}, nothing to move.".format(old))
+
+        rawnewsit = self.keeper.getSit(key=new)
+        if rawnewsit is not None:
+            raise ValueError("Preexistent new sit for pre={} may not clobber.".format(new))
+
+        if not self.keeper.putPrm(key=new, val=bytes(rawoldprm)):
+            raise ValueError("Failed moving prm from old pre={} to new pre={}.".format(old, new))
+        else:
+            self.keeper.delPrm(key=old)
+
+        if not self.keeper.putSit(key=new, val=bytes(rawoldsit)):
+            raise ValueError("Failed moving sit from old pre={} to new pre={}.".format(old, new))
         else:
             self.keeper.delSit(key=old)
+
+        # assign old
+        if not self.keeper.setPre(key=old, val=new):
+            raise ValueError("Failed assiging new pre={} to old pre={}.".format(new, old))
+
+        # make new so that if move again we reserve each one
+        if not self.keeper.putPre(key=new, val=new):
+            raise ValueError("Failed assiging new pre={}.".format(new))
+
 
 
     def rotate(self, pre, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
@@ -1029,13 +1067,17 @@ class Manager:
             dcode is str derivation code of next key digests
             transferable is if public key is transferable or not
                 default is transferable special case is non-transferable
-            temp is temporary for testing it modifies level if salty algorithm
+            temp is temporary for testing it modifies tier if salty algorithm
 
         """
-        rawsit = self.keeper.getSit(key=pre.encode("utf-8"))
+        rawprm = self.keeper.getPrm(key=pre)
+        if rawprm is None:
+            raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
+        pp = helping.datify(PrePrm, json.loads(bytes(rawprm).decode("utf-8")))
+
+        rawsit = self.keeper.getSit(key=pre)
         if rawsit is None:
             raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
-
         ps = helping.datify(PreSit, json.loads(bytes(rawsit).decode("utf-8")))
 
         if not ps.nxt.pubs:  # empty nxt public keys so non-transferable prefix
@@ -1047,18 +1089,16 @@ class Manager:
 
         verfers = []  #  assign verfers from old nxt now new.
         for pub in ps.new.pubs:
-            if pub not in self.signers:
-                verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
-                raw = self.keeper.getPri(key=pub.encode("utf-8"))
-                if raw is None:
-                    raise ValueError("Missing prikey in db for pubkey={}".format(pub))
-                pri = bytes(raw)
-                signer = coring.Signer(qb64b=pri,
-                                       transferable = not verfer.nontrans)
-                self.signers[pub] = signer
-            verfers.append(self.signers[pub].verfer)
+            verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
+            raw = self.keeper.getPri(key=pub.encode("utf-8"))
+            if raw is None:
+                raise ValueError("Missing prikey in db for pubkey={}".format(pub))
+            pri = bytes(raw)
+            signer = coring.Signer(qb64b=pri,
+                                   transferable = not verfer.nontrans)
+            verfers.append(signer.verfer)
 
-        creator = Creatory(algo=ps.algo).make(salt=ps.salt, level=ps.tier)
+        creator = Creatory(algo=pp.algo).make(salt=pp.salt, stem=pp.stem, tier=pp.tier)
 
         if not codes:  # all same code, make list of len count of same code
             codes = [code for i in range(count)]
@@ -1082,14 +1122,11 @@ class Manager:
         if not result:
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
-        for pub in old.pubs:  # remove old signers and old prikeys
-            if pub in self.signers:
-                del self.signers[pub]
-                self.keeper.delPri(key=pub.encode("utf-8"))
-
         for signer in signers:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
-            self.signers[signer.verfer.qb64] = signer
+
+        for pub in old.pubs:  # remove old prikeys
+            self.keeper.delPri(key=pub.encode("utf-8"))
 
         return (verfers, digers)
 
@@ -1116,29 +1153,23 @@ class Manager:
 
         if pubs:
             for pub in pubs:
-                if pub not in self.signers:
-                    verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
-                    raw = self.keeper.getPri(key=pub)
-                    if raw is None:
-                        raise ValueError("Missing prikey in db for pubkey={}".format(pub))
-                    signer = coring.Signer(qb64b=bytes(raw),
-                                           transferable= not verfer.nontrans)
-                    self.signers[pub] = signer
-
-                signers.append(self.signers[pub])
+                verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
+                raw = self.keeper.getPri(key=pub)
+                if raw is None:
+                    raise ValueError("Missing prikey in db for pubkey={}".format(pub))
+                signer = coring.Signer(qb64b=bytes(raw),
+                                       transferable= not verfer.nontrans)
+                signers.append(signer)
 
         else:
             for verfer in verfers:
                 pub = verfer.qb64
-                if pub not in self.signers:
-                    raw = self.keeper.getPri(key=pub)
-                    if raw is None:
-                        raise ValueError("Missing prikey in db for pubkey={}".format(pub))
-                    signer = coring.Signer(qb64b=bytes(raw),
-                                           transferable= not verfer.nontrans)
-                    self.signers[pub] = signer
-
-                signers.append(self.signers[pub])
+                raw = self.keeper.getPri(key=pub)
+                if raw is None:
+                    raise ValueError("Missing prikey in db for pubkey={}".format(pub))
+                signer = coring.Signer(qb64b=bytes(raw),
+                                       transferable= not verfer.nontrans)
+                signers.append(signer)
 
         if indexed:
             sigers = []
