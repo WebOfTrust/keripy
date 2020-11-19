@@ -295,10 +295,10 @@ class CryNonTransCodex:
 
 CryNonTransDex = CryNonTransCodex()  #  Make instance
 
-#  secret derivation security level
-SecLevelage = namedtuple("Secretage", 'low med high')
+# secret derivation security tier
+Tierage = namedtuple("Tierage", 'low med high')
 
-SecLevels = SecLevelage(low='low', med='med', high='high')
+Tiers = Tierage(low='low', med='med', high='high')
 
 
 class CryMat:
@@ -860,9 +860,9 @@ class Salter(CryMat):
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
-    Level = SecLevels.low
+    Tier = Tiers.low
 
-    def __init__(self,raw=None, code=CryTwoDex.Salt_128, level=None, **kwa):
+    def __init__(self,raw=None, code=CryTwoDex.Salt_128, tier=None, **kwa):
         """
         Initialize salter's raw and code
 
@@ -889,10 +889,10 @@ class Salter(CryMat):
         if self.code not in (CryTwoDex.Salt_128, ):
             raise ValueError("Unsupported salter code = {}.".format(self.code))
 
-        self.level = level if level is not None else self.Level
+        self.tier = tier if tier is not None else self.Tier
 
 
-    def signer(self, path="", level=None, code=CryOneDex.Ed25519_Seed,
+    def signer(self, path="", tier=None, code=CryOneDex.Ed25519_Seed,
                transferable=True, temp=False):
         """
         Returns Signer instance whose .raw secret is derived from path and
@@ -906,23 +906,23 @@ class Salter(CryMat):
             temp is Boolean, True means use quick method to stretch salt
                     for testing only, Otherwise use more time to stretch
         """
-        level = level if level is not None else self.level
+        tier = tier if tier is not None else self.tier
 
         if temp:
             opslimit = pysodium.crypto_pwhash_OPSLIMIT_MIN
             memlimit = pysodium.crypto_pwhash_MEMLIMIT_MIN
         else:
-            if level == SecLevels.low:
+            if tier == Tiers.low:
                 opslimit = pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE
                 memlimit = pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
-            elif level == SecLevels.med:
+            elif tier == Tiers.med:
                 opslimit = pysodium.crypto_pwhash_OPSLIMIT_MODERATE
                 memlimit = pysodium.crypto_pwhash_MEMLIMIT_MODERATE
-            elif level == SecLevels.high:
+            elif tier == Tiers.high:
                 opslimit = pysodium.crypto_pwhash_OPSLIMIT_SENSITIVE
                 memlimit = pysodium.crypto_pwhash_MEMLIMIT_SENSITIVE
             else:
-                raise ValueError("Unsupported security level = {}.".format(level))
+                raise ValueError("Unsupported security tier = {}.".format(tier))
 
          # stretch algorithm is argon2id
         seed = pysodium.crypto_pwhash(outlen=CryRawSizes[code],

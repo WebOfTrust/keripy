@@ -57,19 +57,30 @@ class PubLot:
         return iter(asdict(self))
 
 
-
 @dataclass()
-class PubSit:
+class PreSit:
     """
-    Public key situation and parameters for creating key lists and tracking them
+    Prefix's public key situation (sets of public kets)
     """
-    pidx: int = 0  # prefix index for this keypair sequence
-    algo: str = Algos.salty  # default use indices and salt  to create new key pairs
-    salt: str = ''  # empty salt  used for index algo.
-    level: str = coring.SecLevels.low  # stretch security level for index algo
     old: PubLot = field(default_factory=PubLot)  # previous publot
     new: PubLot = field(default_factory=PubLot)  # newly current publot
     nxt: PubLot = field(default_factory=PubLot)  # next public publot
+
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+@dataclass()
+class PrePrm:
+    """
+    Prefix's parameters for createing new key pairs
+    """
+    pidx: int = 0  # prefix index for this keypair sequence
+    algo: str = Algos.salty  # default use indices and salt  to create new key pairs
+    salt: str = ''  # empty salt  used for salty algo.
+    stem: str = ''  # default unique path stem for salty algo
+    tier: str = ''  # security tier for stretch index salty algo
 
 
     def __iter__(self):
@@ -108,17 +119,24 @@ class Keeper(dbing.LMDBer):
                             Otherwise LMDB .env is closed
 
     Attributes:
-        .prms is named sub DB whose values are parameters
-            Keyed by parameter labels
+        .gbls is named sub DB whose values are global parameters or all prefixes
+            Key is parameter labels
             Value is parameter
                parameters:
                    pidx is bytes hex index of next prefix key-pair sequence to be incepted
                    salt is bytes root salt for generating key pairs
+                   tier is bytes default root security tier for root salt
         .pris is named sub DB whose values are private keys
-            Keyed by public key (fully qualified qb64)
+            Key is public key (fully qualified qb64)
             Value is private key (fully qualified qb64)
-        .sits is named sub DB whose values are serialized dicts of PubSit instance
-            Keyed by identifer prefix (fully qualified qb64)
+        .pres is named sub DB whose values are prefixes or first public keys
+            Key is first public key in key sequence for a prefix (fully qualified qb64)
+            Value is prefix or first public key (temporary) (fully qualified qb64
+        .prms is named sub DB whose values are serialized dicts of PrePrm instance
+            Key is identifer prefix (fully qualified qb64)
+            Value is  serialized parameter dict (JSON) of public key parameters
+        .sits is named sub DB whose values are serialized dicts of PreSit instance
+            Key is identifer prefix (fully qualified qb64)
             Value is  serialized parameter dict (JSON) of public key situation
                 {
                   algo: ,
@@ -201,12 +219,14 @@ class Keeper(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.prms = self.env.open_db(key=b'prms.')
+        self.gbls = self.env.open_db(key=b'gbls.')
         self.pris = self.env.open_db(key=b'pris.')
+        self.pres = self.env.open_db(key=b'pres.')
+        self.prms = self.env.open_db(key=b'prms.')
         self.sits = self.env.open_db(key=b'sits.')
 
-    # .prms methods
-    def putPrm(self, key, val):
+    # .gbls methods
+    def putGbl(self, key, val):
         """
         Write parameter as val to key
         key is parameter label
@@ -221,10 +241,10 @@ class Keeper(dbing.LMDBer):
             key = key.encode("utf-8")  # convert str to bytes
         if hasattr(val, "encode"):
             val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.prms, key, val)
+        return self.putVal(self.gbls, key, val)
 
 
-    def setPrm(self, key, val):
+    def setGbl(self, key, val):
         """
         Write parameter as val to key
         key is parameter label
@@ -235,10 +255,10 @@ class Keeper(dbing.LMDBer):
             key = key.encode("utf-8")  # convert str to bytes
         if hasattr(val, "encode"):
             val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.prms, key, val)
+        return self.setVal(self.gbls, key, val)
 
 
-    def getPrm(self, key):
+    def getGbl(self, key):
         """
         Return parameter val at key label
         key is fully qualified public key
@@ -246,10 +266,10 @@ class Keeper(dbing.LMDBer):
         """
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.prms, key)
+        return self.getVal(self.gbls, key)
 
 
-    def delPrm(self, key):
+    def delGbl(self, key):
         """
         Deletes value at key.
         val is fully qualified private key
@@ -258,7 +278,7 @@ class Keeper(dbing.LMDBer):
         """
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.prms, key)
+        return self.delVal(self.gbls, key)
 
 
     # .pris methods
@@ -313,10 +333,117 @@ class Keeper(dbing.LMDBer):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.pris, key)
 
+
+    # .pres methods
+    def putPre(self, key, val):
+        """
+        Write fully qualified prefix as val to key
+        key is fully qualified first public key
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
+        return self.putVal(self.pres, key, val)
+
+
+    def setPre(self, key, val):
+        """
+        Write fully qualified prefix as val to key
+        key is fully qualified first public key
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
+        return self.setVal(self.pres, key, val)
+
+
+    def getPre(self, key):
+        """
+        Return prefix val at key
+        key is fully qualified first public key
+        Returns None if no entry at key
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        return self.getVal(self.pres, key)
+
+
+    def delPre(self, key):
+        """
+        Deletes value at key.
+        val is fully qualified private key
+        key is fully qualified public key
+        Returns True If key exists in database Else False
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        return self.delVal(self.pres, key)
+
+
+    # .prms methods
+    def putPrm(self, key, val):
+        """
+        Write serialized dict of PrePrm as val to key
+        key is fully qualified prefix
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
+        return self.putVal(self.gbls, key, val)
+
+
+    def setPrm(self, key, val):
+        """
+        Write serialized dict of PrePrm as val to key
+        key is fully qualified prefix
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
+        return self.setVal(self.gbls, key, val)
+
+
+    def getPrm(self, key):
+        """
+        Return serialized parameter dict at key
+        key is fully qualified prefix
+        Returns None if no entry at key
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        return self.getVal(self.gbls, key)
+
+
+    def delPrm(self, key):
+        """
+        Deletes value at key.
+        val is fully qualified private key
+        key is fully qualified public key
+        Returns True If key exists in database Else False
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        return self.delVal(self.gbls, key)
+
+
     # .sits methods
     def putSit(self, key, val):
         """
-        Write serialized dict of PubSit as val to key
+        Write serialized dict of PreSit as val to key
         key is fully qualified prefix
         Does not overwrite existing val if any
         Returns True If val successfully written Else False
@@ -454,6 +581,28 @@ class Creator:
         """
         return []
 
+    @property
+    def salt(self):
+        """
+        salt property getter
+        """
+        return ''
+
+    @property
+    def stem(self):
+        """
+        stem property getter
+        """
+        return ''
+
+
+    @property
+    def level(self):
+        """
+        level property getter
+        """
+        return ''
+
 
 class RandyCreator(Creator):
     """
@@ -518,7 +667,7 @@ class SaltyCreator(Creator):
         ._salter holds instance for .salter property
     """
 
-    def __init__(self, salt=None, level=None, **kwa):
+    def __init__(self, salt=None, stem=None, level=None, **kwa):
         """
         Setup Creator.
 
@@ -527,6 +676,7 @@ class SaltyCreator(Creator):
         """
         super(SaltyCreator, self).__init__(**kwa)
         self.salter = coring.Salter(qb64=salt, level=level)
+        self._stem = stem if stem is not None else ''
 
 
     @property
@@ -536,18 +686,24 @@ class SaltyCreator(Creator):
         """
         return self.salter.qb64
 
+    @property
+    def stem(self):
+        """
+        stem property getter
+        """
+        return self._stem
+
 
     @property
     def level(self):
         """
         level property getter
         """
-        return self.salter.level
+        return self.salter.tier
 
 
     def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
-               pidx=0, ridx=0, kidx=0, level=None,
-               transferable=True, temp=False, **kwa):
+               pidx=0, ridx=0, kidx=0, transferable=True, temp=False, **kwa):
         """
         Returns list of signers one per kidx in kidxs
 
@@ -565,12 +721,14 @@ class SaltyCreator(Creator):
         signers = []
         if not codes:  # if not codes make list len count of same code
             codes = [code for i in range(count)]
+
+        stem = self.stem if self.stem else pidx  # if not stem use pidx
         for i, code in enumerate(codes):
-            path = "{:x}{:x}{:x}".format(pidx, ridx, kidx + i)
+            path = "{:x}{:x}{:x}".format(stem, ridx, kidx + i)
             signers.append(self.salter.signer(path=path,
                                               code=code,
                                               transferable=transferable,
-                                              level=level,
+                                              tier=self.level,
                                               temp=temp))
         return signers
 
@@ -648,7 +806,7 @@ class Manager:
        ._salt is initial salt use attribute because keeper may not be open on init
     """
 
-    def __init__(self, keeper=None, pidx=None, salt=None):
+    def __init__(self, keeper=None, pidx=None, salt=None, tier=None):
         """
         Setup Creator.
 
@@ -656,7 +814,8 @@ class Manager:
             keeper is Keeper instance (LMDB)
             signers is dict of active signers keyed by pubkey
             pidx is int index of next created key pair sequence
-            salt is qbb4 of root salt. Makes random salt if not provided
+            salt is qb64 of root salt. Makes random root salt if not provided
+            tier is default SecTier for root salt
 
         """
         if keeper is None:
@@ -665,49 +824,65 @@ class Manager:
         self.keeper = keeper
         self.signers = dict()
         self._pidx = pidx if pidx is not None else 0
-        self._salt = coring.Salter(qb64=salt).qb64
+        self._salt = root if salt is not None else coring.Salter().qb64
+        self._tier = tier if tier is not None else coring.Tiers.low
+
+        if self.keeper.opened:
+            self.setup()
 
 
-    def initParms(self):
+    def setup(self):
         """
-        Return duple (pidx, salt) from .keeper.prms if keeper is setup
-        Otherwise if .keeper.prms not setup then initialize to ._pidx and ._salt
+        Return triple (pidx, salt, tier) from .keeper.gbls if keeper is setup
+        Otherwise if .keeper.gbls not setup then initialize from
+        ._pidx, ._salt, and ._tier
+
+        This is so keeper may be opened later asynchronously  and first call
+        to .setup fills them in.
+
         """
-        raw = self.keeper.getPrm('pidx')
+        raw = self.keeper.getGbl('pidx')
         if raw is None:
             pidx = self._pidx
-            self.keeper.putPrm('pidx', b'%x' % pidx)
+            self.keeper.putGbl('pidx', b'%x' % pidx)
         else:
             pidx = int(bytes(raw), 16)
 
-        raw = self.keeper.getPrm('salt')
+        raw = self.keeper.getGbl('salt')
         if raw is None:
             salt = self._salt
-            self.keeper.putPrm('salt', salt)
+            self.keeper.putGbl('salt', salt)
             self._salt = ''  # don't keep around
         else:
             salt = bytes(raw).decode("utf-8")
 
-        return (pidx, salt)
+        raw = self.keeper.getGbl('tier')
+        if raw is None:
+            tier = self._tier
+            self.keeper.putGbl('tier', tier)
+        else:
+            tier = bytes(raw).decode("utf-8")
+
+        return (pidx, salt, tier)
 
 
     def getPidx(self):
         """
         return pidx from .keeper. Assumes setup
         """
-        return int(bytes(self.keeper.getPrm(b"pidx")), 16)
+        return int(bytes(self.keeper.getGbl(b"pidx")), 16)
 
     def setPidx(self, pidx):
         """
         Save .pidx to .keeper
         """
-        self.keeper.setPrm(b"pidx", b"%x" % pidx)
+        self.keeper.setGbl(b"pidx", b"%x" % pidx)
 
 
     def incept(self, icodes=None, icount=1, icode=coring.CryOneDex.Ed25519_Seed,
                      ncodes=None, ncount=1, ncode=coring.CryOneDex.Ed25519_Seed,
                      dcode=coring.CryOneDex.Blake3_256,
-                     algo=Algos.salty, salt=None, level=None, rooted=True,
+                     algo=Algos.salty, salt=None, stem=None, level=None, rooted=True,
                      transferable=True, temp=False):
         """
         Returns duple (verfers, digers) for inception event where
@@ -718,7 +893,7 @@ class Manager:
 
         Incept a prefix. Use first public key as temporary prefix.
         Must .repre later to move pubsit dict to correct permanent prefix.
-        Store the dictified PubSit in the keeper under the first public key
+        Store the dictified PreSit in the keeper under the first public key
 
 
         Parameters:
@@ -748,14 +923,18 @@ class Manager:
             not be rotatable (non-transferable prefix)
 
         """
-        pidx, root = self.initParms()
+        pidx, rootSalt, rootTier = self.setup()  # default pidx, salt, tier
         ridx = 0
         kidx = 0
 
         if rooted and salt is None:  # use root salt instead of random salt
-            salt = root
+            salt = rootSalt
 
-        creator = Creatory(algo=algo).make(salt=salt, level=level)
+        if rooted and tier is None: #  use root tier as default
+            tier = rootTier
+
+
+        creator = Creatory(algo=algo).make(salt=salt, stem=stem, level=level)
 
         if not icodes:  # all same code, make list of len icount of same code
             icodes = [icode for i in range(icount)]
@@ -774,17 +953,14 @@ class Manager:
                                   transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in nsigners]
 
-        if salt is None:  # assign proper default
-            salt = creator.salt if hasattr(creator, 'salt') else ''
-
-        if level is None:  # assign proper default
-            level = creator.level if hasattr(creator, 'level') else coring.SecLevels.low
 
         dt = helping.nowIso8601()
-        ps = PubSit(algo=algo, salt=salt, level=level,
-                        new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
+        ps = PreSit(pidx=pidx,
+                    algo=algo,
+                    salt=creator.salt, stem=creator.stem, level=creator.level,
+                    new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
                                    ridx=ridx, kidx=kidx, dt=dt),
-                        nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
+                    nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
                                    ridx=ridx+1, kidx=kidx+len(icodes), dt=dt)
                     )
 
@@ -808,7 +984,7 @@ class Manager:
 
     def moveSit(self, old, new):
         """
-        Moves PubSit dict in keeper db from old default pre to new pre db key
+        Moves PreSit dict in keeper db from old default pre to new pre db key
         The new pre is the newly derived prefix which may only be known some
         time after the original creation of the associated key pairs.
 
@@ -841,7 +1017,7 @@ class Manager:
                 digest to xor is diger.raw
 
         Rotate a prefix.
-        Store the updated dictified PubSit in the keeper under pre
+        Store the updated dictified PreSit in the keeper under pre
 
         Parameters:
             pre is str qb64 of prefix
@@ -860,7 +1036,7 @@ class Manager:
         if rawsit is None:
             raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
 
-        ps = helping.datify(PubSit, json.loads(bytes(rawsit).decode("utf-8")))
+        ps = helping.datify(PreSit, json.loads(bytes(rawsit).decode("utf-8")))
 
         if not ps.nxt.pubs:  # empty nxt public keys so non-transferable prefix
             raise ValueError("Attempt to rotate nontransferable pre={}.".format(pre))
@@ -882,7 +1058,7 @@ class Manager:
                 self.signers[pub] = signer
             verfers.append(self.signers[pub].verfer)
 
-        creator = Creatory(algo=ps.algo).make(salt=ps.salt, level=ps.level)
+        creator = Creatory(algo=ps.algo).make(salt=ps.salt, level=ps.tier)
 
         if not codes:  # all same code, make list of len count of same code
             codes = [code for i in range(count)]
