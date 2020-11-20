@@ -6,17 +6,149 @@ tests.base.keeping module
 import pytest
 
 import os
+import stat
+import json
+from dataclasses import asdict
+
 import lmdb
 
-from hio.base import  doing
+from hio.base import doing
+
+from keri.help import helping
+from keri.core import coring
 from keri.base import keeping
 
 
-def test_openkeep():
+def test_publot_pubsit():
+    """
+    test key set tracking and creation parameters
+    """
+    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    pub = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    pri = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
+    seed = '0AZxWJGkCkpDcHuVG4GM1KVw'
+
+    pl = keeping.PubLot()
+    assert isinstance(pl, keeping.PubLot)
+    assert pl.pubs == []
+    assert pl.ridx == 0
+    assert pl.kidx == 0
+    assert pl.dt == ''
+
+    assert asdict(pl) == dict(pubs=[], ridx=0, kidx=0, dt='')
+    pl = helping.datify(keeping.PubLot, dict(pubs=[], ridx=0, kidx=0, dt=''))
+    assert pl.pubs == []
+    assert pl.ridx == 0
+    assert pl.kidx == 0
+    assert pl.dt == ''
+
+    # dt = helping.nowIso8601()
+    dt = '2020-11-16T22:30:34.812526+00:00'
+    pl = keeping.PubLot(pubs=[], ridx=1, kidx=3, dt=dt)
+    assert pl.pubs == []
+    assert pl.ridx == 1
+    assert pl.kidx == 3
+    assert pl.dt == dt
+
+    pp = keeping.PrePrm()
+    assert isinstance(pp, keeping.PrePrm)
+    assert pp.pidx == 0
+    assert pp.algo == keeping.Algos.salty == 'salty'
+    assert pp.stem == ''
+    assert pp.salt == ''
+    assert pp.tier == ''
+    assert asdict(pp) == dict(pidx=0,
+                              algo=keeping.Algos.salty,
+                              salt='',
+                              stem='',
+                              tier='',
+                              )
+    pp = helping.datify(keeping.PrePrm, dict(pidx=0,
+                                             algo=keeping.Algos.salty,
+                                             salt='',
+                                             stem='',
+                                             tier='',
+                                          ))
+
+    assert isinstance(pp, keeping.PrePrm)
+    assert pp.pidx == 0
+    assert pp.algo == keeping.Algos.salty == 'salty'
+    assert pp.stem == ''
+    assert pp.salt == ''
+    assert pp.tier == ''
+
+    pp = keeping.PrePrm(pidx=1, algo=keeping.Algos.randy)
+    assert pp.pidx == 1
+    assert pp.algo == keeping.Algos.randy
+    assert pp.salt == ''
+    assert pp.stem == ''
+    assert pp.tier == ''
+
+    ps = keeping.PreSit()
+    assert isinstance(ps, keeping.PreSit)
+    assert isinstance(ps.old, keeping.PubLot)
+    assert isinstance(ps.new, keeping.PubLot)
+    assert isinstance(ps.nxt, keeping.PubLot)
+    assert ps.old.pubs == []
+    assert ps.old.ridx ==  0
+    assert ps.old.kidx == 0
+    assert ps.old.dt == ''
+    assert ps.new.pubs == []
+    assert ps.new.ridx ==  0
+    assert ps.new.kidx == 0
+    assert ps.new.dt == ''
+    assert ps.nxt.pubs == []
+    assert ps.nxt.ridx ==  0
+    assert ps.nxt.kidx == 0
+    assert ps.nxt.dt == ''
+    assert asdict(ps) == dict(
+                              old=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                              new=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                              nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                              )
+    ps = helping.datify(keeping.PreSit, dict(
+                                             old=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                             new=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                             nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                                          ))
+
+    assert isinstance(ps, keeping.PreSit)
+    assert isinstance(ps.old, keeping.PubLot)
+    assert isinstance(ps.new, keeping.PubLot)
+    assert isinstance(ps.nxt, keeping.PubLot)
+    assert ps.old.pubs == []
+    assert ps.old.ridx ==  0
+    assert ps.old.kidx == 0
+    assert ps.old.dt == ''
+    assert ps.new.pubs == []
+    assert ps.new.ridx ==  0
+    assert ps.new.kidx == 0
+    assert ps.new.dt == ''
+    assert ps.nxt.pubs == []
+    assert ps.nxt.ridx ==  0
+    assert ps.nxt.kidx == 0
+    assert ps.nxt.dt == ''
+
+    old = keeping.PubLot(ridx=0, kidx=0)
+    new = keeping.PubLot(ridx=1, kidx=3)
+    nxt = keeping.PubLot(ridx=2, kidx=6)
+
+    ps = keeping.PreSit(old=old, new=new, nxt=nxt)
+    assert ps.old.ridx == 0
+    assert ps.old.kidx == 0
+    assert ps.new.ridx == 1
+    assert ps.new.kidx == 3
+    assert ps.nxt.ridx == 2
+    assert ps.nxt.kidx == 6
+
+    """End Test"""
+
+
+def test_openkeeper():
     """
     test contextmanager decorator for test Keeper databases
     """
-    with keeping.openKeep() as keeper:
+    with keeping.openKeeper() as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "test"
         assert isinstance(keeper.env, lmdb.Environment)
@@ -29,7 +161,7 @@ def test_openkeep():
     assert not os.path.exists(keeper.path)
     assert not keeper.opened
 
-    with keeping.openKeep(name="blue") as keeper:
+    with keeping.openKeeper(name="blue") as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "blue"
         assert isinstance(keeper.env, lmdb.Environment)
@@ -42,7 +174,7 @@ def test_openkeep():
     assert not os.path.exists(keeper.path)
     assert not keeper.opened
 
-    with keeping.openKeep(name="red") as red, keeping.openKeep(name="tan") as tan:
+    with keeping.openKeeper(name="red") as red, keeping.openKeeper(name="tan") as tan:
         assert isinstance(red, keeping.Keeper)
         assert red.name == "red"
         assert red.env.path() == red.path
@@ -62,47 +194,24 @@ def test_openkeep():
 
     """ End Test """
 
-def test_keyfuncs():
-    """
-    test the key generation functions
-    """
-    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-    pub = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
-    pri = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
-
-    seed = '0AZxWJGkCkpDcHuVG4GM1KVw'
-    count = 0
-    seedLabel = b"seed"
-    countLabel = b"count"
-
-    pmKey = keeping.pmKey
-    pbKey = keeping.pbKey
-
-    pmky = pmKey(pre, seedLabel)
-    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.seed'
-    pmky = pmKey(pre, countLabel)
-    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.count'
-
-    pmky = pmKey(pre.decode("utf-8"), seedLabel.decode("utf-8"))
-    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.seed'
-    pmky = pmKey(pre.decode("utf-8"), countLabel.decode("utf-8"))
-    assert pmky == b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.count'
-
-    pbky = pbKey(pre, pub)
-    assert pbky == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9'
-                    b'IPb0foWTZvI_4')
-    pbky = pbKey(pre.decode("utf-8"), pub.decode("utf-8"))
-    assert pbky == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9'
-                    b'IPb0foWTZvI_4')
-
-    """End Test"""
-
-
-
 def test_keeper():
     """
     Test Keeper creation
     """
+
+    """
+    stat.S_ISVTX  is Sticky bit. When this bit is set on a directory it means
+        that a file in that directory can be renamed or deleted only by the
+        owner of the file, by the owner of the directory, or by a privileged process.
+
+    stat.S_IRUSR Owner has read permission.
+    stat.S_IWUSR Owner has write permission.
+    stat.S_IXUSR Owner has execute permission.
+    """
+    dirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
+    assert dirMode == 0o1700
+
+    # set mode to sticky bit plus rwx only for owner/user
     keeper = keeping.Keeper()
     assert isinstance(keeper, keeping.Keeper)
     assert keeper.name == "main"
@@ -111,11 +220,32 @@ def test_keeper():
     assert keeper.path.endswith("keri/keep/main")
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
+    assert oct(os.stat(keeper.path).st_mode)[-4:] == "1700"
+    assert keeper.DirMode == dirMode
 
-    assert isinstance(keeper.prms, lmdb._Database)
-    assert isinstance(keeper.keys, lmdb._Database)
-    assert isinstance(keeper.dtss, lmdb._Database)
+    assert isinstance(keeper.gbls, lmdb._Database)
+    assert isinstance(keeper.pris, lmdb._Database)
+    assert isinstance(keeper.sits, lmdb._Database)
 
+
+    keeper.close(clear=True)
+    assert not os.path.exists(keeper.path)
+    assert not keeper.opened
+
+    # set to unrestricted mode
+    keeper = keeping.Keeper(dirMode=0o775)
+    assert isinstance(keeper, keeping.Keeper)
+    assert keeper.name == "main"
+    assert keeper.temp == False
+    assert isinstance(keeper.env, lmdb.Environment)
+    assert keeper.path.endswith("keri/keep/main")
+    assert keeper.env.path() == keeper.path
+    assert os.path.exists(keeper.path)
+    assert oct(os.stat(keeper.path).st_mode)[-4:] == "0775"
+
+    assert isinstance(keeper.gbls, lmdb._Database)
+    assert isinstance(keeper.pris, lmdb._Database)
+    assert isinstance(keeper.sits, lmdb._Database)
 
     keeper.close(clear=True)
     assert not os.path.exists(keeper.path)
@@ -137,18 +267,16 @@ def test_keeper():
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
 
-    assert isinstance(keeper.prms, lmdb._Database)
-    assert isinstance(keeper.keys, lmdb._Database)
-    assert isinstance(keeper.dtss, lmdb._Database)
+    assert isinstance(keeper.gbls, lmdb._Database)
+    assert isinstance(keeper.pris, lmdb._Database)
+    assert isinstance(keeper.sits, lmdb._Database)
 
     keeper.close(clear=True)
     assert not os.path.exists(keeper.path)
     assert not keeper.opened
 
-
-
     # Test using context manager
-    with keeping.openKeep() as keeper:
+    with keeping.openKeeper() as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "test"
         assert keeper.temp == True
@@ -158,9 +286,139 @@ def test_keeper():
         assert keeper.env.path() == keeper.path
         assert os.path.exists(keeper.path)
 
-        assert isinstance(keeper.prms, lmdb._Database)
-        assert isinstance(keeper.keys, lmdb._Database)
-        assert isinstance(keeper.dtss, lmdb._Database)
+        assert isinstance(keeper.gbls, lmdb._Database)
+        assert isinstance(keeper.pris, lmdb._Database)
+        assert isinstance(keeper.sits, lmdb._Database)
+
+        salta = b'0AZxWJGkCkpDcHuVG4GM1KVw'
+        saltb = b'0AHuVG4GM1KVwZxWJGkCkpDc'
+        pria = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
+        prib = b'AE2yPgBXiP6h_J2cZeCy4MaOa6eOCJQcgEozYb1GgV9z'
+        puba = b'DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+        pubb = b'DoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-QiVgbRbyAIZG'
+        pubc = b'DAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4G'
+        prea = b'EWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+        preb = b'EQPYGGwTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gz'
+
+        #  test .gbls sub db methods
+        key = b'pidx'
+        pidxa = b'%x' % 0  # "{:x}".format(pidx).encode("utf-8")
+        pidxb = b'%x' % 1  # "{:x}".format(pidx).encode("utf-8"
+        assert keeper.getPri(key) == None
+        assert keeper.delPri(key) == False
+        assert keeper.putPri(key, val=pidxa) == True
+        assert keeper.getPri(key) == pidxa
+        assert keeper.putPri(key, val=pidxb) == False
+        assert keeper.getPri(key) == pidxa
+        assert keeper.setPri(key, val=pidxb) == True
+        assert keeper.getPri(key) == pidxb
+        assert keeper.delPri(key) == True
+        assert keeper.getPri(key) == None
+
+        key = b'salt'
+        assert keeper.getPri(key) == None
+        assert keeper.delPri(key) == False
+        assert keeper.putPri(key, val=salta) == True
+        assert keeper.getPri(key) == salta
+        assert keeper.putPri(key, val=saltb) == False
+        assert keeper.getPri(key) == salta
+        assert keeper.setPri(key, val=saltb) == True
+        assert keeper.getPri(key) == saltb
+        assert keeper.delPri(key) == True
+        assert keeper.getPri(key) == None
+
+        key = b'tier'
+        assert keeper.getPri(key) == None
+        assert keeper.delPri(key) == False
+        assert keeper.putPri(key, val=coring.Tiers.low) == True
+        assert keeper.getPri(key) == coring.Tiers.low.encode("utf-8")
+        assert keeper.putPri(key, val=coring.Tiers.med) == False
+        assert keeper.getPri(key) == coring.Tiers.low.encode("utf-8")
+        assert keeper.setPri(key, val=coring.Tiers.med) == True
+        assert keeper.getPri(key) == coring.Tiers.med.encode("utf-8")
+        assert keeper.delPri(key) == True
+        assert keeper.getPri(key) == None
+
+
+        #  test .pris sub db methods
+        key = puba
+        assert keeper.getPri(key) == None
+        assert keeper.delPri(key) == False
+        assert keeper.putPri(key, val=pria) == True
+        assert keeper.getPri(key) == pria
+        assert keeper.putPri(key, val=prib) == False
+        assert keeper.getPri(key) == pria
+        assert keeper.setPri(key, val=prib) == True
+        assert keeper.getPri(key) == prib
+        assert keeper.delPri(key) == True
+        assert keeper.getPri(key) == None
+
+        #  test .pres sub db methods
+        key = puba
+        assert keeper.getPre(key) == None
+        assert keeper.delPre(key) == False
+        assert keeper.putPre(key, val=prea) == True
+        assert keeper.getPre(key) == prea
+        assert keeper.putPre(key, val=preb) == False
+        assert keeper.getPre(key) == prea
+        assert keeper.setPre(key, val=preb) == True
+        assert keeper.getPre(key) == preb
+        assert keeper.delPre(key) == True
+        assert keeper.getPre(key) == None
+
+        #  test .prms sub db methods
+        key = prea
+        prma = json.dumps(
+                    dict(pidx=0,
+                         algo='salty',
+                         salt=salta.decode("utf-8"),
+                         stem='',
+                         tier='low',
+                    )).encode("utf-8")
+        prmb = json.dumps(
+                    dict(pidx=1,
+                         algo='randy',
+                         salt='',
+                         stem='',
+                         level='',
+                    )).encode("utf-8")
+        assert keeper.getPrm(key) == None
+        assert keeper.delPrm(key) == False
+        assert keeper.putPrm(key, val=prma) == True
+        assert keeper.getPrm(key) == prma
+        assert keeper.putPrm(key, val=prmb) == False
+        assert keeper.getPrm(key) == prma
+        assert keeper.setPrm(key, val=prmb) == True
+        assert keeper.getPrm(key) == prmb
+        assert keeper.delPrm(key) == True
+        assert keeper.getPrm(key) == None
+
+
+        #  test .sits sub db methods
+        key = prea
+        sita = json.dumps(
+                    dict(
+                         old=dict(pubs=[], ridx=0, kidx=0, dt=''),
+                         new=dict(pubs=[puba.decode("utf-8")], ridx=1, kidx=1, dt=helping.nowIso8601()),
+                         nxt=dict(pubs=[pubb.decode("utf-8")], ridx=2, kidx=2, dt=helping.nowIso8601())
+                    )).encode("utf-8")
+        sitb = json.dumps(
+                    dict(
+                         old=dict(pubs=[puba.decode("utf-8")], ridx=0, kidx=0, dt=helping.nowIso8601()),
+                         new=dict(pubs=[pubb.decode("utf-8")], ridx=1, kidx=1, dt=helping.nowIso8601()),
+                         nxt=dict(pubs=[pubc.decode("utf-8")], ridx=2, kidx=2, dt=helping.nowIso8601())
+                    )).encode("utf-8")
+        assert keeper.getSit(key) == None
+        assert keeper.delSit(key) == False
+        assert keeper.putSit(key, val=sita) == True
+        assert keeper.getSit(key) == sita
+        assert keeper.putSit(key, val=sitb) == False
+        assert keeper.getSit(key) == sita
+        assert keeper.setSit(key, val=sitb) == True
+        assert keeper.getSit(key) == sitb
+        assert keeper.delSit(key) == True
+        assert keeper.getSit(key) == None
+
 
     assert not os.path.exists(keeper.path)
 
@@ -228,7 +486,389 @@ def test_keeperdoer():
 
     """End Test"""
 
+def test_creator():
+    """
+    test Creator and Creatory classes
+    """
+    creator = keeping.Creator()
+    assert isinstance(creator, keeping.Creator)
+    assert creator.create() == []
+    assert creator.salt == ''
+    assert creator.stem == ''
+    assert creator.tier == ''
+
+    creator = keeping.RandyCreator()
+    assert isinstance(creator, keeping.RandyCreator)
+    assert isinstance(creator, keeping.Creator)
+    assert creator.salt == ''
+    assert creator.stem == ''
+    assert creator.tier == ''
+    signers = creator.create()
+    assert len(signers) == 1
+    signer = signers[0]
+    assert isinstance(signer, coring.Signer)
+    assert signer.code == coring.CryOneDex.Ed25519_Seed
+    assert signer.verfer.code == coring.CryOneDex.Ed25519
+    assert signer.verfer.code not in coring.CryNonTransDex
+
+    signers = creator.create(count=2, transferable=False)
+    assert len(signers) == 2
+    for signer in signers:
+        assert isinstance(signer, coring.Signer)
+        assert signer.code == coring.CryOneDex.Ed25519_Seed
+        assert signer.verfer.code == coring.CryOneDex.Ed25519N
+        assert signer.verfer.code in coring.CryNonTransDex
+
+    creator = keeping.SaltyCreator()
+    assert isinstance(creator, keeping.SaltyCreator)
+    assert isinstance(creator, keeping.Creator)
+    assert isinstance(creator.salter, coring.Salter)
+    assert creator.salter.code == coring.CryTwoDex.Salt_128
+    assert creator.salt == creator.salter.qb64
+    assert creator.stem == ''
+    assert creator.tier == creator.salter.tier
+    signers = creator.create()
+    assert len(signers) == 1
+    signer = signers[0]
+    assert isinstance(signer, coring.Signer)
+    assert signer.code == coring.CryOneDex.Ed25519_Seed
+    assert signer.verfer.code == coring.CryOneDex.Ed25519
+    assert signer.verfer.code not in coring.CryNonTransDex
+
+    signers = creator.create(count=2, transferable=False)
+    assert len(signers) == 2
+    for signer in signers:
+        assert isinstance(signer, coring.Signer)
+        assert signer.code == coring.CryOneDex.Ed25519_Seed
+        assert signer.verfer.code == coring.CryOneDex.Ed25519N
+        assert signer.verfer.code in coring.CryNonTransDex
+
+    raw = b'0123456789abcdef'
+    salt = coring.Salter(raw=raw).qb64
+    assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    creator = keeping.SaltyCreator(salt=salt)
+    assert isinstance(creator, keeping.SaltyCreator)
+    assert isinstance(creator, keeping.Creator)
+    assert isinstance(creator.salter, coring.Salter)
+    assert creator.salter.code == coring.CryTwoDex.Salt_128
+    assert creator.salter.raw == raw
+    assert creator.salter.qb64 == salt
+    signers = creator.create()
+    assert len(signers) == 1
+    signer = signers[0]
+    assert isinstance(signer, coring.Signer)
+    assert signer.code == coring.CryOneDex.Ed25519_Seed
+    assert signer.qb64 == 'A8wl7SXA6nCdf0-S9fWaHbq-XMZiXpFaBYZyVzwIBAn0'
+    assert signer.verfer.code == coring.CryOneDex.Ed25519
+    assert signer.verfer.code not in coring.CryNonTransDex
+    assert signer.verfer.qb64 == 'DxnLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ'
+
+    signers = creator.create(count=1, transferable=False, temp=True)
+    assert len(signers) == 1
+    signer = signers[0]
+    assert isinstance(signer, coring.Signer)
+    assert signer.code == coring.CryOneDex.Ed25519_Seed
+    assert signer.qb64 == 'AwasAzSejEulG1472bEZP7LNhKsoXAky40jgqWZKTbp4'
+    assert signer.verfer.code == coring.CryOneDex.Ed25519N
+    assert signer.verfer.code in coring.CryNonTransDex
+    assert signer.verfer.qb64 == 'BVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
+
+    creator = keeping.Creatory(algo=keeping.Algos.salty).make(salt=salt)
+    assert isinstance(creator, keeping.SaltyCreator)
+    assert creator.salter.qb64 == salt
+
+    creator = keeping.Creatory(algo=keeping.Algos.randy).make()
+    assert isinstance(creator, keeping.RandyCreator)
+    """End Test"""
+
+
+def test_manager():
+    """
+    test Manager class
+    """
+    manager = keeping.Manager()
+    assert isinstance(manager, keeping.Manager)
+    assert isinstance(manager.keeper, keeping.Keeper)
+    assert manager.keeper.opened
+
+    manager.keeper.close(clear=True)
+    assert not os.path.exists(manager.keeper.path)
+    assert not manager.keeper.opened
+
+    raw = b'0123456789abcdef'
+    salt = coring.Salter(raw=raw).qb64
+    stem = "red"
+    tier = coring.Tiers.low
+    assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+
+    ser = bytes(b'{"vs":"KERI10JSON0000fb_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
+                    b'70m6LIjkiCdoI","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
+                    b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EPYuj8mq_PYYsoBKkz'
+                    b'X1kxSPGYBWaIya3slgCOyOtlqU","toad":"0","wits":[],"cnfg":[]}-AABA'
+                    b'ApYcYd1cppVg7Inh2YCslWKhUwh59TrPpIoqWxN2A38NCbTljvmBPBjSGIFDBNOv'
+                    b'VjHpdZlty3Hgk6ilF8pVpAQ')
+
+    with keeping.openKeeper() as keeper:
+        manager = keeping.Manager(keeper=keeper, salt=salt)
+        assert manager.keeper.opened
+        assert manager._pidx == 0
+        assert manager._salt == ''  # zeroed out
+        assert manager._tier == coring.Tiers.low
+
+        # salty algorithm incept
+        verfers, digers = manager.incept(salt=salt, temp=True)  # algo default salty
+        assert len(verfers) == 1
+        assert len(digers) == 1
+        assert manager.getPidx() == 1
+
+        spre = verfers[0].qb64b
+        assert spre == b'DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 0
+        assert pp.algo == keeping.Algos.salty
+        assert pp.salt == salt
+        assert pp.stem == ''
+        assert pp.tier == coring.Tiers.low
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+        assert ps.old.pubs == []
+        assert len(ps.new.pubs) == 1
+        assert ps.new.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
+        assert ps.new.ridx == 0
+        assert ps.new.kidx == 0
+        assert len(ps.nxt.pubs) == 1
+        assert ps.nxt.pubs == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
+        assert ps.nxt.ridx == 1
+        assert ps.nxt.kidx == 1
+
+        keys = [verfer.qb64 for verfer in verfers]
+        assert keys == ps.new.pubs
+
+        digs = [diger.qb64 for diger in  digers]
+        assert digs == ['E8UYvbKn7KYw9e4F2DR-iduGtdA1o16ePAYjpyCYSeYo']
+
+        oldspre = spre
+        spre = b'DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc'
+        manager.move(old=oldspre, new=spre)
+
+        psigers = manager.sign(ser=ser, pubs=ps.new.pubs)
+        for siger in psigers:
+            assert isinstance(siger, coring.Siger)
+        vsigers = manager.sign(ser=ser, verfers=verfers)
+        psigs = [siger.qb64 for siger in psigers]
+        vsigs = [siger.qb64 for siger in vsigers]
+        assert psigs == vsigs
+        assert psigs == ['AAGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
+
+        pcigars = manager.sign(ser=ser, pubs=ps.new.pubs, indexed=False)
+        for cigar in pcigars:
+            assert isinstance(cigar, coring.Cigar)
+        vcigars = manager.sign(ser=ser, verfers=verfers, indexed=False)
+        psigs = [cigar.qb64 for cigar in pcigars]
+        vsigs = [cigar.qb64 for cigar in vcigars]
+        assert psigs == vsigs
+        assert psigs == ['0BGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
+
+        # salty algorithm rotate
+        oldpubs = [verfer.qb64 for verfer in verfers]
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
+
+        assert len(verfers) == 1
+        assert len(digers) == 1
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 0
+        assert pp.algo == keeping.Algos.salty
+        assert pp.salt == salt
+        assert pp.stem == ''
+        assert pp.tier == coring.Tiers.low
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+        assert ps.old.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
+        assert len(ps.new.pubs) == 1
+        assert ps.new.pubs == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
+        assert ps.new.ridx == 1
+        assert ps.new.kidx == 1
+        assert len(ps.nxt.pubs) == 1
+        assert ps.nxt.pubs == ['DRpGly44ejh01ur4ltL_LVrYcyqVCQyVLJnqWrVa57Yc']
+        assert ps.nxt.ridx == 2
+        assert ps.nxt.kidx == 2
+
+        keys = [verfer.qb64 for verfer in verfers]
+        assert keys == ps.new.pubs
+
+        digs = [diger.qb64 for diger in  digers]
+        assert digs == ['EJUzDm_HbdIZDp94OlIoZH1gcaSdWLZhJwqKz2rVJZrc']
+
+        assert oldpubs == ps.old.pubs
+
+        # salty algorithm rotate
+        oldpubs = [verfer.qb64 for verfer in verfers]
+        deadpubs = ps.old.pubs
+
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 0
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+
+        assert oldpubs == ps.old.pubs
+
+        for pub in deadpubs:
+            assert not manager.keeper.getPri(key=pub.encode("utf-8"))
+
+        # salty algorithm rotate to null
+
+        verfers, digers = manager.rotate(pre=spre.decode("utf-8"), count=0)
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 0
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+
+        assert digers == []
+        assert ps.nxt.pubs == []
+
+        #  attempt to rotate after null
+        with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
+            verfers, digers = manager.rotate(pre=spre.decode("utf-8"))
+        assert ex.value.args[0].startswith('Attempt to rotate nontransferable ')
+
+        # randy algo incept
+        verfers, digers = manager.incept(algo=keeping.Algos.randy)
+        assert len(verfers) == 1
+        assert len(digers) == 1
+        assert manager.getPidx() == 2
+        rpre = verfers[0].qb64b
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 1
+        assert pp.algo == keeping.Algos.randy
+        assert pp.salt == ''
+        assert pp.stem == ''
+        assert pp.tier == ''
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+        assert ps.old.pubs == []
+        assert len(ps.new.pubs) == 1
+        assert ps.new.ridx == 0
+        assert ps.new.kidx == 0
+        assert len(ps.nxt.pubs) == 1
+        assert ps.nxt.ridx == 1
+        assert ps.nxt.kidx == 1
+
+        keys = [verfer.qb64 for verfer in verfers]
+        for key in keys:
+            val = bytes(manager.keeper.getPri(key.encode("utf-8")))
+
+        digs = [diger.qb64 for diger in  digers]
+        assert len(digs) == 1
+
+        oldrpre = rpre
+        rpre = b'DMqxMVG3IcCNK4lpFfCu5o5cxzv1lgpMM-9rfkY3XVUc'
+        manager.move(old=oldrpre, new=rpre)
+
+        # randy algorithm rotate
+        oldpubs = [verfer.qb64 for verfer in verfers]
+
+        verfers, digers = manager.rotate(pre=rpre.decode("utf-8"))
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 1
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+
+        assert oldpubs == ps.old.pubs
+
+        # randy algo incept with null nxt
+        verfers, digers = manager.incept(algo=keeping.Algos.randy, ncount=0)
+        assert manager.getPidx() == 3
+        rpre = verfers[0].qb64b
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 2
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+
+        assert digers == []
+        assert ps.nxt.pubs == []
+
+        #  attempt to rotate after null
+        with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
+            verfers, digers = manager.rotate(pre=rpre.decode("utf-8"))
+
+        # salty algorithm incept with stem
+        verfers, digers = manager.incept(salt=salt, stem=stem, temp=True)  # algo default salty
+        assert len(verfers) == 1
+        assert len(digers) == 1
+        assert manager.getPidx() == 4
+
+        spre = verfers[0].qb64b
+        assert spre == b'D627iBfehzh966wPzBYjKQuGOSmIkdcR7b14nZv_ULIw'
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 3
+        assert pp.algo == keeping.Algos.salty
+        assert pp.salt == salt
+        assert pp.stem == stem == 'red'
+        assert pp.tier == coring.Tiers.low
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+        assert ps.old.pubs == []
+        assert len(ps.new.pubs) == 1
+        assert ps.new.pubs == ['D627iBfehzh966wPzBYjKQuGOSmIkdcR7b14nZv_ULIw']
+        assert ps.new.ridx == 0
+        assert ps.new.kidx == 0
+        assert len(ps.nxt.pubs) == 1
+        assert ps.nxt.pubs == ['DHNnq96NI0Bmle_VINGcgX8_VSpxbl3am7ZT6_66Fe8Q']
+        assert ps.nxt.ridx == 1
+        assert ps.nxt.kidx == 1
+
+        keys = [verfer.qb64 for verfer in verfers]
+        assert keys == ps.new.pubs
+
+        digs = [diger.qb64 for diger in  digers]
+        assert digs == ['EAQ7QvfBLj0OrGTqzJZGutLJowUht_zBA6213agRQ8hA']
+
+
+        #  attempt to reincept same first pub
+        with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
+            verfers, digers = manager.incept(salt=salt, stem=stem, temp=True)
+        assert ex.value.args[0].startswith('Already incepted pre')
+
+        oldspre = spre
+        spre = b'DCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxMVG3Ic'
+        manager.move(old=oldspre, new=spre)
+
+        #  attempt to reincept same first pub after move pre
+        with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
+            verfers, digers = manager.incept(salt=salt, stem=stem, temp=True)
+        assert ex.value.args[0].startswith('Already incepted pre')
+
+
+
+    assert not os.path.exists(manager.keeper.path)
+    assert not manager.keeper.opened
+    """End Test"""
 
 
 if __name__ == "__main__":
-    test_keyfuncs()
+    test_manager()

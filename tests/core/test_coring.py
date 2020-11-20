@@ -24,7 +24,7 @@ from keri.core.coring import (CrySelDex, CryCntDex,
                               CryTwoDex, CryTwoSizes, CryTwoRawSizes,
                               CryFourDex, CryFourSizes, CryFourRawSizes,
                               CrySizes, CryRawSizes, MINCRYSIZE)
-from keri.core.coring import (CryMat, CryCounter, Verfer, Cigar, Signer,
+from keri.core.coring import (CryMat, CryCounter, Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import (SigSelDex, SigCntDex, SigCntSizes, SigCntRawSizes,
@@ -98,7 +98,7 @@ def test_cryderivationcodes():
         assert x in CryOneSizes
         assert x in CryOneRawSizes
 
-    assert CryTwoDex.Seed_128 == '0A'
+    assert CryTwoDex.Salt_128 == '0A'
     assert CryTwoDex.Ed25519 == '0B'
     assert CryTwoDex.ECDSA_256k1 == '0C'
 
@@ -606,12 +606,54 @@ def test_signer():
 
     assert crymat.raw == sigmat.raw
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  #  use invalid code not SEED
         signer = Signer(raw=seed, code=CryOneDex.Ed25519N)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  #  use invalid code not SEED
         signer = Signer(code=CryOneDex.Ed25519N)
     """ Done Test """
+
+
+def test_salter():
+    """
+    Test the support functionality for salter subclass of crymat
+    """
+    salter = Salter()  # defaults to CryTwoDex.Salt_128
+    assert salter.code == CryTwoDex.Salt_128
+    assert len(salter.raw) == CryRawSizes[salter.code] == 16
+
+    raw = b'0123456789abcdef'
+
+    salter = Salter(raw=raw)
+    assert salter.raw == raw
+    assert salter.qb64 == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+
+    signer = salter.signer(path="01", temp=True)  # defaults to Ed25519
+    assert signer.code == CryOneDex.Ed25519_Seed
+    assert len(signer.raw) == CryRawSizes[signer.code]
+    assert signer.verfer.code == CryOneDex.Ed25519
+    assert len(signer.verfer.raw) == CryRawSizes[signer.verfer.code]
+    assert signer.qb64 == 'Aw-yoFnFZ21ikGGtacpiK3AVrvuz3TZD6dfew9POqzRE'
+    assert signer.verfer.qb64 == 'DVgXBkk4w3LcWScQIvy1RpBlEFTJD3EK_oXxyQb5QKsI'
+
+    signer = salter.signer(path="01")  # defaults to Ed25519 temp = False level="low"
+    assert signer.code == CryOneDex.Ed25519_Seed
+    assert len(signer.raw) == CryRawSizes[signer.code]
+    assert signer.verfer.code == CryOneDex.Ed25519
+    assert len(signer.verfer.raw) == CryRawSizes[signer.verfer.code]
+    assert signer.qb64 == 'ASSpCI1N7FYH19MumAmn-Vdbre0WVP5jT-aBDDDij50I'
+    assert signer.verfer.qb64 == 'D8kbIf0fUz9JRJ_XxHNfw6p3KHETJkmkqbkSbQ-emxZ0'
+
+    salter = Salter(qb64='0AMDEyMzQ1Njc4OWFiY2RlZg')
+    assert salter.raw == raw
+    assert salter.qb64 == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+
+    with pytest.raises(ShortageError):
+        salter = Salter(qb64='')
+
+
+    """ Done Test """
+
 
 def test_generatesigners():
     """
@@ -626,7 +668,7 @@ def test_generatesigners():
     # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     root = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
     assert len(root) == 16
-    signers = generateSigners(root=root, count=4)  # default is transferable
+    signers = generateSigners(salt=root, count=4)  # default is transferable
     assert len(signers) == 4
     for signer in signers:
         assert signer.code == CryOneDex.Ed25519_Seed
@@ -638,7 +680,7 @@ def test_generatesigners():
                        'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
                        'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8']
 
-    secrets = generateSecrets(root=root, count=4)
+    secrets = generateSecrets(salt=root, count=4)
     assert secrets == sigkeys
 
     """ End Test """
@@ -1699,4 +1741,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_nexter()
+    test_salter()

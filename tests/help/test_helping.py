@@ -8,10 +8,40 @@ import pytest
 import datetime
 import pysodium
 
+from dataclasses import dataclass, asdict
+
 
 from keri.help.helping import mdict
 from keri.help.helping import extractValues
 from keri.help.helping import nowIso8601, toIso8601, fromIso8601
+from keri.help.helping import datify
+
+def test_datify():
+    """
+    Test convert dict to dataclass
+
+    dataclass, astuple, asdict, fields,
+    """
+    @dataclass
+    class Point:
+        x: float
+        y: float
+
+    @dataclass
+    class Line:
+        a: Point
+        b: Point
+
+    line = Line(Point(1,2), Point(3,4))
+    assert line == datify(Line, asdict(line))
+
+    assert asdict(line) == {'a': {'x': 1, 'y': 2}, 'b': {'x': 3, 'y': 4}}
+
+    pdict = dict(x=3, y=4)
+    pdata = datify(Point, pdict)
+    assert isinstance(pdata, Point)
+
+    """End Test"""
 
 
 def test_mdict():
@@ -133,4 +163,4 @@ def test_iso8601():
 
 
 if __name__ == "__main__":
-    test_iso8601()
+    test_datify()

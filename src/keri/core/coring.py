@@ -202,7 +202,7 @@ class CryTwoCodex:
 
     Note binary length of everything in CryTwoCodex results in 2 Base64 pad bytes.
     """
-    Seed_128:    str = '0A'  # 128 bit random seed.
+    Salt_128:    str = '0A'  # 128 bit random seed.
     Ed25519:     str = '0B'  # Ed25519 signature.
     ECDSA_256k1: str = '0C'  # ECDSA secp256k1 signature.
 
@@ -295,6 +295,11 @@ class CryNonTransCodex:
 
 CryNonTransDex = CryNonTransCodex()  #  Make instance
 
+# secret derivation security tier
+Tierage = namedtuple("Tierage", 'low med high')
+
+Tiers = Tierage(low='low', med='med', high='high')
+
 
 class CryMat:
     """
@@ -305,15 +310,23 @@ class CryMat:
 
     Attributes:
 
-
     Properties:
-        .code  str derivation code to indicate cypher suite
-        .raw   bytes crypto material only without code
-        .pad  int number of pad chars given raw
-        .qb64 str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  bytes in binary with derivation code + crypto material
-        .nontrans True when non-transferable derivation code False otherwise
+        .pad  is int number of pad chars given raw
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
 
@@ -405,21 +418,21 @@ class CryMat:
 
 
     @property
-    def index(self):
-        """
-        Returns ._index
-        Makes .index read only
-        """
-        return self._index
-
-
-    @property
     def raw(self):
         """
         Returns ._raw
         Makes .raw read only
         """
         return self._raw
+
+
+    @property
+    def index(self):
+        """
+        Returns ._index
+        Makes .index read only
+        """
+        return self._index
 
 
     def _infil(self):
@@ -511,16 +524,6 @@ class CryMat:
 
 
     @property
-    def qb64(self):
-        """
-        Property qb64:
-        Returns Fully Qualified Base64 Version
-        Assumes self.raw and self.code are correctly populated
-        """
-        return self.qb64b.decode("utf-8")
-
-
-    @property
     def qb64b(self):
         """
         Property qb64b:
@@ -528,6 +531,16 @@ class CryMat:
         Assumes self.raw and self.code are correctly populated
         """
         return self._infil()
+
+
+    @property
+    def qb64(self):
+        """
+        Property qb64:
+        Returns Fully Qualified Base64 Version
+        Assumes self.raw and self.code are correctly populated
+        """
+        return self.qb64b.decode("utf-8")
 
 
     @property
@@ -541,10 +554,11 @@ class CryMat:
         # decode self.code as bits and prepend to self.raw
         return decodeB64(self._infil())
 
+
     @property
     def nontrans(self):
         """
-        Property transferable:
+        Property nontrans:
         Returns True if identifier has non-transferable derivation code,
                 False otherwise
         """
@@ -815,21 +829,126 @@ class Signer(CryMat):
                           verfer=verfer)
 
 
+class Salter(CryMat):
+    """
+    Salter is CryMat subclass to maintain random salt for secrets (private keys)
+    Its .raw is random salt, .code as cipher suite for salt
 
-def generateSigners(root=None, count=8, transferable=True):
+    Attributes:
+        .level is str security level code. Provides default level
+
+    Inherited Properties
+        .pad  is int number of pad chars given raw
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+
+    Properties:
+
+    Methods:
+
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
+
+    """
+    Tier = Tiers.low
+
+    def __init__(self,raw=None, code=CryTwoDex.Salt_128, tier=None, **kwa):
+        """
+        Initialize salter's raw and code
+
+        Inherited Parameters:
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
+
+        Parameters:
+
+        """
+        try:
+            super(Salter, self).__init__(raw=raw, code=code, **kwa)
+        except EmptyMaterialError as ex:
+            if code == CryTwoDex.Salt_128:
+                raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+                super(Salter, self).__init__(raw=raw, code=code, **kwa)
+            else:
+                raise ValueError("Unsupported salter code = {}.".format(code))
+
+        if self.code not in (CryTwoDex.Salt_128, ):
+            raise ValueError("Unsupported salter code = {}.".format(self.code))
+
+        self.tier = tier if tier is not None else self.Tier
+
+
+    def signer(self, path="", tier=None, code=CryOneDex.Ed25519_Seed,
+               transferable=True, temp=False):
+        """
+        Returns Signer instance whose .raw secret is derived from path and
+        salter's .raw and streched to size given by code. The signers public key
+        for its .verfer is derived from code and transferable.
+
+        Parameters:
+            path is str of unique chars used in derivation of secret seed for signer
+            code is str code of secret crypto suite
+            transferable is Boolean, True means use transferace code for public key
+            temp is Boolean, True means use quick method to stretch salt
+                    for testing only, Otherwise use more time to stretch
+        """
+        tier = tier if tier is not None else self.tier
+
+        if temp:
+            opslimit = pysodium.crypto_pwhash_OPSLIMIT_MIN
+            memlimit = pysodium.crypto_pwhash_MEMLIMIT_MIN
+        else:
+            if tier == Tiers.low:
+                opslimit = pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE
+                memlimit = pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE
+            elif tier == Tiers.med:
+                opslimit = pysodium.crypto_pwhash_OPSLIMIT_MODERATE
+                memlimit = pysodium.crypto_pwhash_MEMLIMIT_MODERATE
+            elif tier == Tiers.high:
+                opslimit = pysodium.crypto_pwhash_OPSLIMIT_SENSITIVE
+                memlimit = pysodium.crypto_pwhash_MEMLIMIT_SENSITIVE
+            else:
+                raise ValueError("Unsupported security tier = {}.".format(tier))
+
+         # stretch algorithm is argon2id
+        seed = pysodium.crypto_pwhash(outlen=CryRawSizes[code],
+                                      passwd=path,
+                                      salt=self.raw,
+                                      opslimit=opslimit,
+                                      memlimit=memlimit,
+                                      alg=pysodium.crypto_pwhash_ALG_DEFAULT)
+
+        return (Signer(raw=seed, code=code, transferable=transferable))
+
+
+def generateSigners(salt=None, count=8, transferable=True):
     """
     Returns list of Signers for Ed25519
 
     Parameters:
-        root is bytes 16 byte long root key (salt/seed) from which seeds for Signers
+        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
             in list are derived
-            random root created if not provided
+            random salt created if not provided
         count is number of signers in list
         transferable is boolean true means signer.verfer code is transferable
                                 non-transferable otherwise
     """
-    if not root:
-        root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    if not salt:
+        salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
 
     signers = []
     for i in range(count):
@@ -837,7 +956,7 @@ def generateSigners(root=None, count=8, transferable=True):
         # algorithm default is argon2id
         seed = pysodium.crypto_pwhash(outlen=32,
                                       passwd=path,
-                                      salt=root,
+                                      salt=salt,
                                       opslimit=pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
                                       memlimit=pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
                                       alg=pysodium.crypto_pwhash_ALG_DEFAULT)
@@ -846,19 +965,20 @@ def generateSigners(root=None, count=8, transferable=True):
 
     return signers
 
-def generateSecrets(root=None, count=8):
+
+def generateSecrets(salt=None, count=8):
     """
     Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
 
     Parameters:
-        root is bytes 16 byte long root key (salt/seed) from which seeds for Signers
+        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
             in list are derived
-            random root created if not provided
+            random salt created if not provided
         count is number of signers in list
     """
-    signers = generateSigners(root=root, count=count)
+    signers = generateSigners(salt=salt, count=count)
 
-    return [signer.qb64 for signer in signers]  #  fetch the qb64
+    return [signer.qb64 for signer in signers]  #  fetch the qb64 as secret
 
 
 class Diger(CryMat):
@@ -2100,6 +2220,7 @@ class Serder:
           .diger is Diger instance of digest of .raw
           .dig  is qb64 digest from .diger
           .digb is qb64b digest from .diger
+          .verfers is list of Verfers converted from .ked["keys"]
 
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
@@ -2244,6 +2365,7 @@ class Serder:
         """ raw property getter """
         return self._raw
 
+
     @raw.setter
     def raw(self, raw):
         """ raw property setter """
@@ -2260,6 +2382,7 @@ class Serder:
     def ked(self):
         """ ked property getter"""
         return self._ked
+
 
     @ked.setter
     def ked(self, ked):
@@ -2279,6 +2402,7 @@ class Serder:
         """ kind property getter"""
         return self._kind
 
+
     @kind.setter
     def kind(self, kind):
         """ kind property setter Assumes ._ked """
@@ -2290,15 +2414,18 @@ class Serder:
         self._size = size
         self._version = version
 
+
     @property
     def version(self):
         """ version property getter"""
         return self._version
 
+
     @property
     def size(self):
         """ size property getter"""
         return self._size
+
 
     @property
     def diger(self):
@@ -2308,6 +2435,7 @@ class Serder:
         """
         return self._diger
 
+
     @property
     def dig(self):
         """
@@ -2315,6 +2443,7 @@ class Serder:
         dig (digest) property getter
         """
         return self.diger.qb64
+
 
     @property
     def digb(self):
