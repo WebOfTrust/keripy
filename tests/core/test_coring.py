@@ -644,6 +644,13 @@ def test_salter():
     assert signer.qb64 == 'ASSpCI1N7FYH19MumAmn-Vdbre0WVP5jT-aBDDDij50I'
     assert signer.verfer.qb64 == 'D8kbIf0fUz9JRJ_XxHNfw6p3KHETJkmkqbkSbQ-emxZ0'
 
+    salter = Salter(qb64='0AMDEyMzQ1Njc4OWFiY2RlZg')
+    assert salter.raw == raw
+    assert salter.qb64 == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+
+    with pytest.raises(ShortageError):
+        salter = Salter(qb64='')
+
 
     """ Done Test """
 
