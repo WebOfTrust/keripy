@@ -2220,6 +2220,7 @@ class Serder:
           .diger is Diger instance of digest of .raw
           .dig  is qb64 digest from .diger
           .digb is qb64b digest from .diger
+          .verfers is list of Verfers converted from .ked["keys"]
 
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
@@ -2364,6 +2365,7 @@ class Serder:
         """ raw property getter """
         return self._raw
 
+
     @raw.setter
     def raw(self, raw):
         """ raw property setter """
@@ -2380,6 +2382,7 @@ class Serder:
     def ked(self):
         """ ked property getter"""
         return self._ked
+
 
     @ked.setter
     def ked(self, ked):
@@ -2399,6 +2402,7 @@ class Serder:
         """ kind property getter"""
         return self._kind
 
+
     @kind.setter
     def kind(self, kind):
         """ kind property setter Assumes ._ked """
@@ -2410,15 +2414,18 @@ class Serder:
         self._size = size
         self._version = version
 
+
     @property
     def version(self):
         """ version property getter"""
         return self._version
 
+
     @property
     def size(self):
         """ size property getter"""
         return self._size
+
 
     @property
     def diger(self):
@@ -2428,6 +2435,7 @@ class Serder:
         """
         return self._diger
 
+
     @property
     def dig(self):
         """
@@ -2435,6 +2443,7 @@ class Serder:
         dig (digest) property getter
         """
         return self.diger.qb64
+
 
     @property
     def digb(self):

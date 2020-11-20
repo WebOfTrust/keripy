@@ -1284,14 +1284,14 @@ class Kevery:
         dgkey = dgKey(pre=pre, dig=dig)
         raw = self.baser.getEvt(key=dgkey)  # retrieve receipted event at dig
 
-        if ldig is not None:  #  verify digs match
+        if ldig is not None:  #  verify digs match last seen and receipt dig
             ldig = bytes(ldig).decode("utf-8")
             if ldig != dig:  # stale receipt at sn discard
                 raise ValidationError("Stale receipt at sn = {} for evt = {}."
                                       "".format(ked["sn"], ked))
 
-        else:  # verify that dig not for some other event
-            if raw is not None:  # bad receipt dig matches some other event
+        else:  # no last seen so verify that dig not for some other event
+            if raw is not None:  # stale receipt dig matches some other event not last seen
                 raise ValidationError("Bad receipt for sn = {} and dig = {} "
                                   " for evt = {}.".format(ked["sn"]), dig, ked)
 
@@ -1300,24 +1300,31 @@ class Kevery:
         # if ldig == dig then eraw must not be none
         if (ldig is not None and raw is not None and seal.pre in self.kevers):
             # both receipted event and receipter in database
-            rekever = self.kevers[seal.pre]
-            if rekever.lastEst.dig != seal.dig:  # receipt not from last est event
-                #  discard receipt from validator as stale
-                raise ValidationError("Stale receipt for pre = {} dig ={} from "
-                                      "validator = {} for evt = {}."
-                                      "".format(pre, dig, seal.pre, ked))
+            # retreive
+
+            sigraw = self.baser.getEvt(key=dgKey(pre=seal.pre, dig=seal.dig))
+            if sigraw is None:
+                raise ValidationError("Missing seal est. event dig = {} for "
+                                      "receipt from pre ={}."
+                                      "".format(seal.dig, seal.pre))
+            sigSerder = Serder(raw=bytes(sigraw))
+            verfers = sigSerder.verfers
+            if not verfers:
+                raise ValidationError("Invalid seal est. event dig = {} for "
+                                      "receipt from pre ={} no keys."
+                                      "".format(seal.dig, seal.pre))
 
             raw = bytes(raw)
             for siger in sigers:  # verify sigs
-                if siger.index >= len(rekever.verfers):
+                if siger.index >= len(verfers):
                     raise ValidationError("Index = {} to large for keys."
                                           "".format(siger.index))
 
-                siger.verfer = rekever.verfers[siger.index]  # assign verfer
+                siger.verfer = verfers[siger.index]  # assign verfer
                 if siger.verfer.verify(siger.raw, raw):  # verify sig
                     # good sig so write receipt truplet to database
                     triplet = sealet + siger.qb64b
-                    self.baser.addVrc(key=dgkey, val=triplet)
+                    self.baser.addVrc(key=dgkey, val=triplet)  # dups kept
 
         else:  # escrow  either receiptor or event not yet in database
             for siger in sigers:  # escrow triplets one for each sig
