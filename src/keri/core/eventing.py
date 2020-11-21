@@ -89,13 +89,13 @@ SealLocation = namedtuple("SealLocation", 'pre sn ilk dig')
 
 def incept(keys,
            code=None,
-           version=Version,
-           kind=Serials.json,
            sith=None,
            nxt="",
            toad=None,
            wits=None,
            cnfg=None,
+           version=Version,
+           kind=Serials.json,
           ):
 
     """
@@ -103,14 +103,15 @@ def incept(keys,
     Utility function to automate creation of inception events.
 
      Parameters:
-        keys,
-        version
-        kind
-        sith
-        nxt
-        toad
-        wits
-        cnfg
+        keys is list of qb64 signing keys
+        code is derivation code for prefix
+        sith is int  of signing threshold
+        nxt  is qb64 next digest xor
+        toad is int of witness threshold
+        wits is list of qb64 witness prefixes
+        cnfg is list of dicts of configuration traits
+        version is Version instance
+        kind is serialization kind
     """
     vs = Versify(version=version, kind=kind, size=0)
     sn = 0
@@ -169,9 +170,8 @@ def incept(keys,
 
 def rotate(pre,
            keys,
-           dig,sn=1,
-           version=Version,
-           kind=Serials.json,
+           dig,
+           sn=1,
            sith=None,
            nxt="",
            toad=None,
@@ -179,6 +179,8 @@ def rotate(pre,
            cuts=None,
            adds=None,
            data=None,
+           version=Version,
+           kind=Serials.json,
           ):
 
     """
@@ -186,18 +188,19 @@ def rotate(pre,
     Utility function to automate creation of rotation events.
 
      Parameters:
-        pre
-        keys
-        dig
-        version
-        kind
-        sn
-        sith
-        nxt
-        toad
-        cuts
-        adds
-        data
+        pre is identifier prefix qb64
+        keys is list of qb64 signing keys
+        dig is digest of previous event qb64
+        sn is int sequence number
+        sith is int signing threshold
+        nxt  is qb64 next digest xor
+        toad is int of witness threshold
+        wits is list of prior witness prefixes qb64
+        cuts is list of witness prefixes to cut qb64
+        adds is list of witness prefixes to add qb64
+        data is list of dicts of comitted data such as seals
+        version is Version instance
+        kind is serialization kind
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.rot
@@ -282,9 +285,9 @@ def rotate(pre,
 def interact(pre,
              dig,
              sn=1,
+             data=None,
              version=Version,
              kind=Serials.json,
-             data=None,
             ):
 
     """
@@ -292,12 +295,12 @@ def interact(pre,
     Utility function to automate creation of interaction events.
 
      Parameters:
-        pre
-        dig
-        sn
-        version
-        kind
-        data
+        pre is identifier prefix qb64
+        dig is digest of previous event qb64
+        sn is int sequence number
+        data is list of dicts of comitted data such as seals
+        version is Version instance
+        kind is serialization kind
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.ixn
@@ -388,6 +391,221 @@ def chit(pre,
                )
 
     return Serder(ked=ked)  # return serialized ked
+
+
+def delcept(keys,
+           code=None,
+           sith=None,
+           nxt="",
+           toad=None,
+           wits=None,
+           perm=None,
+           seal=None,
+           version=Version,
+           kind=Serials.json,
+          ):
+
+    """
+    Returns serder of delegated inception event message.
+    Utility function to automate creation of delegated inception events.
+
+     Parameters:
+        keys is list of qb64 keys
+        code is derivation code for prefix
+        sith is int  of signing threshold
+        nxt  is qb64 next digest xor
+        toad is int  of witness threshold
+        wits is list of qb64 witness prefixes
+        perm is list of permissions dicts and/or configuration traits
+        seal is namedTuple of type SealLocation of delegating event
+            pre is qb64 of receipter's prefix
+            sn is sequence number of delegating event
+            ilk is ilk of delegating event
+            dig is qb64 digest of prior event to delegating event
+        version is Version instance
+        kind is serialization kind
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    sn = 0
+    ilk = Ilks.dip
+
+    if sith is None:
+        sith = max(1, ceil(len(keys) / 2))
+
+    if isinstance(sith, int):
+        if sith < 1 or sith > len(keys):  # out of bounds sith
+            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+    else:  # list sith not yet supported
+        raise ValueError("invalid sith = {}.".format(sith))
+
+    wits = wits if wits is not None else []
+    if len(oset(wits)) != len(wits):
+        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+
+    if toad is None:
+        if not wits:
+            toad = 0
+        else:
+            toad = max(1, ceil(len(wits) / 2))
+
+    if wits:
+        if toad < 1 or toad > len(wits):  # out of bounds toad
+            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+    else:
+        if toad != 0:  # invalid toad
+            raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
+
+    perm = perm if perm is not None else []
+
+    ked = dict(vs=vs,  # version string
+               pre="",  # qb64 prefix
+               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,
+               sith="{:x}".format(sith), # hex string no leading zeros lowercase
+               keys=keys,  # list of qb64
+               nxt=nxt,  # hash qual Base64
+               toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+               wits=wits,  # list of qb64 may be empty
+               perm=perm,  # list of perm config ordered mappings may be empty
+               seal=seal._asdict()  # event seal: pre, dig
+               )
+
+    if code is None and len(keys) == 1:
+        prefixer = Prefixer(qb64=keys[0])  # default code from only key
+    else:
+        # raises derivation error if non-empty nxt but ephemeral code
+        prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
+
+    if not prefixer.digestive:
+        raise ValueError("Invalid derivation code ={} for delegation. Must be"
+                         " digestive".formate(prefixer.code))
+
+    ked["pre"] = prefixer.qb64  # update pre element in ked with pre qb64
+
+    return Serder(ked=ked)  # return serialized ked
+
+
+
+def deltate(pre,
+           keys,
+           dig,
+           sn=1,
+           sith=None,
+           nxt="",
+           toad=None,
+           wits=None, # prior existing wits
+           cuts=None,
+           adds=None,
+           perm=None,
+           seal=None,
+           version=Version,
+           kind=Serials.json,
+          ):
+
+    """
+    Returns serder of delegated rotation event message.
+    Utility function to automate creation of delegated rotation events.
+
+     Parameters:
+        pre is identifier prefix qb64
+        keys is list of qb64 signing keys
+        dig is digest of previous event qb64
+        sn is int sequence number
+        sith is int signing threshold
+        nxt  is qb64 next digest xor
+        toad is int of witness threshold
+        wits is list of prior witness prefixes qb64
+        cuts is list of witness prefixes to cut qb64
+        adds is list of witness prefixes to add qb64
+        perm is list of dicts of committed permissions
+        seal is namedTuple of type SealLocation of delegating event
+            pre is qb64 of receipter's prefix
+            sn is sequence number of delegating event
+            ilk is ilk of delegating event
+            dig is qb64 digest of prior event to delegating event
+        version is Version instance
+        kind is serialization kind
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.drt
+
+    if sn < 1:
+        raise ValueError("Invalid sn = {} for rot.".format(sn))
+
+    if sith is None:
+        sith = max(1, ceil(len(keys) / 2))
+
+    if isinstance(sith, int):
+        if sith < 1 or sith > len(keys):  # out of bounds sith
+            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+    else:  # list sith not yet supported
+        raise ValueError("invalid sith = {}.".format(sith))
+
+    wits = wits if wits is not None else []
+    witset = oset(wits)
+    if len(witset) != len(wits):
+        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+
+    cuts = cuts if cuts is not None else []
+    cutset = oset(cuts)
+    if len(cutset) != len(cuts):
+        raise ValueError("Invalid cuts = {}, has duplicates.".format(cuts))
+
+    if (witset & cutset) != cutset:  #  some cuts not in wits
+        raise ValueError("Invalid cuts = {}, not all members in wits.".format(cuts))
+
+    adds = adds if adds is not None else []
+    addset = oset(adds)
+    if len(addset) != len(adds):
+        raise ValueError("Invalid adds = {}, has duplicates.".format(adds))
+
+    if cutset & addset:  # non empty intersection
+        raise ValueError("Intersecting cuts = {} and  adds = {}.".format(cuts, adds))
+
+    if witset & addset:  # non empty intersection
+        raise ValueError("Intersecting wits = {} and  adds = {}.".format(wits, adds))
+
+    newitset = (witset - cutset) | addset
+
+    if len(newitset) != (len(wits) - len(cuts) + len(adds)):  # redundant?
+        raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
+                         "and adds = {}.".format(wits, cuts, adds))
+
+    if toad is None:
+        if not newitset:
+            toad = 0
+        else:
+            toad = max(1, ceil(len(newitset) / 2))
+
+    if newitset:
+        if toad < 1 or toad > len(newitset):  # out of bounds toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(newitset)))
+    else:
+        if toad != 0:  # invalid toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(newitset)))
+
+
+    perm = perm if perm is not None else []
+
+    ked = dict(vs=vs,  # version string
+               pre=pre,  # qb64 prefix
+               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
+               ilk=ilk,
+               dig=dig,  #  qb64 digest of prior event
+               sith="{:x}".format(sith), # hex string no leading zeros lowercase
+               keys=keys,  # list of qb64
+               nxt=nxt,  # hash qual Base64
+               toad="{:x}".format(toad),  # hex string no leading zeros lowercase
+               cuts=cuts,  # list of qb64 may be empty
+               adds=adds,  # list of qb64 may be empty
+               perm=perm,  # list of perm config ordered mappings may be empty
+               seal=seal._asdict()  # event seal: pre, dig
+               )
+
+    return Serder(ked=ked)  # return serialized ked
+
 
 class Kever:
     """
@@ -497,7 +715,7 @@ class Kever:
         self.diger = serder.diger
 
         nxt = ked["nxt"]
-        if self.prefixer.nontrans and nxt:  # nxt must be empty for nontrans prefix
+        if not self.prefixer.transferable and nxt:  # nxt must be empty for nontrans prefix
             raise ValidationError("Invalid inception nxt not empty for "
                                   "non-transferable prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
@@ -1228,7 +1446,7 @@ class Kevery:
             eserder = Serder(raw=bytes(raw))  # deserialize event raw
             # process each couplet verify sig and write to db
             for cigar in cigars:
-                if not cigar.verfer.nontrans:# check that verfer is non-transferable
+                if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
                 if cigar.verfer.verify(cigar.raw, eserder.raw):
                     # write receipt couplet to database
@@ -1241,7 +1459,7 @@ class Kevery:
                                   "for evt = {}.".format(ked["sn"]), dig, ked)
 
             for cigar in cigars:  # escrow each couplet
-                if not cigar.verfer.nontrans:# check that verfer is non-transferable
+                if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
                 couplet = cigar.verfer.qb64b + cigar.qb64b
                 self.baser.addUre(key=dgkey, val=couplet)

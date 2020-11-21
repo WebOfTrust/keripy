@@ -1095,7 +1095,7 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             pri = bytes(raw)
             signer = coring.Signer(qb64b=pri,
-                                   transferable = not verfer.nontrans)
+                                   transferable = verfer.transferable)
             verfers.append(signer.verfer)
 
         creator = Creatory(algo=pp.algo).make(salt=pp.salt, stem=pp.stem, tier=pp.tier)
@@ -1158,7 +1158,7 @@ class Manager:
                 if raw is None:
                     raise ValueError("Missing prikey in db for pubkey={}".format(pub))
                 signer = coring.Signer(qb64b=bytes(raw),
-                                       transferable= not verfer.nontrans)
+                                       transferable= verfer.transferable)
                 signers.append(signer)
 
         else:
@@ -1168,7 +1168,7 @@ class Manager:
                 if raw is None:
                     raise ValueError("Missing prikey in db for pubkey={}".format(pub))
                 signer = coring.Signer(qb64b=bytes(raw),
-                                       transferable= not verfer.nontrans)
+                                       transferable= verfer.transferable)
                 signers.append(signer)
 
         if indexed:
