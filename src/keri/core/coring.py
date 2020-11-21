@@ -587,7 +587,7 @@ class CryMat:
 
 
     @property
-    def digestable(self):
+    def digestive(self):
         """
         Property digestable:
         Returns True if identifier has digest derivation code,
