@@ -394,13 +394,13 @@ def chit(pre,
 
 
 def delcept(keys,
+            seal,
            code=None,
            sith=None,
            nxt="",
            toad=None,
            wits=None,
            perm=None,
-           seal=None,
            version=Version,
            kind=Serials.json,
           ):
@@ -411,17 +411,17 @@ def delcept(keys,
 
      Parameters:
         keys is list of qb64 keys
+        seal is namedTuple of type SealLocation of delegating event
+            pre is qb64 of receipter's prefix
+            sn is sequence number of delegating event
+            ilk is ilk of delegating event
+            dig is qb64 digest of prior event to delegating event
         code is derivation code for prefix
         sith is int  of signing threshold
         nxt  is qb64 next digest xor
         toad is int  of witness threshold
         wits is list of qb64 witness prefixes
         perm is list of permissions dicts and/or configuration traits
-        seal is namedTuple of type SealLocation of delegating event
-            pre is qb64 of receipter's prefix
-            sn is sequence number of delegating event
-            ilk is ilk of delegating event
-            dig is qb64 digest of prior event to delegating event
         version is Version instance
         kind is serialization kind
     """
@@ -470,11 +470,11 @@ def delcept(keys,
                seal=seal._asdict()  # event seal: pre, dig
                )
 
-    if code is None and len(keys) == 1:
-        prefixer = Prefixer(qb64=keys[0])  # default code from only key
-    else:
-        # raises derivation error if non-empty nxt but ephemeral code
-        prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
+    if code is None:
+        code = CryOneDex.Blake3_256  # Default digest
+
+    # raises derivation error if non-empty nxt but ephemeral code
+    prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
 
     if not prefixer.digestive:
         raise ValueError("Invalid derivation code ={} for delegation. Must be"
@@ -489,6 +489,7 @@ def delcept(keys,
 def deltate(pre,
            keys,
            dig,
+           seal,
            sn=1,
            sith=None,
            nxt="",
@@ -497,7 +498,6 @@ def deltate(pre,
            cuts=None,
            adds=None,
            perm=None,
-           seal=None,
            version=Version,
            kind=Serials.json,
           ):
@@ -510,6 +510,11 @@ def deltate(pre,
         pre is identifier prefix qb64
         keys is list of qb64 signing keys
         dig is digest of previous event qb64
+        seal is namedTuple of type SealLocation of delegating event
+            pre is qb64 of receipter's prefix
+            sn is sequence number of delegating event
+            ilk is ilk of delegating event
+            dig is qb64 digest of prior event to delegating event
         sn is int sequence number
         sith is int signing threshold
         nxt  is qb64 next digest xor
@@ -518,11 +523,7 @@ def deltate(pre,
         cuts is list of witness prefixes to cut qb64
         adds is list of witness prefixes to add qb64
         perm is list of dicts of committed permissions
-        seal is namedTuple of type SealLocation of delegating event
-            pre is qb64 of receipter's prefix
-            sn is sequence number of delegating event
-            ilk is ilk of delegating event
-            dig is qb64 digest of prior event to delegating event
+
         version is Version instance
         kind is serialization kind
     """
