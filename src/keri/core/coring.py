@@ -295,6 +295,27 @@ class CryNonTransCodex:
 
 CryNonTransDex = CryNonTransCodex()  #  Make instance
 
+
+@dataclass(frozen=True)
+class CryDigCodex:
+    """
+    CryDigCodex is codex all digest derivation codes. This is needed to ensure
+    delegated inception using a self-addressing derivation i.e. digest derivation
+    code.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Blake3_256:           str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:          str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:          str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:             str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:             str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+CryDigDex = CryDigCodex()  #  Make instance
+
 # secret derivation security tier
 Tierage = namedtuple("Tierage", 'low med high')
 
@@ -556,13 +577,23 @@ class CryMat:
 
 
     @property
-    def nontrans(self):
+    def transferable(self):
         """
-        Property nontrans:
-        Returns True if identifier has non-transferable derivation code,
+        Property transferable:
+        Returns True if identifier does not have non-transferable derivation code,
                 False otherwise
         """
-        return(self.code in CryNonTransDex)
+        return(self.code not in CryNonTransDex)
+
+
+    @property
+    def digestive(self):
+        """
+        Property digestable:
+        Returns True if identifier has digest derivation code,
+                False otherwise
+        """
+        return(self.code in CryDigDex)
 
 
 

@@ -34,7 +34,8 @@ from keri.core.coring import Ilkage, Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
-from keri.core.eventing import incept, rotate, interact, receipt, chit
+from keri.core.eventing import (incept, rotate, interact, receipt, chit,
+                                delcept, deltate)
 from keri.core.eventing import Kever, Kevery
 
 from keri.db.dbing import dgKey, snKey, openDB, Baser
@@ -191,7 +192,6 @@ def test_keyeventfuncs():
                            b'AXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U","toad":"0","cuts":[],"adds":[],'
                            b'"data":[]}')
 
-
     # Interaction:
     serder2 = interact(pre=pre, dig=serder1.dig, sn=2)
     assert serder2.ked["pre"] == pre
@@ -202,8 +202,6 @@ def test_keyeventfuncs():
                            b'c","sn":"2","ilk":"ixn","dig":"Ehl5-_BQFcAKqweFqEpqR6ClTAaJh3vrbHJPfOpISOOQ"'
                            b',"data":[]}')
 
-
-
     # Receipt
     serder3 = receipt(pre=pre, sn=0, dig=serder2.dig)
     assert serder3.ked["pre"] == pre
@@ -213,8 +211,6 @@ def test_keyeventfuncs():
     assert serder3.raw == (b'{"vs":"KERI10JSON000099_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
                            b'c","sn":"0","ilk":"rct","dig":"EgWxcdJkGUDh08x02ZW9pc-7XhrLe-zXJp3Vv5M35tTQ"'
                            b'}')
-
-
 
     # ValReceipt  chit
     serderA = incept(keys=keys0, nxt=nxt1, code=CryOneDex.Blake3_256)
@@ -232,6 +228,82 @@ def test_keyeventfuncs():
                            b'c","sn":"2","ilk":"vrc","dig":"EgWxcdJkGUDh08x02ZW9pc-7XhrLe-zXJp3Vv5M35tTQ"'
                            b',"seal":{"pre":"EykXsFe4u9epTUQFCL7YdNdHxtdjCQUM-TVO8CgJAKb8","dig":"EaqN7zh'
                            b'qTEhkeDZ2zMuNWHss_H_kH4cG7Li1jn2DXfrE"}}')
+
+
+    # Delegated Inception:
+    # Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seedD = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+            b'\x98Y\xdd\xe8')
+    signerD = Signer(raw=seedD)  #  next signing keypair transferable is default
+    assert signerD.code == CryOneDex.Ed25519_Seed
+    assert signerD.verfer.code == CryOneDex.Ed25519
+    keysD = [signerD.verfer.qb64]
+    # compute nxt digest
+    nexterD = Nexter(keys=keysD)  # default sith is 1
+    assert nexterD.sith == '1'  # default from keys
+    nxtD = nexterD.qb64  # transferable so nxt is not empty
+    assert nxtD == 'EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4'
+
+    seal = SealLocation(pre='ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd',
+                        sn="{:x}".format(3),
+                        ilk=Ilks.ixn,
+                        dig='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+
+    serderD = delcept(keys=keysD, seal=seal, nxt=nxtD)
+    pre = serderD.ked["pre"]
+    assert serderD.ked["pre"] == 'E69svP3NQcz6GxN3BlSH6c5bVzP5aXV1VAeXN3xjzfHg'
+    assert serderD.ked["sn"] == '0'
+    assert serderD.ked["ilk"] == Ilks.dip
+    assert serderD.ked["nxt"] == nxtD
+    assert serderD.raw == (b'{"vs":"KERI10JSON000183_","pre":"E69svP3NQcz6GxN3BlSH6c5bVzP5aXV1VAeXN3xjzfH'
+                           b'g","sn":"0","ilk":"dip","sith":"1","keys":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRi'
+                           b'af9FdA_-_49A"],"nxt":"EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4","toad":"'
+                           b'0","wits":[],"perm":[],"seal":{"pre":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQ'
+                           b'FCL7Yd","sn":"3","ilk":"ixn","dig":"EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhke'
+                           b'DZ2z"}}')
+    assert serderD.dig == 'Es7KWhMdTfaSSE3gx-o5dwzRvlChheBGV3yZ2AkGL6Lo'
+
+
+    # Delegated Rotation:
+    # Transferable not abandoned i.e. next not empty
+    seedR = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+            b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signerR = Signer(raw=seedR)  #  next signing keypair transferable is default
+    assert signerR.code == CryOneDex.Ed25519_Seed
+    assert signerR.verfer.code == CryOneDex.Ed25519
+    keysR = [signerR.verfer.qb64]
+    # compute nxt digest
+    nexterR = Nexter(keys=keysR)  # default sith is 1
+    assert nexterR.sith == '1'  # default from keys
+    nxtR = nexterR.qb64  # transferable so nxt is not empty
+    assert nxtR == 'EAXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U'
+
+    seal = SealLocation(pre='ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd',
+                        sn="{:x}".format(4),
+                        ilk=Ilks.ixn,
+                        dig='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+
+    serderR = deltate(pre=pre,
+                      keys=keysR,
+                      dig='EIIUSTX04qnUbyuJiJc-udBgaKKoqK-XNUmA6eG7JKUA',
+                      seal=seal,
+                      sn=4,
+                      nxt=nxtR)
+
+    assert serderR.ked["pre"] == pre
+    assert serderR.ked["sn"] == '4'
+    assert serderR.ked["ilk"] == Ilks.drt
+    assert serderR.ked["nxt"] == nxtR
+    assert serderR.raw == (b'{"vs":"KERI10JSON0001c2_","pre":"E69svP3NQcz6GxN3BlSH6c5bVzP5aXV1VAeXN3xjzfH'
+                           b'g","sn":"4","ilk":"drt","dig":"EIIUSTX04qnUbyuJiJc-udBgaKKoqK-XNUmA6eG7JKUA"'
+                           b',"sith":"1","keys":["D8u3hipCxZnkM_O0jfaZLJMk9ERI428T0psRO0JVgh4c"],"nxt":"E'
+                           b'AXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U","toad":"0","cuts":[],"adds":[],'
+                           b'"perm":[],"seal":{"pre":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd","sn":'
+                           b'"4","ilk":"ixn","dig":"EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z"}}')
+    assert serderR.dig == 'EY0mEaoLO4SaaW7Z5LJK_CIge9PJAdeP5gRoHtHKGgUs'
+
+
     """ Done Test """
 
 
@@ -3001,4 +3073,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_receipt()
+    test_keyeventfuncs()
