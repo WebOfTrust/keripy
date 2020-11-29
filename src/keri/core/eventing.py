@@ -653,16 +653,9 @@ class Kever:
             establishOnly is boolean trait to indicate establish only event
 
         """
-        self.incept(serder=serder, estOnly=estOnly, baser=baser)
+        self.incept(serder=serder, baser=baser)
 
-        # assign traits
-        self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
-                             else False)  # ensure default estOnly is boolean
-
-        cnfg = serder.ked["cnfg"]  # process cnfg for traits
-        for d in cnfg:
-            if "trait" in d and d["trait"] == TraitDex.EstOnly:
-                self.estOnly = True
+        self.config(serder=serder, estOnly=estOnly)
 
         # verify indexes of attached signatures against verifiers
         for siger in sigers:
@@ -697,7 +690,7 @@ class Kever:
         return(self.nexter is not None and self.prefixer.transferable)
 
 
-    def incept(self, serder, estOnly=None, baser=None):
+    def incept(self, serder, baser=None, estOnly=None):
         """
         Verify incept key event message from serder
 
@@ -787,6 +780,20 @@ class Kever:
 
         # need this to recognize recovery events and transferable receipts
         self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)  # last establishment event location
+
+
+    def config(self, serder, estOnly=None):
+        """
+        Process cnfg field for configuration traits
+        """
+        # assign traits
+        self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
+                            else False)  # ensure default estOnly is boolean
+
+        cnfg = serder.ked["cnfg"]  # process cnfg for traits
+        for d in cnfg:
+            if "trait" in d and d["trait"] == TraitDex.EstOnly:
+                self.estOnly = True
 
 
     def update(self, serder,  sigers):
@@ -1145,7 +1152,7 @@ class DelKever(Kever):
     """
     EstOnly = False
 
-    def __init__(self, serder, sigers, baser=None, **kwa):
+    def __init__(self, serder, sigers, baser=None, estOnly=None):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -1156,7 +1163,9 @@ class DelKever(Kever):
             establishOnly is boolean trait to indicate establish only event
 
         """
-        self.incept(serder=serder, baser=baser, **kwa)
+        self.incept(serder=serder, baser=baser)
+
+        self.config(serder=serder, estOnly=estOnly)
 
         # verify indexes of attached signatures against verifiers
         for siger in sigers:
@@ -1190,11 +1199,8 @@ class DelKever(Kever):
             baser is LMDB Baser instance
 
         """
-        super(DelKever, self).incept(serder=serder, estOnly=estOnly, baser=baser)
+        super(DelKever, self).incept(serder=serder, baser=baser, **kwa)
 
-        # assign traits  no
-        self.estOnly = False  # not allowed trait of delegated events
-        # cnfg = serder.ked["cnfg"]  #process cnfg for traits
 
         #process perm for permissions
         perm = serder.ked["perm"]
