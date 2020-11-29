@@ -675,24 +675,7 @@ class Kever:
 
         self.config(serder=serder, estOnly=estOnly)
 
-        # verify indexes of attached signatures against verifiers
-        for siger in sigers:
-            if siger.index >= len(self.verfers):
-                raise ValidationError("Index = {} to large for keys for evt = "
-                                      "{}.".format(siger.index, serder.ked))
-            siger.verfer = self.verfers[siger.index]  # assign verfer
-
-        # verify signatures
-        if not self.verifySigs(sigers=sigers, serder=serder):
-            raise ValidationError("Failure verifying signatures = {} for {} for"
-                                  " evt = {}.".format(sigers, serder, ked))
-
-        # verify sith given signatures verify
-        if not self.verifySith(sigers=sigers):  # uses self.sith
-            self.escrowEvent(self, serder, sigers, self.prefixer.qb64b, self.sn)
-
-            raise ValidationError("Failure verifying sith = {} on sigs for {}"
-                                  " for evt = {}.".format(self.sith, sigers, ked))
+        self.validateSigs(serder=serder, sigers=sigers, sith=self.sith, sn=self.sn)
 
         self.logEvent(serder, sigers)  # update logs
 
@@ -807,7 +790,7 @@ class Kever:
                                   " state.".format(serder.ked))
 
         ked = serder.ked
-        pre = ked["pre"]
+        # pre = ked["pre"]
         sn = ked["sn"]
         if len(sn) > 32:
             raise ValidationError("Invalid sn = {} too large.".format(sn))
@@ -818,12 +801,12 @@ class Kever:
         if sn == 0:
             raise ValidationError("Zero sn = {} for non=inception evt = {}."
                                               "".format(sn, ked))
-        dig = ked["dig"]  # dig of prior event to this update event
+        # dig = ked["dig"]  # dig of prior event to this update event
         ilk = ked["ilk"]
 
-        if pre != self.prefixer.qb64:
+        if ked["pre"] != self.prefixer.qb64:
             raise ValidationError("Mismatch event aid prefix = {} expecting"
-                                  " = {} for evt = {}.".format(pre,
+                                  " = {} for evt = {}.".format(ked["pre"],
                                                                self.prefixer.qb64,
                                                                ked))
 
@@ -833,160 +816,37 @@ class Kever:
                     raise ValidationError("Missing element = {} from {} event "
                                           "evt = {}.".format(k, Ilks.rot, ked))
 
-
-            if sn > self.sn + 1:  #  out of order event
-                raise ValidationError("Out of order event sn = {} expecting"
-                                      " = {} for evt = {}.".format(sn,
-                                                                   self.sn+1,
-                                                                   ked))
-
-            elif sn <= self.sn:  #  stale or recovery
-                #  stale events could be duplicitous
-                #  duplicity detection should have happend before .update called
-                #  so raise exception if stale
-                if sn <= self.lastEst.sn :  # stale  event
-                    raise ValidationError("Stale event sn = {} expecting"
-                                          " = {} for evt = {}.".format(sn,
-                                                                       self.sn+1,
-                                                                       ked))
-
-                else:  # sn > self.lastEst.sn  #  recovery event
-                    if self.ilk != Ilks.ixn:  #  recovery only override ixn event
-                        raise ValidationError("Invalid recovery attempt: Recovery"
-                                              "at ilk = {} not ilk = {} for evt"
-                                              " = {}.".format(self.ilk,
-                                                              Ilks.ixn,
-                                                              ked))
-
-                    psn = sn - 1 # sn of prior event
-                    # fetch raw serialization of last inserted  event at psn
-                    pdig = self.baser.getKeLast(key=snKey(pre=pre, sn=psn))
-                    if pdig is None:
-                        raise ValidationError("Invalid recovery attempt: "
-                                              "Bad sn = {} for event = {}."
-                                              "".format(psn, ked))
-                    praw = self.baser.getEvt(key=dgKey(pre=pre, dig=pdig))
-                    if praw is None:
-                        raise ValidationError("Invalid recovery attempt: "
-                                              " Bad dig = {}.".format(pdig))
-                    pserder = Serder(raw=bytes(praw))  # deserialize prior event raw
-                    if dig != pserder.dig:  # bad recovery event
-                        raise ValidationError("Invalid recovery attempt:"
-                                              "Mismatch recovery event prior dig"
-                                              "= {} with dig = {} of event sn = {}"
-                                              " evt = {}.".format(dig,
-                                                                  pserder.dig,
-                                                                  psn,
-                                                                  ked))
-
-            else:  # sn == self.sn + 1   new non-recovery event
-                if dig != self.diger.qb64:  # prior event dig not match
-                    raise ValidationError("Mismatch event dig = {} with"
-                                          " state dig = {} for evt = {}."
-                                          "".format(dig, self.dig.qb64, ked))
-
-            # verify nxt from prior
-            # also check derivation code of pre for non-transferable
-            if self.nexter is None:   # empty so rotations not allowed
-                raise ValidationError("Attempted rotation for nontransferable"
-                                      " prefix = {} for evt = {}."
-                                      "".format(self.prefixer.qb64, ked))
-
-            verfers = serder.verfers  # only for establishment events
-
-            sith = ked["sith"]
-            if isinstance(sith, str):
-                sith = int(sith, 16)
-                if sith < 1 or sith > len(self.verfers):  # out of bounds sith
-                    raise ValueError("Invalid sith = {} for keys = {} for evt "
-                                     "= {}.".format(sith,
-                                          [verfer.qb64 for verfer in verfers],
-                                          ked))
-            else:
-                # fix this to support list sith
-                raise ValueError("Unsupported type for sith = {} for evt = {}."
-                                 "".format(sith, ked))
-
-            keys = ked["keys"]
-            if not self.nexter.verify(sith=sith, keys=keys):
-                raise ValidationError("Mismatch nxt digest = {} with rotation"
-                                      " sith = {}, keys = {} for evt = {}."
-                                      "".format(nexter.qb64, sith, keys, ked))
-
-            # compute wits from cuts and adds use set
-            # verify set math
-            witset = oset(self.wits)
-            cuts = ked["cuts"]
-            cutset = oset(cuts)
-            if len(cutset) != len(cuts):
-                raise ValueError("Invalid cuts = {}, has duplicates for evt = "
-                                 "{}.".format(cuts, ked))
-
-            if (witset & cutset) != cutset:  #  some cuts not in wits
-                raise ValueError("Invalid cuts = {}, not all members in wits"
-                                 " for evt = {}.".format(cuts, ked))
-
-
-            adds = ked["adds"]
-            addset = oset(adds)
-            if len(addset) != len(adds):
-                raise ValueError("Invalid adds = {}, has duplicates for evt = "
-                                 "{}.".format(adds, ked))
-
-            if cutset & addset:  # non empty intersection
-                raise ValueError("Intersecting cuts = {} and  adds = {} for "
-                                 "evt = {}.".format(cuts, adds, ked))
-
-            if witset & addset:  # non empty intersection
-                raise ValueError("Intersecting wits = {} and  adds = {} for "
-                                 "evt = {}.".format(self.wits, adds, ked))
-
-            wits = list((witset - cutset) | addset)
-
-            if len(wits) != (len(self.wits) - len(cuts) + len(adds)):  # redundant?
-                raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
-                                 "and adds = {} for evt = {}.".format(self.wits,
-                                                                      cuts,
-                                                                      adds,
-                                                                      ked))
-
-            toad = int(ked["toad"], 16)
-            if wits:
-                if toad < 1 or toad > len(wits):  # out of bounds toad
-                    raise ValueError("Invalid toad = {} for wits = {} for evt "
-                                     "= {}.".format(toad, wits, ked))
-            else:
-                if toad != 0:  # invalid toad
-                    raise ValueError("Invalid toad = {} for wits = {} for evt "
-                                     "= {}.".format(toad, wits, ked))
+            sith, toad, wits = self.rotate(serder, sn)
 
             # prior nxt valid so verify sigers using new verifier keys from event
             # rotation event use keys from event
 
-            # verify indexes of attached signatures against verifiers
-            for siger in sigers:
-                if siger.index >= len(verfers):
-                    raise ValidationError("Index = {} to large for keys for "
-                                          "evt = {}.".format(siger.index, ked))
-                siger.verfer = verfers[siger.index]  # assign verfer
+            self.validateSigs(serder=serder, sigers=sigers, sith=sith, sn=sn)
 
-            # verify signatures
-            if not self.verifySigs(sigers=sigers, serder=serder):
-                raise ValidationError("Failure verifying signatures = {} for "
-                                      "{} for evt = {}.".format(sigers, serder, ked))
+            ## verify indexes of attached signatures against verifiers
+            #for siger in sigers:
+                #if siger.index >= len(serder.verfers):
+                    #raise ValidationError("Index = {} to large for keys for "
+                                          #"evt = {}.".format(siger.index, ked))
+                #siger.verfer = serder.verfers[siger.index]  # assign verfer
 
-            # verify sith given signatures verify
-            if not self.verifySith(sigers=sigers, sith=sith):  # uses new sith
-                self.escrowEvent(self, serder, sigers, self.prefixer.qb64b, sn)
-                raise ValidationError("Failure verifying sith = {} on sigs for {}"
-                                      " for evt = {}.".format(self.sith, sigers, ked))
+            ## verify signatures
+            #if not self.verifySigs(sigers=sigers, serder=serder):
+                #raise ValidationError("Failure verifying signatures = {} for "
+                                      #"{} for evt = {}.".format(sigers, serder, ked))
+
+            ## verify sith given signatures verify
+            #if not self.verifySith(sigers=sigers, sith=sith):  # uses new sith
+                #self.escrowEvent(self, serder, sigers, self.prefixer.qb64b, sn)
+                #raise ValidationError("Failure verifying sith = {} on sigs for {}"
+                                      #" for evt = {}.".format(sith, sigers, ked))
 
             # nxt and signatures verify so update state
             self.sn = sn
             self.diger = serder.diger
             self.ilk = ilk
             self.sith = sith
-            self.verfers = verfers
+            self.verfers = serder.verfers
             # update .nexter
             nxt = ked["nxt"]
             self.nexter = Nexter(qb64=nxt) if nxt else None  # check for empty
@@ -1014,9 +874,9 @@ class Kever:
                 raise ValidationError("Invalid sn = {} expecting = {} for evt "
                                       "= {}.".format(sn, self.sn+1, ked))
 
-            if dig != self.diger.qb64:  # prior event dig not match
+            if ked["dig"] != self.diger.qb64:  # prior event dig not match
                 raise ValidationError("Mismatch event dig = {} with state dig"
-                                      " = {} for evt = {}.".format(dig,
+                                      " = {} for evt = {}.".format(ked["dig"],
                                                                    self.dig.qb64,
                                                                    ked))
 
@@ -1050,11 +910,172 @@ class Kever:
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
 
-    def rotate(self, serder,  sigers):
+
+    def rotate(self, serder, sn):
         """
-        Rotation Event Processing
+        Generic Rotate Operation Processing
+        Same logic for both rot and drt (plain and delegated rotation)
+
+        Parameters:
+            serder is event Serder instance
+            sn is int sequence number
 
         """
+        ked = serder.ked
+        pre = ked["pre"]
+        dig = ked["dig"]
+
+        if sn > self.sn + 1:  #  out of order event
+            raise ValidationError("Out of order event sn = {} expecting"
+                                  " = {} for evt = {}.".format(sn,
+                                                               self.sn+1,
+                                                               ked))
+
+        elif sn <= self.sn:  #  stale or recovery
+            #  stale events could be duplicitous
+            #  duplicity detection should have happend before .update called
+            #  so raise exception if stale
+            if sn <= self.lastEst.sn :  # stale  event
+                raise ValidationError("Stale event sn = {} expecting"
+                                      " = {} for evt = {}.".format(sn,
+                                                                   self.sn+1,
+                                                                   ked))
+
+            else:  # sn > self.lastEst.sn  #  recovery event
+                if self.ilk != Ilks.ixn:  #  recovery only override ixn event
+                    raise ValidationError("Invalid recovery attempt: Recovery"
+                                          "at ilk = {} not ilk = {} for evt"
+                                          " = {}.".format(self.ilk,
+                                                          Ilks.ixn,
+                                                          ked))
+
+                psn = sn - 1 # sn of prior event
+                # fetch raw serialization of last inserted  event at psn
+                pdig = self.baser.getKeLast(key=snKey(pre=pre, sn=psn))
+                if pdig is None:
+                    raise ValidationError("Invalid recovery attempt: "
+                                          "Bad sn = {} for event = {}."
+                                          "".format(psn, ked))
+                praw = self.baser.getEvt(key=dgKey(pre=pre, dig=pdig))
+                if praw is None:
+                    raise ValidationError("Invalid recovery attempt: "
+                                          " Bad dig = {}.".format(pdig))
+                pserder = Serder(raw=bytes(praw))  # deserialize prior event raw
+                if dig != pserder.dig:  # bad recovery event
+                    raise ValidationError("Invalid recovery attempt:"
+                                          "Mismatch recovery event prior dig"
+                                          "= {} with dig = {} of event sn = {}"
+                                          " evt = {}.".format(dig,
+                                                              pserder.dig,
+                                                              psn,
+                                                              ked))
+
+        else:  # sn == self.sn + 1   new non-recovery event
+            if dig != self.diger.qb64:  # prior event dig not match
+                raise ValidationError("Mismatch event dig = {} with"
+                                      " state dig = {} for evt = {}."
+                                      "".format(dig, self.dig.qb64, ked))
+
+
+        # also check derivation code of pre for non-transferable
+        if self.nexter is None:   # empty so rotations not allowed
+            raise ValidationError("Attempted rotation for nontransferable"
+                                  " prefix = {} for evt = {}."
+                                  "".format(self.prefixer.qb64, ked))
+
+
+        sith = ked["sith"]
+        if isinstance(sith, str):
+            sith = int(sith, 16)
+            if sith < 1 or sith > len(serder.verfers):  # out of bounds sith
+                raise ValueError("Invalid sith = {} for keys = {} for evt "
+                                 "= {}.".format(sith,
+                                      [verfer.qb64 for verfer in serder.verfers],
+                                      ked))
+        else:
+            # fix this to support list sith
+            raise ValueError("Unsupported type for sith = {} for evt = {}."
+                             "".format(sith, ked))
+
+        # verify nxt from prior
+        keys = ked["keys"]
+        if not self.nexter.verify(sith=sith, keys=keys):
+            raise ValidationError("Mismatch nxt digest = {} with rotation"
+                                  " sith = {}, keys = {} for evt = {}."
+                                  "".format(self.nexter.qb64, sith, keys, ked))
+
+        # compute wits from cuts and adds use set
+        # verify set math
+        witset = oset(self.wits)
+        cuts = ked["cuts"]
+        cutset = oset(cuts)
+        if len(cutset) != len(cuts):
+            raise ValueError("Invalid cuts = {}, has duplicates for evt = "
+                             "{}.".format(cuts, ked))
+
+        if (witset & cutset) != cutset:  #  some cuts not in wits
+            raise ValueError("Invalid cuts = {}, not all members in wits"
+                             " for evt = {}.".format(cuts, ked))
+
+
+        adds = ked["adds"]
+        addset = oset(adds)
+        if len(addset) != len(adds):
+            raise ValueError("Invalid adds = {}, has duplicates for evt = "
+                             "{}.".format(adds, ked))
+
+        if cutset & addset:  # non empty intersection
+            raise ValueError("Intersecting cuts = {} and  adds = {} for "
+                             "evt = {}.".format(cuts, adds, ked))
+
+        if witset & addset:  # non empty intersection
+            raise ValueError("Intersecting wits = {} and  adds = {} for "
+                             "evt = {}.".format(self.wits, adds, ked))
+
+        wits = list((witset - cutset) | addset)
+
+        if len(wits) != (len(self.wits) - len(cuts) + len(adds)):  # redundant?
+            raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
+                             "and adds = {} for evt = {}.".format(self.wits,
+                                                                  cuts,
+                                                                  adds,
+                                                                  ked))
+
+        toad = int(ked["toad"], 16)
+        if wits:
+            if toad < 1 or toad > len(wits):  # out of bounds toad
+                raise ValueError("Invalid toad = {} for wits = {} for evt "
+                                 "= {}.".format(toad, wits, ked))
+        else:
+            if toad != 0:  # invalid toad
+                raise ValueError("Invalid toad = {} for wits = {} for evt "
+                                 "= {}.".format(toad, wits, ked))
+
+        return (sith, toad, wits)
+
+
+    def validateSigs(self, serder, sigers, sith, sn):
+        """
+        Validate signatures by validating sith indexs and verifying signatures
+        """
+        # verify indexes of attached signatures against verifiers
+        for siger in sigers:
+            if siger.index >= len(serder.verfers):
+                raise ValidationError("Index = {} to large for keys for evt = "
+                                      "{}.".format(siger.index, serder.ked))
+            siger.verfer = serder.verfers[siger.index]  # assign verfer
+
+        # verify signatures
+        if not self.verifySigs(sigers=sigers, serder=serder):
+            raise ValidationError("Failure verifying signatures = {} for {} for"
+                                  " evt = {}.".format(sigers, serder, serder.ked))
+
+        # verify sith given signatures verify
+        if not self.verifySith(sigers=sigers, sith=sith):
+            self.escrowEvent(self, serder, sigers, self.prefixer.qb64b, sn)
+
+            raise ValidationError("Failure verifying sith = {} on sigs for {}"
+                                  " for evt = {}.".format(self.sith, sigers, serder.ked))
 
 
     def verifySigs(self, sigers, serder):
@@ -1096,6 +1117,7 @@ class Kever:
 
         return True
 
+
     def logEvent(self, serder, sigers):
         """
         Update associated logs for verified event
@@ -1109,6 +1131,7 @@ class Kever:
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.diger.qb64b)
+
 
     def escrowEvent(self, serder, sigers, pre, sn):
         """
@@ -1193,33 +1216,14 @@ class DelKever(Kever):
 
         self.config(serder=serder, estOnly=estOnly)
 
-        if not self.verifySeal(serder=serder):
-            raise ValidationError("Failure verifying seal = {} for evt = {}."
-                                  "".format(serder.ked["seal"], seder.ked))
+        self.validateSeal(serder=serder)
 
-        # verify indexes of attached signatures against verifiers
-        for siger in sigers:
-            if siger.index >= len(self.verfers):
-                raise ValidationError("Index = {} to large for keys for evt = "
-                                      "{}.".format(siger.index, serder.ked))
-            siger.verfer = self.verfers[siger.index]  # assign verfer
-
-        # verify signatures
-        if not self.verifySigs(sigers=sigers, serder=serder):
-            raise ValidationError("Failure verifying signatures = {} for {} for"
-                                  " evt = {}.".format(sigers, serder, ked))
-
-        # verify sith given signatures verify
-        if not self.verifySith(sigers=sigers):  # uses self.sith
-            self.escrowEvent(self, serder, sigers, self.prefixer.qb64b, self.sn)
-
-            raise ValidationError("Failure verifying sith = {} on sigs for {}"
-                                  " for evt = {}.".format(self.sith, sigers, ked))
+        self.validateSigs(serder=serder, sigers=sigers, sith=self.sith, sn=self.sn)
 
         self.logEvent(serder, sigers)  # update logs
 
 
-    def verifySeal(self, serder):
+    def validateSeal(self, serder):
         """
         Assumes that incept already called
 
@@ -1230,7 +1234,9 @@ class DelKever(Kever):
         # verify delegator seal
         seal = SealLocation(**serder.ked["seal"])
 
-        return True
+        if False:
+            raise ValidationError("Failure validating seal = {} for evt = {}."
+                                  "".format(serder.ked["seal"], seder.ked))
 
 
     def update(self, serder,  sigers):
