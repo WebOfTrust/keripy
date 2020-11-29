@@ -259,11 +259,10 @@ def test_keyeventfuncs():
     assert serderD.raw == (b'{"vs":"KERI10JSON000183_","pre":"E69svP3NQcz6GxN3BlSH6c5bVzP5aXV1VAeXN3xjzfH'
                            b'g","sn":"0","ilk":"dip","sith":"1","keys":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRi'
                            b'af9FdA_-_49A"],"nxt":"EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4","toad":"'
-                           b'0","wits":[],"perm":[],"seal":{"pre":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQ'
+                           b'0","wits":[],"cnfg":[],"seal":{"pre":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQ'
                            b'FCL7Yd","sn":"3","ilk":"ixn","dig":"EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhke'
                            b'DZ2z"}}')
-    assert serderD.dig == 'Es7KWhMdTfaSSE3gx-o5dwzRvlChheBGV3yZ2AkGL6Lo'
-
+    assert serderD.dig == 'E8Cy-3XpLhzRwPzoNT2zCOhvfIfbzNfvygjzok9HAk4U'
 
     # Delegated Rotation:
     # Transferable not abandoned i.e. next not empty

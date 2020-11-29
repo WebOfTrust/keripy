@@ -395,14 +395,14 @@ def chit(pre,
 
 def delcept(keys,
             seal,
-           code=None,
-           sith=None,
-           nxt="",
-           toad=None,
-           wits=None,
-           perm=None,
-           version=Version,
-           kind=Serials.json,
+            code=None,
+            sith=None,
+            nxt="",
+            toad=None,
+            wits=None,
+            cnfg=None,
+            version=Version,
+            kind=Serials.json,
           ):
 
     """
@@ -421,7 +421,7 @@ def delcept(keys,
         nxt  is qb64 next digest xor
         toad is int  of witness threshold
         wits is list of qb64 witness prefixes
-        perm is list of permissions dicts and/or configuration traits
+        cnfg is list of configuration trait dicts including permissions dicts
         version is Version instance
         kind is serialization kind
     """
@@ -455,7 +455,7 @@ def delcept(keys,
         if toad != 0:  # invalid toad
             raise ValueError("Invalid toad = {} for wits = {}".format(toad, wits))
 
-    perm = perm if perm is not None else []
+    cnfg = cnfg if cnfg is not None else []
 
     ked = dict(vs=vs,  # version string
                pre="",  # qb64 prefix
@@ -466,7 +466,7 @@ def delcept(keys,
                nxt=nxt,  # hash qual Base64
                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
                wits=wits,  # list of qb64 may be empty
-               perm=perm,  # list of perm config ordered mappings may be empty
+               cnfg=cnfg,  # list of config and permission ordered mappings may be empty
                seal=seal._asdict()  # event seal: pre, dig
                )
 
