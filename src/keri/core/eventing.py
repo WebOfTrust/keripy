@@ -41,7 +41,7 @@ ROT_LABELS = ["vs", "pre", "sn", "ilk", "dig", "sith", "keys", "nxt",
               "toad", "cuts", "adds", "data"]
 IXN_LABELS = ["vs", "pre", "sn", "ilk", "dig", "data"]
 DIP_LABELS = ["vs", "pre", "sn", "ilk", "sith", "keys", "nxt",
-              "toad", "wits", "perm", "seal"]
+              "toad", "wits", "cnfg", "seal"]
 DRT_LABELS = ["vs", "pre", "sn", "ilk", "dig", "sith", "keys", "nxt",
               "toad", "cuts", "adds", "perm", "seal"]
 
@@ -653,7 +653,25 @@ class Kever:
             establishOnly is boolean trait to indicate establish only event
 
         """
-        self.incept(serder=serder, baser=baser)
+        if baser is None:
+            baser = Baser()  # default name = "main"
+        self.baser = baser
+
+        # may update state as we go because if invalid we fail to finish init
+        self.version = serder.version  # version dispatch ?
+
+        for k in ICP_LABELS:
+            if k not in serder.ked:
+                raise ValidationError("Missing element = {} from {} event for "
+                                      "evt = {}.".format(k, Ilks.icp, serder.ked))
+
+        ilk = serder.ked["ilk"]
+        if ilk != Ilks.icp:
+            raise ValidationError("Expected ilk = {} got {} for evt = {}."
+                                              "".format(Ilks.icp, ilk, serder.ked))
+        self.ilk = ilk
+
+        self.incept(serder=serder)
 
         self.config(serder=serder, estOnly=estOnly)
 
@@ -701,27 +719,9 @@ class Kever:
             baser is LMDB Baser instance
 
         """
-        # update state as we go because if invalid we fail to finish init
-
-        if baser is None:
-            baser = Baser()  # default name = "main"
-        self.baser = baser
-
-        self.version = serder.version  # version dispatch ?
-        self.verfers = serder.verfers  # converts keys to verifiers
         ked = serder.ked
 
-        for k in ICP_LABELS:
-            if k not in ked:
-                raise ValidationError("Missing element = {} from {} event for "
-                                      "evt = {}.".format(k, Ilks.icp, ked))
-
-        ilk = ked["ilk"]
-        if ilk != Ilks.icp:
-            raise ValidationError("Expected ilk = {} got {} for evt = {}."
-                                              "".format(Ilks.icp, ilk, ked))
-        self.ilk = ilk
-
+        self.verfers = serder.verfers  # converts keys to verifiers
         sith = ked["sith"]
         if isinstance(sith, str):
             self.sith = int(sith, 16)
@@ -962,6 +962,7 @@ class Kever:
 
             # prior nxt valid so verify sigers using new verifier keys from event
             # rotation event use keys from event
+
             # verify indexes of attached signatures against verifiers
             for siger in sigers:
                 if siger.index >= len(verfers):
@@ -969,6 +970,7 @@ class Kever:
                                           "evt = {}.".format(siger.index, ked))
                 siger.verfer = verfers[siger.index]  # assign verfer
 
+            # verify signatures
             if not self.verifySigs(sigers=sigers, serder=serder):
                 raise ValidationError("Failure verifying signatures = {} for "
                                       "{} for evt = {}.".format(sigers, serder, ked))
@@ -1047,6 +1049,12 @@ class Kever:
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
+
+    def rotate(self, serder,  sigers):
+        """
+        Rotation Event Processing
+
+        """
 
 
     def verifySigs(self, sigers, serder):
@@ -1163,9 +1171,31 @@ class DelKever(Kever):
             establishOnly is boolean trait to indicate establish only event
 
         """
-        self.incept(serder=serder, baser=baser)
+        if baser is None:
+            baser = Baser()  # default name = "main"
+        self.baser = baser
+
+        # may update state as we go because if invalid we fail to finish init
+        self.version = serder.version  # version dispatch ?
+
+        for k in DIP_LABELS:
+            if k not in serder.ked:
+                raise ValidationError("Missing element = {} from {} event for "
+                                      "evt = {}.".format(k, Ilks.dip, serder.ked))
+
+        ilk = serder.ked["ilk"]
+        if ilk != Ilks.dip:
+            raise ValidationError("Expected ilk = {} got {} for evt = {}."
+                                              "".format(Ilks.dip, ilk, serder.ked))
+        self.ilk = ilk
+
+        self.incept(serder=serder)
 
         self.config(serder=serder, estOnly=estOnly)
+
+        if not self.verifySeal(serder=serder):
+            raise ValidationError("Failure verifying seal = {} for evt = {}."
+                                  "".format(serder.ked["seal"], seder.ked))
 
         # verify indexes of attached signatures against verifiers
         for siger in sigers:
@@ -1189,26 +1219,18 @@ class DelKever(Kever):
         self.logEvent(serder, sigers)  # update logs
 
 
-    def incept(self, serder, baser=None, **kwa):
+    def verifySeal(self, serder):
         """
-        Verify incept key event message from serder
-
+        Assumes that incept already called
 
         Parameters:
-            serder is Serder instance of inception event
-            baser is LMDB Baser instance
+            serder is event serder
 
         """
-        super(DelKever, self).incept(serder=serder, baser=baser, **kwa)
-
-
-        #process perm for permissions
-        perm = serder.ked["perm"]
-
         # verify delegator seal
         seal = SealLocation(**serder.ked["seal"])
 
-
+        return True
 
 
     def update(self, serder,  sigers):
@@ -1463,75 +1485,6 @@ class DelKever(Kever):
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
 
-
-    def verifySigs(self, sigers, serder):
-        """
-        Use verfer in each siger to verify signature against serder
-        Assumes that sigers with verfer already extracted correctly wrt indexes
-
-        Parameters:
-            sigers is list of Siger instances
-            serder is Serder instance
-
-        """
-        for siger in sigers:
-            if not siger.verfer.verify(siger.raw, serder.raw):
-                return False
-
-        if len(sigers) < 1:  # at least one signature
-            return False
-
-        return True
-
-    def verifySith(self, sigers, sith=None):
-        """
-        Assumes that all sigers signatures were already verified
-        If sith not provided then use .sith instead
-
-        Parameters:
-            sigers is list of Siger instances
-            sith is int threshold
-
-        """
-        sith = sith if sith is not None else self.sith
-
-        if not isinstance(sith, int):
-            raise ValueError("Unsupported type for sith = {}".format(sith))
-
-        if len(sigers) < sith:  # not meet threshold fix for list sith
-            return False
-
-        return True
-
-    def logEvent(self, serder, sigers):
-        """
-        Update associated logs for verified event
-
-        Parameters:
-            serder is Serder instance of current event
-            sigers is list of Siger instance for current event
-        """
-        dgkey = dgKey(self.prefixer.qb64b, self.diger.qb64b)
-        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
-        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.diger.qb64b)
-
-    def escrowEvent(self, serder, sigers, pre, sn):
-        """
-        Update associated logs for escrow of partially signed event
-
-        Parameters:
-            serder is Serder instance of  event
-            sigers is list of Siger instance for  event
-            pre is str qb64 ofidentifier prefix of event
-            sn is int sequence number of event
-        """
-        dgkey = dgKey(pre, serder.digb)
-        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
-        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addPses(snKey(pre, sn), serder.digb)
 
 
 
