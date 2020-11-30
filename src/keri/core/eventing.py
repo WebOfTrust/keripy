@@ -1143,7 +1143,8 @@ class Kever:
         dserder = Serder(raw=bytes(raw))
         found = False
         for dseal in dserder.data:  #  find delegating seal
-            if pre in dseal and dig in dseal and  dseal["dig"] == serder.dig:
+            if (pre in dseal and dseal["pre"] == seal.pre and
+                dig in dseal and dseal["dig"] == serder.dig):
                 found = True
                 break
 
