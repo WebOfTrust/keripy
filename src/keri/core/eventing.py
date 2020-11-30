@@ -785,21 +785,6 @@ class Kever:
             if "trait" in d and d["trait"] == TraitDex.EstOnly:
                 self.estOnly = True
 
-    def validateSeal(self, serder):
-        """
-        Assumes that incept already called
-
-        Parameters:
-            serder is event serder
-
-        """
-        # verify delegator seal
-        seal = SealLocation(**serder.ked["seal"])
-
-        if False:
-            raise ValidationError("Failure validating seal = {} for evt = {}."
-                                  "".format(serder.ked["seal"], seder.ked))
-
 
     def update(self, serder,  sigers):
         """
@@ -1109,6 +1094,22 @@ class Kever:
             return False
 
         return True
+
+
+    def validateSeal(self, serder):
+        """
+        Assumes that incept already called
+
+        Parameters:
+            serder is event serder
+
+        """
+        # verify delegator seal
+        seal = SealLocation(**serder.ked["seal"])
+
+        if False:
+            raise ValidationError("Failure validating seal = {} for evt = {}."
+                                  "".format(serder.ked["seal"], seder.ked))
 
 
     def logEvent(self, serder, sigers):
