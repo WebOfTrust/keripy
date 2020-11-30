@@ -1106,9 +1106,9 @@ class Kever:
         Assumes state setup
 
         Parameters:
-            serder is event serder
-            sigers is list of event sigers
-            sn is int event sequence number
+            serder is delegated event serder
+            sigers is delegated event list of event sigers
+            sn is int delegated event sequence number
 
         """
         # verify delegator seal
@@ -1117,6 +1117,7 @@ class Kever:
 
         ssn = self.validateSN(sn=seal.sn, ked=serder.ked, inceptive=False)
 
+        # get the dig of the delegating event
         key = snKey(pre=seal.pre, sn=ssn)
         raw = self.baser.getKeLast(key)
         if raw is None:  # no delegating event at key
@@ -1128,23 +1129,27 @@ class Kever:
             raise ValidationError("No delegating event at seal = {} for "
                                   "evt = {}.".format(serder.ked["seal"],
                                                      serder.ked))
-        dig = bytes(raw)
-        if dig != seal.dig:
-            raise ValidationError("Mismatch prior dig of delegating event at "
-                                  "seal = {} for evt = {}.".format(serder.ked["seal"],
-                                                                   serder.ked))
 
-        key = dgKey(pre=seal.pre, dig=dig)
+        # get the delegating event from dig
+        key = dgKey(pre=seal.pre, dig=bytes(raw))
         raw = self.baser.getEvt(key)
         if raw is None:
             raise ValidationError("Missing event at seal = {} for evt = {}."
                                   "".format(serder.ked["seal"], serder.ked))
 
         dserder = Serder(raw=bytes(raw))
-        found = False
-        for dseal in dserder.data:  #  find delegating seal
-            if ("pre" in dseal and dseal["pre"] == seal.pre and
-                "dig" in dseal and dseal["dig"] == serder.dig):
+
+        if dserder.ked['dig'] != seal.dig:  # delegating event prior dig match seal
+            raise ValidationError("Mismatch prior dig of delegating event at "
+                                  "seal = {} for evt = {}.".format(serder.ked["seal"],
+                                                                   serder.ked))
+
+        pre = serder.ked["pre"]
+        dig = serder.dig
+        found = False  # find event seal of delegated event in delegating data
+        for dseal in dserder.ked["data"]:  #  find delegating seal
+            if ("pre" in dseal and dseal["pre"] == pre and
+                "dig" in dseal and dseal["dig"] == dig):
                 found = True
                 break
 

@@ -1339,6 +1339,7 @@ class Prefixer(CryMat):
         Parameters:
             ked is inception key event dict
             seed is only used for sig derivation it is the secret key/secret
+
         """
         return (self._derive(ked=ked, seed=seed, secret=secret))
 
@@ -1359,6 +1360,7 @@ class Prefixer(CryMat):
         Returns tuple (raw, code) of basic nontransferable Ed25519 prefix (qb64)
             as derived from key event dict ked
         """
+        ked = dict(ked)  # make copy so don't clobber original ked
         try:
             keys = ked["keys"]
             if len(keys) != 1:
@@ -1415,6 +1417,7 @@ class Prefixer(CryMat):
         Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
             as derived from key event dict ked
         """
+        ked = dict(ked)  # make copy so don't clobber original ked
         try:
             keys = ked["keys"]
             if len(keys) != 1:
@@ -1460,6 +1463,7 @@ class Prefixer(CryMat):
         Returns tuple (raw, code) of basic Ed25519 pre (qb64)
             as derived from key event dict ked
         """
+        ked = dict(ked)  # make copy so don't clobber original ked
         ilk = ked["ilk"]
         if ilk == Ilks.icp:
             labels = [key for key in ked if key not in self.IcpExcludes]
@@ -1510,6 +1514,7 @@ class Prefixer(CryMat):
         Returns tuple (raw, code) of basic Ed25519 pre (qb64)
             as derived from key event dict ked
         """
+        ked = dict(ked)  # make copy so don't clobber original ked
         ilk = ked["ilk"]
         if ilk == Ilks.icp:
             labels = [key for key in ked if key not in self.IcpExcludes]
