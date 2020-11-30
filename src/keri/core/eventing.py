@@ -730,17 +730,7 @@ class Kever:
             raise ValidationError("Invalid prefix = {} for inception evt = {}."
                                   "".format(self.prefixer.qb64, ked))
 
-        sn = ked["sn"]
-        if len(sn) > 32:
-            raise ValidationError("Invalid sn = {} too large for evt = {}."
-                                  "".format(sn, ked))
-        try:
-            sn = int(sn, 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
-        if sn != 0:
-            raise ValidationError("Nonzero sn = {} for inception evt = {}."
-                                              "".format(sn, ked))
+        sn = self.validateSN(sn=ked["sn"], ked=ked, inceptive=True)
         self.sn = sn
         self.diger = serder.diger
 
@@ -795,29 +785,17 @@ class Kever:
         if not self.transferable:  # not transferable so no events after inception allowed
             raise ValidationError("Unexpected event = {} in nontransferable "
                                   " state.".format(serder.ked))
-
         ked = serder.ked
-
         if ked["pre"] != self.prefixer.qb64:
             raise ValidationError("Mismatch event aid prefix = {} expecting"
                                   " = {} for evt = {}.".format(ked["pre"],
                                                                self.prefixer.qb64,
                                                                ked))
-        sn = ked["sn"]
-        if len(sn) > 32:
-            raise ValidationError("Invalid sn = {} too large.".format(sn))
-        try:
-            sn = int(sn, 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
-        if sn == 0:
-            raise ValidationError("Zero sn = {} for non=inception evt = {}."
-                                              "".format(sn, ked))
 
+        sn = self.validateSN(sn=ked["sn"], ked=ked, inceptive=False)
         ilk = ked["ilk"]
 
         if ilk in (Ilks.rot, Ilks.drt) :  # rotation (or delegated rotation) event
-
             labels = DRT_LABELS if ilk == Ilks.dip else ROT_LABELS
             for k in labels:
                 if k not in ked:
@@ -871,7 +849,6 @@ class Kever:
                                       " = {} for evt = {}.".format(ked["dig"],
                                                                    self.dig.qb64,
                                                                    ked))
-
 
             # interaction event use sith and keys from pre-existing Kever state
             # validates and escrows as needed
@@ -1031,6 +1008,32 @@ class Kever:
 
         return (sith, toad, wits)
 
+    def validateSN(self, sn, ked, inceptive=False):
+        """
+        Returns int validated from hex str sn in ked
+
+        Parameters:
+           sn is hex char sequence number of event or seal in an event
+           ked is key event dict of associated event
+        """
+        if len(sn) > 32:
+            raise ValidationError("Invalid sn = {} too large for evt = {}."
+                                  "".format(sn, ked))
+        try:
+            sn = int(sn, 16)
+        except Exception as ex:
+            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
+
+        if inceptive:
+            if sn != 0:
+                raise ValidationError("Nonzero sn = {} for inception evt = {}."
+                                      "".format(sn, ked))
+        else:
+            if sn == 0:
+                raise ValidationError("Zero sn = {} for non=inception evt = {}."
+                                      "".format(sn, ked))
+        return sn
+
 
     def validateSigs(self, serder, sigers, verfers, sith, sn):
         """
@@ -1098,7 +1101,7 @@ class Kever:
 
     def validateSeal(self, serder):
         """
-        Assumes that incept already called
+        Assumes state setup
 
         Parameters:
             serder is event serder
@@ -1106,10 +1109,43 @@ class Kever:
         """
         # verify delegator seal
         seal = SealLocation(**serder.ked["seal"])
+        # seal has pre sn ilk dig (prior dig)
 
-        if False:
-            raise ValidationError("Failure validating seal = {} for evt = {}."
-                                  "".format(serder.ked["seal"], seder.ked))
+        sn = self.validateSN(sn=seal.sn, ked=serder.ked, inceptive=False)
+
+        key = snKey(pre=seal.pre, sn=sn)
+        raw = self.baser.getKeLast(key)
+        if raw is None:  # no delegating event at key
+            #  escrow event here
+            raise ValidationError("No delegating event at seal = {} for "
+                                  "evt = {}.".format(serder.ked["seal"],
+                                                     serder.ked))
+        dig = bytes(raw)
+        if dig != seal.dig:
+            raise ValidationError("Mismatch prior dig of delegating event at "
+                                  "seal = {} for evt = {}.".format(serder.ked["seal"],
+                                                                   serder.ked))
+
+        key = dgKey(pre=seal.pre, dig=dig)
+        raw = self.baser.getEvt(key)
+        if raw is None:
+            raise ValidationError("Missing event at seal = {} for evt = {}."
+                                  "".format(serder.ked["seal"], serder.ked))
+
+        dserder = Serder(raw=bytes(raw))
+        found = False
+        for dseal in dserder.data:  #  find delegating seal
+            if pre in dseal and dig in dseal and  dseal["dig"] == serder.dig:
+                found = True
+                break
+
+        if not found:
+            raise ValidationError("Missing delegating seal = {} for evt = {}."
+                                  "".format(serder.ked["seal"], serder.ked))
+
+        # should we reverify signatures or trust the database?
+        # if database is loaded into memory fresh each bootup then we can trust
+        #  it otherwise we can't
 
 
     def logEvent(self, serder, sigers):
