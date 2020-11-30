@@ -259,11 +259,10 @@ def test_keyeventfuncs():
     assert serderD.raw == (b'{"vs":"KERI10JSON000183_","pre":"E69svP3NQcz6GxN3BlSH6c5bVzP5aXV1VAeXN3xjzfH'
                            b'g","sn":"0","ilk":"dip","sith":"1","keys":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRi'
                            b'af9FdA_-_49A"],"nxt":"EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4","toad":"'
-                           b'0","wits":[],"perm":[],"seal":{"pre":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQ'
+                           b'0","wits":[],"cnfg":[],"seal":{"pre":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQ'
                            b'FCL7Yd","sn":"3","ilk":"ixn","dig":"EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhke'
                            b'DZ2z"}}')
-    assert serderD.dig == 'Es7KWhMdTfaSSE3gx-o5dwzRvlChheBGV3yZ2AkGL6Lo'
-
+    assert serderD.dig == 'E8Cy-3XpLhzRwPzoNT2zCOhvfIfbzNfvygjzok9HAk4U'
 
     # Delegated Rotation:
     # Transferable not abandoned i.e. next not empty
@@ -299,9 +298,9 @@ def test_keyeventfuncs():
                            b'g","sn":"4","ilk":"drt","dig":"EIIUSTX04qnUbyuJiJc-udBgaKKoqK-XNUmA6eG7JKUA"'
                            b',"sith":"1","keys":["D8u3hipCxZnkM_O0jfaZLJMk9ERI428T0psRO0JVgh4c"],"nxt":"E'
                            b'AXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U","toad":"0","cuts":[],"adds":[],'
-                           b'"perm":[],"seal":{"pre":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd","sn":'
+                           b'"data":[],"seal":{"pre":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd","sn":'
                            b'"4","ilk":"ixn","dig":"EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z"}}')
-    assert serderR.dig == 'EY0mEaoLO4SaaW7Z5LJK_CIge9PJAdeP5gRoHtHKGgUs'
+    assert serderR.dig == 'EqBzOygGY1BVOS1pBas7kW8K_nvAVAziWfGabzAEK3to'
 
 
     """ Done Test """
@@ -552,7 +551,7 @@ def test_keyeventsequence_0():
         assert [verfer.qb64 for verfer in kever.verfers] == keys0
         assert kever.nexter.qb64 == nxt1
         assert kever.estOnly == False
-        assert kever.nonTrans == False
+        assert kever.transferable == True
 
         # Event 1 Rotation Transferable
         # compute nxt digest from keys2
@@ -710,7 +709,7 @@ def test_keyeventsequence_0():
         assert kever.ilk == Ilks.rot
         assert [verfer.qb64 for verfer in kever.verfers] == keys4
         assert kever.nexter == None
-        assert kever.nonTrans
+        assert not kever.transferable
 
         # Event 8 Interaction
         serder8 = interact(pre=pre, dig=serder7.dig, sn=8)
@@ -813,7 +812,7 @@ def test_keyeventsequence_1():
         assert [verfer.qb64 for verfer in kever.verfers] == keys0
         assert kever.nexter.qb64 == nxt1
         assert kever.estOnly == True
-        assert kever.nonTrans == False
+        assert kever.transferable == True
 
         # Event 1 Interaction. Because EstOnly, this event not included in KEL
         serder1 = interact(pre=pre, dig=serder0.dig, sn=1)
@@ -3070,6 +3069,8 @@ def test_process_manual():
     result = pysodium.crypto_sign_verify_detached(rxsigmat.raw, rxsrdr.raw, rxvermat.raw)
     assert not result  # None if verifies successfully else raises ValueError
     """ Done Test """
+
+
 
 
 if __name__ == "__main__":
