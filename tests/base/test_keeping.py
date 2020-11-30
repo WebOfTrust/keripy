@@ -148,7 +148,7 @@ def test_openkeeper():
     """
     test contextmanager decorator for test Keeper databases
     """
-    with keeping.openKeeper() as keeper:
+    with keeping.openKeep() as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "test"
         assert isinstance(keeper.env, lmdb.Environment)
@@ -161,7 +161,7 @@ def test_openkeeper():
     assert not os.path.exists(keeper.path)
     assert not keeper.opened
 
-    with keeping.openKeeper(name="blue") as keeper:
+    with keeping.openKeep(name="blue") as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "blue"
         assert isinstance(keeper.env, lmdb.Environment)
@@ -174,7 +174,7 @@ def test_openkeeper():
     assert not os.path.exists(keeper.path)
     assert not keeper.opened
 
-    with keeping.openKeeper(name="red") as red, keeping.openKeeper(name="tan") as tan:
+    with keeping.openKeep(name="red") as red, keeping.openKeep(name="tan") as tan:
         assert isinstance(red, keeping.Keeper)
         assert red.name == "red"
         assert red.env.path() == red.path
@@ -276,7 +276,7 @@ def test_keeper():
     assert not keeper.opened
 
     # Test using context manager
-    with keeping.openKeeper() as keeper:
+    with keeping.openKeep() as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "test"
         assert keeper.temp == True
@@ -608,7 +608,7 @@ def test_manager():
                     b'ApYcYd1cppVg7Inh2YCslWKhUwh59TrPpIoqWxN2A38NCbTljvmBPBjSGIFDBNOv'
                     b'VjHpdZlty3Hgk6ilF8pVpAQ')
 
-    with keeping.openKeeper() as keeper:
+    with keeping.openKeep() as keeper:
         manager = keeping.Manager(keeper=keeper, salt=salt)
         assert manager.keeper.opened
         assert manager._pidx == 0
