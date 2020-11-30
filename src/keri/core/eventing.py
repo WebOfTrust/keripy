@@ -1055,7 +1055,7 @@ class Kever:
 
         # verify sith given signatures verify
         if not self.verifySith(sigers=sigers, sith=sith):
-            self.escrowEvent(self, serder, sigers, self.prefixer.qb64b, sn)
+            self.escrowPSEvent(self, serder, sigers, self.prefixer.qb64b, sn)
 
             raise ValidationError("Failure verifying sith = {} on sigs for {}"
                                   " for evt = {}.".format(self.sith, sigers, serder.ked))
@@ -1123,7 +1123,7 @@ class Kever:
             #  escrow event here
             inceptive = True if serder.ked["ilk"] in (Ilks.icp, Ilks.dip) else False
             sn = self.validateSN(serder.ked["sn"], serder.ked, inceptive=inceptive)
-            self.escrowEvent(serder=serder, sigers=sigers,
+            self.escrowPSEvent(serder=serder, sigers=sigers,
                              pre=self.prefixer.qb64b, sn=sn)
             raise ValidationError("No delegating event at seal = {} for "
                                   "evt = {}.".format(serder.ked["seal"],
@@ -1143,8 +1143,8 @@ class Kever:
         dserder = Serder(raw=bytes(raw))
         found = False
         for dseal in dserder.data:  #  find delegating seal
-            if (pre in dseal and dseal["pre"] == seal.pre and
-                dig in dseal and dseal["dig"] == serder.dig):
+            if ("pre" in dseal and dseal["pre"] == seal.pre and
+                "dig" in dseal and dseal["dig"] == serder.dig):
                 found = True
                 break
 
@@ -1170,9 +1170,10 @@ class Kever:
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.diger.qb64b)
+        blogger.info("Kever process: added valid event to KEL event = %s\n", serder.ked)
 
 
-    def escrowEvent(self, serder, sigers, pre, sn):
+    def escrowPSEvent(self, serder, sigers, pre, sn):
         """
         Update associated logs for escrow of partially signed event
         or fully signed delegated event but without delegating event
@@ -1188,11 +1189,8 @@ class Kever:
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addPse(snKey(pre, sn), serder.digb)
-
-
-
-
-
+        blogger.info("Kever process: escrowed partial siganture or delegated "
+                     "event = %s\n", serder.ked)
 
 
 class Kevery:
@@ -1400,6 +1398,63 @@ class Kevery:
                                   " {}.".format(ilk, serder.ked))
 
 
+    def validateSN(self, ked):
+        """
+        Returns int validated from hex str sn in ked
+
+        Parameters:
+           sn is hex char sequence number of event or seal in an event
+           ked is key event dict of associated event
+        """
+        sn = ked["sn"]
+        if len(sn) > 32:
+            raise ValidationError("Invalid sn = {} too large for evt = {}."
+                                  "".format(sn, ked))
+        try:
+            sn = int(sn, 16)
+        except Exception as ex:
+            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
+
+        return sn
+
+    def escrowOOEvent(self, serder, sigers, pre, sn):
+        """
+        Update associated logs for escrow of Out-of-Order event
+
+        Parameters:
+            serder is Serder instance of  event
+            sigers is list of Siger instance for  event
+            pre is str qb64 of identifier prefix of event
+            sn is int sequence number of event
+        """
+        dgkey = dgKey(pre, serder.dig)
+        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.baser.putEvt(dgkey, serder.raw)
+        self.baser.addOoes(snKey(pre, sn), serder.dig)
+        # log escrowed
+        blogger.info("Kevery process: escrowed out of order event = %s\n", serder.ked)
+
+
+    def escrowLDEvent(self, serder, sigers, pre, sn):
+        """
+        Update associated logs for escrow of Likely Duplicitous event
+
+        Parameters:
+            serder is Serder instance of  event
+            sigers is list of Siger instance for  event
+            pre is str qb64 of identifier prefix of event
+            sn is int sequence number of event
+        """
+        dgkey = dgKey(pre, serder.dig)
+        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.baser.putEvt(dgkey, serder.raw)
+        self.baser.addLde(snKey(pre, sn), serder.dig)
+        # log duplicitous
+        blogger.info("Kevery process: escrowed likely duplicitous event = %s\n", serder.ked)
+
+
     def processEvent(self, serder, sigers):
         """
         Process one event serder with attached indexd signatures sigers
@@ -1417,16 +1472,8 @@ class Kevery:
                                   "".format(ked["pre"], ked))
         pre = prefixer.qb64
         ked = serder.ked
+        sn = self.validateSN(ked)
         ilk = ked["ilk"]
-
-        sn = ked["sn"]
-        if len(sn) > 32:
-            raise ValidationError("Invalid sn = {} too large for evt = {}."
-                                  "".format(sn, ked))
-        try:
-            sn = int(sn, 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
         dig = serder.dig
 
         if self.baser.getEvt(dgKey(pre, dig)) is not None:
@@ -1435,7 +1482,7 @@ class Kevery:
             return  # discard duplicate
 
         if pre not in self.kevers:  #  first seen event for pre
-            if ilk == Ilks.icp:  # first seen and inception so verify event keys
+            if ilk in (Ilks.icp, Ilks.dip):  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures
                 # raises exception if problem
                 # otherwise adds to KEL
@@ -1448,59 +1495,35 @@ class Kevery:
                 # create cue for receipt   direct mode for now
                 self.cues.append(dict(pre=pre, serder=serder))
 
-            else:  # not inception so can't verify, add to escrow
-                dgkey = dgKey(pre, dig)
-                self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
-                self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
-                self.baser.putEvt(dgkey, serder.raw)
-                self.baser.addOoes(snKey(pre, sn), dig)
-                # log escrowed
-                blogger.info("Kevery process: escrowed out of order event = %s\n", ked)
-
+            else:  # not inception so can't verify, add to out-of-order escrow
+                self.escrowOOEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
 
         else:  # already accepted inception event for pre
-            if ilk == Ilks.icp:  # inception event so maybe duplicitous
-                # log duplicitous
-                dgkey = dgKey(pre, dig)
-                self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
-                self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
-                self.baser.putEvt(dgkey, serder.raw)
-                self.baser.addLdes(snKey(pre, sn), dig)
-                # log duplicitous
-                blogger.info("Kevery process: escrowed likely duplicitous event = %s\n", ked)
+            if ilk in (Ilks.icp, Ilks.dip):  # inception event so maybe duplicitous
+                # escrow likely duplicitous event
+                self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
 
-            else:  # rot or ixn, so sn matters
+            else:  # rot, drt, or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
                 sno = kever.sn + 1  # proper sn of new inorder event
 
                 if sn > sno:  # sn later than sno so out of order escrow
-                    #  log escrowed
-                    dgkey = dgKey(pre, dig)
-                    self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
-                    self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
-                    self.baser.putEvt(dgkey, serder.raw)
-                    self.baser.addOoes(snKey(pre, sn), dig)
-                    # log escrowed
-                    blogger.info("Kevery process: escrowed out of order event = %s\n", ked)
+                    # escrow out-of-order event
+                    self.escrowOOEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
 
-                elif ((sn == sno) or  # new inorder event
-                      (ilk == Ilks.rot and kever.lastEst.sn < sn <= sno )):  # recovery
+                elif ((sn == sno) or  # new inorder event or recovery
+                      (ilk in (Ilks.rot, Ilks.drt) and kever.lastEst.sn < sn <= sno )):
                     # verify signatures etc and update state if valid
                     # raise exception if problem.
                     # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers)
 
-                    # create cue for receipt   direct mode for now
+                    # create cue for receipt direct mode for now
                     self.cues.append(dict(pre=pre, serder=serder))
 
                 else:  # maybe duplicitous
-                    dgkey = dgKey(pre, dig)
-                    self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
-                    self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
-                    self.baser.putEvt(dgkey, serder.raw)
-                    self.baser.addLdes(snKey(pre, sn), dig)
-                    # log duplicitous
-                    blogger.info("Kevery process: escrowed likely duplicitous event = %s\n", ked)
+                    #  escrow likely duplicitous event
+                    self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
 
 
     def processReceipt(self, serder, cigars):
