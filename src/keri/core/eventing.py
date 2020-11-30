@@ -682,7 +682,7 @@ class Kever:
                           sith=self.sith, sn=self.sn)
 
         if ilk == Ilks.dip:
-            self.validateSeal(serder=serder)
+            self.validateSeal(serder=serder, sigers=sigers)
 
         self.logEvent(serder, sigers)  # update logs
 
@@ -808,6 +808,9 @@ class Kever:
             self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
                               sith=sith, sn=sn)
 
+            if ilk == Ilks.drt:
+                self.validateSeal(serder=serder, sigers=sigers)
+
             # nxt and signatures verify so update state
             self.sn = sn
             self.diger = serder.diger
@@ -824,8 +827,7 @@ class Kever:
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)
 
-            if ilk == Ilks.drt:
-                self.validateSeal(serder=serder)
+
 
             self.logEvent(serder, sigers)  # update logs
 
@@ -1099,24 +1101,30 @@ class Kever:
         return True
 
 
-    def validateSeal(self, serder):
+    def validateSeal(self, serder, sigers):
         """
         Assumes state setup
 
         Parameters:
             serder is event serder
+            sigers is list of event sigers
+            sn is int event sequence number
 
         """
         # verify delegator seal
         seal = SealLocation(**serder.ked["seal"])
         # seal has pre sn ilk dig (prior dig)
 
-        sn = self.validateSN(sn=seal.sn, ked=serder.ked, inceptive=False)
+        ssn = self.validateSN(sn=seal.sn, ked=serder.ked, inceptive=False)
 
-        key = snKey(pre=seal.pre, sn=sn)
+        key = snKey(pre=seal.pre, sn=ssn)
         raw = self.baser.getKeLast(key)
         if raw is None:  # no delegating event at key
             #  escrow event here
+            inceptive = True if serder.ked["ilk"] in (Ilks.icp, Ilks.dip) else False
+            sn = self.validateSN(serder.ked["sn"], serder.ked, inceptive=inceptive)
+            self.escrowEvent(serder=serder, sigers=sigers,
+                             pre=self.prefixer.qb64b, sn=sn)
             raise ValidationError("No delegating event at seal = {} for "
                                   "evt = {}.".format(serder.ked["seal"],
                                                      serder.ked))
@@ -1166,18 +1174,21 @@ class Kever:
     def escrowEvent(self, serder, sigers, pre, sn):
         """
         Update associated logs for escrow of partially signed event
+        or fully signed delegated event but without delegating event
 
         Parameters:
             serder is Serder instance of  event
             sigers is list of Siger instance for  event
-            pre is str qb64 ofidentifier prefix of event
+            pre is str qb64 of identifier prefix of event
             sn is int sequence number of event
         """
         dgkey = dgKey(pre, serder.digb)
         self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addPses(snKey(pre, sn), serder.digb)
+        self.baser.addPse(snKey(pre, sn), serder.digb)
+
+
 
 
 
