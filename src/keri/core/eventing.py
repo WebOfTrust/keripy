@@ -1120,7 +1120,7 @@ class Kever:
             sn is int delegated event sequence number
 
         """
-        # verify delegator seal
+        # verify seal pointing delegator event
         seal = SealLocation(**serder.ked["seal"])
         # seal has pre sn ilk dig (prior dig)
 
@@ -1167,8 +1167,8 @@ class Kever:
                                   "".format(serder.ked["seal"], serder.ked))
 
         # should we reverify signatures or trust the database?
-        # if database is loaded into memory fresh each bootup then we can trust
-        #  it otherwise we can't
+        # if database is loaded into memory fresh and reverified each bootup
+        # then we can trust it otherwise we can't
 
 
     def logEvent(self, serder, sigers):
