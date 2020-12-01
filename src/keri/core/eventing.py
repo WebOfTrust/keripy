@@ -635,6 +635,7 @@ class Kever:
         .estOnly is boolean trait True means only allow establishment events
         .lastEst is LastEstLoc namedtuple of int .sn and qb64 .dig of last est event
         .delegated is Boolean, True means delegated identifier, False not delegated
+        .delgator is str qb64 of delegator's prefix
 
 
     Properties:
@@ -683,10 +684,12 @@ class Kever:
                           sith=self.sith, sn=self.sn)
 
         if ilk == Ilks.dip:
-            self.validateSeal(serder=serder, sigers=sigers)
+            seal = self.validateSeal(serder=serder, sigers=sigers)
             self.delegated = True
+            self.delegator = seal.pre
         else:
             self.delegated = False
+            self.delegator = None
 
         self.logEvent(serder, sigers)  # update logs
 
@@ -800,7 +803,7 @@ class Kever:
         ilk = ked["ilk"]
 
         if ilk in (Ilks.rot, Ilks.drt) :  # rotation (or delegated rotation) event
-            if self.delegated and  ilk != Ilks.drt:
+            if self.delegated and ilk != Ilks.drt:
                 raise ValidationError("Attempted non delegated rotation on "
                                       "delegated pre = {} with evt = {}."
                                       "".format(ked["pre"], ked))
@@ -818,7 +821,12 @@ class Kever:
                               sith=sith, sn=sn)
 
             if ilk == Ilks.drt:
-                self.validateSeal(serder=serder, sigers=sigers)
+                seal = self.validateSeal(serder=serder, sigers=sigers)
+                if seal.pre != self.delegator:
+                    raise ValidationError("Attempted delegated rotation with "
+                                      "wrong delegator = {} for delegated pre "
+                                      " = {} with evt = {}."
+                                      "".format(seal.pre, ked["pre"], ked))
 
             # nxt and signatures verify so update state
             self.sn = sn
@@ -1112,6 +1120,8 @@ class Kever:
 
     def validateSeal(self, serder, sigers):
         """
+        Returns seal instance of SealLocation if seal validates with respect
+        to Delegator's KEL
         Assumes state setup
 
         Parameters:
@@ -1120,7 +1130,7 @@ class Kever:
             sn is int delegated event sequence number
 
         """
-        # verify delegator seal
+        # verify seal pointing delegator event
         seal = SealLocation(**serder.ked["seal"])
         # seal has pre sn ilk dig (prior dig)
 
@@ -1167,8 +1177,10 @@ class Kever:
                                   "".format(serder.ked["seal"], serder.ked))
 
         # should we reverify signatures or trust the database?
-        # if database is loaded into memory fresh each bootup then we can trust
-        #  it otherwise we can't
+        # if database is loaded into memory fresh and reverified each bootup
+        # then we can trust it otherwise we can't
+
+        return seal
 
 
     def logEvent(self, serder, sigers):
@@ -1699,36 +1711,36 @@ class Kevery:
         Placeholder here for logic need to move
 
         """
+        pass
+        ## fetch ked ilk  pre, sn, dig to see how to process
+        #ked = serder.ked
+        #try:  # see if pre in event validates
+            #prefixer = Prefixer(qb64=ked["pre"])
+        #except Exception as ex:
+            #raise ValidationError("Invalid pre = {}.".format(ked["pre"]))
+        #pre = prefixer.qb64
+        #ked = serder.ked
+        #ilk = ked["ilk"]
+        #try:
+            #sn = int(ked["sn"], 16)
+        #except Exception as ex:
+            #raise ValidationError("Invalid sn = {}".format(ked["sn"]))
+        #dig = serder.dig
 
-        # fetch ked ilk  pre, sn, dig to see how to process
-        ked = serder.ked
-        try:  # see if pre in event validates
-            prefixer = Prefixer(qb64=ked["pre"])
-        except Exception as ex:
-            raise ValidationError("Invalid pre = {}.".format(ked["pre"]))
-        pre = prefixer.qb64
-        ked = serder.ked
-        ilk = ked["ilk"]
-        try:
-            sn = int(ked["sn"], 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {}".format(ked["sn"]))
-        dig = serder.dig
+        ##if dig in DELPs["pre"]:
+            ##return
 
-        #if dig in DELPs["pre"]:
-            #return
+        #if ilk == Ilks.icp:  # inception event so maybe duplicitous
+            ## Using Kever for cheap duplicity detection of inception events
+            ## kever init verifies basic inception stuff and signatures
+            ## raises exception if problem.
+            #kever = Kever(serder=serder, sigers=siger, baser=self.baser)  # create kever from serder
+            ## No exception above so verified duplicitous event
+            ## log it and add to DELS if first time
+            ##if pre not in DELs:  #  add to DELS
+                ##DELs[pre] = dict()
+            ##if dig not in DELS[pre]:
+                ##DELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
 
-        if ilk == Ilks.icp:  # inception event so maybe duplicitous
-            # Using Kever for cheap duplicity detection of inception events
-            # kever init verifies basic inception stuff and signatures
-            # raises exception if problem.
-            kever = Kever(serder=serder, sigers=siger, baser=self.baser)  # create kever from serder
-            # No exception above so verified duplicitous event
-            # log it and add to DELS if first time
-            #if pre not in DELs:  #  add to DELS
-                #DELs[pre] = dict()
-            #if dig not in DELS[pre]:
-                #DELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
-
-        else:
-            pass
+        #else:
+            #pass
