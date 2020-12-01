@@ -1699,36 +1699,36 @@ class Kevery:
         Placeholder here for logic need to move
 
         """
+        pass
+        ## fetch ked ilk  pre, sn, dig to see how to process
+        #ked = serder.ked
+        #try:  # see if pre in event validates
+            #prefixer = Prefixer(qb64=ked["pre"])
+        #except Exception as ex:
+            #raise ValidationError("Invalid pre = {}.".format(ked["pre"]))
+        #pre = prefixer.qb64
+        #ked = serder.ked
+        #ilk = ked["ilk"]
+        #try:
+            #sn = int(ked["sn"], 16)
+        #except Exception as ex:
+            #raise ValidationError("Invalid sn = {}".format(ked["sn"]))
+        #dig = serder.dig
 
-        # fetch ked ilk  pre, sn, dig to see how to process
-        ked = serder.ked
-        try:  # see if pre in event validates
-            prefixer = Prefixer(qb64=ked["pre"])
-        except Exception as ex:
-            raise ValidationError("Invalid pre = {}.".format(ked["pre"]))
-        pre = prefixer.qb64
-        ked = serder.ked
-        ilk = ked["ilk"]
-        try:
-            sn = int(ked["sn"], 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {}".format(ked["sn"]))
-        dig = serder.dig
+        ##if dig in DELPs["pre"]:
+            ##return
 
-        #if dig in DELPs["pre"]:
-            #return
+        #if ilk == Ilks.icp:  # inception event so maybe duplicitous
+            ## Using Kever for cheap duplicity detection of inception events
+            ## kever init verifies basic inception stuff and signatures
+            ## raises exception if problem.
+            #kever = Kever(serder=serder, sigers=siger, baser=self.baser)  # create kever from serder
+            ## No exception above so verified duplicitous event
+            ## log it and add to DELS if first time
+            ##if pre not in DELs:  #  add to DELS
+                ##DELs[pre] = dict()
+            ##if dig not in DELS[pre]:
+                ##DELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
 
-        if ilk == Ilks.icp:  # inception event so maybe duplicitous
-            # Using Kever for cheap duplicity detection of inception events
-            # kever init verifies basic inception stuff and signatures
-            # raises exception if problem.
-            kever = Kever(serder=serder, sigers=siger, baser=self.baser)  # create kever from serder
-            # No exception above so verified duplicitous event
-            # log it and add to DELS if first time
-            #if pre not in DELs:  #  add to DELS
-                #DELs[pre] = dict()
-            #if dig not in DELS[pre]:
-                #DELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
-
-        else:
-            pass
+        #else:
+            #pass
