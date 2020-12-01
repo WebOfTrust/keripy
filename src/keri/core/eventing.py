@@ -634,6 +634,7 @@ class Kever:
         .wits is list of qualified qb64 aids for witnesses
         .estOnly is boolean trait True means only allow establishment events
         .lastEst is LastEstLoc namedtuple of int .sn and qb64 .dig of last est event
+        .delegated is Boolean, True means delegated identifier, False not delegated
 
 
     Properties:
@@ -683,6 +684,9 @@ class Kever:
 
         if ilk == Ilks.dip:
             self.validateSeal(serder=serder, sigers=sigers)
+            self.delegated = True
+        else:
+            self.delegated = False
 
         self.logEvent(serder, sigers)  # update logs
 
@@ -796,6 +800,11 @@ class Kever:
         ilk = ked["ilk"]
 
         if ilk in (Ilks.rot, Ilks.drt) :  # rotation (or delegated rotation) event
+            if self.delegated and  ilk != Ilks.drt:
+                raise ValidationError("Attempted non delegated rotation on "
+                                      "delegated pre = {} with evt = {}."
+                                      "".format(ked["pre"], ked))
+
             labels = DRT_LABELS if ilk == Ilks.dip else ROT_LABELS
             for k in labels:
                 if k not in ked:

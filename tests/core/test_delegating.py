@@ -154,6 +154,7 @@ def test_delegation():
         bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
         assert delPre in bobKvy.kevers  # successfully validated
         delK = bobKvy.kevers[delPre]
+        assert delK.delegated
         assert delK.diger.qb64 == delSrdr.dig  # key state updated so event was validated
         assert delK.diger.qb64 == 'EeBPcw30IVCylYANEGOg3V8f4nBYMspEpqNaq2Y8_knw'
 
@@ -234,6 +235,7 @@ def test_delegation():
 
         # apply Del's delegated inception event message to bob's Kevery
         bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        assert delK.delegated
         assert delK.diger.qb64 == delSrdr.dig  # key state updated so event was validated
         assert delK.diger.qb64 == 'EeiCC5kb8Ms2-T3lnx83kwEPq_iJBBL0QC03ab559Dts'
 
