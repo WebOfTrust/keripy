@@ -635,6 +635,7 @@ class Kever:
         .estOnly is boolean trait True means only allow establishment events
         .lastEst is LastEstLoc namedtuple of int .sn and qb64 .dig of last est event
         .delegated is Boolean, True means delegated identifier, False not delegated
+        .delgator is str qb64 of delegator's prefix
 
 
     Properties:
@@ -683,10 +684,12 @@ class Kever:
                           sith=self.sith, sn=self.sn)
 
         if ilk == Ilks.dip:
-            self.validateSeal(serder=serder, sigers=sigers)
+            seal = self.validateSeal(serder=serder, sigers=sigers)
             self.delegated = True
+            self.delegator = seal.pre
         else:
             self.delegated = False
+            self.delegator = None
 
         self.logEvent(serder, sigers)  # update logs
 
@@ -800,7 +803,7 @@ class Kever:
         ilk = ked["ilk"]
 
         if ilk in (Ilks.rot, Ilks.drt) :  # rotation (or delegated rotation) event
-            if self.delegated and  ilk != Ilks.drt:
+            if self.delegated and ilk != Ilks.drt:
                 raise ValidationError("Attempted non delegated rotation on "
                                       "delegated pre = {} with evt = {}."
                                       "".format(ked["pre"], ked))
@@ -818,7 +821,12 @@ class Kever:
                               sith=sith, sn=sn)
 
             if ilk == Ilks.drt:
-                self.validateSeal(serder=serder, sigers=sigers)
+                seal = self.validateSeal(serder=serder, sigers=sigers)
+                if seal.pre != self.delegator:
+                    raise ValidationError("Attempted delegated rotation with "
+                                      "wrong delegator = {} for delegated pre "
+                                      " = {} with evt = {}."
+                                      "".format(seal.pre, ked["pre"], ked))
 
             # nxt and signatures verify so update state
             self.sn = sn
@@ -1112,6 +1120,8 @@ class Kever:
 
     def validateSeal(self, serder, sigers):
         """
+        Returns seal instance of SealLocation if seal validates with respect
+        to Delegator's KEL
         Assumes state setup
 
         Parameters:
@@ -1169,6 +1179,8 @@ class Kever:
         # should we reverify signatures or trust the database?
         # if database is loaded into memory fresh and reverified each bootup
         # then we can trust it otherwise we can't
+
+        return seal
 
 
     def logEvent(self, serder, sigers):
