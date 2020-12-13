@@ -1699,6 +1699,7 @@ def test_serder():
     assert evt1.size == size1
     assert evt1.raw == e1ss[:size1]
     assert evt1.version == vers1
+    assert evt1.diger.code == CryOneDex.Blake3_256
 
     evt2 = Serder(raw=e2ss)
     assert evt2.kind == kind2
@@ -1776,6 +1777,17 @@ def test_serder():
     assert evt2.kind == Serials.json
     knd, version, size = Deversify(evt2.ked['vs'])
     assert knd == Serials.json
+
+    #  Test diger code
+    ked = {'vs': 'KERI10JSON000042_', 'pre': 'ABCDEFG', 'sn': '0001', 'ilk': 'rot'}
+    raw = b'{"vs":"KERI10JSON000042_","pre":"ABCDEFG","sn":"0001","ilk":"rot"}'
+    srdr = Serder(raw=raw, code=CryOneDex.SHA3_256)
+    assert srdr.kind == 'JSON'
+    assert srdr.raw == raw
+    assert srdr.ked == ked
+    assert srdr.diger.code == CryOneDex.SHA3_256
+
+
     """Done Test """
 
 
@@ -1783,4 +1795,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_diger()
+    test_serder()
