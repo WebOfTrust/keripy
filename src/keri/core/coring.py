@@ -1035,6 +1035,14 @@ class Diger(CryMat):
 
         See CryMat for inherited parameters
 
+        Inherited Parameters:
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
+
         Parameters:
            ser is bytes serialization from which raw is computed if not raw
 
@@ -1082,67 +1090,114 @@ class Diger(CryMat):
         Parameters:
             ser is bytes serialization
         """
-        return (self._verify(ser=ser, dig=self.raw))
+        return (self._verify(ser=ser, raw=self.raw))
+
+
+    def compare(self, ser, dig=None, diger=None):
+        """
+        Returns True  if dig and .qb64 or .qb64b match or
+            if both .raw and dig are valid digests of ser
+            Otherwise returns False
+
+        Parameters:
+            ser is bytes serialization
+            dig is qb64b or qb64 digest of ser to compare with self
+            diger is Diger instance of digest of ser to compare with self
+
+            if both supplied dig takes precedence
+
+
+        If both match then as optimization returns True and does not verify either
+          as digest of ser
+        If both have same code but do not match then as optimization returns False
+           and does not verify if either is digest of ser
+        But if both do not match then recalcs both digests to verify they
+        they are both digests of ser with or without matching codes.
+        """
+        if dig is not None:
+            if hasattr(dig, "encode"):
+                dig = dig.encode('utf-8')  #  makes bytes
+
+            if dig == self.qb64b:  #  matching
+                return True
+
+            diger = Diger(qb64b=dig)  # extract code
+
+        elif diger is not None:
+            if diger.qb64b == self.qb64b:
+                return True
+
+        else:
+            raise ValueError("Both dig and diger may not be None.")
+
+        if diger.code == self.code: # digest not match but same code
+            return False
+
+        if diger.verify(ser=ser) and self.verify(ser=ser):  # both verify on ser
+            return True
+
+        return (False)
+
 
     @staticmethod
-    def _blake3_256(ser, dig):
+    def _blake3_256(ser, raw):
         """
         Returns True if verified False otherwise
-        Verifiy blake3_256 digest of ser matches dig
+        Verifiy blake3_256 digest of ser matches raw
 
         Parameters:
             ser is bytes serialization
             dig is bytes reference digest
         """
-        return(blake3.blake3(ser).digest() == dig)
+        return(blake3.blake3(ser).digest() == raw)
 
     @staticmethod
-    def _blake2b_256(ser, dig):
+    def _blake2b_256(ser, raw):
         """
         Returns True if verified False otherwise
-        Verifiy blake2b_256 digest of ser matches dig
+        Verifiy blake2b_256 digest of ser matches raw
 
         Parameters:
             ser is bytes serialization
             dig is bytes reference digest
         """
-        return(hashlib.blake2b(ser, digest_size=32).digest() == dig)
+        return(hashlib.blake2b(ser, digest_size=32).digest() == raw)
 
     @staticmethod
-    def _blake2s_256(ser, dig):
+    def _blake2s_256(ser, raw):
         """
         Returns True if verified False otherwise
-        Verifiy blake2s_256 digest of ser matches dig
+        Verifiy blake2s_256 digest of ser matches raw
 
         Parameters:
             ser is bytes serialization
             dig is bytes reference digest
         """
-        return(hashlib.blake2s(ser, digest_size=32).digest() == dig)
+        return(hashlib.blake2s(ser, digest_size=32).digest() == raw)
 
     @staticmethod
-    def _sha3_256(ser, dig):
+    def _sha3_256(ser, raw):
         """
         Returns True if verified False otherwise
-        Verifiy blake2s_256 digest of ser matches dig
+        Verifiy blake2s_256 digest of ser matches raw
 
         Parameters:
             ser is bytes serialization
             dig is bytes reference digest
         """
-        return(hashlib.sha3_256(ser).digest() == dig)
+        return(hashlib.sha3_256(ser).digest() == raw)
 
     @staticmethod
-    def _sha2_256(ser, dig):
+    def _sha2_256(ser, raw):
         """
         Returns True if verified False otherwise
-        Verifiy blake2s_256 digest of ser matches dig
+        Verifiy blake2s_256 digest of ser matches raw
 
         Parameters:
             ser is bytes serialization
             dig is bytes reference digest
         """
-        return(hashlib.sha256(ser).digest() == dig)
+        return(hashlib.sha256(ser).digest() == raw)
 
 
 
