@@ -6,6 +6,7 @@ tests.core.test_coring module
 import pytest
 import pysodium
 import blake3
+import hashlib
 
 
 from base64 import urlsafe_b64encode as encodeB64
@@ -274,5 +275,127 @@ def test_blake3():
     """
     Done Test
     """
+
+def test_blake2b():
+    """
+    Used generic hash in LibSodium which is Blake2b
+    Also hash std lib
+
+    """
+    # create keypair without seed
+    verkey,  sigkey = pysodium.crypto_sign_keypair()
+    assert len(verkey) == 32 == pysodium.crypto_sign_PUBLICKEYBYTES
+    assert len(sigkey) == 64 == pysodium.crypto_sign_SECRETKEYBYTES
+
+    verkey = b'Z\x80s\x81\xd3\xf4\xaa\x94\x80\x86\x9bH\x8ay\xc2\xf9\x89k_\x946\xf1_`\x8c\xa9\xd8\xd2b\xe4\x00\x08'
+
+    #  digest of publickey
+    digest = pysodium.crypto_generichash(verkey)
+    assert len(digest) == 32 == pysodium.crypto_generichash_BYTES
+    assert digest == (b'\xf9\xa4\xe3\x87\x05\xc9\xf8\x9b\x18pI\xf3\xb5G@\xdf\x03\xbe\xcc\x9b)\xe7u\xeaH\x19\x1d\xe6*4Yp')
+
+
+    digestbig = pysodium.crypto_generichash(verkey, outlen=64)
+    assert len(digestbig) == 64
+    # assert digestbig[:32] == digest  # not true for blake2b
+
+    dig = hashlib.blake2b(verkey, digest_size=32).digest()
+    assert dig ==  (b'\xf9\xa4\xe3\x87\x05\xc9\xf8\x9b\x18pI\xf3\xb5G@\xdf\x03\xbe\xcc\x9b)\xe7u\xeaH\x19\x1d\xe6*4Yp')
+    assert len(dig) == 32
+    assert dig == digest
+
+    digbig =  hashlib.blake2b(verkey).digest()
+    assert len(digbig) == 64
+    assert digbig == digestbig
+
+    """
+    Done Test
+    """
+
+def test_blake2s():
+    """
+    Used hash std lib
+
+    """
+    # create keypair without seed
+    verkey,  sigkey = pysodium.crypto_sign_keypair()
+    assert len(verkey) == 32 == pysodium.crypto_sign_PUBLICKEYBYTES
+    assert len(sigkey) == 64 == pysodium.crypto_sign_SECRETKEYBYTES
+
+    verkey = b'Z\x80s\x81\xd3\xf4\xaa\x94\x80\x86\x9bH\x8ay\xc2\xf9\x89k_\x946\xf1_`\x8c\xa9\xd8\xd2b\xe4\x00\x08'
+
+    dig = hashlib.blake2s(verkey, digest_size=32).digest()
+    assert dig ==  (b'E(\x89\xec\xfc\xe4\x02\xba\x05\xcc\xf35=\xfa\xfa\xb1\x87\t\x99\xd0Q:\t\x80f^\xe4J\x17\xe9\x9d\x1a')
+    assert len(dig) == 32
+
+    """
+    Done Test
+    """
+
+
+def test_sha2():
+    """
+    Used pysoidium.crypto_hash_sha256(message)
+
+    """
+    # create keypair without seed
+    verkey,  sigkey = pysodium.crypto_sign_keypair()
+    assert len(verkey) == 32 == pysodium.crypto_sign_PUBLICKEYBYTES
+    assert len(sigkey) == 64 == pysodium.crypto_sign_SECRETKEYBYTES
+
+    verkey = b'Z\x80s\x81\xd3\xf4\xaa\x94\x80\x86\x9bH\x8ay\xc2\xf9\x89k_\x946\xf1_`\x8c\xa9\xd8\xd2b\xe4\x00\x08'
+
+    #  digest of publickey
+    digest = pysodium.crypto_hash_sha256(verkey)
+    assert len(digest) == 32 == pysodium.crypto_generichash_BYTES
+    assert digest == (b'\x81\xce\x15L\x8b3\xb1mI\x9bF\xd9(\x0e\x99\x08SH6\xb9\xb5)\xf6\x93\xd0\x7f\x85\xe1r\xa7\x13\xd7')
+
+
+    digestbig = pysodium.crypto_hash_sha512(verkey)
+    assert len(digestbig) == 64
+    # assert digestbig[:32] == digest  # not true for sha256 sha512
+
+    dig = hashlib.sha256(verkey).digest()
+    assert len(dig) == 32
+    assert dig == digest
+
+    digbig =  hashlib.sha512(verkey).digest()
+    assert len(digbig) == 64
+    assert digbig == digestbig
+
+
+    """
+    Done Test
+    """
+
+def test_sha3():
+    """
+    Used pysoidium.crypto_hash_sha256(message)
+
+    """
+    # create keypair without seed
+    verkey,  sigkey = pysodium.crypto_sign_keypair()
+    assert len(verkey) == 32 == pysodium.crypto_sign_PUBLICKEYBYTES
+    assert len(sigkey) == 64 == pysodium.crypto_sign_SECRETKEYBYTES
+
+    verkey = b'Z\x80s\x81\xd3\xf4\xaa\x94\x80\x86\x9bH\x8ay\xc2\xf9\x89k_\x946\xf1_`\x8c\xa9\xd8\xd2b\xe4\x00\x08'
+
+    dig = hashlib.sha3_256(verkey).digest()
+    assert len(dig) == 32
+    assert dig == (b'\xd6\x00\xac_&\xeb\xd5"\xbaP\xdc\xb7\x06\x91^{\xa3\x18\xca\n+t\xbe\x1c7\xebY5ww\xdd7')
+
+    digbig =  hashlib.sha3_512(verkey).digest()
+    assert len(digbig) == 64
+    assert digbig ==  (b'X\x0e\t\x03{--\xf1oms6\xb0\xb2\x94m.\xe1=?\xee\xbe\xd18\xa7\x90\x04\xc6'
+                       b'd\xbd):\x9d\xaf\xd3\xc3\xb4V\xb3s8]G\x92F\x92\x0c\xb1\x86\xd1\x13\x88'
+                       b':\xd5\xd6\x84%\x18\x94u\xf2\xff\xd5|')
+
+    # assert digbig[:32] == dig  # not true for sha256 sha512
+
+    """
+    Done Test
+    """
+
+
 if __name__ == "__main__":
-    test_blake3()
+    test_blake2s()

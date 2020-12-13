@@ -8,6 +8,7 @@ import pytest
 import pysodium
 import blake3
 import json
+import hashlib
 
 import msgpack
 import cbor2 as cbor
@@ -695,33 +696,74 @@ def test_diger():
 
     #create something to digest and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
     dig = blake3.blake3(ser).digest()
+    with pytest.raises(ValueError):
+        diger = Diger(raw=dig, code=CryOneDex.Ed25519)
+
+    with pytest.raises(ValueError):
+        diger = Diger(ser=ser, code=CryOneDex.Ed25519)
 
     diger = Diger(raw=dig)  # defaults provide Blake3_256 digester
     assert diger.code == CryOneDex.Blake3_256
     assert len(diger.raw) == CryOneRawSizes[diger.code]
-    result = diger.verify(ser=ser)
-    assert result == True
-    result = diger.verify(ser=ser+b'ABCDEF')
-    assert result == False
+    assert diger.verify(ser=ser)
+    assert not diger.verify(ser=ser+b'ABCDEF')
 
     diger = Diger(raw=dig, code=CryOneDex.Blake3_256)
     assert diger.code == CryOneDex.Blake3_256
     assert len(diger.raw) == CryOneRawSizes[diger.code]
-    result = diger.verify(ser=ser)
-    assert result == True
+    assert diger.verify(ser=ser)
 
-    with pytest.raises(ValueError):
-        diger = Diger(raw=dig, code=CryOneDex.Ed25519)
-
-    diger = Diger(ser=ser)
+    diger = Diger(ser=ser)  # default code is  Blake3_256
     assert diger.code == CryOneDex.Blake3_256
     assert len(diger.raw) == CryOneRawSizes[diger.code]
-    result = diger.verify(ser=ser)
-    assert result == True
+    assert diger.verify(ser=ser)
 
-    with pytest.raises(ValueError):
-        diger = Diger(ser=ser, code=CryOneDex.Ed25519)
+    dig = hashlib.blake2b(ser, digest_size=32).digest()
+    diger = Diger(raw=dig, code=CryOneDex.Blake2b_256)
+    assert diger.code == CryOneDex.Blake2b_256
+    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert diger.verify(ser=ser)
+
+    diger = Diger(ser=ser, code=CryOneDex.Blake2b_256)
+    assert diger.code == CryOneDex.Blake2b_256
+    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert diger.verify(ser=ser)
+
+    dig = hashlib.blake2s(ser, digest_size=32).digest()
+    diger = Diger(raw=dig, code=CryOneDex.Blake2s_256)
+    assert diger.code == CryOneDex.Blake2s_256
+    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert diger.verify(ser=ser)
+
+    diger = Diger(ser=ser, code=CryOneDex.Blake2s_256)
+    assert diger.code == CryOneDex.Blake2s_256
+    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert diger.verify(ser=ser)
+
+    dig = hashlib.sha3_256(ser).digest()
+    diger = Diger(raw=dig, code=CryOneDex.SHA3_256)
+    assert diger.code == CryOneDex.SHA3_256
+    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert diger.verify(ser=ser)
+
+    diger = Diger(ser=ser, code=CryOneDex.SHA3_256)
+    assert diger.code == CryOneDex.SHA3_256
+    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert diger.verify(ser=ser)
+
+    dig = hashlib.sha256(ser).digest()
+    diger = Diger(raw=dig, code=CryOneDex.SHA2_256)
+    assert diger.code == CryOneDex.SHA2_256
+    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert diger.verify(ser=ser)
+
+    diger = Diger(ser=ser, code=CryOneDex.SHA2_256)
+    assert diger.code == CryOneDex.SHA2_256
+    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert diger.verify(ser=ser)
+
     """ Done Test """
 
 
@@ -1741,4 +1783,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_salter()
+    test_diger()

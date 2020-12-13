@@ -17,6 +17,8 @@ import cbor2 as cbor
 import msgpack
 import pysodium
 import blake3
+import hashlib
+
 
 from ..kering import (ValidationError, VersionError, EmptyMaterialError,
                       DerivationError, ShortageError)
@@ -1044,12 +1046,29 @@ class Diger(CryMat):
                 raise ex
             if code == CryOneDex.Blake3_256:
                 dig = blake3.blake3(ser).digest()
-                super(Diger, self).__init__(raw=dig, code=code, **kwa)
+            elif code == CryOneDex.Blake2b_256:
+                dig = hashlib.blake2b(ser, digest_size=32).digest()
+            elif code == CryOneDex.Blake2s_256:
+                dig = hashlib.blake2s(ser, digest_size=32).digest()
+            elif code == CryOneDex.SHA3_256:
+                dig = hashlib.sha3_256(ser).digest()
+            elif code == CryOneDex.SHA2_256:
+                dig = hashlib.sha256(ser).digest()
             else:
                 raise ValueError("Unsupported code = {} for digester.".format(code))
 
+            super(Diger, self).__init__(raw=dig, code=code, **kwa)
+
         if self.code == CryOneDex.Blake3_256:
             self._verify = self._blake3_256
+        elif self.code == CryOneDex.Blake2b_256:
+            self._verify = self._blake2b_256
+        elif self.code == CryOneDex.Blake2s_256:
+            self._verify = self._blake2s_256
+        elif self.code == CryOneDex.SHA3_256:
+            self._verify = self._sha3_256
+        elif self.code == CryOneDex.SHA2_256:
+            self._verify = self._sha2_256
         else:
             raise ValueError("Unsupported code = {} for digester.".format(self.code))
 
@@ -1076,6 +1095,55 @@ class Diger(CryMat):
             dig is bytes reference digest
         """
         return(blake3.blake3(ser).digest() == dig)
+
+    @staticmethod
+    def _blake2b_256(ser, dig):
+        """
+        Returns True if verified False otherwise
+        Verifiy blake2b_256 digest of ser matches dig
+
+        Parameters:
+            ser is bytes serialization
+            dig is bytes reference digest
+        """
+        return(hashlib.blake2b(ser, digest_size=32).digest() == dig)
+
+    @staticmethod
+    def _blake2s_256(ser, dig):
+        """
+        Returns True if verified False otherwise
+        Verifiy blake2s_256 digest of ser matches dig
+
+        Parameters:
+            ser is bytes serialization
+            dig is bytes reference digest
+        """
+        return(hashlib.blake2s(ser, digest_size=32).digest() == dig)
+
+    @staticmethod
+    def _sha3_256(ser, dig):
+        """
+        Returns True if verified False otherwise
+        Verifiy blake2s_256 digest of ser matches dig
+
+        Parameters:
+            ser is bytes serialization
+            dig is bytes reference digest
+        """
+        return(hashlib.sha3_256(ser).digest() == dig)
+
+    @staticmethod
+    def _sha2_256(ser, dig):
+        """
+        Returns True if verified False otherwise
+        Verifiy blake2s_256 digest of ser matches dig
+
+        Parameters:
+            ser is bytes serialization
+            dig is bytes reference digest
+        """
+        return(hashlib.sha256(ser).digest() == dig)
+
 
 
 class Nexter(CryMat):
