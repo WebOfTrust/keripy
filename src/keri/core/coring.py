@@ -2290,7 +2290,7 @@ class Serder:
         .size is int of number of bytes in serialed event only
 
     """
-    def __init__(self, raw=b'', ked=None, kind=None):
+    def __init__(self, raw=b'', ked=None, kind=None, code=CryOneDex.Blake3_256):
         """
         Deserialize if raw provided
         Serialize if ked provided but not raw
@@ -2303,7 +2303,7 @@ class Serder:
           kind is serialization kind string value or None (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
             if kind is None then its extracted from ked or raw
-          size is int number of bytes in raw if any
+          code is .diger default digest code
 
 
         Attributes:
@@ -2313,6 +2313,7 @@ class Serder:
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
           ._version is Versionage instance of event version
           ._size is int of number of bytes in serialed event only
+          ._code is default code for .diger
           ._diger is Diger instance of digest of .raw
 
         Properties:
@@ -2329,6 +2330,7 @@ class Serder:
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
         """
+        self._code = code  # need default code for .diger
         if raw:  # deserialize raw using property
             self.raw = raw  # raw property setter does the deserialization
         elif ked: # serialize ked
@@ -2336,6 +2338,7 @@ class Serder:
             self.ked = ked  # ked property setter does the serialization
         else:
             raise ValueError("Improper initialization need raw or ked.")
+
 
     @staticmethod
     def _sniff(raw):
@@ -2464,6 +2467,7 @@ class Serder:
 
         return (raw, kind, ked, version)
 
+
     @property
     def raw(self):
         """ raw property getter """
@@ -2479,8 +2483,8 @@ class Serder:
         self._kind = kind
         self._version = version
         self._size = size
-        self._diger = Diger(raw=blake3.blake3(self._raw).digest(),
-                            code=CryOneDex.Blake3_256)
+        self._diger = Diger(ser=self._raw, code=self._code)
+
 
     @property
     def ked(self):
@@ -2498,8 +2502,8 @@ class Serder:
         self._kind = kind
         self._size = size
         self._version = version
-        self._diger = Diger(raw=blake3.blake3(self._raw).digest(),
-                            code=CryOneDex.Blake3_256)
+        self._diger = Diger(ser=self._raw, code=self._code)
+
 
     @property
     def kind(self):
