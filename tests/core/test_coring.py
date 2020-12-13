@@ -764,6 +764,27 @@ def test_diger():
     assert len(diger.raw) == CryOneRawSizes[diger.code]
     assert diger.verify(ser=ser)
 
+    diger0 = Diger(ser=ser) # default code
+    diger1 = Diger(ser=ser, code=CryOneDex.SHA3_256)
+    diger2 = Diger(ser=ser, code=CryOneDex.Blake2b_256)
+
+    assert diger0.compare(ser=ser, diger=diger1)
+    assert diger0.compare(ser=ser, diger=diger2)
+    assert diger1.compare(ser=ser, diger=diger2)
+
+    assert diger0.compare(ser=ser, dig=diger1.qb64)
+    assert diger0.compare(ser=ser, dig=diger2.qb64b)
+    assert diger1.compare(ser=ser, dig=diger2.qb64)
+
+    ser1 = b'ABCDEFGHIJKLMNOPQSTUVWXYXZabcdefghijklmnopqrstuvwxyz0123456789'
+
+    assert not diger0.compare(ser=ser, diger=Diger(ser=ser1))  # codes match
+    assert not diger0.compare(ser=ser, dig=Diger(ser=ser1).qb64)  # codes match
+    assert not diger0.compare(ser=ser,  # codes not match
+                              diger=Diger(ser=ser1, code=CryOneDex.SHA3_256))
+    assert not diger0.compare(ser=ser,  # codes not match
+                              dig=Diger(ser=ser1, code=CryOneDex.SHA3_256).qb64b)
+
     """ Done Test """
 
 
@@ -1795,4 +1816,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_serder()
+    test_diger()
