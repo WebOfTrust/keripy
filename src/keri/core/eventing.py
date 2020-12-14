@@ -1097,6 +1097,7 @@ class Kever:
 
         return True
 
+
     def verifySith(self, sigers, sith=None):
         """
         Assumes that all sigers signatures were already verified
@@ -1122,6 +1123,7 @@ class Kever:
         """
         Returns seal instance of SealLocation if seal validates with respect
         to Delegator's KEL
+        Location Seal is from Delegate's establishment event
         Assumes state setup
 
         Parameters:
@@ -1168,7 +1170,7 @@ class Kever:
         found = False  # find event seal of delegated event in delegating data
         for dseal in dserder.ked["data"]:  #  find delegating seal
             if ("pre" in dseal and dseal["pre"] == pre and
-                "dig" in dseal and dseal["dig"] == dig):
+                "dig" in dseal and serder.compare(dig=dseal["dig"])):  # dseal["dig"] == dig
                 found = True
                 break
 
@@ -1564,6 +1566,7 @@ class Kevery:
         Receipt dict labels
             vs  # version string
             pre  # qb64 prefix
+            sn  # hex string sequence number
             ilk  # rct
             dig  # qb64 digest of receipted event
         """
@@ -1578,42 +1581,38 @@ class Kevery:
             sn = int(sn, 16)
         except Exception as ex:
             raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
-        dig = ked["dig"]
 
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)
         ldig = self.baser.getKeLast(key=snkey)   # retrieve dig of last event at sn.
 
-        # retrieve event by dig
-        dgkey = dgKey(pre=pre, dig=dig)
-        raw = self.baser.getEvt(key=dgkey)  # retrieve receipted event at dig
-
         if ldig is not None:  #  verify digs match
             ldig = bytes(ldig).decode("utf-8")
-            if ldig != dig:  # stale receipt at sn discard
-                raise ValidationError("Stale receipt at sn = {} for evt = {}."
+            # retrieve event by dig assumes if ldig is not None that event exists at ldig
+            dgkey = dgKey(pre=pre, dig=ldig)
+            raw = bytes(self.baser.getEvt(key=dgkey))  # retrieve receipted event at dig
+            # assumes db ensures that raw must not be none
+            lserder = Serder(raw=raw)  # deserialize event raw
+
+            if not lserder.compare(dig=ked["dig"]):  # stale receipt at sn discard
+                raise ValidationError("Stale receipt at sn = {} for rct = {}."
                                       "".format(ked["sn"], ked))
 
-            # assumes db ensures that if ldig == dig then raw must not be none
-            eserder = Serder(raw=bytes(raw))  # deserialize event raw
             # process each couplet verify sig and write to db
             for cigar in cigars:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
-                if cigar.verfer.verify(cigar.raw, eserder.raw):
+                if cigar.verfer.verify(cigar.raw, lserder.raw):
                     # write receipt couplet to database
                     couplet = cigar.verfer.qb64b + cigar.qb64b
                     self.baser.addRct(key=dgkey, val=couplet)
 
-        else:  # verify that dig not for some other event
-            if raw is not None:  # bad receipt dig matches some other event
-                raise ValidationError("Bad receipt for sn = {} and dig = {} "
-                                  "for evt = {}.".format(ked["sn"]), dig, ked)
-
+        else:  # no events to be receipted yet at that sn so escrow
             for cigar in cigars:  # escrow each couplet
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
                 couplet = cigar.verfer.qb64b + cigar.qb64b
+                dgkey = dgKey(pre=pre, dig=ked["dig"])
                 self.baser.addUre(key=dgkey, val=couplet)
 
 

@@ -3074,4 +3074,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_keyeventfuncs()
+    test_receipt()
