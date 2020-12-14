@@ -255,6 +255,7 @@ class Reactor(doing.Doer):
         # create seal of own last est event
         kever = self.hab.kevers[self.hab.pre]
         seal = eventing.SealEvent(pre=self.hab.pre,
+                                  sn="{:x}".format(kever.lastEst.sn),
                                   dig=kever.lastEst.dig)
 
         cueKed = cueSerder.ked
@@ -523,6 +524,7 @@ class Reactant(tyming.Tymee):
         # create seal of own last est event
         kever = self.hab.kevers[self.hab.pre]
         seal = eventing.SealEvent(pre=self.hab.pre,
+                                  sn="{:x}".format(kever.lastEst.sn),
                                   dig=kever.lastEst.dig)
 
         cueKed = cueSerder.ked

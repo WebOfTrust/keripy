@@ -76,8 +76,9 @@ SealDigest = namedtuple("SealDigest", 'dig')
 # Root Seal: root is qb64 digest that is merkle tree root of data tree
 SealRoot = namedtuple("SealRoot", 'root')
 
-# Event Seal: pre is qb64 of identifier prefix of KEL, dig is qb64 digest of event
-SealEvent = namedtuple("SealEvent", 'pre dig')
+# Event Seal: pre is qb64 of identifier prefix of KEL, sn is hex string,
+# dig is qb64 digest of event
+SealEvent = namedtuple("SealEvent", 'pre sn dig')
 
 # Event Location Seal: pre is qb64 of identifier prefix of KEL,
 # sn is hex string, ilk is str, dig is qb64 of prior event digest
