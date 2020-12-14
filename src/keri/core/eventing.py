@@ -1642,7 +1642,7 @@ class Kevery:
             sn = int(sn, 16)
         except Exception as ex:
             raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
-        dig = ked["dig"]
+
         seal = SealEvent(**ked["seal"])
         sealet = seal.pre.encode("utf-8") + seal.dig.encode("utf-8")
 
@@ -1650,32 +1650,27 @@ class Kevery:
         snkey = snKey(pre=pre, sn=sn)
         ldig = self.baser.getKeLast(key=snkey)  # retrieve dig of last event at sn.
 
-        dgkey = dgKey(pre=pre, dig=dig)
-        raw = self.baser.getEvt(key=dgkey)  # retrieve receipted event at dig
-
-        if ldig is not None:  #  verify digs match last seen and receipt dig
-            ldig = bytes(ldig).decode("utf-8")
-            if ldig != dig:  # stale receipt at sn discard
-                raise ValidationError("Stale receipt at sn = {} for evt = {}."
-                                      "".format(ked["sn"], ked))
-
-        else:  # no last seen so verify that dig not for some other event
-            if raw is not None:  # stale receipt dig matches some other event not last seen
-                raise ValidationError("Bad receipt for sn = {} and dig = {} "
-                                  " for evt = {}.".format(ked["sn"]), dig, ked)
-
-        # assumes db ensures that:
-        # if ldig is not None then raw is not None and vice versa
-        # if ldig == dig then eraw must not be none
-        if (ldig is not None and raw is not None and seal.pre in self.kevers):
+        if ldig is not None and seal.pre in self.kevers:  #  verify digs match last seen and receipt dig
             # both receipted event and receipter in database
-            # retreive
+            # so retreive
+            ldig = bytes(ldig).decode("utf-8")
+
+            # retrieve event by dig assumes if ldig is not None that event exists at ldig
+            dgkey = dgKey(pre=pre, dig=ldig)
+            raw = bytes(self.baser.getEvt(key=dgkey))  # retrieve receipted event at dig
+            # assumes db ensures that raw must not be none
+            lserder = Serder(raw=raw)  # deserialize event raw
+
+            if not lserder.compare(dig=ked["dig"]):  # stale receipt at sn discard
+                raise ValidationError("Stale receipt at sn = {} for rct = {}."
+                                      "".format(ked["sn"], ked))
 
             sigraw = self.baser.getEvt(key=dgKey(pre=seal.pre, dig=seal.dig))
             if sigraw is None:
                 raise ValidationError("Missing seal est. event dig = {} for "
                                       "receipt from pre ={}."
                                       "".format(seal.dig, seal.pre))
+
             sigSerder = Serder(raw=bytes(sigraw))
             verfers = sigSerder.verfers
             if not verfers:
@@ -1698,6 +1693,7 @@ class Kevery:
         else:  # escrow  either receiptor or event not yet in database
             for siger in sigers:  # escrow triplets one for each sig
                 triplet = sealet + siger.qb64b
+                dgkey = dgKey(pre=pre, dig=ked["dig"])
                 self.baser.addVre(key=dgkey, val=triplet)
 
 
