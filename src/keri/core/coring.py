@@ -2523,6 +2523,32 @@ class Serder:
         return (raw, kind, ked, version)
 
 
+    def compare(self, dig=None, diger=None):
+        """
+        Returns True  if dig and either .diger.qb64 or .diger.qb64b match or
+            if both .diger.raw and dig are valid digests of self.raw
+            Otherwise returns False
+
+        Convenience method to allow comparison of own .diger digest self.raw
+        with some other purported digest of self.raw
+
+        Parameters:
+            dig is qb64b or qb64 digest of ser to compare with .diger.raw
+            diger is Diger instance of digest of ser to compare with .diger.raw
+
+            if both supplied dig takes precedence
+
+
+        If both match then as optimization returns True and does not verify either
+          as digest of ser
+        If both have same code but do not match then as optimization returns False
+           and does not verify if either is digest of ser
+        But if both do not match then recalcs both digests to verify they
+        they are both digests of ser with or without matching codes.
+        """
+        return (self.diger.compare(ser=self.raw, dig=dig, diger=diger))
+
+
     @property
     def raw(self):
         """ raw property getter """

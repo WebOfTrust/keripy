@@ -625,6 +625,7 @@ class Kever:
         .version is version of current event state
         .prefixer is prefixer instance for current event state
         .sn is sequence number int
+        .serder is Serder instance of current event with .serder.diger for digest
         .diger is Diger instance with digest of current event not prior event
         .ilk is str of current event type
         .sith is int or list of current signing threshold
@@ -740,6 +741,7 @@ class Kever:
         sn = self.validateSN(sn=ked["sn"], ked=ked, inceptive=True)
         self.sn = sn
         self.diger = serder.diger
+        self.serder = serder  # need whole serder for digest agility comparisons
 
         nxt = ked["nxt"]
         if not self.prefixer.transferable and nxt:  # nxt must be empty for nontrans prefix
@@ -831,6 +833,7 @@ class Kever:
             # nxt and signatures verify so update state
             self.sn = sn
             self.diger = serder.diger
+            self.serder = serder  #  need whole serder for digest agility compare
             self.ilk = ilk
             self.sith = sith
             self.verfers = serder.verfers
@@ -877,6 +880,7 @@ class Kever:
             # update state
             self.sn = sn
             self.diger = serder.diger
+            self.serder = serder  # need for digest agility
             self.ilk = ilk
 
             self.logEvent(serder, sigers)  # update logs
@@ -935,7 +939,7 @@ class Kever:
                     raise ValidationError("Invalid recovery attempt: "
                                           " Bad dig = {}.".format(pdig))
                 pserder = Serder(raw=bytes(praw))  # deserialize prior event raw
-                if dig != pserder.dig:  # bad recovery event
+                if not pserder.compare(dig=dig): #  bad recovery event
                     raise ValidationError("Invalid recovery attempt:"
                                           "Mismatch recovery event prior dig"
                                           "= {} with dig = {} of event sn = {}"
@@ -945,10 +949,11 @@ class Kever:
                                                               ked))
 
         else:  # sn == self.sn + 1   new non-recovery event
-            if dig != self.diger.qb64:  # prior event dig not match
+            # if dig != self.diger.qb64:
+            if not self.serder.compare(dig=dig):  # prior event dig not match
                 raise ValidationError("Mismatch event dig = {} with"
                                       " state dig = {} for evt = {}."
-                                      "".format(dig, self.dig.qb64, ked))
+                                      "".format(dig, self.serder.diger.qb64, ked))
 
 
         # also check derivation code of pre for non-transferable

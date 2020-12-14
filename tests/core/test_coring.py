@@ -764,6 +764,8 @@ def test_diger():
     assert len(diger.raw) == CryOneRawSizes[diger.code]
     assert diger.verify(ser=ser)
 
+    ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
+
     diger0 = Diger(ser=ser) # default code
     diger1 = Diger(ser=ser, code=CryOneDex.SHA3_256)
     diger2 = Diger(ser=ser, code=CryOneDex.Blake2b_256)
@@ -1808,6 +1810,35 @@ def test_serder():
     assert srdr.ked == ked
     assert srdr.diger.code == CryOneDex.SHA3_256
 
+    #  Test compare
+    ked = {'vs': 'KERI10JSON000042_', 'pre': 'ABCDEFG', 'sn': '0001', 'ilk': 'rot'}
+    raw = b'{"vs":"KERI10JSON000042_","pre":"ABCDEFG","sn":"0001","ilk":"rot"}'
+    srdr = Serder(raw=raw)
+    assert srdr.kind == 'JSON'
+    assert srdr.raw == raw
+    assert srdr.ked == ked
+    assert srdr.diger.code == CryOneDex.Blake3_256
+
+    diger0 = Diger(ser=srdr.raw) # default code
+    diger1 = Diger(ser=srdr.raw, code=CryOneDex.SHA3_256)
+    diger2 = Diger(ser=srdr.raw, code=CryOneDex.Blake2b_256)
+
+    # test Serder.compare
+    assert srdr.compare(diger=diger0)
+    assert srdr.compare(diger=diger1)
+    assert srdr.compare(diger=diger2)
+
+    assert srdr.compare(dig=diger0.qb64)
+    assert srdr.compare(dig=diger1.qb64b)
+    assert srdr.compare(dig=diger2.qb64)
+
+    ser1 = b'ABCDEFGHIJKLMNOPQSTUVWXYXZabcdefghijklmnopqrstuvwxyz0123456789'
+
+    assert not srdr.compare(diger=Diger(ser=ser1))  # codes match
+    assert not srdr.compare(dig=Diger(ser=ser1).qb64)  # codes match
+    assert not srdr.compare(diger=Diger(ser=ser1, code=CryOneDex.SHA3_256)) # codes not match
+    assert not srdr.compare(dig=Diger(ser=ser1, code=CryOneDex.SHA2_256).qb64b)     # codes not match
+
 
     """Done Test """
 
@@ -1816,4 +1847,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_diger()
+    test_serder()
