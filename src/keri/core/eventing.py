@@ -626,7 +626,6 @@ class Kever:
         .prefixer is prefixer instance for current event state
         .sn is sequence number int
         .serder is Serder instance of current event with .serder.diger for digest
-        .diger is Diger instance with digest of current event not prior event
         .ilk is str of current event type
         .sith is int or list of current signing threshold
         .verfers is list of Verfer instances for current event state set of signing keys
@@ -740,7 +739,6 @@ class Kever:
 
         sn = self.validateSN(sn=ked["sn"], ked=ked, inceptive=True)
         self.sn = sn
-        self.diger = serder.diger
         self.serder = serder  # need whole serder for digest agility comparisons
 
         nxt = ked["nxt"]
@@ -768,7 +766,7 @@ class Kever:
         self.toad = toad
 
         # need this to recognize recovery events and transferable receipts
-        self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)  # last establishment event location
+        self.lastEst = LastEstLoc(sn=self.sn, dig=self.serder.diger.qb64)  # last establishment event location
 
 
     def config(self, serder, estOnly=None):
@@ -832,7 +830,6 @@ class Kever:
 
             # nxt and signatures verify so update state
             self.sn = sn
-            self.diger = serder.diger
             self.serder = serder  #  need whole serder for digest agility compare
             self.ilk = ilk
             self.sith = sith
@@ -845,7 +842,7 @@ class Kever:
             self.wits = wits
 
             # last establishment event location need this to recognize recovery events
-            self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)
+            self.lastEst = LastEstLoc(sn=self.sn, dig=self.serder.diger.qb64)
 
 
 
@@ -866,10 +863,10 @@ class Kever:
                 raise ValidationError("Invalid sn = {} expecting = {} for evt "
                                       "= {}.".format(sn, self.sn+1, ked))
 
-            if ked["dig"] != self.diger.qb64:  # prior event dig not match
+            if not self.serder.compare(dig=ked["dig"]):  # prior event dig not match
                 raise ValidationError("Mismatch event dig = {} with state dig"
                                       " = {} for evt = {}.".format(ked["dig"],
-                                                                   self.dig.qb64,
+                                                                   self.serder.diger.qb64,
                                                                    ked))
 
             # interaction event use sith and keys from pre-existing Kever state
@@ -879,8 +876,7 @@ class Kever:
 
             # update state
             self.sn = sn
-            self.diger = serder.diger
-            self.serder = serder  # need for digest agility
+            self.serder = serder  # need for digest agility includes .serder.diger
             self.ilk = ilk
 
             self.logEvent(serder, sigers)  # update logs
@@ -949,7 +945,6 @@ class Kever:
                                                               ked))
 
         else:  # sn == self.sn + 1   new non-recovery event
-            # if dig != self.diger.qb64:
             if not self.serder.compare(dig=dig):  # prior event dig not match
                 raise ValidationError("Mismatch event dig = {} with"
                                       " state dig = {} for evt = {}."
@@ -1196,11 +1191,11 @@ class Kever:
             serder is Serder instance of current event
             sigers is list of Siger instance for current event
         """
-        dgkey = dgKey(self.prefixer.qb64b, self.diger.qb64b)
+        dgkey = dgKey(self.prefixer.qb64b, self.serder.diger.qb64b)
         self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.diger.qb64b)
+        self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
         blogger.info("Kever process: added valid event to KEL event = %s\n", serder.ked)
 
 
