@@ -803,7 +803,7 @@ def test_usebaser():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=keys,
                         sith=sith,
-                        dig=kever.diger.qb64,
+                        dig=kever.serder.diger.qb64,
                         nxt=Nexter(keys=nxtkeys).qb64,
                         sn=1)
 
@@ -815,7 +815,7 @@ def test_usebaser():
 
         # Event 2 Interaction
         serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.diger.qb64,
+                          dig=kever.serder.diger.qb64,
                           sn=2)
 
         # sign serialization  (keys don't change for signing)

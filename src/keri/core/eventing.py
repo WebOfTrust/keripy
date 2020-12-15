@@ -76,8 +76,9 @@ SealDigest = namedtuple("SealDigest", 'dig')
 # Root Seal: root is qb64 digest that is merkle tree root of data tree
 SealRoot = namedtuple("SealRoot", 'root')
 
-# Event Seal: pre is qb64 of identifier prefix of KEL, dig is qb64 digest of event
-SealEvent = namedtuple("SealEvent", 'pre dig')
+# Event Seal: pre is qb64 of identifier prefix of KEL, sn is hex string,
+# dig is qb64 digest of event
+SealEvent = namedtuple("SealEvent", 'pre sn dig')
 
 # Event Location Seal: pre is qb64 of identifier prefix of KEL,
 # sn is hex string, ilk is str, dig is qb64 of prior event digest
@@ -625,7 +626,7 @@ class Kever:
         .version is version of current event state
         .prefixer is prefixer instance for current event state
         .sn is sequence number int
-        .diger is Diger instance with digest of current event not prior event
+        .serder is Serder instance of current event with .serder.diger for digest
         .ilk is str of current event type
         .sith is int or list of current signing threshold
         .verfers is list of Verfer instances for current event state set of signing keys
@@ -739,7 +740,7 @@ class Kever:
 
         sn = self.validateSN(sn=ked["sn"], ked=ked, inceptive=True)
         self.sn = sn
-        self.diger = serder.diger
+        self.serder = serder  # need whole serder for digest agility comparisons
 
         nxt = ked["nxt"]
         if not self.prefixer.transferable and nxt:  # nxt must be empty for nontrans prefix
@@ -766,7 +767,7 @@ class Kever:
         self.toad = toad
 
         # need this to recognize recovery events and transferable receipts
-        self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)  # last establishment event location
+        self.lastEst = LastEstLoc(sn=self.sn, dig=self.serder.diger.qb64)  # last establishment event location
 
 
     def config(self, serder, estOnly=None):
@@ -830,7 +831,7 @@ class Kever:
 
             # nxt and signatures verify so update state
             self.sn = sn
-            self.diger = serder.diger
+            self.serder = serder  #  need whole serder for digest agility compare
             self.ilk = ilk
             self.sith = sith
             self.verfers = serder.verfers
@@ -842,7 +843,7 @@ class Kever:
             self.wits = wits
 
             # last establishment event location need this to recognize recovery events
-            self.lastEst = LastEstLoc(sn=self.sn, dig=self.diger.qb64)
+            self.lastEst = LastEstLoc(sn=self.sn, dig=self.serder.diger.qb64)
 
 
 
@@ -863,10 +864,10 @@ class Kever:
                 raise ValidationError("Invalid sn = {} expecting = {} for evt "
                                       "= {}.".format(sn, self.sn+1, ked))
 
-            if ked["dig"] != self.diger.qb64:  # prior event dig not match
+            if not self.serder.compare(dig=ked["dig"]):  # prior event dig not match
                 raise ValidationError("Mismatch event dig = {} with state dig"
                                       " = {} for evt = {}.".format(ked["dig"],
-                                                                   self.dig.qb64,
+                                                                   self.serder.diger.qb64,
                                                                    ked))
 
             # interaction event use sith and keys from pre-existing Kever state
@@ -876,7 +877,7 @@ class Kever:
 
             # update state
             self.sn = sn
-            self.diger = serder.diger
+            self.serder = serder  # need for digest agility includes .serder.diger
             self.ilk = ilk
 
             self.logEvent(serder, sigers)  # update logs
@@ -935,7 +936,7 @@ class Kever:
                     raise ValidationError("Invalid recovery attempt: "
                                           " Bad dig = {}.".format(pdig))
                 pserder = Serder(raw=bytes(praw))  # deserialize prior event raw
-                if dig != pserder.dig:  # bad recovery event
+                if not pserder.compare(dig=dig): #  bad recovery event
                     raise ValidationError("Invalid recovery attempt:"
                                           "Mismatch recovery event prior dig"
                                           "= {} with dig = {} of event sn = {}"
@@ -945,10 +946,10 @@ class Kever:
                                                               ked))
 
         else:  # sn == self.sn + 1   new non-recovery event
-            if dig != self.diger.qb64:  # prior event dig not match
+            if not self.serder.compare(dig=dig):  # prior event dig not match
                 raise ValidationError("Mismatch event dig = {} with"
                                       " state dig = {} for evt = {}."
-                                      "".format(dig, self.dig.qb64, ked))
+                                      "".format(dig, self.serder.diger.qb64, ked))
 
 
         # also check derivation code of pre for non-transferable
@@ -1097,6 +1098,7 @@ class Kever:
 
         return True
 
+
     def verifySith(self, sigers, sith=None):
         """
         Assumes that all sigers signatures were already verified
@@ -1122,6 +1124,7 @@ class Kever:
         """
         Returns seal instance of SealLocation if seal validates with respect
         to Delegator's KEL
+        Location Seal is from Delegate's establishment event
         Assumes state setup
 
         Parameters:
@@ -1156,9 +1159,24 @@ class Kever:
             raise ValidationError("Missing event at seal = {} for evt = {}."
                                   "".format(serder.ked["seal"], serder.ked))
 
-        dserder = Serder(raw=bytes(raw))
+        dserder = Serder(raw=bytes(raw))  # delegating event
 
-        if dserder.ked['dig'] != seal.dig:  # delegating event prior dig match seal
+        # get prior event
+        pdig = self.baser.getKeLast(key=snKey(pre=seal.pre, sn=int(dserder.ked["sn"], 16) - 1 ))
+
+        if pdig is  None:
+            raise ValidationError("Missing prior event for seal = {}."
+                                  "".format(serder.ked["seal"]))
+
+        praw = self.baser.getEvt(key=dgKey(pre=seal.pre, dig=pdig))
+        if praw is None:
+            raise ValidationError("Missing prior event for seal = {}."
+                                  "".format(serder.ked["seal"]))
+
+        pserder = Serder(raw=bytes(praw))  # prior event of delegating event
+
+        # need to retrieve prior event from database in order to verify digest agility
+        if not pserder.compare(dig=seal.dig):  # delegating event prior dig match seal
             raise ValidationError("Mismatch prior dig of delegating event at "
                                   "seal = {} for evt = {}.".format(serder.ked["seal"],
                                                                    serder.ked))
@@ -1168,7 +1186,7 @@ class Kever:
         found = False  # find event seal of delegated event in delegating data
         for dseal in dserder.ked["data"]:  #  find delegating seal
             if ("pre" in dseal and dseal["pre"] == pre and
-                "dig" in dseal and dseal["dig"] == dig):
+                "dig" in dseal and serder.compare(dig=dseal["dig"])):  # dseal["dig"] == dig
                 found = True
                 break
 
@@ -1191,11 +1209,11 @@ class Kever:
             serder is Serder instance of current event
             sigers is list of Siger instance for current event
         """
-        dgkey = dgKey(self.prefixer.qb64b, self.diger.qb64b)
+        dgkey = dgKey(self.prefixer.qb64b, self.serder.diger.qb64b)
         self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.diger.qb64b)
+        self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
         blogger.info("Kever process: added valid event to KEL event = %s\n", serder.ked)
 
 
@@ -1564,6 +1582,7 @@ class Kevery:
         Receipt dict labels
             vs  # version string
             pre  # qb64 prefix
+            sn  # hex string sequence number
             ilk  # rct
             dig  # qb64 digest of receipted event
         """
@@ -1578,42 +1597,38 @@ class Kevery:
             sn = int(sn, 16)
         except Exception as ex:
             raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
-        dig = ked["dig"]
 
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)
         ldig = self.baser.getKeLast(key=snkey)   # retrieve dig of last event at sn.
 
-        # retrieve event by dig
-        dgkey = dgKey(pre=pre, dig=dig)
-        raw = self.baser.getEvt(key=dgkey)  # retrieve receipted event at dig
-
         if ldig is not None:  #  verify digs match
             ldig = bytes(ldig).decode("utf-8")
-            if ldig != dig:  # stale receipt at sn discard
-                raise ValidationError("Stale receipt at sn = {} for evt = {}."
+            # retrieve event by dig assumes if ldig is not None that event exists at ldig
+            dgkey = dgKey(pre=pre, dig=ldig)
+            raw = bytes(self.baser.getEvt(key=dgkey))  # retrieve receipted event at dig
+            # assumes db ensures that raw must not be none
+            lserder = Serder(raw=raw)  # deserialize event raw
+
+            if not lserder.compare(dig=ked["dig"]):  # stale receipt at sn discard
+                raise ValidationError("Stale receipt at sn = {} for rct = {}."
                                       "".format(ked["sn"], ked))
 
-            # assumes db ensures that if ldig == dig then raw must not be none
-            eserder = Serder(raw=bytes(raw))  # deserialize event raw
             # process each couplet verify sig and write to db
             for cigar in cigars:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
-                if cigar.verfer.verify(cigar.raw, eserder.raw):
+                if cigar.verfer.verify(cigar.raw, lserder.raw):
                     # write receipt couplet to database
                     couplet = cigar.verfer.qb64b + cigar.qb64b
                     self.baser.addRct(key=dgkey, val=couplet)
 
-        else:  # verify that dig not for some other event
-            if raw is not None:  # bad receipt dig matches some other event
-                raise ValidationError("Bad receipt for sn = {} and dig = {} "
-                                  "for evt = {}.".format(ked["sn"]), dig, ked)
-
+        else:  # no events to be receipted yet at that sn so escrow
             for cigar in cigars:  # escrow each couplet
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
                 couplet = cigar.verfer.qb64b + cigar.qb64b
+                dgkey = dgKey(pre=pre, dig=ked["dig"])
                 self.baser.addUre(key=dgkey, val=couplet)
 
 
@@ -1643,7 +1658,7 @@ class Kevery:
             sn = int(sn, 16)
         except Exception as ex:
             raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
-        dig = ked["dig"]
+
         seal = SealEvent(**ked["seal"])
         sealet = seal.pre.encode("utf-8") + seal.dig.encode("utf-8")
 
@@ -1651,33 +1666,35 @@ class Kevery:
         snkey = snKey(pre=pre, sn=sn)
         ldig = self.baser.getKeLast(key=snkey)  # retrieve dig of last event at sn.
 
-        dgkey = dgKey(pre=pre, dig=dig)
-        raw = self.baser.getEvt(key=dgkey)  # retrieve receipted event at dig
-
-        if ldig is not None:  #  verify digs match last seen and receipt dig
+        if ldig is not None and seal.pre in self.kevers:  #  verify digs match last seen and receipt dig
+            # both receipted event and receipter in database
+            # so retreive
             ldig = bytes(ldig).decode("utf-8")
-            if ldig != dig:  # stale receipt at sn discard
-                raise ValidationError("Stale receipt at sn = {} for evt = {}."
+
+            # retrieve event by dig assumes if ldig is not None that event exists at ldig
+            dgkey = dgKey(pre=pre, dig=ldig)
+            raw = bytes(self.baser.getEvt(key=dgkey))  # retrieve receipted event at dig
+            # assumes db ensures that raw must not be none
+            lserder = Serder(raw=raw)  # deserialize event raw
+
+            if not lserder.compare(dig=ked["dig"]):  # stale receipt at sn discard
+                raise ValidationError("Stale receipt at sn = {} for rct = {}."
                                       "".format(ked["sn"], ked))
 
-        else:  # no last seen so verify that dig not for some other event
-            if raw is not None:  # stale receipt dig matches some other event not last seen
-                raise ValidationError("Bad receipt for sn = {} and dig = {} "
-                                  " for evt = {}.".format(ked["sn"]), dig, ked)
+            # retrieve dig of last event at sn.
+            sigdig = self.baser.getKeLast(key=snKey(pre=seal.pre, sn=int(seal.sn, 16)))
 
-        # assumes db ensures that:
-        # if ldig is not None then raw is not None and vice versa
-        # if ldig == dig then eraw must not be none
-        if (ldig is not None and raw is not None and seal.pre in self.kevers):
-            # both receipted event and receipter in database
-            # retreive
-
-            sigraw = self.baser.getEvt(key=dgKey(pre=seal.pre, dig=seal.dig))
+            sigraw = self.baser.getEvt(key=dgKey(pre=seal.pre, dig=bytes(sigdig)))
             if sigraw is None:
                 raise ValidationError("Missing seal est. event dig = {} for "
                                       "receipt from pre ={}."
                                       "".format(seal.dig, seal.pre))
+
             sigSerder = Serder(raw=bytes(sigraw))
+            if not sigSerder.compare(dig=seal.dig):  # seal dig not match event
+                raise ValidationError("Bad chit seal at sn = {} for rct = {}."
+                                      "".format(seal.sn, ked))
+
             verfers = sigSerder.verfers
             if not verfers:
                 raise ValidationError("Invalid seal est. event dig = {} for "
@@ -1699,6 +1716,7 @@ class Kevery:
         else:  # escrow  either receiptor or event not yet in database
             for siger in sigers:  # escrow triplets one for each sig
                 triplet = sealet + siger.qb64b
+                dgkey = dgKey(pre=pre, dig=ked["dig"])
                 self.baser.addVre(key=dgkey, val=triplet)
 
 

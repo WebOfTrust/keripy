@@ -70,8 +70,8 @@ def test_delegation():
         bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
         bobK = bobKvy.kevers[bobPre]
         assert bobK.prefixer.qb64 == bobPre
-        assert bobK.diger.qb64 == bobSrdr.dig
-        assert bobK.diger.qb64 == 'Ey-05xXgtfYvKyMGa-dladxUQyXv4JaPg-gaKuXLfceQ'
+        assert bobK.serder.diger.qb64 == bobSrdr.dig
+        assert bobK.serder.diger.qb64 == 'Ey-05xXgtfYvKyMGa-dladxUQyXv4JaPg-gaKuXLfceQ'
 
         # apply msg to del's Kevery
         delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
@@ -83,7 +83,7 @@ def test_delegation():
         seal = eventing.SealLocation(pre=bobK.prefixer.qb64,
                                      sn="{:x}".format(bobK.sn+1),
                                      ilk=coring.Ilks.ixn,
-                                     dig=bobK.diger.qb64)
+                                     dig=bobK.serder.diger.qb64)
 
         assert seal._asdict() == dict(pre='EXmV-FiCyD7U76DoXSQoHlG30hFLD2cuYWEQPp0mEu1U',
                                       sn='1',
@@ -101,9 +101,11 @@ def test_delegation():
         assert delSrdr.dig == 'EeBPcw30IVCylYANEGOg3V8f4nBYMspEpqNaq2Y8_knw'
 
         # Now create delegating event
-        seal = eventing.SealEvent(pre=delPre, dig=delSrdr.dig)
+        seal = eventing.SealEvent(pre=delPre,
+                                  sn=delSrdr.ked["sn"],
+                                  dig=delSrdr.dig)
         bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
-                                    dig=bobK.diger.qb64,
+                                    dig=bobK.serder.diger.qb64,
                                     sn=bobK.sn+1,
                                     data=[seal._asdict()])
 
@@ -115,21 +117,22 @@ def test_delegation():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"vs":"KERI10JSON00010e_","pre":"EXmV-FiCyD7U76DoXSQoHlG30hFLD2c'
+        assert msg == bytearray(b'{"vs":"KERI10JSON000117_","pre":"EXmV-FiCyD7U76DoXSQoHlG30hFLD2c'
                                 b'uYWEQPp0mEu1U","sn":"1","ilk":"ixn","dig":"Ey-05xXgtfYvKyMGa-dla'
                                 b'dxUQyXv4JaPg-gaKuXLfceQ","data":[{"pre":"Ek7M173EvQZ6kLjyorCwZK4'
-                                b'XWwyNcSi6u7lz5-M6MyFE","dig":"EeBPcw30IVCylYANEGOg3V8f4nBYMspEpq'
-                                b'Naq2Y8_knw"}]}-AABAA8_fyED6L-y6d8GUg1nKCMtfhyChd_6_bpfAXv1nMC76l'
-                                b'zpyaPBTm0O6geoO9kBuaaBCz3ojPUDAtktikVRFlCA')
+                                b'XWwyNcSi6u7lz5-M6MyFE","sn":"0","dig":"EeBPcw30IVCylYANEGOg3V8f4'
+                                b'nBYMspEpqNaq2Y8_knw"}]}-AABAAD-OA6t17UiGoNivDiCBtkmIuDnjhuuYSLae'
+                                b'tbf8_iVktJtD38Ix6LvFI1n6EIqBqyaTdeSqt2s7hT5i8jmlxBg')
+
 
         # apply msg to bob's Kevery
         bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
-        assert bobK.diger.qb64 == bobSrdr.dig  # key state updated so event was validated
-        assert bobK.diger.qb64 == 'Eews7edyNg7fa-bze0UcCSCG4vitUo6dB5DetsoZA2NU'
+        assert bobK.serder.diger.qb64 == bobSrdr.dig  # key state updated so event was validated
+        assert bobK.serder.diger.qb64 == 'EbJxDKQqvYtZ3y8pL_kHNumERg8_OSb28XweHsS1yNHo'
 
         # apply msg to del's Kevery
         delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
-        assert delKvy.kevers[bobPre].diger.qb64 == bobSrdr.dig
+        assert delKvy.kevers[bobPre].serder.diger.qb64 == bobSrdr.dig
 
         # now create msg with Del's delegated inception event
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
@@ -155,12 +158,12 @@ def test_delegation():
         assert delPre in bobKvy.kevers  # successfully validated
         delK = bobKvy.kevers[delPre]
         assert delK.delegated
-        assert delK.diger.qb64 == delSrdr.dig  # key state updated so event was validated
-        assert delK.diger.qb64 == 'EeBPcw30IVCylYANEGOg3V8f4nBYMspEpqNaq2Y8_knw'
+        assert delK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
+        assert delK.serder.diger.qb64 == 'EeBPcw30IVCylYANEGOg3V8f4nBYMspEpqNaq2Y8_knw'
 
         # apply msg to del's Kevery
         delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
-        assert delKvy.kevers[delPre].diger.qb64 == delSrdr.dig
+        assert delKvy.kevers[delPre].serder.diger.qb64 == delSrdr.dig
 
         # Setup Del rotation event assuming that Bob's next event will be an ixn delegating event
         verfers, digers = delMgr.rotate(pre=delPre, temp=True)
@@ -168,26 +171,28 @@ def test_delegation():
         seal = eventing.SealLocation(pre=bobK.prefixer.qb64,
                                      sn="{:x}".format(bobK.sn+1),
                                      ilk=coring.Ilks.ixn,
-                                     dig=bobK.diger.qb64)
+                                     dig=bobK.serder.diger.qb64)
 
         assert seal._asdict() == dict(pre='EXmV-FiCyD7U76DoXSQoHlG30hFLD2cuYWEQPp0mEu1U',
                                       sn='2',
                                       ilk='ixn',
-                                      dig='Eews7edyNg7fa-bze0UcCSCG4vitUo6dB5DetsoZA2NU')
+                                      dig='EbJxDKQqvYtZ3y8pL_kHNumERg8_OSb28XweHsS1yNHo')
 
         delSrdr = eventing.deltate(pre=delK.prefixer.qb64,
                                    keys=[verfer.qb64 for verfer in verfers],
-                                   dig=delK.diger.qb64,
+                                   dig=delK.serder.diger.qb64,
                                    seal=seal,
                                    sn=delK.sn+1,
                                    nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
 
-        assert delSrdr.dig == 'EeiCC5kb8Ms2-T3lnx83kwEPq_iJBBL0QC03ab559Dts'
+        assert delSrdr.dig == 'E5_Qnd78eKwf7AFCHjraVNpvxu6pnwqgdWi3HdCNyN44'
 
         # Now create delegating rotation event
-        seal = eventing.SealEvent(pre=delK.prefixer.qb64, dig=delSrdr.dig)
+        seal = eventing.SealEvent(pre=delK.prefixer.qb64,
+                                  sn=delSrdr.ked["sn"],
+                                  dig=delSrdr.dig)
         bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
-                                    dig=bobK.diger.qb64,
+                                    dig=bobK.serder.diger.qb64,
                                     sn=bobK.sn+1,
                                     data=[seal._asdict()])
 
@@ -199,20 +204,20 @@ def test_delegation():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"vs":"KERI10JSON00010e_","pre":"EXmV-FiCyD7U76DoXSQoHlG30hFLD2c'
-                                b'uYWEQPp0mEu1U","sn":"2","ilk":"ixn","dig":"Eews7edyNg7fa-bze0UcC'
-                                b'SCG4vitUo6dB5DetsoZA2NU","data":[{"pre":"Ek7M173EvQZ6kLjyorCwZK4'
-                                b'XWwyNcSi6u7lz5-M6MyFE","dig":"EeiCC5kb8Ms2-T3lnx83kwEPq_iJBBL0QC'
-                                b'03ab559Dts"}]}-AABAA3V9qL1YINRBkSvkj-Q-NyMQoWpprrK05mrUYQNuc1EoP'
-                                b'At9pBa8quPorxhB-Q0_DVAd5PI6zH9Wn5j0R_eZQDw')
+        assert msg == bytearray(b'{"vs":"KERI10JSON000117_","pre":"EXmV-FiCyD7U76DoXSQoHlG30hFLD2c'
+                                b'uYWEQPp0mEu1U","sn":"2","ilk":"ixn","dig":"EbJxDKQqvYtZ3y8pL_kHN'
+                                b'umERg8_OSb28XweHsS1yNHo","data":[{"pre":"Ek7M173EvQZ6kLjyorCwZK4'
+                                b'XWwyNcSi6u7lz5-M6MyFE","sn":"1","dig":"E5_Qnd78eKwf7AFCHjraVNpvx'
+                                b'u6pnwqgdWi3HdCNyN44"}]}-AABAAi0gU5t6NYcK07DwDedgw5cHawG4CCUcXpHO'
+                                b'-raWpMlu_GRYEGHSlCQwZIakFE_TWfykCU5d9hf9-a1jjc-18Dw')
 
         # apply msg to bob's Kevery
         bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
-        assert bobK.diger.qb64 == bobSrdr.dig  # key state updated so event was validated
+        assert bobK.serder.diger.qb64 == bobSrdr.dig  # key state updated so event was validated
 
         # apply msg to del's Kevery
         delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
-        assert delKvy.kevers[bobPre].diger.qb64 == bobSrdr.dig
+        assert delKvy.kevers[bobPre].serder.diger.qb64 == bobSrdr.dig
 
         # now create msg from Del's delegated rotation event
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
@@ -229,19 +234,19 @@ def test_delegation():
                                 b'MuNhLQRr8JaAUeiC6wjB_4_08"],"nxt":"E8kyiXDfkE7idwWnAZQjHbUZMz-kd'
                                 b'_yIMH0miptIFFPo","toad":"0","cuts":[],"adds":[],"data":[],"seal"'
                                 b':{"pre":"EXmV-FiCyD7U76DoXSQoHlG30hFLD2cuYWEQPp0mEu1U","sn":"2",'
-                                b'"ilk":"ixn","dig":"Eews7edyNg7fa-bze0UcCSCG4vitUo6dB5DetsoZA2NU"'
-                                b'}}-AABAAXRILNpCj1-oLVbl4ZLSkNZTDDDudEVqk2nHxA--lNhacAI1P_5-uAjlr'
-                                b'93cmy2WDXZA61ddtF7mI5SjRMnSqDA')
+                                b'"ilk":"ixn","dig":"EbJxDKQqvYtZ3y8pL_kHNumERg8_OSb28XweHsS1yNHo"'
+                                b'}}-AABAAKnITCZt0mvZ9Ewts2DeT-_C_wpcujGTs7Elbg6NlH_yOwL_ENEHTxaqS'
+                                b'lPGjwcGnMv53OipTIDrrPUs3P456BA')
 
         # apply Del's delegated inception event message to bob's Kevery
         bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
         assert delK.delegated
-        assert delK.diger.qb64 == delSrdr.dig  # key state updated so event was validated
-        assert delK.diger.qb64 == 'EeiCC5kb8Ms2-T3lnx83kwEPq_iJBBL0QC03ab559Dts'
+        assert delK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
+        assert delK.serder.diger.qb64 == 'E5_Qnd78eKwf7AFCHjraVNpvxu6pnwqgdWi3HdCNyN44'
 
         # apply msg to del's Kevery
         delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
-        assert delKvy.kevers[delPre].diger.qb64 == delSrdr.dig
+        assert delKvy.kevers[delPre].serder.diger.qb64 == delSrdr.dig
 
     assert not os.path.exists(delKp.path)
     assert not os.path.exists(delDB.path)

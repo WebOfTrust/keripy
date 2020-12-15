@@ -255,6 +255,7 @@ class Reactor(doing.Doer):
         # create seal of own last est event
         kever = self.hab.kevers[self.hab.pre]
         seal = eventing.SealEvent(pre=self.hab.pre,
+                                  sn="{:x}".format(kever.lastEst.sn),
                                   dig=kever.lastEst.dig)
 
         cueKed = cueSerder.ked
@@ -523,6 +524,7 @@ class Reactant(tyming.Tymee):
         # create seal of own last est event
         kever = self.hab.kevers[self.hab.pre]
         seal = eventing.SealEvent(pre=self.hab.pre,
+                                  sn="{:x}".format(kever.lastEst.sn),
                                   dig=kever.lastEst.dig)
 
         cueKed = cueSerder.ked
@@ -663,7 +665,7 @@ class BobDirector(Director):
 
             serder = eventing.rotate(pre=kever.prefixer.qb64,
                         keys=[self.hab.signers[esn].verfer.qb64],
-                        dig=kever.diger.qb64,
+                        dig=kever.serder.diger.qb64,
                         nxt=coring.Nexter(keys=[self.hab.signers[esn+1].verfer.qb64]).qb64,
                         sn=sn)
             # create sig counter
@@ -690,7 +692,7 @@ class BobDirector(Director):
             sn += 1  #  do not increment esn
 
             serder = eventing.interact(pre=kever.prefixer.qb64,
-                                       dig=kever.diger.qb64,
+                                       dig=kever.serder.diger.qb64,
                                        sn=sn)
 
             # create sig counter
@@ -807,7 +809,7 @@ class SamDirector(Director):
             sn += 1  #  do not increment esn
 
             serder = eventing.interact(pre=kever.prefixer.qb64,
-                                       dig=kever.diger.qb64,
+                                       dig=kever.serder.diger.qb64,
                                        sn=sn)
 
             # create sig counter
@@ -838,7 +840,7 @@ class SamDirector(Director):
 
             serder = eventing.rotate(pre=kever.prefixer.qb64,
                                              keys=[self.hab.signers[esn].verfer.qb64],
-                                dig=kever.diger.qb64,
+                                dig=kever.serder.diger.qb64,
                                 nxt=coring.Nexter(keys=[self.hab.signers[esn+1].verfer.qb64]).qb64,
                                 sn=sn)
             # create sig counter
