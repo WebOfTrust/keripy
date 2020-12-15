@@ -1666,13 +1666,20 @@ class Kevery:
                 raise ValidationError("Stale receipt at sn = {} for rct = {}."
                                       "".format(ked["sn"], ked))
 
-            sigraw = self.baser.getEvt(key=dgKey(pre=seal.pre, dig=seal.dig))
+            # retrieve dig of last event at sn.
+            sigdig = self.baser.getKeLast(key=snKey(pre=seal.pre, sn=int(seal.sn, 16)))
+
+            sigraw = self.baser.getEvt(key=dgKey(pre=seal.pre, dig=bytes(sigdig)))
             if sigraw is None:
                 raise ValidationError("Missing seal est. event dig = {} for "
                                       "receipt from pre ={}."
                                       "".format(seal.dig, seal.pre))
 
             sigSerder = Serder(raw=bytes(sigraw))
+            if not sigSerder.compare(dig=seal.dig):  # seal dig not match event
+                raise ValidationError("Bad chit seal at sn = {} for rct = {}."
+                                      "".format(seal.sn, ked))
+
             verfers = sigSerder.verfers
             if not verfers:
                 raise ValidationError("Invalid seal est. event dig = {} for "
