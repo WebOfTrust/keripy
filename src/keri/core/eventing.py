@@ -1159,9 +1159,24 @@ class Kever:
             raise ValidationError("Missing event at seal = {} for evt = {}."
                                   "".format(serder.ked["seal"], serder.ked))
 
-        dserder = Serder(raw=bytes(raw))
+        dserder = Serder(raw=bytes(raw))  # delegating event
 
-        if dserder.ked['dig'] != seal.dig:  # delegating event prior dig match seal
+        # get prior event
+        pdig = self.baser.getKeLast(key=snKey(pre=seal.pre, sn=int(dserder.ked["sn"], 16) - 1 ))
+
+        if pdig is  None:
+            raise ValidationError("Missing prior event for seal = {}."
+                                  "".format(serder.ked["seal"]))
+
+        praw = self.baser.getEvt(key=dgKey(pre=seal.pre, dig=pdig))
+        if praw is None:
+            raise ValidationError("Missing prior event for seal = {}."
+                                  "".format(serder.ked["seal"]))
+
+        pserder = Serder(raw=bytes(praw))  # prior event of delegating event
+
+        # need to retrieve prior event from database in order to verify digest agility
+        if not pserder.compare(dig=seal.dig):  # delegating event prior dig match seal
             raise ValidationError("Mismatch prior dig of delegating event at "
                                   "seal = {} for evt = {}.".format(serder.ked["seal"],
                                                                    serder.ked))
