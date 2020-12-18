@@ -54,7 +54,8 @@ class TraitCodex:
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
     """
-    EstOnly:         str = 'EstOnly'  #  Only allow establishment events
+    EstOnly:         str = 'EO'  #  Only allow establishment events
+    DoNotDelegate:   str = 'DND'  #  Dot not allow delegated identifiers
 
 
     def __iter__(self):
@@ -779,9 +780,8 @@ class Kever:
                             else False)  # ensure default estOnly is boolean
 
         cnfg = serder.ked["cnfg"]  # process cnfg for traits
-        for d in cnfg:
-            if "trait" in d and d["trait"] == TraitDex.EstOnly:
-                self.estOnly = True
+        if TraitDex.EstOnly in cnfg:
+            self.estOnly = True
 
 
     def update(self, serder,  sigers):

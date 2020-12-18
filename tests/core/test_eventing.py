@@ -792,7 +792,7 @@ def test_keyeventsequence_1():
         keys1 = [signers[1].verfer.qb64]
         nexter1 = Nexter(keys=keys1)
         nxt1 = nexter1.qb64  # transferable so nxt is not empty
-        cnfg = [dict(trait=TraitDex.EstOnly)]  #  EstOnly
+        cnfg = [TraitDex.EstOnly]  #  EstOnly
         serder0 = incept(keys=keys0, nxt=nxt1, cnfg=cnfg)
         event_digs.append(serder0.dig)
         pre = serder0.ked["pre"]
