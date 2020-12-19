@@ -34,7 +34,7 @@ from keri.core.coring import (SigSelDex, SigCntDex, SigCntSizes, SigCntRawSizes,
                               SigFiveDex, SigFiveSizes, SigFiveRawSizes,
                               SigSizes, SigRawSizes, MINSIGSIZE)
 from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat, SigCounter, Siger
+from keri.core.coring import SigMat, SigCounter, SeqNumber, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import Serder
@@ -460,10 +460,141 @@ def test_crycounter():
     assert counter.qb64 == qsc
     assert counter.qb64b == qscb
     assert counter.qb2 == b'\xf8\x10\x05'
-
-
     """ Done Test """
 
+
+def test_seqnumber():
+    """
+    Test SeqNumber subclass of CryMat
+    """
+    number = SeqNumber()  #  defaults to zero
+    assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 0
+    assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAAAA'
+    assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAAA'
+    assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+
+    snraw = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    snqb64b = b'0AAAAAAAAAAAAAAAAAAAAAAA'
+    snqb64 = '0AAAAAAAAAAAAAAAAAAAAAAA'
+    snqb2 = b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+
+    with pytest.raises(ValidationError):
+        number = SeqNumber(raw=b'')
+
+    number = SeqNumber(qb64b=snqb64b)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 0
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    number = SeqNumber(qb64=snqb64)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 0
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    number = SeqNumber(qb2=snqb2)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 0
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    number = SeqNumber(raw=snraw)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 0
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    # test priority lower for sn
+    number = SeqNumber(qb64b=snqb64b, sn=5)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 0
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    number = SeqNumber(qb64=snqb64, sn=5)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 0
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    number = SeqNumber(qb2=snqb2, sn=5)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 0
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    number = SeqNumber(raw=snraw, sn=5)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 0
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    #test other sn
+    number = SeqNumber(sn=5)
+    assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05'
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 5
+    assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAABQ'
+    assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAABQ'
+    assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00P'
+
+    snraw = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05'
+    snqb64b = b'0AAAAAAAAAAAAAAAAAAAAABQ'
+    snqb64 = '0AAAAAAAAAAAAAAAAAAAAABQ'
+    snqb2 = b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00P'
+
+    number = SeqNumber(qb64b=snqb64b)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 5
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    number = SeqNumber(qb64=snqb64)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 5
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    number = SeqNumber(qb2=snqb2, sn=5)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 5
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    number = SeqNumber(raw=snraw, sn=5)
+    assert number.raw == snraw
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 5
+    assert number.qb64 == snqb64
+    assert number.qb64b == snqb64b
+    assert number.qb2 == snqb2
+
+    """ Done Test """
 
 
 def test_verfer():
@@ -889,7 +1020,7 @@ def test_nexter():
     assert nexter.verify(sith=2, keys=keys)
     assert nexter.verify(raw=raw)
 
-    ked = dict(sith=sith, keys=keys)  #  subsequent event
+    ked = dict(kt=sith, k=keys)  #  subsequent event
     nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
@@ -923,17 +1054,16 @@ def test_prefixer():
     with pytest.raises(ValueError):
         prefixer = Prefixer(raw=verkey, code=CryOneDex.SHA2_256)
 
-
     # test creation given raw and code no derivation
     prefixer = Prefixer(raw=verkey)  # defaults provide Ed25519N prefixer
     assert prefixer.code == CryOneDex.Ed25519N
     assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
     assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
 
-    ked = dict(keys=[prefixer.qb64], nxt="")
+    ked = dict(k=[prefixer.qb64], n="")
     assert prefixer.verify(ked=ked) == True
 
-    ked = dict(keys=[prefixer.qb64], nxt="ABC")
+    ked = dict(k=[prefixer.qb64], n="ABC")
     assert prefixer.verify(ked=ked) == False
 
     prefixer = Prefixer(raw=verkey, code=CryOneDex.Ed25519)  # defaults provide Ed25519N prefixer
@@ -941,7 +1071,7 @@ def test_prefixer():
     assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
     assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
 
-    ked = dict(keys=[prefixer.qb64])
+    ked = dict(k=[prefixer.qb64])
     assert prefixer.verify(ked=ked) == True
 
     verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
@@ -950,7 +1080,7 @@ def test_prefixer():
     assert prefixer.verify(ked=ked) == False
 
     # Test basic derivation from ked
-    ked = dict(keys=[verfer.qb64], nxt="")
+    ked = dict(k=[verfer.qb64], n="")
     prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519)
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
@@ -959,12 +1089,12 @@ def test_prefixer():
         prefixer = Prefixer(ked=ked)
 
     verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
-    ked = dict(keys=[verfer.qb64], nxt="")
+    ked = dict(k=[verfer.qb64], n="")
     prefixer = Prefixer(ked=ked)
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
 
-    ked = dict(keys=[verfer.qb64], nxt="ABCD")
+    ked = dict(k=[verfer.qb64], n="ABCD")
     with pytest.raises(DerivationError):
         prefixer = Prefixer(ked=ked)
 
@@ -979,61 +1109,61 @@ def test_prefixer():
     wits = []
     cnfg = []
 
-    ked = dict(vs=vs,  # version string
-               pre="",  # qb64 prefix
-               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-               ilk=ilk,
-               sith="{:x}".format(sith), # hex string no leading zeros lowercase
-               keys=keys,  # list of qb64
-               nxt=nxt,  # hash qual Base64
-               toad="{:x}".format(toad),  # hex string no leading zeros lowercase
-               wits=wits,  # list of qb64 may be empty
-               cnfg=cnfg,  # list of config ordered mappings may be empty
+    ked = dict(v=vs,  # version string
+               i="",  # qb64 prefix
+               s="{:x}".format(sn),  # hex string no leading zeros lowercase
+               t=ilk,
+               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               k=keys,  # list of qb64
+               n=nxt,  # hash qual Base64
+               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               w=wits,  # list of qb64 may be empty
+               c=cnfg,  # list of config ordered mappings may be empty
                )
 
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
-    assert prefixer.qb64 == 'EFMo3ix8YSCJn5mVK5TvL5A30V-eOXYKfEsqWRWoA6z4'
+    assert prefixer.qb64 == 'EOlaUfE_iaLJbBhLuE1aEIsiLk6jwbS5vI4Gh4G-Ld7g'
     assert prefixer.verify(ked=ked) == True
 
 
     nexter = Nexter(sith=1, keys=[nxtfer.qb64])
-    ked = dict(vs=vs,  # version string
-               pre="",  # qb64 prefix
-               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-               ilk=ilk,
-               sith="{:x}".format(sith), # hex string no leading zeros lowercase
-               keys=keys,  # list of qb64
-               nxt=nexter.qb64,  # hash qual Base64
-               toad="{:x}".format(toad),  # hex string no leading zeros lowercase
-               wits=wits,  # list of qb64 may be empty
-               cnfg=cnfg,  # list of config ordered mappings may be empty
+    ked = dict(v=vs,  # version string
+               i="",  # qb64 prefix
+               s="{:x}".format(sn),  # hex string no leading zeros lowercase
+               t=ilk,
+               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               k=keys,  # list of qb64
+               n=nexter.qb64,  # hash qual Base64
+               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               w=wits,  # list of qb64 may be empty
+               c=cnfg,  # list of config ordered mappings may be empty
                )
 
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
-    assert prefixer.qb64 == 'EgsBUrK4JIGh7o5rdcpLTg-NYy0WKelTUVlBhg_zIRiM'
+    assert prefixer.qb64 == 'EvDq46gwbZ92Wq2y6ZzmP6F4T97YqE-l2C1lABmbBsD8'
     assert prefixer.verify(ked=ked) == True
 
     perm = []
-    seal = dict(pre = 'EkbeB57LYWRYNqg4xarckyfd_LsaH0J350WmOdvMwU_Q',
-                sn  = '2',
-                ilk = Ilks.ixn,
-                dig = 'E03rxRmMcP2-I2Gd0sUhlYwjk8KEz5gNGxPwPg-sGJds')
+    seal = dict(i='EkbeB57LYWRYNqg4xarckyfd_LsaH0J350WmOdvMwU_Q',
+                s='2',
+                t=Ilks.ixn,
+                d='E03rxRmMcP2-I2Gd0sUhlYwjk8KEz5gNGxPwPg-sGJds')
 
-    ked = dict(vs=vs,  # version string
-               pre="",  # qb64 prefix
-               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-               ilk=Ilks.dip,
-               sith="{:x}".format(sith), # hex string no leading zeros lowercase
-               keys=keys,  # list of qb64
-               nxt=nexter.qb64,  # hash qual Base64
-               toad="{:x}".format(toad),  # hex string no leading zeros lowercase
-               wits=wits,  # list of qb64 may be empty
-               perm=cnfg,  # list of config ordered mappings may be empty
-               seal=seal
+    ked = dict(v=vs,  # version string
+               i="",  # qb64 prefix
+               s="{:x}".format(sn),  # hex string no leading zeros lowercase
+               t=Ilks.dip,
+               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               k=keys,  # list of qb64
+               n=nexter.qb64,  # hash qual Base64
+               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               w=wits,  # list of qb64 may be empty
+               c=cnfg,  # list of config ordered mappings may be empty
+               da=seal
                )
 
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
-    assert prefixer.qb64 == 'E_6sb9qnmw2cpSlmFTNQptnTG2r6XqEW3pcnJ420zCpM'
+    assert prefixer.qb64 == 'Ed8FiA0PXwppAqQElwaw7u1DkcHnfGo-DtTkYHe-kH9g'
     assert prefixer.verify(ked=ked) == True
 
     #  Test signature derivation
@@ -1056,24 +1186,24 @@ def test_prefixer():
     cnfg = []
 
     nexter = Nexter(sith=1, keys=[nxtfer.qb64])
-    ked = dict(vs=vs,  # version string
-               pre="",  # qb64 prefix
-               sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-               ilk=ilk,
-               sith="{:x}".format(sith), # hex string no leading zeros lowercase
-               keys=keys,  # list of qb64
-               nxt=nexter.qb64,  # hash qual Base64
-               toad="{:x}".format(toad),  # hex string no leading zeros lowercase
-               wits=wits,  # list of qb64 may be empty
-               cnfg=cnfg,  # list of config ordered mappings may be empty
+    ked = dict(v=vs,  # version string
+               i="",  # qb64 prefix
+               s="{:x}".format(sn),  # hex string no leading zeros lowercase
+               t=ilk,
+               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               k=keys,  # list of qb64
+               n=nexter.qb64,  # hash qual Base64
+               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               w=wits,  # list of qb64 may be empty
+               c=cnfg,  # list of config ordered mappings may be empty
                )
 
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, seed=seed)
-    assert prefixer.qb64 == '0Bm9fvxatvQLVVsGzTaU2lh79kzd2zwMwKHggeSHx5Ri-wE7eRtyYPNoiLRGsQ3t6B9KDQL66lwP6I_GNym1-PAw'
+    assert prefixer.qb64 == '0BSM6noSyGTzVPk_uKwGzl1PMbHwhOFgevAVNQX5Eu-ZD7qhZ0Nay45WpwebYSG6HWodZfc7HDwWkLcaC1fVbLAQ'
     assert prefixer.verify(ked=ked) == True
 
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
-    assert prefixer.qb64 == '0Bm9fvxatvQLVVsGzTaU2lh79kzd2zwMwKHggeSHx5Ri-wE7eRtyYPNoiLRGsQ3t6B9KDQL66lwP6I_GNym1-PAw'
+    assert prefixer.qb64 == '0BSM6noSyGTzVPk_uKwGzl1PMbHwhOFgevAVNQX5Eu-ZD7qhZ0Nay45WpwebYSG6HWodZfc7HDwWkLcaC1fVbLAQ'
     assert prefixer.verify(ked=ked) == True
 
     """ Done Test """
@@ -1584,22 +1714,25 @@ def test_serder():
     with pytest.raises(ValueError):
         serder = Serder()
 
-    e1 = dict(vs=Vstrings.json, pre="ABCDEFG", sn="0001", ilk="rot")
+    e1 = dict(v=Vstrings.json,
+              i="ABCDEFG",
+              s="0001",
+              t="rot")
     serder = Serder(ked=e1)
     assert serder.ked == e1
     assert serder.kind == Serials.json
     assert serder.version == Versionage(major=1, minor=0)
-    assert serder.dig == 'EaDVEkrFdx8W0ZZAsfwf9mjxhgBt6PvfCmFPdr7RIcfY'
-    assert serder.digb == b'EaDVEkrFdx8W0ZZAsfwf9mjxhgBt6PvfCmFPdr7RIcfY'
-    assert serder.size == 66
+    assert serder.dig == 'E4z66CxKHEo-6YCbIbpd1SqeXKVkLdh3j8CwUq31XA4o'
+    assert serder.digb == b'E4z66CxKHEo-6YCbIbpd1SqeXKVkLdh3j8CwUq31XA4o'
+    assert serder.size == 60
     assert serder.verfers == []
-    assert serder.raw == b'{"vs":"KERI10JSON000042_","pre":"ABCDEFG","sn":"0001","ilk":"rot"}'
+    assert serder.raw == b'{"v":"KERI10JSON00003c_","i":"ABCDEFG","s":"0001","t":"rot"}'
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    assert e1s == b'{"vs":"KERI10JSON000042_","pre":"ABCDEFG","sn":"0001","ilk":"rot"}'
+    assert e1s == b'{"v":"KERI10JSON00003c_","i":"ABCDEFG","s":"0001","t":"rot"}'
     vs = Versify(kind=Serials.json, size=len(e1s))  # use real length
-    assert vs == 'KERI10JSON000042_'
-    e1["vs"] = vs  # has real length
+    assert vs == 'KERI10JSON00003c_'
+    e1["v"] = vs  # has real length
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     with pytest.raises(ShortageError):  # test too short
@@ -1607,11 +1740,11 @@ def test_serder():
 
     kind1, vers1, size1 = serder._sniff(e1s[:MINSNIFFSIZE])
     assert kind1 == Serials.json
-    assert size1 == 66
+    assert size1 == 60
 
     kind1, vers1, size1 = serder._sniff(e1s)
     assert kind1 == Serials.json
-    assert size1 == 66
+    assert size1 == 60
     e1ss = e1s + b'extra attached at the end.'
     ked1, knd1, vrs1, siz1 = serder._inhale(e1ss)
     assert ked1 == e1
@@ -1629,12 +1762,12 @@ def test_serder():
     assert vrs1 == vers1
 
     e2 = dict(e1)
-    e2["vs"] = Vstrings.mgpk
+    e2["v"] = Vstrings.mgpk
     e2s = msgpack.dumps(e2)
-    assert e2s == b'\x84\xa2vs\xb1KERI10MGPK000000_\xa3pre\xa7ABCDEFG\xa2sn\xa40001\xa3ilk\xa3rot'
+    assert e2s == b'\x84\xa1v\xb1KERI10MGPK000000_\xa1i\xa7ABCDEFG\xa1s\xa40001\xa1t\xa3rot'
     vs = Versify(kind=Serials.mgpk, size=len(e2s))  # use real length
-    assert vs == 'KERI10MGPK000032_'
-    e2["vs"] = vs  # has real length
+    assert vs == 'KERI10MGPK00002c_'
+    e2["v"] = vs  # has real length
     e2s = msgpack.dumps(e2)
 
     with pytest.raises(ShortageError):  # test too short
@@ -1642,11 +1775,11 @@ def test_serder():
 
     kind2, vers2, size2 = serder._sniff(e2s[:MINSNIFFSIZE])
     assert kind2 == Serials.mgpk
-    assert size2 == 50
+    assert size2 == 44
 
     kind2, vers2, size2 = serder._sniff(e2s)
     assert kind2 == Serials.mgpk
-    assert size2 == 50
+    assert size2 == 44
     e2ss = e2s + b'extra attached  at the end.'
     ked2, knd2, vrs2, siz2 = serder._inhale(e2ss)
     assert ked2 == e2
@@ -1664,12 +1797,12 @@ def test_serder():
     assert vrs2 == vers2
 
     e3 = dict(e1)
-    e3["vs"] = Vstrings.cbor
+    e3["v"] = Vstrings.cbor
     e3s = cbor.dumps(e3)
-    assert e3s == b'\xa4bvsqKERI10CBOR000000_cpregABCDEFGbsnd0001cilkcrot'
+    assert e3s == b'\xa4avqKERI10CBOR000000_aigABCDEFGasd0001atcrot'
     vs = Versify(kind=Serials.cbor, size=len(e3s))  # use real length
-    assert vs == 'KERI10CBOR000032_'
-    e3["vs"] = vs  # has real length
+    assert vs == 'KERI10CBOR00002c_'
+    e3["v"] = vs  # has real length
     e3s = cbor.dumps(e3)
 
     with pytest.raises(ShortageError):  # test too short
@@ -1677,11 +1810,11 @@ def test_serder():
 
     kind3, vers3, size3 = serder._sniff(e3s[:MINSNIFFSIZE])
     assert kind3 == Serials.cbor
-    assert size3 == 50
+    assert size3 == 44
 
     kind3, vers3, size3 = serder._sniff(e3s)
     assert kind3 == Serials.cbor
-    assert size3 == 50
+    assert size3 == 44
     e3ss = e3s + b'extra attached  at the end.'
     ked3, knd3, vrs3, siz3 = serder._inhale(e3ss)
     assert ked3 == e3
@@ -1712,7 +1845,7 @@ def test_serder():
     assert len(evt1.diger.raw) == 32
     assert len(evt1.dig) == 44
     assert len(evt1.dig) == CryOneSizes[CryOneDex.Blake3_256]
-    assert evt1.dig == 'EaDVEkrFdx8W0ZZAsfwf9mjxhgBt6PvfCmFPdr7RIcfY'
+    assert evt1.dig == 'E4z66CxKHEo-6YCbIbpd1SqeXKVkLdh3j8CwUq31XA4o'
     assert evt1.diger.verify(evt1.raw)
 
     evt1 = Serder(ked=ked1)
@@ -1798,7 +1931,7 @@ def test_serder():
     assert evt2.kind == Serials.cbor
     evt2.kind = Serials.json
     assert evt2.kind == Serials.json
-    knd, version, size = Deversify(evt2.ked['vs'])
+    knd, version, size = Deversify(evt2.ked["v"])
     assert knd == Serials.json
 
     #  Test diger code
@@ -1847,4 +1980,4 @@ def test_serder():
 
 
 if __name__ == "__main__":
-    test_serder()
+    test_nexter()

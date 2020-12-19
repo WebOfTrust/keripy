@@ -18,7 +18,7 @@ from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, CryCounter
+from keri.core.coring import CryMat, CryCounter, SeqNumber
 from keri.core.coring import Verfer, Signer, Diger, Nexter, Prefixer
 from keri.core.coring import generateSigners, generateSecrets
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
@@ -49,14 +49,14 @@ def test_lastestloc():
     """
     Test LastEstLoc namedtuple
     """
-    lastEst = LastEstLoc(sn=1, dig='E12345')
+    lastEst = LastEstLoc(s=1, d='E12345')
 
     assert isinstance(lastEst, LastEstLoc)
 
     assert 1 in lastEst
-    assert lastEst.sn == 1
+    assert lastEst.s == 1
     assert 'E12345' in lastEst
-    assert lastEst.dig == 'E12345'
+    assert lastEst.d == 'E12345'
 
     """End Test """
 
@@ -65,41 +65,41 @@ def test_seals():
     Test seal namedtuples
 
     """
-    seal = SealDigest(dig='E12345')
+    seal = SealDigest(d='E12345')
     assert isinstance(seal, SealDigest)
     assert 'E12345' in seal
-    assert seal.dig == 'E12345'
-    assert seal._asdict() == dict(dig='E12345')
+    assert seal.d == 'E12345'
+    assert seal._asdict() == dict(d='E12345')
 
-    seal = SealRoot(root='EABCDE')
+    seal = SealRoot(rd='EABCDE')
     assert isinstance(seal, SealRoot)
     assert 'EABCDE' in seal
-    assert seal.root == 'EABCDE'
-    assert seal._asdict() == dict(root='EABCDE')
+    assert seal.rd == 'EABCDE'
+    assert seal._asdict() == dict(rd='EABCDE')
 
-    seal = SealEvent(pre='B4321', sn='1', dig='Eabcd')
+    seal = SealEvent(i='B4321', s='1', d='Eabcd')
     assert isinstance(seal, SealEvent)
     assert 'B4321' in seal
-    assert seal.pre == 'B4321'
+    assert seal.i == 'B4321'
     assert '1' in seal
-    assert seal.sn ==  '1'
+    assert seal.s ==  '1'
     assert 'Eabcd' in seal
-    assert seal.dig == 'Eabcd'
-    assert seal._asdict() == dict(pre='B4321', sn='1', dig='Eabcd')
-    assert seal._fields == ('pre', 'sn', 'dig')
+    assert seal.d == 'Eabcd'
+    assert seal._asdict() == dict(i='B4321', s='1', d='Eabcd')
+    assert seal._fields == ('i', 's', 'd')
 
-    seal = SealLocation(pre='B4321', sn='1', ilk='ixn', dig='Eabcd')
+    seal = SealLocation(i='B4321', s='1', t='ixn', p='Eabcd')
     assert isinstance(seal, SealLocation)
     assert 'B4321' in seal
-    assert seal.pre == 'B4321'
+    assert seal.i == 'B4321'
     assert '1' in seal
-    assert seal.sn == '1'
+    assert seal.s == '1'
     assert 'ixn' in seal
-    assert seal.ilk == 'ixn'
+    assert seal.t == 'ixn'
     assert 'Eabcd' in seal
-    assert seal.dig == 'Eabcd'
-    assert seal._asdict() == dict(pre='B4321', sn='1', ilk='ixn', dig='Eabcd')
-    assert seal._fields == ('pre', 'sn', 'ilk', 'dig')
+    assert seal.p == 'Eabcd'
+    assert seal._asdict() == dict(i='B4321', s='1', t='ixn', p='Eabcd')
+    assert seal._fields == ('i', 's', 't', 'p')
 
     """End Test """
 
@@ -118,11 +118,11 @@ def test_keyeventfuncs():
     assert signer0.verfer.code == CryOneDex.Ed25519N
     keys0 = [signer0.verfer.qb64]
     serder = incept(keys=keys0)  #  default nxt is empty so abandoned
-    assert serder.ked["pre"] == 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-    assert serder.ked["nxt"] == ""
-    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","pre":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                          b'c","sn":"0","ilk":"icp","sith":"1","keys":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
-                          b'Z-Wk1x4ejhcc"],"nxt":"","toad":"0","wits":[],"cnfg":[]}')
+    assert serder.ked["i"] == 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.ked["n"] == ""
+    assert serder.raw == (b'{"v":"KERI10JSON0000ba_","i":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
+                          b'"s":"0","t":"icp","kt":"1","k":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                          b'c"],"n":"","wt":"0","w":[],"c":[]}')
 
 
     with pytest.raises(DerivationError):
@@ -135,11 +135,11 @@ def test_keyeventfuncs():
     assert signer0.verfer.code == CryOneDex.Ed25519
     keys0 = [signer0.verfer.qb64]
     serder = incept(keys=keys0)  #  default nxt is empty so abandoned
-    assert serder.ked["pre"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-    assert serder.ked["nxt"] == ""
-    assert serder.raw == (b'{"vs":"KERI10JSON0000cf_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                          b'c","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
-                          b'Z-Wk1x4ejhcc"],"nxt":"","toad":"0","wits":[],"cnfg":[]}')
+    assert serder.ked["i"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder.ked["n"] == ""
+    assert serder.raw == (b'{"v":"KERI10JSON0000ba_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
+                          b'"s":"0","t":"icp","kt":"1","k":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                          b'c"],"n":"","wt":"0","w":[],"c":[]}')
 
 
     # Inception: Transferable not abandoned i.e. next not empty
@@ -156,17 +156,17 @@ def test_keyeventfuncs():
     nxt1 = nexter1.qb64  # transferable so nxt is not empty
     assert nxt1 == 'EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4'
     serder0 = incept(keys=keys0, nxt=nxt1)
-    pre = serder0.ked["pre"]
-    assert serder0.ked["pre"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
-    assert serder0.ked["sn"] == '0'
-    assert serder0.ked["ilk"] == Ilks.icp
-    assert serder0.ked["nxt"] == nxt1
-    assert serder0.raw == (b'{"vs":"KERI10JSON0000fb_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","sn":"0","ilk":"icp","sith":"1","keys":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_y'
-                           b'Z-Wk1x4ejhcc"],"nxt":"EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4","toad":"'
-                           b'0","wits":[],"cnfg":[]}')
+    pre = serder0.ked["i"]
+    assert serder0.ked["i"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked["n"] == nxt1
+    assert serder0.raw == (b'{"v":"KERI10JSON0000e6_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
+                           b'"s":"0","t":"icp","kt":"1","k":["DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                           b'c"],"n":"EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4","wt":"0","w":[],"c":['
+                           b']}')
 
-    assert serder0.dig == 'EIIUSTX04qnUbyuJiJc-udBgaKKoqK-XNUmA6eG7JKUA'
+    assert serder0.dig == 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
 
 
     # Rotation: Transferable not abandoned i.e. next not empty
@@ -183,53 +183,51 @@ def test_keyeventfuncs():
     nxt2 = nexter2.qb64  # transferable so nxt is not empty
     assert nxt2 == 'EAXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U'
     serder1 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
-    assert serder1.ked["pre"] == pre
-    assert serder1.ked["sn"] == '1'
-    assert serder1.ked["ilk"] == Ilks.rot
-    assert serder1.ked["nxt"] == nxt2
-    assert serder1.ked["dig"] == serder0.dig
-    assert serder1.raw == (b'{"vs":"KERI10JSON00013a_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","sn":"1","ilk":"rot","dig":"EIIUSTX04qnUbyuJiJc-udBgaKKoqK-XNUmA6eG7JKUA"'
-                           b',"sith":"1","keys":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRiaf9FdA_-_49A"],"nxt":"E'
-                           b'AXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U","toad":"0","cuts":[],"adds":[],'
-                           b'"data":[]}')
+    assert serder1.ked["i"] == pre
+    assert serder1.ked["s"] == '1'
+    assert serder1.ked["t"] == Ilks.rot
+    assert serder1.ked["n"] == nxt2
+    assert serder1.ked["p"] == serder0.dig
+    assert serder1.raw == (b'{"v":"KERI10JSON000122_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
+                           b'"s":"1","t":"rot","p":"E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ","kt":"1'
+                           b'","k":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRiaf9FdA_-_49A"],"n":"EAXTvbATMnVRGjyC'
+                           b'_VCNuXcPTxxpLanfzj14u3QMsD_U","wt":"0","wr":[],"wa":[],"a":[]}')
 
     # Interaction:
     serder2 = interact(pre=pre, dig=serder1.dig, sn=2)
-    assert serder2.ked["pre"] == pre
-    assert serder2.ked["sn"] == '2'
-    assert serder2.ked["ilk"] == Ilks.ixn
-    assert serder2.ked["dig"] == serder1.dig
-    assert serder2.raw == (b'{"vs":"KERI10JSON0000a3_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","sn":"2","ilk":"ixn","dig":"Ehl5-_BQFcAKqweFqEpqR6ClTAaJh3vrbHJPfOpISOOQ"'
-                           b',"data":[]}')
+    assert serder2.ked["i"] == pre
+    assert serder2.ked["s"] == '2'
+    assert serder2.ked["t"] == Ilks.ixn
+    assert serder2.ked["p"] == serder1.dig
+    assert serder2.raw == (b'{"v":"KERI10JSON000098_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
+                           b'"s":"2","t":"ixn","p":"EvHM3Dnx0Z9Vorzjv0e5YWZ84B9VMdw5eP9nE15LuMZ0","a":[]}')
 
     # Receipt
     serder3 = receipt(pre=pre, sn=0, dig=serder2.dig)
-    assert serder3.ked["pre"] == pre
-    assert serder3.ked["sn"] == "0"
-    assert serder3.ked["ilk"] == Ilks.rct
-    assert serder3.ked["dig"] == serder2.dig
-    assert serder3.raw == (b'{"vs":"KERI10JSON000099_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","sn":"0","ilk":"rct","dig":"EgWxcdJkGUDh08x02ZW9pc-7XhrLe-zXJp3Vv5M35tTQ"'
-                           b'}')
+    assert serder3.ked["i"] == pre
+    assert serder3.ked["s"] == "0"
+    assert serder3.ked["t"] == Ilks.rct
+    assert serder3.ked["d"] == serder2.dig
+    assert serder3.raw == (b'{"v":"KERI10JSON000091_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
+                           b'"s":"0","t":"rct","d":"EoLKHoaFmo5VFzaOpCQXmUo5Wxf_cRuIbx7LcyBS69lQ"}')
 
     # ValReceipt  chit
     serderA = incept(keys=keys0, nxt=nxt1, code=CryOneDex.Blake3_256)
-    seal = SealEvent(pre=serderA.ked["pre"], sn=serderA.ked["sn"], dig=serderA.dig)
-    assert seal.pre == serderA.ked["pre"] == 'EykXsFe4u9epTUQFCL7YdNdHxtdjCQUM-TVO8CgJAKb8'
-    assert seal.dig == serderA.dig == 'EaqN7zhqTEhkeDZ2zMuNWHss_H_kH4cG7Li1jn2DXfrE'
+    seal = SealEvent(i=serderA.ked["i"], s=serderA.ked["s"], d=serderA.dig)
+    assert seal.i == serderA.ked["i"] == 'EQHZvtdIQAJ5MsdHtVL3yNEIbDN-6_A0QExE-bDrjG08'
+    assert seal.d == serderA.dig == 'E61U7ngjkwu4mIOElrqSunmIE1Ihtms-kL7wjhOwGvA0'
 
     serder4 = chit(pre=pre, sn=2, dig=serder2.dig, seal=seal)
-    assert serder4.ked["pre"] == pre
-    assert serder4.ked["sn"] == "2"
-    assert serder4.ked["ilk"] == Ilks.vrc
-    assert serder4.ked["dig"] == serder2.dig
-    assert serder4.ked["seal"] == seal._asdict()
-    assert serder4.raw == (b'{"vs":"KERI10JSON000115_","pre":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
-                           b'c","sn":"2","ilk":"vrc","dig":"EgWxcdJkGUDh08x02ZW9pc-7XhrLe-zXJp3Vv5M35tTQ"'
-                           b',"seal":{"pre":"EykXsFe4u9epTUQFCL7YdNdHxtdjCQUM-TVO8CgJAKb8","sn":"0","dig"'
-                           b':"EaqN7zhqTEhkeDZ2zMuNWHss_H_kH4cG7Li1jn2DXfrE"}}')
+    assert serder4.ked["i"] == pre
+    assert serder4.ked["s"] == "2"
+    assert serder4.ked["t"] == Ilks.vrc
+    assert serder4.ked["d"] == serder2.dig
+    assert serder4.ked["a"] == seal._asdict()
+    assert serder4.raw == (b'{"v":"KERI10JSON000105_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
+                           b'"s":"2","t":"vrc","d":"EoLKHoaFmo5VFzaOpCQXmUo5Wxf_cRuIbx7LcyBS69lQ","a":{"i'
+                           b'":"EQHZvtdIQAJ5MsdHtVL3yNEIbDN-6_A0QExE-bDrjG08","s":"0","d":"E61U7ngjkwu4mI'
+                           b'OElrqSunmIE1Ihtms-kL7wjhOwGvA0"}}')
+
 
 
 
@@ -248,24 +246,23 @@ def test_keyeventfuncs():
     nxtD = nexterD.qb64  # transferable so nxt is not empty
     assert nxtD == 'EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4'
 
-    seal = SealLocation(pre='ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd',
-                        sn="{:x}".format(3),
-                        ilk=Ilks.ixn,
-                        dig='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+    seal = SealLocation(i='ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd',
+                        s="{:x}".format(3),
+                        t=Ilks.ixn,
+                        p='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
     serderD = delcept(keys=keysD, seal=seal, nxt=nxtD)
-    pre = serderD.ked["pre"]
-    assert serderD.ked["pre"] == 'E69svP3NQcz6GxN3BlSH6c5bVzP5aXV1VAeXN3xjzfHg'
-    assert serderD.ked["sn"] == '0'
-    assert serderD.ked["ilk"] == Ilks.dip
-    assert serderD.ked["nxt"] == nxtD
-    assert serderD.raw == (b'{"vs":"KERI10JSON000183_","pre":"E69svP3NQcz6GxN3BlSH6c5bVzP5aXV1VAeXN3xjzfH'
-                           b'g","sn":"0","ilk":"dip","sith":"1","keys":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRi'
-                           b'af9FdA_-_49A"],"nxt":"EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4","toad":"'
-                           b'0","wits":[],"cnfg":[],"seal":{"pre":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQ'
-                           b'FCL7Yd","sn":"3","ilk":"ixn","dig":"EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhke'
-                           b'DZ2z"}}')
-    assert serderD.dig == 'E8Cy-3XpLhzRwPzoNT2zCOhvfIfbzNfvygjzok9HAk4U'
+    pre = serderD.ked["i"]
+    assert serderD.ked["i"] == 'Ec-b7rwk9Pjo_eVSJZMZFA1lzb0AS0uXfmKg5MAGARW4'
+    assert serderD.ked["s"] == '0'
+    assert serderD.ked["t"] == Ilks.dip
+    assert serderD.ked["n"] == nxtD
+    assert serderD.raw == (b'{"v":"KERI10JSON000165_","i":"Ec-b7rwk9Pjo_eVSJZMZFA1lzb0AS0uXfmKg5MAGARW4",'
+                           b'"s":"0","t":"dip","kt":"1","k":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRiaf9FdA_-_49'
+                           b'A"],"n":"EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4","wt":"0","w":[],"c":['
+                           b'],"da":{"i":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd","s":"3","t":"ixn"'
+                           b',"p":"EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z"}}')
+    assert serderD.dig == 'EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30'
 
     # Delegated Rotation:
     # Transferable not abandoned i.e. next not empty
@@ -281,29 +278,29 @@ def test_keyeventfuncs():
     nxtR = nexterR.qb64  # transferable so nxt is not empty
     assert nxtR == 'EAXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U'
 
-    seal = SealLocation(pre='ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd',
-                        sn="{:x}".format(4),
-                        ilk=Ilks.ixn,
-                        dig='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+    seal = SealLocation(i='ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd',
+                        s="{:x}".format(4),
+                        t=Ilks.ixn,
+                        p='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
     serderR = deltate(pre=pre,
                       keys=keysR,
-                      dig='EIIUSTX04qnUbyuJiJc-udBgaKKoqK-XNUmA6eG7JKUA',
+                      dig='EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
                       seal=seal,
                       sn=4,
                       nxt=nxtR)
 
-    assert serderR.ked["pre"] == pre
-    assert serderR.ked["sn"] == '4'
-    assert serderR.ked["ilk"] == Ilks.drt
-    assert serderR.ked["nxt"] == nxtR
-    assert serderR.raw == (b'{"vs":"KERI10JSON0001c2_","pre":"E69svP3NQcz6GxN3BlSH6c5bVzP5aXV1VAeXN3xjzfH'
-                           b'g","sn":"4","ilk":"drt","dig":"EIIUSTX04qnUbyuJiJc-udBgaKKoqK-XNUmA6eG7JKUA"'
-                           b',"sith":"1","keys":["D8u3hipCxZnkM_O0jfaZLJMk9ERI428T0psRO0JVgh4c"],"nxt":"E'
-                           b'AXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U","toad":"0","cuts":[],"adds":[],'
-                           b'"data":[],"seal":{"pre":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd","sn":'
-                           b'"4","ilk":"ixn","dig":"EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z"}}')
-    assert serderR.dig == 'EqBzOygGY1BVOS1pBas7kW8K_nvAVAziWfGabzAEK3to'
+    assert serderR.ked["i"] == pre
+    assert serderR.ked["s"] == '4'
+    assert serderR.ked["t"] == Ilks.drt
+    assert serderR.ked["n"] == nxtR
+    assert serderR.raw == (b'{"v":"KERI10JSON0001a1_","i":"Ec-b7rwk9Pjo_eVSJZMZFA1lzb0AS0uXfmKg5MAGARW4",'
+                           b'"s":"4","t":"drt","p":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","kt":"1'
+                           b'","k":["D8u3hipCxZnkM_O0jfaZLJMk9ERI428T0psRO0JVgh4c"],"n":"EAXTvbATMnVRGjyC'
+                           b'_VCNuXcPTxxpLanfzj14u3QMsD_U","wt":"0","wr":[],"wa":[],"a":[],"da":{"i":"ENd'
+                           b'HxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd","s":"4","t":"ixn","p":"EMuNWHss_H'
+                           b'_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z"}}')
+    assert serderR.dig == 'E1M53rzcC3w9w3LqWuo04_YadO9TERPz4QfXikyxpbAo'
 
 
     """ Done Test """
@@ -342,16 +339,16 @@ def test_kever():
         toad = 0  # no witnesses
         nsigs = 1  #  one attached signature unspecified index
 
-        ked0 = dict(vs=Versify(kind=Serials.json, size=0),
-                    pre="",  # qual base 64 prefix
-                    sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-                    ilk=Ilks.icp,
-                    sith="{:x}".format(sith), # hex string no leading zeros lowercase
-                    keys=keys,  # list of signing keys each qual Base64
-                    nxt=nxt,  # hash qual Base64
-                    toad="{:x}".format(toad),  # hex string no leading zeros lowercase
-                    wits=[],  # list of qual Base64 may be empty
-                    cnfg=[],  # list of config ordered mappings may be empty
+        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+                    i="",  # qual base 64 prefix
+                    s="{:x}".format(sn),  # hex string no leading zeros lowercase
+                    t=Ilks.icp,
+                    kt="{:x}".format(sith), # hex string no leading zeros lowercase
+                    k=keys,  # list of signing keys each qual Base64
+                    n=nxt,  # hash qual Base64
+                    wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+                    w=[],  # list of qual Base64 may be empty
+                    c=[],  # list of config ordered mappings may be empty
                    )
 
 
@@ -361,7 +358,7 @@ def test_kever():
         assert aid0.qb64 == skp0.verfer.qb64
 
         # update ked with pre
-        ked0["pre"] = aid0.qb64
+        ked0["i"] = aid0.qb64
 
         # Serialize ked0
         tser0 = Serder(ked=ked0)
@@ -397,16 +394,16 @@ def test_kever():
         toad = 0  # no witnesses
         nsigs = 1  #  one attached signature unspecified index
 
-        ked0 = dict(vs=Versify(kind=Serials.json, size=0),
-                    pre="",  # qual base 64 prefix
-                    sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-                    ilk=Ilks.icp,
-                    sith="{:x}".format(sith), # hex string no leading zeros lowercase
-                    keys=keys,  # list of signing keys each qual Base64
-                    nxt=nxt,  # hash qual Base64
-                    toad="{:x}".format(toad),  # hex string no leading zeros lowercase
-                    wits=[],  # list of qual Base64 may be empty
-                    cnfg=[],  # list of config ordered mappings may be empty
+        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+                    i="",  # qual base 64 prefix
+                    s="{:x}".format(sn),  # hex string no leading zeros lowercase
+                    t=Ilks.icp,
+                    kt="{:x}".format(sith), # hex string no leading zeros lowercase
+                    k=keys,  # list of signing keys each qual Base64
+                    n=nxt,  # hash qual Base64
+                    wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+                    w=[],  # list of qual Base64 may be empty
+                    c=[],  # list of config ordered mappings may be empty
                    )
 
 
@@ -418,7 +415,7 @@ def test_kever():
         # assert aid0.qb64 == skp0.verfer.qb64
 
         # update ked with pre
-        ked0["pre"] =skp0.verfer.qb64
+        ked0["i"] =skp0.verfer.qb64
 
         # Serialize ked0
         tser0 = Serder(ked=ked0)
@@ -438,17 +435,17 @@ def test_kever():
         toad = 0  # no witnesses
         nsigs = 1  #  one attached signature unspecified index
 
-        ked0 = dict(vs=Versify(kind=Serials.json, size=0),
-                        pre="",  # qual base 64 prefix
-                        sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-                        ilk=Ilks.icp,
-                        sith="{:x}".format(sith), # hex string no leading zeros lowercase
-                        keys=keys,  # list of signing keys each qual Base64
-                        nxt=nxt,  # hash qual Base64
-                        toad="{:x}".format(toad),  # hex string no leading zeros lowercase
-                        wits=[],  # list of qual Base64 may be empty
-                        cnfg=[],  # list of config ordered mappings may be empty
-                        )
+        ked0 = dict(v=Versify(kind=Serials.json, size=0),
+                    i="",  # qual base 64 prefix
+                    s="{:x}".format(sn),  # hex string no leading zeros lowercase
+                    t=Ilks.icp,
+                    kt="{:x}".format(sith), # hex string no leading zeros lowercase
+                    k=keys,  # list of signing keys each qual Base64
+                    n=nxt,  # hash qual Base64
+                    wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+                    w=[],  # list of qual Base64 may be empty
+                    c=[],  # list of config ordered mappings may be empty
+                    )
 
 
         # Derive AID from ked
@@ -458,7 +455,7 @@ def test_kever():
         assert aid0.qb64 == skp0.verfer.qb64
 
         # update ked with pre
-        ked0["pre"] = aid0.qb64
+        ked0["i"] = aid0.qb64
 
         # Serialize ked0
         tser0 = Serder(ked=ked0)
@@ -532,14 +529,14 @@ def test_keyeventsequence_0():
         nxt1 = nexter1.qb64  # transferable so nxt is not empty
         assert nxt1 == 'EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqU'
         serder0 = incept(keys=keys0, nxt=nxt1)
-        pre = serder0.ked["pre"]
+        pre = serder0.ked["i"]
         event_digs.append(serder0.dig)
-        assert serder0.ked["pre"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-        assert serder0.ked["sn"] == '0'
-        assert serder0.ked["sith"] == '1'
-        assert serder0.ked["keys"] == keys0
-        assert serder0.ked["nxt"] == nxt1
-        assert serder0.dig == 'Ew3MXaYk3VBkPAFyTZN6Oyev5sbKM_6ycHAds-A6znN8'
+        assert serder0.ked["i"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+        assert serder0.ked["s"] == '0'
+        assert serder0.ked["kt"] == '1'
+        assert serder0.ked["k"] == keys0
+        assert serder0.ked["n"] == nxt1
+        assert serder0.dig == 'EB5PLgogAWw5iniBXk0MKnFU9udCHa9ez_HJxCuvL_xM'
 
         # sign serialization and verify signature
         sig0 = signers[0].sign(serder0.raw, index=0)
@@ -565,12 +562,12 @@ def test_keyeventsequence_0():
         assert nxt2 == 'E-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI'
         serder1 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
         event_digs.append(serder1.dig)
-        assert serder1.ked["pre"] == pre
-        assert serder1.ked["sn"] == '1'
-        assert serder1.ked["sith"] == '1'
-        assert serder1.ked["keys"] == keys1
-        assert serder1.ked["nxt"] == nxt2
-        assert serder1.ked["dig"] == serder0.dig
+        assert serder1.ked["i"] == pre
+        assert serder1.ked["s"] == '1'
+        assert serder1.ked["kt"] == '1'
+        assert serder1.ked["k"] == keys1
+        assert serder1.ked["n"] == nxt2
+        assert serder1.ked["p"] == serder0.dig
 
         # sign serialization and verify signature
         sig1 = signers[1].sign(serder1.raw, index=0)
@@ -591,11 +588,11 @@ def test_keyeventsequence_0():
         nxt3 = nexter3.qb64  # transferable so nxt is not empty
         serder2 = rotate(pre=pre, keys=keys2, dig=serder1.dig, nxt=nxt3, sn=2)
         event_digs.append(serder2.dig)
-        assert serder2.ked["pre"] == pre
-        assert serder2.ked["sn"] == '2'
-        assert serder2.ked["keys"] == keys2
-        assert serder2.ked["nxt"] == nxt3
-        assert serder2.ked["dig"] == serder1.dig
+        assert serder2.ked["i"] == pre
+        assert serder2.ked["s"] == '2'
+        assert serder2.ked["k"] == keys2
+        assert serder2.ked["n"] == nxt3
+        assert serder2.ked["p"] == serder1.dig
 
         # sign serialization and verify signature
         sig2 = signers[2].sign(serder2.raw, index=0)
@@ -612,9 +609,9 @@ def test_keyeventsequence_0():
         # Event 3 Interaction
         serder3 = interact(pre=pre, dig=serder2.dig, sn=3)
         event_digs.append(serder3.dig)
-        assert serder3.ked["pre"] == pre
-        assert serder3.ked["sn"] == '3'
-        assert serder3.ked["dig"] == serder2.dig
+        assert serder3.ked["i"] == pre
+        assert serder3.ked["s"] == '3'
+        assert serder3.ked["p"] == serder2.dig
 
         # sign serialization and verify signature
         sig3 = signers[2].sign(serder3.raw, index=0)
@@ -631,9 +628,9 @@ def test_keyeventsequence_0():
         # Event 4 Interaction
         serder4 = interact(pre=pre, dig=serder3.dig, sn=4)
         event_digs.append(serder4.dig)
-        assert serder4.ked["pre"] == pre
-        assert serder4.ked["sn"] == '4'
-        assert serder4.ked["dig"] == serder3.dig
+        assert serder4.ked["i"] == pre
+        assert serder4.ked["s"] == '4'
+        assert serder4.ked["p"] == serder3.dig
 
         # sign serialization and verify signature
         sig4 = signers[2].sign(serder4.raw, index=0)
@@ -654,11 +651,11 @@ def test_keyeventsequence_0():
         nxt4 = nexter4.qb64  # transferable so nxt is not empty
         serder5 = rotate(pre=pre, keys=keys3, dig=serder4.dig, nxt=nxt4, sn=5)
         event_digs.append(serder5.dig)
-        assert serder5.ked["pre"] == pre
-        assert serder5.ked["sn"] == '5'
-        assert serder5.ked["keys"] == keys3
-        assert serder5.ked["nxt"] == nxt4
-        assert serder5.ked["dig"] == serder4.dig
+        assert serder5.ked["i"] == pre
+        assert serder5.ked["s"] == '5'
+        assert serder5.ked["k"] == keys3
+        assert serder5.ked["n"] == nxt4
+        assert serder5.ked["p"] == serder4.dig
 
         # sign serialization and verify signature
         sig5 = signers[3].sign(serder5.raw, index=0)
@@ -675,9 +672,9 @@ def test_keyeventsequence_0():
         # Event 6 Interaction
         serder6 = interact(pre=pre, dig=serder5.dig, sn=6)
         event_digs.append(serder6.dig)
-        assert serder6.ked["pre"] == pre
-        assert serder6.ked["sn"] == '6'
-        assert serder6.ked["dig"] == serder5.dig
+        assert serder6.ked["i"] == pre
+        assert serder6.ked["s"] == '6'
+        assert serder6.ked["p"] == serder5.dig
 
         # sign serialization and verify signature
         sig6 = signers[3].sign(serder6.raw, index=0)
@@ -695,11 +692,11 @@ def test_keyeventsequence_0():
         nxt5 = ""  # nxt digest is empty
         serder7 = rotate(pre=pre, keys=keys4, dig=serder6.dig, nxt=nxt5, sn=7)
         event_digs.append(serder7.dig)
-        assert serder7.ked["pre"] == pre
-        assert serder7.ked["sn"] == '7'
-        assert serder7.ked["keys"] == keys4
-        assert serder7.ked["nxt"] == nxt5
-        assert serder7.ked["dig"] == serder6.dig
+        assert serder7.ked["i"] == pre
+        assert serder7.ked["s"] == '7'
+        assert serder7.ked["k"] == keys4
+        assert serder7.ked["n"] == nxt5
+        assert serder7.ked["p"] == serder6.dig
 
         # sign serialization and verify signature
         sig7 = signers[4].sign(serder7.raw, index=0)
@@ -716,9 +713,9 @@ def test_keyeventsequence_0():
 
         # Event 8 Interaction
         serder8 = interact(pre=pre, dig=serder7.dig, sn=8)
-        assert serder8.ked["pre"] == pre
-        assert serder8.ked["sn"] == '8'
-        assert serder8.ked["dig"] == serder7.dig
+        assert serder8.ked["i"] == pre
+        assert serder8.ked["s"] == '8'
+        assert serder8.ked["p"] == serder7.dig
 
         # sign serialization and verify signature
         sig8 = signers[4].sign(serder8.raw, index=0)
@@ -732,9 +729,9 @@ def test_keyeventsequence_0():
         nexter5 = Nexter(keys=keys5)
         nxt5 = nexter4.qb64  # transferable so nxt is not empty
         serder8 = rotate(pre=pre, keys=keys5, dig=serder7.dig, nxt=nxt5, sn=8)
-        assert serder8.ked["pre"] == pre
-        assert serder8.ked["sn"] == '8'
-        assert serder8.ked["dig"] == serder7.dig
+        assert serder8.ked["i"] == pre
+        assert serder8.ked["s"] == '8'
+        assert serder8.ked["p"] == serder7.dig
 
         # sign serialization and verify signature
         sig8 = signers[4].sign(serder8.raw, index=0)
@@ -795,13 +792,13 @@ def test_keyeventsequence_1():
         cnfg = [TraitDex.EstOnly]  #  EstOnly
         serder0 = incept(keys=keys0, nxt=nxt1, cnfg=cnfg)
         event_digs.append(serder0.dig)
-        pre = serder0.ked["pre"]
-        assert serder0.ked["pre"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-        assert serder0.ked["sn"] == '0'
-        assert serder0.ked["sith"] == '1'
-        assert serder0.ked["keys"] == keys0
-        assert serder0.ked["nxt"] == nxt1
-        assert serder0.ked["cnfg"] == cnfg
+        pre = serder0.ked["i"]
+        assert serder0.ked["i"] == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+        assert serder0.ked["s"] == '0'
+        assert serder0.ked["kt"] == '1'
+        assert serder0.ked["k"] == keys0
+        assert serder0.ked["n"] == nxt1
+        assert serder0.ked["c"] == cnfg
         # sign serialization and verify signature
         sig0 = signers[0].sign(serder0.raw, index=0)
         assert signers[0].verfer.verify(sig0.raw, serder0.raw)
@@ -819,9 +816,9 @@ def test_keyeventsequence_1():
 
         # Event 1 Interaction. Because EstOnly, this event not included in KEL
         serder1 = interact(pre=pre, dig=serder0.dig, sn=1)
-        assert serder1.ked["pre"] == pre
-        assert serder1.ked["sn"] == '1'
-        assert serder1.ked["dig"] == serder0.dig
+        assert serder1.ked["i"] == pre
+        assert serder1.ked["s"] == '1'
+        assert serder1.ked["p"] == serder0.dig
         # sign serialization and verify signature
         sig1 = signers[0].sign(serder1.raw, index=0)
         assert signers[0].verfer.verify(sig1.raw, serder1.raw)
@@ -838,12 +835,12 @@ def test_keyeventsequence_1():
         assert nxt2 == 'E-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI'
         serder2 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
         event_digs.append(serder2.dig)
-        assert serder2.ked["pre"] == pre
-        assert serder2.ked["sn"] == '1'
-        assert serder2.ked["sith"] == '1'
-        assert serder2.ked["keys"] == keys1
-        assert serder2.ked["nxt"] == nxt2
-        assert serder2.ked["dig"] == serder0.dig
+        assert serder2.ked["i"] == pre
+        assert serder2.ked["s"] == '1'
+        assert serder2.ked["kt"] == '1'
+        assert serder2.ked["k"] == keys1
+        assert serder2.ked["n"] == nxt2
+        assert serder2.ked["p"] == serder0.dig
 
         # sign serialization and verify signature
         sig2 = signers[1].sign(serder2.raw, index=0)
@@ -906,12 +903,11 @@ def test_kevery():
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
 
-        assert kes == bytearray(b'{"vs":"KERI10JSON0000fb_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
-                                b'ZOoeKtWTOunRA","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
-                                b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EPYuj8mq_PYYsoBKkz'
-                                b'X1kxSPGYBWaIya3slgCOyOtlqU","toad":"0","wits":[],"cnfg":[]}-AABA'
-                                b'Ab9HVtXGZWUssiJdEOVMTNNy9jVfinHmDGIJxkD22ogiBI1rvUxPpCATf66DvilG'
-                                b'QOhKbpumcrQRkZMe737QyBA')
+        assert kes ==bytearray(b'{"v":"KERI10JSON0000e6_","i":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOo'
+                               b'eKtWTOunRA","s":"0","t":"icp","kt":"1","k":["DSuhyBcPZEZLK-fcw5t'
+                               b'zHn2N46wRCG_ZOoeKtWTOunRA"],"n":"EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIy'
+                               b'a3slgCOyOtlqU","wt":"0","w":[],"c":[]}-AABAAyIoOoziM1_fGb-1gKWY_'
+                               b'LtlKiZIwuaJ5iPkYflmqOxxBn6MspbvCcLf8bF_uAgxCVLG1W4IMEhvDi_8rPORgDw')
 
         # Event 1 Rotation Transferable
         serder = rotate(pre=kever.prefixer.qb64,
@@ -1068,7 +1064,7 @@ def test_kevery():
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
 
-        assert len(kes) == 3349
+        assert len(kes) == 3164
 
         pre = kever.prefixer.qb64
 
@@ -1138,7 +1134,7 @@ def test_multisig_digprefix():
                         sith=sith,
                         nxt=Nexter(keys=nxtkeys).qb64)
 
-        assert serder.ked["pre"] == 'EUEtw_3JqBhrLtwwlP9QLnDXZGjJ3CIxq7QGP_dEQiwc'
+        assert serder.ked["i"] == 'EIP6JVp53VZau8wPba8mMsc8wRH1eySlFvCOuMmxm_-w'
         # create sig counter
         count = len(keys)
         counter = SigCounter(count=count)  # default is count = 1
@@ -1152,17 +1148,16 @@ def test_multisig_digprefix():
         for siger in sigers:
             kes.extend(siger.qb64b)
 
-        assert kes == bytearray(b'{"vs":"KERI10JSON000159_","pre":"EUEtw_3JqBhrLtwwlP9QLnDXZGjJ3CI'
-                                b'xq7QGP_dEQiwc","sn":"0","ilk":"icp","sith":"2","keys":["DSuhyBcP'
-                                b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA","DVcuJOOJF1IE8svqEtrSuyQjG'
-                                b'Td2HhfAkt9y2QkUtFJI","DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Gr'
-                                b'h8"],"nxt":"E9izzBkXX76sqt0N-tfLzJeRqj0W56p4pDQ_ZqNCDpyw","toad"'
-                                b':"0","wits":[],"cnfg":[]}-AADAAh_trqX993WCZfZ2Mm8Rj2AnlpJzStsv2x'
-                                b'4M3gKOIpA740SCYGTDIU4L2Zokd8Krfakt98vy2vAYTjrJ7_UMnBQABNgYwwmein'
-                                b'upnrK8nIbVkz4iL7OgjAalNSNimZciYLCBRoKD5jbyXbHDxgycjl2vaw3roAzuaS'
-                                b'i4686OY4P0kDgACbz0tl-U_EBbSfdKmtJHkSNfbDjB7pw_k9C9MuTv1eP3XM4OFA'
-                                b'pLJyhshWDtWmUzb4uorpXWvqRKfkMIRCKyBDQ')
-
+        assert kes == bytearray(b'{"v":"KERI10JSON000144_","i":"EIP6JVp53VZau8wPba8mMsc8wRH1eySlFv'
+                                b'COuMmxm_-w","s":"0","t":"icp","kt":"2","k":["DSuhyBcPZEZLK-fcw5t'
+                                b'zHn2N46wRCG_ZOoeKtWTOunRA","DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y'
+                                b'2QkUtFJI","DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8"],"n":"E'
+                                b'9izzBkXX76sqt0N-tfLzJeRqj0W56p4pDQ_ZqNCDpyw","wt":"0","w":[],"c"'
+                                b':[]}-AADAAPGMuShtKCzc_oXMViVhVPMkAfmSyeRtQ2EHtvgRy2NrcXbx-o-vAOw'
+                                b'MVv2gOit2JetBrIpJ9Vrk7AIqlUUfCAQABq8xN8U7XetGS5ayeX7dd9jZ4dTdNSB'
+                                b'cF4Ov57k0TzdBh5ukwi3ocpY77qZ4vr0nlK83iIbLBu999UZ7XoljBBgACKJuVmv'
+                                b'5usbWsDOjq_I8028pXe0Nib2YlKgKKtx1AblOCtWBU2zD_qgXUs58ACmOcFIdTfk'
+                                b'xhR3u_jCN8XfHSAw')
 
 
         # Event 1 Rotation Transferable
@@ -1242,8 +1237,7 @@ def test_multisig_digprefix():
         for siger in sigers:
             kes.extend(siger.qb64b)
 
-
-        assert len(kes) == 2783
+        assert len(kes) == 2692
 
         kevery = Kevery(baser=vallgr)
         kevery.processAll(ims=kes)
@@ -1291,7 +1285,7 @@ def test_recovery():
         serder = incept(keys=[signers[esn].verfer.qb64],
                         nxt=Nexter(keys=[signers[esn+1].verfer.qb64]).qb64)
 
-        assert sn == int(serder.ked["sn"], 16) == 0
+        assert sn == int(serder.ked["s"], 16) == 0
 
         event_digs.append(serder.dig)
         # create sig counter
@@ -1568,8 +1562,8 @@ def test_receipt():
         serder = incept(keys=[coeSigners[esn].verfer.qb64],
                         nxt=Nexter(keys=[coeSigners[esn+1].verfer.qb64]).qb64)
 
-        assert sn == int(serder.ked["sn"], 16) == 0
-        coepre = serder.ked['pre']
+        assert sn == int(serder.ked["s"], 16) == 0
+        coepre = serder.ked["i"]
         assert coepre == 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
 
         event_digs.append(serder.dig)
@@ -1591,14 +1585,13 @@ def test_receipt():
         valKever = valKevery.kevers[coepre]
         assert len(kes) ==  0
 
-
         # create receipt from val to coe
         reserder = receipt(pre=coeKever.prefixer.qb64,
                            sn=coeKever.sn,
                            dig=coeKever.serder.diger.qb64)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
-        assert valCigar.qb64 == '0Bi6u-ogCjhGeXMUV0Vls9RbefJ-W_daYc6aBVPY5fqMsBYhkl47TrhbpescYp-yBcfkEEKUQHEpZhoXgzw3IeDQ'
+        assert valCigar.qb64 == '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
         recnt = CryCounter(count=1)
         assert recnt.qb64 == '-AAB'
 
@@ -1606,12 +1599,11 @@ def test_receipt():
         res.extend(recnt.qb64b)
         res.extend(valPrefixer.qb64b)
         res.extend(valCigar.qb64b)
-        assert res == bytearray(b'{"vs":"KERI10JSON000099_","pre":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_'
-                                b'ZOoeKtWTOunRA","sn":"0","ilk":"rct","dig":"Ew3MXaYk3VBkPAFyTZN6O'
-                                b'yev5sbKM_6ycHAds-A6znN8"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzh'
-                                b'DNZlEKiMc0Bi6u-ogCjhGeXMUV0Vls9RbefJ-W_daYc6aBVPY5fqMsBYhkl47Trh'
-                                b'bpescYp-yBcfkEEKUQHEpZhoXgzw3IeDQ')
-
+        assert res == bytearray(b'{"v":"KERI10JSON000091_","i":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOo'
+                                b'eKtWTOunRA","s":"0","t":"rct","d":"EB5PLgogAWw5iniBXk0MKnFU9udCH'
+                                b'a9ez_HJxCuvL_xM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiM'
+                                b'c0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8'
+                                b'Fu_5asnM7m67KlGC9EYaw0KDQ')
 
         coeKevery.processAll(ims=res)  #  coe process the receipt from val
         #  check if in receipt database
@@ -1640,7 +1632,6 @@ def test_receipt():
                                                         dig=fake))
         assert bytes(result[0]) == valPrefixer.qb64b + valCigar.qb64b
 
-
         # create receipt stale use invalid dig and valid sn so bad receipt
         fake = reserder.dig  # some other dig
         reserder = receipt(pre=coeKever.prefixer.qb64,
@@ -1657,7 +1648,6 @@ def test_receipt():
 
         with pytest.raises(ValidationError):
             coeKevery.processOne(ims=res)  #  coe process the escrow receipt from val
-
 
         # Next Event Rotation Transferable
         sn += 1
@@ -1784,7 +1774,6 @@ def test_receipt():
         coeKevery.processAll(ims=bytearray(kes))  # update key event verifier state
         valKevery.processAll(ims=kes)
 
-
         assert coeKever.verfers[0].qb64 == coeSigners[esn].verfer.qb64
 
         db_digs = [bytes(val).decode("utf-8") for val in coeKever.baser.getKelIter(coepre)]
@@ -1860,9 +1849,9 @@ def test_direct_mode():
                         nxt=Nexter(keys=[coeSigners[cesn+1].verfer.qb64]).qb64,
                         code=CryOneDex.Blake3_256)
 
-        assert csn == int(coeSerder.ked["sn"], 16) == 0
-        coepre = coeSerder.ked['pre']
-        assert coepre == 'EvEnZMhz52iTrJU8qKwtDxzmypyosgG70m6LIjkiCdoI'
+        assert csn == int(coeSerder.ked["s"], 16) == 0
+        coepre = coeSerder.ked["i"]
+        assert coepre == 'ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXXVXSWpRY'
 
         coe_event_digs.append(coeSerder.dig)
         # create sig counter
@@ -1874,12 +1863,11 @@ def test_direct_mode():
         cmsg = bytearray(coeSerder.raw)
         cmsg.extend(counter.qb64b)
         cmsg.extend(siger.qb64b)
-        assert cmsg == bytearray(b'{"vs":"KERI10JSON0000fb_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
-                                 b'70m6LIjkiCdoI","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcP'
-                                 b'ZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA"],"nxt":"EPYuj8mq_PYYsoBKkz'
-                                 b'X1kxSPGYBWaIya3slgCOyOtlqU","toad":"0","wits":[],"cnfg":[]}-AABA'
-                                 b'ApYcYd1cppVg7Inh2YCslWKhUwh59TrPpIoqWxN2A38NCbTljvmBPBjSGIFDBNOv'
-                                 b'VjHpdZlty3Hgk6ilF8pVpAQ')
+        assert cmsg == bytearray(b'{"v":"KERI10JSON0000e6_","i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7'
+                                 b'ZXXVXSWpRY","s":"0","t":"icp","kt":"1","k":["DSuhyBcPZEZLK-fcw5t'
+                                 b'zHn2N46wRCG_ZOoeKtWTOunRA"],"n":"EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIy'
+                                 b'a3slgCOyOtlqU","wt":"0","w":[],"c":[]}-AABAAMiMnE1gmjqoEuDmhbU7a'
+                                 b'qYBUqKCqAmrHPQB-tPUKSbH_IUXsbglEQ6TGlQT1k7G4VlnKoczYBUd7CPJuo5TnDg')
 
         # create own Coe Kever in  Coe's Kevery
         coeKevery.processOne(ims=bytearray(cmsg))  # send copy of cmsg
@@ -1891,9 +1879,9 @@ def test_direct_mode():
                             nxt=Nexter(keys=[valSigners[vesn+1].verfer.qb64]).qb64,
                             code=CryOneDex.Blake3_256)
 
-        assert vsn == int(valSerder.ked["sn"], 16) == 0
-        valpre = valSerder.ked['pre']
-        assert valpre == 'E0uTVILY2KXdcxX40MSM9Fr8EpGwfjMNap6ulAAzVt0M'
+        assert vsn == int(valSerder.ked["s"], 16) == 0
+        valpre = valSerder.ked["i"]
+        assert valpre == 'EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-IB33bEg'
 
         val_event_digs.append(valSerder.dig)
         # create sig counter
@@ -1905,12 +1893,11 @@ def test_direct_mode():
         vmsg = bytearray(valSerder.raw)
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'{"vs":"KERI10JSON0000fb_","pre":"E0uTVILY2KXdcxX40MSM9Fr8EpGwfjM'
-                                 b'Nap6ulAAzVt0M","sn":"0","ilk":"icp","sith":"1","keys":["D8KY1sKm'
-                                 b'gyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc"],"nxt":"EOWDAJvex5dZzDxeHB'
-                                 b'ANyaIoUG3F4-ic81G6GwtnC4f4","toad":"0","wits":[],"cnfg":[]}-AABA'
-                                 b'AR5dawnJxU_Gbb8EK2xUMLb2AU7wLlZDHlDzHvovP-YIowqFq719VMQc9hrEwW9J'
-                                 b'Ks90leAm2rUp3_DOi7-olBg')
+        assert vmsg == bytearray(b'{"v":"KERI10JSON0000e6_","i":"EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfum'
+                                 b'EV-IB33bEg","s":"0","t":"icp","kt":"1","k":["D8KY1sKmgyjAiUDdUBP'
+                                 b'NPyrSz_ad_Qf9yzhDNZlEKiMc"],"n":"EOWDAJvex5dZzDxeHBANyaIoUG3F4-i'
+                                 b'c81G6GwtnC4f4","wt":"0","w":[],"c":[]}-AABAApBSsY9FoB9RRRL3L4YTr'
+                                 b'i4cY2RWtk2I3oX6z7fZLc4Nh7AB_d9yZya5cVWhuFiLFSrDYNpFvHBYWAix4CfhTAQ')
 
         # create own Val Kever in  Val's Kevery
         valKevery.processOne(ims=bytearray(vmsg))  # send copy of vmsg
@@ -1923,9 +1910,9 @@ def test_direct_mode():
 
         # create receipt of coe's inception
         # create seal of val's last est event
-        seal = SealEvent(pre=valpre,
-                         sn="{:x}".format(valKever.lastEst.sn),
-                         dig=valKever.lastEst.dig)
+        seal = SealEvent(i=valpre,
+                         s="{:x}".format(valKever.lastEst.s),
+                         d=valKever.lastEst.d)
         coeK = valKevery.kevers[coepre]  # lookup coeKever from val's .kevers
         # create validator receipt
         reserder = chit(pre=coeK.prefixer.qb64,
@@ -1935,44 +1922,44 @@ def test_direct_mode():
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIcpDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
-        assert coeIcpDig == coeK.serder.diger.qb64b == b'EdpkS5j6xIAnPFjovQKLaou1jF7XcLny-pYZde4p35jc'
+        assert coeIcpDig == coeK.serder.diger.qb64b == b'E9ZTKOhr-lqB7jbBMBpUIdMpfWvEswoMoc5UrwCRcTSc'
         coeIcpRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
-        assert coeIcpRaw == (b'{"vs":"KERI10JSON0000fb_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG70m6LIjkiCdo'
-                             b'I","sn":"0","ilk":"icp","sith":"1","keys":["DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_Z'
-                             b'OoeKtWTOunRA"],"nxt":"EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqU","toad":"'
-                             b'0","wits":[],"cnfg":[]}')
+        assert coeIcpRaw == (b'{"v":"KERI10JSON0000e6_","i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXXVXSWpRY",'
+                             b'"s":"0","t":"icp","kt":"1","k":["DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunR'
+                             b'A"],"n":"EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqU","wt":"0","w":[],"c":['
+                             b']}')
         counter = SigCounter(count=1)
         assert counter.qb64 == '-AAB'
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
-        assert siger.qb64 == 'AAcQJDHTzG8k1WYCR6LahLCIlcDED21Slz66piD9tcZo4VEmyWHYDccj4aRvVdy9xHqHsn38FMGN26x4S2skJGCw'
+        assert siger.qb64 == 'AAmptM4R0KnuzFtY4WTqdzUOuhkD_Rl6dKyX8a71NdoZSbCE5hbBlGh4NoxkdchGuF0jM1Ss-uHUfdoyICZsQvCg'
 
         # process own Val receipt in Val's Kevery so have copy in own log
         rmsg = bytearray(reserder.raw)
         rmsg.extend(counter.qb64b)
         rmsg.extend(siger.qb64b)
-        assert rmsg == bytearray(b'{"vs":"KERI10JSON000115_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
-                                 b'70m6LIjkiCdoI","sn":"0","ilk":"vrc","dig":"EdpkS5j6xIAnPFjovQKLa'
-                                 b'ou1jF7XcLny-pYZde4p35jc","seal":{"pre":"E0uTVILY2KXdcxX40MSM9Fr8'
-                                 b'EpGwfjMNap6ulAAzVt0M","sn":"0","dig":"Es0RthuviC_p-qHut_JCfMKSFw'
-                                 b'pljZ-WoppazqZIid-A"}}-AABAAcQJDHTzG8k1WYCR6LahLCIlcDED21Slz66piD'
-                                 b'9tcZo4VEmyWHYDccj4aRvVdy9xHqHsn38FMGN26x4S2skJGCw')
+        assert rmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7'
+                                 b'ZXXVXSWpRY","s":"0","t":"vrc","d":"E9ZTKOhr-lqB7jbBMBpUIdMpfWvEs'
+                                 b'woMoc5UrwCRcTSc","a":{"i":"EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-'
+                                 b'IB33bEg","s":"0","d":"E-_qFJZK8ER6rJA7W4WR2xxSwKT1RLi8yCCyZ0XHTn'
+                                 b'LU"}}-AABAAmptM4R0KnuzFtY4WTqdzUOuhkD_Rl6dKyX8a71NdoZSbCE5hbBlGh'
+                                 b'4NoxkdchGuF0jM1Ss-uHUfdoyICZsQvCg')
+
 
         valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach reciept message to existing message with val's incept message
         vmsg.extend(rmsg)
-        assert vmsg == bytearray(b'{"vs":"KERI10JSON0000fb_","pre":"E0uTVILY2KXdcxX40MSM9Fr8EpGwfjM'
-                                 b'Nap6ulAAzVt0M","sn":"0","ilk":"icp","sith":"1","keys":["D8KY1sKm'
-                                 b'gyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc"],"nxt":"EOWDAJvex5dZzDxeHB'
-                                 b'ANyaIoUG3F4-ic81G6GwtnC4f4","toad":"0","wits":[],"cnfg":[]}-AABA'
-                                 b'AR5dawnJxU_Gbb8EK2xUMLb2AU7wLlZDHlDzHvovP-YIowqFq719VMQc9hrEwW9J'
-                                 b'Ks90leAm2rUp3_DOi7-olBg{"vs":"KERI10JSON000115_","pre":"EvEnZMhz'
-                                 b'52iTrJU8qKwtDxzmypyosgG70m6LIjkiCdoI","sn":"0","ilk":"vrc","dig"'
-                                 b':"EdpkS5j6xIAnPFjovQKLaou1jF7XcLny-pYZde4p35jc","seal":{"pre":"E'
-                                 b'0uTVILY2KXdcxX40MSM9Fr8EpGwfjMNap6ulAAzVt0M","sn":"0","dig":"Es0'
-                                 b'RthuviC_p-qHut_JCfMKSFwpljZ-WoppazqZIid-A"}}-AABAAcQJDHTzG8k1WYC'
-                                 b'R6LahLCIlcDED21Slz66piD9tcZo4VEmyWHYDccj4aRvVdy9xHqHsn38FMGN26x4'
-                                 b'S2skJGCw')
+        assert vmsg == bytearray(b'{"v":"KERI10JSON0000e6_","i":"EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfum'
+                                 b'EV-IB33bEg","s":"0","t":"icp","kt":"1","k":["D8KY1sKmgyjAiUDdUBP'
+                                 b'NPyrSz_ad_Qf9yzhDNZlEKiMc"],"n":"EOWDAJvex5dZzDxeHBANyaIoUG3F4-i'
+                                 b'c81G6GwtnC4f4","wt":"0","w":[],"c":[]}-AABAApBSsY9FoB9RRRL3L4YTr'
+                                 b'i4cY2RWtk2I3oX6z7fZLc4Nh7AB_d9yZya5cVWhuFiLFSrDYNpFvHBYWAix4CfhT'
+                                 b'AQ{"v":"KERI10JSON000105_","i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJ'
+                                 b'a7ZXXVXSWpRY","s":"0","t":"vrc","d":"E9ZTKOhr-lqB7jbBMBpUIdMpfWv'
+                                 b'EswoMoc5UrwCRcTSc","a":{"i":"EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumE'
+                                 b'V-IB33bEg","s":"0","d":"E-_qFJZK8ER6rJA7W4WR2xxSwKT1RLi8yCCyZ0XH'
+                                 b'TnLU"}}-AABAAmptM4R0KnuzFtY4WTqdzUOuhkD_Rl6dKyX8a71NdoZSbCE5hbBl'
+                                 b'Gh4NoxkdchGuF0jM1Ss-uHUfdoyICZsQvCg')
 
 
         # Simulate send to coe of val's incept and val's receipt of coe's inception message
@@ -1980,15 +1967,17 @@ def test_direct_mode():
 
         # check if val Kever in coe's .kevers
         assert valpre in coeKevery.kevers
-        #  check if receipt from val in receipt database
+        #  check if receipt quadlet from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
+                                    SeqNumber(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
-        assert bytes(result[0]) == (b'E0uTVILY2KXdcxX40MSM9Fr8EpGwfjMNap6ulAAzVt0MEs0RthuviC_p-qHut_JCfMKSFwpljZ-W'
-                                    b'oppazqZIid-AAAcQJDHTzG8k1WYCR6LahLCIlcDED21Slz66piD9tcZo4VEmyWHYDccj4aRvVdy9'
-                                    b'xHqHsn38FMGN26x4S2skJGCw')
+        assert bytes(result[0]) == (b'EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-IB33bEg0AAAAAAAAAAAAAAAAAAAAAAAE-_qFJZK'
+                                    b'8ER6rJA7W4WR2xxSwKT1RLi8yCCyZ0XHTnLUAAmptM4R0KnuzFtY4WTqdzUOuhkD_Rl6dKyX8a71'
+                                    b'NdoZSbCE5hbBlGh4NoxkdchGuF0jM1Ss-uHUfdoyICZsQvCg')
+
 
         # create receipt to escrow use invalid dig and sn so not in coe's db
         fake = reserder.dig  # some other dig
@@ -2004,19 +1993,20 @@ def test_direct_mode():
         vmsg = bytearray(reserder.raw)
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'{"vs":"KERI10JSON000115_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
-                                 b'70m6LIjkiCdoI","sn":"a","ilk":"vrc","dig":"EJfKyt5-NsXYji-gpI1u7'
-                                 b'4XHgiD99rdVU6nxyNyzYZO8","seal":{"pre":"E0uTVILY2KXdcxX40MSM9Fr8'
-                                 b'EpGwfjMNap6ulAAzVt0M","sn":"0","dig":"Es0RthuviC_p-qHut_JCfMKSFw'
-                                 b'pljZ-WoppazqZIid-A"}}-AABAAcQJDHTzG8k1WYCR6LahLCIlcDED21Slz66piD'
-                                 b'9tcZo4VEmyWHYDccj4aRvVdy9xHqHsn38FMGN26x4S2skJGCw')
+        assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7'
+                                 b'ZXXVXSWpRY","s":"a","t":"vrc","d":"ElyVE4F4uR8q4fH1A49RgMPJjcNuy'
+                                 b'euic-kLf8PIKd2c","a":{"i":"EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-'
+                                 b'IB33bEg","s":"0","d":"E-_qFJZK8ER6rJA7W4WR2xxSwKT1RLi8yCCyZ0XHTn'
+                                 b'LU"}}-AABAAmptM4R0KnuzFtY4WTqdzUOuhkD_Rl6dKyX8a71NdoZSbCE5hbBlGh'
+                                 b'4NoxkdchGuF0jM1Ss-uHUfdoyICZsQvCg')
 
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
-        #  check if in escrow database
+        #  check if receipt quadlet in escrow database
         result = coeKevery.baser.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
                                                    dig=fake))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
+                                    SeqNumber(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2024,9 +2014,9 @@ def test_direct_mode():
         # Send receipt from coe to val
         # create receipt of val's inception
         # create seal of coe's last est event
-        seal = SealEvent(pre=coepre,
-                         sn="{:x}".format(coeKever.lastEst.sn),
-                         dig=coeKever.lastEst.dig)
+        seal = SealEvent(i=coepre,
+                         s="{:x}".format(coeKever.lastEst.s),
+                         d=coeKever.lastEst.d)
         valK = coeKevery.kevers[valpre]  # lookup valKever from coe's .kevers
         # create validator receipt
         reserder = chit(pre=valK.prefixer.qb64,
@@ -2036,28 +2026,29 @@ def test_direct_mode():
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
         valIcpDig = bytes(coeKevery.baser.getKeLast(key=snKey(pre=valpre, sn=vsn)))
-        assert valIcpDig == valK.serder.diger.qb64b == b'Es0RthuviC_p-qHut_JCfMKSFwpljZ-WoppazqZIid-A'
+        assert valIcpDig == valK.serder.diger.qb64b == b'E-_qFJZK8ER6rJA7W4WR2xxSwKT1RLi8yCCyZ0XHTnLU'
         valIcpRaw = bytes(coeKevery.baser.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
-        assert valIcpRaw == (b'{"vs":"KERI10JSON0000fb_","pre":"E0uTVILY2KXdcxX40MSM9Fr8EpGwfjMNap6ulAAzVt0'
-                             b'M","sn":"0","ilk":"icp","sith":"1","keys":["D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9'
-                             b'yzhDNZlEKiMc"],"nxt":"EOWDAJvex5dZzDxeHBANyaIoUG3F4-ic81G6GwtnC4f4","toad":"'
-                             b'0","wits":[],"cnfg":[]}')
+        assert valIcpRaw == (b'{"v":"KERI10JSON0000e6_","i":"EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-IB33bEg",'
+                             b'"s":"0","t":"icp","kt":"1","k":["D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiM'
+                             b'c"],"n":"EOWDAJvex5dZzDxeHBANyaIoUG3F4-ic81G6GwtnC4f4","wt":"0","w":[],"c":['
+                             b']}')
 
         counter = SigCounter(count=1)
         assert counter.qb64 == '-AAB'
         siger = coeSigners[vesn].sign(ser=valIcpRaw, index=0)  # return Siger if index
-        assert siger.qb64 == 'AATMyrZLJRc1NiAJnOPqiysasNfmhzrN8hGurWOehxrT7riGQ5Cp0vv_WVXGvdkuvhbzgkULSAiia8RwteiN_JBA'
+        assert siger.qb64 == 'AAbjnQh-j5gNveK96Qe0cQN37pQOhcZ_pcIxPtKbCzMUssczHMSOAchg2HRFu2QflT7SC7CfFMFxxtrQVuCWLHAQ'
 
         # create receipt message
         cmsg = bytearray(reserder.raw)
         cmsg.extend(counter.qb64b)
         cmsg.extend(siger.qb64b)
-        assert cmsg == bytearray(b'{"vs":"KERI10JSON000115_","pre":"E0uTVILY2KXdcxX40MSM9Fr8EpGwfjM'
-                                 b'Nap6ulAAzVt0M","sn":"0","ilk":"vrc","dig":"Es0RthuviC_p-qHut_JCf'
-                                 b'MKSFwpljZ-WoppazqZIid-A","seal":{"pre":"EvEnZMhz52iTrJU8qKwtDxzm'
-                                 b'ypyosgG70m6LIjkiCdoI","sn":"0","dig":"EdpkS5j6xIAnPFjovQKLaou1jF'
-                                 b'7XcLny-pYZde4p35jc"}}-AABAATMyrZLJRc1NiAJnOPqiysasNfmhzrN8hGurWO'
-                                 b'ehxrT7riGQ5Cp0vv_WVXGvdkuvhbzgkULSAiia8RwteiN_JBA')
+        assert cmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfum'
+                                 b'EV-IB33bEg","s":"0","t":"vrc","d":"E-_qFJZK8ER6rJA7W4WR2xxSwKT1R'
+                                 b'Li8yCCyZ0XHTnLU","a":{"i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXX'
+                                 b'VXSWpRY","s":"0","d":"E9ZTKOhr-lqB7jbBMBpUIdMpfWvEswoMoc5UrwCRcT'
+                                 b'Sc"}}-AABAAbjnQh-j5gNveK96Qe0cQN37pQOhcZ_pcIxPtKbCzMUssczHMSOAch'
+                                 b'g2HRFu2QflT7SC7CfFMFxxtrQVuCWLHAQ')
+
 
 
         # coe process own receipt in own Kevery so have copy in own log
@@ -2066,16 +2057,16 @@ def test_direct_mode():
         # Simulate send to val of coe's receipt of val's inception message
         valKevery.processAll(ims=cmsg)  #  coe process val's incept and receipt
 
-        #  check if receipt from coe in val's receipt database
+        #  check if receipt quadlet from coe in val's receipt database
         result = valKevery.baser.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
                                                     dig=valKever.serder.diger.qb64))
         assert bytes(result[0]) == (coeKever.prefixer.qb64b +
+                                    SeqNumber(sn=coeKever.sn).qb64b +
                                     coeKever.serder.diger.qb64b +
                                     siger.qb64b)
-        assert bytes(result[0]) == (b'EvEnZMhz52iTrJU8qKwtDxzmypyosgG70m6LIjkiCdoIEdpkS5j6xIAnPFjovQKLaou1jF7XcLny'
-                                    b'-pYZde4p35jcAATMyrZLJRc1NiAJnOPqiysasNfmhzrN8hGurWOehxrT7riGQ5Cp0vv_WVXGvdku'
-                                    b'vhbzgkULSAiia8RwteiN_JBA')
-
+        assert bytes(result[0]) == (b'ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXXVXSWpRY0AAAAAAAAAAAAAAAAAAAAAAAE9ZTKOhr'
+                                    b'-lqB7jbBMBpUIdMpfWvEswoMoc5UrwCRcTScAAbjnQh-j5gNveK96Qe0cQN37pQOhcZ_pcIxPtKb'
+                                    b'CzMUssczHMSOAchg2HRFu2QflT7SC7CfFMFxxtrQVuCWLHAQ')
         # Coe Event 1 RotationTransferable
         csn += 1
         cesn += 1
@@ -2095,14 +2086,12 @@ def test_direct_mode():
         cmsg = bytearray(coeSerder.raw)
         cmsg.extend(counter.qb64b)
         cmsg.extend(siger.qb64b)
-        assert cmsg == bytearray(b'{"vs":"KERI10JSON00013a_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
-                                 b'70m6LIjkiCdoI","sn":"1","ilk":"rot","dig":"EdpkS5j6xIAnPFjovQKLa'
-                                 b'ou1jF7XcLny-pYZde4p35jc","sith":"1","keys":["DVcuJOOJF1IE8svqEtr'
-                                 b'SuyQjGTd2HhfAkt9y2QkUtFJI"],"nxt":"E-dapdcC6XR1KWmWDsNl4J_OxcGxN'
-                                 b'Zw1Xd95JH5a34fI","toad":"0","cuts":[],"adds":[],"data":[]}-AABAA'
-                                 b'KoZDhf2twFMQPf7l9hM3JTccR4MyogVqHb0SgZs_PPAiOPfPtvX2NeUPStF4UQjB'
-                                 b'ZLELfU0bhcZ1Fa6rcQl-Bg')
-
+        assert cmsg == bytearray(b'{"v":"KERI10JSON000122_","i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7'
+                                 b'ZXXVXSWpRY","s":"1","t":"rot","p":"E9ZTKOhr-lqB7jbBMBpUIdMpfWvEs'
+                                 b'woMoc5UrwCRcTSc","kt":"1","k":["DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfA'
+                                 b'kt9y2QkUtFJI"],"n":"E-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI'
+                                 b'","wt":"0","wr":[],"wa":[],"a":[]}-AABAA91xjNugSykLy0_IZsvkUxkVn'
+                                 b'ZVlNqqhhZT5_VT9wK0pccNrD6i_3h_lTK5ZmXr0wsN6zn-4KMw3ZtYQ2bjbuDQ')
 
         # update coe's key event verifier state
         coeKevery.processOne(ims=bytearray(cmsg))  # make copy
@@ -2118,9 +2107,9 @@ def test_direct_mode():
 
         # create receipt of coe's rotation
         # create seal of val's last est event
-        seal = SealEvent(pre=valpre,
-                         sn="{:x}".format(valKever.lastEst.sn),
-                         dig=valKever.lastEst.dig)
+        seal = SealEvent(i=valpre,
+                         s="{:x}".format(valKever.lastEst.s),
+                         d=valKever.lastEst.d)
         # create validator receipt
         reserder = chit(pre=coeK.prefixer.qb64,
                         sn=coeK.sn,
@@ -2129,27 +2118,27 @@ def test_direct_mode():
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeRotDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
-        assert coeRotDig == coeK.serder.diger.qb64b == b'EcNPT1qtD-7jkVAFrU3BivIfoKbuQ8mRxhbvGOj9s0OQ'
+        assert coeRotDig == coeK.serder.diger.qb64b == b'ELWbb2Oun3FTpWZqHYmeefM5B-11nZQBsxPfufyjJHy4'
         coeRotRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
-        assert coeRotRaw == (b'{"vs":"KERI10JSON00013a_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG70m6LIjkiCdo'
-                             b'I","sn":"1","ilk":"rot","dig":"EdpkS5j6xIAnPFjovQKLaou1jF7XcLny-pYZde4p35jc"'
-                             b',"sith":"1","keys":["DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI"],"nxt":"E'
-                             b'-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI","toad":"0","cuts":[],"adds":[],'
-                             b'"data":[]}')
+        assert coeRotRaw == (b'{"v":"KERI10JSON000122_","i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXXVXSWpRY",'
+                             b'"s":"1","t":"rot","p":"E9ZTKOhr-lqB7jbBMBpUIdMpfWvEswoMoc5UrwCRcTSc","kt":"1'
+                             b'","k":["DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI"],"n":"E-dapdcC6XR1KWmW'
+                             b'DsNl4J_OxcGxNZw1Xd95JH5a34fI","wt":"0","wr":[],"wa":[],"a":[]}')
+
         counter = SigCounter(count=1)
         siger = valSigners[vesn].sign(ser=coeRotRaw, index=0)  # return Siger if index
-        assert siger.qb64 == 'AAbwCangbTsyr12mEjTuCgi8vHd584VemQ37DsN_c2m9raYg8TGiLvSaa4H3JZ7t-2fpnNQyuLcqUPFwb_zsKzAQ'
+        assert siger.qb64 == 'AAySShbJxo8VBuNr-nEPr09x3Cc3sDr-bvvrj7u3PEOwMugNBVN7gKH_hGhFbpduaPjvxIcbb-IsqHoewR5H0cDw'
 
         # val create receipt message
         vmsg = bytearray(reserder.raw)
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'{"vs":"KERI10JSON000115_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
-                                 b'70m6LIjkiCdoI","sn":"1","ilk":"vrc","dig":"EcNPT1qtD-7jkVAFrU3Bi'
-                                 b'vIfoKbuQ8mRxhbvGOj9s0OQ","seal":{"pre":"E0uTVILY2KXdcxX40MSM9Fr8'
-                                 b'EpGwfjMNap6ulAAzVt0M","sn":"0","dig":"Es0RthuviC_p-qHut_JCfMKSFw'
-                                 b'pljZ-WoppazqZIid-A"}}-AABAAbwCangbTsyr12mEjTuCgi8vHd584VemQ37DsN'
-                                 b'_c2m9raYg8TGiLvSaa4H3JZ7t-2fpnNQyuLcqUPFwb_zsKzAQ')
+        assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7'
+                                 b'ZXXVXSWpRY","s":"1","t":"vrc","d":"ELWbb2Oun3FTpWZqHYmeefM5B-11n'
+                                 b'ZQBsxPfufyjJHy4","a":{"i":"EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-'
+                                 b'IB33bEg","s":"0","d":"E-_qFJZK8ER6rJA7W4WR2xxSwKT1RLi8yCCyZ0XHTn'
+                                 b'LU"}}-AABAAySShbJxo8VBuNr-nEPr09x3Cc3sDr-bvvrj7u3PEOwMugNBVN7gKH'
+                                 b'_hGhFbpduaPjvxIcbb-IsqHoewR5H0cDw')
 
         # val process own receipt in own kevery so have copy in own log
         valKevery.processOne(ims=bytearray(vmsg))  # make copy
@@ -2157,16 +2146,18 @@ def test_direct_mode():
         # Simulate send to coe of val's receipt of coe's rotation message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
-        #  check if receipt from val in receipt database
+        #  check if receipt quadlet from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
+                                    SeqNumber(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
-        assert bytes(result[0]) == (b'E0uTVILY2KXdcxX40MSM9Fr8EpGwfjMNap6ulAAzVt0MEs0RthuviC_p-qHut_JCfMKSFwpljZ-W'
-                                    b'oppazqZIid-AAAbwCangbTsyr12mEjTuCgi8vHd584VemQ37DsN_c2m9raYg8TGiLvSaa4H3JZ7t'
-                                    b'-2fpnNQyuLcqUPFwb_zsKzAQ')
+        assert bytes(result[0]) == (b'EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-IB33bEg0AAAAAAAAAAAAAAAAAAAAAAAE-_qFJZK'
+                                    b'8ER6rJA7W4WR2xxSwKT1RLi8yCCyZ0XHTnLUAAySShbJxo8VBuNr-nEPr09x3Cc3sDr-bvvrj7u3'
+                                    b'PEOwMugNBVN7gKH_hGhFbpduaPjvxIcbb-IsqHoewR5H0cDw')
+
 
         # Next Event 2 Coe Interaction
         csn += 1  #  do not increment esn
@@ -2185,10 +2176,10 @@ def test_direct_mode():
         cmsg = bytearray(coeSerder.raw)
         cmsg.extend(counter.qb64b)
         cmsg.extend(siger.qb64b)
-        assert cmsg == bytearray(b'{"vs":"KERI10JSON0000a3_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
-                                 b'70m6LIjkiCdoI","sn":"2","ilk":"ixn","dig":"EcNPT1qtD-7jkVAFrU3Bi'
-                                 b'vIfoKbuQ8mRxhbvGOj9s0OQ","data":[]}-AABAAfwixVNNu4zYIIY0C28g3o5W'
-                                 b'6GjvUFp9wnocOtrqVKivExzhnJKIKZ14XmaIdqWlpHSLKvo1ChD72TlNtyrCzDQ')
+        assert cmsg == bytearray(b'{"v":"KERI10JSON000098_","i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7'
+                                 b'ZXXVXSWpRY","s":"2","t":"ixn","p":"ELWbb2Oun3FTpWZqHYmeefM5B-11n'
+                                 b'ZQBsxPfufyjJHy4","a":[]}-AABAAqxzoxk4rltuP41tB8wEpHFC4Yd1TzhOGfu'
+                                 b'hlylbDFAm73jB2emdvaLjUP6FrHxiPqS2CcbAWaVNsmii80KJEBw')
 
 
         # update coe's key event verifier state
@@ -2206,9 +2197,9 @@ def test_direct_mode():
 
         # create receipt of coe's interaction
         # create seal of val's last est event
-        seal = SealEvent(pre=valpre,
-                         sn="{:x}".format(valKever.lastEst.sn),
-                         dig=valKever.lastEst.dig)
+        seal = SealEvent(i=valpre,
+                         s="{:x}".format(valKever.lastEst.s),
+                         d=valKever.lastEst.d)
         # create validator receipt
         reserder = chit(pre=coeK.prefixer.qb64,
                         sn=coeK.sn,
@@ -2217,26 +2208,25 @@ def test_direct_mode():
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIxnDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
-        assert coeIxnDig == coeK.serder.diger.qb64b == b'E9kNZ4WLRTdbg7-DhvYpqpvW3cyKCbgCPipSEDOW2OE0'
+        assert coeIxnDig == coeK.serder.diger.qb64b == b'EFGlDJesPRaa1AQJo8FD4DKR82VfVyp2Q027l4HhLTk8'
         coeIxnRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
-        assert coeIxnRaw == (b'{"vs":"KERI10JSON0000a3_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG70m6LIjkiCdo'
-                             b'I","sn":"2","ilk":"ixn","dig":"EcNPT1qtD-7jkVAFrU3BivIfoKbuQ8mRxhbvGOj9s0OQ"'
-                             b',"data":[]}')
+        assert coeIxnRaw == (b'{"v":"KERI10JSON000098_","i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXXVXSWpRY",'
+                             b'"s":"2","t":"ixn","p":"ELWbb2Oun3FTpWZqHYmeefM5B-11nZQBsxPfufyjJHy4","a":[]}')
         counter = SigCounter(count=1)
         siger = valSigners[vesn].sign(ser=coeIxnRaw, index=0)  # return Siger if index
-        assert siger.qb64 == 'AAJpvKidI4QI9ns1penElEeUHKmVvIHMbyQhZ8m9IauY41Be-IdGhZOIL0MVh-JIMiWYWLo9pHeUQf__FH0p2KDQ'
+        assert siger.qb64 == 'AAMsZsg7Hm0MtR3qi0QgOmVH7wqqy4rQuBwZj5jzToE-OVIXtg2w_FPv-JEM-u9EyocytK6KH09_MiV8vMLJc7CA'
 
 
         # create receipt message
         vmsg = bytearray(reserder.raw)
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'{"vs":"KERI10JSON000115_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
-                                 b'70m6LIjkiCdoI","sn":"2","ilk":"vrc","dig":"E9kNZ4WLRTdbg7-DhvYpq'
-                                 b'pvW3cyKCbgCPipSEDOW2OE0","seal":{"pre":"E0uTVILY2KXdcxX40MSM9Fr8'
-                                 b'EpGwfjMNap6ulAAzVt0M","sn":"0","dig":"Es0RthuviC_p-qHut_JCfMKSFw'
-                                 b'pljZ-WoppazqZIid-A"}}-AABAAJpvKidI4QI9ns1penElEeUHKmVvIHMbyQhZ8m'
-                                 b'9IauY41Be-IdGhZOIL0MVh-JIMiWYWLo9pHeUQf__FH0p2KDQ')
+        assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7'
+                                 b'ZXXVXSWpRY","s":"2","t":"vrc","d":"EFGlDJesPRaa1AQJo8FD4DKR82VfV'
+                                 b'yp2Q027l4HhLTk8","a":{"i":"EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-'
+                                 b'IB33bEg","s":"0","d":"E-_qFJZK8ER6rJA7W4WR2xxSwKT1RLi8yCCyZ0XHTn'
+                                 b'LU"}}-AABAAMsZsg7Hm0MtR3qi0QgOmVH7wqqy4rQuBwZj5jzToE-OVIXtg2w_FP'
+                                 b'v-JEM-u9EyocytK6KH09_MiV8vMLJc7CA')
 
 
         # val process own receipt in own kevery so have copy in own log
@@ -2245,16 +2235,18 @@ def test_direct_mode():
         # Simulate send to coe of val's receipt of coe's rotation message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
-        #  check if receipt from val in receipt database
+        #  check if receipt quadlet from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
+                                    SeqNumber(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
-        assert bytes(result[0]) == (b'E0uTVILY2KXdcxX40MSM9Fr8EpGwfjMNap6ulAAzVt0MEs0RthuviC_p-qHut_JCfMKSFwpljZ-W'
-                                    b'oppazqZIid-AAAJpvKidI4QI9ns1penElEeUHKmVvIHMbyQhZ8m9IauY41Be-IdGhZOIL0MVh-JI'
-                                    b'MiWYWLo9pHeUQf__FH0p2KDQ')
+        assert bytes(result[0]) == (b'EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-IB33bEg0AAAAAAAAAAAAAAAAAAAAAAAE-_qFJZK'
+                                    b'8ER6rJA7W4WR2xxSwKT1RLi8yCCyZ0XHTnLUAAMsZsg7Hm0MtR3qi0QgOmVH7wqqy4rQuBwZj5jz'
+                                    b'ToE-OVIXtg2w_FPv-JEM-u9EyocytK6KH09_MiV8vMLJc7CA')
+
 
 
         #  verify final coe event state
@@ -2263,16 +2255,16 @@ def test_direct_mode():
 
         db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
-        assert db_digs == coe_event_digs == ['EdpkS5j6xIAnPFjovQKLaou1jF7XcLny-pYZde4p35jc',
-                                             'EcNPT1qtD-7jkVAFrU3BivIfoKbuQ8mRxhbvGOj9s0OQ',
-                                             'E9kNZ4WLRTdbg7-DhvYpqpvW3cyKCbgCPipSEDOW2OE0']
+        assert db_digs == coe_event_digs == ['E9ZTKOhr-lqB7jbBMBpUIdMpfWvEswoMoc5UrwCRcTSc',
+                                             'ELWbb2Oun3FTpWZqHYmeefM5B-11nZQBsxPfufyjJHy4',
+                                             'EFGlDJesPRaa1AQJo8FD4DKR82VfVyp2Q027l4HhLTk8']
 
 
         db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
-        assert db_digs == coe_event_digs == ['EdpkS5j6xIAnPFjovQKLaou1jF7XcLny-pYZde4p35jc',
-                                             'EcNPT1qtD-7jkVAFrU3BivIfoKbuQ8mRxhbvGOj9s0OQ',
-                                             'E9kNZ4WLRTdbg7-DhvYpqpvW3cyKCbgCPipSEDOW2OE0']
+        assert db_digs == coe_event_digs == ['E9ZTKOhr-lqB7jbBMBpUIdMpfWvEswoMoc5UrwCRcTSc',
+                                             'ELWbb2Oun3FTpWZqHYmeefM5B-11nZQBsxPfufyjJHy4',
+                                             'EFGlDJesPRaa1AQJo8FD4DKR82VfVyp2Q027l4HhLTk8']
 
 
         #  verify final val event state
@@ -2281,11 +2273,11 @@ def test_direct_mode():
 
         db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
-        assert db_digs == val_event_digs == ['Es0RthuviC_p-qHut_JCfMKSFwpljZ-WoppazqZIid-A']
+        assert db_digs == val_event_digs == ['E-_qFJZK8ER6rJA7W4WR2xxSwKT1RLi8yCCyZ0XHTnLU']
 
         db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
-        assert db_digs == val_event_digs == ['Es0RthuviC_p-qHut_JCfMKSFwpljZ-WoppazqZIid-A']
+        assert db_digs == val_event_digs == ['E-_qFJZK8ER6rJA7W4WR2xxSwKT1RLi8yCCyZ0XHTnLU']
 
     assert not os.path.exists(valKevery.baser.path)
     assert not os.path.exists(coeKever.baser.path)
@@ -2355,9 +2347,9 @@ def test_direct_mode_cbor_mgpk():
                            code=CryOneDex.Blake3_256,
                            kind=Serials.cbor)
 
-        assert csn == int(coeSerder.ked["sn"], 16) == 0
-        coepre = coeSerder.ked['pre']
-        assert coepre == 'EIg6YUFgkOh50O_4Z_1Bnv3yYbPfW2lT-C2_hiWPJPxw'
+        assert csn == int(coeSerder.ked["s"], 16) == 0
+        coepre = coeSerder.ked["i"]
+        assert coepre == 'EHZBXd1Rw3IySNaU9LU3lnJcnXTWLhYliG7_hLIxtIpE'
 
         coe_event_digs.append(coeSerder.dig)
         # create sig counter
@@ -2369,11 +2361,11 @@ def test_direct_mode_cbor_mgpk():
         cmsg = bytearray(coeSerder.raw)
         cmsg.extend(counter.qb64b)
         cmsg.extend(siger.qb64b)
-        assert cmsg ==  bytearray(b'\xaabvsqKERI10CBOR0000d5_cprex,EIg6YUFgkOh50O_4Z_1Bnv3yYbPfW2lT-C2_'
-                                  b'hiWPJPxwbsna0cilkcicpdsitha1dkeys\x81x,DSuhyBcPZEZLK-fcw5tzHn2N46wR'
-                                  b'CG_ZOoeKtWTOunRAcnxtx,EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtl'
-                                  b'qUdtoada0dwits\x80dcnfg\x80-AABAADt4Wdj3bzP6UvKsdNiXRnihQ0Aj1tBwxd'
-                                  b'6qCLiZZg2dRKODi6j31bqrVymejoA9G-IUMVkf6fG6N82W3v8ozDg')
+        assert cmsg ==  bytearray(b'\xaaavqKERI10CBOR0000c0_aix,EHZBXd1Rw3IySNaU9LU3lnJcnXTWLhYliG7_hLI'
+                                  b'xtIpEasa0atcicpbkta1ak\x81x,DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWT'
+                                  b'OunRAanx,EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqUbwta0aw'
+                                  b'\x80ac\x80-AABAAbs0amJdj6pNDaxUQqvh0wIZqD7tCq39jHHHwtq34BzrF0iG4cm'
+                                  b'_3qLs6TuGucGu-Wsu-IdG3XSYGBvVZx6C-Dw')
 
         # create own Coe Kever in  Coe's Kevery
         coeKevery.processOne(ims=bytearray(cmsg))  # send copy of cmsg
@@ -2386,9 +2378,9 @@ def test_direct_mode_cbor_mgpk():
                             code=CryOneDex.Blake3_256,
                             kind=Serials.mgpk)
 
-        assert vsn == int(valSerder.ked["sn"], 16) == 0
-        valpre = valSerder.ked['pre']
-        assert valpre == 'EqnG_-DkA5CGCmx6kItDRKhT5IvQYtJDr3z9WcJ9-N_I'
+        assert vsn == int(valSerder.ked["s"], 16) == 0
+        valpre = valSerder.ked["i"]
+        assert valpre == 'EVsGCQ97XNr1lrG51CYvnty130FFnEkfRrq0yKjOHvf0'
 
         val_event_digs.append(valSerder.dig)
         # create sig counter
@@ -2400,12 +2392,12 @@ def test_direct_mode_cbor_mgpk():
         vmsg = bytearray(valSerder.raw)
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'\x8a\xa2vs\xb1KERI10MGPK0000d5_\xa3pre\xd9,EqnG_-DkA5CGCmx6kItDRKhT'
-                                 b'5IvQYtJDr3z9WcJ9-N_I\xa2sn\xa10\xa3ilk\xa3icp\xa4sith\xa11\xa4key'
-                                 b's\x91\xd9,D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc\xa3nxt'
-                                 b'\xd9,EOWDAJvex5dZzDxeHBANyaIoUG3F4-ic81G6GwtnC4f4\xa4toad\xa1'
-                                 b'0\xa4wits\x90\xa4cnfg\x90-AABAAmDNr4AHdiDZRMuLJEzQrAi8pEWcvQhOve'
-                                 b'Aa3ViUxHE7nEsYgvDJNUqjXl2ISQzSvJVN5rcWtw8tCYbM8t454AQ')
+        assert vmsg == bytearray(b'\x8a\xa1v\xb1KERI10MGPK0000c0_\xa1i\xd9,EVsGCQ97XNr1lrG51CYvnty130F'
+                                 b'FnEkfRrq0yKjOHvf0\xa1s\xa10\xa1t\xa3icp\xa2kt\xa11\xa1k\x91\xd9,D8K'
+                                 b'Y1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc\xa1n\xd9,EOWDAJvex5dZzDx'
+                                 b'eHBANyaIoUG3F4-ic81G6GwtnC4f4\xa2wt\xa10\xa1w\x90\xa1c\x90-AABAAeG'
+                                 b'C3ZBxcMvZCho9K_vKTFRokoWcYxZQGSM6hN1IrHsVFFS-V4cgxmC_Qd5-y0G5iMs'
+                                 b'6HkgaPBmNUnqJxB3zWCA')
 
         # create own Val Kever in  Val's Kevery
         valKevery.processOne(ims=bytearray(vmsg))  # send copy of vmsg
@@ -2418,9 +2410,9 @@ def test_direct_mode_cbor_mgpk():
 
         # create receipt of coe's inception
         # create seal of val's last est event
-        seal = SealEvent(pre=valpre,
-                         sn="{:x}".format(valKever.lastEst.sn),
-                         dig=valKever.lastEst.dig)
+        seal = SealEvent(i=valpre,
+                         s="{:x}".format(valKever.lastEst.s),
+                         d=valKever.lastEst.d)
         coeK = valKevery.kevers[coepre]  # lookup coeKever from val's .kevers
         # create validator receipt
         reserder = chit(pre=coeK.prefixer.qb64,
@@ -2431,63 +2423,60 @@ def test_direct_mode_cbor_mgpk():
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIcpDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
-        assert coeIcpDig == coeK.serder.diger.qb64b == b'ETQyg_rXakwWXCrJeIW7AZ3jzAJ610aQRG9rkhZmEbE4'
+        assert coeIcpDig == coeK.serder.diger.qb64b == b'ERiFeU_lu-s0OC-JtZAsJDdcMvV-x0Aswg0G1HOOZ_oQ'
         coeIcpRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
-        assert coeIcpRaw == (b'\xaabvsqKERI10CBOR0000d5_cprex,EIg6YUFgkOh50O_4Z_1Bnv3yYbPfW2lT-C2_hiWPJPxw'
-                             b'bsna0cilkcicpdsitha1dkeys\x81x,DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-                             b'cnxtx,EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqUdtoada0dwits\x80dcnfg\x80')
-
+        assert coeIcpRaw == (b'\xaaavqKERI10CBOR0000c0_aix,EHZBXd1Rw3IySNaU9LU3lnJcnXTWLhYliG7_hLIxtIpEasa'
+                             b'0atcicpbkta1ak\x81x,DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRAanx,EPYuj8m'
+                             b'q_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqUbwta0aw\x80ac\x80')
 
         counter = SigCounter(count=1)
         assert counter.qb64 == '-AAB'
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
-        assert siger.qb64 == 'AAZH9dsO6GDbGEYp27bMX442u8DlAx9qxH6f4fGRjcC8OB4iUEzw7YgK2AQ5w_AG6YhrlS31mZ7aR3Qt9bHA0JCQ'
+        assert siger.qb64 == 'AAxNuRw3sMCPFihxIsFgPuBe636qPlmRUgY5Z2KJBeHzZWjNLAW3oW2pqkyiX8tzntAM2dCBPpboM8LckmuTZCDA'
 
         # process own Val receipt in Val's Kevery so have copy in own log
         rmsg = bytearray(reserder.raw)
         rmsg.extend(counter.qb64b)
         rmsg.extend(siger.qb64b)
-        assert rmsg == bytearray(b'\x86\xa2vs\xb1KERI10MGPK0000f6_\xa3pre\xd9,EIg6YUFgkOh50O_4Z_1Bnv3y'
-                                 b'YbPfW2lT-C2_hiWPJPxw\xa2sn\xa10\xa3ilk\xa3vrc\xa3dig\xd9,ETQyg_rXa'
-                                 b'kwWXCrJeIW7AZ3jzAJ610aQRG9rkhZmEbE4\xa4seal\x83\xa3pre\xd9,EqnG_'
-                                 b'-DkA5CGCmx6kItDRKhT5IvQYtJDr3z9WcJ9-N_I\xa2sn\xa10\xa3dig\xd9,Eh'
-                                 b'17ypedXkwkrflD5WJ5VFIbXbHtlZKBDQq4GyM7K3aU-AABAAZH9dsO6GDbGEYp27'
-                                 b'bMX442u8DlAx9qxH6f4fGRjcC8OB4iUEzw7YgK2AQ5w_AG6YhrlS31mZ7aR3Qt9b'
-                                 b'HA0JCQ')
+        assert rmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EHZBXd1Rw3IySNaU9LU3lnJcnXT'
+                                 b'WLhYliG7_hLIxtIpE\xa1s\xa10\xa1t\xa3vrc\xa1d\xd9,ERiFeU_lu-s0OC-Jt'
+                                 b'ZAsJDdcMvV-x0Aswg0G1HOOZ_oQ\xa1a\x83\xa1i\xd9,EVsGCQ97XNr1lrG51C'
+                                 b'Yvnty130FFnEkfRrq0yKjOHvf0\xa1s\xa10\xa1d\xd9,EVhLCQXbrairohNysn'
+                                 b'BmdfqLu9DBZdEmFnhPOG_oFIfQ-AABAAxNuRw3sMCPFihxIsFgPuBe636qPlmRUg'
+                                 b'Y5Z2KJBeHzZWjNLAW3oW2pqkyiX8tzntAM2dCBPpboM8LckmuTZCDA')
 
         valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach reciept message to existing message with val's incept message
         vmsg.extend(rmsg)
-        assert vmsg == bytearray(b'\x8a\xa2vs\xb1KERI10MGPK0000d5_\xa3pre\xd9,EqnG_-DkA5CGCmx6kItDRKhT'
-                                 b'5IvQYtJDr3z9WcJ9-N_I\xa2sn\xa10\xa3ilk\xa3icp\xa4sith\xa11\xa4key'
-                                 b's\x91\xd9,D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc\xa3nxt'
-                                 b'\xd9,EOWDAJvex5dZzDxeHBANyaIoUG3F4-ic81G6GwtnC4f4\xa4toad\xa1'
-                                 b'0\xa4wits\x90\xa4cnfg\x90-AABAAmDNr4AHdiDZRMuLJEzQrAi8pEWcvQhOve'
-                                 b'Aa3ViUxHE7nEsYgvDJNUqjXl2ISQzSvJVN5rcWtw8tCYbM8t454AQ\x86\xa2v'
-                                 b's\xb1KERI10MGPK0000f6_\xa3pre\xd9,EIg6YUFgkOh50O_4Z_1Bnv3yYbPfW2l'
-                                 b'T-C2_hiWPJPxw\xa2sn\xa10\xa3ilk\xa3vrc\xa3dig\xd9,ETQyg_rXakwWXCrJ'
-                                 b'eIW7AZ3jzAJ610aQRG9rkhZmEbE4\xa4seal\x83\xa3pre\xd9,EqnG_-DkA5CG'
-                                 b'Cmx6kItDRKhT5IvQYtJDr3z9WcJ9-N_I\xa2sn\xa10\xa3dig\xd9,Eh17ypedX'
-                                 b'kwkrflD5WJ5VFIbXbHtlZKBDQq4GyM7K3aU-AABAAZH9dsO6GDbGEYp27bMX442u'
-                                 b'8DlAx9qxH6f4fGRjcC8OB4iUEzw7YgK2AQ5w_AG6YhrlS31mZ7aR3Qt9bHA0JCQ')
-
-
+        assert vmsg == bytearray(b'\x8a\xa1v\xb1KERI10MGPK0000c0_\xa1i\xd9,EVsGCQ97XNr1lrG51CYvnty130F'
+                                 b'FnEkfRrq0yKjOHvf0\xa1s\xa10\xa1t\xa3icp\xa2kt\xa11\xa1k\x91\xd9,D8K'
+                                 b'Y1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc\xa1n\xd9,EOWDAJvex5dZzDx'
+                                 b'eHBANyaIoUG3F4-ic81G6GwtnC4f4\xa2wt\xa10\xa1w\x90\xa1c\x90-AABAAeG'
+                                 b'C3ZBxcMvZCho9K_vKTFRokoWcYxZQGSM6hN1IrHsVFFS-V4cgxmC_Qd5-y0G5iMs'
+                                 b'6HkgaPBmNUnqJxB3zWCA\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EHZBXd1'
+                                 b'Rw3IySNaU9LU3lnJcnXTWLhYliG7_hLIxtIpE\xa1s\xa10\xa1t\xa3vrc\xa1'
+                                 b'd\xd9,ERiFeU_lu-s0OC-JtZAsJDdcMvV-x0Aswg0G1HOOZ_oQ\xa1a\x83\xa1i'
+                                 b'\xd9,EVsGCQ97XNr1lrG51CYvnty130FFnEkfRrq0yKjOHvf0\xa1s\xa10\xa1d'
+                                 b'\xd9,EVhLCQXbrairohNysnBmdfqLu9DBZdEmFnhPOG_oFIfQ-AABAAxNuRw3sMCPFi'
+                                 b'hxIsFgPuBe636qPlmRUgY5Z2KJBeHzZWjNLAW3oW2pqkyiX8tzntAM2dCBPpboM8'
+                                 b'LckmuTZCDA')
 
         # Simulate send to coe of val's receipt of coe's inception message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
         # check if val Kever in coe's .kevers
         assert valpre in coeKevery.kevers
-        #  check if receipt from val in receipt database
+        #  check if receipt quadlet from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
+                                    SeqNumber(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
-        assert bytes(result[0]) == (b'EqnG_-DkA5CGCmx6kItDRKhT5IvQYtJDr3z9WcJ9-N_IEh17ypedXkwkrflD5WJ5VFIbXbHtlZKB'
-                                    b'DQq4GyM7K3aUAAZH9dsO6GDbGEYp27bMX442u8DlAx9qxH6f4fGRjcC8OB4iUEzw7YgK2AQ5w_AG'
-                                    b'6YhrlS31mZ7aR3Qt9bHA0JCQ')
+        assert bytes(result[0]) == (b'EVsGCQ97XNr1lrG51CYvnty130FFnEkfRrq0yKjOHvf00AAAAAAAAAAAAAAAAAAAAAAAEVhLCQXb'
+                                    b'rairohNysnBmdfqLu9DBZdEmFnhPOG_oFIfQAAxNuRw3sMCPFihxIsFgPuBe636qPlmRUgY5Z2KJ'
+                                    b'BeHzZWjNLAW3oW2pqkyiX8tzntAM2dCBPpboM8LckmuTZCDA')
 
         # create receipt to escrow use invalid dig so not in coe's db
         fake = reserder.dig  # some other dig
@@ -2504,13 +2493,13 @@ def test_direct_mode_cbor_mgpk():
         vmsg = bytearray(reserder.raw)
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'\x86\xa2vs\xb1KERI10MGPK0000f6_\xa3pre\xd9,EIg6YUFgkOh50O_4Z_1Bnv3y'
-                                 b'YbPfW2lT-C2_hiWPJPxw\xa2sn\xa1a\xa3ilk\xa3vrc\xa3dig\xd9,E83FwNRaL'
-                                 b'2VK941El7Z09aQKgEbM5lttFUvZizp9-3dk\xa4seal\x83\xa3pre\xd9,EqnG_'
-                                 b'-DkA5CGCmx6kItDRKhT5IvQYtJDr3z9WcJ9-N_I\xa2sn\xa10\xa3dig\xd9,Eh'
-                                 b'17ypedXkwkrflD5WJ5VFIbXbHtlZKBDQq4GyM7K3aU-AABAAZH9dsO6GDbGEYp27'
-                                 b'bMX442u8DlAx9qxH6f4fGRjcC8OB4iUEzw7YgK2AQ5w_AG6YhrlS31mZ7aR3Qt9b'
-                                 b'HA0JCQ')
+        assert vmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EHZBXd1Rw3IySNaU9LU3lnJcnXT'
+                                 b'WLhYliG7_hLIxtIpE\xa1s\xa1a\xa1t\xa3vrc\xa1d\xd9,ESXq0K_mDUR2Mq1nw'
+                                 b'LIJNDyW7rG_yHSZ8dB2E9rMiuXw\xa1a\x83\xa1i\xd9,EVsGCQ97XNr1lrG51C'
+                                 b'Yvnty130FFnEkfRrq0yKjOHvf0\xa1s\xa10\xa1d\xd9,EVhLCQXbrairohNysn'
+                                 b'BmdfqLu9DBZdEmFnhPOG_oFIfQ-AABAAxNuRw3sMCPFihxIsFgPuBe636qPlmRUg'
+                                 b'Y5Z2KJBeHzZWjNLAW3oW2pqkyiX8tzntAM2dCBPpboM8LckmuTZCDA')
+
 
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
@@ -2518,6 +2507,7 @@ def test_direct_mode_cbor_mgpk():
         result = coeKevery.baser.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
                                                    dig=fake))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
+                                    SeqNumber(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2525,9 +2515,9 @@ def test_direct_mode_cbor_mgpk():
         # Send receipt from coe to val
         # create receipt of val's inception
         # create seal of coe's last est event
-        seal = SealEvent(pre=coepre,
-                         sn="{:x}".format(coeKever.lastEst.sn),
-                         dig=coeKever.lastEst.dig)
+        seal = SealEvent(i=coepre,
+                         s="{:x}".format(coeKever.lastEst.s),
+                         d=coeKever.lastEst.d)
         valK = coeKevery.kevers[valpre]  # lookup valKever from coe's .kevers
         # create validator receipt
         reserder = chit(pre=valK.prefixer.qb64,
@@ -2538,31 +2528,28 @@ def test_direct_mode_cbor_mgpk():
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
         valIcpDig = bytes(coeKevery.baser.getKeLast(key=snKey(pre=valpre, sn=vsn)))
-        assert valIcpDig == valK.serder.diger.qb64b == b'Eh17ypedXkwkrflD5WJ5VFIbXbHtlZKBDQq4GyM7K3aU'
+        assert valIcpDig == valK.serder.diger.qb64b == b'EVhLCQXbrairohNysnBmdfqLu9DBZdEmFnhPOG_oFIfQ'
         valIcpRaw = bytes(coeKevery.baser.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
-        assert valIcpRaw == (b'\x8a\xa2vs\xb1KERI10MGPK0000d5_\xa3pre\xd9,EqnG_-DkA5CGCmx6kItDRKhT5IvQYtJD'
-                             b'r3z9WcJ9-N_I\xa2sn\xa10\xa3ilk\xa3icp\xa4sith\xa11\xa4keys\x91\xd9,D8KY1sKm'
-                             b'gyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc\xa3nxt\xd9,EOWDAJvex5dZzDxeHBANyaIoUG'
-                             b'3F4-ic81G6GwtnC4f4\xa4toad\xa10\xa4wits\x90\xa4cnfg\x90')
+        assert valIcpRaw == (b'\x8a\xa1v\xb1KERI10MGPK0000c0_\xa1i\xd9,EVsGCQ97XNr1lrG51CYvnty130FFnEkfRrq'
+                             b'0yKjOHvf0\xa1s\xa10\xa1t\xa3icp\xa2kt\xa11\xa1k\x91\xd9,D8KY1sKmgyjAiUDdUBP'
+                             b'NPyrSz_ad_Qf9yzhDNZlEKiMc\xa1n\xd9,EOWDAJvex5dZzDxeHBANyaIoUG3F4-ic81G6Gwt'
+                             b'nC4f4\xa2wt\xa10\xa1w\x90\xa1c\x90')
 
 
         counter = SigCounter(count=1)
         assert counter.qb64 == '-AAB'
         siger = coeSigners[vesn].sign(ser=valIcpRaw, index=0)  # return Siger if index
-        assert siger.qb64 == 'AAleFjojDzyrLOwKfmOlHnbH_c5Qg5rAszLrCj_DVDdvWnCTKWbvi2jU6--MoFZkFMGVCUsbn1l1G59gRDYWBTCA'
+        assert siger.qb64 == 'AAT8Q2Vfpp8kHGLi-ExMz59EGTTQ4NU9qEC89-RpP7kWSVgottNdi8sckqinhn2p11bhTmWpvhnJ8Ug4dSprxrDw'
 
         # create receipt message
         cmsg = bytearray(reserder.raw)
         cmsg.extend(counter.qb64b)
         cmsg.extend(siger.qb64b)
-        assert cmsg == bytearray(b'\xa6bvsqKERI10CBOR0000f6_cprex,EqnG_-DkA5CGCmx6kItDRKhT5IvQYtJDr3z9'
-                                 b'WcJ9-N_Ibsna0cilkcvrccdigx,Eh17ypedXkwkrflD5WJ5VFIbXbHtlZKBDQq4G'
-                                 b'yM7K3aUdseal\xa3cprex,EIg6YUFgkOh50O_4Z_1Bnv3yYbPfW2lT-C2_hiWPJPxwb'
-                                 b'sna0cdigx,ETQyg_rXakwWXCrJeIW7AZ3jzAJ610aQRG9rkhZmEbE4-AABAAleFj'
-                                 b'ojDzyrLOwKfmOlHnbH_c5Qg5rAszLrCj_DVDdvWnCTKWbvi2jU6--MoFZkFMGVCU'
-                                 b'sbn1l1G59gRDYWBTCA')
-
-
+        assert cmsg == bytearray(b'\xa6avqKERI10CBOR0000e6_aix,EVsGCQ97XNr1lrG51CYvnty130FFnEkfRrq0yKj'
+                                 b'OHvf0asa0atcvrcadx,EVhLCQXbrairohNysnBmdfqLu9DBZdEmFnhPOG_oFIfQa'
+                                 b'a\xa3aix,EHZBXd1Rw3IySNaU9LU3lnJcnXTWLhYliG7_hLIxtIpEasa0adx,ERiFeU'
+                                 b'_lu-s0OC-JtZAsJDdcMvV-x0Aswg0G1HOOZ_oQ-AABAAT8Q2Vfpp8kHGLi-ExMz5'
+                                 b'9EGTTQ4NU9qEC89-RpP7kWSVgottNdi8sckqinhn2p11bhTmWpvhnJ8Ug4dSprxrDw')
 
         # coe process own receipt in own Kevery so have copy in own log
         coeKevery.processOne(ims=bytearray(cmsg))  # make copy
@@ -2574,11 +2561,12 @@ def test_direct_mode_cbor_mgpk():
         result = valKevery.baser.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
                                                     dig=valKever.serder.diger.qb64))
         assert bytes(result[0]) == (coeKever.prefixer.qb64b +
+                                    SeqNumber(sn=coeKever.sn).qb64b +
                                     coeKever.serder.diger.qb64b +
                                     siger.qb64b)
-        assert bytes(result[0]) == (b'EIg6YUFgkOh50O_4Z_1Bnv3yYbPfW2lT-C2_hiWPJPxwETQyg_rXakwWXCrJeIW7AZ3jzAJ610aQ'
-                                    b'RG9rkhZmEbE4AAleFjojDzyrLOwKfmOlHnbH_c5Qg5rAszLrCj_DVDdvWnCTKWbvi2jU6--MoFZk'
-                                    b'FMGVCUsbn1l1G59gRDYWBTCA')
+        assert bytes(result[0]) == (b'EHZBXd1Rw3IySNaU9LU3lnJcnXTWLhYliG7_hLIxtIpE0AAAAAAAAAAAAAAAAAAAAAAAERiFeU_l'
+                                    b'u-s0OC-JtZAsJDdcMvV-x0Aswg0G1HOOZ_oQAAT8Q2Vfpp8kHGLi-ExMz59EGTTQ4NU9qEC89-Rp'
+                                    b'P7kWSVgottNdi8sckqinhn2p11bhTmWpvhnJ8Ug4dSprxrDw')
 
         # Coe RotationTransferable
         csn += 1
@@ -2600,12 +2588,13 @@ def test_direct_mode_cbor_mgpk():
         cmsg = bytearray(coeSerder.raw)
         cmsg.extend(counter.qb64b)
         cmsg.extend(siger.qb64b)
-        assert cmsg == bytearray(b'\xacbvsqKERI10CBOR00010d_cprex,EIg6YUFgkOh50O_4Z_1Bnv3yYbPfW2lT-C2_'
-                                 b'hiWPJPxwbsna1cilkcrotcdigx,ETQyg_rXakwWXCrJeIW7AZ3jzAJ610aQRG9rk'
-                                 b'hZmEbE4dsitha1dkeys\x81x,DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtF'
-                                 b'JIcnxtx,E-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fIdtoada0dcuts'
-                                 b'\x80dadds\x80ddata\x80-AABAAwZ0TUK0fogg-xNIYgzusZJVx42sCET_i6_ma-'
-                                 b'0HmuZ3FWQxVPVDGlF83SiC9KlFUYJ7WLnxQ-6Bp9Y_xrHg_AA')
+        assert cmsg == bytearray(b'\xacavqKERI10CBOR0000f5_aix,EHZBXd1Rw3IySNaU9LU3lnJcnXTWLhYliG7_hLI'
+                                 b'xtIpEasa1atcrotapx,ERiFeU_lu-s0OC-JtZAsJDdcMvV-x0Aswg0G1HOOZ_oQb'
+                                 b'kta1ak\x81x,DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJIanx,E-dapdc'
+                                 b'C6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fIbwta0bwr\x80bwa\x80aa\x80-AA'
+                                 b'BAAnaUnTtJoJHsINiw5XEofVum8fYO_tSRZw2dXl6MSCAOYx606YajjXf4r1FZSF'
+                                 b'B8gJN0ysQAQ-4EUSwjxAb4NAg')
+
 
         # update coe's key event verifier state
         coeKevery.processOne(ims=bytearray(cmsg))  # make copy
@@ -2621,9 +2610,9 @@ def test_direct_mode_cbor_mgpk():
 
         # create receipt of coe's rotation
         # create seal of val's last est event
-        seal = SealEvent(pre=valpre,
-                         sn="{:x}".format(valKever.lastEst.sn),
-                         dig=valKever.lastEst.dig)
+        seal = SealEvent(i=valpre,
+                         s="{:x}".format(valKever.lastEst.s),
+                         d=valKever.lastEst.d)
         # create validator receipt
         reserder = chit(pre=coeK.prefixer.qb64,
                         sn=coeK.sn,
@@ -2633,29 +2622,29 @@ def test_direct_mode_cbor_mgpk():
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeRotDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
-        assert coeRotDig == coeK.serder.diger.qb64b == b'EjXM5dH2RF7aVBZ3gQycxCR6DTS3dtDgHFZGEJFI0IUk'
+        assert coeRotDig == coeK.serder.diger.qb64b == b'E0lqMfoKq_yHfReDosC4SuHPdWPKHP5vUORhnV17DgR4'
         coeRotRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
-        assert coeRotRaw == (b'\xacbvsqKERI10CBOR00010d_cprex,EIg6YUFgkOh50O_4Z_1Bnv3yYbPfW2lT-C2_hiWPJPxw'
-                             b'bsna1cilkcrotcdigx,ETQyg_rXakwWXCrJeIW7AZ3jzAJ610aQRG9rkhZmEbE4dsitha1dk'
-                             b'eys\x81x,DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJIcnxtx,E-dapdcC6XR1KWmW'
-                             b'DsNl4J_OxcGxNZw1Xd95JH5a34fIdtoada0dcuts\x80dadds\x80ddata\x80')
+        assert coeRotRaw == (b'\xacavqKERI10CBOR0000f5_aix,EHZBXd1Rw3IySNaU9LU3lnJcnXTWLhYliG7_hLIxtIpEasa'
+                             b'1atcrotapx,ERiFeU_lu-s0OC-JtZAsJDdcMvV-x0Aswg0G1HOOZ_oQbkta1ak\x81x,DVcuJOO'
+                             b'JF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJIanx,E-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd9'
+                             b'5JH5a34fIbwta0bwr\x80bwa\x80aa\x80')
 
 
         counter = SigCounter(count=1)
         siger = valSigners[vesn].sign(ser=coeRotRaw, index=0)  # return Siger if index
-        assert siger.qb64 == 'AAyqCqS7xIUKg64dbV0F-nk-YPeOa2GlKcs4gXNQUHxoOU8poQ9XxUr1DYObUoXBXKAcSVX1Afnj4AxwljSkcSAg'
+        assert siger.qb64 == 'AAiv6-pjRky7OjrVcpUYbCEzQeo0Y7YHH2YoMDW5EJE4YqQwI5yYUPMo_I_h1E4dCNuwpppH02gVD-NSr7REYxDg'
 
         # create receipt message
         vmsg = bytearray(reserder.raw)
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'\x86\xa2vs\xb1KERI10MGPK0000f6_\xa3pre\xd9,EIg6YUFgkOh50O_4Z_1Bnv3y'
-                                 b'YbPfW2lT-C2_hiWPJPxw\xa2sn\xa11\xa3ilk\xa3vrc\xa3dig\xd9,EjXM5dH2R'
-                                 b'F7aVBZ3gQycxCR6DTS3dtDgHFZGEJFI0IUk\xa4seal\x83\xa3pre\xd9,EqnG_'
-                                 b'-DkA5CGCmx6kItDRKhT5IvQYtJDr3z9WcJ9-N_I\xa2sn\xa10\xa3dig\xd9,Eh'
-                                 b'17ypedXkwkrflD5WJ5VFIbXbHtlZKBDQq4GyM7K3aU-AABAAyqCqS7xIUKg64dbV'
-                                 b'0F-nk-YPeOa2GlKcs4gXNQUHxoOU8poQ9XxUr1DYObUoXBXKAcSVX1Afnj4Axwlj'
-                                 b'SkcSAg')
+        assert vmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EHZBXd1Rw3IySNaU9LU3lnJcnXT'
+                                 b'WLhYliG7_hLIxtIpE\xa1s\xa11\xa1t\xa3vrc\xa1d\xd9,E0lqMfoKq_yHfReDo'
+                                 b'sC4SuHPdWPKHP5vUORhnV17DgR4\xa1a\x83\xa1i\xd9,EVsGCQ97XNr1lrG51C'
+                                 b'Yvnty130FFnEkfRrq0yKjOHvf0\xa1s\xa10\xa1d\xd9,EVhLCQXbrairohNysn'
+                                 b'BmdfqLu9DBZdEmFnhPOG_oFIfQ-AABAAiv6-pjRky7OjrVcpUYbCEzQeo0Y7YHH2'
+                                 b'YoMDW5EJE4YqQwI5yYUPMo_I_h1E4dCNuwpppH02gVD-NSr7REYxDg')
+
 
         # val process own receipt in own kevery so have copy in own log
         valKevery.processOne(ims=bytearray(vmsg))  # make copy
@@ -2667,12 +2656,13 @@ def test_direct_mode_cbor_mgpk():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
+                                    SeqNumber(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
-        assert bytes(result[0]) == (b'EqnG_-DkA5CGCmx6kItDRKhT5IvQYtJDr3z9WcJ9-N_IEh17ypedXkwkrflD5WJ5VFIbXbHtlZKB'
-                                    b'DQq4GyM7K3aUAAyqCqS7xIUKg64dbV0F-nk-YPeOa2GlKcs4gXNQUHxoOU8poQ9XxUr1DYObUoXB'
-                                    b'XKAcSVX1Afnj4AxwljSkcSAg')
+        assert bytes(result[0]) == (b'EVsGCQ97XNr1lrG51CYvnty130FFnEkfRrq0yKjOHvf00AAAAAAAAAAAAAAAAAAAAAAAEVhLCQXb'
+                                    b'rairohNysnBmdfqLu9DBZdEmFnhPOG_oFIfQAAiv6-pjRky7OjrVcpUYbCEzQeo0Y7YHH2YoMDW5'
+                                    b'EJE4YqQwI5yYUPMo_I_h1E4dCNuwpppH02gVD-NSr7REYxDg')
 
         # Next Event Coe Interaction
         csn += 1  #  do not increment esn
@@ -2692,10 +2682,10 @@ def test_direct_mode_cbor_mgpk():
         cmsg = bytearray(coeSerder.raw)
         cmsg.extend(counter.qb64b)
         cmsg.extend(siger.qb64b)
-        assert cmsg == bytearray(b'\xa6bvsqKERI10CBOR00008d_cprex,EIg6YUFgkOh50O_4Z_1Bnv3yYbPfW2lT-C2_'
-                                 b'hiWPJPxwbsna2cilkcixncdigx,EjXM5dH2RF7aVBZ3gQycxCR6DTS3dtDgHFZGE'
-                                 b'JFI0IUkddata\x80-AABAAqc6aOfFA1xZAXq9yUJhw4HgHDQ5R5KEPogWRagUxT49U4'
-                                 b'34SHoaLjBKkXnKUN9e1YjZqfB8DfkCKjNoMENlbCg')
+        assert cmsg == bytearray(b'\xa6avqKERI10CBOR000082_aix,EHZBXd1Rw3IySNaU9LU3lnJcnXTWLhYliG7_hLI'
+                                 b'xtIpEasa2atcixnapx,E0lqMfoKq_yHfReDosC4SuHPdWPKHP5vUORhnV17DgR4a'
+                                 b'a\x80-AABAAB2zkS5dFEyZwA39dCvmbIaAbP9-yanUfr1mUWaHpb8RmjlVp-wxsGPYS'
+                                 b'wiFg5OM08xxU6vKldmPsGA6k_6SZBg')
 
         # update coe's key event verifier state
         coeKevery.processOne(ims=bytearray(cmsg))  # make copy
@@ -2712,9 +2702,9 @@ def test_direct_mode_cbor_mgpk():
 
         # create receipt of coe's interaction
         # create seal of val's last est event
-        seal = SealEvent(pre=valpre,
-                         sn="{:x}".format(valKever.lastEst.sn),
-                         dig=valKever.lastEst.dig)
+        seal = SealEvent(i=valpre,
+                         s="{:x}".format(valKever.lastEst.s),
+                         d=valKever.lastEst.d)
         # create validator receipt
         reserder = chit(pre=coeK.prefixer.qb64,
                         sn=coeK.sn,
@@ -2724,29 +2714,26 @@ def test_direct_mode_cbor_mgpk():
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIxnDig = bytes(valKevery.baser.getKeLast(key=snKey(pre=coepre, sn=csn)))
-        assert coeIxnDig == coeK.serder.diger.qb64b == b'Eo9swR_3jo2AV5cn0ndHB4JdNV9BymIUhQ6ByuTbEcuY'
+        assert coeIxnDig == coeK.serder.diger.qb64b == b'EV-C2WfxDBrFaVmaHY5vpdFG-1IoFGnWNmmC5j7WKzCE'
         coeIxnRaw = bytes(valKevery.baser.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
-        assert coeIxnRaw == (b'\xa6bvsqKERI10CBOR00008d_cprex,EIg6YUFgkOh50O_4Z_1Bnv3yYbPfW2lT-C2_hiWPJPxw'
-                             b'bsna2cilkcixncdigx,EjXM5dH2RF7aVBZ3gQycxCR6DTS3dtDgHFZGEJFI0IUkddata\x80')
+        assert coeIxnRaw == (b'\xa6avqKERI10CBOR000082_aix,EHZBXd1Rw3IySNaU9LU3lnJcnXTWLhYliG7_hLIxtIpEasa'
+                             b'2atcixnapx,E0lqMfoKq_yHfReDosC4SuHPdWPKHP5vUORhnV17DgR4aa\x80')
+
 
         counter = SigCounter(count=1)
         siger = valSigners[vesn].sign(ser=coeIxnRaw, index=0)  # return Siger if index
-        assert siger.qb64 == 'AAvIeL1S3AE__VYixpe0T34TYgW0ZXvgNLQM_qg8DOOk4vVt0M73mjZjrk9iDBb_I9cUDIC6q6_MahNNP_t0z5AA'
+        assert siger.qb64 == 'AAz154zGMQYKr3QnSYqWSzVWw9mUcnfCXo5lmn2EXhNTgP5C3gntEErFCeeNcqjQYx-MGUeVE1yNfd1M2tfEtHAw'
 
         # create receipt message
         vmsg = bytearray(reserder.raw)
         vmsg.extend(counter.qb64b)
         vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'\x86\xa2vs\xb1KERI10MGPK0000f6_\xa3pre\xd9,EIg6YUFgkOh50O_4Z_1Bnv3y'
-                                 b'YbPfW2lT-C2_hiWPJPxw\xa2sn\xa12\xa3ilk\xa3vrc\xa3dig\xd9,Eo9swR_3j'
-                                 b'o2AV5cn0ndHB4JdNV9BymIUhQ6ByuTbEcuY\xa4seal\x83\xa3pre\xd9,EqnG_'
-                                 b'-DkA5CGCmx6kItDRKhT5IvQYtJDr3z9WcJ9-N_I\xa2sn\xa10\xa3dig\xd9,Eh'
-                                 b'17ypedXkwkrflD5WJ5VFIbXbHtlZKBDQq4GyM7K3aU-AABAAvIeL1S3AE__VYixp'
-                                 b'e0T34TYgW0ZXvgNLQM_qg8DOOk4vVt0M73mjZjrk9iDBb_I9cUDIC6q6_MahNNP_'
-                                 b't0z5AA')
-
-
-
+        assert vmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EHZBXd1Rw3IySNaU9LU3lnJcnXT'
+                                 b'WLhYliG7_hLIxtIpE\xa1s\xa12\xa1t\xa3vrc\xa1d\xd9,EV-C2WfxDBrFaVmaH'
+                                 b'Y5vpdFG-1IoFGnWNmmC5j7WKzCE\xa1a\x83\xa1i\xd9,EVsGCQ97XNr1lrG51C'
+                                 b'Yvnty130FFnEkfRrq0yKjOHvf0\xa1s\xa10\xa1d\xd9,EVhLCQXbrairohNysn'
+                                 b'BmdfqLu9DBZdEmFnhPOG_oFIfQ-AABAAz154zGMQYKr3QnSYqWSzVWw9mUcnfCXo'
+                                 b'5lmn2EXhNTgP5C3gntEErFCeeNcqjQYx-MGUeVE1yNfd1M2tfEtHAw')
 
         # val process own receipt in own kevery so have copy in own log
         valKevery.processOne(ims=bytearray(vmsg))  # make copy
@@ -2758,12 +2745,14 @@ def test_direct_mode_cbor_mgpk():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
+                                    SeqNumber(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
-        assert bytes(result[0]) == (b'EqnG_-DkA5CGCmx6kItDRKhT5IvQYtJDr3z9WcJ9-N_IEh17ypedXkwkrflD5WJ5VFIbXbHtlZKB'
-                                    b'DQq4GyM7K3aUAAvIeL1S3AE__VYixpe0T34TYgW0ZXvgNLQM_qg8DOOk4vVt0M73mjZjrk9iDBb_'
-                                    b'I9cUDIC6q6_MahNNP_t0z5AA')
+        assert bytes(result[0]) == (b'EVsGCQ97XNr1lrG51CYvnty130FFnEkfRrq0yKjOHvf00AAAAAAAAAAAAAAAAAAAAAAAEVhLCQXb'
+                                    b'rairohNysnBmdfqLu9DBZdEmFnhPOG_oFIfQAAz154zGMQYKr3QnSYqWSzVWw9mUcnfCXo5lmn2E'
+                                    b'XhNTgP5C3gntEErFCeeNcqjQYx-MGUeVE1yNfd1M2tfEtHAw')
+
 
         #  verify final coe event state
         assert coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
@@ -2771,15 +2760,17 @@ def test_direct_mode_cbor_mgpk():
 
         db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
-        assert db_digs == coe_event_digs == ['ETQyg_rXakwWXCrJeIW7AZ3jzAJ610aQRG9rkhZmEbE4',
-                                             'EjXM5dH2RF7aVBZ3gQycxCR6DTS3dtDgHFZGEJFI0IUk',
-                                             'Eo9swR_3jo2AV5cn0ndHB4JdNV9BymIUhQ6ByuTbEcuY']
+        assert db_digs == coe_event_digs == ['ERiFeU_lu-s0OC-JtZAsJDdcMvV-x0Aswg0G1HOOZ_oQ',
+                                             'E0lqMfoKq_yHfReDosC4SuHPdWPKHP5vUORhnV17DgR4',
+                                             'EV-C2WfxDBrFaVmaHY5vpdFG-1IoFGnWNmmC5j7WKzCE']
+
 
         db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
-        assert db_digs == coe_event_digs == ['ETQyg_rXakwWXCrJeIW7AZ3jzAJ610aQRG9rkhZmEbE4',
-                                             'EjXM5dH2RF7aVBZ3gQycxCR6DTS3dtDgHFZGEJFI0IUk',
-                                             'Eo9swR_3jo2AV5cn0ndHB4JdNV9BymIUhQ6ByuTbEcuY']
+        assert db_digs == coe_event_digs == ['ERiFeU_lu-s0OC-JtZAsJDdcMvV-x0Aswg0G1HOOZ_oQ',
+                                             'E0lqMfoKq_yHfReDosC4SuHPdWPKHP5vUORhnV17DgR4',
+                                             'EV-C2WfxDBrFaVmaHY5vpdFG-1IoFGnWNmmC5j7WKzCE']
+
 
 
         #  verify final val event state
@@ -2788,11 +2779,11 @@ def test_direct_mode_cbor_mgpk():
 
         db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
-        assert db_digs == val_event_digs == ['Eh17ypedXkwkrflD5WJ5VFIbXbHtlZKBDQq4GyM7K3aU']
+        assert db_digs == val_event_digs == ['EVhLCQXbrairohNysnBmdfqLu9DBZdEmFnhPOG_oFIfQ']
 
         db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
-        assert db_digs == val_event_digs == ['Eh17ypedXkwkrflD5WJ5VFIbXbHtlZKBDQq4GyM7K3aU']
+        assert db_digs == val_event_digs == ['EVhLCQXbrairohNysnBmdfqLu9DBZdEmFnhPOG_oFIfQ']
 
     assert not os.path.exists(valKevery.baser.path)
     assert not os.path.exists(coeKever.baser.path)
@@ -2822,16 +2813,16 @@ def test_process_nontransferable():
     toad = 0  # no witnesses
     nsigs = 1  #  one attached signature unspecified index
 
-    ked0 = dict(vs=Versify(kind=Serials.json, size=0),
-                pre=aid0.qb64,  # qual base 64 prefix
-                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-                ilk=Ilks.icp,
-                sith="{:x}".format(sith), # hex string no leading zeros lowercase
-                keys=[aid0.qb64],  # list of signing keys each qual Base64
-                nxt=nxt,  # hash qual Base64
-                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
-                wits=[],  # list of qual Base64 may be empty
-                cnfg=[],  # list of config ordered mappings may be empty
+    ked0 = dict(v=Versify(kind=Serials.json, size=0),
+                i=aid0.qb64,  # qual base 64 prefix
+                s="{:x}".format(sn),  # hex string no leading zeros lowercase
+                t=Ilks.icp,
+                kt="{:x}".format(sith), # hex string no leading zeros lowercase
+                k=[aid0.qb64],  # list of signing keys each qual Base64
+                n=nxt,  # hash qual Base64
+                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+                w=[],  # list of qual Base64 may be empty
+                c=[],  # list of config ordered mappings may be empty
                )
 
     # verify derivation of aid0 from ked0
@@ -2864,7 +2855,7 @@ def test_process_nontransferable():
     del msgb0[:len(rcnt0.qb64)]
 
     # extract attached sigs
-    keys = rser0.ked["keys"]
+    keys = rser0.ked["k"]
     for i in range(nrsigs): # verify each attached signature
         rsig = SigMat(qb64=msgb0)
         assert rsig.index == 0
@@ -2875,7 +2866,7 @@ def test_process_nontransferable():
         del msgb0[:len(rsig.qb64)]
 
     # verify pre
-    raid0 = Prefixer(qb64=rser0.ked["pre"])
+    raid0 = Prefixer(qb64=rser0.ked["i"])
     assert raid0.verify(ked=rser0.ked)
     """ Done Test """
 
@@ -2906,15 +2897,16 @@ def test_process_transferable():
     toad = 0  # no witnesses
     nsigs = 1  #  one attached signature unspecified index
 
-    ked0 = dict(vs=Versify(kind=Serials.json, size=0),
-                pre="",  # qual base 64 prefix
-                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-                ilk=Ilks.icp,
-                sith="{:x}".format(sith), # hex string no leading zeros lowercase
-                keys=keys,  # list of signing keys each qual Base64
-                nxt=nxt,  # hash qual Base64
-                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
-                wits=[],  # list of qual Base64 may be empty
+    ked0 = dict(v=Versify(kind=Serials.json, size=0),
+                i="",  # qual base 64 prefix
+                s="{:x}".format(sn),  # hex string no leading zeros lowercase
+                t=Ilks.icp,
+                kt="{:x}".format(sith), # hex string no leading zeros lowercase
+                k=keys,  # list of signing keys each qual Base64
+                n=nxt,  # hash qual Base64
+                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+                w=[],  # list of qual Base64 may be empty
+                c=[],
                )
 
 
@@ -2924,7 +2916,7 @@ def test_process_transferable():
     assert aid0.qb64 == skp0.verfer.qb64
 
     # update ked with pre
-    ked0["pre"] = aid0.qb64
+    ked0["i"] = aid0.qb64
 
     # Serialize ked0
     tser0 = Serder(ked=ked0)
@@ -2953,7 +2945,7 @@ def test_process_transferable():
     del msgb0[:len(rcnt0.qb64)]
 
     # extract attached sigs
-    keys = rser0.ked["keys"]
+    keys = rser0.ked["k"]
     for i in range(nrsigs): # verify each attached signature
         rsig = SigMat(qb64=msgb0)
         assert rsig.index == 0
@@ -2964,11 +2956,11 @@ def test_process_transferable():
         del msgb0[:len(rsig.qb64)]
 
     # verify pre
-    raid0 = Prefixer(qb64=rser0.ked["pre"])
+    raid0 = Prefixer(qb64=rser0.ked["i"])
     assert raid0.verify(ked=rser0.ked)
 
     #verify nxt digest from event is still valid
-    rnxt1 = Nexter(qb64=rser0.ked["nxt"])
+    rnxt1 = Nexter(qb64=rser0.ked["n"])
     assert rnxt1.verify(sith=nxtsith, keys=nxtkeys)
     """ Done Test """
 
@@ -3031,30 +3023,31 @@ def test_process_manual():
     index = 0
 
     #create key event dict
-    ked0 = dict(vs=Versify(kind=Serials.json, size=0),
-                pre=aidmat.qb64,  # qual base 64 prefix
-                sn="{:x}".format(sn),  # hex string no leading zeros lowercase
-                ilk=Ilks.icp,
-                sith="{:x}".format(sith), # hex string no leading zeros lowercase
-                keys=[aidmat.qb64],  # list of signing keys each qual Base64
-                nxt=nxtdigmat.qb64,  # hash qual Base64
-                toad="{:x}".format(toad),  # hex string no leading zeros lowercase
-                wits=[],  # list of qual Base64 may be empty
-                cnfg=[],  # list of config ordered mappings may be empty
+    ked0 = dict(v=Versify(kind=Serials.json, size=0),
+                i=aidmat.qb64,  # qual base 64 prefix
+                s="{:x}".format(sn),  # hex string no leading zeros lowercase
+                t=Ilks.icp,
+                kt="{:x}".format(sith), # hex string no leading zeros lowercase
+                k=[aidmat.qb64],  # list of signing keys each qual Base64
+                n=nxtdigmat.qb64,  # hash qual Base64
+                wt ="{:x}".format(toad),  # hex string no leading zeros lowercase
+                w=[],  # list of qual Base64 may be empty
+                c=[],  # list of config ordered mappings may be empty
                )
 
 
     txsrdr = Serder(ked=ked0, kind=Serials.json)
-    assert txsrdr.raw == (b'{"vs":"KERI10JSON0000fb_","pre":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50'
-                          b's","sn":"0","ilk":"icp","sith":"1","keys":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7'
-                          b'MyzuKsKJP50s"],"nxt":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","toad":"'
-                          b'0","wits":[],"cnfg":[]}')
+    assert txsrdr.raw == (b'{"v":"KERI10JSON0000e6_","i":"Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s",'
+                          b'"s":"0","t":"icp","kt":"1","k":["Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50'
+                          b's"],"n":"E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI","wt":"0","w":[],"c":['
+                          b']}')
 
-    assert txsrdr.size == 251
+
+    assert txsrdr.size == 230
 
     txdig = blake3.blake3(txsrdr.raw).digest()
     txdigmat = CryMat(raw=txdig, code=CryOneDex.Blake3_256)
-    assert txdigmat.qb64 == 'EdZaosuU8YMf2LUnjr6HEjDqeuP42SeiIC4OIGl9pF_k'
+    assert txdigmat.qb64 == 'Ea-gtTKs7O4bJUXI5Rl7FM1xYgv-GtLd322iMGe0UZV8'
 
     assert txsrdr.dig == txdigmat.qb64
 
@@ -3065,13 +3058,13 @@ def test_process_manual():
     assert not result  # None if verifies successfully else raises ValueError
 
     txsigmat = SigMat(raw=sig0raw, code=SigTwoDex.Ed25519, index=index)
-    assert txsigmat.qb64 == 'AAz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'
+    assert txsigmat.qb64 == 'AAACj90Gx1W_YKEIKBuCB3H4_dNIUEXYpkm-oCW9MhnbqYqFKb4BhZU9PQRuVfExEPcvlrzzuxB-1B4ALXwOhqDQ'
     assert len(txsigmat.qb64) == 88
     assert txsigmat.index == index
 
     msgb = txsrdr.raw + txsigmat.qb64.encode("utf-8")
 
-    assert len(msgb) == 339  #  251 + 88
+    assert len(msgb) == 318  #  230 + 88
 
     #  Recieve side
     rxsrdr = Serder(raw=msgb)
@@ -3083,12 +3076,12 @@ def test_process_manual():
     rxsigmat = SigMat(qb64=rxsigqb64)
     assert rxsigmat.index == index
 
-    rxaidqb64 = rxsrdr.ked["pre"]
+    rxaidqb64 = rxsrdr.ked["i"]
     rxaidmat = CryMat(qb64=rxaidqb64)
     assert rxaidmat.qb64 == aidmat.qb64
     assert rxaidmat.code == CryOneDex.Ed25519
 
-    rxverqb64 = rxsrdr.ked["keys"][index]
+    rxverqb64 = rxsrdr.ked["k"][index]
     rxvermat = CryMat(qb64=rxverqb64)
     assert rxvermat.qb64 == rxaidmat.qb64  #  basic derivation same
 
@@ -3100,4 +3093,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_keyeventfuncs()
+    test_process_manual()

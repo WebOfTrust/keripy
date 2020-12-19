@@ -44,8 +44,8 @@ def test_directing_basic():
                                 nxt=coring.Nexter(keys=[bobSigners[1].verfer.qb64]).qb64,
                                 code=coring.CryOneDex.Blake3_256)
 
-    bob = bobSerder.ked['pre']
-    assert bob == 'EvEnZMhz52iTrJU8qKwtDxzmypyosgG70m6LIjkiCdoI'
+    bob = bobSerder.ked["i"]
+    assert bob == 'ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXXVXSWpRY'
 
 
     # set of secrets (seeds for private keys)
@@ -67,8 +67,8 @@ def test_directing_basic():
                                 nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
                                 code=coring.CryOneDex.Blake3_256)
 
-    eve = eveSerder.ked['pre']
-    assert eve == 'E0uTVILY2KXdcxX40MSM9Fr8EpGwfjMNap6ulAAzVt0M'
+    eve = eveSerder.ked["i"]
+    assert eve == 'EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-IB33bEg'
 
 
 
@@ -208,8 +208,8 @@ def test_direct_mode():
                                 nxt=coring.Nexter(keys=[bobSigners[1].verfer.qb64]).qb64,
                                 code=coring.CryOneDex.Blake3_256)
 
-    bob = bobSerder.ked['pre']
-    assert bob == 'EvEnZMhz52iTrJU8qKwtDxzmypyosgG70m6LIjkiCdoI'
+    bob = bobSerder.ked["i"]
+    assert bob == 'ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXXVXSWpRY'
 
 
     # set of secrets (seeds for private keys)
@@ -231,8 +231,8 @@ def test_direct_mode():
                                 nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
                                 code=coring.CryOneDex.Blake3_256)
 
-    eve = eveSerder.ked['pre']
-    assert eve == 'E0uTVILY2KXdcxX40MSM9Fr8EpGwfjMNap6ulAAzVt0M'
+    eve = eveSerder.ked["i"]
+    assert eve == 'EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-IB33bEg'
 
 
 
@@ -364,8 +364,8 @@ def test_direct_mode_sam():
                                 nxt=coring.Nexter(keys=[bobSigners[1].verfer.qb64]).qb64,
                                 code=coring.CryOneDex.Blake3_256)
 
-    bob = bobSerder.ked['pre']
-    assert bob == 'EvEnZMhz52iTrJU8qKwtDxzmypyosgG70m6LIjkiCdoI'
+    bob = bobSerder.ked["i"]
+    assert bob == 'ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXXVXSWpRY'
 
 
     # set of secrets (seeds for private keys)
@@ -387,8 +387,8 @@ def test_direct_mode_sam():
                                 nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
                                 code=coring.CryOneDex.Blake3_256)
 
-    eve = eveSerder.ked['pre']
-    assert eve == 'E0uTVILY2KXdcxX40MSM9Fr8EpGwfjMNap6ulAAzVt0M'
+    eve = eveSerder.ked["i"]
+    assert eve == 'EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-IB33bEg'
 
 
 
