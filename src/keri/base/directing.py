@@ -41,7 +41,7 @@ class Habitat():
         self.inception = eventing.incept(keys=[self.signers[0].verfer.qb64],
                         nxt=coring.Nexter(keys=[self.signers[1].verfer.qb64]).qb64,
                         code=coring.CryOneDex.Blake3_256)
-        self.pre = self.inception.ked['pre']
+        self.pre = self.inception.ked["i"]
 
 
 class Director(doing.Doer):
@@ -230,14 +230,14 @@ class Reactor(doing.Doer):
         cuePre = cue["pre"]
         cueSerder = cue["serder"]
         cueKed = cueSerder.ked
-        cueIlk = cueKed["ilk"]
+        cueIlk = cueKed["t"]
 
         if cueIlk == coring.Ilks.icp:
             # check for chit from remote pre for own inception
             dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
             found = False
-            for triplet in self.hab.db.getVrcsIter(dgkey):
-                if bytes(triplet).decode("utf-8").startswith(cuePre):
+            for quadlet in self.hab.db.getVrcsIter(dgkey):
+                if bytes(quadlet).decode("utf-8").startswith(cuePre):
                     found = True
                     break
 
@@ -254,14 +254,14 @@ class Reactor(doing.Doer):
         # send own chit of event
         # create seal of own last est event
         kever = self.hab.kevers[self.hab.pre]
-        seal = eventing.SealEvent(pre=self.hab.pre,
-                                  sn="{:x}".format(kever.lastEst.sn),
-                                  dig=kever.lastEst.dig)
+        seal = eventing.SealEvent(i=self.hab.pre,
+                                  s="{:x}".format(kever.lastEst.s),
+                                  d=kever.lastEst.d)
 
         cueKed = cueSerder.ked
         # create validator receipt
         reserder = eventing.chit(pre=cuePre,
-                                 sn=int(cueKed["sn"], 16),
+                                 sn=int(cueKed["s"], 16),
                                  dig=cueSerder.dig,
                                  seal=seal)
         # sign cueSerder event not receipt
@@ -500,14 +500,14 @@ class Reactant(tyming.Tymee):
         cuePre = cue["pre"]
         cueSerder = cue["serder"]
         cueKed = cueSerder.ked
-        cueIlk = cueKed["ilk"]
+        cueIlk = cueKed["t"]
 
         if cueIlk == coring.Ilks.icp:
             # check for chit from remote pre for own inception
             dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
             found = False
-            for triplet in self.hab.db.getVrcsIter(dgkey):
-                if triplet.startswith(bytes(cuePre)):
+            for quadlet in self.hab.db.getVrcsIter(dgkey):
+                if quadlet.startswith(bytes(cuePre)):
                     found = True
                     break
 
@@ -523,14 +523,14 @@ class Reactant(tyming.Tymee):
         # send own chit of event
         # create seal of own last est event
         kever = self.hab.kevers[self.hab.pre]
-        seal = eventing.SealEvent(pre=self.hab.pre,
-                                  sn="{:x}".format(kever.lastEst.sn),
-                                  dig=kever.lastEst.dig)
+        seal = eventing.SealEvent(i=self.hab.pre,
+                                  s="{:x}".format(kever.lastEst.s),
+                                  d=kever.lastEst.d)
 
         cueKed = cueSerder.ked
         # create validator receipt
         reserder = eventing.chit(pre=cuePre,
-                                 sn=int(cueKed["sn"], 16),
+                                 sn=int(cueKed["s"], 16),
                                  dig=cueSerder.dig,
                                  seal=seal)
         # sign cueSerder event not receipt

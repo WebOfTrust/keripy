@@ -110,7 +110,7 @@ def test_extractvalues():
                nxt="EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4",
                toad="0",
                wits=[],  # list of qb64 may be empty
-               cnfg=[dict(trait="EstOnly")],
+               cnfg=["EO"],
                )
 
     labels = ["vs", "ilk", "sith", "keys", "nxt", "toad", "wits", "cnfg"]
@@ -123,14 +123,14 @@ def test_extractvalues():
                         'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA',
                         'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4',
                         '0',
-                        'EstOnly'
+                        'EO'
                     ]
 
 
     ser = "".join(values)
 
     assert ser == ('KERI10JSON0000fb_icp1DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtW'
-                   'TOunRAEGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_40EstOnly')
+                   'TOunRAEGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_40EO')
     """End Test"""
 
 def test_iso8601():
@@ -163,4 +163,4 @@ def test_iso8601():
 
 
 if __name__ == "__main__":
-    test_datify()
+    test_extractvalues()

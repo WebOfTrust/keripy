@@ -608,6 +608,8 @@ class CryCounter(CryMat):
     instance qb64 is inserted after Serder of receipt statement and
     before attached receipt couplets.
 
+    .raw is empty only the derivation code is part of qb64 etc.
+
     Changes default initialization code = CryCntDex.Base64
     Raises error on init if code not in CryCntDex
 
@@ -630,7 +632,7 @@ class CryCounter(CryMat):
             count is int number of attached sigantures same as index
 
         """
-        raw = b'' if raw is not None else raw  # force raw to be empty is
+        raw = b'' if raw is not None else raw  # force raw empty
 
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             raw = b''
@@ -641,7 +643,6 @@ class CryCounter(CryMat):
         if index is None:
             index = 1  # most common case
 
-        # force raw empty
         super(CryCounter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                          code=code, index=index, **kwa)
 
@@ -657,6 +658,58 @@ class CryCounter(CryMat):
         Assumes ._index is correctly assigned
         """
         return self.index
+
+
+class SeqNumber(CryMat):
+    """
+    SeqNumber is subclass of CryMat, cryptographic material,
+    SeqNumber provides fully qualified format for sequence numbers when
+    used a attached cryptographic material items in its .sn property.
+
+    Useful when parsing attached receipt quadlets from stream or database
+
+    Changes default initialization code = CryTwoDex.Salt_128
+    Raises error on init if code not CryTwoDex.Salt_128
+
+    See CryMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .sn is int sequence number
+
+    Methods:
+
+
+    """
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=CryTwoDex.Salt_128, sn=None, **kwa):
+        """
+
+        Parameters:  See CryMat for inherted parameters
+            sn is int sequence number
+
+        """
+        if sn is None:
+            sn = 0
+
+        if raw is None and qb64b is None and qb64 is None and qb2 is None:
+            raw = sn.to_bytes(CryRawSizes[CryTwoDex.Salt_128], 'big')
+
+        super(SeqNumber, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+                                         code=code, **kwa)
+
+        if self.code != CryTwoDex.Salt_128:
+            raise ValidationError("Invalid code = {} for SeqNumber."
+                                  "".format(self.code))
+
+    @property
+    def sn(self):
+        """
+        Property sn:
+        Returns. raw converted to int
+        """
+        return int.from_bytes(self.raw, 'big')
 
 
 class Verfer(CryMat):
@@ -1323,7 +1376,7 @@ class Nexter(CryMat):
         if not digs:
             if not keys:
                 try:
-                    keys = ked["keys"]
+                    keys = ked["k"]
                 except KeyError as ex:
                     raise DerivationError("Error extracting keys from"
                                           " ked = {}".format(ex))
@@ -1344,7 +1397,7 @@ class Nexter(CryMat):
 
         if sith is None:  # need len keydigs to compute default sith
             try:
-                sith = ked["sith"]
+                sith = ked["kt"]
             except Exception as ex:
                 sith = max(1, ceil(len(keydigs) / 2))  # default simple majority
 
@@ -1399,9 +1452,9 @@ class Prefixer(CryMat):
 
     """
     # element labels to exclude in digest or signature derivation from inception icp
-    IcpExcludes = ["pre"]
+    IcpExcludes = ["i"]
     # element labels to exclude in digest or signature derivation from delegated inception dip
-    DipExcludes = ["pre"]
+    DipExcludes = ["i"]
 
     def __init__(self, raw=None, code=CryOneDex.Ed25519N, ked=None,
                  seed=None, secret=None, **kwa):
@@ -1485,7 +1538,7 @@ class Prefixer(CryMat):
         """
         ked = dict(ked)  # make copy so don't clobber original ked
         try:
-            keys = ked["keys"]
+            keys = ked["k"]
             if len(keys) != 1:
                 raise DerivationError("Basic derivation needs at most 1 key "
                                       " got {} keys instead".format(len(keys)))
@@ -1499,9 +1552,9 @@ class Prefixer(CryMat):
                                   "".format(verfer.code))
 
         try:
-            if verfer.code == CryOneDex.Ed25519N and ked["nxt"]:
+            if verfer.code == CryOneDex.Ed25519N and ked["n"]:
                 raise DerivationError("Non-empty nxt = {} for non-transferable"
-                                      " code = {}".format(ked["nxt"],
+                                      " code = {}".format(ked["n"],
                                                           verfer.code))
         except Exception as ex:
             raise DerivationError("Error checking nxt = {}".format(ex))
@@ -1519,14 +1572,14 @@ class Prefixer(CryMat):
             pre is Base64 fully qualified prefix
         """
         try:
-            keys = ked["keys"]
+            keys = ked["k"]
             if len(keys) != 1:
                 return False
 
             if keys[0] != pre:
                 return False
 
-            if ked["nxt"]:  # must be empty
+            if ked["n"]:  # must be empty
                 return False
 
         except Exception as ex:
@@ -1542,7 +1595,7 @@ class Prefixer(CryMat):
         """
         ked = dict(ked)  # make copy so don't clobber original ked
         try:
-            keys = ked["keys"]
+            keys = ked["k"]
             if len(keys) != 1:
                 raise DerivationError("Basic derivation needs at most 1 key "
                                       " got {} keys instead".format(len(keys)))
@@ -1569,7 +1622,7 @@ class Prefixer(CryMat):
             pre is Base64 fully qualified prefix
         """
         try:
-            keys = ked["keys"]
+            keys = ked["k"]
             if len(keys) != 1:
                 return False
 
@@ -1587,7 +1640,7 @@ class Prefixer(CryMat):
             as derived from key event dict ked
         """
         ked = dict(ked)  # make copy so don't clobber original ked
-        ilk = ked["ilk"]
+        ilk = ked["t"]
         if ilk == Ilks.icp:
             labels = [key for key in ked if key not in self.IcpExcludes]
         elif ilk == Ilks.dip:
@@ -1596,7 +1649,7 @@ class Prefixer(CryMat):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
-        ked["pre"] = "{}".format("a"*CryOneSizes[CryOneDex.Blake3_256])
+        ked["i"] = "{}".format("_"*CryOneSizes[CryOneDex.Blake3_256])
         serder = Serder(ked=ked)
         ked = serder.ked  # use updated ked with valid vs element
 
@@ -1638,7 +1691,7 @@ class Prefixer(CryMat):
             as derived from key event dict ked
         """
         ked = dict(ked)  # make copy so don't clobber original ked
-        ilk = ked["ilk"]
+        ilk = ked["t"]
         if ilk == Ilks.icp:
             labels = [key for key in ked if key not in self.IcpExcludes]
         elif ilk == Ilks.dip:
@@ -1647,7 +1700,7 @@ class Prefixer(CryMat):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
-        ked["pre"] = "{}".format("a"*CryTwoSizes[CryTwoDex.Ed25519])
+        ked["i"] = "{}".format("a"*CryTwoSizes[CryTwoDex.Ed25519])
         serder = Serder(ked=ked)
         ked = serder.ked  # use updated ked with valid vs element
 
@@ -1659,7 +1712,7 @@ class Prefixer(CryMat):
         ser = "".join(values).encode("utf-8")
 
         try:
-            keys = ked["keys"]
+            keys = ked["k"]
             if len(keys) != 1:
                 raise DerivationError("Basic derivation needs at most 1 key "
                                       " got {} keys instead".format(len(keys)))
@@ -1698,7 +1751,7 @@ class Prefixer(CryMat):
             pre is Base64 fully qualified prefix
         """
         try:
-            ilk = ked["ilk"]
+            ilk = ked["t"]
             if ilk == Ilks.icp:
                 labels = [key for key in ked if key not in self.IcpExcludes]
             elif ilk == Ilks.dip:
@@ -1707,7 +1760,7 @@ class Prefixer(CryMat):
                 raise DerivationError("Invalid ilk = {} to derive prefix.".format(ilk))
 
             # put in dummy pre to get size correct
-            ked["pre"] = "{}".format("a"*CryTwoSizes[CryTwoDex.Ed25519])
+            ked["i"] = "{}".format("a"*CryTwoSizes[CryTwoDex.Ed25519])
             serder = Serder(ked=ked)
             ked = serder.ked  # use updated ked with valid vs element
 
@@ -1719,7 +1772,7 @@ class Prefixer(CryMat):
             ser = "".join(values).encode("utf-8")
 
             try:
-                keys = ked["keys"]
+                keys = ked["k"]
                 if len(keys) != 1:
                     raise DerivationError("Basic derivation needs at most 1 key "
                                           " got {} keys instead".format(len(keys)))
@@ -2380,7 +2433,7 @@ class Serder:
           .diger is Diger instance of digest of .raw
           .dig  is qb64 digest from .diger
           .digb is qb64b digest from .diger
-          .verfers is list of Verfers converted from .ked["keys"]
+          .verfers is list of Verfers converted from .ked["k"]
 
         Note:
           loads and jumps of json use str whereas cbor and msgpack use bytes
@@ -2479,10 +2532,10 @@ class Serder:
 
         Assumes only supports Version
         """
-        if "vs" not in ked:
+        if "v" not in ked:
             raise ValueError("Missing or empty version string in key event dict = {}".format(ked))
 
-        knd, version, size = Deversify(ked['vs'])  # extract kind and version
+        knd, version, size = Deversify(ked["v"])  # extract kind and version
         if version != Version:
             raise VersionError("Unsupported version = {}.{}".format(version.major,
                                                                     version.minor))
@@ -2518,7 +2571,7 @@ class Serder:
         raw = b'%b%b%b' % (raw[:fore], vs.encode("utf-8"), raw[back:])
         if size != len(raw):  # substitution messed up
             raise ValueError("Malformed version string size = {}".format(vs))
-        ked['vs'] = vs  #  update ked
+        ked["v"] = vs  #  update ked
 
         return (raw, kind, ked, version)
 
@@ -2649,8 +2702,8 @@ class Serder:
         Returns list of Verifier instances as converted from .ked.keys
         verfers property getter
         """
-        if "keys" in self.ked:  # establishment event
-            keys = self.ked["keys"]
+        if "k" in self.ked:  # establishment event
+            keys = self.ked["k"]
         else:  # non-establishment event
             keys =  []
 
