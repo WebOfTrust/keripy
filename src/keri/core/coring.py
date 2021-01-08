@@ -12,6 +12,7 @@ from collections import namedtuple, deque
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from math import ceil
+from fractions import Fraction
 
 import cbor2 as cbor
 import msgpack
@@ -1475,13 +1476,13 @@ class Prefixer(CryMat):
                 raise  ex
 
             if code == CryOneDex.Ed25519N:
-                self._derive = self._DeriveBasicEd25519N
+                self._derive = self._derive_ed25519N
             elif code == CryOneDex.Ed25519:
-                self._derive = self._DeriveBasicEd25519
+                self._derive = self._derive_ed25519
             elif code == CryOneDex.Blake3_256:
-                self._derive = self._DeriveDigBlake3_256
+                self._derive = self._derive_blake3_256
             elif code == CryTwoDex.Ed25519:
-                self._derive = self._DeriveSigEd25519
+                self._derive = self._derive_sig_ed25519
             else:
                 raise ValueError("Unsupported code = {} for prefixer.".format(code))
 
@@ -1490,13 +1491,13 @@ class Prefixer(CryMat):
             super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code == CryOneDex.Ed25519N:
-            self._verify = self._VerifyBasicEd25519N
+            self._verify = self._verify_ed25519N
         elif self.code == CryOneDex.Ed25519:
-            self._verify = self._VerifyBasicEd25519
+            self._verify = self._verify_ed25519
         elif self.code == CryOneDex.Blake3_256:
-            self._verify = self._VerifyDigBlake3_256
+            self._verify = self._verify_blake3_256
         elif code == CryTwoDex.Ed25519:
-            self._verify = self._VerifySigEd25519
+            self._verify = self._verify_sig_ed25519
         else:
             raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
 
@@ -1531,7 +1532,7 @@ class Prefixer(CryMat):
         return (self._verify(ked=ked, pre=self.qb64))
 
 
-    def _DeriveBasicEd25519N(self, ked, seed=None, secret=None):
+    def _derive_ed25519N(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic nontransferable Ed25519 prefix (qb64)
             as derived from key event dict ked
@@ -1562,9 +1563,9 @@ class Prefixer(CryMat):
         return (verfer.raw, verfer.code)
 
 
-    def _VerifyBasicEd25519N(self, ked, pre):
+    def _verify_ed25519N(self, ked, pre):
         """
-        Returns True if verified raises exception otherwise
+        Returns True if verified  False otherwise
         Verify derivation of fully qualified Base64 pre from inception iked dict
 
         Parameters:
@@ -1588,7 +1589,7 @@ class Prefixer(CryMat):
         return True
 
 
-    def _DeriveBasicEd25519(self, ked, seed=None, secret=None):
+    def _derive_ed25519(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
             as derived from key event dict ked
@@ -1611,9 +1612,9 @@ class Prefixer(CryMat):
         return (verfer.raw, verfer.code)
 
 
-    def _VerifyBasicEd25519(self, ked, pre):
+    def _verify_ed25519(self, ked, pre):
         """
-        Returns True if verified raises exception otherwise
+        Returns True if verified False otherwise
         Verify derivation of fully qualified Base64 prefix from
         inception key event dict (ked)
 
@@ -1634,7 +1635,7 @@ class Prefixer(CryMat):
         return True
 
 
-    def _DeriveDigBlake3_256(self, ked, seed=None, secret=None):
+    def _derive_blake3_256(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic Ed25519 pre (qb64)
             as derived from key event dict ked
@@ -1663,9 +1664,9 @@ class Prefixer(CryMat):
         return (dig, CryOneDex.Blake3_256)
 
 
-    def _VerifyDigBlake3_256(self, ked, pre):
+    def _verify_blake3_256(self, ked, pre):
         """
-        Returns True if verified raises exception otherwise
+        Returns True if verified False otherwise
         Verify derivation of fully qualified Base64 prefix from
         inception key event dict (ked)
 
@@ -1674,7 +1675,7 @@ class Prefixer(CryMat):
             pre is Base64 fully qualified
         """
         try:
-            raw, code =  self._DeriveDigBlake3_256(ked=ked)
+            raw, code =  self._derive_blake3_256(ked=ked)
             crymat = CryMat(raw=raw, code=CryOneDex.Blake3_256)
             if crymat.qb64 != pre:
                 return False
@@ -1685,7 +1686,7 @@ class Prefixer(CryMat):
         return True
 
 
-    def _DeriveSigEd25519(self, ked, seed=None, secret=None):
+    def _derive_sig_ed25519(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic Ed25519 pre (qb64)
             as derived from key event dict ked
@@ -1740,9 +1741,9 @@ class Prefixer(CryMat):
         return (cigar.raw, CryTwoDex.Ed25519)
 
 
-    def _VerifySigEd25519(self, ked, pre):
+    def _verify_sig_ed25519(self, ked, pre):
         """
-        Returns True if verified raises exception otherwise
+        Returns True if verified False otherwise
         Verify derivation of fully qualified Base64 prefix from
         inception key event dict (ked)
 
@@ -2377,11 +2378,7 @@ class Siger(SigMat):
         """ verfer property setter """
         self._verfer = verfer
 
-"""
-Need to add Serdery  as Serder factory that figures out what type of
-serialization and creates appropriate subclass
 
-"""
 
 class Serder:
     """
@@ -2396,6 +2393,23 @@ class Serder:
         .kind is serialization kind string value (see namedtuple coring.Serials)
         .version is Versionage instance of event version
         .size is int of number of bytes in serialed event only
+        .diger is Diger instance of digest of .raw
+        .dig  is qb64 digest from .diger
+        .digb is qb64b digest from .diger
+        .verfers is list of Verfers converted from .ked["k"]
+
+    Hidden Attributes:
+          ._raw is bytes of serialized event only
+          ._ked is key event dict
+          ._kind is serialization kind string value (see namedtuple coring.Serials)
+            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
+          ._version is Versionage instance of event version
+          ._size is int of number of bytes in serialed event only
+          ._code is default code for .diger
+          ._diger is Diger instance of digest of .raw
+
+    Note:
+        loads and jumps of json use str whereas cbor and msgpack use bytes
 
     """
     def __init__(self, raw=b'', ked=None, kind=None, code=CryOneDex.Blake3_256):
@@ -2413,30 +2427,6 @@ class Serder:
             if kind is None then its extracted from ked or raw
           code is .diger default digest code
 
-
-        Attributes:
-          ._raw is bytes of serialized event only
-          ._ked is key event dict
-          ._kind is serialization kind string value (see namedtuple coring.Serials)
-            supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-          ._version is Versionage instance of event version
-          ._size is int of number of bytes in serialed event only
-          ._code is default code for .diger
-          ._diger is Diger instance of digest of .raw
-
-        Properties:
-          .raw is bytes of serialized event only
-          .ked is key event dict
-          .kind is serialization kind string value (see namedtuple coring.Serials)
-          .version is Versionage instance of event version
-          .size is int of number of bytes in serialed event only
-          .diger is Diger instance of digest of .raw
-          .dig  is qb64 digest from .diger
-          .digb is qb64b digest from .diger
-          .verfers is list of Verfers converted from .ked["k"]
-
-        Note:
-          loads and jumps of json use str whereas cbor and msgpack use bytes
         """
         self._code = code  # need default code for .diger
         if raw:  # deserialize raw using property
@@ -2711,3 +2701,123 @@ class Serder:
 
 
 
+class Tholder:
+    """
+    Tholder is KERI Signing Threshold Satisfactionclass
+    .satisfy method evaluates satisfaction based on ordered list of indices of
+    verified signatures where indices correspond to offsets in key list of
+    associated signatures.
+
+    Has the following public properties:
+
+    Properties:
+        .sith is parsed signing threshold
+        .weighted is Boolean True if fractional weighted threshold False if numeric
+
+    Hidden:
+        ._sith is parsed signing threshold
+        ._weighted is Boolean, True if fractional weighted threshold False if numeric
+        ._satisfy is method reference of threshold specified verification method
+        ._satisfy_numeric is numeric threshold verification method
+        ._satisfy_weighted is fractional weighted threshold verification method
+
+
+    """
+    def __init__(self, sith=''):
+        """
+        Parse threshold
+
+        Parameters:
+            sith is either hex string of threshold number or iterable of fractional
+                weights. Fractional weights may be either an iterable of
+                fraction strings or an iterable of iterables of fractions strings.
+
+                The verify method appropriately evaluates each of the threshold
+                forms.
+
+        """
+        if isinstance(sith, str):
+            self._weighted = False
+            self._sith = int(sith, 16)
+            if self._sith < 1:
+                raise ValueError("Invalid sith = {} < 1.".format(self._sith))
+            self._satisfy = self._satisfy_numeric
+
+        else:  # assumes iterable of weights or iterable of iterables of weights
+            self._weighted = True
+            if not sith:  # empty iterable
+                raise ValueError("Invalid sith = {}, empty weight list.".format(self._sith))
+
+            mask = [isinstance(w, str) for w in sith]
+            if mask:  #  not empty so a least one weight is string
+                if not all(mask):  # mix of string and non strings
+                    raise ValueError("Invalid sith = {}, not all weights are "
+                                     "strings.".format(self._sith))
+                sith = list(sith)  # make list of list so uniform
+            else:  # empty mask so all weights are not strings assume iterables
+                sith = sith  # already list of lists
+
+            # replace fractional strings with fractions
+            thold = []
+            for clause in sith:  # convert string fractions to Fractions
+                thold.append([Fraction(w) for w in clause])  # append list of Fractions
+
+            self._sith = thold
+            self._satisfy = self._satisfy_weighted
+
+    @property
+    def sith(self):
+        """ sith property getter """
+        return self._sith
+
+    @property
+    def weighted(self):
+        """ weighted property getter """
+        return self._weighted
+
+
+    def satisfy(self, indices):
+        """
+        Returns True if indices list of verified signature key indices satisfies
+        threshold, False otherwise.
+
+        Parameters:
+            indices is list of indices (offsets into key list) of verified signatures
+        """
+        return (self._satisfy(indices=indices))
+
+
+    def _satisfy_numeric(self, indices):
+        """
+        Returns True if satisfies numeric threshold False otherwise
+
+        Parameters:
+            indices is list of indices (offsets into key list) of verified signatures
+        """
+        try:
+            if len(indices) >= self.sith:
+                return True
+
+        except Exception as ex:
+            return False
+
+        return False
+
+
+    def _satisfy_weighted(self, indices):
+        """
+        Returns True if satifies fractional weighted threshold False otherwise
+
+
+        Parameters:
+            indices is list of indices (offsets into key list) of verified signatures
+
+        """
+        try:
+            if len(indices) >= self.sith:
+                return True
+
+        except Exception as ex:
+            return False
+
+        return False
