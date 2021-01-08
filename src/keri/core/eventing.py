@@ -27,7 +27,7 @@ from ..help.helping import nowIso8601
 from ..db.dbing import dgKey, snKey, Baser
 
 from .coring import Versify, Serials, Ilks, CryOneDex
-from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder
+from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
 from .coring import CryMat, CryRawSizes, CryTwoDex, SeqNumber
 from .coring import CryCounter, Cigar
 from .coring import SigCounter, Siger
@@ -723,6 +723,12 @@ class Kever:
         ked = serder.ked
 
         self.verfers = serder.verfers  # converts keys to verifiers
+        tholder = Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
+        if len(self.verfers) < tholder.size:
+            raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
+                             "".format(ked["kt"],
+                                       [verfer.qb64 for verfer in self.verfers],
+                                       ked))
         sith = ked["kt"]
         if isinstance(sith, str):
             self.sith = int(sith, 16)
