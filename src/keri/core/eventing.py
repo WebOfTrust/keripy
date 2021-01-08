@@ -631,6 +631,7 @@ class Kever:
         .serder is Serder instance of current event with .serder.diger for digest
         .ilk is str of current event type
         .sith is int or list of current signing threshold
+        .tholder is Tholder instance of sith
         .verfers is list of Verfer instances for current event state set of signing keys
         .nexter is qualified qb64 of next sith and next signing keys
         .toad is int threshold of accountable duplicity

@@ -1984,11 +1984,12 @@ def test_tholder():
         tholder = Tholder()
 
     tholder = Tholder(sith="b")
-    assert tholder.sith == 11
+    assert tholder.sith == "b"
+    assert tholder.thold == 11
     assert not tholder.weighted
-    assert tholder.size == tholder.sith
+    assert tholder.size == tholder.thold
     assert not tholder.satisfy(indices=[0, 1, 2])
-    assert tholder.satisfy(indices=list(range(tholder.sith)))
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
 
 
     with pytest.raises(ValueError):
@@ -2019,7 +2020,8 @@ def test_tholder():
         tholder = Tholder(sith=[["1/2", "1/2"], [[], "1"]])
 
     tholder = Tholder(sith=["1/2", "1/2", "1/4", "1/4", "1/4"])
-    assert tholder.sith == [[Fraction(1, 2),
+    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4"]
+    assert tholder.thold == [[Fraction(1, 2),
                             Fraction(1, 2),
                             Fraction(1, 4),
                             Fraction(1, 4),
@@ -2036,7 +2038,8 @@ def test_tholder():
     assert not tholder.satisfy(indices=[2, 3, 4])
 
     tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"]])
-    assert tholder.sith == [[Fraction(1, 2),
+    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"]]
+    assert tholder.thold == [[Fraction(1, 2),
                             Fraction(1, 2),
                             Fraction(1, 4),
                             Fraction(1, 4),
@@ -2054,7 +2057,8 @@ def test_tholder():
 
 
     tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]])
-    assert tholder.sith == [[Fraction(1, 2),
+    assert tholder.sith ==  [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    assert tholder.thold == [[Fraction(1, 2),
                             Fraction(1, 2),
                             Fraction(1, 4),
                             Fraction(1, 4),

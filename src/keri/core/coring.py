@@ -2712,12 +2712,14 @@ class Tholder:
     Has the following public properties:
 
     Properties:
-        .sith is parsed signing threshold
+        .sith is originat signing threshold
+        .thold is parsed signing threshold
         .weighted is Boolean True if fractional weighted threshold False if numeric
         .size is int of minimun size of keys list
 
     Hidden:
-        ._sith is parsed signing threshold
+        ._sith is original signing threshold
+        ._thold is parsed signing threshold
         ._weighted is Boolean, True if fractional weighted threshold False if numeric
         ._size is int minimum size of of keys list
         ._satisfy is method reference of threshold specified verification method
@@ -2739,13 +2741,14 @@ class Tholder:
                 forms.
 
         """
+        self._sith = sith
         if isinstance(sith, str):
             self._weighted = False
-            sith = int(sith, 16)
-            if sith < 1:
-                raise ValueError("Invalid sith = {} < 1.".format(sith))
-            self._sith = sith
-            self._size =  self._sith  #  Keys list size must be at least threshold
+            thold = int(sith, 16)
+            if thold < 1:
+                raise ValueError("Invalid sith = {} < 1.".format(thold))
+            self._thold = thold
+            self._size =  self._thold  #  Keys list size must be at least threshold
             self._satisfy = self._satisfy_numeric
 
         else:  # assumes iterable of weights or iterable of iterables of weights
@@ -2770,7 +2773,7 @@ class Tholder:
                     raise ValueError("Invalid sith cLause = {}, all clause weight "
                                      "sums must be >= 1.".format(thold))
 
-            self._sith = thold
+            self._thold = thold
             self._size = sum(len(clause) for clause in thold)
             self._satisfy = self._satisfy_weighted
 
@@ -2779,6 +2782,11 @@ class Tholder:
     def sith(self):
         """ sith property getter """
         return self._sith
+
+    @property
+    def thold(self):
+        """ thold property getter """
+        return self._thold
 
     @property
     def weighted(self):
@@ -2810,7 +2818,7 @@ class Tholder:
             indices is list of indices (offsets into key list) of verified signatures
         """
         try:
-            if len(indices) >= self.sith:
+            if len(indices) >= self.thold:
                 return True
 
         except Exception as ex:
@@ -2839,7 +2847,7 @@ class Tholder:
                 sats[idx] = True  # set aat atverified signature index to True
 
             wio = 0  # weight index offset
-            for clause in self.sith:
+            for clause in self.thold:
                 cw = 0  # init clause weight
                 for w in clause:
                     if sats[wio]:  # verified signature so weight applies
