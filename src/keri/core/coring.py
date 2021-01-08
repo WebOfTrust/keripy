@@ -2713,10 +2713,12 @@ class Tholder:
     Properties:
         .sith is parsed signing threshold
         .weighted is Boolean True if fractional weighted threshold False if numeric
+        .size is int of minimun size of keys list
 
     Hidden:
         ._sith is parsed signing threshold
         ._weighted is Boolean, True if fractional weighted threshold False if numeric
+        ._size is int minimum size of of keys list
         ._satisfy is method reference of threshold specified verification method
         ._satisfy_numeric is numeric threshold verification method
         ._satisfy_weighted is fractional weighted threshold verification method
@@ -2738,32 +2740,39 @@ class Tholder:
         """
         if isinstance(sith, str):
             self._weighted = False
-            self._sith = int(sith, 16)
-            if self._sith < 1:
-                raise ValueError("Invalid sith = {} < 1.".format(self._sith))
+            sith = int(sith, 16)
+            if sith < 1:
+                raise ValueError("Invalid sith = {} < 1.".format(sith))
+            self._sith = sith
+            self._size =  self._sith  #  Keys list size must be at least threshold
             self._satisfy = self._satisfy_numeric
 
         else:  # assumes iterable of weights or iterable of iterables of weights
             self._weighted = True
             if not sith:  # empty iterable
-                raise ValueError("Invalid sith = {}, empty weight list.".format(self._sith))
+                raise ValueError("Invalid sith = {}, empty weight list.".format(sith))
 
             mask = [isinstance(w, str) for w in sith]
-            if mask:  #  not empty so a least one weight is string
-                if not all(mask):  # mix of string and non strings
-                    raise ValueError("Invalid sith = {}, not all weights are "
-                                     "strings.".format(self._sith))
-                sith = list(sith)  # make list of list so uniform
-            else:  # empty mask so all weights are not strings assume iterables
-                sith = sith  # already list of lists
+            if mask and all(mask):  # not empty and all strings
+                sith = [sith]  # make list of list so uniform
+            elif any(mask):  # some strings but not all
+                raise ValueError("Invalid sith = {} some weights non non string."
+                                 "".format(sith))
 
             # replace fractional strings with fractions
             thold = []
             for clause in sith:  # convert string fractions to Fractions
                 thold.append([Fraction(w) for w in clause])  # append list of Fractions
 
+            for clause in thold:  #  sum of fractions in clause must be >= 1
+                if not (sum(clause) >= 1):
+                    raise ValueError("Invalid sith cLause = {}, all clause weight "
+                                     "sums must be >= 1.".format(thold))
+
             self._sith = thold
+            self._size = sum(len(clause) for clause in thold)
             self._satisfy = self._satisfy_weighted
+
 
     @property
     def sith(self):
@@ -2774,6 +2783,11 @@ class Tholder:
     def weighted(self):
         """ weighted property getter """
         return self._weighted
+
+    @property
+    def size(self):
+        """ size property getter """
+        return self._size
 
 
     def satisfy(self, indices):

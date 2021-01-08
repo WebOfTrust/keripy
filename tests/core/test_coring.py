@@ -15,6 +15,7 @@ import cbor2 as cbor
 
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
+from fractions import Fraction
 
 from keri.kering import Version, Versionage
 from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
@@ -37,7 +38,7 @@ from keri.core.coring import IntToB64, B64ToInt
 from keri.core.coring import SigMat, SigCounter, SeqNumber, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
-from keri.core.coring import Serder
+from keri.core.coring import Serder, Tholder
 from keri.core.coring import Ilkage, Ilks
 
 
@@ -1971,13 +1972,76 @@ def test_serder():
     assert not srdr.compare(dig=Diger(ser=ser1).qb64)  # codes match
     assert not srdr.compare(diger=Diger(ser=ser1, code=CryOneDex.SHA3_256)) # codes not match
     assert not srdr.compare(dig=Diger(ser=ser1, code=CryOneDex.SHA2_256).qb64b)     # codes not match
-
-
     """Done Test """
 
 
+def test_tholder():
+    """
+    Test Tholder signing threshold satisfier class
+    """
+
+    with pytest.raises(ValueError):
+        tholder = Tholder()
+
+    tholder = Tholder(sith="b")
+    assert tholder.sith == 11
+    assert not tholder.weighted
+    assert tholder.size == tholder.sith
+    assert not tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.sith)))
+
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=0)
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith="0")
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=["1/3", "1/2", []])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=["1/3", "1/2"])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[[], []])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[["1/3", "1/2"], ["1"]])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[["1/3", "1/2"], []])
+
+    with pytest.raises(TypeError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2"], [[], "1"]])
+
+    tholder = Tholder(sith=["1/2", "1/2", "1/4", "1/4", "1/4"])
+    assert tholder.sith == [[Fraction(1, 2),
+                            Fraction(1, 2),
+                            Fraction(1, 4),
+                            Fraction(1, 4),
+                            Fraction(1, 4)]]
+    assert tholder.weighted
+    assert tholder.size == 5
+
+
+    tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]])
+    assert tholder.sith == [[Fraction(1, 2),
+                            Fraction(1, 2),
+                            Fraction(1, 4),
+                            Fraction(1, 4),
+                            Fraction(1, 4)],
+                           [Fraction(1, 1), Fraction(1, 1)]]
+    assert tholder.weighted
+    assert tholder.size == 7
+
+
+    """ Done Test """
 
 
 
 if __name__ == "__main__":
-    test_nexter()
+    test_tholder()
