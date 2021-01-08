@@ -13,6 +13,7 @@ from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from math import ceil
 from fractions import Fraction
+from orderedset import OrderedSet
 
 import cbor2 as cbor
 import msgpack
@@ -2828,8 +2829,26 @@ class Tholder:
 
         """
         try:
-            if len(indices) >= self.sith:
-                return True
+            if not indices:  #  empty indices
+                return False
+
+            # remove duplicates with set, sort low to high
+            indices = sorted(set(indices))
+            sats = [False] * self.size  # default all satifactions to False
+            for idx in indices:
+                sats[idx] = True  # set aat atverified signature index to True
+
+            wio = 0  # weight index offset
+            for clause in self.sith:
+                cw = 0  # init clause weight
+                for w in clause:
+                    if sats[wio]:  # verified signature so weight applies
+                        cw += w
+                    wio += 1
+                if cw < 1:
+                    return False
+
+            return True  # all clauses including final one cw >= 1
 
         except Exception as ex:
             return False

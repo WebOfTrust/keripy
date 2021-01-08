@@ -2026,6 +2026,31 @@ def test_tholder():
                             Fraction(1, 4)]]
     assert tholder.weighted
     assert tholder.size == 5
+    assert tholder.satisfy(indices=[0, 2, 4])
+    assert tholder.satisfy(indices=[0, 1])
+    assert tholder.satisfy(indices=[1, 3, 4])
+    assert tholder.satisfy(indices=[0, 1, 2, 3, 4])
+    assert tholder.satisfy(indices=[3, 2, 0])
+    assert tholder.satisfy(indices=[0, 0, 1, 2, 1])
+    assert not tholder.satisfy(indices=[0, 2])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+
+    tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"]])
+    assert tholder.sith == [[Fraction(1, 2),
+                            Fraction(1, 2),
+                            Fraction(1, 4),
+                            Fraction(1, 4),
+                            Fraction(1, 4)]]
+    assert tholder.weighted
+    assert tholder.size == 5
+    assert tholder.satisfy(indices=[1, 2, 3])
+    assert tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=[1, 3, 4])
+    assert tholder.satisfy(indices=[0, 1, 2, 3, 4])
+    assert tholder.satisfy(indices=[3, 2, 0])
+    assert tholder.satisfy(indices=[0, 0, 1, 2, 1, 4, 4])
+    assert not tholder.satisfy(indices=[0, 2])
+    assert not tholder.satisfy(indices=[2, 3, 4])
 
 
     tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]])
@@ -2037,6 +2062,12 @@ def test_tholder():
                            [Fraction(1, 1), Fraction(1, 1)]]
     assert tholder.weighted
     assert tholder.size == 7
+    assert tholder.satisfy(indices=[1, 2, 3, 5])
+    assert tholder.satisfy(indices=[0, 1, 6])
+    assert not tholder.satisfy(indices=[0, 1])
+    assert not tholder.satisfy(indices=[5, 6])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+    assert not tholder.satisfy(indices=[])
 
 
     """ Done Test """
