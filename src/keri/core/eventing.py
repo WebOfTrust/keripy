@@ -723,24 +723,26 @@ class Kever:
         ked = serder.ked
 
         self.verfers = serder.verfers  # converts keys to verifiers
-        tholder = Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
-        if len(self.verfers) < tholder.size:
+        self.tholder = Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
+        if len(self.verfers) < self.tholder.size:
             raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
                              "".format(ked["kt"],
                                        [verfer.qb64 for verfer in self.verfers],
                                        ked))
-        sith = ked["kt"]
-        if isinstance(sith, str):
-            self.sith = int(sith, 16)
-            if self.sith < 1 or self.sith > len(self.verfers):  # out of bounds sith
-                raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
-                                 "".format(sith,
-                                           [verfer.qb64 for verfer in self.verfers],
-                                           ked))
-        else:
-            # fix this to support list sith
-            raise ValueError("Unsupported type for sith = {} for evt = {}."
-                             "".format(sith, ked))
+        self.sith = self.tholder.thold
+
+        #sith = ked["kt"]
+        #if isinstance(sith, str):
+            #self.sith = int(sith, 16)
+            #if self.sith < 1 or self.sith > len(self.verfers):  # out of bounds sith
+                #raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
+                                 #"".format(sith,
+                                           #[verfer.qb64 for verfer in self.verfers],
+                                           #ked))
+        #else:
+            ## fix this to support list sith
+            #raise ValueError("Unsupported type for sith = {} for evt = {}."
+                             #"".format(sith, ked))
 
         self.prefixer = Prefixer(qb64=ked["i"])
         if not self.prefixer.verify(ked=ked):  # invalid prefix
@@ -823,11 +825,11 @@ class Kever:
                     raise ValidationError("Missing element = {} from {} event for "
                                           "evt = {}.".format(k, ilk, ked))
 
-            sith, toad, wits = self.rotate(serder, sn)
+            tholder, toad, wits = self.rotate(serder, sn)
 
             # validates and escrows as needed
             self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
-                              sith=sith, sn=sn)
+                              sith=tholder.thold, sn=sn)
 
             if ilk == Ilks.drt:
                 seal = self.validateSeal(serder=serder, sigers=sigers)
@@ -841,7 +843,8 @@ class Kever:
             self.sn = sn
             self.serder = serder  #  need whole serder for digest agility compare
             self.ilk = ilk
-            self.sith = sith
+            self.sith = tholder.thold
+            self.tholder = tholder
             self.verfers = serder.verfers
             # update .nexter
             nxt = ked["n"]
@@ -898,6 +901,7 @@ class Kever:
         """
         Generic Rotate Operation Processing
         Same logic for both rot and drt (plain and delegated rotation)
+        Returns triple (tholder, toad, wits)
 
         Parameters:
             serder is event Serder instance
@@ -966,26 +970,32 @@ class Kever:
                                   " prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
 
+        tholder = Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
+        if len(serder.verfers) < tholder.size:
+            raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
+                             "".format(ked["kt"],
+                                       [verfer.qb64 for verfer in serder.verfers],
+                                       ked))
 
-        sith = ked["kt"]
-        if isinstance(sith, str):
-            sith = int(sith, 16)
-            if sith < 1 or sith > len(serder.verfers):  # out of bounds sith
-                raise ValueError("Invalid sith = {} for keys = {} for evt "
-                                 "= {}.".format(sith,
-                                      [verfer.qb64 for verfer in serder.verfers],
-                                      ked))
-        else:
-            # fix this to support list sith
-            raise ValueError("Unsupported type for sith = {} for evt = {}."
-                             "".format(sith, ked))
+        #sith = ked["kt"]
+        #if isinstance(sith, str):
+            #sith = int(sith, 16)
+            #if sith < 1 or sith > len(serder.verfers):  # out of bounds sith
+                #raise ValueError("Invalid sith = {} for keys = {} for evt "
+                                 #"= {}.".format(sith,
+                                      #[verfer.qb64 for verfer in serder.verfers],
+                                      #ked))
+        #else:
+            ## fix this to support list sith
+            #raise ValueError("Unsupported type for sith = {} for evt = {}."
+                             #"".format(sith, ked))
 
         # verify nxt from prior
         keys = ked["k"]
-        if not self.nexter.verify(sith=sith, keys=keys):
+        if not self.nexter.verify(sith=tholder.thold, keys=keys):
             raise ValidationError("Mismatch nxt digest = {} with rotation"
                                   " sith = {}, keys = {} for evt = {}."
-                                  "".format(self.nexter.qb64, sith, keys, ked))
+                                  "".format(self.nexter.qb64, tholder.thold, keys, ked))
 
         # compute wits from cuts and adds use set
         # verify set math
@@ -1034,7 +1044,7 @@ class Kever:
                 raise ValueError("Invalid toad = {} for wits = {} for evt "
                                  "= {}.".format(toad, wits, ked))
 
-        return (sith, toad, wits)
+        return (tholder, toad, wits)
 
     def validateSN(self, sn, ked, inceptive=False):
         """
