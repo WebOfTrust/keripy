@@ -542,7 +542,7 @@ def test_keyeventsequence_0():
         assert kever.sn == 0
         assert kever.serder.diger.qb64 == serder0.dig
         assert kever.ilk == Ilks.icp
-        assert kever.sith == 1
+        assert kever.tholder.thold == 1
         assert [verfer.qb64 for verfer in kever.verfers] == keys0
         assert kever.nexter.qb64 == nxt1
         assert kever.estOnly == False
@@ -802,7 +802,7 @@ def test_keyeventsequence_1():
         assert kever.sn == 0
         assert kever.serder.diger.qb64 == serder0.dig
         assert kever.ilk == Ilks.icp
-        assert kever.sith == 1
+        assert kever.tholder.thold == 1
         assert [verfer.qb64 for verfer in kever.verfers] == keys0
         assert kever.nexter.qb64 == nxt1
         assert kever.estOnly == True

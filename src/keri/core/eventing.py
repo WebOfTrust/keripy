@@ -630,8 +630,7 @@ class Kever:
         .sn is sequence number int
         .serder is Serder instance of current event with .serder.diger for digest
         .ilk is str of current event type
-        .sith is int or list of current signing threshold
-        .tholder is Tholder instance of sith
+        .tholder is Tholder instance for event sith
         .verfers is list of Verfer instances for current event state set of signing keys
         .nexter is qualified qb64 of next sith and next signing keys
         .toad is int threshold of accountable duplicity
@@ -685,7 +684,7 @@ class Kever:
 
         # validates and escrows as needed
         self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
-                          sith=self.sith, sn=self.sn)
+                          tholder=self.tholder, sn=self.sn)
 
         if ilk == Ilks.dip:
             seal = self.validateSeal(serder=serder, sigers=sigers)
@@ -729,20 +728,6 @@ class Kever:
                              "".format(ked["kt"],
                                        [verfer.qb64 for verfer in self.verfers],
                                        ked))
-        self.sith = self.tholder.thold
-
-        #sith = ked["kt"]
-        #if isinstance(sith, str):
-            #self.sith = int(sith, 16)
-            #if self.sith < 1 or self.sith > len(self.verfers):  # out of bounds sith
-                #raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
-                                 #"".format(sith,
-                                           #[verfer.qb64 for verfer in self.verfers],
-                                           #ked))
-        #else:
-            ## fix this to support list sith
-            #raise ValueError("Unsupported type for sith = {} for evt = {}."
-                             #"".format(sith, ked))
 
         self.prefixer = Prefixer(qb64=ked["i"])
         if not self.prefixer.verify(ked=ked):  # invalid prefix
@@ -829,7 +814,7 @@ class Kever:
 
             # validates and escrows as needed
             self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
-                              sith=tholder.thold, sn=sn)
+                              tholder=tholder, sn=sn)
 
             if ilk == Ilks.drt:
                 seal = self.validateSeal(serder=serder, sigers=sigers)
@@ -843,7 +828,6 @@ class Kever:
             self.sn = sn
             self.serder = serder  #  need whole serder for digest agility compare
             self.ilk = ilk
-            self.sith = tholder.thold
             self.tholder = tholder
             self.verfers = serder.verfers
             # update .nexter
@@ -882,7 +866,7 @@ class Kever:
             # interaction event use sith and keys from pre-existing Kever state
             # validates and escrows as needed
             self.validateSigs(serder=serder, sigers=sigers, verfers=self.verfers,
-                              sith=self.sith, sn=sn)
+                              tholder=self.tholder, sn=sn)
 
             # update state
             self.sn = sn
@@ -975,19 +959,6 @@ class Kever:
                                        [verfer.qb64 for verfer in serder.verfers],
                                        ked))
 
-        #sith = ked["kt"]
-        #if isinstance(sith, str):
-            #sith = int(sith, 16)
-            #if sith < 1 or sith > len(serder.verfers):  # out of bounds sith
-                #raise ValueError("Invalid sith = {} for keys = {} for evt "
-                                 #"= {}.".format(sith,
-                                      #[verfer.qb64 for verfer in serder.verfers],
-                                      #ked))
-        #else:
-            ## fix this to support list sith
-            #raise ValueError("Unsupported type for sith = {} for evt = {}."
-                             #"".format(sith, ked))
-
         # verify nxt from prior
         keys = ked["k"]
         if not self.nexter.verify(limen=tholder.limen, keys=keys):
@@ -1071,7 +1042,7 @@ class Kever:
         return sn
 
 
-    def validateSigs(self, serder, sigers, verfers, sith, sn):
+    def validateSigs(self, serder, sigers, verfers, tholder, sn):
         """
         Validate signatures by validating sith indexs and verifying signatures
         """
@@ -1083,57 +1054,23 @@ class Kever:
             siger.verfer = verfers[siger.index]  # assign verfer
 
         # verify signatures
-        if not self.verifySigs(sigers=sigers, serder=serder):
-            raise ValidationError("Failure verifying signatures = {} for {} for"
-                                  " evt = {}.".format(sigers, serder, serder.ked))
+        indices = []
+        for siger in sigers:
+            if siger.verfer.verify(siger.raw, serder.raw):
+                indices.append(siger.index)
 
-        # verify sith given signatures verify
-        if not self.verifySith(sigers=sigers, sith=sith):
+        if not indices:  # must have a least one verified
+            raise ValidationError("No verified signatures among {} for evt = {}."
+                                  "".format([siger.qb64 for siger in sigers],
+                                            serder.ked))
+
+        if not tholder.satisfy(indices):  #  at least one but not enough
             self.escrowPSEvent(self, serder, sigers, self.prefixer.qb64b, sn)
 
-            raise ValidationError("Failure verifying sith = {} on sigs for {}"
-                                  " for evt = {}.".format(self.sith, sigers, serder.ked))
-
-
-    def verifySigs(self, sigers, serder):
-        """
-        Use verfer in each siger to verify signature against serder
-        Assumes that sigers with verfer already extracted correctly wrt indexes
-
-        Parameters:
-            sigers is list of Siger instances
-            serder is Serder instance
-
-        """
-        for siger in sigers:
-            if not siger.verfer.verify(siger.raw, serder.raw):
-                return False
-
-        if len(sigers) < 1:  # at least one signature
-            return False
-
-        return True
-
-
-    def verifySith(self, sigers, sith=None):
-        """
-        Assumes that all sigers signatures were already verified
-        If sith not provided then use .sith instead
-
-        Parameters:
-            sigers is list of Siger instances
-            sith is int threshold
-
-        """
-        sith = sith if sith is not None else self.sith
-
-        if not isinstance(sith, int):
-            raise ValueError("Unsupported type for sith = {}".format(sith))
-
-        if len(sigers) < sith:  # not meet threshold fix for list sith
-            return False
-
-        return True
+            raise ValidationError("Failure satisfying sith = {} on sigs for {}"
+                                  " for evt = {}.".format(tholder.sith,
+                                                [siger.qb64 for siger in sigers],
+                                                serder.ked))
 
 
     def validateSeal(self, serder, sigers):
