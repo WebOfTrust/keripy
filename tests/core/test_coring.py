@@ -1013,12 +1013,12 @@ def test_nexter():
     assert nexter.verify(keys=keys)
     assert nexter.verify(raw=raw)
 
-    nexter = Nexter(sith=2, keys=keys)  # defaults provide Blake3_256 digester
+    nexter = Nexter(sith="2", keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter.sith == sith
     assert nexter.keys == keys
-    assert nexter.verify(sith=2, keys=keys)
+    assert nexter.verify(sith="2", keys=keys)
     assert nexter.verify(raw=raw)
 
     ked = dict(kt=sith, k=keys)  #  subsequent event
@@ -1127,7 +1127,7 @@ def test_prefixer():
     assert prefixer.verify(ked=ked) == True
 
 
-    nexter = Nexter(sith=1, keys=[nxtfer.qb64])
+    nexter = Nexter(sith="1", keys=[nxtfer.qb64])
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
@@ -1186,7 +1186,7 @@ def test_prefixer():
     wits = []
     cnfg = []
 
-    nexter = Nexter(sith=1, keys=[nxtfer.qb64])
+    nexter = Nexter(sith="1", keys=[nxtfer.qb64])
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase

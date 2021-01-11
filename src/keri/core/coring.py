@@ -1282,7 +1282,7 @@ class Nexter(CryMat):
 
 
     """
-    def __init__(self, sith=None, digs=None, keys=None, ked=None,
+    def __init__(self, limen=None, sith=None, digs=None, keys=None, ked=None,
                  code=CryOneDex.Blake3_256, **kwa):
         """
         Assign digest verification function to ._verify
@@ -1296,6 +1296,7 @@ class Nexter(CryMat):
             index is int of count of attached receipts for CryCntDex codes
 
         Parameters:
+           limen is string extracted from sith expression in event
            sith is int threshold or lowercase hex str no leading zeros
            digs is list of qb64 digests of public keys
            keys is list of keys each is qb64 public key str
@@ -1326,7 +1327,8 @@ class Nexter(CryMat):
             else:
                 raise ValueError("Unsupported code = {} for nexter.".format(code))
 
-            raw = self._derive(code=code, sith=sith, digs=digs, keys=keys, ked=ked)  #  derive nxt raw
+            raw = self._derive(code=code, limen=limen, sith=sith, digs=digs,
+                               keys=keys, ked=ked)  #  derive nxt raw
             super(Nexter, self).__init__(raw=raw, code=code, **kwa)  # attaches code etc
 
         else:
@@ -1336,9 +1338,8 @@ class Nexter(CryMat):
                 raise ValueError("Unsupported code = {} for nexter.".format(code))
 
             self._sith = copy.deepcopy(sith) if sith is not None else None
+            self._limen = limen if limen is not None else None
             self._keys = copy.deepcopy(keys) if keys is not None else None
-
-
 
     @property
     def sith(self):
@@ -1352,7 +1353,7 @@ class Nexter(CryMat):
         return self._keys
 
 
-    def verify(self, raw=b'', sith=None, digs=None, keys=None, ked=None):
+    def verify(self, raw=b'', limen=None, sith=None, digs=None, keys=None, ked=None):
         """
         Returns True if digest of bytes nxt raw matches .raw
         Uses .raw as reference nxt raw for ._verify algorithm determined by .code
@@ -1366,12 +1367,13 @@ class Nexter(CryMat):
             ked is key event dict
         """
         if not raw:
-            raw = self._derive(code=self.code, sith=sith, digs=digs, keys=keys, ked=ked)
+            raw = self._derive(code=self.code, limen=limen, sith=sith, digs=digs,
+                               keys=keys, ked=ked)
 
         return (raw == self.raw)
 
 
-    def _derive(self, code, sith=None, digs=None, keys=None, ked=None):
+    def _derive(self, code, limen=None, sith=None, digs=None, keys=None, ked=None):
         """
         Returns ser where ser is serialization derived from code, sith, keys, or ked
         """
@@ -1397,30 +1399,37 @@ class Nexter(CryMat):
                                           "".format(diger.code, code))
             keydigs = [diger.raw for diger in digers]
 
-        if sith is None:  # need len keydigs to compute default sith
-            try:
-                sith = ked["kt"]
-            except Exception as ex:
-                sith = max(1, ceil(len(keydigs) / 2))  # default simple majority
+        if limen is None:  # compute default limen
+            if sith is None:  # need len keydigs to compute default sith
+                try:
+                    sith = ked["kt"]
+                except Exception as ex:
+                    # default simple majority
+                    sith = "{:x}".format(max(1, ceil(len(keydigs) / 2)))
 
-        if isinstance(sith, list):
-            # verify list expression against keys
-            # serialize list here
-            raise DerivationError("List form of sith = {} not yet supported".format(sith))
-        else:
-            try:
-                sith = int(sith, 16)  # convert to int
-            except TypeError as ex:  #  already int
-                pass
-            sith = max(1, sith)  # ensure sith at least 1
-            sith = "{:x}".format(sith)  # convert back to lowercase hex no leading zeros
+            tholder = Tholder(sith=sith)
+            limen = tholder.limen
+
+            #if isinstance(sith, list):
+                ## verify list expression against keys
+                ## serialize list here
+                #raise DerivationError("List form of sith = {} not yet supported".format(sith))
+            #else:
+                #try:
+                    #sith = int(sith, 16)  # convert to int
+                #except TypeError as ex:  #  already int
+                    #pass
+                #sith = max(1, sith)  # ensure sith at least 1
+                #sith = "{:x}".format(sith)  # convert back to lowercase hex no leading zeros
+
 
         kints = [int.from_bytes(keydig, 'big') for keydig in keydigs]
-        sint = int.from_bytes(self._digest(sith.encode("utf-8")), 'big')
+        sint = int.from_bytes(self._digest(limen.encode("utf-8")), 'big')
         for kint in kints:
             sint ^= kint  # xor together
 
         self._sith = copy.deepcopy(sith)
+        self._limen = limen
         self._keys = copy.deepcopy(keys) if keys is not None else None
 
         return (sint.to_bytes(CryRawSizes[code], 'big'))

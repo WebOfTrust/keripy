@@ -326,7 +326,7 @@ def test_kever():
         keys = [skp0.verfer.qb64]
 
         # create next key
-        nxtsith = 1 #  one signer
+        nxtsith = "1" #  one signer
         skp1 = Signer()  #  next signing keypair transferable is default
         assert skp1.code == CryOneDex.Ed25519_Seed
         assert skp1.verfer.code == CryOneDex.Ed25519
@@ -381,7 +381,7 @@ def test_kever():
         keys = [skp0.verfer.qb64]
 
         # create next key Error case
-        nxtsith = 1 #  one signer
+        nxtsith = "1" #  one signer
         skp1 = Signer()  #  next signing keypair transferable is default
         assert skp1.code == CryOneDex.Ed25519_Seed
         assert skp1.verfer.code == CryOneDex.Ed25519
@@ -2884,7 +2884,7 @@ def test_process_transferable():
     keys = [skp0.verfer.qb64]
 
     # create next key
-    nxtsith = 1 #  one signer
+    nxtsith = "1" #  one signer
     skp1 = Signer()  #  next signing keypair transferable is default
     assert skp1.code == CryOneDex.Ed25519_Seed
     assert skp1.verfer.code == CryOneDex.Ed25519

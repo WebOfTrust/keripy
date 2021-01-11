@@ -990,7 +990,7 @@ class Kever:
 
         # verify nxt from prior
         keys = ked["k"]
-        if not self.nexter.verify(sith=tholder.thold, keys=keys):
+        if not self.nexter.verify(limen=tholder.limen, keys=keys):
             raise ValidationError("Mismatch nxt digest = {} with rotation"
                                   " sith = {}, keys = {} for evt = {}."
                                   "".format(self.nexter.qb64, tholder.thold, keys, ked))
