@@ -856,8 +856,6 @@ class Kever:
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(s=self.sn, d=self.serder.diger.qb64)
 
-
-
             self.logEvent(serder, sigers)  # update logs
 
 

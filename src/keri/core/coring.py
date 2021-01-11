@@ -2712,14 +2712,16 @@ class Tholder:
     Has the following public properties:
 
     Properties:
-        .sith is originat signing threshold
+        .sith is original signing threshold
         .thold is parsed signing threshold
+        .limen is the extracted string for the next commitment to the threshold
         .weighted is Boolean True if fractional weighted threshold False if numeric
         .size is int of minimun size of keys list
 
     Hidden:
         ._sith is original signing threshold
         ._thold is parsed signing threshold
+        ._limen is extracted string for the next commitment to threshold
         ._weighted is Boolean, True if fractional weighted threshold False if numeric
         ._size is int minimum size of of keys list
         ._satisfy is method reference of threshold specified verification method
@@ -2750,6 +2752,7 @@ class Tholder:
             self._thold = thold
             self._size =  self._thold  #  Keys list size must be at least threshold
             self._satisfy = self._satisfy_numeric
+            self._limen = self._sith  # just use hex string
 
         else:  # assumes iterable of weights or iterable of iterables of weights
             self._weighted = True
@@ -2777,6 +2780,10 @@ class Tholder:
             self._size = sum(len(clause) for clause in thold)
             self._satisfy = self._satisfy_weighted
 
+            # extract limen from sith
+            self._limen = "&".join([",".join(clause) for clause in sith])
+
+
 
     @property
     def sith(self):
@@ -2797,6 +2804,11 @@ class Tholder:
     def size(self):
         """ size property getter """
         return self._size
+
+    @property
+    def limen(self):
+        """ limen property getter """
+        return self._limen
 
 
     def satisfy(self, indices):

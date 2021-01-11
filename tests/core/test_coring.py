@@ -1990,6 +1990,7 @@ def test_tholder():
     assert tholder.size == tholder.thold
     assert not tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=list(range(tholder.thold)))
+    assert tholder.limen == "b"
 
 
     with pytest.raises(ValueError):
@@ -2028,6 +2029,7 @@ def test_tholder():
                             Fraction(1, 4)]]
     assert tholder.weighted
     assert tholder.size == 5
+    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4'
     assert tholder.satisfy(indices=[0, 2, 4])
     assert tholder.satisfy(indices=[0, 1])
     assert tholder.satisfy(indices=[1, 3, 4])
@@ -2046,6 +2048,7 @@ def test_tholder():
                             Fraction(1, 4)]]
     assert tholder.weighted
     assert tholder.size == 5
+    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4'
     assert tholder.satisfy(indices=[1, 2, 3])
     assert tholder.satisfy(indices=[0, 1, 2])
     assert tholder.satisfy(indices=[1, 3, 4])
@@ -2066,6 +2069,7 @@ def test_tholder():
                            [Fraction(1, 1), Fraction(1, 1)]]
     assert tholder.weighted
     assert tholder.size == 7
+    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4&1,1'
     assert tholder.satisfy(indices=[1, 2, 3, 5])
     assert tholder.satisfy(indices=[0, 1, 6])
     assert not tholder.satisfy(indices=[0, 1])
