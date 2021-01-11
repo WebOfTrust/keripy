@@ -152,7 +152,6 @@ def test_keyeventfuncs():
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
     nexter1 = Nexter(keys=keys1)  # dfault sith is 1
-    assert nexter1.sith == '1'  # default from keys
     nxt1 = nexter1.qb64  # transferable so nxt is not empty
     assert nxt1 == 'EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4'
     serder0 = incept(keys=keys0, nxt=nxt1)
@@ -179,7 +178,6 @@ def test_keyeventfuncs():
     keys2 = [signer2.verfer.qb64]
     # compute nxt digest
     nexter2 = Nexter(keys=keys2)
-    assert nexter2.sith == '1'  # default from keys
     nxt2 = nexter2.qb64  # transferable so nxt is not empty
     assert nxt2 == 'EAXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U'
     serder1 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
@@ -242,7 +240,6 @@ def test_keyeventfuncs():
     keysD = [signerD.verfer.qb64]
     # compute nxt digest
     nexterD = Nexter(keys=keysD)  # default sith is 1
-    assert nexterD.sith == '1'  # default from keys
     nxtD = nexterD.qb64  # transferable so nxt is not empty
     assert nxtD == 'EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4'
 
@@ -274,7 +271,6 @@ def test_keyeventfuncs():
     keysR = [signerR.verfer.qb64]
     # compute nxt digest
     nexterR = Nexter(keys=keysR)  # default sith is 1
-    assert nexterR.sith == '1'  # default from keys
     nxtR = nexterR.qb64  # transferable so nxt is not empty
     assert nxtR == 'EAXTvbATMnVRGjyC_VCNuXcPTxxpLanfzj14u3QMsD_U'
 
@@ -525,7 +521,6 @@ def test_keyeventsequence_0():
         # compute nxt digest from keys1
         keys1 = [signers[1].verfer.qb64]
         nexter1 = Nexter(keys=keys1)
-        assert nexter1.sith == '1'
         nxt1 = nexter1.qb64  # transferable so nxt is not empty
         assert nxt1 == 'EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqU'
         serder0 = incept(keys=keys0, nxt=nxt1)
@@ -557,7 +552,6 @@ def test_keyeventsequence_0():
         # compute nxt digest from keys2
         keys2 = [signers[2].verfer.qb64]
         nexter2 = Nexter(keys=keys2)
-        assert nexter2.sith == '1'
         nxt2 = nexter2.qb64  # transferable so nxt is not empty
         assert nxt2 == 'E-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI'
         serder1 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)
@@ -830,7 +824,6 @@ def test_keyeventsequence_1():
         # compute nxt digest from keys2  but from event0
         keys2 = [signers[2].verfer.qb64]
         nexter2 = Nexter(keys=keys2)
-        assert nexter2.sith == '1'
         nxt2 = nexter2.qb64  # transferable so nxt is not empty
         assert nxt2 == 'E-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI'
         serder2 = rotate(pre=pre, keys=keys1, dig=serder0.dig, nxt=nxt2, sn=1)

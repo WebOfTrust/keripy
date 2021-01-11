@@ -968,8 +968,6 @@ def test_nexter():
     nexter = Nexter(raw=raw)  # defaults provide Blake3_256 digest
     assert nexter.code == CryOneDex.Blake3_256
     assert nexter.qb64 == 'ED8YvDrXvGuaIVZ69XsBVA5YN2pNTfQOFwgeloVHeWKs'
-    assert nexter.sith == None  # not used by nexter for its  digest
-    assert nexter.keys == None  # not used by nexter for its  digest
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter.verify(raw=raw)
     assert nexter.verify(raw=raw+b'ABCDEF') == False
@@ -980,24 +978,18 @@ def test_nexter():
     nexter = Nexter(digs=digs)  # compute sith from digs using default sith
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == None
     assert nexter.verify(digs=digs)
     assert nexter.verify(raw=raw)
 
     nexter = Nexter(sith=sith, digs=digs)  # compute sith from digs using default sith
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == None
     assert nexter.verify(sith=sith, digs=digs)
     assert nexter.verify(raw=raw)
 
     nexter = Nexter(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == keys
     assert nexter.verify(sith=sith, keys=keys)
     assert nexter.verify(raw=raw)
     assert nexter.verify(raw=raw+b'ABCDEF') == False
@@ -1008,16 +1000,12 @@ def test_nexter():
     nexter = Nexter(keys=keys)  # compute sith from keys default sith
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == keys
     assert nexter.verify(keys=keys)
     assert nexter.verify(raw=raw)
 
     nexter = Nexter(sith="2", keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == keys
     assert nexter.verify(sith="2", keys=keys)
     assert nexter.verify(raw=raw)
 
@@ -1025,8 +1013,6 @@ def test_nexter():
     nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == keys
     assert nexter.verify(ked=ked)
     assert nexter.verify(raw=raw)
 

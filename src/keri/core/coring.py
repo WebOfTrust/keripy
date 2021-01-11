@@ -1275,10 +1275,12 @@ class Nexter(CryMat):
         .nontrans True when non-transferable derivation code False otherwise
 
     Properties:
-        .sith return copy of sith used to create digest. None otherwise.
-        .keys returns copy of keys used to create digest. None otherwise.
 
     Methods:
+
+    Hidden:
+        ._digest is digest method
+        ._derive is derivation method
 
 
     """
@@ -1337,21 +1339,6 @@ class Nexter(CryMat):
             else:
                 raise ValueError("Unsupported code = {} for nexter.".format(code))
 
-            self._sith = copy.deepcopy(sith) if sith is not None else None
-            self._limen = limen if limen is not None else None
-            self._keys = copy.deepcopy(keys) if keys is not None else None
-
-    @property
-    def sith(self):
-        """ Property ._sith getter """
-        return self._sith
-
-
-    @property
-    def keys(self):
-        """ Property ._keys getter """
-        return self._keys
-
 
     def verify(self, raw=b'', limen=None, sith=None, digs=None, keys=None, ked=None):
         """
@@ -1407,30 +1394,12 @@ class Nexter(CryMat):
                     # default simple majority
                     sith = "{:x}".format(max(1, ceil(len(keydigs) / 2)))
 
-            tholder = Tholder(sith=sith)
-            limen = tholder.limen
-
-            #if isinstance(sith, list):
-                ## verify list expression against keys
-                ## serialize list here
-                #raise DerivationError("List form of sith = {} not yet supported".format(sith))
-            #else:
-                #try:
-                    #sith = int(sith, 16)  # convert to int
-                #except TypeError as ex:  #  already int
-                    #pass
-                #sith = max(1, sith)  # ensure sith at least 1
-                #sith = "{:x}".format(sith)  # convert back to lowercase hex no leading zeros
-
+            limen = Tholder(sith=sith).limen
 
         kints = [int.from_bytes(keydig, 'big') for keydig in keydigs]
         sint = int.from_bytes(self._digest(limen.encode("utf-8")), 'big')
         for kint in kints:
             sint ^= kint  # xor together
-
-        self._sith = copy.deepcopy(sith)
-        self._limen = limen
-        self._keys = copy.deepcopy(keys) if keys is not None else None
 
         return (sint.to_bytes(CryRawSizes[code], 'big'))
 
