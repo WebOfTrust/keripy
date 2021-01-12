@@ -903,7 +903,7 @@ class Manager:
                 when icodes list not provided
             ncodes is list of private key derivation codes qb64 str
                 one per next key pair
-            ncount is int count of next public keys when icodes not provided
+            ncount is int count of next public keys when ncodes not provided
             ncode is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
             dcode is str derivation code of next key digests

@@ -27,7 +27,7 @@ from ..help.helping import nowIso8601
 from ..db.dbing import dgKey, snKey, Baser
 
 from .coring import Versify, Serials, Ilks, CryOneDex
-from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder
+from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
 from .coring import CryMat, CryRawSizes, CryTwoDex, SeqNumber
 from .coring import CryCounter, Cigar
 from .coring import SigCounter, Siger
@@ -91,7 +91,6 @@ SealLocation = namedtuple("SealLocation", 'i s t p')
 
 
 def incept(keys,
-           code=None,
            sith=None,
            nxt="",
            toad=None,
@@ -99,6 +98,7 @@ def incept(keys,
            cnfg=None,
            version=Version,
            kind=Serials.json,
+           code=None,
           ):
 
     """
@@ -107,27 +107,25 @@ def incept(keys,
 
      Parameters:
         keys is list of qb64 signing keys
-        code is derivation code for prefix
-        sith is int  of signing threshold
+        sith is string, or list format for signing threshold
         nxt  is qb64 next digest xor
         toad is int of witness threshold
         wits is list of qb64 witness prefixes
         cnfg is list of dicts of configuration traits
         version is Version instance
         kind is serialization kind
+        code is derivation code for prefix
     """
     vs = Versify(version=version, kind=kind, size=0)
     sn = 0
     ilk = Ilks.icp
 
     if sith is None:
-        sith = max(1, ceil(len(keys) / 2))
+        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
 
-    if isinstance(sith, int):
-        if sith < 1 or sith > len(keys):  # out of bounds sith
-            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
-    else:  # list sith not yet supported
-        raise ValueError("invalid sith = {}.".format(sith))
+    tholder = Tholder(sith=sith)
+    if tholder.size > len(keys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
 
     wits = wits if wits is not None else []
     if len(oset(wits)) != len(wits):
@@ -152,7 +150,7 @@ def incept(keys,
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,
-               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               kt=sith, # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nxt,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
@@ -195,7 +193,7 @@ def rotate(pre,
         keys is list of qb64 signing keys
         dig is digest of previous event qb64
         sn is int sequence number
-        sith is int signing threshold
+        sith is string or list format for signing threshold
         nxt  is qb64 next digest xor
         toad is int of witness threshold
         wits is list of prior witness prefixes qb64
@@ -212,13 +210,11 @@ def rotate(pre,
         raise ValueError("Invalid sn = {} for rot.".format(sn))
 
     if sith is None:
-        sith = max(1, ceil(len(keys) / 2))
+        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
 
-    if isinstance(sith, int):
-        if sith < 1 or sith > len(keys):  # out of bounds sith
-            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
-    else:  # list sith not yet supported
-        raise ValueError("invalid sith = {}.".format(sith))
+    tholder = Tholder(sith=sith)
+    if tholder.size > len(keys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
 
     wits = wits if wits is not None else []
     witset = oset(wits)
@@ -273,7 +269,7 @@ def rotate(pre,
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,
                p=dig,  #  qb64 digest of prior event
-               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               kt=sith, # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nxt,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
@@ -630,7 +626,7 @@ class Kever:
         .sn is sequence number int
         .serder is Serder instance of current event with .serder.diger for digest
         .ilk is str of current event type
-        .sith is int or list of current signing threshold
+        .tholder is Tholder instance for event sith
         .verfers is list of Verfer instances for current event state set of signing keys
         .nexter is qualified qb64 of next sith and next signing keys
         .toad is int threshold of accountable duplicity
@@ -684,7 +680,7 @@ class Kever:
 
         # validates and escrows as needed
         self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
-                          sith=self.sith, sn=self.sn)
+                          tholder=self.tholder, sn=self.sn)
 
         if ilk == Ilks.dip:
             seal = self.validateSeal(serder=serder, sigers=sigers)
@@ -722,18 +718,12 @@ class Kever:
         ked = serder.ked
 
         self.verfers = serder.verfers  # converts keys to verifiers
-        sith = ked["kt"]
-        if isinstance(sith, str):
-            self.sith = int(sith, 16)
-            if self.sith < 1 or self.sith > len(self.verfers):  # out of bounds sith
-                raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
-                                 "".format(sith,
-                                           [verfer.qb64 for verfer in self.verfers],
-                                           ked))
-        else:
-            # fix this to support list sith
-            raise ValueError("Unsupported type for sith = {} for evt = {}."
-                             "".format(sith, ked))
+        self.tholder = Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
+        if len(self.verfers) < self.tholder.size:
+            raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
+                             "".format(ked["kt"],
+                                       [verfer.qb64 for verfer in self.verfers],
+                                       ked))
 
         self.prefixer = Prefixer(qb64=ked["i"])
         if not self.prefixer.verify(ked=ked):  # invalid prefix
@@ -816,11 +806,11 @@ class Kever:
                     raise ValidationError("Missing element = {} from {} event for "
                                           "evt = {}.".format(k, ilk, ked))
 
-            sith, toad, wits = self.rotate(serder, sn)
+            tholder, toad, wits = self.rotate(serder, sn)
 
             # validates and escrows as needed
             self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
-                              sith=sith, sn=sn)
+                              tholder=tholder, sn=sn)
 
             if ilk == Ilks.drt:
                 seal = self.validateSeal(serder=serder, sigers=sigers)
@@ -834,7 +824,7 @@ class Kever:
             self.sn = sn
             self.serder = serder  #  need whole serder for digest agility compare
             self.ilk = ilk
-            self.sith = sith
+            self.tholder = tholder
             self.verfers = serder.verfers
             # update .nexter
             nxt = ked["n"]
@@ -845,8 +835,6 @@ class Kever:
 
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(s=self.sn, d=self.serder.diger.qb64)
-
-
 
             self.logEvent(serder, sigers)  # update logs
 
@@ -874,7 +862,7 @@ class Kever:
             # interaction event use sith and keys from pre-existing Kever state
             # validates and escrows as needed
             self.validateSigs(serder=serder, sigers=sigers, verfers=self.verfers,
-                              sith=self.sith, sn=sn)
+                              tholder=self.tholder, sn=sn)
 
             # update state
             self.sn = sn
@@ -891,6 +879,7 @@ class Kever:
         """
         Generic Rotate Operation Processing
         Same logic for both rot and drt (plain and delegated rotation)
+        Returns triple (tholder, toad, wits)
 
         Parameters:
             serder is event Serder instance
@@ -959,26 +948,19 @@ class Kever:
                                   " prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
 
-
-        sith = ked["kt"]
-        if isinstance(sith, str):
-            sith = int(sith, 16)
-            if sith < 1 or sith > len(serder.verfers):  # out of bounds sith
-                raise ValueError("Invalid sith = {} for keys = {} for evt "
-                                 "= {}.".format(sith,
-                                      [verfer.qb64 for verfer in serder.verfers],
-                                      ked))
-        else:
-            # fix this to support list sith
-            raise ValueError("Unsupported type for sith = {} for evt = {}."
-                             "".format(sith, ked))
+        tholder = Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
+        if len(serder.verfers) < tholder.size:
+            raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
+                             "".format(ked["kt"],
+                                       [verfer.qb64 for verfer in serder.verfers],
+                                       ked))
 
         # verify nxt from prior
         keys = ked["k"]
-        if not self.nexter.verify(sith=sith, keys=keys):
+        if not self.nexter.verify(limen=tholder.limen, keys=keys):
             raise ValidationError("Mismatch nxt digest = {} with rotation"
                                   " sith = {}, keys = {} for evt = {}."
-                                  "".format(self.nexter.qb64, sith, keys, ked))
+                                  "".format(self.nexter.qb64, tholder.thold, keys, ked))
 
         # compute wits from cuts and adds use set
         # verify set math
@@ -1027,7 +1009,7 @@ class Kever:
                 raise ValueError("Invalid toad = {} for wits = {} for evt "
                                  "= {}.".format(toad, wits, ked))
 
-        return (sith, toad, wits)
+        return (tholder, toad, wits)
 
     def validateSN(self, sn, ked, inceptive=False):
         """
@@ -1056,7 +1038,7 @@ class Kever:
         return sn
 
 
-    def validateSigs(self, serder, sigers, verfers, sith, sn):
+    def validateSigs(self, serder, sigers, verfers, tholder, sn):
         """
         Validate signatures by validating sith indexs and verifying signatures
         """
@@ -1068,57 +1050,23 @@ class Kever:
             siger.verfer = verfers[siger.index]  # assign verfer
 
         # verify signatures
-        if not self.verifySigs(sigers=sigers, serder=serder):
-            raise ValidationError("Failure verifying signatures = {} for {} for"
-                                  " evt = {}.".format(sigers, serder, serder.ked))
+        indices = []
+        for siger in sigers:
+            if siger.verfer.verify(siger.raw, serder.raw):
+                indices.append(siger.index)
 
-        # verify sith given signatures verify
-        if not self.verifySith(sigers=sigers, sith=sith):
+        if not indices:  # must have a least one verified
+            raise ValidationError("No verified signatures among {} for evt = {}."
+                                  "".format([siger.qb64 for siger in sigers],
+                                            serder.ked))
+
+        if not tholder.satisfy(indices):  #  at least one but not enough
             self.escrowPSEvent(self, serder, sigers, self.prefixer.qb64b, sn)
 
-            raise ValidationError("Failure verifying sith = {} on sigs for {}"
-                                  " for evt = {}.".format(self.sith, sigers, serder.ked))
-
-
-    def verifySigs(self, sigers, serder):
-        """
-        Use verfer in each siger to verify signature against serder
-        Assumes that sigers with verfer already extracted correctly wrt indexes
-
-        Parameters:
-            sigers is list of Siger instances
-            serder is Serder instance
-
-        """
-        for siger in sigers:
-            if not siger.verfer.verify(siger.raw, serder.raw):
-                return False
-
-        if len(sigers) < 1:  # at least one signature
-            return False
-
-        return True
-
-
-    def verifySith(self, sigers, sith=None):
-        """
-        Assumes that all sigers signatures were already verified
-        If sith not provided then use .sith instead
-
-        Parameters:
-            sigers is list of Siger instances
-            sith is int threshold
-
-        """
-        sith = sith if sith is not None else self.sith
-
-        if not isinstance(sith, int):
-            raise ValueError("Unsupported type for sith = {}".format(sith))
-
-        if len(sigers) < sith:  # not meet threshold fix for list sith
-            return False
-
-        return True
+            raise ValidationError("Failure satisfying sith = {} on sigs for {}"
+                                  " for evt = {}.".format(tholder.sith,
+                                                [siger.qb64 for siger in sigers],
+                                                serder.ked))
 
 
     def validateSeal(self, serder, sigers):

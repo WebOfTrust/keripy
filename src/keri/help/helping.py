@@ -75,6 +75,7 @@ def verify64uEd25519(signature, message, verkey):
     msg = message.encode("utf-8")
     return (verifyEd25519(sig, msg, vk))
 
+
 class mdict(MultiDict):
     """
     Multiple valued dictionary. Insertion order of keys preserved.
@@ -188,6 +189,7 @@ def nonStringIterable(obj):
     return (hasattr(x, '__iter__') and not isinstance(x, (str, bytes)))
     """
     return (not isinstance(obj, (str, bytes)) and isinstance(obj, Iterable))
+
 
 def nonStringSequence(obj):
     """

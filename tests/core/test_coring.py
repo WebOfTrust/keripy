@@ -15,6 +15,7 @@ import cbor2 as cbor
 
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
+from fractions import Fraction
 
 from keri.kering import Version, Versionage
 from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
@@ -37,7 +38,7 @@ from keri.core.coring import IntToB64, B64ToInt
 from keri.core.coring import SigMat, SigCounter, SeqNumber, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
-from keri.core.coring import Serder
+from keri.core.coring import Serder, Tholder
 from keri.core.coring import Ilkage, Ilks
 
 
@@ -967,8 +968,6 @@ def test_nexter():
     nexter = Nexter(raw=raw)  # defaults provide Blake3_256 digest
     assert nexter.code == CryOneDex.Blake3_256
     assert nexter.qb64 == 'ED8YvDrXvGuaIVZ69XsBVA5YN2pNTfQOFwgeloVHeWKs'
-    assert nexter.sith == None  # not used by nexter for its  digest
-    assert nexter.keys == None  # not used by nexter for its  digest
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
     assert nexter.verify(raw=raw)
     assert nexter.verify(raw=raw+b'ABCDEF') == False
@@ -979,24 +978,18 @@ def test_nexter():
     nexter = Nexter(digs=digs)  # compute sith from digs using default sith
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == None
     assert nexter.verify(digs=digs)
     assert nexter.verify(raw=raw)
 
     nexter = Nexter(sith=sith, digs=digs)  # compute sith from digs using default sith
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == None
     assert nexter.verify(sith=sith, digs=digs)
     assert nexter.verify(raw=raw)
 
     nexter = Nexter(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == keys
     assert nexter.verify(sith=sith, keys=keys)
     assert nexter.verify(raw=raw)
     assert nexter.verify(raw=raw+b'ABCDEF') == False
@@ -1007,25 +1000,19 @@ def test_nexter():
     nexter = Nexter(keys=keys)  # compute sith from keys default sith
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == keys
     assert nexter.verify(keys=keys)
     assert nexter.verify(raw=raw)
 
-    nexter = Nexter(sith=2, keys=keys)  # defaults provide Blake3_256 digester
+    nexter = Nexter(sith="2", keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == keys
-    assert nexter.verify(sith=2, keys=keys)
+    assert nexter.verify(sith="2", keys=keys)
     assert nexter.verify(raw=raw)
 
     ked = dict(kt=sith, k=keys)  #  subsequent event
     nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
     assert nexter.code == CryOneDex.Blake3_256
     assert len(nexter.raw) == CryOneRawSizes[nexter.code]
-    assert nexter.sith == sith
-    assert nexter.keys == keys
     assert nexter.verify(ked=ked)
     assert nexter.verify(raw=raw)
 
@@ -1126,7 +1113,7 @@ def test_prefixer():
     assert prefixer.verify(ked=ked) == True
 
 
-    nexter = Nexter(sith=1, keys=[nxtfer.qb64])
+    nexter = Nexter(sith="1", keys=[nxtfer.qb64])
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
@@ -1185,7 +1172,7 @@ def test_prefixer():
     wits = []
     cnfg = []
 
-    nexter = Nexter(sith=1, keys=[nxtfer.qb64])
+    nexter = Nexter(sith="1", keys=[nxtfer.qb64])
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
@@ -1971,13 +1958,115 @@ def test_serder():
     assert not srdr.compare(dig=Diger(ser=ser1).qb64)  # codes match
     assert not srdr.compare(diger=Diger(ser=ser1, code=CryOneDex.SHA3_256)) # codes not match
     assert not srdr.compare(dig=Diger(ser=ser1, code=CryOneDex.SHA2_256).qb64b)     # codes not match
-
-
     """Done Test """
 
 
+def test_tholder():
+    """
+    Test Tholder signing threshold satisfier class
+    """
+
+    with pytest.raises(ValueError):
+        tholder = Tholder()
+
+    tholder = Tholder(sith="b")
+    assert tholder.sith == "b"
+    assert tholder.thold == 11
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert not tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+    assert tholder.limen == "b"
+
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=0)
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith="0")
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=["1/3", "1/2", []])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=["1/3", "1/2"])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[[], []])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[["1/3", "1/2"], ["1"]])
+
+    with pytest.raises(ValueError):
+        tholder = Tholder(sith=[["1/3", "1/2"], []])
+
+    with pytest.raises(TypeError) as ex:
+        tholder = Tholder(sith=[["1/2", "1/2"], [[], "1"]])
+
+    tholder = Tholder(sith=["1/2", "1/2", "1/4", "1/4", "1/4"])
+    assert tholder.sith == ["1/2", "1/2", "1/4", "1/4", "1/4"]
+    assert tholder.thold == [[Fraction(1, 2),
+                            Fraction(1, 2),
+                            Fraction(1, 4),
+                            Fraction(1, 4),
+                            Fraction(1, 4)]]
+    assert tholder.weighted
+    assert tholder.size == 5
+    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4'
+    assert tholder.satisfy(indices=[0, 2, 4])
+    assert tholder.satisfy(indices=[0, 1])
+    assert tholder.satisfy(indices=[1, 3, 4])
+    assert tholder.satisfy(indices=[0, 1, 2, 3, 4])
+    assert tholder.satisfy(indices=[3, 2, 0])
+    assert tholder.satisfy(indices=[0, 0, 1, 2, 1])
+    assert not tholder.satisfy(indices=[0, 2])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+
+    tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"]])
+    assert tholder.sith == [["1/2", "1/2", "1/4", "1/4", "1/4"]]
+    assert tholder.thold == [[Fraction(1, 2),
+                            Fraction(1, 2),
+                            Fraction(1, 4),
+                            Fraction(1, 4),
+                            Fraction(1, 4)]]
+    assert tholder.weighted
+    assert tholder.size == 5
+    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4'
+    assert tholder.satisfy(indices=[1, 2, 3])
+    assert tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=[1, 3, 4])
+    assert tholder.satisfy(indices=[0, 1, 2, 3, 4])
+    assert tholder.satisfy(indices=[3, 2, 0])
+    assert tholder.satisfy(indices=[0, 0, 1, 2, 1, 4, 4])
+    assert not tholder.satisfy(indices=[0, 2])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+
+
+    tholder = Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]])
+    assert tholder.sith ==  [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+    assert tholder.thold == [[Fraction(1, 2),
+                            Fraction(1, 2),
+                            Fraction(1, 4),
+                            Fraction(1, 4),
+                            Fraction(1, 4)],
+                           [Fraction(1, 1), Fraction(1, 1)]]
+    assert tholder.weighted
+    assert tholder.size == 7
+    assert tholder.limen == '1/2,1/2,1/4,1/4,1/4&1,1'
+    assert tholder.satisfy(indices=[1, 2, 3, 5])
+    assert tholder.satisfy(indices=[0, 1, 6])
+    assert not tholder.satisfy(indices=[0, 1])
+    assert not tholder.satisfy(indices=[5, 6])
+    assert not tholder.satisfy(indices=[2, 3, 4])
+    assert not tholder.satisfy(indices=[])
+
+
+    """ Done Test """
 
 
 
 if __name__ == "__main__":
-    test_nexter()
+    test_tholder()
