@@ -1120,7 +1120,7 @@ def test_multisig_digprefix():
 
         keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
         nxtkeys = [signers[3].verfer.qb64, signers[4].verfer.qb64, signers[5].verfer.qb64]
-        sith = 2
+        sith = "2"
         code = CryOneDex.Blake3_256  # Blake3 digest of incepting data
         serder = incept(keys=keys,
                         code=code,
@@ -1155,7 +1155,7 @@ def test_multisig_digprefix():
 
         # Event 1 Rotation Transferable
         keys = nxtkeys
-        sith = 2
+        sith = "2"
         nxtkeys = [signers[5].verfer.qb64, signers[6].verfer.qb64, signers[7].verfer.qb64]
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=keys,
@@ -1214,7 +1214,7 @@ def test_multisig_digprefix():
         keys = nxtkeys
         serder = rotate(pre=kever.prefixer.qb64,
                     keys=keys,
-                    sith=2,
+                    sith="2",
                     dig=kever.serder.diger.qb64,
                     nxt="",
                     sn=4)

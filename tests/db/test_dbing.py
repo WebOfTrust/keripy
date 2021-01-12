@@ -784,7 +784,7 @@ def test_usebaser():
         keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
         count = len(keys)
         nxtkeys = [signers[3].verfer.qb64, signers[4].verfer.qb64, signers[5].verfer.qb64]
-        sith = 2
+        sith = "2"
         code = CryOneDex.Blake3_256  # Blake3 digest of incepting data
         serder = incept(keys=keys,
                         code=code,

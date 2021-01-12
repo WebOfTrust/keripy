@@ -91,7 +91,6 @@ SealLocation = namedtuple("SealLocation", 'i s t p')
 
 
 def incept(keys,
-           code=None,
            sith=None,
            nxt="",
            toad=None,
@@ -99,6 +98,7 @@ def incept(keys,
            cnfg=None,
            version=Version,
            kind=Serials.json,
+           code=None,
           ):
 
     """
@@ -107,27 +107,25 @@ def incept(keys,
 
      Parameters:
         keys is list of qb64 signing keys
-        code is derivation code for prefix
-        sith is int  of signing threshold
+        sith is string, or list format for signing threshold
         nxt  is qb64 next digest xor
         toad is int of witness threshold
         wits is list of qb64 witness prefixes
         cnfg is list of dicts of configuration traits
         version is Version instance
         kind is serialization kind
+        code is derivation code for prefix
     """
     vs = Versify(version=version, kind=kind, size=0)
     sn = 0
     ilk = Ilks.icp
 
     if sith is None:
-        sith = max(1, ceil(len(keys) / 2))
+        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
 
-    if isinstance(sith, int):
-        if sith < 1 or sith > len(keys):  # out of bounds sith
-            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
-    else:  # list sith not yet supported
-        raise ValueError("invalid sith = {}.".format(sith))
+    tholder = Tholder(sith=sith)
+    if tholder.size > len(keys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
 
     wits = wits if wits is not None else []
     if len(oset(wits)) != len(wits):
@@ -152,7 +150,7 @@ def incept(keys,
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,
-               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               kt=sith, # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nxt,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
@@ -195,7 +193,7 @@ def rotate(pre,
         keys is list of qb64 signing keys
         dig is digest of previous event qb64
         sn is int sequence number
-        sith is int signing threshold
+        sith is string or list format for signing threshold
         nxt  is qb64 next digest xor
         toad is int of witness threshold
         wits is list of prior witness prefixes qb64
@@ -212,13 +210,11 @@ def rotate(pre,
         raise ValueError("Invalid sn = {} for rot.".format(sn))
 
     if sith is None:
-        sith = max(1, ceil(len(keys) / 2))
+        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
 
-    if isinstance(sith, int):
-        if sith < 1 or sith > len(keys):  # out of bounds sith
-            raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
-    else:  # list sith not yet supported
-        raise ValueError("invalid sith = {}.".format(sith))
+    tholder = Tholder(sith=sith)
+    if tholder.size > len(keys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
 
     wits = wits if wits is not None else []
     witset = oset(wits)
@@ -273,7 +269,7 @@ def rotate(pre,
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,
                p=dig,  #  qb64 digest of prior event
-               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               kt=sith, # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nxt,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase

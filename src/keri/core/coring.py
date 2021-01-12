@@ -2728,7 +2728,7 @@ class Tholder:
             if thold < 1:
                 raise ValueError("Invalid sith = {} < 1.".format(thold))
             self._thold = thold
-            self._size =  self._thold  #  Keys list size must be at least threshold
+            self._size = self._thold  # used to verify that keys list size is at least size
             self._satisfy = self._satisfy_numeric
             self._limen = self._sith  # just use hex string
 
