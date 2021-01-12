@@ -1637,8 +1637,6 @@ class Prefixer(CryMat):
             if l not in ked:
                 raise DerivationError("Missing element = {} from ked.".format(l))
 
-        #values = extractValues(ked=ked, labels=labels)
-        #ser = "".join(values).encode("utf-8")
         dig =  blake3.blake3(serder.raw).digest()
         return (dig, CryOneDex.Blake3_256)
 
@@ -1687,9 +1685,6 @@ class Prefixer(CryMat):
         for l in labels:
             if l not in ked:
                 raise DerivationError("Missing element = {} from ked.".format(l))
-
-        #values = extractValues(ked=ked, labels=labels)
-        #ser = "".join(values).encode("utf-8")
 
         try:
             keys = ked["k"]
@@ -1747,9 +1742,6 @@ class Prefixer(CryMat):
             for l in labels:
                 if l not in ked:
                     raise DerivationError("Missing element = {} from ked.".format(l))
-
-            #values = extractValues(ked=ked, labels=labels)
-            #ser = "".join(values).encode("utf-8")
 
             try:
                 keys = ked["k"]
