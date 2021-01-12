@@ -45,7 +45,6 @@ def test_weighted():
                                  code=coring.CryOneDex.Blake3_256)
 
         wesPre = wesSrdr.ked["i"]
-        assert wesPre == 'EiLUP3YJQo2zKDL5R5L3yD7eHPrLo7cdlFQ9JP-x6bAA'
 
         wesMgr.move(old=verfers[0].qb64, new=wesPre)  # move key pair label to prefix
 
@@ -57,23 +56,22 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON000154_","i":"EiLUP3YJQo2zKDL5R5L3yD7eHPrLo7cdlF'
-                                b'Q9JP-x6bAA","s":"0","t":"icp","kt":["1/2","1/2","1/2"],"k":["DK4'
+        assert msg == bytearray(b'{"v":"KERI10JSON000154_","i":"EM8ac0UPJZCaWOw2uRcvx6FaygyxFvGzA5'
+                                b'MTob9WfbDQ","s":"0","t":"icp","kt":["1/2","1/2","1/2"],"k":["DK4'
                                 b'OJI8JOr6oEEUMeSF_X-SbKysfwpKwW-ho5KARvH5c","D1RZLgYke0GmfZm-CH8A'
                                 b'sW4HoTU4m-2mFgu8kbwp8jQU","DBVwzum-jPfuUXUcHEWdplB4YcoL3BWGXK0TM'
                                 b'oF_NeFU"],"n":"EhJGhyJQTpSlZ9oWfQT-lHNl1woMazLC42O89fRHocTI","wt'
-                                b'":"0","w":[],"c":[]}-AADAAGapgdCsw7Ad0jiqd0HZI-pJMkWuse1tDamZ090'
-                                b'jMFlI7-snmNZFq0KPKJbPkyG46MYYVaMsm7SeXoBdI7zD9DwABIciVlOQDtrPuPG'
-                                b'lYSOhatNupNFvv_zG0Dgfpsg3gx4KzEG9FXNV0MbHX20pg48Mbmq9ZqJjN2yEJkp'
-                                b'XJGbG2AgACTCbPvwZT341CZyDPTlYdMErfWJ4BLoMK4GInqvWTb53tKOMwewAzMj'
-                                b'mbCgUmBgsmYgoTEJnHjP53_2Ddd_7VCA')
+                                b'":"0","w":[],"c":[]}-AADAAc4jIKyjjpK7rJzywkX2AXXaNGgUGfcUgT6fm7P'
+                                b'iqL8H8tDsxHb6dcnybE7Hc34jtUq47OWWwCV3K9oCTUUAHAwABlP9qpCcMow8Lq5'
+                                b'bzE-DLHlItNuQYD9SqOQDNyJoTpk_BEW6Q8UIG012MJEM7GoFTMV5H9UUztQfSQp'
+                                b'l9Jh9lBQACVn_l3CTPIrCyGZpvW9qxVfZll0su-vIv1gvx0GQfo1qAMNk4c_7t-x'
+                                b'bXKTw3hwDPt46m5zGd38Y3qIEwQD3jCA')
 
         # apply msg to Wes's Kevery
         wesKvy.processAll(ims=bytearray(msg))  # process local copy of msg
         wesK = wesKvy.kevers[wesPre]  # kever created so event was validated
         assert wesK.prefixer.qb64 == wesPre
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
-        assert wesK.serder.diger.qb64 == 'EFm137-l_G7WDTKNUmUXdcDkLlDN90cJeJ-NeIXWPhNU'
 
         # create interaction event for Wes
         wesSrdr = eventing.interact(pre=wesK.prefixer.qb64,
@@ -89,18 +87,17 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON000098_","i":"EiLUP3YJQo2zKDL5R5L3yD7eHPrLo7cdlF'
-                                b'Q9JP-x6bAA","s":"1","t":"ixn","p":"EFm137-l_G7WDTKNUmUXdcDkLlDN9'
-                                b'0cJeJ-NeIXWPhNU","a":[]}-AADAA1PVYniDwmHmutvL4BiUA7SXzPN-ibI2KJ1'
-                                b'VjDMzwUf9_qlmPjTXf22vmJvNXkFoTFP-Pki3z9GtheyJBPHEDDgABODOMDScTLE'
-                                b'2CXcQe95mDihb4k_w8Wu3BQP8Xm0gKuS493POlpuj23VBFRynZMU1HAhL2I1swZM'
-                                b'Gt2XmnscEZDAACa0kZ1clbZvDSJYEcXdFlV65PN4Hb6cDcNkTX-pYO6TTHaZRy3a'
-                                b'tURJonV558J2kTvVtB6E3RyTyL6qHAQ4ItAA')
+        assert msg == bytearray(b'{"v":"KERI10JSON000098_","i":"EM8ac0UPJZCaWOw2uRcvx6FaygyxFvGzA5'
+                                b'MTob9WfbDQ","s":"1","t":"ixn","p":"E3-lhMd85oc8Uwrd_7c6xUy5tvZhr'
+                                b'b9ZHvcOO4HxHB1c","a":[]}-AADAAWmzu83wDFTn9Hc6_xskGe8Ed_PhiOpVQ2H'
+                                b'kxAx28qgLP_Zz7pwCsvmRDM1x9sL8Ygg7hQman5qDaeJS4fJm1DQABlc4hfziecy'
+                                b'_DXVN2a8AttmuBL_Oh0-Ro_Rz3Mf6KWOJTMLQIHaRJ62L01Q5vP6KmiSr2zwJUT_'
+                                b'urfGLZoaRUBwACt4l7pTFqmzfzk6p6FKlT1KGXYJ2ea2SmU7I-7agz0i4lCDNQf-'
+                                b'Y_NJWs6NTWEs5vsPOskNcGnr8nIpQ51N1qBQ')
 
         # apply msg to wes's Kevery
         wesKvy.processAll(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
-        assert wesK.serder.diger.qb64 == 'ERTOyErK-hGJvld6G38CFN_I1MxaH9e_vaH1qz--KYtU'
 
         # Create rotation event for Wes
         # get current keys as verfers and next digests as digers
@@ -124,22 +121,21 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON000190_","i":"EiLUP3YJQo2zKDL5R5L3yD7eHPrLo7cdlF'
-                                b'Q9JP-x6bAA","s":"2","t":"rot","p":"ERTOyErK-hGJvld6G38CFN_I1MxaH'
-                                b'9e_vaH1qz--KYtU","kt":["1/2","1/2","1/2"],"k":["DeonYM2bKnAwp6VZ'
+        assert msg == bytearray(b'{"v":"KERI10JSON000190_","i":"EM8ac0UPJZCaWOw2uRcvx6FaygyxFvGzA5'
+                                b'MTob9WfbDQ","s":"2","t":"rot","p":"E6wjlP_oqJzmo65d56XuTL602ABcK'
+                                b'X0ZBEy9M-k7E1Eg","kt":["1/2","1/2","1/2"],"k":["DeonYM2bKnAwp6VZ'
                                 b'cuCXdX72kNFw56czlZ_Tc7XHHVGI","DQghKIy-2do9OkweSgazh3Ql1vCOt5bnc'
                                 b'5QF8x50tRoU","DNAUn-5dxm6b8Njo01O0jlStMRCjo9FYQA2mfqFW1_JA"],"n"'
                                 b':"EX5fxvjOg5VuDboWbqnTjTPpXa3nNIm99hlsB1EmhTo8","wt":"0","wr":[]'
-                                b',"wa":[],"a":[]}-AADAAZpGSRZmnNbcJDA1LZ1LoizGyjW_EscWWebJ3-c8cws'
-                                b'v_u4p0RDEQRokxuyK7hSXIzI8ZTeUUHCsPvzUpfLNADQAB-QRmN2hfwqk1HYmxb5'
-                                b'f4Rzsurxcv5fpSAuqDS7DFYUStcjl8zGXq7I9UkdN9fKz44gHCkhADIzzZc4LR5X'
-                                b'CCCQACy70czPALNGqz-GdX4H90113zKto_P04NnMfPwp_E3wIlqM0YfXYy9NIJr7'
-                                b'xugbHIsQajERM3blpUe1CllzjWBA')
+                                b',"wa":[],"a":[]}-AADAApZ3U4zacSPm5embDTRD2IxB1e4FrdAToP-tsXB-VVp'
+                                b'fX6Yk78iIdFyeNi9U_sgefzvhR3_mH5Bj_ZlfpEMCQDAABWURvCkE1HjbE_noEqj'
+                                b'BWEpdG1hUfP3_Oye5Ys0zquigDrOSv2ApXzlq1-ALDTZeqMX4lbVlqubRjDu3Qog'
+                                b'xrAgACtyNpfXHvly2emXyAdJ5sAVUVCnodONK2CG8WGipISYLGIlyfmNoTVeHw-f'
+                                b'_3ZY2tAgbmLZika4kEL8REfr5VCA')
 
         # apply msg to Wes's Kevery
         wesKvy.processAll(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
-        assert wesK.serder.diger.qb64 == 'ETx4epYdzpME9yQKFhQ_PCE3a58vZgH6PJeJDq-ZgpC0'
 
         # Create rotation event for Wes
         # get current keys as verfers and next digests as digers
@@ -165,22 +161,22 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON000190_","i":"EiLUP3YJQo2zKDL5R5L3yD7eHPrLo7cdlF'
-                                b'Q9JP-x6bAA","s":"3","t":"rot","p":"ETx4epYdzpME9yQKFhQ_PCE3a58vZ'
-                                b'gH6PJeJDq-ZgpC0","kt":["1/2","1/2","1/2"],"k":["D7WWKDLVwYxYMLAj'
+        assert msg == bytearray(b'{"v":"KERI10JSON000190_","i":"EM8ac0UPJZCaWOw2uRcvx6FaygyxFvGzA5'
+                                b'MTob9WfbDQ","s":"3","t":"rot","p":"E9tuWqXCN31LqElTSdfGp3lWDetle'
+                                b'T4Pa9tuSUi2V87k","kt":["1/2","1/2","1/2"],"k":["D7WWKDLVwYxYMLAj'
                                 b'DceIEs66xPMY4Afzx-RQw2x0mQzI","Dmg6Aah8qyKKDiQyNXTiO71QJwizjZfGM'
                                 b'61BA-s0A5F4","DS3fhKpvPCDL5WmfN4_PkmJMMsSCdRTxG24OQuf_EmHQ"],"n"'
                                 b':"EcM4iw7fElXWhad8V-za4Px7nBKjndxoh3XZRkohghKY","wt":"0","wr":[]'
-                                b',"wa":[],"a":[]}-AADAAWUGHldvgFs1_fFN_n5R-nDAWXwS8W2J_lAmQN-uy5B'
-                                b'ZuZCkQ0nN1AyKZn57PFnXXFGN-DjHKd5U-RVRy23DzBQABQ0TEPseYhDCDPUf4mI'
-                                b'sct1FECHF-fv18cDiupYLZoXiW3cNsFbpJA0hlumsC9vp-zopSkOxX3KNR41RnzI'
-                                b'YYBQACS100r1L0Om-sN2ILrgHaZwhASCr0pkPk2-CWLpVGNDvuaBm25tVZAsWSL8'
-                                b'Jq43GjrwqDu3yzSk7bTocgVQN7CA')
+                                b',"wa":[],"a":[]}-AADAAO0Ma_uiLbrXrqkNsLccCNgWcfvopoo2NwZ5aJLKBa9'
+                                b'7OMuZibsiVL6bDues9r65o2Tq1hzuuQQK6cHg_OH3xDAAB-cLMTqhogxrxyhMVoP'
+                                b'RXJ-rtQaV5oEsXSqcU3phI0bxFJvtydfnySe30LXbOwnFS-_HhCRMOulhBdcAvFR'
+                                b'dKAAACXhumJPsAS1UWSjlKiSby_TCC_W82jkTcvWBB4pwrcYmno8jRpQoB0ubPyG'
+                                b'96I2RqNql0Q9p5LcMPsLtT_Zt4DA')
+
 
         # apply msg to Wes's Kevery
         wesKvy.processAll(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
-        assert wesK.serder.diger.qb64 == 'EFJayD7ngsJTiNbFfyxZRhV_4XnrE_Z3VpTK2kUUZb4U'
 
         # Create rotation event for Wes
         # get current keys as verfers and next digests as digers
@@ -206,26 +202,25 @@ def test_weighted():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON0001fe_","i":"EiLUP3YJQo2zKDL5R5L3yD7eHPrLo7cdlF'
-                                b'Q9JP-x6bAA","s":"4","t":"rot","p":"EFJayD7ngsJTiNbFfyxZRhV_4XnrE'
-                                b'_Z3VpTK2kUUZb4U","kt":[["1/2","1/2","1/2"],["1/1","1/1"]],"k":["'
+        assert msg == bytearray(b'{"v":"KERI10JSON0001fe_","i":"EM8ac0UPJZCaWOw2uRcvx6FaygyxFvGzA5'
+                                b'MTob9WfbDQ","s":"4","t":"rot","p":"EkBxzyMDQGRCNmoMOWwh58wuNuERR'
+                                b'cLoMH2_F0w99Dw4","kt":[["1/2","1/2","1/2"],["1/1","1/1"]],"k":["'
                                 b'DToUWoemnetqJoLFIqDI7lxIJEfF0W7xG5ZlqAseVUQc","Drz-IZjko61q-sPMD'
                                 b'IW6n-0NGFubbXiZhzWZrO_BZ0Wc","DiGwL3hjQqiUgQlFPeA6kRR1EBXX0vSLm9'
                                 b'b6QhPS8IkQ","Dxj5pcStgZ6CbQ2YktNaj8KLE_g9YAOZF6AL9fyLcWQw","DE5z'
                                 b'r5eH8EUVQXyAaxWfQUWkGCId-QDCvvxMT77ibj2Q"],"n":"E3in3Z14va0kk4Wq'
                                 b'd3vcCAojKNtQq7ZTrQaavR8x0yu4","wt":"0","wr":[],"wa":[],"a":[]}-A'
-                                b'AFAAxC_rkCi0QDswHoTC229WXAqV3v_drsQhaNjs1tAxMqy813o8onpAMp2KHC-p'
-                                b'V-2-0t7WZf2xpPArvQtF7Yj9BAABu1mkYffvoo6wyFfZyb9LIikO7hKNWezyYkqA'
-                                b'lgH0CTENqu2qyNfLeTjcHvK9WKsjkOH0dsfzQX-xsHR4CcCkCQAC4zA0VgJBdt9h'
-                                b'zlIVhZbp4q2bMeYWFFqx_nQpDRAzepkA_6gz4AM9fB1CyaeKz1aGxhWgDoUwj4Vh'
-                                b'qun0az62CAAD4n0Z0uQVaZ76WZa9suo1z-_PUUPbmLziBNWDffFXqvzrqZm9BG0n'
-                                b'CD3HuAYOdvH7KXtOHcDGOk4wqksgzA1YAAAE292FFAQJDweKw_PKLngr-2iBeHrU'
-                                b'Fu_rVJwIT2ddzjDKex9g7gsVcOgjmZtHce5mqFU5aUVWs1OAEHooC05zBA')
+                                b'AFAAEjpPTMtLre--y96OaTckIov-qfWT1lqOvwNBAcdTfmsfCLIJgZO4Y2ybJqGw'
+                                b'l2Q6DqLdfNQWHiDwnyllo1zZBgABny8aZlKENxCnulxSzSWIbFsg1Kv7RrdgTt4r'
+                                b'19taFq-bmBmMTLrkidNbeMHwgsNhhT8f3KJnPTaHEZ2Myd3BDQACaJ2sc2SpEcM0'
+                                b'9qMbk-8maWuxjAdMCb8n5P1vJesnf7TW6p3Vu2Mart5HuXW44r79DQ91sAmyYB_0'
+                                b'4q--ZyNYAQAD5trFl0S9G0GQmFF7FCgMYWzKNe7x16622OvT1-HjDP-eXxf9dani'
+                                b'dlUIbVWqalLgXOdhhsCNUDasvOHLByjSBgAEs-ovUeu2--2wnCJLpfHzLZUbc5fL'
+                                b'8bpOShEoPUwxEH4H1Wxsn3xPlvL3_pe5Mun3sq2jIhl1EOjcDaKOHofZCA')
 
         # apply msg to Wes's Kevery
         wesKvy.processAll(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
-        assert wesK.serder.diger.qb64 == 'EA0LlynpZE1kxSJIIGL9ipYnIfQMYdq2QzCGZVx-cR94'
 
 
     assert not os.path.exists(wesKp.path)

@@ -47,7 +47,7 @@ def test_delegation():
                                  code=coring.CryOneDex.Blake3_256)
 
         bobPre = bobSrdr.ked["i"]
-        assert bobPre == 'EjR6PFb7KSo8dICnjD6dQ5kYJR07R3-T0cDcS0qC3ZK0'
+        assert bobPre == 'EiBlVttjqvySMbA4ShN19rSrz3D0ioNW-Uj92Ri7XnFE'
 
         bobMgr.move(old=verfers[0].qb64, new=bobPre)  # move key pair label to prefix
 
@@ -59,18 +59,18 @@ def test_delegation():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON0000e6_","i":"EjR6PFb7KSo8dICnjD6dQ5kYJR07R3-T0c'
-                                b'DcS0qC3ZK0","s":"0","t":"icp","kt":"1","k":["DqI2cOZ06RwGNwCovYU'
+        assert msg == bytearray(b'{"v":"KERI10JSON0000e6_","i":"EiBlVttjqvySMbA4ShN19rSrz3D0ioNW-U'
+                                b'j92Ri7XnFE","s":"0","t":"icp","kt":"1","k":["DqI2cOZ06RwGNwCovYU'
                                 b'WExmdKU983IasmUKMmZflvWdQ"],"n":"E7FuL3Z_KBgt_QAwuZi1lUFNC69wvyH'
-                                b'SxnMFUsKjZHss","wt":"0","w":[],"c":[]}-AABAAEQJs05lKxSa8wWfV4hYf'
-                                b'd8j47ATEtnaps_WKM0wHhDnNrgCin4m6NP9cYQ5UCfKXHhe4mTF6-dfnuQxtBq7CBA')
+                                b'SxnMFUsKjZHss","wt":"0","w":[],"c":[]}-AABAAQPFdtnncXLz6dE6A-tXG'
+                                b'YYK0BHu3I3Pj-G8DxlbzC3yx5MV8yucZILqAA5toZNODnHVHZtPIMkDknqldL4utBQ')
 
         # apply msg to bob's Kevery
         bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
         bobK = bobKvy.kevers[bobPre]
         assert bobK.prefixer.qb64 == bobPre
         assert bobK.serder.diger.qb64 == bobSrdr.dig
-        assert bobK.serder.diger.qb64 == 'EmEY_w4RrCIIKvJ2gFA3cS7EUvVldX2DKUz-xIwxw5mc'
+        assert bobK.serder.diger.qb64 == 'EvP2kWxEjTMI3auc6x64EpU-nMQZHiBeKeuavcGdRB24'
 
         # apply msg to del's Kevery
         delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
@@ -84,20 +84,20 @@ def test_delegation():
                                      t=coring.Ilks.ixn,
                                      p=bobK.serder.diger.qb64)
 
-        assert seal._asdict() == dict(i='EjR6PFb7KSo8dICnjD6dQ5kYJR07R3-T0cDcS0qC3ZK0',
+        assert seal._asdict() == dict(i='EiBlVttjqvySMbA4ShN19rSrz3D0ioNW-Uj92Ri7XnFE',
                                       s='1',
                                       t='ixn',
-                                      p='EmEY_w4RrCIIKvJ2gFA3cS7EUvVldX2DKUz-xIwxw5mc')
+                                      p='EvP2kWxEjTMI3auc6x64EpU-nMQZHiBeKeuavcGdRB24')
 
         delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
                                    seal=seal,
                                    nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
 
         delPre = delSrdr.ked["i"]
-        assert delPre == 'EYWTA7WoB0Cdu4Dq6WnAVodn-xklLI0vltf34S_XK2zg'
+        assert delPre == 'ErLe2qWp4VCmDp7v_R01tC-ha13ZEZY0VGcgYtPRhqPs'
 
         delMgr.move(old=verfers[0].qb64, new=delPre)  # move key pair label to prefix
-        assert delSrdr.dig == 'ElEt2RtdiyJoImqGO2krlF2Y4rnPnqI-BXy1KGywC2HA'
+        assert delSrdr.dig == 'ESDuaqpoI8-HLD8-eLijUMZpXqYFkNArJFDvt3ABYr9I'
 
         # Now create delegating event
         seal = eventing.SealEvent(i=delPre,
@@ -116,17 +116,17 @@ def test_delegation():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON000107_","i":"EjR6PFb7KSo8dICnjD6dQ5kYJR07R3-T0c'
-                                b'DcS0qC3ZK0","s":"1","t":"ixn","p":"EmEY_w4RrCIIKvJ2gFA3cS7EUvVld'
-                                b'X2DKUz-xIwxw5mc","a":[{"i":"EYWTA7WoB0Cdu4Dq6WnAVodn-xklLI0vltf3'
-                                b'4S_XK2zg","s":"0","d":"ElEt2RtdiyJoImqGO2krlF2Y4rnPnqI-BXy1KGywC'
-                                b'2HA"}]}-AABAAS_Fnq8_FIPTBV6Vz-jjdaok7gh32q9gxaRWEGbBnA42z0-YqRAp'
-                                b'2iAmJlkYK18HvWVTuzZTYCmR66TUJMsTODw')
+        assert msg == bytearray(b'{"v":"KERI10JSON000107_","i":"EiBlVttjqvySMbA4ShN19rSrz3D0ioNW-U'
+                                b'j92Ri7XnFE","s":"1","t":"ixn","p":"EvP2kWxEjTMI3auc6x64EpU-nMQZH'
+                                b'iBeKeuavcGdRB24","a":[{"i":"ErLe2qWp4VCmDp7v_R01tC-ha13ZEZY0VGcg'
+                                b'YtPRhqPs","s":"0","d":"ESDuaqpoI8-HLD8-eLijUMZpXqYFkNArJFDvt3ABY'
+                                b'r9I"}]}-AABAAZ4V2cSIXYEPg5BtkJSHVBj-A0dGI6rH2XGaVt1kewqGeJjpy4uz'
+                                b'ObPWnoBpaEojFa5AnrUJEgMytORoWMqEhCw')
 
         # apply msg to bob's Kevery
         bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
         assert bobK.serder.diger.qb64 == bobSrdr.dig  # key state updated so event was validated
-        assert bobK.serder.diger.qb64 == 'E1RjNsNVehiVsvuvQQL0N3Xok0y9OupLV6JIW64GGd6M'
+        assert bobK.serder.diger.qb64 == 'EtzXPztLsGC5DGyooSdHdBGIOHjhblBWtZ_AOhGS-hDE'
 
         # apply msg to del's Kevery
         delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
@@ -141,14 +141,13 @@ def test_delegation():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON000165_","i":"EYWTA7WoB0Cdu4Dq6WnAVodn-xklLI0vlt'
-                                b'f34S_XK2zg","s":"0","t":"dip","kt":"1","k":["DuK1x8ydpucu3480Jpd'
+        assert msg == bytearray(b'{"v":"KERI10JSON000165_","i":"ErLe2qWp4VCmDp7v_R01tC-ha13ZEZY0VG'
+                                b'cgYtPRhqPs","s":"0","t":"dip","kt":"1","k":["DuK1x8ydpucu3480Jpd'
                                 b'1XBfjnCwb3dZ3x5b1CJmuUphA"],"n":"EWWkjZkZDXF74O2bOQ4H5hu4nXDlKg2'
-                                b'm4CBEBkUxibiU","wt":"0","w":[],"c":[],"da":{"i":"EjR6PFb7KSo8dIC'
-                                b'njD6dQ5kYJR07R3-T0cDcS0qC3ZK0","s":"1","t":"ixn","p":"EmEY_w4RrC'
-                                b'IIKvJ2gFA3cS7EUvVldX2DKUz-xIwxw5mc"}}-AABAA5K8RggXcquGksdVrXWNgo'
-                                b'K9LHvkTx-8gxW7G-1gCudS5jWLWAUyAf8piSlDsmKdTQ0HpUC2TuxRl7Qwl6oj_DQ')
-
+                                b'm4CBEBkUxibiU","wt":"0","w":[],"c":[],"da":{"i":"EiBlVttjqvySMbA'
+                                b'4ShN19rSrz3D0ioNW-Uj92Ri7XnFE","s":"1","t":"ixn","p":"EvP2kWxEjT'
+                                b'MI3auc6x64EpU-nMQZHiBeKeuavcGdRB24"}}-AABAADv-a3LeXEStuY1LHknepu'
+                                b'J7mBcTByugqQ1TNRMrIa0rctfjKsh-hkkkpwDj6M_OLLaFtLqBpmdNTUgBPANLzCQ')
 
         # apply Del's delegated inception event message to bob's Kevery
         bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
@@ -156,7 +155,7 @@ def test_delegation():
         delK = bobKvy.kevers[delPre]
         assert delK.delegated
         assert delK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
-        assert delK.serder.diger.qb64 == 'ElEt2RtdiyJoImqGO2krlF2Y4rnPnqI-BXy1KGywC2HA'
+        assert delK.serder.diger.qb64 == 'ESDuaqpoI8-HLD8-eLijUMZpXqYFkNArJFDvt3ABYr9I'
 
         # apply msg to del's Kevery
         delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
@@ -170,10 +169,11 @@ def test_delegation():
                                      t=coring.Ilks.ixn,
                                      p=bobK.serder.diger.qb64)
 
-        assert seal._asdict() == dict(i='EjR6PFb7KSo8dICnjD6dQ5kYJR07R3-T0cDcS0qC3ZK0',
-                                      s='2',
-                                      t='ixn',
-                                      p='E1RjNsNVehiVsvuvQQL0N3Xok0y9OupLV6JIW64GGd6M')
+        assert seal._asdict() == {'i': 'EiBlVttjqvySMbA4ShN19rSrz3D0ioNW-Uj92Ri7XnFE',
+                                  's': '2',
+                                  't': 'ixn',
+                                  'p': 'EtzXPztLsGC5DGyooSdHdBGIOHjhblBWtZ_AOhGS-hDE'}
+
 
         delSrdr = eventing.deltate(pre=delK.prefixer.qb64,
                                    keys=[verfer.qb64 for verfer in verfers],
@@ -182,7 +182,7 @@ def test_delegation():
                                    sn=delK.sn+1,
                                    nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
 
-        assert delSrdr.dig == 'EOiyqfqvKcQHy8_7txhp_Iz5g5ynV25L6l6D7sWVVQA0'
+        assert delSrdr.dig == 'E-dZsWLp2IIPVDbGdGS-yvuw4HeV_w_w76FHsofmuiq0'
 
         # Now create delegating rotation event
         seal = eventing.SealEvent(i=delK.prefixer.qb64,
@@ -201,12 +201,12 @@ def test_delegation():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON000107_","i":"EjR6PFb7KSo8dICnjD6dQ5kYJR07R3-T0c'
-                                b'DcS0qC3ZK0","s":"2","t":"ixn","p":"E1RjNsNVehiVsvuvQQL0N3Xok0y9O'
-                                b'upLV6JIW64GGd6M","a":[{"i":"EYWTA7WoB0Cdu4Dq6WnAVodn-xklLI0vltf3'
-                                b'4S_XK2zg","s":"1","d":"EOiyqfqvKcQHy8_7txhp_Iz5g5ynV25L6l6D7sWVV'
-                                b'QA0"}]}-AABAAtsDvEdBhF9WfVJzdhHJ1srBBoYAow6OkX11SEyDnjW2TktWv-gc'
-                                b'qLFoWW7PxStVcjRhgee6YtR-K-V6VtzjNCw')
+        assert msg == bytearray(b'{"v":"KERI10JSON000107_","i":"EiBlVttjqvySMbA4ShN19rSrz3D0ioNW-U'
+                                b'j92Ri7XnFE","s":"2","t":"ixn","p":"EtzXPztLsGC5DGyooSdHdBGIOHjhb'
+                                b'lBWtZ_AOhGS-hDE","a":[{"i":"ErLe2qWp4VCmDp7v_R01tC-ha13ZEZY0VGcg'
+                                b'YtPRhqPs","s":"1","d":"E-dZsWLp2IIPVDbGdGS-yvuw4HeV_w_w76FHsofmu'
+                                b'iq0"}]}-AABAAmloDxOwz6ztvRR_4N8Hn-6ZJk6_0nQhfNE7bzX6NpJRfYDwmUw3'
+                                b'rXod0g46iFOLqEWw12oaFVzVH85NYAh67Ag')
 
         # apply msg to bob's Kevery
         bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
@@ -225,20 +225,21 @@ def test_delegation():
         for siger in sigers:
             msg.extend(siger.qb64b)
 
-        assert msg == bytearray(b'{"v":"KERI10JSON0001a1_","i":"EYWTA7WoB0Cdu4Dq6WnAVodn-xklLI0vlt'
-                                b'f34S_XK2zg","s":"1","t":"drt","p":"ElEt2RtdiyJoImqGO2krlF2Y4rnPn'
-                                b'qI-BXy1KGywC2HA","kt":"1","k":["DTf6QZWoet154o9wvzeMuNhLQRr8JaAU'
+        assert msg == bytearray(b'{"v":"KERI10JSON0001a1_","i":"ErLe2qWp4VCmDp7v_R01tC-ha13ZEZY0VG'
+                                b'cgYtPRhqPs","s":"1","t":"drt","p":"ESDuaqpoI8-HLD8-eLijUMZpXqYFk'
+                                b'NArJFDvt3ABYr9I","kt":"1","k":["DTf6QZWoet154o9wvzeMuNhLQRr8JaAU'
                                 b'eiC6wjB_4_08"],"n":"E8kyiXDfkE7idwWnAZQjHbUZMz-kd_yIMH0miptIFFPo'
-                                b'","wt":"0","wr":[],"wa":[],"a":[],"da":{"i":"EjR6PFb7KSo8dICnjD6'
-                                b'dQ5kYJR07R3-T0cDcS0qC3ZK0","s":"2","t":"ixn","p":"E1RjNsNVehiVsv'
-                                b'uvQQL0N3Xok0y9OupLV6JIW64GGd6M"}}-AABAAPVu6DmWiYtEWOLDzULJR7M5j_'
-                                b'YT7V3uWTot5Y4I7XXQHiwDwDhpUP14LOohokbjV-KLJQ_BBHsjVxXLuywEvCw')
+                                b'","wt":"0","wr":[],"wa":[],"a":[],"da":{"i":"EiBlVttjqvySMbA4ShN'
+                                b'19rSrz3D0ioNW-Uj92Ri7XnFE","s":"2","t":"ixn","p":"EtzXPztLsGC5DG'
+                                b'yooSdHdBGIOHjhblBWtZ_AOhGS-hDE"}}-AABAAXcUl6KlY4VOx8ZumFMc0uR4iH'
+                                b'BGmPQo4IAx0nIiiEDB_u2ewkvgIDIp1ELDGxfc2VVUkl38Z7PqwydBdpIK0DA')
+
 
         # apply Del's delegated inception event message to bob's Kevery
         bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
         assert delK.delegated
         assert delK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
-        assert delK.serder.diger.qb64 == 'EOiyqfqvKcQHy8_7txhp_Iz5g5ynV25L6l6D7sWVVQA0'
+        assert delK.serder.diger.qb64 == 'E-dZsWLp2IIPVDbGdGS-yvuw4HeV_w_w76FHsofmuiq0'
 
         # apply msg to del's Kevery
         delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
