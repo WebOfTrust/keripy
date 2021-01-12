@@ -1629,7 +1629,7 @@ class Prefixer(CryMat):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
-        ked["i"] = "{}".format("_"*CryOneSizes[CryOneDex.Blake3_256])
+        ked["i"] = "{}".format("#"*CryOneSizes[CryOneDex.Blake3_256])
         serder = Serder(ked=ked)
         ked = serder.ked  # use updated ked with valid vs element
 
