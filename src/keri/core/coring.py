@@ -27,7 +27,6 @@ from ..kering import (ValidationError, VersionError, EmptyMaterialError,
 from ..kering import Versionage, Version
 from ..help.helping import extractValues
 
-
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
@@ -1431,6 +1430,7 @@ class Prefixer(CryMat):
         verify():  Verifies derivation of aid prefix
 
     """
+    Dummy = "#"  # dummy spaceholder char for pre. Must not be a valid Base64 char
     # element labels to exclude in digest or signature derivation from inception icp
     IcpExcludes = ["i"]
     # element labels to exclude in digest or signature derivation from delegated inception dip
@@ -1629,7 +1629,7 @@ class Prefixer(CryMat):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
-        ked["i"] = "{}".format("_"*CryOneSizes[CryOneDex.Blake3_256])
+        ked["i"] = "{}".format(self.Dummy*CryOneSizes[CryOneDex.Blake3_256])
         serder = Serder(ked=ked)
         ked = serder.ked  # use updated ked with valid vs element
 
@@ -1637,9 +1637,7 @@ class Prefixer(CryMat):
             if l not in ked:
                 raise DerivationError("Missing element = {} from ked.".format(l))
 
-        values = extractValues(ked=ked, labels=labels)
-        ser = "".join(values).encode("utf-8")
-        dig =  blake3.blake3(ser).digest()
+        dig =  blake3.blake3(serder.raw).digest()
         return (dig, CryOneDex.Blake3_256)
 
 
@@ -1680,16 +1678,13 @@ class Prefixer(CryMat):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
-        ked["i"] = "{}".format("a"*CryTwoSizes[CryTwoDex.Ed25519])
+        ked["i"] = "{}".format(self.Dummy*CryTwoSizes[CryTwoDex.Ed25519])
         serder = Serder(ked=ked)
         ked = serder.ked  # use updated ked with valid vs element
 
         for l in labels:
             if l not in ked:
                 raise DerivationError("Missing element = {} from ked.".format(l))
-
-        values = extractValues(ked=ked, labels=labels)
-        ser = "".join(values).encode("utf-8")
 
         try:
             keys = ked["k"]
@@ -1713,7 +1708,7 @@ class Prefixer(CryMat):
         if verfer.raw != signer.verfer.raw:
             raise DerivationError("Key in ked not match seed.")
 
-        cigar = signer.sign(ser=ser)
+        cigar = signer.sign(ser=serder.raw)
 
         # sig = pysodium.crypto_sign_detached(ser, signer.raw + verfer.raw)
 
@@ -1740,16 +1735,13 @@ class Prefixer(CryMat):
                 raise DerivationError("Invalid ilk = {} to derive prefix.".format(ilk))
 
             # put in dummy pre to get size correct
-            ked["i"] = "{}".format("a"*CryTwoSizes[CryTwoDex.Ed25519])
+            ked["i"] = "{}".format(self.Dummy*CryTwoSizes[CryTwoDex.Ed25519])
             serder = Serder(ked=ked)
             ked = serder.ked  # use updated ked with valid vs element
 
             for l in labels:
                 if l not in ked:
                     raise DerivationError("Missing element = {} from ked.".format(l))
-
-            values = extractValues(ked=ked, labels=labels)
-            ser = "".join(values).encode("utf-8")
 
             try:
                 keys = ked["k"]
@@ -1767,7 +1759,7 @@ class Prefixer(CryMat):
 
             cigar = Cigar(qb64=pre, verfer=verfer)
 
-            result = cigar.verfer.verify(sig=cigar.raw, ser=ser)
+            result = cigar.verfer.verify(sig=cigar.raw, ser=serder.raw)
             return result
 
             #try:  # verify returns None if valid else raises ValueError

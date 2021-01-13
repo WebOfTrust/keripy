@@ -45,8 +45,7 @@ def test_directing_basic():
                                 code=coring.CryOneDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
-    assert bob == 'ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXXVXSWpRY'
-
+    assert bob == 'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
 
     # set of secrets (seeds for private keys)
     eveSecrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
@@ -68,9 +67,7 @@ def test_directing_basic():
                                 code=coring.CryOneDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-IB33bEg'
-
-
+    assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
     with dbing.openDB(name="eve") as eveDB, \
          dbing.openDB(name="bob") as bobDB:
@@ -209,7 +206,7 @@ def test_direct_mode():
                                 code=coring.CryOneDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
-    assert bob == 'ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXXVXSWpRY'
+    assert bob == 'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
 
 
     # set of secrets (seeds for private keys)
@@ -232,9 +229,7 @@ def test_direct_mode():
                                 code=coring.CryOneDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-IB33bEg'
-
-
+    assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
     with dbing.openDB(name="eve") as eveDB, \
          dbing.openDB(name="bob") as bobDB:
@@ -365,7 +360,7 @@ def test_direct_mode_sam():
                                 code=coring.CryOneDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
-    assert bob == 'ENqFtH6_cfDg8riLZ-GDvDaCKVn6clOJa7ZXXVXSWpRY'
+    assert bob == 'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
 
 
     # set of secrets (seeds for private keys)
@@ -388,7 +383,7 @@ def test_direct_mode_sam():
                                 code=coring.CryOneDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'EmGTyV9unQ59uIQIYv6Vsc7KweyTbplfumEV-IB33bEg'
+    assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
 
 

@@ -1089,7 +1089,7 @@ def test_prefixer():
     vs = Versify(version=Version, kind=Serials.json, size=0)
     sn = 0
     ilk = Ilks.icp
-    sith = 1
+    sith = "1"
     keys = [Prefixer(raw=verkey, code=CryOneDex.Ed25519).qb64]
     nxt = ""
     toad = 0
@@ -1100,7 +1100,7 @@ def test_prefixer():
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,
-               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               kt=sith, # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nxt,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
@@ -1109,16 +1109,16 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
-    assert prefixer.qb64 == 'EOlaUfE_iaLJbBhLuE1aEIsiLk6jwbS5vI4Gh4G-Ld7g'
+    assert prefixer.qb64 == 'E_P7GKEdbet8OudlQvqILlGn7Fll5q6zfddiSXc-XY5Y'
     assert prefixer.verify(ked=ked) == True
 
-
+    # test with Nexter
     nexter = Nexter(sith="1", keys=[nxtfer.qb64])
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,
-               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               kt=sith, # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nexter.qb64,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
@@ -1127,10 +1127,67 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
-    assert prefixer.qb64 == 'EvDq46gwbZ92Wq2y6ZzmP6F4T97YqE-l2C1lABmbBsD8'
+    assert prefixer.qb64 == 'E7iQvEO7xsRE8UfBB0DCWnksY8ju-9madY3jJ1Y-eYPE'
     assert prefixer.verify(ked=ked) == True
 
-    perm = []
+    # test with fractionally weighted sith
+    secrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
+
+
+    # create signers from secrets
+    signers = [Signer(qb64=secret) for secret in secrets]  # faster
+    assert [siger.qb64 for siger in signers] == secrets
+    # each signer has verfer for keys
+
+    # Test with sith with one clause
+    keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
+    sith = [["1/2", "1/2", "1"]]
+    nexter = Nexter(sith="1", keys=[signers[3].verfer.qb64])
+    ked = dict(v=vs,  # version string
+               i="",  # qb64 prefix
+               s="{:x}".format(sn),  # hex string no leading zeros lowercase
+               t=ilk,
+               kt=sith, # hex string no leading zeros lowercase
+               k=keys,  # list of qb64
+               n=nexter.qb64,  # hash qual Base64
+               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               w=wits,  # list of qb64 may be empty
+               c=cnfg,  # list of config ordered mappings may be empty
+               )
+
+    prefixer1 = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
+    assert prefixer1.qb64 == 'En6Ks1QPlek3GMHFTDlr-ufdZzQyHay_E2k5wTNB_MHM'
+    assert prefixer1.verify(ked=ked) == True
+
+    # now test with different sith but same weights in two clauses
+    sith = [["1/2", "1/2"], ["1"]]
+    ked = dict(v=vs,  # version string
+               i="",  # qb64 prefix
+               s="{:x}".format(sn),  # hex string no leading zeros lowercase
+               t=ilk,
+               kt=sith, # hex string no leading zeros lowercase
+               k=keys,  # list of qb64
+               n=nexter.qb64,  # hash qual Base64
+               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               w=wits,  # list of qb64 may be empty
+               c=cnfg,  # list of config ordered mappings may be empty
+               )
+
+    prefixer2 = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
+    assert prefixer2.qb64 == 'EITG4HqxAlyOrQBYW9utR7W_iJmq4NmOI9IrPicZfK5E'
+    assert prefixer2.verify(ked=ked) == True
+    assert prefixer2.qb64 !=  prefixer1.qb64  # semantic diff -> syntactic diff
+
+    sith = "1"
     seal = dict(i='EkbeB57LYWRYNqg4xarckyfd_LsaH0J350WmOdvMwU_Q',
                 s='2',
                 t=Ilks.ixn,
@@ -1140,7 +1197,7 @@ def test_prefixer():
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=Ilks.dip,
-               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               kt=sith, # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nexter.qb64,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
@@ -1150,7 +1207,7 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
-    assert prefixer.qb64 == 'Ed8FiA0PXwppAqQElwaw7u1DkcHnfGo-DtTkYHe-kH9g'
+    assert prefixer.qb64 == 'EZHlPj5b4zrbJgd72n2sg3v5GYlam_BiX7Sl58mPRP84'
     assert prefixer.verify(ked=ked) == True
 
     #  Test signature derivation
@@ -1165,7 +1222,7 @@ def test_prefixer():
     vs = Versify(version=Version, kind=Serials.json, size=0)
     sn = 0
     ilk = Ilks.icp
-    sith = 1
+    sith = "1"
     keys = [signer.verfer.qb64]
     nxt = ""
     toad = 0
@@ -1177,7 +1234,7 @@ def test_prefixer():
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,
-               kt="{:x}".format(sith), # hex string no leading zeros lowercase
+               kt=sith, # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nexter.qb64,  # hash qual Base64
                wt="{:x}".format(toad),  # hex string no leading zeros lowercase
@@ -1186,11 +1243,11 @@ def test_prefixer():
                )
 
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, seed=seed)
-    assert prefixer.qb64 == '0BSM6noSyGTzVPk_uKwGzl1PMbHwhOFgevAVNQX5Eu-ZD7qhZ0Nay45WpwebYSG6HWodZfc7HDwWkLcaC1fVbLAQ'
+    assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
     assert prefixer.verify(ked=ked) == True
 
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
-    assert prefixer.qb64 == '0BSM6noSyGTzVPk_uKwGzl1PMbHwhOFgevAVNQX5Eu-ZD7qhZ0Nay45WpwebYSG6HWodZfc7HDwWkLcaC1fVbLAQ'
+    assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
     assert prefixer.verify(ked=ked) == True
 
     """ Done Test """
@@ -2069,4 +2126,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_tholder()
+    test_prefixer()
