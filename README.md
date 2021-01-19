@@ -306,12 +306,12 @@ https://medium.com/@joehonton/cipher-suites-demystified-ada2e97be9c9
 
 ## Development
 
-###Setup
+### Setup
 * Ensure Python 3.9 is present along with venv and dev header files;
 * Setup virtual environment: `python3 -m venv keripy`
 * Activate virtual environment: `source keripy/bin/activate`
 * Setup dependencies: `pip install -r requirements.txt`
 
-###Testing
+### Testing
 * Install a testing framework like pytest: `pip install pytest`
 * To run the test suite: `pytest tests/`
