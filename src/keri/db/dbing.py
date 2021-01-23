@@ -547,7 +547,7 @@ class LMDBer:
 
     def getIoVals(self, db, key):
         """
-        Return list of values at key in db in insertion order
+        Return list of duplicate values at key in db in insertion order
         Returns empty list if no entry at key
 
         Duplicates at a given key are retrieved in insertion order.
@@ -570,6 +570,32 @@ class LMDBer:
                 # slice off prepended ordering prefix
                 vals = [val[7:] for val in cursor.iternext_dup()]
             return vals
+
+
+    def getIoValsIter(self, db, key):
+        """
+        Return iterator of all duplicate values at key in db in insertion order
+        Raises StopIteration Error when no remaining dup items = empty.
+
+        Duplicates at a given key are retrieved in insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates,
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            vals = []
+            if cursor.set_key(key):  # moves to first_dup
+                for val in cursor.iternext_dup():
+                    yield val[7:]  # slice off prepended ordering prefix
 
 
     def getIoValsLast(self, db, key):
@@ -637,7 +663,7 @@ class LMDBer:
     def getIoItemsNextIter(self, db, key=b""):
         """
         Return iterator of all dup items at next key after key in db in insertion order
-        Raises StopIteration Error when empty.
+        Raises StopIteration Error when no remaining dup items = empty.
 
         If key is empty then gets io items (key, io value) at first key in db
         Use the return key from items as next key for next call to function in
@@ -665,8 +691,7 @@ class LMDBer:
                     found = cursor.next_nodup()  # skip to next key not dup if any
                 if found:
                     for key, val in cursor.iternext_dup(keys=True):
-                        # slice off prepended ordering prefix
-                        yield (key, val[7:])
+                        yield (key, val[7:]) # slice off prepended ordering prefix
 
 
     def cntIoVals(self, db, key):
@@ -1490,6 +1515,16 @@ class Baser(LMDBer):
         return self.getIoVals(self.pses, key)
 
 
+    def getPsesIter(self, key):
+        """
+        Use sgKey()
+        Return iterator of partial signed escrowed event dig vals at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsIter(self.pses, key)
+
+
     def getPsesLast(self, key):
         """
         Use snKey()
@@ -1498,6 +1533,9 @@ class Baser(LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValsLast(self.pses, key)
+
+    #  getIoItemsNext and getIoItemsNextIter
+
 
 
     def cntPses(self, key):

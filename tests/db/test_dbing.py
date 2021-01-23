@@ -183,6 +183,7 @@ def test_lmdber():
         assert dber.addIoVal(db, key, val=b'b') == True
         assert dber.addIoVal(db, key, val=b'a') == False
         assert dber.getIoVals(db, key) == [b"z", b"m", b"x", b"a", b'b']
+        assert [val for val in dber.getIoValsIter(db, key)] == [b"z", b"m", b"x", b"a", b'b']
         assert dber.delIoVals(db, key) == True
         assert dber.getIoVals(db, key) == []
 
@@ -675,6 +676,7 @@ def test_baser():
         assert db.addPse(key, b'a') == False   # duplicate
         assert db.addPse(key, b'b') == True
         assert db.getPses(key) == [b"z", b"m", b"x", b"a", b"b"]
+        assert [val for val in db.getPsesIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
         assert db.delPses(key) == True
         assert db.getPses(key) == []
 
@@ -921,4 +923,4 @@ def test_usebaser():
     """ End Test """
 
 if __name__ == "__main__":
-    test_lmdber()
+    test_baser()
