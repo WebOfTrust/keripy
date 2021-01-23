@@ -314,4 +314,9 @@ https://medium.com/@joehonton/cipher-suites-demystified-ada2e97be9c9
 
 ### Testing
 * Install a testing framework like pytest: `pip install pytest`
-* To run the test suite: `pytest tests/`
+* To run the test suite: 
+    ```
+    pytest tests/ --ignore tests/demo/
+    pytest tests/demo/
+    ```
+    
