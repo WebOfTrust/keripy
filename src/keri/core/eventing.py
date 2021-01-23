@@ -1184,7 +1184,7 @@ class Kever:
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addPse(snKey(pre, sn), serder.digb)
-        blogger.info("Kever process: escrowed partial siganture or delegated "
+        blogger.info("Kever process: escrowed partial signature or delegated "
                      "event = %s\n", serder.ked)
 
 
@@ -1672,6 +1672,125 @@ class Kevery:
                 self.baser.addVre(key=dgkey, val=quadlet)
 
 
+
+    def processEscrows(self):
+        """
+        Iterate throush escrows and process any that may now be finalized
+
+        Parameters:
+
+
+        """
+
+        try:
+            self.processPartials()
+
+
+
+        except Exception as ex:  # log diagnostics errors etc
+            if blogger.isEnabledFor(logging.DEBUG):
+                blogger.exception("Kevery escrow process error: %s\n", ex.args[0])
+            else:
+                blogger.error("Kevery escrow process error: %s\n", ex.args[0])
+
+
+    def processPartials(self):
+        """
+        Process events escrowed by Kever that were only partially fulfilled.
+        Either due to missing signatures or missing dependent events like a
+        delegating event.  But event has at least one verified signature.
+
+        Escrowed items are indexed in database table keyed by prefix and
+        sequence number with duplicates inserted in insertion order. This allows
+        FIFO processing of events with same prefix and sn.
+        Uses  .baser.addPse(self, key, val) which is IOVal with dups.
+
+        Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
+
+        Original Escrow steps:
+            dgkey = dgKey(pre, serder.digb)
+            .baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+            .baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            .baser.putEvt(dgkey, serder.raw)
+            .baser.addPse(snKey(pre, sn), serder.digb)
+            where:
+                serder is Serder instance of  event
+                sigers is list of Siger instance for  event
+                pre is str qb64 of identifier prefix of event
+                sn is int sequence number of event
+
+        Steps:
+            Each pass  (walk index table)
+                For each prefix,sn
+                    For each escrow item dup at prefix,sn:
+                        Get Event
+                        Get and Attach Signatures
+                        Process event as if it came in over the wire
+                        If successful then remove from escrow table
+
+                        Need to figure out what success looks like
+
+
+        """
+
+        done = False
+        ims = bytearray()
+        while not Done:
+            try:
+                # get the digest of event in escrow
+                edigs = self.baser.getPses(snKey(pre, sn))
+
+                for edig in edigs:
+
+                    # get the delegating event from dig
+                    eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
+                    if eraw is None:
+                        # no event so unescrow all
+                        self.baser.delPses(snKey(pre, sn))  # removes all other escrows
+                        blogger.info("Kevery unescrow error: Missing event at."
+                                 "dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed evt at dig = {}."
+                                              "".format(bytes(edig)))
+
+
+                    eserder = Serder(raw=bytes(raw))  # escrowed event
+
+                #  Return list of partial signed escrowed event dig vals at key
+                #  Returns empty list if no entry at key
+                #  Duplicates are retrieved in insertion order.
+
+                #  now for each dupl in raws list
+                #  get event
+                #  get sigs and attach then process event
+
+                # self.processOne(ims=ims, framed=self.framed)
+                # If not successful i.e. trys to reescrow then it will not
+                #  add a dup already exists and any re-escrow call raises
+                # validation error. So no validation error means successful
+                #  but need to know when event in escrow is stale or duplicitous
+                #  so need different error for escrow attempt versus error that
+                #  means we should flush from escrow buffer
+
+
+            except Exception as ex:  # log diagnostics errors etc
+                if blogger.isEnabledFor(logging.DEBUG):
+                    blogger.exception("Kevery unescrow failed: %s\n", ex.args[0])
+                else:
+                    blogger.error("Kevery unescrow failed: %s\n", ex.args[0])
+
+            else:  # unescrow succeeded, remove from escrow
+                pass
+                # self.baser.addPse(snKey(pre, sn), serder.digb)
+                self.baser.delPses(snKey(pre, sn))  # removes all other escrows
+                #  first seen wins. Should we do duplicity on any others
+                #  that is we already loaded all partials so do we process all
+                #  which may create duplicitous
+                blogger.info("Kevery unescrow succeeded: "
+                         "event = %s\n", serder.ked)
+
+
+
     def duplicity(self, serder, sigers):
         """
         Processes potential duplicitous events in PDELs
@@ -1682,35 +1801,3 @@ class Kevery:
 
         """
         pass
-        ## fetch ked ilk  pre, sn, dig to see how to process
-        #ked = serder.ked
-        #try:  # see if pre in event validates
-            #prefixer = Prefixer(qb64=ked["i"])
-        #except Exception as ex:
-            #raise ValidationError("Invalid pre = {}.".format(ked["i"]))
-        #pre = prefixer.qb64
-        #ked = serder.ked
-        #ilk = ked["t"]
-        #try:
-            #sn = int(ked["s"], 16)
-        #except Exception as ex:
-            #raise ValidationError("Invalid sn = {}".format(ked["s"]))
-        #dig = serder.dig
-
-        ##if dig in DELPs["pre"]:
-            ##return
-
-        #if ilk == Ilks.icp:  # inception event so maybe duplicitous
-            ## Using Kever for cheap duplicity detection of inception events
-            ## kever init verifies basic inception stuff and signatures
-            ## raises exception if problem.
-            #kever = Kever(serder=serder, sigers=siger, baser=self.baser)  # create kever from serder
-            ## No exception above so verified duplicitous event
-            ## log it and add to DELS if first time
-            ##if pre not in DELs:  #  add to DELS
-                ##DELs[pre] = dict()
-            ##if dig not in DELS[pre]:
-                ##DELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
-
-        #else:
-            #pass

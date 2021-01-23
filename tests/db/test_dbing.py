@@ -186,6 +186,59 @@ def test_lmdber():
         assert dber.delIoVals(db, key) == True
         assert dber.getIoVals(db, key) == []
 
+        # Test  getIoItemsNext(self, db, key=b""):
+        edb = dber.env.open_db(key=b'escrow.', dupsort=True)
+        aKey = snKey(pre=b'A', sn=1)
+        aVals = [b"z", b"m", b"x"]
+        bKey = snKey(pre=b'A', sn=2)
+        bVals = [b"o", b"r", b"z"]
+        cKey = snKey(pre=b'A', sn=4)
+        cVals = [b"h", b"n"]
+        dKey = snKey(pre=b'A', sn=7)
+        dVals = [b"k", b"b"]
+
+        assert dber.putIoVals(edb, key=aKey, vals=aVals)
+        assert dber.putIoVals(edb, key=bKey, vals=bVals)
+        assert dber.putIoVals(edb, key=cKey, vals=cVals)
+        assert dber.putIoVals(edb, key=dKey, vals=dVals)
+
+        # aVals
+        items = dber.getIoItemsNext(edb)  #  get first key in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        # bVals
+        items = dber.getIoItemsNext(edb, key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for key, val in items]
+        assert vals == bVals
+
+        # cVals
+        items = dber.getIoItemsNext(edb, key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == cKey
+        vals = [val for key, val in items]
+        assert vals == cVals
+
+        # dVals
+        items = dber.getIoItemsNext(edb, key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == dKey
+        vals = [val for key, val in items]
+        assert vals == dVals
+
+        # none
+        items = dber.getIoItemsNext(edb, key=ikey)
+        assert items == []  # empty
+        assert not items
+
         # Test getIoValsAllPreIter(self, db, pre)
         vals0 = [b"gamma", b"beta"]
         sn = 0
@@ -828,4 +881,4 @@ def test_usebaser():
     """ End Test """
 
 if __name__ == "__main__":
-    test_baser()
+    test_lmdber()
