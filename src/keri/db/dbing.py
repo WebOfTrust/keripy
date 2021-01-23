@@ -627,7 +627,8 @@ class LMDBer:
 
     def getIoItemsNext(self, db, key=b""):
         """
-        Return list of items at next key after key in db in insertion order
+        Return list of dup items at next key after key in db in insertion order.
+        If key = b'' then returns list of dup items at first key in db.
         Returns empty list if no entries at next key after key
         If key is empty then gets io items (key, io value) at first key in db
         Use the return key from items as next key for next call to function in
@@ -662,7 +663,8 @@ class LMDBer:
 
     def getIoItemsNextIter(self, db, key=b""):
         """
-        Return iterator of all dup items at next key after key in db in insertion order
+        Return iterator of all dup items at next key after key in db in insertion order.
+        If key = b'' then returns list of dup items at first key in db.
         Raises StopIteration Error when no remaining dup items = empty.
 
         If key is empty then gets io items (key, io value) at first key in db
@@ -1441,6 +1443,7 @@ class Baser(LMDBer):
         """
         return self.delIoVals(self.kels, key)
 
+
     def getKelIter(self, pre):
         """
         Returns iterator of all dup vals in insertion order for all entries
@@ -1464,9 +1467,9 @@ class Baser(LMDBer):
 
     def getKelEstIter(self, pre):
         """
-        Returns iterator of last dup vals in insertion order for all entries
-        with same prefix across all sequence numbers without gaps. Stops if
-        encounters gap.
+        Returns iterator of last one of dup vals at each key in insertion order
+        for all entries with same prefix across all sequence numbers without gaps.
+        Stops if encounters gap.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
 
@@ -1525,7 +1528,7 @@ class Baser(LMDBer):
         return self.getIoValsIter(self.pses, key)
 
 
-    def getPsesLast(self, key):
+    def getPseLast(self, key):
         """
         Use snKey()
         Return last inserted dup partial signed escrowed event dig val at key
@@ -1538,7 +1541,8 @@ class Baser(LMDBer):
     def getPsesNext(self, key):
         """
         Use snKey()
-        Return last inserted dup partial signed escrowed event dig val at key
+        Return all dups of partial signed escrowed event dig val at next key
+        after key. If key is b'' then returns dups at first key.
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
@@ -1548,7 +1552,8 @@ class Baser(LMDBer):
     def getPsesNextIter(self, key):
         """
         Use sgKey()
-        Return iterator of partial signed escrowed event dig vals at key
+        Return iterator of partial signed escrowed event dig vals at next key
+        after key. If key is b'' then returns dups at first key.
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
@@ -1605,10 +1610,10 @@ class Baser(LMDBer):
         return self.getIoVals(self.ooes, key)
 
 
-    def getOoesLast(self, key):
+    def getOoeLast(self, key):
         """
         Use snKey()
-        Return last inserted dup out of order escrow event dig at key
+        Return last inserted dup val of out of order escrow event dig vals at key
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
@@ -1665,10 +1670,10 @@ class Baser(LMDBer):
         return self.getIoVals(self.dels, key)
 
 
-    def getDesLast(self, key):
+    def getDeLast(self, key):
         """
         Use snKey()
-        Return last inserted dup duplicitous event dig vals at key
+        Return last inserted dup value of duplicitous event dig vals at key
         Returns None if no entry at key
 
         Duplicates are retrieved in insertion order.
@@ -1746,10 +1751,10 @@ class Baser(LMDBer):
         return self.getIoVals(self.ldes, key)
 
 
-    def getLdesLast(self, key):
+    def getLdeLast(self, key):
         """
         Use snKey()
-        Return last inserted dup likely duplicitous event dig at key
+        Return last inserted dup val of likely duplicitous event dig vals at key
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """

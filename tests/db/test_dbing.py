@@ -664,13 +664,13 @@ def test_baser():
         vals = [b"z", b"m", b"x", b"a"]
 
         assert db.getPses(key) == []
-        assert db.getPsesLast(key) == None
+        assert db.getPseLast(key) == None
         assert db.cntPses(key) == 0
         assert db.delPses(key) == False
         assert db.putPses(key, vals) == True
         assert db.getPses(key) == vals  # preserved insertion order
         assert db.cntPses(key) == len(vals) == 4
-        assert db.getPsesLast(key) == vals[-1]
+        assert db.getPseLast(key) == vals[-1]
         assert db.putPses(key, vals=[b'a']) == False   # duplicate
         assert db.getPses(key) == vals  #  no change
         assert db.addPse(key, b'a') == False   # duplicate
@@ -685,13 +685,13 @@ def test_baser():
         vals = [b"z", b"m", b"x", b"a"]
 
         assert db.getOoes(key) == []
-        assert db.getOoesLast(key) == None
+        assert db.getOoeLast(key) == None
         assert db.cntOoes(key) == 0
         assert db.delOoes(key) == False
         assert db.putOoes(key, vals) == True
         assert db.getOoes(key) == vals  # preserved insertion order
         assert db.cntOoes(key) == len(vals) == 4
-        assert db.getOoesLast(key) == vals[-1]
+        assert db.getOoeLast(key) == vals[-1]
         assert db.putOoes(key, vals=[b'a']) == False   # duplicate
         assert db.getOoes(key) == vals  #  no change
         assert db.addOoe(key, b'a') == False   # duplicate
@@ -705,13 +705,13 @@ def test_baser():
         vals = [b"z", b"m", b"x", b"a"]
 
         assert db.getDes(key) == []
-        assert db.getDesLast(key) == None
+        assert db.getDeLast(key) == None
         assert db.cntDes(key) == 0
         assert db.delDes(key) == False
         assert db.putDes(key, vals) == True
         assert db.getDes(key) == vals  # preserved insertion order
         assert db.cntDes(key) == len(vals) == 4
-        assert db.getDesLast(key) == vals[-1]
+        assert db.getDeLast(key) == vals[-1]
         assert db.putDes(key, vals=[b'a']) == False   # duplicate
         assert db.getDes(key) == vals  #  no change
         assert db.addDe(key, b'a') == False   # duplicate
@@ -725,13 +725,13 @@ def test_baser():
         vals = [b"z", b"m", b"x", b"a"]
 
         assert db.getLdes(key) == []
-        assert db.getLdesLast(key) == None
+        assert db.getLdeLast(key) == None
         assert db.cntLdes(key) == 0
         assert db.delLdes(key) == False
         assert db.putLdes(key, vals) == True
         assert db.getLdes(key) == vals  # preserved insertion order
         assert db.cntLdes(key) == len(vals) == 4
-        assert db.getLdesLast(key) == vals[-1]
+        assert db.getLdeLast(key) == vals[-1]
         assert db.putLdes(key, vals=[b'a']) == False   # duplicate
         assert db.getLdes(key) == vals  #  no change
         assert db.delLdes(key) == True
