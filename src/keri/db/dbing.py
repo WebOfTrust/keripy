@@ -598,7 +598,7 @@ class LMDBer:
                     yield val[7:]  # slice off prepended ordering prefix
 
 
-    def getIoValsLast(self, db, key):
+    def getIoValLast(self, db, key):
         """
         Return last added dup value at key in db in insertion order
         Returns None no entry at key
@@ -1421,7 +1421,7 @@ class Baser(LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsLast(self.kels, key)
+        return self.getIoValLast(self.kels, key)
 
 
     def cntKes(self, key):
@@ -1532,7 +1532,7 @@ class Baser(LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsLast(self.pses, key)
+        return self.getIoValLast(self.pses, key)
 
 
     def getPsesNext(self, key):
@@ -1612,7 +1612,7 @@ class Baser(LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsLast(self.ooes, key)
+        return self.getIoValLast(self.ooes, key)
 
 
     def cntOoes(self, key):
@@ -1673,7 +1673,7 @@ class Baser(LMDBer):
 
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsLast(self.dels, key)
+        return self.getIoValLast(self.dels, key)
 
 
     def cntDes(self, key):
@@ -1753,7 +1753,7 @@ class Baser(LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsLast(self.ldes, key)
+        return self.getIoValLast(self.ldes, key)
 
 
     def cntLdes(self, key):

@@ -171,13 +171,13 @@ def test_lmdber():
         db = dber.env.open_db(key=b'peep.', dupsort=True)
 
         assert dber.getIoVals(db, key) == []
-        assert dber.getIoValsLast(db, key) == None
+        assert dber.getIoValLast(db, key) == None
         assert dber.cntIoVals(db, key) == 0
         assert dber.delIoVals(db, key) == False
         assert dber.putIoVals(db, key, vals) == True
         assert dber.getIoVals(db, key) == vals  # preserved insertion order
         assert dber.cntIoVals(db, key) == len(vals) == 4
-        assert dber.getIoValsLast(db, key) == vals[-1]
+        assert dber.getIoValLast(db, key) == vals[-1]
         assert dber.putIoVals(db, key, vals=[b'a']) == False   # duplicate
         assert dber.getIoVals(db, key) == vals  #  no change
         assert dber.addIoVal(db, key, val=b'b') == True
