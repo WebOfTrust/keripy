@@ -1534,8 +1534,25 @@ class Baser(LMDBer):
         """
         return self.getIoValsLast(self.pses, key)
 
-    #  getIoItemsNext and getIoItemsNextIter
 
+    def getPsesNext(self, key):
+        """
+        Use snKey()
+        Return last inserted dup partial signed escrowed event dig val at key
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsNext(self.pses, key)
+
+
+    def getPsesNextIter(self, key):
+        """
+        Use sgKey()
+        Return iterator of partial signed escrowed event dig vals at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsNextIter(self.pses, key)
 
 
     def cntPses(self, key):
