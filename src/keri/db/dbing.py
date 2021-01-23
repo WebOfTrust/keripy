@@ -653,7 +653,7 @@ class LMDBer:
             items = []
             if cursor.set_range(key):  # moves to first_dup at key
                 found = True
-                if key:  # key not empty string so need to skip to next
+                if key and cursor.key() == key:  # skip to next key
                     found = cursor.next_nodup()  # skip to next key not dup if any
                 if found:
                     # slice off prepended ordering prefix on value in item
@@ -689,7 +689,7 @@ class LMDBer:
             cursor = txn.cursor()
             if cursor.set_range(key):  # moves to first_dup at key
                 found = True
-                if key:  # key not empty string so need to skip to next
+                if key and cursor.key() == key:  # skip to next key
                     found = cursor.next_nodup()  # skip to next key not dup if any
                 if found:
                     for key, val in cursor.iternext_dup(keys=True):
@@ -1538,26 +1538,26 @@ class Baser(LMDBer):
         return self.getIoValLast(self.pses, key)
 
 
-    def getPsesNext(self, key):
+    def getPseItemsNext(self, key=b''):
         """
         Use snKey()
-        Return all dups of partial signed escrowed event dig val at next key
+        Return all dups of partial signed escrowed event dig items at next key
         after key. If key is b'' then returns dups at first key.
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsNext(self.pses, key)
+        return self.getIoItemsNext(self.pses, key)
 
 
-    def getPsesNextIter(self, key):
+    def getPseItemsNextIter(self, key=b''):
         """
         Use sgKey()
-        Return iterator of partial signed escrowed event dig vals at next key
+        Return iterator of partial signed escrowed event dig items at next key
         after key. If key is b'' then returns dups at first key.
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsNextIter(self.pses, key)
+        return self.getIoItemsNextIter(self.pses, key)
 
 
     def cntPses(self, key):

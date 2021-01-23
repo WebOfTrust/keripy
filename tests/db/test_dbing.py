@@ -250,6 +250,7 @@ def test_lmdber():
         assert  ikey == aKey
         vals = [val for  key, val in items]
         assert vals == aVals
+        assert dber.delIoVals(edb, ikey) == True
 
         # bVals
         items = [item for item in dber.getIoItemsNextIter(edb, key=ikey)]
@@ -258,6 +259,7 @@ def test_lmdber():
         assert  ikey == bKey
         vals = [val for key, val in items]
         assert vals == bVals
+        assert dber.delIoVals(edb, ikey) == True
 
         # cVals
         items = [item for item in dber.getIoItemsNextIter(edb, key=ikey)]
@@ -266,6 +268,7 @@ def test_lmdber():
         assert  ikey == cKey
         vals = [val for key, val in items]
         assert vals == cVals
+        assert dber.delIoVals(edb, ikey) == True
 
         # dVals
         items = [item for item in dber.getIoItemsNext(edb, key=ikey)]
@@ -274,6 +277,7 @@ def test_lmdber():
         assert  ikey == dKey
         vals = [val for key, val in items]
         assert vals == dVals
+        assert dber.delIoVals(edb, ikey) == True
 
         # none
         items = [item for item in dber.getIoItemsNext(edb, key=ikey)]
@@ -679,6 +683,103 @@ def test_baser():
         assert [val for val in db.getPsesIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
         assert db.delPses(key) == True
         assert db.getPses(key) == []
+
+        # Setup Tests for getPsesNext and getPsesNextIter
+        aKey = snKey(pre=b'A', sn=1)
+        aVals = [b"z", b"m", b"x"]
+        bKey = snKey(pre=b'A', sn=2)
+        bVals = [b"o", b"r", b"z"]
+        cKey = snKey(pre=b'A', sn=4)
+        cVals = [b"h", b"n"]
+        dKey = snKey(pre=b'A', sn=7)
+        dVals = [b"k", b"b"]
+
+        assert db.putPses(key=aKey, vals=aVals)
+        assert db.putPses(key=bKey, vals=bVals)
+        assert db.putPses(key=cKey, vals=cVals)
+        assert db.putPses(key=dKey, vals=dVals)
+
+        # Test getPseItemsNext( key=b"")
+        # aVals
+        items = db.getPseItemsNext()  #  get first key in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        # bVals
+        items = db.getPseItemsNext(key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for key, val in items]
+        assert vals == bVals
+
+        # cVals
+        items = db.getPseItemsNext(key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == cKey
+        vals = [val for key, val in items]
+        assert vals == cVals
+
+        # dVals
+        items = db.getPseItemsNext(key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == dKey
+        vals = [val for key, val in items]
+        assert vals == dVals
+
+        # none
+        items = db.getPseItemsNext(key=ikey)
+        assert items == []  # empty
+        assert not items
+
+        # Test getPseItemsNextIter(key=b"")
+        #  get dups at first key in database
+        # aVals
+        items = [item for item in db.getPseItemsNextIter()]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+        assert db.delPses(ikey) == True
+
+        # bVals
+        items = [item for item in db.getPseItemsNextIter(key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for key, val in items]
+        assert vals == bVals
+        assert db.delPses(ikey) == True
+
+        # cVals
+        items = [item for item in db.getPseItemsNextIter(key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == cKey
+        vals = [val for key, val in items]
+        assert vals == cVals
+        assert db.delPses(ikey) == True
+
+        # dVals
+        items = [item for item in db.getPseItemsNextIter(key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == dKey
+        vals = [val for key, val in items]
+        assert vals == dVals
+        assert db.delPses(ikey) == True
+
+        # none
+        items = [item for item in db.getPseItemsNext(key=ikey)]
+        assert items == []  # empty
+        assert not items
+
 
         # test .ooes insertion order dup methods.  dup vals are insertion order
         key = b'A'
