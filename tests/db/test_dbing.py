@@ -212,6 +212,27 @@ def test_lmdber():
         vals = [val for  key, val in items]
         assert vals == aVals
 
+        items = dber.getIoItemsNext(edb, key=aKey, skip=False)  # get aKey in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = dber.getIoItemsNext(edb, key=aKey)  # get bKey in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for  key, val in items]
+        assert vals == bVals
+
+        items = dber.getIoItemsNext(edb, key=b'', skip=False)  # get first key in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
         # bVals
         items = dber.getIoItemsNext(edb, key=ikey)
         assert items  # not empty
@@ -245,6 +266,27 @@ def test_lmdber():
         #  get dups at first key in database
         # aVals
         items = [item for item in dber.getIoItemsNextIter(edb)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = [item for item in dber.getIoItemsNextIter(edb, key=aKey, skip=False)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = [item for item in dber.getIoItemsNextIter(edb, key=aKey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for  key, val in items]
+        assert vals == bVals
+
+        items = [item for item in dber.getIoItemsNextIter(edb, key=b'', skip=False)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey
@@ -708,6 +750,27 @@ def test_baser():
         vals = [val for  key, val in items]
         assert vals == aVals
 
+        items = db.getPseItemsNext(key=aKey, skip=False)  #  get aKey  in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = db.getPseItemsNext(key=aKey)  #  get bKey  in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for  key, val in items]
+        assert vals == bVals
+
+        items = db.getPseItemsNext(key=b'', skip=False)  #  get frist key in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
         # bVals
         items = db.getPseItemsNext(key=ikey)
         assert items  # not empty
@@ -741,6 +804,27 @@ def test_baser():
         #  get dups at first key in database
         # aVals
         items = [item for item in db.getPseItemsNextIter()]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = [item for item in db.getPseItemsNextIter(key=aKey, skip=False)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = [item for item in db.getPseItemsNextIter(key=aKey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for  key, val in items]
+        assert vals == bVals
+
+        items = [item for item in db.getPseItemsNextIter(key=b'', skip=False)]
         assert items  # not empty
         ikey = items[0][0]
         assert  ikey == aKey

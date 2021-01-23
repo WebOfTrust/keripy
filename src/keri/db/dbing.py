@@ -625,10 +625,11 @@ class LMDBer:
             return val
 
 
-    def getIoItemsNext(self, db, key=b""):
+    def getIoItemsNext(self, db, key=b"", skip=True):
         """
         Return list of dup items at next key after key in db in insertion order.
-        If key = b'' then returns list of dup items at first key in db.
+        If key == b'' then returns list of dup items at first key in db.
+        If skip is False and key is not empty then returns dup items at key
         Returns empty list if no entries at next key after key
         If key is empty then gets io items (key, io value) at first key in db
         Use the return key from items as next key for next call to function in
@@ -645,7 +646,9 @@ class LMDBer:
 
         Parameters:
             db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace or empty
+            key is bytes of key within sub db's keyspace or empty string
+            skip is Boolean If True skips to next key if key is not empty string
+                    Othewise don't skip for first pass
         """
 
         with self.env.begin(db=db, write=False, buffers=True) as txn:
@@ -653,7 +656,7 @@ class LMDBer:
             items = []
             if cursor.set_range(key):  # moves to first_dup at key
                 found = True
-                if key and cursor.key() == key:  # skip to next key
+                if skip and key and cursor.key() == key:  # skip to next key
                     found = cursor.next_nodup()  # skip to next key not dup if any
                 if found:
                     # slice off prepended ordering prefix on value in item
@@ -661,10 +664,11 @@ class LMDBer:
             return items
 
 
-    def getIoItemsNextIter(self, db, key=b""):
+    def getIoItemsNextIter(self, db, key=b"", skip=True):
         """
         Return iterator of all dup items at next key after key in db in insertion order.
         If key = b'' then returns list of dup items at first key in db.
+        If skip is False and key is not empty then returns dup items at key
         Raises StopIteration Error when no remaining dup items = empty.
 
         If key is empty then gets io items (key, io value) at first key in db
@@ -683,13 +687,15 @@ class LMDBer:
         Parameters:
             db is opened named sub db with dupsort=True
             key is bytes of key within sub db's keyspace or empty
+            skip is Boolean If True skips to next key if key is not empty string
+                    Othewise don't skip for first pass
         """
 
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             if cursor.set_range(key):  # moves to first_dup at key
                 found = True
-                if key and cursor.key() == key:  # skip to next key
+                if skip and key and cursor.key() == key:  # skip to next key
                     found = cursor.next_nodup()  # skip to next key not dup if any
                 if found:
                     for key, val in cursor.iternext_dup(keys=True):
@@ -1538,26 +1544,29 @@ class Baser(LMDBer):
         return self.getIoValLast(self.pses, key)
 
 
-    def getPseItemsNext(self, key=b''):
+    def getPseItemsNext(self, key=b'', skip=True):
         """
         Use snKey()
         Return all dups of partial signed escrowed event dig items at next key
-        after key. If key is b'' then returns dups at first key.
+        after key.
+        If key is b'' empty then returns dups at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNext(self.pses, key)
+        return self.getIoItemsNext(self.pses, key, skip)
 
 
-    def getPseItemsNextIter(self, key=b''):
+    def getPseItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
         Return iterator of partial signed escrowed event dig items at next key
-        after key. If key is b'' then returns dups at first key.
+        after key. If key is b'' empty then returns dups at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoItemsNextIter(self.pses, key)
+        return self.getIoItemsNextIter(self.pses, key, skip)
 
 
     def cntPses(self, key):
