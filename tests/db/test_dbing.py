@@ -186,7 +186,7 @@ def test_lmdber():
         assert dber.delIoVals(db, key) == True
         assert dber.getIoVals(db, key) == []
 
-        # Test  getIoItemsNext(self, db, key=b""):
+        # Setup Tests for getIoItemsNext and getIoItemsNextIter
         edb = dber.env.open_db(key=b'escrow.', dupsort=True)
         aKey = snKey(pre=b'A', sn=1)
         aVals = [b"z", b"m", b"x"]
@@ -202,6 +202,7 @@ def test_lmdber():
         assert dber.putIoVals(edb, key=cKey, vals=cVals)
         assert dber.putIoVals(edb, key=dKey, vals=dVals)
 
+        # Test getIoItemsNext(self, db, key=b"")
         # aVals
         items = dber.getIoItemsNext(edb)  #  get first key in database
         assert items  # not empty
@@ -236,6 +237,45 @@ def test_lmdber():
 
         # none
         items = dber.getIoItemsNext(edb, key=ikey)
+        assert items == []  # empty
+        assert not items
+
+        # Test getIoItemsNextIter(self, db, key=b"")
+        #  get dups at first key in database
+        # aVals
+        items = [item for item in dber.getIoItemsNextIter(edb)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        # bVals
+        items = [item for item in dber.getIoItemsNextIter(edb, key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for key, val in items]
+        assert vals == bVals
+
+        # cVals
+        items = [item for item in dber.getIoItemsNextIter(edb, key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == cKey
+        vals = [val for key, val in items]
+        assert vals == cVals
+
+        # dVals
+        items = [item for item in dber.getIoItemsNext(edb, key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == dKey
+        vals = [val for key, val in items]
+        assert vals == dVals
+
+        # none
+        items = [item for item in dber.getIoItemsNext(edb, key=ikey)]
         assert items == []  # empty
         assert not items
 

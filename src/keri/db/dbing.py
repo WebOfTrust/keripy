@@ -634,6 +634,41 @@ class LMDBer:
             return items
 
 
+    def getIoItemsNextIter(self, db, key=b""):
+        """
+        Return iterator of all dup items at next key after key in db in insertion order
+        Raises StopIteration Error when empty.
+
+        If key is empty then gets io items (key, io value) at first key in db
+        Use the return key from items as next key for next call to function in
+        order to iterate through the database
+
+        Assumes DB opened with dupsort=True
+        Duplicates at a given key are retrieved in insertion order.
+        Because lmdb is lexocographic an insertion ordering value is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending prefix
+        to each value changes duplicate ordering. Prefix is 7 characters long.
+        With 6 character hex string followed by '.' for a max
+        of 2**24 = 16,777,216 duplicates,
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace or empty
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if cursor.set_range(key):  # moves to first_dup at key
+                found = True
+                if key:  # key not empty string so need to skip to next
+                    found = cursor.next_nodup()  # skip to next key not dup if any
+                if found:
+                    for key, val in cursor.iternext_dup(keys=True):
+                        # slice off prepended ordering prefix
+                        yield (key, val[7:])
+
+
     def cntIoVals(self, db, key):
         """
         Return count of dup values at key in db, or zero otherwise
