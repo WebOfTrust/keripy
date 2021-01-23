@@ -313,8 +313,8 @@ https://medium.com/@joehonton/cipher-suites-demystified-ada2e97be9c9
 * Setup dependencies: `pip install -r requirements.txt`
 
 ### Testing
-* Install a testing framework like pytest: `pip install pytest`
-* To run the test suite: 
+* Install pytest: `pip install pytest`
+* Run the test suites: 
     ```
     pytest tests/ --ignore tests/demo/
     pytest tests/demo/
