@@ -98,6 +98,33 @@ def snKey(pre, sn):
     return (b'%s.%032x' % (pre, sn))
 
 
+def splitKey(key):
+    """
+    Returns duple of pre and either dig or sn str by splitting key at '.'
+    Accepts either bytes or str key
+    Raises ValueError if key does not split into exactly two elements
+    """
+    if hasattr(key, "encode"):
+        sep = "."
+    else:
+        sep = b'.'
+    splits = key.split(sep)
+    if len(splits) != 2:
+        raise  ValueError("Unsplitable key = {}".format(key))
+    return tuple(splits)
+
+
+def splitKeySn(key):
+    """
+    Returns list of pre and int sn from key
+    Accepts either bytes or str key
+
+    """
+    pre, sn = splitKey(key)
+    sn = int(sn, 16)
+    return (pre, sn)
+
+
 def clearDatabaserDir(path):
     """
     Remove directory path

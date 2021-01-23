@@ -11,7 +11,7 @@ import json
 import lmdb
 
 from keri.db.dbing import clearDatabaserDir, openLMDB, openDB
-from keri.db.dbing import dgKey, snKey, LMDBer, Baser
+from keri.db.dbing import dgKey, snKey, splitKey, splitKeySn, LMDBer, Baser
 
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
 from keri.core.coring import CryCntDex, CryOneDex, CryTwoDex, CryFourDex
@@ -20,6 +20,53 @@ from keri.core.coring import Serials, Vstrings, Versify
 from keri.core.eventing import incept, rotate, interact, Kever, Kevery
 
 from keri.help.helping import nowIso8601, toIso8601, fromIso8601
+
+
+def test_key_funcs():
+    """
+    Test key utility functions
+    """
+    # Bytes
+    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    dig = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    sn = 3
+
+    assert snKey(pre, sn) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                        b'.00000000000000000000000000000003')
+
+    assert splitKey(snKey(pre, sn)) == (pre, b'%032x' % sn)
+    assert splitKeySn(snKey(pre, sn)) == (pre, sn)
+
+    assert dgKey(pre, dig) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                         b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+
+    assert splitKey(dgKey(pre, dig)) == (pre, dig)
+
+    #  Str
+    pre = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    dig = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+
+    assert snKey(pre, sn) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                        b'.00000000000000000000000000000003')
+
+    assert splitKey(snKey(pre, sn).decode("utf-8")) == (pre, '%032x' % sn)
+    assert splitKeySn(snKey(pre, sn).decode("utf-8")) == (pre, sn)
+
+    assert dgKey(pre, dig) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                         b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+
+    assert splitKey(dgKey(pre, dig).decode("utf-8")) == (pre, dig)
+
+    with pytest.raises(TypeError):
+        snKey(pre, sn='3')
+
+    with pytest.raises(ValueError):
+        splitKey(pre)
+
+    with pytest.raises(ValueError):
+        splitKey(dgKey(pre, dgKey(pre, dig)))
+
+    """Done Test"""
 
 
 def test_opendatabaser():
@@ -1108,4 +1155,4 @@ def test_usebaser():
     """ End Test """
 
 if __name__ == "__main__":
-    test_baser()
+    test_key_funcs()
