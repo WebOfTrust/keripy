@@ -41,7 +41,6 @@ Algoage = namedtuple("Algoage", 'randy salty')
 Algos = Algoage(randy='randy', salty='salty')  # randy is rerandomize, salty is use salt
 
 
-
 @dataclass()
 class PubLot:
     """
@@ -50,8 +49,7 @@ class PubLot:
     pubs: list = field(default_factory=list)  # empty list of fully qualified Base64 public keys.
     ridx: int = 0  # index of rotation (est event) that uses public key set
     kidx: int = 0  # index of key in sequence of public keys
-    dt:   str = ""  #  datetime ISO8601 when key set created
-
+    dt:   str = ""  # datetime ISO8601 when key set created
 
     def __iter__(self):
         return iter(asdict(self))
@@ -65,7 +63,6 @@ class PreSit:
     old: PubLot = field(default_factory=PubLot)  # previous publot
     new: PubLot = field(default_factory=PubLot)  # newly current publot
     nxt: PubLot = field(default_factory=PubLot)  # next public publot
-
 
     def __iter__(self):
         return iter(asdict(self))
@@ -81,7 +78,6 @@ class PrePrm:
     salt: str = ''  # empty salt  used for salty algo.
     stem: str = ''  # default unique path stem for salty algo
     tier: str = ''  # security tier for stretch index salty algo
-
 
     def __iter__(self):
         return iter(asdict(self))
@@ -160,14 +156,13 @@ class Keeper(dbing.LMDBer):
     """
     HeadDirPath = "/usr/local/var"  # default in /usr/local/var
     TailDirPath = "keri/keep"
-    AltHeadDirPath = "~"  #  put in ~ as fallback when desired not permitted
+    AltHeadDirPath = "~"  # put in ~ as fallback when desired not permitted
     AltTailDirPath = ".keri/keep"
     TempHeadDir = "/tmp"
     TempPrefix = "keri_keep_"
     TempSuffix = "_test"
     MaxNamedDBs = 8
     DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700
-
 
     def __init__(self, headDirPath=None, dirMode=None, reopen=True, **kwa):
         """
@@ -208,7 +203,6 @@ class Keeper(dbing.LMDBer):
         super(Keeper, self).__init__(headDirPath=headDirPath, dirMode=dirMode,
                                      reopen=reopen, **kwa)
 
-
     def reopen(self, **kwa):
         """
         Open sub databases
@@ -243,7 +237,6 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.gbls, key, val)
 
-
     def setGbl(self, key, val):
         """
         Write parameter as val to key
@@ -257,7 +250,6 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.gbls, key, val)
 
-
     def getGbl(self, key):
         """
         Return parameter val at key label
@@ -267,7 +259,6 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.gbls, key)
-
 
     def delGbl(self, key):
         """
@@ -279,7 +270,6 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.gbls, key)
-
 
     # .pris methods
     def putPri(self, key, val):
@@ -296,7 +286,6 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.pris, key, val)
 
-
     def setPri(self, key, val):
         """
         Write fully qualified private key as val to key
@@ -310,7 +299,6 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.pris, key, val)
 
-
     def getPri(self, key):
         """
         Return private key val at key
@@ -320,7 +308,6 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.pris, key)
-
 
     def delPri(self, key):
         """
@@ -332,7 +319,6 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.pris, key)
-
 
     # .pres methods
     def putPre(self, key, val):
@@ -349,7 +335,6 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.pres, key, val)
 
-
     def setPre(self, key, val):
         """
         Write fully qualified prefix as val to key
@@ -363,7 +348,6 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.pres, key, val)
 
-
     def getPre(self, key):
         """
         Return prefix val at key
@@ -373,7 +357,6 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.pres, key)
-
 
     def delPre(self, key):
         """
@@ -385,7 +368,6 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.pres, key)
-
 
     # .prms methods
     def putPrm(self, key, val):
@@ -402,7 +384,6 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.gbls, key, val)
 
-
     def setPrm(self, key, val):
         """
         Write serialized dict of PrePrm as val to key
@@ -416,7 +397,6 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.gbls, key, val)
 
-
     def getPrm(self, key):
         """
         Return serialized parameter dict at key
@@ -426,7 +406,6 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.gbls, key)
-
 
     def delPrm(self, key):
         """
@@ -438,7 +417,6 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.gbls, key)
-
 
     # .sits methods
     def putSit(self, key, val):
@@ -455,7 +433,6 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.sits, key, val)
 
-
     def setSit(self, key, val):
         """
         Write serialized parameter dict as val to key
@@ -469,7 +446,6 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.sits, key, val)
 
-
     def getSit(self, key):
         """
         Return serialized parameter dict at key
@@ -479,7 +455,6 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.sits, key)
-
 
     def delSit(self, key):
         """
@@ -540,11 +515,9 @@ class KeeperDoer(doing.Doer):
         super(KeeperDoer, self).__init__(**kwa)
         self.keeper = keeper
 
-
     def enter(self):
         """"""
         self.keeper.reopen()
-
 
     def exit(self):
         """"""
@@ -574,7 +547,6 @@ class Creator:
 
         """
 
-
     def create(self, **kwa):
         """
         Returns tuple of signers one per key pair
@@ -594,7 +566,6 @@ class Creator:
         stem property getter
         """
         return ''
-
 
     @property
     def tier(self):
@@ -619,7 +590,6 @@ class RandyCreator(Creator):
 
     """
 
-
     def __init__(self, **kwa):
         """
         Setup Creator.
@@ -628,7 +598,6 @@ class RandyCreator(Creator):
 
         """
         super(RandyCreator, self).__init__(**kwa)
-
 
     def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
                transferable=True, **kwa):
@@ -647,7 +616,6 @@ class RandyCreator(Creator):
         for code in codes:
             signers.append(coring.Signer(code=code, transferable=transferable))
         return signers
-
 
 
 class SaltyCreator(Creator):
@@ -678,14 +646,12 @@ class SaltyCreator(Creator):
         self.salter = coring.Salter(qb64=salt, tier=tier)
         self._stem = stem if stem is not None else ''
 
-
     @property
     def salt(self):
         """
         salt property getter
         """
         return self.salter.qb64
-
 
     @property
     def stem(self):
@@ -694,14 +660,12 @@ class SaltyCreator(Creator):
         """
         return self._stem
 
-
     @property
     def tier(self):
         """
         tier property getter
         """
         return self.salter.tier
-
 
     def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
                pidx=0, ridx=0, kidx=0, transferable=True, temp=False, **kwa):
@@ -775,7 +739,6 @@ class Creatory:
         """
         return (self._make(**kwa))
 
-
     def _makeNovel(self, **kwa):
         """
 
@@ -787,7 +750,6 @@ class Creatory:
 
         """
         return SaltyCreator(**kwa)
-
 
 
 class Manager:
@@ -829,7 +791,6 @@ class Manager:
         if self.keeper.opened:
             self.setup()
 
-
     def setup(self):
         """
         Return triple (pidx, salt, tier) from .keeper.gbls if keeper is setup
@@ -864,7 +825,6 @@ class Manager:
 
         return (pidx, salt, tier)
 
-
     def getPidx(self):
         """
         return pidx from .keeper. Assumes setup
@@ -876,7 +836,6 @@ class Manager:
         Save .pidx to .keeper
         """
         self.keeper.setGbl(b"pidx", b"%x" % pidx)
-
 
     def incept(self, icodes=None, icount=1, icode=coring.CryOneDex.Ed25519_Seed,
                      ncodes=None, ncount=1, ncode=coring.CryOneDex.Ed25519_Seed,
@@ -929,7 +888,7 @@ class Manager:
         if rooted and salt is None:  # use root salt instead of random salt
             salt = rootSalt
 
-        if rooted and tier is None: #  use root tier as default
+        if rooted and tier is None:  # use root tier as default
             tier = rootTier
 
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
@@ -987,7 +946,6 @@ class Manager:
 
         return (verfers, digers)
 
-
     def move(self, old, new):
         """
         Assigns new pre to old default .pres at old
@@ -1042,8 +1000,6 @@ class Manager:
         if not self.keeper.putPre(key=new, val=new):
             raise ValueError("Failed assiging new pre={}.".format(new))
 
-
-
     def rotate(self, pre, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
                      dcode=coring.CryOneDex.Blake3_256,
                      transferable=True, temp=False):
@@ -1087,7 +1043,7 @@ class Manager:
         ps.old = ps.new  # move new to old
         ps.new = ps.nxt  # move nxt to new
 
-        verfers = []  #  assign verfers from old nxt now new.
+        verfers = []  # assign verfers from old nxt now new.
         for pub in ps.new.pubs:
             verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
             raw = self.keeper.getPri(key=pub.encode("utf-8"))
@@ -1095,7 +1051,7 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             pri = bytes(raw)
             signer = coring.Signer(qb64b=pri,
-                                   transferable = verfer.transferable)
+                                   transferable=verfer.transferable)
             verfers.append(signer.verfer)
 
         creator = Creatory(algo=pp.algo).make(salt=pp.salt, stem=pp.stem, tier=pp.tier)
@@ -1130,7 +1086,6 @@ class Manager:
 
         return (verfers, digers)
 
-
     def sign(self, ser, pubs=None, verfers=None, indexed=True):
         """
         Returns list of signatures of ser if indexed as Sigers else as Cigars
@@ -1158,7 +1113,7 @@ class Manager:
                 if raw is None:
                     raise ValueError("Missing prikey in db for pubkey={}".format(pub))
                 signer = coring.Signer(qb64b=bytes(raw),
-                                       transferable= verfer.transferable)
+                                       transferable=verfer.transferable)
                 signers.append(signer)
 
         else:
@@ -1168,7 +1123,7 @@ class Manager:
                 if raw is None:
                     raise ValueError("Missing prikey in db for pubkey={}".format(pub))
                 signer = coring.Signer(qb64b=bytes(raw),
-                                       transferable= verfer.transferable)
+                                       transferable=verfer.transferable)
                 signers.append(signer)
 
         if indexed:
