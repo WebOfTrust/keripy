@@ -756,11 +756,11 @@ class LMDBer:
                 key = snKey(pre, cnt:=cnt+1)
 
 
-    def getIoValsLastAllPreIter(self, db, pre):
+    def getIoValLastAllPreIter(self, db, pre):
         """
-        Returns iterator of last only dup vals in insertion order for all entries
-        with same prefix across all sequence numbers in order without gaps
-        starting with zero. Stops if gap or different pre.
+        Returns iterator of last only of dup vals of each key in insertion order
+        for all entries with same prefix across all sequence numbers in order
+        without gaps starting with zero. Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
 
@@ -1480,7 +1480,7 @@ class Baser(LMDBer):
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoValsLastAllPreIter(self.kels, pre)
+        return self.getIoValLastAllPreIter(self.kels, pre)
 
 
     def putPses(self, key, vals):

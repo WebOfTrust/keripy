@@ -319,7 +319,7 @@ def test_lmdber():
         key = snKey(pre, sn)
         assert dber.putIoVals(db, key, vals2) == True
 
-        vals = [bytes(val) for val in dber.getIoValsLastAllPreIter(db, pre)]
+        vals = [bytes(val) for val in dber.getIoValLastAllPreIter(db, pre)]
         lastvals = [vals0[-1], vals1[-1], vals2[-1]]
         assert vals == lastvals
 
