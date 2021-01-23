@@ -210,6 +210,14 @@ def test_lmdber():
         assert [val for val in dber.getValsIter(db, key)] == [b'a', b'b', b'm', b'x', b'z']
         assert dber.delVals(db, key) == True
         assert dber.getVals(db, key) == []
+        assert dber.putVals(db, key, vals) == True
+        for val in vals:
+            assert dber.delVals(db, key, val)
+        assert dber.getVals(db, key) == []
+        assert dber.putVals(db, key, vals) == True
+        for val in dber.getValsIter(db, key):
+            assert dber.delVals(db, key, val)  # allows delete fo dup while iter over dups
+        assert dber.getVals(db, key) == []
 
 
         # test IoVals insertion order dup methods.  dup vals are insertion order
@@ -233,6 +241,14 @@ def test_lmdber():
         assert [val for val in dber.getIoValsIter(db, key)] == [b"z", b"m", b"x", b"a", b'b']
         assert dber.delIoVals(db, key) == True
         assert dber.getIoVals(db, key) == []
+        #assert dber.putIoVals(db, key, vals) == True
+        #for val in vals:
+            #assert dber.delIoVals(db, key, val)
+        #assert dber.getIoVals(db, key) == []
+        #assert dber.putIoVals(db, key, vals) == True
+        #for val in dber.getIoValsIter(db, key):
+            #assert dber.delIoVals(db, key, val)  # allows delete fo dup while iter over dups
+        #assert dber.getIoVals(db, key) == []
 
         # Setup Tests for getIoItemsNext and getIoItemsNextIter
         edb = dber.env.open_db(key=b'escrow.', dupsort=True)
@@ -608,6 +624,15 @@ def test_baser():
         assert [val for val in db.getSigsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
         assert db.delSigs(key) == True
         assert db.getSigs(key) == []
+        vals = [b"z", b"m", b"x", b"a"]
+        assert db.putSigs(key, vals) == True
+        for val in vals:
+            assert db.delSigs(key, val) == True
+        assert db.getSigs(key) == []
+        assert db.putSigs(key, vals) == True
+        for val in db.getSigsIter(key):
+            assert db.delSigs(key, val) == True
+        assert db.getSigs(key) == []
 
         assert db.putSigs(key, vals=[sig0b]) == True
         assert db.getSigs(key) == [sig0b]
@@ -635,6 +660,15 @@ def test_baser():
         assert db.getRcts(key) == [b'a', b'b', b'm', b'x', b'z']
         assert [val for val in db.getRctsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
         assert db.delRcts(key) == True
+        assert db.getRcts(key) == []
+        vals = [b"z", b"m", b"x", b"a"]
+        assert db.putRcts(key, vals) == True
+        for val in vals:
+            assert db.delRcts(key, val) == True
+        assert db.getRcts(key) == []
+        assert db.putRcts(key, vals) == True
+        for val in db.getRctsIter(key):
+            assert db.delRcts(key, val) == True
         assert db.getRcts(key) == []
 
         assert db.putRcts(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
@@ -664,6 +698,15 @@ def test_baser():
         assert [val for val in db.getUresIter(key)] == [b'a', b'b', b'm', b'x', b'z']
         assert db.delUres(key) == True
         assert db.getUres(key) == []
+        vals = [b"z", b"m", b"x", b"a"]
+        assert db.putUres(key, vals) == True
+        for val in vals:
+            assert db.delUres(key, val) == True
+        assert db.getUres(key) == []
+        assert db.putUres(key, vals) == True
+        for val in db.getUresIter(key):
+            assert db.delUres(key, val) == True
+        assert db.getUres(key) == []
 
         assert db.putUres(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
         assert db.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
@@ -692,6 +735,15 @@ def test_baser():
         assert [val for val in db.getVrcsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
         assert db.delVrcs(key) == True
         assert db.getVrcs(key) == []
+        vals = [b"z", b"m", b"x", b"a"]
+        assert db.putVrcs(key, vals) == True
+        for val in vals:
+            assert db.delVrcs(key, val) == True
+        assert db.getVrcs(key) == []
+        assert db.putVrcs(key, vals) == True
+        for val in db.getVrcsIter(key):
+            assert db.delVrcs(key, val) == True
+        assert db.getVrcs(key) == []
 
         assert db.putVrcs(key, vals=[valb + vdigb + vsig0b, valb + vdigb + vsig1b]) == True
         assert db.getVrcs(key) == [valb + vdigb + vsig0b, valb + vdigb + vsig1b]  #  lex order
@@ -719,6 +771,15 @@ def test_baser():
         assert db.getVres(key) == [b'a', b'b', b'm', b'x', b'z']
         assert [val for val in db.getVresIter(key)] == [b'a', b'b', b'm', b'x', b'z']
         assert db.delVres(key) == True
+        assert db.getVres(key) == []
+        vals = [b"z", b"m", b"x", b"a"]
+        assert db.putVres(key, vals) == True
+        for val in vals:
+            assert db.delVres(key, val) == True
+        assert db.getVres(key) == []
+        assert db.putVres(key, vals) == True
+        for val in db.getVresIter(key):
+            assert db.delVres(key, val) == True
         assert db.getVres(key) == []
 
         assert db.putVres(key, vals=[valb + vdigb + vsig0b, valb + vdigb + vsig1b]) == True
@@ -1155,4 +1216,4 @@ def test_usebaser():
     """ End Test """
 
 if __name__ == "__main__":
-    test_key_funcs()
+    test_baser()

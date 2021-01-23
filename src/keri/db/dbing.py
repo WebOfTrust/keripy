@@ -489,17 +489,19 @@ class LMDBer:
             return count
 
 
-    def delVals(self,db, key, dupdata=True):
+    def delVals(self, db, key, val=b''):
         """
-        Deletes all values at key in db.
-        Returns True If key exists in db Else False
+        Deletes all values at key in db if val=b'' else deletes the dup
+        that equals val
+        Returns True If key (and val if not empty) exists in db Else False
 
         Parameters:
             db is opened named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
+            val is bytes of dup val at key to delete
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            return (txn.delete(key))
+            return (txn.delete(key, val))
 
 
     def putIoVals(self, db, key, vals):
@@ -745,17 +747,19 @@ class LMDBer:
             return count
 
 
-    def delIoVals(self,db, key, dupdata=True):
+    def delIoVals(self,db, key, val=b''):
         """
-        Deletes all values at key in db.
-        Returns True If key exists in db Else False
+        Deletes all values at key in db if val=b'' else deletes the dup
+        that equals val
+        Returns True If key (and val if not empty) exists in db Else False
 
         Parameters:
             db is opened named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
+            val is bytes of dup val at key to delete
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            return (txn.delete(key))
+            return (txn.delete(key, val))
 
 
     def getIoValsAllPreIter(self, db, pre):
@@ -1164,13 +1168,13 @@ class Baser(LMDBer):
         return self.cntVals(self.sigs, key)
 
 
-    def delSigs(self, key):
+    def delSigs(self, key, val=b''):
         """
         Use dgKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
+        Deletes all values at key if val = b'' else deletes dup val = val.
+        Returns True If key exists in database (or key, val if val not b'') Else False
         """
-        return self.delVals(self.sigs, key)
+        return self.delVals(self.sigs, key, val)
 
 
     def putRcts(self, key, vals):
@@ -1225,13 +1229,13 @@ class Baser(LMDBer):
         return self.cntVals(self.rcts, key)
 
 
-    def delRcts(self, key):
+    def delRcts(self, key, val=b''):
         """
         Use dgKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
+        Deletes all values at key if val = b'' else deletes dup val = val.
+        Returns True If key exists in database (or key, val if val not b'') Else False
         """
-        return self.delVals(self.rcts, key)
+        return self.delVals(self.rcts, key, val)
 
 
     def putUres(self, key, vals):
@@ -1286,13 +1290,13 @@ class Baser(LMDBer):
         return self.cntVals(self.ures, key)
 
 
-    def delUres(self, key):
+    def delUres(self, key, val=b''):
         """
         Use dgKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
+        Deletes all values at key if val = b'' else deletes dup val = val.
+        Returns True If key exists in database (or key, val if val not b'') Else False
         """
-        return self.delVals(self.ures, key)
+        return self.delVals(self.ures, key, val)
 
 
     def putVrcs(self, key, vals):
@@ -1347,13 +1351,13 @@ class Baser(LMDBer):
         return self.cntVals(self.vrcs, key)
 
 
-    def delVrcs(self, key):
+    def delVrcs(self, key, val=b''):
         """
         Use dgKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
+        Deletes all values at key if val = b'' else deletes dup val = val.
+        Returns True If key exists in database (or key, val if val not b'') Else False
         """
-        return self.delVals(self.vrcs, key)
+        return self.delVals(self.vrcs, key, val)
 
 
     def putVres(self, key, vals):
@@ -1408,13 +1412,13 @@ class Baser(LMDBer):
         return self.cntVals(self.vres, key)
 
 
-    def delVres(self, key):
+    def delVres(self, key, val=b''):
         """
         Use dgKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
+        Deletes all values at key if val = b'' else deletes dup val = val.
+        Returns True If key exists in database (or key, val if val not b'') Else False
         """
-        return self.delVals(self.vres, key)
+        return self.delVals(self.vres, key, val)
 
 
     def putKes(self, key, vals):

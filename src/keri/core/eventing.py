@@ -24,7 +24,7 @@ from ..kering import (ValidationError, VersionError, EmptyMaterialError,
                       DerivationError, ShortageError)
 from ..kering import Versionage, Version
 from ..help.helping import nowIso8601
-from ..db.dbing import dgKey, snKey, Baser
+from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
 
 from .coring import Versify, Serials, Ilks, CryOneDex
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
@@ -1735,23 +1735,26 @@ class Kevery:
 
         done = False
         ims = bytearray()
+        key = b''
         while not Done:
-            try:
-                # get the digest of event in escrow
-                edigs = self.baser.getPses(snKey(pre, sn))
+            for ekey, edig in self.baser.getPseItemsNextIter(key=key):
+                try:
+                    pre, sn = splitKeySn(key)  # get pre and sn from escrow item
 
-                for edig in edigs:
-
-                    # get the delegating event from dig
+                    # get the escrowed event using dig
                     eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
                     if eraw is None:
                         # no event so unescrow all
-                        self.baser.delPses(snKey(pre, sn))  # removes all other escrows
+                        self.baser.delPses(ekey)  # removes all other escrows at ekey
                         blogger.info("Kevery unescrow error: Missing event at."
                                  "dig = %s\n", bytes(edig))
 
                         raise ValidationError("Missing escrowed evt at dig = {}."
                                               "".format(bytes(edig)))
+
+
+                    key = ekey #  try next key after ekey
+                    break
 
 
                     eserder = Serder(raw=bytes(raw))  # escrowed event
@@ -1773,21 +1776,21 @@ class Kevery:
                 #  means we should flush from escrow buffer
 
 
-            except Exception as ex:  # log diagnostics errors etc
-                if blogger.isEnabledFor(logging.DEBUG):
-                    blogger.exception("Kevery unescrow failed: %s\n", ex.args[0])
-                else:
-                    blogger.error("Kevery unescrow failed: %s\n", ex.args[0])
+                except Exception as ex:  # log diagnostics errors etc
+                    if blogger.isEnabledFor(logging.DEBUG):
+                        blogger.exception("Kevery unescrow failed: %s\n", ex.args[0])
+                    else:
+                        blogger.error("Kevery unescrow failed: %s\n", ex.args[0])
 
-            else:  # unescrow succeeded, remove from escrow
-                pass
-                # self.baser.addPse(snKey(pre, sn), serder.digb)
-                self.baser.delPses(snKey(pre, sn))  # removes all other escrows
-                #  first seen wins. Should we do duplicity on any others
-                #  that is we already loaded all partials so do we process all
-                #  which may create duplicitous
-                blogger.info("Kevery unescrow succeeded: "
-                         "event = %s\n", serder.ked)
+                else:  # unescrow succeeded, remove from escrow
+                    pass
+                    # self.baser.addPse(snKey(pre, sn), serder.digb)
+                    self.baser.delPses(snKey(pre, sn))  # removes all other escrows
+                    #  first seen wins. Should we do duplicity on any others
+                    #  that is we already loaded all partials so do we process all
+                    #  which may create duplicitous
+                    blogger.info("Kevery unescrow succeeded: "
+                             "event = %s\n", serder.ked)
 
 
 
