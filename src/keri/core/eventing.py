@@ -1737,15 +1737,15 @@ class Kevery:
         ims = bytearray()
         key = b''
         while not Done:
-            for ekey, edig in self.baser.getPseTriplesNextIter(key=key):
+            for ekey, epro, edig in self.baser.getPseTriplesNextIter(key=key):
                 try:
                     pre, sn = splitKeySn(key)  # get pre and sn from escrow item
 
                     # get the escrowed event using dig
                     eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
                     if eraw is None:
-                        # no event so unescrow all
-                        self.baser.delPses(ekey)  # removes all other escrows at ekey
+                        # no event so remove unescrow dup entry at key
+                        self.baser.delPses(ekey, bytes(epro) + bytes(edig))
                         blogger.info("Kevery unescrow error: Missing event at."
                                  "dig = %s\n", bytes(edig))
 
