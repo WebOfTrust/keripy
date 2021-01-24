@@ -21,7 +21,8 @@ import blake3
 from orderedset import OrderedSet as oset
 
 from ..kering import (ValidationError, VersionError, EmptyMaterialError,
-                      DerivationError, ShortageError)
+                      DerivationError, ShortageError, MissingSignatureError,
+                      MissingDelegatingSealError)
 from ..kering import Versionage, Version
 from ..help.helping import nowIso8601
 from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
@@ -678,7 +679,7 @@ class Kever:
 
         self.config(serder=serder, estOnly=estOnly)  # assign config traits perms
 
-        # validates and escrows as needed
+        # validates if not escrows as needed and raises validation error
         self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
                           tholder=self.tholder, sn=self.sn)
 
@@ -808,7 +809,7 @@ class Kever:
 
             tholder, toad, wits = self.rotate(serder, sn)
 
-            # validates and escrows as needed
+            # validates and escrows as needed raises ValidationError if not successful
             self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
                               tholder=tholder, sn=sn)
 
@@ -1063,7 +1064,7 @@ class Kever:
         if not tholder.satisfy(indices):  #  at least one but not enough
             self.escrowPSEvent(self, serder, sigers, self.prefixer.qb64b, sn)
 
-            raise ValidationError("Failure satisfying sith = {} on sigs for {}"
+            raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                   " for evt = {}.".format(tholder.sith,
                                                 [siger.qb64 for siger in sigers],
                                                 serder.ked))
@@ -1097,8 +1098,8 @@ class Kever:
             sn = self.validateSN(serder.ked["s"], serder.ked, inceptive=inceptive)
             self.escrowPSEvent(serder=serder, sigers=sigers,
                              pre=self.prefixer.qb64b, sn=sn)
-            raise ValidationError("No delegating event at seal = {} for "
-                                  "evt = {}.".format(serder.ked["da"],
+            raise MissingDelegatingSealError("No delegating event at seal = {} for "
+                                             "evt = {}.".format(serder.ked["da"],
                                                      serder.ked))
 
         # get the delegating event from dig
@@ -1490,11 +1491,11 @@ class Kevery:
                 # create cue for receipt   direct mode for now
                 self.cues.append(dict(pre=pre, serder=serder))
 
-            else:  # not inception so can't verify, add to out-of-order escrow
+            else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
 
         else:  # already accepted inception event for pre
-            if ilk in (Ilks.icp, Ilks.dip):  # inception event so maybe duplicitous
+            if ilk in (Ilks.icp, Ilks.dip):  # another inception event so maybe duplicitous
                 # escrow likely duplicitous event
                 self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
 
@@ -1742,10 +1743,10 @@ class Kevery:
                     key = ekey #  setup next pass through while at key after ekey
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
 
-                    # get the escrowed event using dig
+                    # get the escrowed event using edig
                     eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
                     if eraw is None:
-                        # no event so remove unescrow dup entry at key
+                        # no event so unescrow dup entry at key
                         self.baser.delPse(ekey, edig)
                         blogger.info("Kevery unescrow error: Missing event at."
                                  "dig = %s\n", bytes(edig))
@@ -1753,35 +1754,41 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt at dig = {}."
                                               "".format(bytes(edig)))
 
-
                     eserder = Serder(raw=bytes(raw))  # escrowed event
+                    #  get sigs and attach
 
-                #  Return list of partial signed escrowed event dig vals at key
-                #  Returns empty list if no entry at key
-                #  Duplicates are retrieved in insertion order.
-
-                #  now for each dupl in raws list
-                #  get event
-                #  get sigs and attach then process event
-
-                # self.processOne(ims=ims, framed=self.framed)
-                # If not successful i.e. trys to reescrow then it will not
-                #  add a dup already exists and any re-escrow call raises
-                # validation error. So no validation error means successful
-                #  but need to know when event in escrow is stale or duplicitous
-                #  so need different error for escrow attempt versus error that
-                #  means we should flush from escrow buffer
+                    # process event
 
 
-                except Exception as ex:  # log diagnostics errors etc
+                    # self.processOne(ims=ims, framed=self.framed)
+                    # If process does not validate sigs and delegation seal (when delegated)
+                    # but there is one valid signature then it will attempt to escrow
+                    # Pse escrow is called by Kever.self.escrowPSEvent
+                    # Which calls self.baser.addPse(snKey(pre, sn), serder.digb)
+                    # Which in turn will not enter dig as dup if one already exists
+                    # IN any case if process does not validate sigs and delegation seal
+                    # It will raise ValidationError
+                    # validation error. So no validation error means process successful
+                    #  but need to know when event in escrow is stale or duplicitous
+                    #  so need different error for escrow attempt versus error that
+                    #  means we should flush from escrow buffer
 
+                except (MissingSignatureError, MissingDelegatingSealError) as ex:
+                    # still waiting on signs for seal to validate
                     if blogger.isEnabledFor(logging.DEBUG):
                         blogger.exception("Kevery unescrow failed: %s\n", ex.args[0])
                     else:
                         blogger.error("Kevery unescrow failed: %s\n", ex.args[0])
 
+                except Exception as ex:  # log diagnostics errors etc
+                    # error other than waiting on sigs or seal so remove from escrow
+                    self.baser.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
+                    if blogger.isEnabledFor(logging.DEBUG):
+                        blogger.exception("Kevery unescrowed: %s\n", ex.args[0])
+                    else:
+                        blogger.error("Kevery unescrowed: %s\n", ex.args[0])
+
                 else:  # unescrow succeeded, remove from escrow
-                    pass
                     #  do we want to remove all other escrows are check them for duplicity?
                     #  first seen wins. Should we do duplicity on any others
                     #  that is we already loaded all partials so do we process all
@@ -1789,7 +1796,7 @@ class Kevery:
                     self.baser.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
                     # self.baser.delPses(snKey(pre, sn))  #  remove all escrows at key
 
-                    blogger.info("Kevery unescrow succeeded: "
+                    blogger.info("Kevery unescrow succeeded in valid event: "
                              "event = %s\n", serder.ked)
 
 
