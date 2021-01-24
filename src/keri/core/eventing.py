@@ -1737,9 +1737,10 @@ class Kevery:
         ims = bytearray()
         key = b''
         while not Done:
-            for ekey, epro, edig in self.baser.getPseItemsNextIter(key=key):
+            for ekey, edig in self.baser.getPseItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySn(key)  # get pre and sn from escrow item
+                    key = ekey #  setup next pass through while at key after ekey
+                    pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
 
                     # get the escrowed event using dig
                     eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
@@ -1751,10 +1752,6 @@ class Kevery:
 
                         raise ValidationError("Missing escrowed evt at dig = {}."
                                               "".format(bytes(edig)))
-
-
-                    key = ekey #  try next key after ekey
-                    break
 
 
                     eserder = Serder(raw=bytes(raw))  # escrowed event
@@ -1777,6 +1774,7 @@ class Kevery:
 
 
                 except Exception as ex:  # log diagnostics errors etc
+
                     if blogger.isEnabledFor(logging.DEBUG):
                         blogger.exception("Kevery unescrow failed: %s\n", ex.args[0])
                     else:
@@ -1784,11 +1782,13 @@ class Kevery:
 
                 else:  # unescrow succeeded, remove from escrow
                     pass
-                    # self.baser.addPse(snKey(pre, sn), serder.digb)
-                    self.baser.delPses(snKey(pre, sn))  # removes all other escrows
+                    #  do we want to remove all other escrows are check them for duplicity?
                     #  first seen wins. Should we do duplicity on any others
                     #  that is we already loaded all partials so do we process all
                     #  which may create duplicitous
+                    self.baser.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
+                    # self.baser.delPses(snKey(pre, sn))  #  remove all escrows at key
+
                     blogger.info("Kevery unescrow succeeded: "
                              "event = %s\n", serder.ked)
 
