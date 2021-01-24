@@ -242,149 +242,13 @@ def test_lmdber():
         assert dber.delIoVals(db, key) == True
         assert dber.getIoVals(db, key) == []
         assert dber.putIoVals(db, key, vals) == True
-
-        # Setup Tests for getIoItemsNext and getIoItemsNextIter
-        edb = dber.env.open_db(key=b'escrow.', dupsort=True)
-        aKey = snKey(pre=b'A', sn=1)
-        aVals = [b"z", b"m", b"x"]
-        bKey = snKey(pre=b'A', sn=2)
-        bVals = [b"o", b"r", b"z"]
-        cKey = snKey(pre=b'A', sn=4)
-        cVals = [b"h", b"n"]
-        dKey = snKey(pre=b'A', sn=7)
-        dVals = [b"k", b"b"]
-
-        assert dber.putIoVals(edb, key=aKey, vals=aVals)
-        assert dber.putIoVals(edb, key=bKey, vals=bVals)
-        assert dber.putIoVals(edb, key=cKey, vals=cVals)
-        assert dber.putIoVals(edb, key=dKey, vals=dVals)
-
-        # Test getIoItemsNext(self, db, key=b"")
-        # aVals
-        triples = dber.getIoTriplesNext(edb)  #  get first key in database
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
-        assert vals == aVals
-
-        triples = dber.getIoTriplesNext(edb, key=aKey, skip=False)  # get aKey in database
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
-        assert vals == aVals
-
-        triples = dber.getIoTriplesNext(edb, key=aKey)  # get bKey in database
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, pro, val in triples]
-        assert vals == bVals
-
-        triples = dber.getIoTriplesNext(edb, key=b'', skip=False)  # get first key in database
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
-        assert vals == aVals
-
-        # bVals
-        triples = dber.getIoTriplesNext(edb, key=ikey)
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == bKey
-        vals = [val for key, pro, val in triples]
-        assert vals == bVals
-
-        # cVals
-        triples = dber.getIoTriplesNext(edb, key=ikey)
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == cKey
-        vals = [val for key, pro, val in triples]
-        assert vals == cVals
-
-        # dVals
-        triples = dber.getIoTriplesNext(edb, key=ikey)
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == dKey
-        vals = [val for key, pro, val in triples]
-        assert vals == dVals
-
-        # none
-        triples = dber.getIoTriplesNext(edb, key=ikey)
-        assert triples == []  # empty
-        assert not triples
-
-        # Test getIoItemsNextIter(self, db, key=b"")
-        #  get dups at first key in database
-        # aVals
-        triples = [triple for triple in dber.getIoTriplesNextIter(edb)]
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
-        assert vals == aVals
-
-        triples = [triple for triple in dber.getIoTriplesNextIter(edb, key=aKey, skip=False)]
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
-        assert vals == aVals
-
-        triples = [triple for triple in dber.getIoTriplesNextIter(edb, key=aKey)]
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == bKey
-        vals = [val for  key, pro, val in triples]
-        assert vals == bVals
-
-        triples = [triple for triple in dber.getIoTriplesNextIter(edb, key=b'', skip=False)]
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
-        assert vals == aVals
-        for key, pro, val in triples:
-            assert dber.delIoVals(edb, ikey, bytes(pro)+bytes(val)) == True
-
-        # bVals
-        triples = [triple for triple in dber.getIoTriplesNextIter(edb, key=ikey)]
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == bKey
-        vals = [val for key, pro, val in triples]
-        assert vals == bVals
-        for key, pro, val in triples:
-            assert dber.delIoVals(edb, ikey, bytes(pro)+bytes(val)) == True
-
-        # cVals
-        triples = [triple for triple in dber.getIoTriplesNextIter(edb, key=ikey)]
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == cKey
-        vals = [val for key, pro, val in triples]
-        assert vals == cVals
-        for key, pro, val in triples:
-            assert dber.delIoVals(edb, ikey, bytes(pro)+bytes(val)) == True
-
-        # dVals
-        triples = [triple for triple in dber.getIoTriplesNext(edb, key=ikey)]
-        assert triples  # not empty
-        ikey = triples[0][0]
-        assert  ikey == dKey
-        vals = [val for key, pro, val in triples]
-        assert vals == dVals
-        for key, pro, val in triples:
-            assert dber.delIoVals(edb, ikey, bytes(pro)+bytes(val)) == True
-
-        # none
-        triples = [triple for triple in dber.getIoTriplesNext(edb, key=ikey)]
-        assert triples == []  # empty
-        assert not triples
+        for val in vals:
+            assert dber.delIoVal(db, key, val)
+        assert dber.getIoVals(db, key) == []
+        assert dber.putIoVals(db, key, vals) == True
+        for val in sorted(vals):
+            assert dber.delIoVal(db, key, val)
+        assert dber.getIoVals(db, key) == []
 
         # Test getIoValsAllPreIter(self, db, pre)
         vals0 = [b"gamma", b"beta"]
@@ -450,6 +314,149 @@ def test_lmdber():
         vals = [bytes(val) for val in dber.getIoValsAnyPreIter(db, pre)]
         allvals = vals0 + vals1 + vals2
         assert vals == allvals
+
+        # Setup Tests for getIoItemsNext and getIoItemsNextIter
+        edb = dber.env.open_db(key=b'escrow.', dupsort=True)
+        aKey = snKey(pre=b'A', sn=1)
+        aVals = [b"z", b"m", b"x"]
+        bKey = snKey(pre=b'A', sn=2)
+        bVals = [b"o", b"r", b"z"]
+        cKey = snKey(pre=b'A', sn=4)
+        cVals = [b"h", b"n"]
+        dKey = snKey(pre=b'A', sn=7)
+        dVals = [b"k", b"b"]
+
+        assert dber.putIoVals(edb, key=aKey, vals=aVals)
+        assert dber.putIoVals(edb, key=bKey, vals=bVals)
+        assert dber.putIoVals(edb, key=cKey, vals=cVals)
+        assert dber.putIoVals(edb, key=dKey, vals=dVals)
+
+        # Test getIoItemsNext(self, db, key=b"")
+        # aVals
+        items = dber.getIoItemsNext(edb)  #  get first key in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = dber.getIoItemsNext(edb, key=aKey, skip=False)  # get aKey in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = dber.getIoItemsNext(edb, key=aKey)  # get bKey in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for  key, val in items]
+        assert vals == bVals
+
+        items = dber.getIoItemsNext(edb, key=b'', skip=False)  # get first key in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        # bVals
+        items = dber.getIoItemsNext(edb, key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for key, val in items]
+        assert vals == bVals
+
+        # cVals
+        items = dber.getIoItemsNext(edb, key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == cKey
+        vals = [val for key, val in items]
+        assert vals == cVals
+
+        # dVals
+        items = dber.getIoItemsNext(edb, key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == dKey
+        vals = [val for key, val in items]
+        assert vals == dVals
+
+        # none
+        items = dber.getIoItemsNext(edb, key=ikey)
+        assert items == []  # empty
+        assert not items
+
+        # Test getIoItemsNextIter(self, db, key=b"")
+        #  get dups at first key in database
+        # aVals
+        items = [item for item in dber.getIoItemsNextIter(edb)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = [item for item in dber.getIoItemsNextIter(edb, key=aKey, skip=False)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = [item for item in dber.getIoItemsNextIter(edb, key=aKey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for  key, val in items]
+        assert vals == bVals
+
+        items = [item for item in dber.getIoItemsNextIter(edb, key=b'', skip=False)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+        for key, val in items:
+            assert dber.delIoVal(edb, ikey, val) == True
+
+        # bVals
+        items = [item for item in dber.getIoItemsNextIter(edb, key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for key, val in items]
+        assert vals == bVals
+        for key, val in items:
+            assert dber.delIoVal(edb, ikey, val) == True
+
+        # cVals
+        items = [item for item in dber.getIoItemsNextIter(edb, key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == cKey
+        vals = [val for key, val in items]
+        assert vals == cVals
+        for key, val in items:
+            assert dber.delIoVal(edb, ikey, val) == True
+
+        # dVals
+        items = [item for item in dber.getIoItemsNext(edb, key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == dKey
+        vals = [val for key, val in items]
+        assert vals == dVals
+        for key, val in items:
+            assert dber.delIoVal(edb, ikey, val) == True
+
+        # none
+        items = [item for item in dber.getIoItemsNext(edb, key=ikey)]
+        assert items == []  # empty
+        assert not items
 
 
     assert not os.path.exists(dber.path)
@@ -848,130 +855,130 @@ def test_baser():
 
         # Test getPseItemsNext( key=b"")
         # aVals
-        triples = db.getPseTriplesNext()  #  get first key in database
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = db.getPseItemsNext()  #  get first key in database
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
+        vals = [val for  key, val in items]
         assert vals == aVals
 
-        triples = db.getPseTriplesNext(key=aKey, skip=False)  #  get aKey  in database
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = db.getPseItemsNext(key=aKey, skip=False)  #  get aKey  in database
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
+        vals = [val for  key, val in items]
         assert vals == aVals
 
-        triples = db.getPseTriplesNext(key=aKey)  #  get bKey  in database
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = db.getPseItemsNext(key=aKey)  #  get bKey  in database
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == bKey
-        vals = [val for  key, pro, val in triples]
+        vals = [val for  key, val in items]
         assert vals == bVals
 
-        triples = db.getPseTriplesNext(key=b'', skip=False)  #  get frist key in database
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = db.getPseItemsNext(key=b'', skip=False)  #  get frist key in database
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
+        vals = [val for  key, val in items]
         assert vals == aVals
 
         # bVals
-        triples = db.getPseTriplesNext(key=ikey)
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = db.getPseItemsNext(key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == bKey
-        vals = [val for key, pro, val in triples]
+        vals = [val for key, val in items]
         assert vals == bVals
 
         # cVals
-        triples = db.getPseTriplesNext(key=ikey)
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = db.getPseItemsNext(key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == cKey
-        vals = [val for key, pro, val in triples]
+        vals = [val for key, val in items]
         assert vals == cVals
 
         # dVals
-        triples = db.getPseTriplesNext(key=ikey)
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = db.getPseItemsNext(key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == dKey
-        vals = [val for key, pro, val in triples]
+        vals = [val for key, val in items]
         assert vals == dVals
 
         # none
-        triples = db.getPseTriplesNext(key=ikey)
-        assert triples == []  # empty
-        assert not triples
+        items = db.getPseItemsNext(key=ikey)
+        assert items == []  # empty
+        assert not items
 
         # Test getPseItemsNextIter(key=b"")
         #  get dups at first key in database
         # aVals
-        triples = [triple for triple in db.getPseTriplesNextIter()]
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = [item for item in db.getPseItemsNextIter()]
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
+        vals = [val for  key, val in items]
         assert vals == aVals
 
-        triples = [triple for triple in db.getPseTriplesNextIter(key=aKey, skip=False)]
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = [item for item in db.getPseItemsNextIter(key=aKey, skip=False)]
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
+        vals = [val for  key, val in items]
         assert vals == aVals
 
-        triples = [triple for triple in db.getPseTriplesNextIter(key=aKey)]
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = [item for item in db.getPseItemsNextIter(key=aKey)]
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == bKey
-        vals = [val for  key, pro, val in triples]
+        vals = [val for  key, val in items]
         assert vals == bVals
 
-        triples = [triple for triple in db.getPseTriplesNextIter(key=b'', skip=False)]
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = [item for item in db.getPseItemsNextIter(key=b'', skip=False)]
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == aKey
-        vals = [val for  key, pro, val in triples]
+        vals = [val for  key, val in items]
         assert vals == aVals
-        for key, pro, val in triples:
-            assert db.delPses(ikey, bytes(pro)+bytes(val)) == True
+        for key, val in items:
+            assert db.delPse(ikey, val) == True
 
         # bVals
-        triples = [triple for triple in db.getPseTriplesNextIter(key=ikey)]
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = [item for item in db.getPseItemsNextIter(key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == bKey
-        vals = [val for key, pro, val in triples]
+        vals = [val for key, val in items]
         assert vals == bVals
-        for key, pro, val in triples:
-            assert db.delPses(ikey, bytes(pro)+bytes(val)) == True
+        for key, val in items:
+            assert db.delPse(ikey, val) == True
 
         # cVals
-        triples = [triple for triple in db.getPseTriplesNextIter(key=ikey)]
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = [item for item in db.getPseItemsNextIter(key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == cKey
-        vals = [val for key, pro, val in triples]
+        vals = [val for key, val in items]
         assert vals == cVals
-        for key, pro, val in triples:
-            assert db.delPses(ikey, bytes(pro)+bytes(val)) == True
+        for key, val in items:
+            assert db.delPse(ikey, val) == True
 
         # dVals
-        triples = [triple for triple in db.getPseTriplesNextIter(key=ikey)]
-        assert triples  # not empty
-        ikey = triples[0][0]
+        items = [item for item in db.getPseItemsNextIter(key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
         assert  ikey == dKey
-        vals = [val for key, pro, val in triples]
+        vals = [val for key, val in items]
         assert vals == dVals
-        for key, pro, val in triples:
-            assert db.delPses(ikey, bytes(pro)+bytes(val)) == True
+        for key, val in items:
+            assert db.delPse(ikey, val) == True
 
         # none
-        triples = [triple for triple in db.getPseTriplesNext(key=ikey)]
-        assert triples == []  # empty
-        assert not triples
+        items = [item for item in db.getPseItemsNext(key=ikey)]
+        assert items == []  # empty
+        assert not items
 
 
         # test .ooes insertion order dup methods.  dup vals are insertion order
