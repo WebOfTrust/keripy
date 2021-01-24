@@ -536,7 +536,7 @@ class LMDBer:
             for val in vals:
                 if val not in dups:
                     if cnt > MaxForks:
-                        raise DatabaseError("Too many recovery forks at key = "
+                        raise DatabaseError("Too many io dups at key = "
                                             "{}.".format(key))
                     result = True
                     val = (b'%06x.' % (cnt)) +  val  # prepend ordering proem
@@ -577,7 +577,7 @@ class LMDBer:
             result = False
             if val not in dups:
                 if cnt > MaxForks:
-                    raise DatabaseError("Too many recovery forks at key = "
+                    raise DatabaseError("Too many io dups at key = "
                                         "{}.".format(key))
                 val = (b'%06x.' % (cnt)) +  val  # prepend ordering proem
                 result = txn.put(key, val, dupdata=True)
