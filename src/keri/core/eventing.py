@@ -1737,7 +1737,7 @@ class Kevery:
         ims = bytearray()
         key = b''
         while not Done:
-            for ekey, edig in self.baser.getPseItemsNextIter(key=key):
+            for ekey, edig in self.baser.getPseTriplesNextIter(key=key):
                 try:
                     pre, sn = splitKeySn(key)  # get pre and sn from escrow item
 
