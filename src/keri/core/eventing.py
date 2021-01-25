@@ -1800,8 +1800,8 @@ class Kevery:
                     # process event
                     self.processOne(ims=ims)  # default framed True
 
-                    # If process does NOT validate sigs or delegation seal (when delegated)
-                    # But there is still one valid signature then process will
+                    # If process does NOT validate sigs or delegation seal (when delegated),
+                    # but there is still one valid signature then process will
                     # attempt to re-escrow and then raise MissingSignatureError
                     # or MissingDelegationSealError (subclass of ValidationError)
                     # so we can distinquish between ValidationErrors that are
@@ -1809,14 +1809,13 @@ class Kevery:
                     # On re-escrow attempt by process, Pse escrow is called by
                     # Kever.self.escrowPSEvent Which calls
                     # self.baser.addPse(snKey(pre, sn), serder.digb)
-                    # Which in turn will not enter dig as dup if one already exists.
+                    # which in turn will not enter dig as dup if one already exists.
                     # So re-escrow attempt will not change the escrowed pse db.
                     # Non re-escrow ValidationError means some other issue so unescrow.
                     # No error at all means processed successfully so also unescrow.
 
                 except (MissingSignatureError, MissingDelegatingSealError) as ex:
-                    # still waiting on sigs or seal to validate
-
+                    # still waiting on missing sigs or missing seal to validate
                     if blogger.isEnabledFor(logging.DEBUG):
                         blogger.exception("Kevery unescrow failed: %s\n", ex.args[0])
                     else:
@@ -1831,8 +1830,9 @@ class Kevery:
                         blogger.error("Kevery unescrowed: %s\n", ex.args[0])
 
                 else:  # unescrow succeeded, remove from escrow
-                    # we don't remove all escrows at pre,sn because some might be
-                    #  duplicitous so we process remaining event if found valid event
+                    # We don't remove all escrows at pre,sn because some might be
+                    # duplicitous so we process remaining escrows in spite of found
+                    # valid event escrow.
                     self.baser.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
                     blogger.info("Kevery unescrow succeeded in valid event: "
                              "event = %s\n", serder.ked)
