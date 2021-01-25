@@ -237,7 +237,7 @@ def test_lmdber():
         assert dber.getIoVals(db, key) == vals  #  no change
         assert dber.addIoVal(db, key, val=b'b') == True
         assert dber.addIoVal(db, key, val=b'a') == False
-        assert dber.getIoVals(db, key) == [b"z", b"m", b"x", b"a", b'b']
+        assert dber.getIoVals(db, key) == [b"z", b"m", b"x", b"a", b"b"]
         assert [val for val in dber.getIoValsIter(db, key)] == [b"z", b"m", b"x", b"a", b'b']
         assert dber.delIoVals(db, key) == True
         assert dber.getIoVals(db, key) == []
