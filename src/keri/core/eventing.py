@@ -1739,17 +1739,15 @@ class Kevery:
 
         done = False
         ims = bytearray()
-        key = b''
-        while not Done:
+        key = ekey = b''  # both start same. when not same means escrows found
+        while True:  # break when done
             for ekey, edig in self.baser.getPseItemsNextIter(key=key):
                 try:
-                    key = ekey #  setup next pass through while at key after ekey
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
-
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
-                        # no date time so unescrow dup entry at key
+                        # no date time so unescrow dup entry at ekey
                         self.baser.delPse(ekey, edig)
                         blogger.info("Kevery unescrow error: Missing event datetime"
                                  " at dig = %s\n", bytes(edig))
@@ -1761,7 +1759,7 @@ class Kevery:
                     dtnow =  datetime.datetime.now(datetime.timezone.utc)
                     dte = fromIso8601(dtb)
                     if (dtnow - dte).seconds > EscrowTimeoutPS:  # in seconds
-                        # escrow stale so unescrow dup entry at key
+                        # escrow stale so unescrow dup entry at ekey
                         self.baser.delPse(ekey, edig)
                         blogger.info("Kevery unescrow error: Stale event escrow "
                                  " at dig = %s\n", bytes(edig))
@@ -1772,7 +1770,7 @@ class Kevery:
                     # get the escrowed event using edig
                     eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
                     if eraw is None:
-                        # no event so unescrow dup entry at key
+                        # no event so unescrow dup entry at ekey
                         self.baser.delPse(ekey, edig)
                         blogger.info("Kevery unescrow error: Missing event at."
                                  "dig = %s\n", bytes(edig))
@@ -1786,7 +1784,7 @@ class Kevery:
                     #  get sigs and attach
                     sigs = self.baser.getSigs(dgKey(pre, bytes(edig)))
                     if not sigs:  #  otherwise its a list of sigs
-                        # no sigs unescrow dup entry at key
+                        # no sigs unescrow dup entry at ekey
                         self.baser.delPse(ekey, edig)
                         blogger.info("Kevery unescrow error: Missing event sigs at."
                                  "dig = %s\n", bytes(edig))
@@ -1802,17 +1800,19 @@ class Kevery:
                     # process event
                     self.processOne(ims=ims)  # default framed True
 
-                    # If process does not validate sigs and delegation seal (when delegated)
-                    # but there is one valid signature then it will attempt to escrow
-                    # Pse escrow is called by Kever.self.escrowPSEvent
-                    # Which calls self.baser.addPse(snKey(pre, sn), serder.digb)
-                    # Which in turn will not enter dig as dup if one already exists
-                    # IN any case if process does not validate sigs and delegation seal
-                    # It will raise ValidationError
-                    # validation error. So no validation error means process successful
-                    #  but need to know when event in escrow is stale or duplicitous
-                    #  so need different error for escrow attempt versus error that
-                    #  means we should flush from escrow buffer
+                    # If process does NOT validate sigs or delegation seal (when delegated)
+                    # But there is still one valid signature then process will
+                    # attempt to re-escrow and then raise MissingSignatureError
+                    # or MissingDelegationSealError (subclass of ValidationError)
+                    # so we can distinquish between ValidationErrors that are
+                    # re-escrow vs non re-escrow.
+                    # On re-escrow attempt by process, Pse escrow is called by
+                    # Kever.self.escrowPSEvent Which calls
+                    # self.baser.addPse(snKey(pre, sn), serder.digb)
+                    # Which in turn will not enter dig as dup if one already exists.
+                    # So re-escrow attempt will not change the escrowed pse db.
+                    # Non re-escrow ValidationError means some other issue so unescrow.
+                    # No error at all means processed successfully so also unescrow.
 
                 except (MissingSignatureError, MissingDelegatingSealError) as ex:
                     # still waiting on sigs or seal to validate
@@ -1831,15 +1831,15 @@ class Kevery:
                         blogger.error("Kevery unescrowed: %s\n", ex.args[0])
 
                 else:  # unescrow succeeded, remove from escrow
-                    #  do we want to remove all other escrows are check them for duplicity?
-                    #  first seen wins. Should we do duplicity on any others
-                    #  that is we already loaded all partials so do we process all
-                    #  which may create duplicitous
+                    # we don't remove all escrows at pre,sn because some might be
+                    #  duplicitous so we process remaining event if found valid event
                     self.baser.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
-                    # self.baser.delPses(snKey(pre, sn))  #  remove all escrows at key
-
                     blogger.info("Kevery unescrow succeeded in valid event: "
                              "event = %s\n", serder.ked)
+
+            if ekey == key:  # still same so no escrows found on last while iteration
+                break
+            key = ekey #  setup next while iteration, with key after ekey
 
 
 
