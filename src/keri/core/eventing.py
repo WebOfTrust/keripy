@@ -1743,6 +1743,8 @@ class Kevery:
                     key = ekey #  setup next pass through while at key after ekey
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
 
+                    # check date if expired then remove escrow.
+
                     # get the escrowed event using edig
                     eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
                     if eraw is None:
@@ -1774,7 +1776,8 @@ class Kevery:
                     #  means we should flush from escrow buffer
 
                 except (MissingSignatureError, MissingDelegatingSealError) as ex:
-                    # still waiting on signs for seal to validate
+                    # still waiting on sigs or seal to validate
+
                     if blogger.isEnabledFor(logging.DEBUG):
                         blogger.exception("Kevery unescrow failed: %s\n", ex.args[0])
                     else:
