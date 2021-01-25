@@ -1478,11 +1478,6 @@ class Kevery:
         ilk = ked["t"]
         dig = serder.dig
 
-        #if self.baser.getEvt(dgKey(pre, dig)) is not None:
-            ## performance log duplicate event
-            #blogger.info("Kevery process: discarded duplicate event = %s\n", ked)
-            #return  # discard duplicate
-
         if pre not in self.kevers:  #  first seen event for pre
             if ilk in (Ilks.icp, Ilks.dip):  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures

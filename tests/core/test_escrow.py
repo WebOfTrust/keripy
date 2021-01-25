@@ -183,33 +183,6 @@ def test_partial_signed_escrow():
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0  # escrow gone
 
-
-        # Create rotation event for
-        # get current keys as verfers and next digests as digers
-        verfers, digers = mgr.rotate(pre=pre, count=3, temp=True)
-        nxtsith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
-
-        srdr = eventing.rotate(pre=kvr.prefixer.qb64,
-                                  keys=[verfer.qb64 for verfer in verfers],
-                                  sith=sith,
-                                  dig=kvr.serder.diger.qb64,
-                                  nxt=coring.Nexter(sith=nxtsith,
-                                                    digs=[diger.qb64 for diger in digers]).qb64,
-                                  sn=kvr.sn+1,
-                                  data=[])
-
-        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
-
-        msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
-        msg.extend(counter.qb64b)
-        for siger in sigers:
-            msg.extend(siger.qb64b)
-
-        # apply msg to Kevery
-        kvy.processAll(ims=bytearray(msg))  # process local copy of msg
-        assert kvr.serder.diger.qb64 == srdr.dig  # key state updated so event was validated
-
         # Create rotation event
         # get current keys as verfers and next digests as digers
         verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
@@ -257,14 +230,33 @@ def test_partial_signed_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.SigCounter(count=2)
         msg.extend(counter.qb64b)
-        for siger in sigers:
-            msg.extend(siger.qb64b)
+        msg.extend(sigers[0].qb64b)
+        msg.extend(sigers[3].qb64b)
 
         # apply msg to Kevery
         kvy.processAll(ims=bytearray(msg))  # process local copy of msg
-        assert kvr.serder.diger.qb64 == srdr.dig  # key state updated so event was validated
+        assert kvr.serder.diger.qb64 != srdr.dig  # key state not updated
+
+        # process escrow
+        kvy.processPartials()
+        assert kvr.serder.diger.qb64 != srdr.dig  # key state not updated
+
+        msg = bytearray(srdr.raw)
+        counter = coring.SigCounter(count=1)
+        msg.extend(counter.qb64b)
+        msg.extend(sigers[1].qb64b)
+
+        # apply msg to Kevery
+        kvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        assert kvr.serder.diger.qb64 != srdr.dig  # key state not updated
+
+        # process escrow
+        kvy.processPartials()
+        assert kvr.serder.diger.qb64 == srdr.dig  # key state updated
+
+
 
 
     assert not os.path.exists(kpr.path)
