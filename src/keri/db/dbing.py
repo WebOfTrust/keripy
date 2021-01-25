@@ -1029,6 +1029,7 @@ class Baser(LMDBer):
         """
         return self.putVal(self.evts, key, val)
 
+
     def setEvt(self, key, val):
         """
         Use dgKey()
@@ -1037,6 +1038,7 @@ class Baser(LMDBer):
         Returns True If val successfully written Else False
         """
         return self.setVal(self.evts, key, val)
+
 
     def getEvt(self, key):
         """
@@ -1136,16 +1138,6 @@ class Baser(LMDBer):
         Duplicates are inserted in lexocographic order not insertion order.
         """
         return self.addVal(self.sigs, key, val)
-
-
-    def getSigs(self, key):
-        """
-        Use dgKey()
-        Return list of signatures at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.sigs, key)
 
 
     def cntSigs(self, key):

@@ -1744,6 +1744,17 @@ class Kevery:
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
 
                     # check date if expired then remove escrow.
+                    dt = self.baser.getDts(dgKey(pre, bytes(edig)))
+                    if dt is None:  # othewise is a datetime as bytes
+                        # no date time so unescrow dup entry at key
+                        self.baser.delPse(ekey, edig)
+                        blogger.info("Kevery unescrow error: Missing event datetime"
+                                 " at dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed event datetime "
+                                              "at dig = {}.".format(bytes(edig)))
+                    # do date math here and discard if stale nowIIso8601() bytes
+
 
                     # get the escrowed event using edig
                     eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
@@ -1756,13 +1767,28 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt at dig = {}."
                                               "".format(bytes(edig)))
 
-                    eserder = Serder(raw=bytes(raw))  # escrowed event
+                    eserder = Serder(raw=bytes(eraw))  # escrowed event
+                    ims.extend(eserder.raw)
+
                     #  get sigs and attach
+                    sigs = self.baser.getSigs(dgKey(pre, bytes(edig)))
+                    if not sigs:  #  otherwise its a list of sigs
+                        # no sigs unescrow dup entry at key
+                        self.baser.delPse(ekey, edig)
+                        blogger.info("Kevery unescrow error: Missing event sigs at."
+                                 "dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed evt sigs at "
+                                              "dig = {}.".format(bytes(edig)))
+
+                    counter = SigCounter(count=len(sigs))
+                    ims.extend(counter.qb64b)
+                    for sig in sigs:  # stored in db as qb64b
+                        ims.extend(sig)
 
                     # process event
+                    self.processOne(ims=ims)  # default framed True
 
-
-                    # self.processOne(ims=ims, framed=self.framed)
                     # If process does not validate sigs and delegation seal (when delegated)
                     # but there is one valid signature then it will attempt to escrow
                     # Pse escrow is called by Kever.self.escrowPSEvent
