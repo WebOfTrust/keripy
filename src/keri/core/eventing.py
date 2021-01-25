@@ -1214,6 +1214,8 @@ class Kevery:
     Properties:
 
     """
+    TimeoutPSE = 3600  # seconds to timeout partial signed escrows
+
     def __init__(self, ims=None, cues=None, kevers=None, baser=None, framed=True):
         """
         Set up event stream and logs
@@ -1476,10 +1478,10 @@ class Kevery:
         ilk = ked["t"]
         dig = serder.dig
 
-        if self.baser.getEvt(dgKey(pre, dig)) is not None:
-            # performance log duplicate event
-            blogger.info("Kevery process: discarded duplicate event = %s\n", ked)
-            return  # discard duplicate
+        #if self.baser.getEvt(dgKey(pre, dig)) is not None:
+            ## performance log duplicate event
+            #blogger.info("Kevery process: discarded duplicate event = %s\n", ked)
+            #return  # discard duplicate
 
         if pre not in self.kevers:  #  first seen event for pre
             if ilk in (Ilks.icp, Ilks.dip):  # first seen and inception so verify event keys
@@ -1738,13 +1740,12 @@ class Kevery:
 
         """
 
-        done = False
         ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
             for ekey, edig in self.baser.getPseItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
+                    pre, sn = splitKeySn(bytes(ekey))  # get pre and sn from escrow item
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
@@ -1758,8 +1759,8 @@ class Kevery:
 
                     # do date math here and discard if stale nowIso8601() bytes
                     dtnow =  datetime.datetime.now(datetime.timezone.utc)
-                    dte = fromIso8601(dtb)
-                    if (dtnow - dte).seconds > EscrowTimeoutPS:  # in seconds
+                    dte = fromIso8601(bytes(dtb))
+                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
                         # escrow stale so unescrow dup entry at ekey
                         self.baser.delPse(ekey, edig)
                         blogger.info("Kevery unescrow error: Stale event escrow "
@@ -1837,7 +1838,7 @@ class Kevery:
                     # valid event escrow.
                     self.baser.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
                     blogger.info("Kevery unescrow succeeded in valid event: "
-                             "event = %s\n", serder.ked)
+                             "event = %s\n", eserder.ked)
 
             if ekey == key:  # still same so no escrows found on last while iteration
                 break
