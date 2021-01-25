@@ -3,10 +3,11 @@
 keri.core.eventing module
 
 """
-
+import datetime
 import re
 import json
 import logging
+
 from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
 from base64 import urlsafe_b64encode as encodeB64
@@ -24,7 +25,7 @@ from ..kering import (ValidationError, VersionError, EmptyMaterialError,
                       DerivationError, ShortageError, MissingSignatureError,
                       MissingDelegatingSealError)
 from ..kering import Versionage, Version
-from ..help.helping import nowIso8601
+from ..help.helping import nowIso8601, fromIso8601, toIso8601
 from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
 
 from .coring import Versify, Serials, Ilks, CryOneDex
@@ -36,6 +37,8 @@ from .coring import SigCounter, Siger
 from ..help import ogling
 
 blogger, flogger = ogling.ogler.getLoggers()
+
+EscrowTimeoutPS = 3600  # seconds for partial signed escrow timeout
 
 ICP_LABELS = ["v", "i", "s", "t", "kt", "k", "n",
               "wt", "w", "c"]
@@ -1744,8 +1747,8 @@ class Kevery:
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
 
                     # check date if expired then remove escrow.
-                    dt = self.baser.getDts(dgKey(pre, bytes(edig)))
-                    if dt is None:  # othewise is a datetime as bytes
+                    dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
+                    if dtb is None:  # othewise is a datetime as bytes
                         # no date time so unescrow dup entry at key
                         self.baser.delPse(ekey, edig)
                         blogger.info("Kevery unescrow error: Missing event datetime"
@@ -1753,8 +1756,18 @@ class Kevery:
 
                         raise ValidationError("Missing escrowed event datetime "
                                               "at dig = {}.".format(bytes(edig)))
-                    # do date math here and discard if stale nowIIso8601() bytes
 
+                    # do date math here and discard if stale nowIso8601() bytes
+                    dtnow =  datetime.datetime.now(datetime.timezone.utc)
+                    dte = fromIso8601(dtb)
+                    if (dtnow - dte).seconds > EscrowTimeoutPS:  # in seconds
+                        # escrow stale so unescrow dup entry at key
+                        self.baser.delPse(ekey, edig)
+                        blogger.info("Kevery unescrow error: Stale event escrow "
+                                 " at dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Stae event escrow "
+                                              "at dig = {}.".format(bytes(edig)))
 
                     # get the escrowed event using edig
                     eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))

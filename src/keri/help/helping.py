@@ -289,7 +289,7 @@ def toIso8601(dt=None):
 
 def fromIso8601(dts):
     """
-    Returns datetime object from ISO 8601 formated str
+    Returns datetime object from ISO 8601 formated str or bytes
     Converts dts from ISO 8601 format to datetime object
 
     YYYY-MM-DDTHH:MM:SS.ffffff+HH:MM[:SS[.ffffff]]
@@ -298,4 +298,6 @@ def fromIso8601(dts):
     Assumes TZ aware
     For nanosecond use instead attotime or datatime64 in pandas or numpy
     """
+    if hasattr(dts, "decode"):
+        dts = dts.decode("utf-8")
     return (datetime.datetime.fromisoformat(dts))
