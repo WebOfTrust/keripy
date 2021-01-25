@@ -1065,7 +1065,8 @@ class Kever:
                                             serder.ked))
 
         if not tholder.satisfy(indices):  #  at least one but not enough
-            self.escrowPSEvent(self, serder, sigers, self.prefixer.qb64b, sn)
+            self.escrowPSEvent(serder=serder, sigers=sigers,
+                               pre=self.prefixer.qb64b, sn=sn)
 
             raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                   " for evt = {}.".format(tholder.sith,
@@ -1805,7 +1806,8 @@ class Kevery:
                     # attempt to re-escrow and then raise MissingSignatureError
                     # or MissingDelegationSealError (subclass of ValidationError)
                     # so we can distinquish between ValidationErrors that are
-                    # re-escrow vs non re-escrow.
+                    # re-escrow vs non re-escrow. We want process to be idempotent
+                    # with respect to processing events that result in escrow items.
                     # On re-escrow attempt by process, Pse escrow is called by
                     # Kever.self.escrowPSEvent Which calls
                     # self.baser.addPse(snKey(pre, sn), serder.digb)
