@@ -509,11 +509,12 @@ class LMDBer:
         Write each entry from list of bytes vals to key in db in insertion order
         Adds to existing values at key if any
         Returns True If at least one of vals is added as dup, False otherwise
+        Assumes DB opened with dupsort=True
 
         Duplicates at a given key preserve insertion order of duplicate.
         Because lmdb is lexocographic an insertion ordering proem is prepended to
         all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
+        Duplicates are ordered as a pair of key plus value so prepending proem
         to each value changes duplicate ordering. Proem is 7 characters long.
         With 6 character hex string followed by '.' for a max
         of 2**24 = 16,777,216 duplicates. With prepended proem ordinal must explicity
@@ -526,23 +527,26 @@ class LMDBer:
             key is bytes of key within sub db's keyspace
             vals is list of bytes of values to be written
         """
+
+        result = False
         dups = set(self.getIoVals(db, key))  #get preexisting dups if any
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            cnt = 0
+            idx = 0
             cursor = txn.cursor()
-            if cursor.set_key(key):
-                cnt = cursor.count()
-            result = False
+            if cursor.set_key(key): # move to key if any
+                if cursor.last_dup(): # move to last dup
+                    idx = 1 + int(bytes(cursor.value()[:6]), 16)  # get last index as int
+
             for val in vals:
                 if val not in dups:
-                    if cnt > MaxForks:
+                    if idx > MaxForks:
                         raise DatabaseError("Too many io dups at key = "
                                             "{}.".format(key))
-                    result = True
-                    val = (b'%06x.' % (cnt)) +  val  # prepend ordering proem
+                    val = (b'%06x.' % (idx)) +  val  # prepend ordering proem
                     txn.put(key, val, dupdata=True)
-                    cnt += 1
-            return result
+                    idx += 1
+                    result = True
+        return result
 
 
     def addIoVal(self, db, key, val):
@@ -551,52 +555,21 @@ class LMDBer:
         Adds to existing values at key if any
         Returns True if written else False if val is already a dup
         Actual value written include prepended proem ordinal
-
-        Duplicates at a given key preserve insertion order of duplicate.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates. With prepended proem ordinal must explicity
-        check for duplicate values before insertion. Uses a python set for the
-        duplicate inclusion test. Set inclusion scales with O(1) whereas list
-        inclusion scales with O(n).
+        Assumes DB opened with dupsort=True
 
         Parameters:
             db is opened named sub db with dupsort=False
             key is bytes of key within sub db's keyspace
             val is bytes of value to be written
         """
-        dups = set(self.getIoVals(db, key))  #get preexisting dups if any
-        with self.env.begin(db=db, write=True, buffers=True) as txn:
-            cnt = 0
-            cursor = txn.cursor()
-            if cursor.set_key(key):
-                cnt = cursor.count()
-            result = False
-            if val not in dups:
-                if cnt > MaxForks:
-                    raise DatabaseError("Too many io dups at key = "
-                                        "{}.".format(key))
-                val = (b'%06x.' % (cnt)) +  val  # prepend ordering proem
-                result = txn.put(key, val, dupdata=True)
-            return result
-
+        return self.putIoVals(db, key, [val])
 
     def getIoVals(self, db, key):
         """
         Return list of duplicate values at key in db in insertion order
         Returns empty list if no entry at key
         Removes prepended proem ordinal from each val  before returning
-
-        Duplicates at a given key are retrieved in insertion order.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates,
+        Assumes DB opened with dupsort=True
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -607,7 +580,7 @@ class LMDBer:
             cursor = txn.cursor()
             vals = []
             if cursor.set_key(key):  # moves to first_dup
-                # slice off prepended ordering prefix
+                # slice off prepended ordering proem
                 vals = [val[7:] for val in cursor.iternext_dup()]
             return vals
 
@@ -617,14 +590,7 @@ class LMDBer:
         Return iterator of all duplicate values at key in db in insertion order
         Raises StopIteration Error when no remaining dup items = empty.
         Removes prepended proem ordinal from each val before returning
-
-        Duplicates at a given key are retrieved in insertion order.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates,
+        Assumes DB opened with dupsort=True
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -636,7 +602,7 @@ class LMDBer:
             vals = []
             if cursor.set_key(key):  # moves to first_dup
                 for val in cursor.iternext_dup():
-                    yield val[7:]  # slice off prepended ordering prefix
+                    yield val[7:]  # slice off prepended ordering proem
 
 
     def getIoValLast(self, db, key):
@@ -644,14 +610,7 @@ class LMDBer:
         Return last added dup value at key in db in insertion order
         Returns None no entry at key
         Removes prepended proem ordinal from val before returning
-
-        Duplicates at a given key are retrieved in insertion order.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates,
+        Assumes DB opened with dupsort=True
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -663,7 +622,7 @@ class LMDBer:
             val = None
             if cursor.set_key(key):  # move to first_dup
                 if cursor.last_dup(): # move to last_dup
-                    val = cursor.value()[7:]  # slice off prepended ordering prefix
+                    val = cursor.value()[7:]  # slice off prepended ordering proem
             return val
 
 
@@ -680,13 +639,6 @@ class LMDBer:
         order to iterate through the database
 
         Assumes DB opened with dupsort=True
-        Duplicates at a given key are retrieved in insertion order.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order the same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates,
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -721,13 +673,6 @@ class LMDBer:
         order to iterate through the database
 
         Assumes DB opened with dupsort=True
-        Duplicates at a given key are retrieved in insertion order.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order the same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates,
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -750,6 +695,7 @@ class LMDBer:
     def cntIoVals(self, db, key):
         """
         Return count of dup values at key in db, or zero otherwise
+        Assumes DB opened with dupsort=True
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -768,6 +714,7 @@ class LMDBer:
         """
         Deletes all values at key in db if key present.
         Returns True If key exists and dups deleted Else False
+        Assumes DB opened with dupsort=True
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -783,17 +730,9 @@ class LMDBer:
         Deletes dup io val at key in db. Performs strip search to find match.
         Strips proems and then searches.
         Returns True if delete else False if val not present
+        Assumes DB opened with dupsort=True
 
-        Duplicates at a given key preserve insertion order of duplicate.
-        Because lmdb is lexocographic an insertion ordering proem is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Proem is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates. With prepended proem ordinal must explicity
-        check for duplicate values before insertion. Uses a python set for the
-        duplicate inclusion test. Set inclusion scales with O(1) whereas list
-        inclusion scales with O(n).
+        Does a linear search so not very efficient when not deleting from the front.
 
         Parameters:
             db is opened named sub db with dupsort=False
@@ -801,21 +740,11 @@ class LMDBer:
             val is bytes of value to be deleted without intersion ordering proem
         """
 
-        #with self.env.begin(db=db, write=True, buffers=True) as txn:
-            #cursor = txn.cursor()
-            #if cursor.set_key(key):  # move to first_dup
-                #if val == cursor.value()[7:]:  # test first value (do while)
-                    #return cursor.delete()
-                #while cursor.next_dup():
-                    #if val == cursor.value()[7:]:
-                        #return cursor.delete()
-        #return False
-
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             cursor = txn.cursor()
             if cursor.set_key(key):  # move to first_dup
                 for proval in cursor.iternext_dup():  #  value with proem
-                    if val == proval[7:]:
+                    if val == proval[7:]:  #  strip of proem
                         return cursor.delete()
         return False
 

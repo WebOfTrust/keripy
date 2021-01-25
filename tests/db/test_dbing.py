@@ -249,6 +249,13 @@ def test_lmdber():
         for val in sorted(vals):
             assert dber.delIoVal(db, key, val)
         assert dber.getIoVals(db, key) == []
+        #delete and add in odd order
+        assert dber.putIoVals(db, key, vals) == True
+        assert dber.delIoVal(db, key, vals[2])
+        assert dber.addIoVal(db, key, b'w')
+        assert dber.delIoVal(db, key, vals[0])
+        assert dber.addIoVal(db, key, b'e')
+        assert dber.getIoVals(db, key) == [b'm', b'a', b'w', b'e']
 
         # Test getIoValsAllPreIter(self, db, pre)
         vals0 = [b"gamma", b"beta"]
@@ -1224,4 +1231,4 @@ def test_usebaser():
     """ End Test """
 
 if __name__ == "__main__":
-    test_baser()
+    test_lmdber()
