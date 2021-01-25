@@ -8,7 +8,7 @@ Project Name:  keripy
 ### Dependencies
 #### Binaries
 
-python 3.82+
+python 3.9.1+
 libsodium 1.0.18+
 
 
@@ -306,7 +306,17 @@ https://medium.com/@joehonton/cipher-suites-demystified-ada2e97be9c9
 
 ## Development
 
-* Ensure Python 3.8 is present along with venv and dev header files;
+### Setup
+* Ensure Python 3.9 is present along with venv and dev header files;
 * Setup virtual environment: `python3 -m venv keripy`
 * Activate virtual environment: `source keripy/bin/activate`
 * Setup dependencies: `pip install -r requirements.txt`
+
+### Testing
+* Install pytest: `pip install pytest`
+* Run the test suites: 
+    ```
+    pytest tests/ --ignore tests/demo/
+    pytest tests/demo/
+    ```
+    
