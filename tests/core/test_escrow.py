@@ -102,6 +102,14 @@ def test_partial_signed_escrow():
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0
 
+        # send duplicate message
+        msg = bytearray(srdr.raw)
+        counter = coring.SigCounter(count=len(sigers))
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        kvy.processAll(ims=bytearray(msg))  # process local copy of msg
+
 
         # create interaction event for
         srdr = eventing.interact(pre=kvr.prefixer.qb64,
@@ -471,5 +479,5 @@ def test_missing_delegator_escrow():
 
 
 if __name__ == "__main__":
-    test_missing_delegator_escrow()
+    test_partial_signed_escrow()
 
