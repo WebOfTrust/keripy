@@ -1612,7 +1612,7 @@ class Kevery:
 
                 else:  # maybe duplicitous
                     # check if duplicate of existing valid accepted event
-                    ddig = bytes(self.baser.getKeLast(key=snKey(pre, sn)))
+                    ddig = bytes(self.baser.getKeLast(key=snKey(pre, sn))).decode("utf-8")
                     if ddig == dig:  # event is a duplicate but not duplicitous
                         eserder = self.fetchEstEvent(pre, sn)
                         # may have attached valid signature not yet logged
