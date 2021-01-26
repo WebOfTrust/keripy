@@ -97,11 +97,22 @@ def test_partial_signed_escrow():
         assert pre in kvy.kevers  # event now accepted via escrow
         kvr = kvy.kevers[pre]  # kever created so event was validated
         assert kvr.prefixer.qb64 == pre
-        assert kvr.serder.diger.qb64 == srdr.dig  # key state updated so event was validated
+        assert kvr.serder.dig == srdr.dig  # key state updated so event was validated
         # escrows now empty
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0
 
+        # send duplicate message with all three sigs
+        msg = bytearray(srdr.raw)
+        counter = coring.SigCounter(count=len(sigers))
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        kvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        sigs = kvy.baser.getSigs(dbing.dgKey(pre, srdr.dig))
+        assert len(sigs) == 3
+        escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        assert len(escrows) == 0  # escrow stays gone
 
         # create interaction event for
         srdr = eventing.interact(pre=kvr.prefixer.qb64,
@@ -178,10 +189,21 @@ def test_partial_signed_escrow():
 
         # Process partials but now escrow not stale
         kvy.processPartials()
-        assert kvr.serder.diger.qb64 == srdr.dig  # key state updated so event was validated
+        assert kvr.serder.dig == srdr.dig  # key state updated so event was validated
         assert kvr.sn == 1  # key state successfully updated
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0  # escrow gone
+
+        # send duplicate message but add last sig
+        msg = bytearray(srdr.raw)
+        counter = coring.SigCounter(count=1)
+        msg.extend(counter.qb64b)
+        msg.extend(sigers[2].qb64b)
+        kvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        sigs = kvy.baser.getSigs(dbing.dgKey(pre, srdr.dig))  #  but sigs is more
+        assert len(sigs) == 3
+        escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
+        assert len(escrows) == 0  # escrow stays gone
 
         # Create rotation event
         # get current keys as verfers and next digests as digers
@@ -209,7 +231,7 @@ def test_partial_signed_escrow():
 
         # apply msg to Kevery
         kvy.processAll(ims=bytearray(msg))  # process local copy of msg
-        assert kvr.serder.diger.qb64 == srdr.dig  # key state updated so event was validated
+        assert kvr.serder.dig == srdr.dig  # key state updated so event was validated
 
         # Create rotation event
         # get current keys as verfers and next digests as digers
@@ -471,5 +493,5 @@ def test_missing_delegator_escrow():
 
 
 if __name__ == "__main__":
-    test_missing_delegator_escrow()
+    test_partial_signed_escrow()
 

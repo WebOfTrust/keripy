@@ -694,7 +694,7 @@ class Kever:
             self.delegated = False
             self.delegator = None
 
-        self.logEvent(serder, sigers)  # update logs
+        self.logEvent(serder, sigers)  # idempotent update db logs
 
 
     @property
@@ -1042,9 +1042,17 @@ class Kever:
         return sn
 
 
-    def validateSigs(self, serder, sigers, verfers, tholder, sn):
+    def verifySigs(self, serder, sigers, verfers):
         """
-        Validate signatures by validating sith indexs and verifying signatures
+        Returns list of indices of verified signatures for serder, sigers, and verfers.
+        Assigns verfer to appropriate siger based on index
+        If no signatures verify then indices is empty
+
+        Parameters:
+            serder is Serder of signed event
+            sigers is list of indexed Siger instances (signatures)
+            verfers is list of Verfer instance (public keys)
+
         """
         # verify indexes of attached signatures against verifiers
         for siger in sigers:
@@ -1059,6 +1067,44 @@ class Kever:
             if siger.verfer.verify(siger.raw, serder.raw):
                 indices.append(siger.index)
 
+        return indices
+
+
+
+    def validateSigs(self, serder, sigers, verfers, tholder, sn):
+        """
+        Validate signatures by validating sith indexs and verifying signatures
+
+        Parameters:
+            serder
+            sigers
+            verfers
+            tholder
+            sn
+            escrow
+
+        """
+        if len(verfers) < self.tholder.size:
+            raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
+                             "".format(tholder.sith,
+                                       [verfer.qb64 for verfer in verfers],
+                                       serder.ked))
+
+        indices = self.verifySigs(serder, sigers, verfers)
+
+        ## verify indexes of attached signatures against verifiers
+        #for siger in sigers:
+            #if siger.index >= len(verfers):
+                #raise ValidationError("Index = {} to large for keys for evt = "
+                                      #"{}.".format(siger.index, serder.ked))
+            #siger.verfer = verfers[siger.index]  # assign verfer
+
+        ## verify signatures
+        #indices = []
+        #for siger in sigers:
+            #if siger.verfer.verify(siger.raw, serder.raw):
+                #indices.append(siger.index)
+
         if not indices:  # must have a least one verified
             raise ValidationError("No verified signatures among {} for evt = {}."
                                   "".format([siger.qb64 for siger in sigers],
@@ -1066,7 +1112,7 @@ class Kever:
 
         if not tholder.satisfy(indices):  #  at least one but not enough
             self.escrowPSEvent(serder=serder, sigers=sigers,
-                               pre=self.prefixer.qb64b, sn=sn)
+                                   pre=self.prefixer.qb64b, sn=sn)
 
             raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                   " for evt = {}.".format(tholder.sith,
@@ -1159,7 +1205,8 @@ class Kever:
 
     def logEvent(self, serder, sigers):
         """
-        Update associated logs for verified event
+        Update associated logs for verified event.
+        Update is idempotent. Logs will not write dup at key if already exists.
 
         Parameters:
             serder is Serder instance of current event
@@ -1399,7 +1446,6 @@ class Kevery:
             raise ValidationError("Unexpected message ilk = {} for evt ="
                                   " {}.".format(ilk, serder.ked))
 
-
     def validateSN(self, ked):
         """
         Returns int validated from hex str sn in ked
@@ -1418,6 +1464,37 @@ class Kevery:
             raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
 
         return sn
+
+    def fetchEstEvent(self, pre, sn):
+        """
+        Returns Serder instance of establishment event that is authoritative for
+        event in KEL for pre at sn.
+        Returns None if no event at sn accepted in KEL for pre
+
+        Parameters:
+            pre is qb64 of identifier prefix for KEL
+            sn is int sequence number of event in KEL of pre
+        """
+
+        found = False
+        while not found:
+            dig = bytes(self.baser.getKeLast(key=snKey(pre, sn)))
+            if not dig:
+                return None
+
+            # retrieve event by dig
+            raw = bytes(self.baser.getEvt(key=dgKey(pre=pre, dig=dig)))
+            if not raw:
+                return None
+
+            serder = Serder(raw=raw)  # deserialize event raw
+            if serder.ked["t"] in (Ilks.icp, Ilks.dip, Ilks.rot, Ilks.drt):
+                return serder  # establishment event so return
+
+            sn = int(serder.ked["s"], 16) - 1  # set sn to previous event
+            if sn < 0: # no more events
+                return None
+
 
     def escrowOOEvent(self, serder, sigers, pre, sn):
         """
@@ -1497,8 +1574,23 @@ class Kevery:
 
         else:  # already accepted inception event for pre
             if ilk in (Ilks.icp, Ilks.dip):  # another inception event so maybe duplicitous
-                # escrow likely duplicitous event
-                self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+                if sn != 0:
+                    raise ValueError("Invalid sn={} for inception event={}."
+                                     "".format(sn, serder.ked))
+                # check if duplicate of existing inception
+                eserder = self.fetchEstEvent(pre, sn)
+                if eserder.dig == dig:  # event is a duplicate but not duplicitous
+                    # may have attached valid signature not yet logged
+                    # raises ValidationError if no valid sig
+                    kever = self.kevers[pre]
+                    indices = kever.verifySigs(serder=serder,
+                                               sigers=sigers,
+                                               verfers=eserder.verfers)
+                    if indices:  # verified signature so log sigs
+                        kever.logEvent(serder, sigers)  # idempotent update db logs
+
+                else:   # escrow likely duplicitous event
+                    self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
 
             else:  # rot, drt, or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
@@ -1519,8 +1611,21 @@ class Kevery:
                     self.cues.append(dict(pre=pre, serder=serder))
 
                 else:  # maybe duplicitous
-                    #  escrow likely duplicitous event
-                    self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+                    # check if duplicate of existing valid accepted event
+                    ddig = bytes(self.baser.getKeLast(key=snKey(pre, sn))).decode("utf-8")
+                    if ddig == dig:  # event is a duplicate but not duplicitous
+                        eserder = self.fetchEstEvent(pre, sn)
+                        # may have attached valid signature not yet logged
+                        # raises ValidationError if no valid sig
+                        kever = self.kevers[pre]
+                        indices = kever.verifySigs(serder=serder,
+                                                   sigers=sigers,
+                                                   verfers=eserder.verfers)
+                        if indices:  # verified signature so log sigs
+                            kever.logEvent(serder, sigers)  # idempotent update db logs
+
+                    else:   # escrow likely duplicitous event
+                        self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
 
 
     def processReceipt(self, serder, cigars):
