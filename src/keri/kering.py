@@ -61,6 +61,14 @@ class OutOfOrderError(ValidationError):
     """
 
 
+class LikelyDuplicitousError(ValidationError):
+    """
+    Error event is likely duplicitous
+    Usage:
+        raise LikelyDuplicitousError("error message")
+    """
+
+
 class VersionError(ValidationError):
     """
     Bad or Unsupported Version
