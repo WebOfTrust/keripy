@@ -1844,8 +1844,7 @@ class Kevery:
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
-                        # no date time so unescrow dup entry at ekey
-                        self.baser.delPse(ekey, edig)
+                        # no date time so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Missing event datetime"
                                  " at dig = %s\n", bytes(edig))
 
@@ -1856,8 +1855,7 @@ class Kevery:
                     dtnow =  datetime.datetime.now(datetime.timezone.utc)
                     dte = fromIso8601(bytes(dtb))
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
-                        # escrow stale so unescrow dup entry at ekey
-                        self.baser.delPse(ekey, edig)
+                        # escrow stale so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Stale event escrow "
                                  " at dig = %s\n", bytes(edig))
 
@@ -1867,8 +1865,7 @@ class Kevery:
                     # get the escrowed event using edig
                     eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
                     if eraw is None:
-                        # no event so unescrow dup entry at ekey
-                        self.baser.delPse(ekey, edig)
+                        # no event so so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Missing event at."
                                  "dig = %s\n", bytes(edig))
 
@@ -1881,8 +1878,7 @@ class Kevery:
                     #  get sigs and attach
                     sigs = self.baser.getSigs(dgKey(pre, bytes(edig)))
                     if not sigs:  #  otherwise its a list of sigs
-                        # no sigs unescrow dup entry at ekey
-                        self.baser.delPse(ekey, edig)
+                        # no sigs so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Missing event sigs at."
                                  "dig = %s\n", bytes(edig))
 
@@ -1987,8 +1983,7 @@ class Kevery:
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
-                        # no date time so unescrow dup entry at ekey
-                        self.baser.delOoe(ekey, edig)
+                        # no date time so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Missing event datetime"
                                  " at dig = %s\n", bytes(edig))
 
@@ -1999,8 +1994,7 @@ class Kevery:
                     dtnow =  datetime.datetime.now(datetime.timezone.utc)
                     dte = fromIso8601(bytes(dtb))
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
-                        # escrow stale so unescrow dup entry at ekey
-                        self.baser.delOoe(ekey, edig)
+                        # escrow stale so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Stale event escrow "
                                  " at dig = %s\n", bytes(edig))
 
@@ -2010,8 +2004,7 @@ class Kevery:
                     # get the escrowed event using edig
                     eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
                     if eraw is None:
-                        # no event so unescrow dup entry at ekey
-                        self.baser.delOoe(ekey, edig)
+                        # no event so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Missing event at."
                                  "dig = %s\n", bytes(edig))
 
@@ -2024,8 +2017,7 @@ class Kevery:
                     #  get sigs and attach
                     sigs = self.baser.getSigs(dgKey(pre, bytes(edig)))
                     if not sigs:  #  otherwise its a list of sigs
-                        # no sigs unescrow dup entry at ekey
-                        self.baser.delOoe(ekey, edig)
+                        # no sigs so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Missing event sigs at."
                                  "dig = %s\n", bytes(edig))
 
