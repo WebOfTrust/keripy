@@ -1262,6 +1262,7 @@ class Kevery:
 
     """
     TimeoutPSE = 3600  # seconds to timeout partial signed escrows
+    TimeoutOOE = 1200  # seconds to timeout out of order escrows
 
     def __init__(self, ims=None, cues=None, kevers=None, baser=None, framed=True):
         """
@@ -1993,7 +1994,7 @@ class Kevery:
                     # do date math here and discard if stale nowIso8601() bytes
                     dtnow =  datetime.datetime.now(datetime.timezone.utc)
                     dte = fromIso8601(bytes(dtb))
-                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
+                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutOOE):
                         # escrow stale so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Stale event escrow "
                                  " at dig = %s\n", bytes(edig))

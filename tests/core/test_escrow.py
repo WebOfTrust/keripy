@@ -618,7 +618,7 @@ def test_out_of_order_escrow():
         assert escrows[0] == ixndig.encode("utf-8")    #  escrow entry for event
 
         # Process partials but stale escrow  set Timeout to 0
-        kvy.TimeoutPSE = 0  # forces all escrows to be stale
+        kvy.TimeoutOOE = 0  # forces all escrows to be stale
         time.sleep(0.001)
         kvy.processOutOfOrders()
         assert pre not in kvy.kevers  # key state not updated
@@ -628,7 +628,7 @@ def test_out_of_order_escrow():
         assert len(escrows) == 0
 
         # Now reset timeout so not zero and rsend events to reload escrow
-        kvy.TimeoutPSE = 3600
+        kvy.TimeoutOOE = 3600
 
         # apply rotation msg to Kevery to process
         kvy.processAll(ims=bytearray(rotmsg))  # process local copy of msg
