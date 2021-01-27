@@ -34,6 +34,20 @@ class ValidationError(KeriError):
         raise ValidationError("error message")
     """
 
+class MissingSignatureError(ValidationError):
+    """
+    Error At least One but Missing Enough Signatures for Threshold
+    Usage:
+        raise MissingSignatureError("error message")
+    """
+
+class MissingDelegatingSealError(ValidationError):
+    """
+    Error Missing Event with Delegating Seal
+    Usage:
+        raise MissingDelegatingSealError("error message")
+    """
+
 class VersionError(ValidationError):
     """
     Bad or Unsupported Version

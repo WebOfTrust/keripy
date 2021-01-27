@@ -3,10 +3,11 @@
 keri.core.eventing module
 
 """
-
+import datetime
 import re
 import json
 import logging
+
 from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
 from base64 import urlsafe_b64encode as encodeB64
@@ -21,10 +22,11 @@ import blake3
 from orderedset import OrderedSet as oset
 
 from ..kering import (ValidationError, VersionError, EmptyMaterialError,
-                      DerivationError, ShortageError)
+                      DerivationError, ShortageError, MissingSignatureError,
+                      MissingDelegatingSealError)
 from ..kering import Versionage, Version
-from ..help.helping import nowIso8601
-from ..db.dbing import dgKey, snKey, Baser
+from ..help.helping import nowIso8601, fromIso8601, toIso8601
+from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
 
 from .coring import Versify, Serials, Ilks, CryOneDex
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
@@ -35,6 +37,8 @@ from .coring import SigCounter, Siger
 from ..help import ogling
 
 blogger, flogger = ogling.ogler.getLoggers()
+
+EscrowTimeoutPS = 3600  # seconds for partial signed escrow timeout
 
 ICP_LABELS = ["v", "i", "s", "t", "kt", "k", "n",
               "wt", "w", "c"]
@@ -678,7 +682,7 @@ class Kever:
 
         self.config(serder=serder, estOnly=estOnly)  # assign config traits perms
 
-        # validates and escrows as needed
+        # validates if not escrows as needed and raises validation error
         self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
                           tholder=self.tholder, sn=self.sn)
 
@@ -690,7 +694,7 @@ class Kever:
             self.delegated = False
             self.delegator = None
 
-        self.logEvent(serder, sigers)  # update logs
+        self.logEvent(serder, sigers)  # idempotent update db logs
 
 
     @property
@@ -808,7 +812,7 @@ class Kever:
 
             tholder, toad, wits = self.rotate(serder, sn)
 
-            # validates and escrows as needed
+            # validates and escrows as needed raises ValidationError if not successful
             self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
                               tholder=tholder, sn=sn)
 
@@ -1038,9 +1042,17 @@ class Kever:
         return sn
 
 
-    def validateSigs(self, serder, sigers, verfers, tholder, sn):
+    def verifySigs(self, serder, sigers, verfers):
         """
-        Validate signatures by validating sith indexs and verifying signatures
+        Returns list of indices of verified signatures for serder, sigers, and verfers.
+        Assigns verfer to appropriate siger based on index
+        If no signatures verify then indices is empty
+
+        Parameters:
+            serder is Serder of signed event
+            sigers is list of indexed Siger instances (signatures)
+            verfers is list of Verfer instance (public keys)
+
         """
         # verify indexes of attached signatures against verifiers
         for siger in sigers:
@@ -1055,15 +1067,54 @@ class Kever:
             if siger.verfer.verify(siger.raw, serder.raw):
                 indices.append(siger.index)
 
+        return indices
+
+
+
+    def validateSigs(self, serder, sigers, verfers, tholder, sn):
+        """
+        Validate signatures by validating sith indexs and verifying signatures
+
+        Parameters:
+            serder
+            sigers
+            verfers
+            tholder
+            sn
+            escrow
+
+        """
+        if len(verfers) < self.tholder.size:
+            raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
+                             "".format(tholder.sith,
+                                       [verfer.qb64 for verfer in verfers],
+                                       serder.ked))
+
+        indices = self.verifySigs(serder, sigers, verfers)
+
+        ## verify indexes of attached signatures against verifiers
+        #for siger in sigers:
+            #if siger.index >= len(verfers):
+                #raise ValidationError("Index = {} to large for keys for evt = "
+                                      #"{}.".format(siger.index, serder.ked))
+            #siger.verfer = verfers[siger.index]  # assign verfer
+
+        ## verify signatures
+        #indices = []
+        #for siger in sigers:
+            #if siger.verfer.verify(siger.raw, serder.raw):
+                #indices.append(siger.index)
+
         if not indices:  # must have a least one verified
             raise ValidationError("No verified signatures among {} for evt = {}."
                                   "".format([siger.qb64 for siger in sigers],
                                             serder.ked))
 
         if not tholder.satisfy(indices):  #  at least one but not enough
-            self.escrowPSEvent(self, serder, sigers, self.prefixer.qb64b, sn)
+            self.escrowPSEvent(serder=serder, sigers=sigers,
+                                   pre=self.prefixer.qb64b, sn=sn)
 
-            raise ValidationError("Failure satisfying sith = {} on sigs for {}"
+            raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                   " for evt = {}.".format(tholder.sith,
                                                 [siger.qb64 for siger in sigers],
                                                 serder.ked))
@@ -1097,8 +1148,8 @@ class Kever:
             sn = self.validateSN(serder.ked["s"], serder.ked, inceptive=inceptive)
             self.escrowPSEvent(serder=serder, sigers=sigers,
                              pre=self.prefixer.qb64b, sn=sn)
-            raise ValidationError("No delegating event at seal = {} for "
-                                  "evt = {}.".format(serder.ked["da"],
+            raise MissingDelegatingSealError("No delegating event at seal = {} for "
+                                             "evt = {}.".format(serder.ked["da"],
                                                      serder.ked))
 
         # get the delegating event from dig
@@ -1154,7 +1205,8 @@ class Kever:
 
     def logEvent(self, serder, sigers):
         """
-        Update associated logs for verified event
+        Update associated logs for verified event.
+        Update is idempotent. Logs will not write dup at key if already exists.
 
         Parameters:
             serder is Serder instance of current event
@@ -1184,7 +1236,7 @@ class Kever:
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addPse(snKey(pre, sn), serder.digb)
-        blogger.info("Kever process: escrowed partial siganture or delegated "
+        blogger.info("Kever process: escrowed partial signature or delegated "
                      "event = %s\n", serder.ked)
 
 
@@ -1209,6 +1261,8 @@ class Kevery:
     Properties:
 
     """
+    TimeoutPSE = 3600  # seconds to timeout partial signed escrows
+
     def __init__(self, ims=None, cues=None, kevers=None, baser=None, framed=True):
         """
         Set up event stream and logs
@@ -1392,7 +1446,6 @@ class Kevery:
             raise ValidationError("Unexpected message ilk = {} for evt ="
                                   " {}.".format(ilk, serder.ked))
 
-
     def validateSN(self, ked):
         """
         Returns int validated from hex str sn in ked
@@ -1411,6 +1464,37 @@ class Kevery:
             raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
 
         return sn
+
+    def fetchEstEvent(self, pre, sn):
+        """
+        Returns Serder instance of establishment event that is authoritative for
+        event in KEL for pre at sn.
+        Returns None if no event at sn accepted in KEL for pre
+
+        Parameters:
+            pre is qb64 of identifier prefix for KEL
+            sn is int sequence number of event in KEL of pre
+        """
+
+        found = False
+        while not found:
+            dig = bytes(self.baser.getKeLast(key=snKey(pre, sn)))
+            if not dig:
+                return None
+
+            # retrieve event by dig
+            raw = bytes(self.baser.getEvt(key=dgKey(pre=pre, dig=dig)))
+            if not raw:
+                return None
+
+            serder = Serder(raw=raw)  # deserialize event raw
+            if serder.ked["t"] in (Ilks.icp, Ilks.dip, Ilks.rot, Ilks.drt):
+                return serder  # establishment event so return
+
+            sn = int(serder.ked["s"], 16) - 1  # set sn to previous event
+            if sn < 0: # no more events
+                return None
+
 
     def escrowOOEvent(self, serder, sigers, pre, sn):
         """
@@ -1471,11 +1555,6 @@ class Kevery:
         ilk = ked["t"]
         dig = serder.dig
 
-        if self.baser.getEvt(dgKey(pre, dig)) is not None:
-            # performance log duplicate event
-            blogger.info("Kevery process: discarded duplicate event = %s\n", ked)
-            return  # discard duplicate
-
         if pre not in self.kevers:  #  first seen event for pre
             if ilk in (Ilks.icp, Ilks.dip):  # first seen and inception so verify event keys
                 # kever init verifies basic inception stuff and signatures
@@ -1490,13 +1569,28 @@ class Kevery:
                 # create cue for receipt   direct mode for now
                 self.cues.append(dict(pre=pre, serder=serder))
 
-            else:  # not inception so can't verify, add to out-of-order escrow
+            else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
 
         else:  # already accepted inception event for pre
-            if ilk in (Ilks.icp, Ilks.dip):  # inception event so maybe duplicitous
-                # escrow likely duplicitous event
-                self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+            if ilk in (Ilks.icp, Ilks.dip):  # another inception event so maybe duplicitous
+                if sn != 0:
+                    raise ValueError("Invalid sn={} for inception event={}."
+                                     "".format(sn, serder.ked))
+                # check if duplicate of existing inception
+                eserder = self.fetchEstEvent(pre, sn)
+                if eserder.dig == dig:  # event is a duplicate but not duplicitous
+                    # may have attached valid signature not yet logged
+                    # raises ValidationError if no valid sig
+                    kever = self.kevers[pre]
+                    indices = kever.verifySigs(serder=serder,
+                                               sigers=sigers,
+                                               verfers=eserder.verfers)
+                    if indices:  # verified signature so log sigs
+                        kever.logEvent(serder, sigers)  # idempotent update db logs
+
+                else:   # escrow likely duplicitous event
+                    self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
 
             else:  # rot, drt, or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
@@ -1517,8 +1611,21 @@ class Kevery:
                     self.cues.append(dict(pre=pre, serder=serder))
 
                 else:  # maybe duplicitous
-                    #  escrow likely duplicitous event
-                    self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+                    # check if duplicate of existing valid accepted event
+                    ddig = bytes(self.baser.getKeLast(key=snKey(pre, sn))).decode("utf-8")
+                    if ddig == dig:  # event is a duplicate but not duplicitous
+                        eserder = self.fetchEstEvent(pre, sn)
+                        # may have attached valid signature not yet logged
+                        # raises ValidationError if no valid sig
+                        kever = self.kevers[pre]
+                        indices = kever.verifySigs(serder=serder,
+                                                   sigers=sigers,
+                                                   verfers=eserder.verfers)
+                        if indices:  # verified signature so log sigs
+                            kever.logEvent(serder, sigers)  # idempotent update db logs
+
+                    else:   # escrow likely duplicitous event
+                        self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
 
 
     def processReceipt(self, serder, cigars):
@@ -1672,6 +1779,173 @@ class Kevery:
                 self.baser.addVre(key=dgkey, val=quadlet)
 
 
+
+    def processEscrows(self):
+        """
+        Iterate throush escrows and process any that may now be finalized
+
+        Parameters:
+
+
+        """
+
+        try:
+            self.processPartials()
+
+
+
+        except Exception as ex:  # log diagnostics errors etc
+            if blogger.isEnabledFor(logging.DEBUG):
+                blogger.exception("Kevery escrow process error: %s\n", ex.args[0])
+            else:
+                blogger.error("Kevery escrow process error: %s\n", ex.args[0])
+
+
+    def processPartials(self):
+        """
+        Process events escrowed by Kever that were only partially fulfilled.
+        Either due to missing signatures or missing dependent events like a
+        delegating event.  But event has at least one verified signature.
+
+        Escrowed items are indexed in database table keyed by prefix and
+        sequence number with duplicates inserted in insertion order. This allows
+        FIFO processing of events with same prefix and sn.
+        Uses  .baser.addPse(self, key, val) which is IOVal with dups.
+
+        Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
+
+        Original Escrow steps:
+            dgkey = dgKey(pre, serder.digb)
+            .baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+            .baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            .baser.putEvt(dgkey, serder.raw)
+            .baser.addPse(snKey(pre, sn), serder.digb)
+            where:
+                serder is Serder instance of  event
+                sigers is list of Siger instance for  event
+                pre is str qb64 of identifier prefix of event
+                sn is int sequence number of event
+
+        Steps:
+            Each pass  (walk index table)
+                For each prefix,sn
+                    For each escrow item dup at prefix,sn:
+                        Get Event
+                        Get and Attach Signatures
+                        Process event as if it came in over the wire
+                        If successful then remove from escrow table
+
+                        Need to figure out what success looks like
+
+
+        """
+
+        ims = bytearray()
+        key = ekey = b''  # both start same. when not same means escrows found
+        while True:  # break when done
+            for ekey, edig in self.baser.getPseItemsNextIter(key=key):
+                try:
+                    pre, sn = splitKeySn(bytes(ekey))  # get pre and sn from escrow item
+                    # check date if expired then remove escrow.
+                    dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
+                    if dtb is None:  # othewise is a datetime as bytes
+                        # no date time so unescrow dup entry at ekey
+                        self.baser.delPse(ekey, edig)
+                        blogger.info("Kevery unescrow error: Missing event datetime"
+                                 " at dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed event datetime "
+                                              "at dig = {}.".format(bytes(edig)))
+
+                    # do date math here and discard if stale nowIso8601() bytes
+                    dtnow =  datetime.datetime.now(datetime.timezone.utc)
+                    dte = fromIso8601(bytes(dtb))
+                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
+                        # escrow stale so unescrow dup entry at ekey
+                        self.baser.delPse(ekey, edig)
+                        blogger.info("Kevery unescrow error: Stale event escrow "
+                                 " at dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Stae event escrow "
+                                              "at dig = {}.".format(bytes(edig)))
+
+                    # get the escrowed event using edig
+                    eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
+                    if eraw is None:
+                        # no event so unescrow dup entry at ekey
+                        self.baser.delPse(ekey, edig)
+                        blogger.info("Kevery unescrow error: Missing event at."
+                                 "dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed evt at dig = {}."
+                                              "".format(bytes(edig)))
+
+                    eserder = Serder(raw=bytes(eraw))  # escrowed event
+                    ims.extend(eserder.raw)
+
+                    #  get sigs and attach
+                    sigs = self.baser.getSigs(dgKey(pre, bytes(edig)))
+                    if not sigs:  #  otherwise its a list of sigs
+                        # no sigs unescrow dup entry at ekey
+                        self.baser.delPse(ekey, edig)
+                        blogger.info("Kevery unescrow error: Missing event sigs at."
+                                 "dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed evt sigs at "
+                                              "dig = {}.".format(bytes(edig)))
+
+                    counter = SigCounter(count=len(sigs))
+                    ims.extend(counter.qb64b)
+                    for sig in sigs:  # stored in db as qb64b
+                        ims.extend(sig)
+
+                    # process event
+                    self.processOne(ims=ims)  # default framed True
+
+                    # If process does NOT validate sigs or delegation seal (when delegated),
+                    # but there is still one valid signature then process will
+                    # attempt to re-escrow and then raise MissingSignatureError
+                    # or MissingDelegationSealError (subclass of ValidationError)
+                    # so we can distinquish between ValidationErrors that are
+                    # re-escrow vs non re-escrow. We want process to be idempotent
+                    # with respect to processing events that result in escrow items.
+                    # On re-escrow attempt by process, Pse escrow is called by
+                    # Kever.self.escrowPSEvent Which calls
+                    # self.baser.addPse(snKey(pre, sn), serder.digb)
+                    # which in turn will not enter dig as dup if one already exists.
+                    # So re-escrow attempt will not change the escrowed pse db.
+                    # Non re-escrow ValidationError means some other issue so unescrow.
+                    # No error at all means processed successfully so also unescrow.
+
+                except (MissingSignatureError, MissingDelegatingSealError) as ex:
+                    # still waiting on missing sigs or missing seal to validate
+                    if blogger.isEnabledFor(logging.DEBUG):
+                        blogger.exception("Kevery unescrow failed: %s\n", ex.args[0])
+                    else:
+                        blogger.error("Kevery unescrow failed: %s\n", ex.args[0])
+
+                except Exception as ex:  # log diagnostics errors etc
+                    # error other than waiting on sigs or seal so remove from escrow
+                    self.baser.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
+                    if blogger.isEnabledFor(logging.DEBUG):
+                        blogger.exception("Kevery unescrowed: %s\n", ex.args[0])
+                    else:
+                        blogger.error("Kevery unescrowed: %s\n", ex.args[0])
+
+                else:  # unescrow succeeded, remove from escrow
+                    # We don't remove all escrows at pre,sn because some might be
+                    # duplicitous so we process remaining escrows in spite of found
+                    # valid event escrow.
+                    self.baser.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
+                    blogger.info("Kevery unescrow succeeded in valid event: "
+                             "event = %s\n", eserder.ked)
+
+            if ekey == key:  # still same so no escrows found on last while iteration
+                break
+            key = ekey #  setup next while iteration, with key after ekey
+
+
+
     def duplicity(self, serder, sigers):
         """
         Processes potential duplicitous events in PDELs
@@ -1682,35 +1956,3 @@ class Kevery:
 
         """
         pass
-        ## fetch ked ilk  pre, sn, dig to see how to process
-        #ked = serder.ked
-        #try:  # see if pre in event validates
-            #prefixer = Prefixer(qb64=ked["i"])
-        #except Exception as ex:
-            #raise ValidationError("Invalid pre = {}.".format(ked["i"]))
-        #pre = prefixer.qb64
-        #ked = serder.ked
-        #ilk = ked["t"]
-        #try:
-            #sn = int(ked["s"], 16)
-        #except Exception as ex:
-            #raise ValidationError("Invalid sn = {}".format(ked["s"]))
-        #dig = serder.dig
-
-        ##if dig in DELPs["pre"]:
-            ##return
-
-        #if ilk == Ilks.icp:  # inception event so maybe duplicitous
-            ## Using Kever for cheap duplicity detection of inception events
-            ## kever init verifies basic inception stuff and signatures
-            ## raises exception if problem.
-            #kever = Kever(serder=serder, sigers=siger, baser=self.baser)  # create kever from serder
-            ## No exception above so verified duplicitous event
-            ## log it and add to DELS if first time
-            ##if pre not in DELs:  #  add to DELS
-                ##DELs[pre] = dict()
-            ##if dig not in DELS[pre]:
-                ##DELS[pre][dig] = LogEntry(serder=serder, sigers=sigers)
-
-        #else:
-            #pass

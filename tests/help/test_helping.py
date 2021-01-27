@@ -144,6 +144,13 @@ def test_iso8601():
     assert dt.month == 8
     assert dt.day == 22
 
+    dtb = b'2020-08-22T20:34:41.687702+00:00'
+    dt = fromIso8601(dts)
+    assert dt.year == 2020
+    assert dt.month == 8
+    assert dt.day == 22
+
+
     dts1 = nowIso8601()
     dt1 = fromIso8601(dts1)
     dts2 = nowIso8601()
@@ -159,8 +166,18 @@ def test_iso8601():
 
     assert dt3 > dt2
 
+    td = dt3 - dt2  # timedelta
+    assert td.microseconds > 0.0
+
+    dt4 = dt + datetime.timedelta(seconds=25.0)
+    dts4 = toIso8601(dt4)
+    assert dts4 == '2020-08-22T20:35:06.687702+00:00'
+    dt4 = fromIso8601(dts4)
+    assert (dt4 - dt).seconds == 25.0
+
+
     """ End Test """
 
 
 if __name__ == "__main__":
-    test_extractvalues()
+    test_iso8601()
