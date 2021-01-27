@@ -11,8 +11,6 @@ from hio.base import doing
 from keri.db import dbing
 
 
-
-
 def test_baserdoer():
     """
     Test BaserDoer
@@ -65,9 +63,7 @@ def test_baserdoer():
         assert doer.baser.env == None
         assert not os.path.exists(doer.baser.path)
 
-
-
-    #start over
+    # start over
     doist.tyme = 0.0
     doist.do(doers=doers)
     assert doist.tyme == limit
@@ -79,6 +75,5 @@ def test_baserdoer():
     """End Test"""
 
 
-
 if __name__ == "__main__":
-    test_basedoer()
+    test_baserdoer()
