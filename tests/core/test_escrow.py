@@ -490,8 +490,191 @@ def test_missing_delegator_escrow():
 
     """End Test"""
 
+def test_out_of_order_escrow():
+    """
+    Test out of order escrow
+
+    """
+    salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+
+    # init event DB and keep DB
+    with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
+        # Init key pair manager
+        mgr = keeping.Manager(keeper=kpr, salt=salt)
+
+        # Init Kevery with event DB
+        kvy = eventing.Kevery(baser=db)
+
+        # create inception event with 3 keys each in incept and next sets
+        # defaults are algo salty and rooted
+        verfers, digers = mgr.incept(icount=3, ncount=3, stem='wes', temp=True)
+        sith = ["1/2", "1/2", "1/2"]  #  2 of 3 but with weighted threshold
+        nxtsith = ["1/2", "1/2", "1/2"]
+
+        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                                  sith=sith,
+                                 nxt=coring.Nexter(sith=nxtsith,
+                                                   digs=[diger.qb64 for diger in digers]).qb64,
+                                 code=coring.CryOneDex.Blake3_256)
+
+        pre = srdr.ked["i"]
+        icpdig = srdr.dig
+
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = bytearray(srdr.raw)
+        counter = coring.SigCounter(count=len(sigers))
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        icpmsg = msg
+
+        # create interaction event
+        srdr = eventing.interact(pre=pre, dig=icpdig, sn=1, data=[])
+        ixndig = srdr.dig
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = bytearray(srdr.raw)
+        counter = coring.SigCounter(count=len(sigers))
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        ixnmsg = msg
+
+        # Create rotation event
+        # get current keys as verfers and next digests as digers
+        verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
+        sith = nxtsith  # rotate so nxtsith is now current sith and need new nextsith
+        #  2 of first 3 and 1 of last 2
+        nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
+
+        srdr = eventing.rotate(pre=pre,
+                                  keys=[verfer.qb64 for verfer in verfers],
+                                  sith=sith,
+                                  dig=ixndig,
+                                  nxt=coring.Nexter(sith=nxtsith,
+                                                    digs=[diger.qb64 for diger in digers]).qb64,
+                                  sn=2,
+                                  data=[])
+
+        rotdig = srdr.dig
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        msg = bytearray(srdr.raw)
+        counter = coring.SigCounter(count=len(sigers))
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        rotmsg = msg
+
+        # apply rotation msg to Kevery to process
+        kvy.processAll(ims=bytearray(rotmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 2))
+        assert len(escrows) == 1
+        assert escrows[0] == rotdig.encode("utf-8")  #  escrow entry for event
+
+        # verify Kevery process is idempotent to previously escrowed events
+        kvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 2))
+        assert len(escrows) == 1
+        assert escrows[0] == rotdig.encode("utf-8")  #  escrow entry for event
+
+        # verify Kevery process out of order escrow is idempotent to previously escrowed events
+        # assuming not stale but nothing else has changed
+        kvy.processOutOfOrders()
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 2))
+        assert len(escrows) == 1
+        assert escrows[0] == rotdig.encode("utf-8")   #  escrow entry for event
+
+        # apply ixn msg to Kevery to process
+        kvy.processAll(ims=bytearray(ixnmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig.encode("utf-8")  #  escrow entry for event
+
+        # verify Kevery process is idempotent to previously escrowed events
+        kvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig.encode("utf-8")  #  escrow entry for event
+
+        # verify Kevery process out of order escrow is idempotent to previously escrowed events
+        # assuming not stale but nothing else has changed
+        kvy.processOutOfOrders()
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig.encode("utf-8")    #  escrow entry for event
+
+        # Process partials but stale escrow  set Timeout to 0
+        kvy.TimeoutPSE = 0  # forces all escrows to be stale
+        time.sleep(0.001)
+        kvy.processOutOfOrders()
+        assert pre not in kvy.kevers  # key state not updated
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 0  # escrow gone
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 2))
+        assert len(escrows) == 0
+
+        # Now reset timeout so not zero and rsend events to reload escrow
+        kvy.TimeoutPSE = 3600
+
+        # apply rotation msg to Kevery to process
+        kvy.processAll(ims=bytearray(rotmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 2))
+        assert len(escrows) == 1
+        assert escrows[0] == rotdig.encode("utf-8")  #  escrow entry for event
+
+        # apply ixn msg to Kevery to process
+        kvy.processAll(ims=bytearray(ixnmsg))  # process local copy of msg
+        assert pre not in kvy.kevers  # event not accepted
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig.encode("utf-8")  #  escrow entry for event
+
+        # apply inception msg to Kevery to process
+        kvy.processAll(ims=bytearray(icpmsg))  # process local copy of msg
+        assert pre in kvy.kevers  # event accepted
+        kvr = kvy.kevers[pre]
+        assert kvr.serder.dig == icpdig  # key state updated so event was validated
+        assert kvr.sn == 0  # key state successfully updated
+        # verify escrows not changed
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 2))
+        assert len(escrows) == 1
+        assert escrows[0] == rotdig.encode("utf-8")  #  escrow entry for event
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 1
+        assert escrows[0] == ixndig.encode("utf-8")  #  escrow entry for event
+
+        # Process out of order escrow
+        # assuming not stale but nothing else has changed
+        kvy.processOutOfOrders()
+        assert kvr.serder.dig == rotdig  # key state updated so event was validated
+        assert kvr.sn == 2  # key state successfully updated
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 1))
+        assert len(escrows) == 0  # escrow gone
+        escrows = kvy.baser.getOoes(dbing.snKey(pre, 2))
+        assert len(escrows) == 0
+
+
+    assert not os.path.exists(kpr.path)
+    assert not os.path.exists(db.path)
+
+    """End Test"""
 
 
 if __name__ == "__main__":
-    test_partial_signed_escrow()
+    test_out_of_order_escrow()
 

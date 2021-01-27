@@ -20,12 +20,14 @@ class KeriError(Exception):
     To use   raise KeriError("Error: message")
     """
 
+
 class ShortageError(KeriError):
     """
     Not Enough bytes in buffer for complete message or material
     Usage:
         raise ShortageError("error message")
     """
+
 
 class ValidationError(KeriError):
     """
@@ -34,6 +36,7 @@ class ValidationError(KeriError):
         raise ValidationError("error message")
     """
 
+
 class MissingSignatureError(ValidationError):
     """
     Error At least One but Missing Enough Signatures for Threshold
@@ -41,12 +44,22 @@ class MissingSignatureError(ValidationError):
         raise MissingSignatureError("error message")
     """
 
+
 class MissingDelegatingSealError(ValidationError):
     """
     Error Missing Event with Delegating Seal
     Usage:
         raise MissingDelegatingSealError("error message")
     """
+
+
+class OutOfOrderError(ValidationError):
+    """
+    Error prior event missing from log so can't verify sigs on this event
+    Usage:
+        raise OutOfOrderError("error message")
+    """
+
 
 class VersionError(ValidationError):
     """
@@ -56,12 +69,14 @@ class VersionError(ValidationError):
         raise VersionError("error message")
     """
 
+
 class EmptyMaterialError(ValidationError):
     """
     Empty or Missing Crypto Material
     Usage:
         raise EmptyMaterialError("error message")
     """
+
 
 class DerivationError(ValidationError):
     """
