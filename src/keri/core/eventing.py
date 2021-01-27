@@ -1944,10 +1944,9 @@ class Kevery:
     def processOutOfOrders(self):
         """
         Process events escrowed by Kever that are recieved out-of-order.
-        The prior event has not been accepted into its KEL. Without the prior
-        event there is no way to know the key state and therefore no way
+        An event is out of order if its prior event has not been accepted into its KEL.
+        Without the prior event there is no way to know the key state and therefore no way
         to verify signatures on the out-of-order event.
-
 
         Escrowed items are indexed in database table keyed by prefix and
         sn with duplicates given by different dig inserted in insertion order.

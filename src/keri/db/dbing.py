@@ -1660,6 +1660,32 @@ class Baser(LMDBer):
         return self.getIoValLast(self.ooes, key)
 
 
+    def getOoeItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of out of order escrowed event dig items at next key after key.
+        Item is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.ooes, key, skip)
+
+
+    def getOoeItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of out of order escrowed event dig items at next key after key.
+        Items is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.ooes, key, skip)
+
+
     def cntOoes(self, key):
         """
         Use snKey()
@@ -1676,6 +1702,20 @@ class Baser(LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.ooes, key)
+
+
+    def delOoe(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.ooes, key, val)
 
 
     def putDes(self, key, vals):
