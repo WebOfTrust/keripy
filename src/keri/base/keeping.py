@@ -604,7 +604,7 @@ class Creator:
         return ''
 
 
-class RandyCreator(Creator):
+class RandoCreator(Creator):
     """
     Class for creating a key pair based on re-randomizing each seed algorithm.
 
@@ -627,7 +627,7 @@ class RandyCreator(Creator):
         Parameters:
 
         """
-        super(RandyCreator, self).__init__(**kwa)
+        super(RandoCreator, self).__init__(**kwa)
 
 
     def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
@@ -780,7 +780,7 @@ class Creatory:
         """
 
         """
-        return RandyCreator(**kwa)
+        return RandoCreator(**kwa)
 
     def _makeSalty(self, **kwa):
         """

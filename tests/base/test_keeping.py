@@ -497,8 +497,8 @@ def test_creator():
     assert creator.stem == ''
     assert creator.tier == ''
 
-    creator = keeping.RandyCreator()
-    assert isinstance(creator, keeping.RandyCreator)
+    creator = keeping.RandoCreator()
+    assert isinstance(creator, keeping.RandoCreator)
     assert isinstance(creator, keeping.Creator)
     assert creator.salt == ''
     assert creator.stem == ''
@@ -578,7 +578,7 @@ def test_creator():
     assert creator.salter.qb64 == salt
 
     creator = keeping.Creatory(algo=keeping.Algos.randy).make()
-    assert isinstance(creator, keeping.RandyCreator)
+    assert isinstance(creator, keeping.RandoCreator)
     """End Test"""
 
 
