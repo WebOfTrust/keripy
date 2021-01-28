@@ -1634,12 +1634,13 @@ class Kevery:
                         self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
                         raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
+
     def processReceipt(self, serder, cigars):
         """
         Process one receipt serder with attached cigars
 
         Parameters:
-            serder is
+            serder is Serder instance of serialized receipt message
             cigars is list of Cigar instances that contain receipt couplet
                 signature in .raw and public key in .verfer
 
@@ -1654,7 +1655,7 @@ class Kevery:
         ked = serder.ked
         pre = ked["i"]
         sn = ked["s"]
-        if len(sn) > 32:
+        if len(sn) > 32:  # replace this with .validateSn ?
             raise ValidationError("Invalid sn = {} too large for evt = {}."
                                   "".format(sn, ked))
         try:
@@ -1692,7 +1693,7 @@ class Kevery:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
                 couplet = cigar.verfer.qb64b + cigar.qb64b
-                dgkey = dgKey(pre=pre, dig=ked["d"])
+                dgkey = dgKey(pre=pre, dig=ked["d"])  # should this use lserder.dig
                 self.baser.addUre(key=dgkey, val=couplet)
 
 
@@ -1715,7 +1716,7 @@ class Kevery:
         ked = serder.ked
         pre = ked["i"]
         sn = ked["s"]
-        if len(sn) > 32:
+        if len(sn) > 32:  # replace with validateSn ?
             raise ValidationError("Invalid sn = {} too large for evt = {}."
                                   "".format(sn, ked))
         try:
@@ -1781,7 +1782,7 @@ class Kevery:
         else:  # escrow  either receiptor or event not yet in database
             for siger in sigers:  # escrow quadlets one for each sig
                 quadlet = sealet + siger.qb64b
-                dgkey = dgKey(pre=pre, dig=ked["d"])
+                dgkey = dgKey(pre=pre, dig=ked["d"])  # should use lserder.dig ?
                 self.baser.addVre(key=dgkey, val=quadlet)
 
 
