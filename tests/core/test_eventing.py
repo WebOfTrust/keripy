@@ -32,7 +32,7 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import TraitDex, LastEstLoc
+from keri.core.eventing import TraitDex, LastEstLoc, detriplet
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
                                 delcept, deltate)
@@ -43,6 +43,22 @@ from keri.db.dbing import dgKey, snKey, openDB, Baser
 from keri.help import ogling
 
 blogger, flogger = ogling.ogler.getLoggers()
+
+
+def test_detriplet():
+    """
+    test detriplet function
+    """
+    dig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    triplet = dig + pre + sig
+    diger, prefixer, cigar = detriplet(triplet)
+    assert diger.qb64 == dig
+    assert prefixer.qb64 == pre
+    assert cigar.qb64 == sig
+    """end test"""
 
 
 def test_lastestloc():
@@ -3054,4 +3070,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_receipt()
+    test_detriplet()
