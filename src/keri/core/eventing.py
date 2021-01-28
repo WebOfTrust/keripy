@@ -24,7 +24,7 @@ from orderedset import OrderedSet as oset
 from ..kering import (ValidationError, VersionError, EmptyMaterialError,
                       DerivationError, ShortageError, MissingSignatureError,
                       MissingDelegatingSealError, OutOfOrderError,
-                      LikelyDuplicitousError)
+                      LikelyDuplicitousError,  UnverifiedReceiptError)
 from ..kering import Versionage, Version
 from ..help.helping import nowIso8601, fromIso8601, toIso8601
 from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
@@ -1537,6 +1537,34 @@ class Kevery:
         blogger.info("Kevery process: escrowed likely duplicitous event = %s\n", serder.ked)
 
 
+    def escrowUREvent(self, dig, cigars, pre, sn):
+        """
+        Update associated logs for escrow of Unverified Event Receipt (non-transferable)
+
+        Parameters:
+            dig instance of receipted event provided in receipt
+            cigars is list of Cigar instances for event receipt
+            pre is str qb64 of identifier prefix of event
+            sn is int sequence number of event
+        """
+        # note receipt dig algo may not match database dig also so must always
+        # serder.compare to match. So receipts for same event may have different
+        # digs of that event due to different algos. So the escrow may have
+        # different dup at same key, sn.  Escrow needs to be triplet with
+        # dig, witness prefix, sig stored at kel pre, sn so can compare digs
+        # with different algos.  Can't lookup by dig for same reason. Must
+        # lookup last event by sn not by dig.
+        self.baser.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
+        for cigar in cigars:  # escrow each triplet
+            if cigar.verfer.transferable:  # skip transferable verfers
+                continue  # skip invalid couplets
+            triplet = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
+            self.baser.addUre(key=snKey(pre, sn), val=triplet)  # should be snKey
+        # log escrowed
+        blogger.info("Kevery process: escrowed unverified receipt of pre= %s "
+                     " sn=%x dig=%s\n", pre, sn, dig)
+
+
     def processEvent(self, serder, sigers):
         """
         Process one event serder with attached indexd signatures sigers
@@ -1654,14 +1682,7 @@ class Kevery:
         # fetch  pre dig to process
         ked = serder.ked
         pre = ked["i"]
-        sn = ked["s"]
-        if len(sn) > 32:  # replace this with .validateSn ?
-            raise ValidationError("Invalid sn = {} too large for evt = {}."
-                                  "".format(sn, ked))
-        try:
-            sn = int(sn, 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
+        sn = self.validateSN(ked)
 
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)
@@ -1689,12 +1710,8 @@ class Kevery:
                     self.baser.addRct(key=dgkey, val=couplet)
 
         else:  # no events to be receipted yet at that sn so escrow
-            for cigar in cigars:  # escrow each couplet
-                if cigar.verfer.transferable:  # skip transferable verfers
-                    continue  # skip invalid couplets
-                couplet = cigar.verfer.qb64b + cigar.qb64b
-                dgkey = dgKey(pre=pre, dig=ked["d"])  # should this use lserder.dig
-                self.baser.addUre(key=dgkey, val=couplet)
+            self.escrowUREvent(ked["d"], cigars, pre, sn)
+            raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
 
     def processChit(self, serder, sigers):
@@ -1715,14 +1732,7 @@ class Kevery:
         # fetch  pre, dig,seal to process
         ked = serder.ked
         pre = ked["i"]
-        sn = ked["s"]
-        if len(sn) > 32:  # replace with validateSn ?
-            raise ValidationError("Invalid sn = {} too large for evt = {}."
-                                  "".format(sn, ked))
-        try:
-            sn = int(sn, 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
+        sn = self.validateSN(ked)
 
         seal = SealEvent(**ked["a"])
         # convert sn in seal to fully qualified SeqNumber 24 bytes, raw 16 bytes

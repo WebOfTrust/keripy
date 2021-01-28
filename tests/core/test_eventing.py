@@ -1614,9 +1614,9 @@ def test_receipt():
 
         coeKevery.processAll(ims=res)  #  coe process the escrow receipt from val
         #  check if in escrow database
-        result = coeKevery.baser.getUres(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                        dig=fake))
-        assert bytes(result[0]) == valPrefixer.qb64b + valCigar.qb64b
+        result = coeKevery.baser.getUres(key=snKey(pre=coeKever.prefixer.qb64,
+                                                        sn=2))
+        assert bytes(result[0]) == fake.encode("utf-8") + valPrefixer.qb64b + valCigar.qb64b
 
         # create receipt stale use invalid dig and valid sn so bad receipt
         fake = reserder.dig  # some other dig
@@ -3054,4 +3054,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_multisig_digprefix()
+    test_receipt()
