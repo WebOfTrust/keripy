@@ -23,7 +23,8 @@ from orderedset import OrderedSet as oset
 
 from ..kering import (ValidationError, VersionError, EmptyMaterialError,
                       DerivationError, ShortageError, MissingSignatureError,
-                      MissingDelegatingSealError)
+                      MissingDelegatingSealError, OutOfOrderError,
+                      LikelyDuplicitousError)
 from ..kering import Versionage, Version
 from ..help.helping import nowIso8601, fromIso8601, toIso8601
 from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
@@ -1262,6 +1263,8 @@ class Kevery:
 
     """
     TimeoutPSE = 3600  # seconds to timeout partial signed escrows
+    TimeoutOOE = 1200  # seconds to timeout out of order escrows
+    TimeoutLDE = 3600  # seconds to timeout out of order escrows
 
     def __init__(self, ims=None, cues=None, kevers=None, baser=None, framed=True):
         """
@@ -1510,7 +1513,7 @@ class Kevery:
         self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addOoes(snKey(pre, sn), serder.dig)
+        self.baser.addOoe(snKey(pre, sn), serder.digb)
         # log escrowed
         blogger.info("Kevery process: escrowed out of order event = %s\n", serder.ked)
 
@@ -1529,7 +1532,7 @@ class Kevery:
         self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addLde(snKey(pre, sn), serder.dig)
+        self.baser.addLde(snKey(pre, sn), serder.digb)
         # log duplicitous
         blogger.info("Kevery process: escrowed likely duplicitous event = %s\n", serder.ked)
 
@@ -1571,6 +1574,7 @@ class Kevery:
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+                raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre
             if ilk in (Ilks.icp, Ilks.dip):  # another inception event so maybe duplicitous
@@ -1591,6 +1595,7 @@ class Kevery:
 
                 else:   # escrow likely duplicitous event
                     self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+                    raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
             else:  # rot, drt, or ixn, so sn matters
                 kever = self.kevers[pre]  # get existing kever for pre
@@ -1599,6 +1604,7 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
                     self.escrowOOEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+                    raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
                 elif ((sn == sno) or  # new inorder event or recovery
                       (ilk in (Ilks.rot, Ilks.drt) and kever.lastEst.s < sn <= sno )):
@@ -1626,6 +1632,7 @@ class Kevery:
 
                     else:   # escrow likely duplicitous event
                         self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+                        raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
 
     def processReceipt(self, serder, cigars):
@@ -1633,7 +1640,7 @@ class Kevery:
         Process one receipt serder with attached cigars
 
         Parameters:
-            serder is
+            serder is Serder instance of serialized receipt message
             cigars is list of Cigar instances that contain receipt couplet
                 signature in .raw and public key in .verfer
 
@@ -1648,7 +1655,7 @@ class Kevery:
         ked = serder.ked
         pre = ked["i"]
         sn = ked["s"]
-        if len(sn) > 32:
+        if len(sn) > 32:  # replace this with .validateSn ?
             raise ValidationError("Invalid sn = {} too large for evt = {}."
                                   "".format(sn, ked))
         try:
@@ -1686,7 +1693,7 @@ class Kevery:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
                 couplet = cigar.verfer.qb64b + cigar.qb64b
-                dgkey = dgKey(pre=pre, dig=ked["d"])
+                dgkey = dgKey(pre=pre, dig=ked["d"])  # should this use lserder.dig
                 self.baser.addUre(key=dgkey, val=couplet)
 
 
@@ -1709,7 +1716,7 @@ class Kevery:
         ked = serder.ked
         pre = ked["i"]
         sn = ked["s"]
-        if len(sn) > 32:
+        if len(sn) > 32:  # replace with validateSn ?
             raise ValidationError("Invalid sn = {} too large for evt = {}."
                                   "".format(sn, ked))
         try:
@@ -1775,7 +1782,7 @@ class Kevery:
         else:  # escrow  either receiptor or event not yet in database
             for siger in sigers:  # escrow quadlets one for each sig
                 quadlet = sealet + siger.qb64b
-                dgkey = dgKey(pre=pre, dig=ked["d"])
+                dgkey = dgKey(pre=pre, dig=ked["d"])  # should use lserder.dig ?
                 self.baser.addVre(key=dgkey, val=quadlet)
 
 
@@ -1785,14 +1792,12 @@ class Kevery:
         Iterate throush escrows and process any that may now be finalized
 
         Parameters:
-
-
         """
 
         try:
+            self.processOutOfOrders()
             self.processPartials()
-
-
+            self.processDuplicitous()
 
         except Exception as ex:  # log diagnostics errors etc
             if blogger.isEnabledFor(logging.DEBUG):
@@ -1834,10 +1839,6 @@ class Kevery:
                         Get and Attach Signatures
                         Process event as if it came in over the wire
                         If successful then remove from escrow table
-
-                        Need to figure out what success looks like
-
-
         """
 
         ims = bytearray()
@@ -1849,8 +1850,7 @@ class Kevery:
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
-                        # no date time so unescrow dup entry at ekey
-                        self.baser.delPse(ekey, edig)
+                        # no date time so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Missing event datetime"
                                  " at dig = %s\n", bytes(edig))
 
@@ -1861,19 +1861,17 @@ class Kevery:
                     dtnow =  datetime.datetime.now(datetime.timezone.utc)
                     dte = fromIso8601(bytes(dtb))
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
-                        # escrow stale so unescrow dup entry at ekey
-                        self.baser.delPse(ekey, edig)
+                        # escrow stale so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Stale event escrow "
                                  " at dig = %s\n", bytes(edig))
 
-                        raise ValidationError("Stae event escrow "
+                        raise ValidationError("Stale event escrow "
                                               "at dig = {}.".format(bytes(edig)))
 
                     # get the escrowed event using edig
                     eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
                     if eraw is None:
-                        # no event so unescrow dup entry at ekey
-                        self.baser.delPse(ekey, edig)
+                        # no event so so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Missing event at."
                                  "dig = %s\n", bytes(edig))
 
@@ -1886,8 +1884,7 @@ class Kevery:
                     #  get sigs and attach
                     sigs = self.baser.getSigs(dgKey(pre, bytes(edig)))
                     if not sigs:  #  otherwise its a list of sigs
-                        # no sigs unescrow dup entry at ekey
-                        self.baser.delPse(ekey, edig)
+                        # no sigs so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Missing event sigs at."
                                  "dig = %s\n", bytes(edig))
 
@@ -1944,6 +1941,280 @@ class Kevery:
                 break
             key = ekey #  setup next while iteration, with key after ekey
 
+
+    def processOutOfOrders(self):
+        """
+        Process events escrowed by Kever that are recieved out-of-order.
+        An event is out of order if its prior event has not been accepted into its KEL.
+        Without the prior event there is no way to know the key state and therefore no way
+        to verify signatures on the out-of-order event.
+
+        Escrowed items are indexed in database table keyed by prefix and
+        sn with duplicates given by different dig inserted in insertion order.
+        This allows FIFO processing of events with same prefix and sn but different
+        digest.
+
+        Uses  .baser.addOoe(self, key, val) which is IOVal with dups.
+
+        Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
+
+        Original Escrow steps:
+            dgkey = dgKey(pre, serder.dig)
+            self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+            self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            self.baser.putEvt(dgkey, serder.raw)
+            self.baser.addOoe(snKey(pre, sn), serder.dig)
+            where:
+                serder is Serder instance of  event
+                sigers is list of Siger instance for  event
+                pre is str qb64 of identifier prefix of event
+                sn is int sequence number of event
+
+        Steps:
+            Each pass  (walk index table)
+                For each prefix,sn
+                    For each escrow item dup at prefix,sn:
+                        Get Event
+                        Get and Attach Signatures
+                        Process event as if it came in over the wire
+                        If successful then remove from escrow table
+        """
+
+        ims = bytearray()
+        key = ekey = b''  # both start same. when not same means escrows found
+        while True:  # break when done
+            for ekey, edig in self.baser.getOoeItemsNextIter(key=key):
+                try:
+                    pre, sn = splitKeySn(bytes(ekey))  # get pre and sn from escrow item
+                    # check date if expired then remove escrow.
+                    dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
+                    if dtb is None:  # othewise is a datetime as bytes
+                        # no date time so raise ValidationError which unescrows below
+                        blogger.info("Kevery unescrow error: Missing event datetime"
+                                 " at dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed event datetime "
+                                              "at dig = {}.".format(bytes(edig)))
+
+                    # do date math here and discard if stale nowIso8601() bytes
+                    dtnow =  datetime.datetime.now(datetime.timezone.utc)
+                    dte = fromIso8601(bytes(dtb))
+                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutOOE):
+                        # escrow stale so raise ValidationError which unescrows below
+                        blogger.info("Kevery unescrow error: Stale event escrow "
+                                 " at dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Stale event escrow "
+                                              "at dig = {}.".format(bytes(edig)))
+
+                    # get the escrowed event using edig
+                    eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
+                    if eraw is None:
+                        # no event so raise ValidationError which unescrows below
+                        blogger.info("Kevery unescrow error: Missing event at."
+                                 "dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed evt at dig = {}."
+                                              "".format(bytes(edig)))
+
+                    eserder = Serder(raw=bytes(eraw))  # escrowed event
+                    ims.extend(eserder.raw)
+
+                    #  get sigs and attach
+                    sigs = self.baser.getSigs(dgKey(pre, bytes(edig)))
+                    if not sigs:  #  otherwise its a list of sigs
+                        # no sigs so raise ValidationError which unescrows below
+                        blogger.info("Kevery unescrow error: Missing event sigs at."
+                                 "dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed evt sigs at "
+                                              "dig = {}.".format(bytes(edig)))
+
+                    counter = SigCounter(count=len(sigs))
+                    ims.extend(counter.qb64b)
+                    for sig in sigs:  # stored in db as qb64b
+                        ims.extend(sig)
+
+                    # process event
+                    self.processOne(ims=ims)  # default framed True
+
+                    # If process does NOT validate event with sigs, becasue it is
+                    # still out of order then process will attempt to re-escrow
+                    # and then raise OutOfOrderError (subclass of ValidationError)
+                    # so we can distinquish between ValidationErrors that are
+                    # re-escrow vs non re-escrow. We want process to be idempotent
+                    # with respect to processing events that result in escrow items.
+                    # On re-escrow attempt by process, Ooe escrow is called by
+                    # Kevery.self.escrowOOEvent Which calls
+                    # self.baser.addOoe(snKey(pre, sn), serder.digb)
+                    # which in turn will not enter dig as dup if one already exists.
+                    # So re-escrow attempt will not change the escrowed ooe db.
+                    # Non re-escrow ValidationError means some other issue so unescrow.
+                    # No error at all means processed successfully so also unescrow.
+
+                except OutOfOrderError as ex:
+                    # still waiting on missing prior event to validate
+                    if blogger.isEnabledFor(logging.DEBUG):
+                        blogger.exception("Kevery unescrow failed: %s\n", ex.args[0])
+                    else:
+                        blogger.error("Kevery unescrow failed: %s\n", ex.args[0])
+
+                except Exception as ex:  # log diagnostics errors etc
+                    # error other than out of order so remove from OO escrow
+                    self.baser.delOoe(snKey(pre, sn), edig)  # removes one escrow at key val
+                    if blogger.isEnabledFor(logging.DEBUG):
+                        blogger.exception("Kevery unescrowed: %s\n", ex.args[0])
+                    else:
+                        blogger.error("Kevery unescrowed: %s\n", ex.args[0])
+
+                else:  # unescrow succeeded, remove from escrow
+                    # We don't remove all escrows at pre,sn because some might be
+                    # duplicitous so we process remaining escrows in spite of found
+                    # valid event escrow.
+                    self.baser.delOoe(snKey(pre, sn), edig)  # removes one escrow at key val
+                    blogger.info("Kevery unescrow succeeded in valid event: "
+                             "event = %s\n", eserder.ked)
+
+            if ekey == key:  # still same so no escrows found on last while iteration
+                break
+            key = ekey #  setup next while iteration, with key after ekey
+
+
+    def processDuplicitous(self):
+        """
+        Process events escrowed by Kever that are likely duplicitous.
+        An event is likely duplicitous if a different version of event already
+        has been accepted into the KEL.
+
+        Escrowed items are indexed in database table keyed by prefix and
+        sn with duplicates given by different dig inserted in insertion order.
+        This allows FIFO processing of events with same prefix and sn but different
+        digest.
+
+        Uses  .baser.addLde(self, key, val) which is IOVal with dups.
+
+        Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
+
+        Original Escrow steps:
+            dgkey = dgKey(pre, serder.dig)
+            self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+            self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+            self.baser.putEvt(dgkey, serder.raw)
+            self.baser.addLde(snKey(pre, sn), serder.digb)
+            where:
+                serder is Serder instance of  event
+                sigers is list of Siger instance for  event
+                pre is str qb64 of identifier prefix of event
+                sn is int sequence number of event
+
+        Steps:
+            Each pass  (walk index table)
+                For each prefix,sn
+                    For each escrow item dup at prefix,sn:
+                        Get Event
+                        Get and Attach Signatures
+                        Process event as if it came in over the wire
+                        If successful then remove from escrow table
+        """
+
+        ims = bytearray()
+        key = ekey = b''  # both start same. when not same means escrows found
+        while True:  # break when done
+            for ekey, edig in self.baser.getLdeItemsNextIter(key=key):
+                try:
+                    pre, sn = splitKeySn(bytes(ekey))  # get pre and sn from escrow item
+                    # check date if expired then remove escrow.
+                    dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
+                    if dtb is None:  # othewise is a datetime as bytes
+                        # no date time so raise ValidationError which unescrows below
+                        blogger.info("Kevery unescrow error: Missing event datetime"
+                                 " at dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed event datetime "
+                                              "at dig = {}.".format(bytes(edig)))
+
+                    # do date math here and discard if stale nowIso8601() bytes
+                    dtnow =  datetime.datetime.now(datetime.timezone.utc)
+                    dte = fromIso8601(bytes(dtb))
+                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutLDE):
+                        # escrow stale so raise ValidationError which unescrows below
+                        blogger.info("Kevery unescrow error: Stale event escrow "
+                                 " at dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Stale event escrow "
+                                              "at dig = {}.".format(bytes(edig)))
+
+                    # get the escrowed event using edig
+                    eraw = self.baser.getEvt(dgKey(pre, bytes(edig)))
+                    if eraw is None:
+                        # no event so raise ValidationError which unescrows below
+                        blogger.info("Kevery unescrow error: Missing event at."
+                                 "dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed evt at dig = {}."
+                                              "".format(bytes(edig)))
+
+                    eserder = Serder(raw=bytes(eraw))  # escrowed event
+                    ims.extend(eserder.raw)
+
+                    #  get sigs and attach
+                    sigs = self.baser.getSigs(dgKey(pre, bytes(edig)))
+                    if not sigs:  #  otherwise its a list of sigs
+                        # no sigs so raise ValidationError which unescrows below
+                        blogger.info("Kevery unescrow error: Missing event sigs at."
+                                 "dig = %s\n", bytes(edig))
+
+                        raise ValidationError("Missing escrowed evt sigs at "
+                                              "dig = {}.".format(bytes(edig)))
+
+                    counter = SigCounter(count=len(sigs))
+                    ims.extend(counter.qb64b)
+                    for sig in sigs:  # stored in db as qb64b
+                        ims.extend(sig)
+
+                    # process event
+                    self.processOne(ims=ims)  # default framed True
+
+                    # If process does NOT validate event with sigs, becasue it is
+                    # still out of order then process will attempt to re-escrow
+                    # and then raise OutOfOrderError (subclass of ValidationError)
+                    # so we can distinquish between ValidationErrors that are
+                    # re-escrow vs non re-escrow. We want process to be idempotent
+                    # with respect to processing events that result in escrow items.
+                    # On re-escrow attempt by process, Ooe escrow is called by
+                    # Kevery.self.escrowOOEvent Which calls
+                    # self.baser.addOoe(snKey(pre, sn), serder.digb)
+                    # which in turn will not enter dig as dup if one already exists.
+                    # So re-escrow attempt will not change the escrowed ooe db.
+                    # Non re-escrow ValidationError means some other issue so unescrow.
+                    # No error at all means processed successfully so also unescrow.
+
+                except LikelyDuplicitousError as ex:
+                    # still can't determine if duplicitous
+                    if blogger.isEnabledFor(logging.DEBUG):
+                        blogger.exception("Kevery unescrow failed: %s\n", ex.args[0])
+                    else:
+                        blogger.error("Kevery unescrow failed: %s\n", ex.args[0])
+
+                except Exception as ex:  # log diagnostics errors etc
+                    # error other than likely duplicitous so remove from escrow
+                    self.baser.delLde(snKey(pre, sn), edig)  # removes one escrow at key val
+                    if blogger.isEnabledFor(logging.DEBUG):
+                        blogger.exception("Kevery unescrowed: %s\n", ex.args[0])
+                    else:
+                        blogger.error("Kevery unescrowed: %s\n", ex.args[0])
+
+                else:  # unescrow succeeded, remove from escrow
+                    # We don't remove all escrows at pre,sn because some might be
+                    # duplicitous so we process remaining escrows in spite of found
+                    # valid event escrow.
+                    self.baser.delLde(snKey(pre, sn), edig)  # removes one escrow at key val
+                    blogger.info("Kevery unescrow succeeded in valid event: "
+                             "event = %s\n", eserder.ked)
+
+            if ekey == key:  # still same so no escrows found on last while iteration
+                break
+            key = ekey #  setup next while iteration, with key after ekey
 
 
     def duplicity(self, serder, sigers):
