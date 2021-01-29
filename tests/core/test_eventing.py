@@ -32,7 +32,7 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import TraitDex, LastEstLoc, detriplet
+from keri.core.eventing import TraitDex, LastEstLoc, detriplet, decouplet
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
                                 delcept, deltate)
@@ -59,11 +59,51 @@ def test_detriplet():
     assert prefixer.qb64 == pre
     assert cigar.qb64 == sig
 
-    triplet = memoryview(triplet.encode("utf-8"))
+    # bytes
+    dig = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    pre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    triplet = dig + pre + sig
     diger, prefixer, cigar = detriplet(triplet)
-    assert diger.qb64 == dig
+    assert diger.qb64b == dig
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
+
+
+    triplet = memoryview(triplet)
+    diger, prefixer, cigar = detriplet(triplet)
+    assert diger.qb64b == dig
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
+
+    """end test"""
+
+def test_decouplet():
+    """
+    test decouplet function
+    """
+    pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    couplet = pre + sig
+    prefixer, cigar = decouplet(couplet)
     assert prefixer.qb64 == pre
     assert cigar.qb64 == sig
+
+    # bytes
+    pre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    couplet = pre + sig
+    prefixer, cigar = decouplet(couplet)
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
+
+    couplet = memoryview(couplet)
+    prefixer, cigar = decouplet(couplet)
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
 
     """end test"""
 

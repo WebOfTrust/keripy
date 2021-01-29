@@ -98,7 +98,7 @@ def detriplet(triplet):
     """
     Returns tuple (triple) of (diger, prefixer, cigar) from concatenated bytes
     of triplet made up of qb64 or qb64b versions of dig+pre+sig
-    triplet is used for escrows of unverified receipts signed by nontransferable prefix keys
+    Triplet is used for escrows of unverified receipts signed by nontransferable prefix keys
 
     Parameters:
         triplet is bytes concatenation of dig+pre+sig from receipt
@@ -110,9 +110,28 @@ def detriplet(triplet):
     diger = Diger(qb64b=triplet)
     triplet = triplet[len(diger.qb64b):]  # strip off dig
     prefixer = Prefixer(qb64b=triplet)
-    triplet = triplet[len(diger.qb64b):]  # strip off pre
+    triplet = triplet[len(prefixer.qb64b):]  # strip off pre
     cigar = Cigar(qb64b=triplet)
     return (diger, prefixer, cigar)
+
+def decouplet(couplet):
+    """
+    Returns tuple (duple) of (prefixer, cigar) from concatenated bytes
+    of couplet made up of qb64 or qb64b versions of pre+sig
+    Couplet is used for receipts signed by nontransferable prefix keys
+
+    Parameters:
+        couplet is bytes concatenation of pre+sig from receipt
+    """
+    if isinstance(couplet, memoryview):
+        couplet = bytes(couplet)
+    if hasattr(couplet, "encode"):
+        couplet = couplet.encode("utf-8")  # convert to bytes
+
+    prefixer = Prefixer(qb64b=couplet)
+    couplet = couplet[len(prefixer.qb64b):]  # strip off pre
+    cigar = Cigar(qb64b=couplet)
+    return (prefixer, cigar)
 
 
 def incept(keys,

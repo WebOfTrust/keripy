@@ -924,11 +924,22 @@ def test_unverified_receipt_escrow():
         # verify receipts
         receipts = kvy.baser.getRcts(dbing.dgKey(pre, icpdig))
         assert len(receipts) == 2
+        rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
+        assert rctPrefixer.qb64 == wit0pre
+        rctPrefixer, rctCigar = eventing.decouplet(receipts[1])
+        assert rctPrefixer.qb64 == wit1pre
         receipts = kvy.baser.getRcts(dbing.dgKey(pre, ixndig))
         assert len(receipts) == 2
+        rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
+        assert rctPrefixer.qb64 == wit0pre
+        rctPrefixer, rctCigar = eventing.decouplet(receipts[1])
+        assert rctPrefixer.qb64 == wit1pre
         receipts = kvy.baser.getRcts(dbing.dgKey(pre, rotdig))
         assert len(receipts) == 2
-
+        rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
+        assert rctPrefixer.qb64 == wit0pre
+        rctPrefixer, rctCigar = eventing.decouplet(receipts[1])
+        assert rctPrefixer.qb64 == wit1pre
 
 
     assert not os.path.exists(kpr.path)
