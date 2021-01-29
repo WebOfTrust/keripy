@@ -104,6 +104,8 @@ def splitKey(key):
     Accepts either bytes or str key
     Raises ValueError if key does not split into exactly two elements
     """
+    if isinstance(key, memoryview):
+        key = bytes(key)
     if hasattr(key, "encode"):
         sep = "."
     else:
@@ -120,6 +122,8 @@ def splitKeySn(key):
     Accepts either bytes or str key
 
     """
+    if isinstance(key, memoryview):
+        key = bytes(key)
     pre, sn = splitKey(key)
     sn = int(sn, 16)
     return (pre, sn)

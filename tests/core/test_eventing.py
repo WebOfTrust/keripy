@@ -58,6 +58,13 @@ def test_detriplet():
     assert diger.qb64 == dig
     assert prefixer.qb64 == pre
     assert cigar.qb64 == sig
+
+    triplet = memoryview(triplet.encode("utf-8"))
+    diger, prefixer, cigar = detriplet(triplet)
+    assert diger.qb64 == dig
+    assert prefixer.qb64 == pre
+    assert cigar.qb64 == sig
+
     """end test"""
 
 

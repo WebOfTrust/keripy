@@ -598,7 +598,7 @@ def test_manager():
     raw = b'0123456789abcdef'
     salt = coring.Salter(raw=raw).qb64
     stem = "red"
-    tier = coring.Tiers.low
+
     assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
 
     ser = bytes(b'{"vs":"KERI10JSON0000fb_","pre":"EvEnZMhz52iTrJU8qKwtDxzmypyosgG'
@@ -863,7 +863,22 @@ def test_manager():
             verfers, digers = manager.incept(salt=salt, stem=stem, temp=True)
         assert ex.value.args[0].startswith('Already incepted pre')
 
+        # Create nontransferable keys that are nontransferable identifier prefixes
+        verfers, digers = manager.incept(ncount=0, salt=salt, stem="wit0",
+                                         transferable=False, temp=True)
+        wit0pre = verfers[0].qb64
+        assert verfers[0].qb64 == 'B5M0jhHM3vTo15w12pOUYRwxJNaIVS96wSqbFZH-inyc'
+        assert verfers[0].code == coring.CryOneDex.Ed25519N
+        assert not digers
 
+        verfers, digers = manager.incept(ncount=0, salt=salt, stem="wit1",
+                                         transferable=False, temp=True)
+        wit1pre = verfers[0].qb64
+        assert verfers[0].qb64 == 'BAH_nE1cfiGjEMK0Ac8U8N51npjBOjyZt3D-_QA4c4y0'
+        assert verfers[0].code == coring.CryOneDex.Ed25519N
+        assert not digers
+
+        assert wit0pre != wit1pre
 
     assert not os.path.exists(manager.keeper.path)
     assert not manager.keeper.opened

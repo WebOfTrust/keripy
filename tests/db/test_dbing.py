@@ -66,6 +66,19 @@ def test_key_funcs():
     with pytest.raises(ValueError):
         splitKey(dgKey(pre, dgKey(pre, dig)))
 
+    # memoryview
+    # Bytes
+    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    dig = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    sn = 3
+
+    key = memoryview(snKey(pre, sn))
+    assert splitKey(key) == (pre, b'%032x' % sn)
+    assert splitKeySn(key) == (pre, sn)
+
+    key = memoryview(dgKey(pre, dig))
+    assert splitKey(key) == (pre, dig)
+
     """Done Test"""
 
 
@@ -1650,4 +1663,4 @@ def test_usebaser():
     """ End Test """
 
 if __name__ == "__main__":
-    test_baser()
+    test_key_funcs()
