@@ -94,6 +94,26 @@ SealLocation = namedtuple("SealLocation", 'i s t p')
 # Cues are dataclasses may be converted tofrom dicts easily
 
 
+def decouplet(couplet):
+    """
+    Returns tuple (duple) of (prefixer, cigar) from concatenated bytes
+    of couplet made up of qb64 or qb64b versions of pre+sig
+    Couplet is used for receipts signed by nontransferable prefix keys
+
+    Parameters:
+        couplet is bytes concatenation of pre+sig from receipt
+    """
+    if isinstance(couplet, memoryview):
+        couplet = bytes(couplet)
+    if hasattr(couplet, "encode"):
+        couplet = couplet.encode("utf-8")  # convert to bytes
+
+    prefixer = Prefixer(qb64b=couplet)
+    couplet = couplet[len(prefixer.qb64b):]  # strip off pre
+    cigar = Cigar(qb64b=couplet)
+    return (prefixer, cigar)
+
+
 def detriplet(triplet):
     """
     Returns tuple (triple) of (diger, prefixer, cigar) from concatenated bytes
@@ -114,24 +134,59 @@ def detriplet(triplet):
     cigar = Cigar(qb64b=triplet)
     return (diger, prefixer, cigar)
 
-def decouplet(couplet):
+
+def dequadlet(quadlet):
     """
-    Returns tuple (duple) of (prefixer, cigar) from concatenated bytes
-    of couplet made up of qb64 or qb64b versions of pre+sig
-    Couplet is used for receipts signed by nontransferable prefix keys
+    Returns tuple (quadruple) of (prefixer, seqnumber, diger, siger) from concatenated bytes
+    of quadlet made up of qb64 or qb64b versions of pre+snu+dig+sig
+    Quadlet is used for receipts signed by transferable prefix keys
 
     Parameters:
-        couplet is bytes concatenation of pre+sig from receipt
+        quadlet is bytes concatenation of pre+snu+dig+sig from receipt
     """
-    if isinstance(couplet, memoryview):
-        couplet = bytes(couplet)
-    if hasattr(couplet, "encode"):
-        couplet = couplet.encode("utf-8")  # convert to bytes
+    if isinstance(quadlet, memoryview):
+        quadlet = bytes(quadlet)
+    if hasattr(quadlet, "encode"):
+        quadlet = quadlet.encode("utf-8")  # convert to bytes
 
-    prefixer = Prefixer(qb64b=couplet)
-    couplet = couplet[len(prefixer.qb64b):]  # strip off pre
-    cigar = Cigar(qb64b=couplet)
-    return (prefixer, cigar)
+    prefixer = Prefixer(qb64b=quadlet)
+    quadlet = quadlet[len(prefixer.qb64b):]  # strip off pre
+    seqnumber = SeqNumber(qb64b=quadlet)
+    quadlet = quadlet[len(prefixer.qb64b):]  # strip off snu
+    diger = Diger(qb64b=quadlet)
+    quadlet = quadlet[len(diger.qb64b):]  # strip off dig
+    siger = Siger(qb64b=quadlet)
+    return (prefixer, seqnumber, diger, siger)
+
+
+def dequintlet(quintlet):
+    """
+    Returns tuple (quintuple) of (ediger, prefixer, seqnumber, diger, siger)
+    from concatenated bytes
+    of quintlet made up of qb64 or qb64b versions of dig+pre+snu+dig+sig
+    Quintlet is used for unverified escrows of validator receipts signed
+    by transferable prefix keys
+
+    Parameters:
+        quintlet is bytes concatenation of dig+pre+snu+dig+sig from receipt
+    """
+    if isinstance(quintlet, memoryview):
+        quintlet = bytes(quintlet)
+    if hasattr(quintlet, "encode"):
+        quintlet = quintlet.encode("utf-8")  # convert to bytes
+
+    ediger = Diger(qb64b=quintlet)  #  diger of receipted event
+    quintlet = quintlet[len(diger.qb64b):]  # strip off dig
+    prefixer = Prefixer(qb64b=quintlet)  # prefixer of recipter
+    quintlet = quintlet[len(prefixer.qb64b):]  # strip off pre
+    seqnumber = SeqNumber(qb64b=quintlet)  # seqnumber of receipting event
+    quintlet = quintlet[len(prefixer.qb64b):]  # strip off snu
+    diger = Diger(qb64b=quintlet)  # diger of receipting event
+    quintlet = quintlet[len(diger.qb64b):]  # strip off dig
+    siger = Siger(qb64b=quintlet)  #  indexed siger of event
+    return (ediger, prefixer, seqnumber, diger, siger)
+
+
 
 
 def incept(keys,
@@ -1605,6 +1660,37 @@ class Kevery:
                      " sn=%x dig=%s\n", pre, sn, dig)
 
 
+    def escrowVREvent(self, edig, sigers, pre, sn, dig):
+        """
+        Update associated logs for escrow of Unverified Validator Event Receipt
+        (transferable)
+
+        Parameters:
+            edig instance of receipted event provided in receipt
+            sigers is list of Siger instances for event receipt
+            pre is str qb64 of identifier prefix of event
+            sn is int sequence number of event
+            dig instance of receipted event provided in receipt
+        """
+        # Receipt dig algo may not match database dig. So must always
+        # serder.compare to match. So receipts for same event may have different
+        # digs of that event due to different algos. So the escrow may have
+        # different dup at same key, sn.  Escrow needs to be quintlet with
+        # edig, validator prefix, validtor est event sn, validator est evvent dig
+        # and sig stored at kel pre, sn so can compare digs
+        # with different algos.  Can't lookup by dig for same reason. Must
+        # lookup last event by sn not by dig.
+        self.baser.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
+        for siger in sigers:  # escrow each triplet
+            if siger.verfer.transferable:  # skip transferable verfers
+                continue  # skip invalid couplets
+            triplet = dig.encode("utf-8") + siger.verfer.qb64b + siger.qb64b
+            self.baser.addVre(key=snKey(pre, sn), val=triplet)  # should be snKey
+        # log escrowed
+        blogger.info("Kevery process: escrowed unverified validator receipt of pre= %s "
+                     " sn=%x dig=%s\n", pre, sn, dig)
+
+
     def processEvent(self, serder, sigers):
         """
         Process one event serder with attached indexd signatures sigers
@@ -1763,11 +1849,18 @@ class Kevery:
             sigers is list of Siger instances that contain signature
 
         Chit dict labels
-            vs  # version string
-            pre  # qb64 prefix
-            ilk  # vrc
-            dig  # qb64 digest of receipted event
-            seal # event seal of last est event pre dig
+            v vs  # version string
+            i pre  # qb64 prefix
+            s sn   # hex of sequence number
+            t ilk  # vrc
+            d dig  # qb64 digest of receipted event
+            a seal # event seal of receipters last est event at time of receipt
+
+        Seal labels
+            i pre  # qb64 prefix of receipter
+            s sn   # hex of sequence number of est event for receipter keys
+            d dig  # qb64 digest of est event for receipter keys
+
         """
         # fetch  pre, dig,seal to process
         ked = serder.ked

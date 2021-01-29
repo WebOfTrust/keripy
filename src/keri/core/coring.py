@@ -665,7 +665,7 @@ class SeqNumber(CryMat):
     """
     SeqNumber is subclass of CryMat, cryptographic material,
     SeqNumber provides fully qualified format for sequence numbers when
-    used a attached cryptographic material items in its .sn property.
+    used as attached cryptographic material items in its .sn property.
 
     Useful when parsing attached receipt quadlets from stream or database
 
