@@ -783,10 +783,29 @@ class Cigar(CryMat):
 
     Attributes:
 
+    Inherited Properties:
+        .pad  is int number of pad chars given raw
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+
     Properties:
+        .verfer is verfer of public key used to verify signature
+
 
     Methods:
 
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
     def __init__(self, verfer=None, **kwa):
@@ -1075,12 +1094,28 @@ class Diger(CryMat):
 
     See CryMat for inherited attributes and properties:
 
-    Attributes:
-
-    Properties:
+    Inherited Properties:
+        .pad  is int number of pad chars given raw
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .nontrans is Boolean, True when non-transferable derivation code False otherwise
 
     Methods:
-        verify: verifies signature
+        verify: verifies digest given ser
+        compare: compares provide digest given ser to this digest of ser.
+                enables digest agility of different digest algos to compare.
+
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
     def __init__(self, raw=None, ser=None, code=CryOneDex.Blake3_256, **kwa):

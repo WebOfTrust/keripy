@@ -32,7 +32,7 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import TraitDex, LastEstLoc
+from keri.core.eventing import TraitDex, LastEstLoc, detriplet, decouplet
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
                                 delcept, deltate)
@@ -43,6 +43,69 @@ from keri.db.dbing import dgKey, snKey, openDB, Baser
 from keri.help import ogling
 
 blogger, flogger = ogling.ogler.getLoggers()
+
+
+def test_detriplet():
+    """
+    test detriplet function
+    """
+    dig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    triplet = dig + pre + sig
+    diger, prefixer, cigar = detriplet(triplet)
+    assert diger.qb64 == dig
+    assert prefixer.qb64 == pre
+    assert cigar.qb64 == sig
+
+    # bytes
+    dig = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    pre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    triplet = dig + pre + sig
+    diger, prefixer, cigar = detriplet(triplet)
+    assert diger.qb64b == dig
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
+
+
+    triplet = memoryview(triplet)
+    diger, prefixer, cigar = detriplet(triplet)
+    assert diger.qb64b == dig
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
+
+    """end test"""
+
+def test_decouplet():
+    """
+    test decouplet function
+    """
+    pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    couplet = pre + sig
+    prefixer, cigar = decouplet(couplet)
+    assert prefixer.qb64 == pre
+    assert cigar.qb64 == sig
+
+    # bytes
+    pre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    couplet = pre + sig
+    prefixer, cigar = decouplet(couplet)
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
+
+    couplet = memoryview(couplet)
+    prefixer, cigar = decouplet(couplet)
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
+
+    """end test"""
 
 
 def test_lastestloc():
@@ -1614,9 +1677,9 @@ def test_receipt():
 
         coeKevery.processAll(ims=res)  #  coe process the escrow receipt from val
         #  check if in escrow database
-        result = coeKevery.baser.getUres(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                        dig=fake))
-        assert bytes(result[0]) == valPrefixer.qb64b + valCigar.qb64b
+        result = coeKevery.baser.getUres(key=snKey(pre=coeKever.prefixer.qb64,
+                                                        sn=2))
+        assert bytes(result[0]) == fake.encode("utf-8") + valPrefixer.qb64b + valCigar.qb64b
 
         # create receipt stale use invalid dig and valid sn so bad receipt
         fake = reserder.dig  # some other dig
@@ -3054,4 +3117,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_multisig_digprefix()
+    test_detriplet()

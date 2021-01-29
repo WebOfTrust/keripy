@@ -68,6 +68,13 @@ class LikelyDuplicitousError(ValidationError):
         raise LikelyDuplicitousError("error message")
     """
 
+class UnverifiedReceiptError(ValidationError):
+    """
+    Error reciept is unverfied
+    Usage:
+        raise UnverifiedReceiptError("error message")
+    """
+
 
 class VersionError(ValidationError):
     """

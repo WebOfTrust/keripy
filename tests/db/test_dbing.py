@@ -66,6 +66,19 @@ def test_key_funcs():
     with pytest.raises(ValueError):
         splitKey(dgKey(pre, dgKey(pre, dig)))
 
+    # memoryview
+    # Bytes
+    pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    dig = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    sn = 3
+
+    key = memoryview(snKey(pre, sn))
+    assert splitKey(key) == (pre, b'%032x' % sn)
+    assert splitKeySn(key) == (pre, sn)
+
+    key = memoryview(dgKey(pre, dig))
+    assert splitKey(key) == (pre, dig)
+
     """Done Test"""
 
 
@@ -692,42 +705,175 @@ def test_baser():
         assert db.delRcts(key) == True
         assert db.getRcts(key) == []
 
-        # test .ures sub db methods dgKey
+
+        # test .ures insertion order dup methods.  dup vals are insertion order
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+
         assert db.getUres(key) == []
+        assert db.getUreLast(key) == None
         assert db.cntUres(key) == 0
         assert db.delUres(key) == False
-
-        # dup vals are lexocographic
-        assert db.putUres(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert db.getUres(key) == [b'a', b'm', b'x', b'z']
-        assert db.cntUres(key) == 4
-        assert db.putUres(key, vals=[b'a']) == True   # duplicate
-        assert db.getUres(key) == [b'a', b'm', b'x', b'z']
+        assert db.putUres(key, vals) == True
+        assert db.getUres(key) == vals  # preserved insertion order
+        assert db.cntUres(key) == len(vals) == 4
+        assert db.getUreLast(key) == vals[-1]
+        assert db.putUres(key, vals=[b'a']) == False   # duplicate
+        assert db.getUres(key) == vals  #  no change
         assert db.addUre(key, b'a') == False   # duplicate
         assert db.addUre(key, b'b') == True
-        assert db.getUres(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in db.getUresIter(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert db.getUres(key) == [b"z", b"m", b"x", b"a", b"b"]
+        assert [val for val in db.getUresIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
         assert db.delUres(key) == True
-        assert db.getUres(key) == []
-        vals = [b"z", b"m", b"x", b"a"]
-        assert db.putUres(key, vals) == True
-        for val in vals:
-            assert db.delUres(key, val) == True
-        assert db.getUres(key) == []
-        assert db.putUres(key, vals) == True
-        for val in db.getUresIter(key):
-            assert db.delUres(key, val) == True
         assert db.getUres(key) == []
 
-        assert db.putUres(key, vals=[wit0b + wsig0b, wit1b + wsig1b]) == True
-        assert db.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert db.putUres(key, vals=[wit1b + wsig1b]) == True
-        assert db.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert db.delUres(key) == True
-        assert db.putUres(key, vals=[wit1b + wsig1b, wit0b + wsig0b]) == True
-        assert db.getUres(key) == [wit1b + wsig1b, wit0b + wsig0b]  #  lex order
-        assert db.delUres(key) == True
-        assert db.getUres(key) == []
+        # Setup Tests for getPsesNext and getPsesNextIter
+        aKey = snKey(pre=b'A', sn=1)
+        aVals = [b"z", b"m", b"x"]
+        bKey = snKey(pre=b'A', sn=2)
+        bVals = [b"o", b"r", b"z"]
+        cKey = snKey(pre=b'A', sn=4)
+        cVals = [b"h", b"n"]
+        dKey = snKey(pre=b'A', sn=7)
+        dVals = [b"k", b"b"]
+
+        assert db.putUres(key=aKey, vals=aVals)
+        assert db.putUres(key=bKey, vals=bVals)
+        assert db.putUres(key=cKey, vals=cVals)
+        assert db.putUres(key=dKey, vals=dVals)
+
+        # Test getUreItemsNext( key=b"")
+        # aVals
+        items = db.getUreItemsNext()  #  get first key in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = db.getUreItemsNext(key=aKey, skip=False)  #  get aKey  in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = db.getUreItemsNext(key=aKey)  #  get bKey  in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for  key, val in items]
+        assert vals == bVals
+
+        items = db.getUreItemsNext(key=b'', skip=False)  #  get frist key in database
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        # bVals
+        items = db.getUreItemsNext(key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for key, val in items]
+        assert vals == bVals
+
+        # cVals
+        items = db.getUreItemsNext(key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == cKey
+        vals = [val for key, val in items]
+        assert vals == cVals
+
+        # dVals
+        items = db.getUreItemsNext(key=ikey)
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == dKey
+        vals = [val for key, val in items]
+        assert vals == dVals
+
+        # none
+        items = db.getUreItemsNext(key=ikey)
+        assert items == []  # empty
+        assert not items
+
+        # Test getUreItemsNextIter(key=b"")
+        #  get dups at first key in database
+        # aVals
+        items = [item for item in db.getUreItemsNextIter()]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = [item for item in db.getUreItemsNextIter(key=aKey, skip=False)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+
+        items = [item for item in db.getUreItemsNextIter(key=aKey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for  key, val in items]
+        assert vals == bVals
+
+        items = [item for item in db.getUreItemsNextIter(key=b'', skip=False)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == aKey
+        vals = [val for  key, val in items]
+        assert vals == aVals
+        for key, val in items:
+            assert db.delUre(ikey, val) == True
+
+        # bVals
+        items = [item for item in db.getUreItemsNextIter(key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == bKey
+        vals = [val for key, val in items]
+        assert vals == bVals
+        for key, val in items:
+            assert db.delUre(ikey, val) == True
+
+        # cVals
+        items = [item for item in db.getUreItemsNextIter(key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == cKey
+        vals = [val for key, val in items]
+        assert vals == cVals
+        for key, val in items:
+            assert db.delUre(ikey, val) == True
+
+        # dVals
+        items = [item for item in db.getUreItemsNextIter(key=ikey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert  ikey == dKey
+        vals = [val for key, val in items]
+        assert vals == dVals
+        for key, val in items:
+            assert db.delUre(ikey, val) == True
+
+        # none
+        items = [item for item in db.getUreItemsNext(key=ikey)]
+        assert items == []  # empty
+        assert not items
+
+        key = dgKey(preb, digb)
+        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
+                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+
+
 
         # test .vrcs sub db methods dgkey
         assert db.getVrcs(key) == []
@@ -1517,4 +1663,4 @@ def test_usebaser():
     """ End Test """
 
 if __name__ == "__main__":
-    test_baser()
+    test_key_funcs()

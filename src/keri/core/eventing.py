@@ -24,7 +24,7 @@ from orderedset import OrderedSet as oset
 from ..kering import (ValidationError, VersionError, EmptyMaterialError,
                       DerivationError, ShortageError, MissingSignatureError,
                       MissingDelegatingSealError, OutOfOrderError,
-                      LikelyDuplicitousError)
+                      LikelyDuplicitousError,  UnverifiedReceiptError)
 from ..kering import Versionage, Version
 from ..help.helping import nowIso8601, fromIso8601, toIso8601
 from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
@@ -93,6 +93,45 @@ SealLocation = namedtuple("SealLocation", 'i s t p')
 
 # Cues are dataclasses may be converted tofrom dicts easily
 
+
+def detriplet(triplet):
+    """
+    Returns tuple (triple) of (diger, prefixer, cigar) from concatenated bytes
+    of triplet made up of qb64 or qb64b versions of dig+pre+sig
+    Triplet is used for escrows of unverified receipts signed by nontransferable prefix keys
+
+    Parameters:
+        triplet is bytes concatenation of dig+pre+sig from receipt
+    """
+    if isinstance(triplet, memoryview):
+        triplet = bytes(triplet)
+    if hasattr(triplet, "encode"):
+        triplet = triplet.encode("utf-8")  # convert to bytes
+    diger = Diger(qb64b=triplet)
+    triplet = triplet[len(diger.qb64b):]  # strip off dig
+    prefixer = Prefixer(qb64b=triplet)
+    triplet = triplet[len(prefixer.qb64b):]  # strip off pre
+    cigar = Cigar(qb64b=triplet)
+    return (diger, prefixer, cigar)
+
+def decouplet(couplet):
+    """
+    Returns tuple (duple) of (prefixer, cigar) from concatenated bytes
+    of couplet made up of qb64 or qb64b versions of pre+sig
+    Couplet is used for receipts signed by nontransferable prefix keys
+
+    Parameters:
+        couplet is bytes concatenation of pre+sig from receipt
+    """
+    if isinstance(couplet, memoryview):
+        couplet = bytes(couplet)
+    if hasattr(couplet, "encode"):
+        couplet = couplet.encode("utf-8")  # convert to bytes
+
+    prefixer = Prefixer(qb64b=couplet)
+    couplet = couplet[len(prefixer.qb64b):]  # strip off pre
+    cigar = Cigar(qb64b=couplet)
+    return (prefixer, cigar)
 
 
 def incept(keys,
@@ -1264,7 +1303,8 @@ class Kevery:
     """
     TimeoutPSE = 3600  # seconds to timeout partial signed escrows
     TimeoutOOE = 1200  # seconds to timeout out of order escrows
-    TimeoutLDE = 3600  # seconds to timeout out of order escrows
+    TimeoutURE = 3600  # seconds to timeout unverified receipt escrows
+    TimeoutLDE = 3600  # seconds to timeout likely duplicitous escrows
 
     def __init__(self, ims=None, cues=None, kevers=None, baser=None, framed=True):
         """
@@ -1537,6 +1577,34 @@ class Kevery:
         blogger.info("Kevery process: escrowed likely duplicitous event = %s\n", serder.ked)
 
 
+    def escrowUREvent(self, dig, cigars, pre, sn):
+        """
+        Update associated logs for escrow of Unverified Event Receipt (non-transferable)
+
+        Parameters:
+            dig instance of receipted event provided in receipt
+            cigars is list of Cigar instances for event receipt
+            pre is str qb64 of identifier prefix of event
+            sn is int sequence number of event
+        """
+        # note receipt dig algo may not match database dig also so must always
+        # serder.compare to match. So receipts for same event may have different
+        # digs of that event due to different algos. So the escrow may have
+        # different dup at same key, sn.  Escrow needs to be triplet with
+        # dig, witness prefix, sig stored at kel pre, sn so can compare digs
+        # with different algos.  Can't lookup by dig for same reason. Must
+        # lookup last event by sn not by dig.
+        self.baser.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
+        for cigar in cigars:  # escrow each triplet
+            if cigar.verfer.transferable:  # skip transferable verfers
+                continue  # skip invalid couplets
+            triplet = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
+            self.baser.addUre(key=snKey(pre, sn), val=triplet)  # should be snKey
+        # log escrowed
+        blogger.info("Kevery process: escrowed unverified receipt of pre= %s "
+                     " sn=%x dig=%s\n", pre, sn, dig)
+
+
     def processEvent(self, serder, sigers):
         """
         Process one event serder with attached indexd signatures sigers
@@ -1654,14 +1722,7 @@ class Kevery:
         # fetch  pre dig to process
         ked = serder.ked
         pre = ked["i"]
-        sn = ked["s"]
-        if len(sn) > 32:  # replace this with .validateSn ?
-            raise ValidationError("Invalid sn = {} too large for evt = {}."
-                                  "".format(sn, ked))
-        try:
-            sn = int(sn, 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
+        sn = self.validateSN(ked)
 
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)
@@ -1689,12 +1750,8 @@ class Kevery:
                     self.baser.addRct(key=dgkey, val=couplet)
 
         else:  # no events to be receipted yet at that sn so escrow
-            for cigar in cigars:  # escrow each couplet
-                if cigar.verfer.transferable:  # skip transferable verfers
-                    continue  # skip invalid couplets
-                couplet = cigar.verfer.qb64b + cigar.qb64b
-                dgkey = dgKey(pre=pre, dig=ked["d"])  # should this use lserder.dig
-                self.baser.addUre(key=dgkey, val=couplet)
+            self.escrowUREvent(ked["d"], cigars, pre, sn)
+            raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
 
     def processChit(self, serder, sigers):
@@ -1715,14 +1772,7 @@ class Kevery:
         # fetch  pre, dig,seal to process
         ked = serder.ked
         pre = ked["i"]
-        sn = ked["s"]
-        if len(sn) > 32:  # replace with validateSn ?
-            raise ValidationError("Invalid sn = {} too large for evt = {}."
-                                  "".format(sn, ked))
-        try:
-            sn = int(sn, 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
+        sn = self.validateSN(ked)
 
         seal = SealEvent(**ked["a"])
         # convert sn in seal to fully qualified SeqNumber 24 bytes, raw 16 bytes
@@ -1798,6 +1848,7 @@ class Kevery:
             self.processOutOfOrders()
             self.processPartials()
             self.processDuplicitous()
+            self.processUnverifieds()
 
         except Exception as ex:  # log diagnostics errors etc
             if blogger.isEnabledFor(logging.DEBUG):
@@ -1846,7 +1897,7 @@ class Kevery:
         while True:  # break when done
             for ekey, edig in self.baser.getPseItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySn(bytes(ekey))  # get pre and sn from escrow item
+                    pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
@@ -1985,7 +2036,7 @@ class Kevery:
         while True:  # break when done
             for ekey, edig in self.baser.getOoeItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySn(bytes(ekey))  # get pre and sn from escrow item
+                    pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
@@ -2080,6 +2131,152 @@ class Kevery:
             key = ekey #  setup next while iteration, with key after ekey
 
 
+    def processUnverifieds(self):
+        """
+        Process event receipts escrowed by Kever that are unverified.
+        A receipt is unverified if the associated event has not been accepted into its KEL.
+        Without the event there is no way to know where to store the receipt couplets.
+
+        The escrow is a triplet with dig+pre+sig the verified receipt is just the
+        couplet pre+sig that is stored by event dig
+
+        Escrowed items are indexed in database table keyed by prefix and
+        sn with duplicates given by different recipt triplet inserted in insertion order.
+        This allows FIFO processing of events with same prefix and sn but different
+        digest.
+
+        Uses  .baser.addUre(self, key, val) which is IOVal with dups.
+
+        Value is triplet
+
+        Original Escrow steps:
+            self.baser.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
+            for cigar in cigars:  # escrow each triplet
+                if cigar.verfer.transferable:  # skip transferable verfers
+                    continue  # skip invalid couplets
+                triplet = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
+                self.baser.addUre(key=snKey(pre, sn), val=triplet)  # should be snKey
+            where:
+                dig is dig in receipt of receipted event
+                cigars is list of cigars instances for receipted event
+                pre is str qb64 of identifier prefix of receipted event
+                sn is int sequence number of receipted event
+
+        Steps:
+            Each pass  (walk index table)
+                For each prefix,sn
+                    For each escrow item dup at prefix,sn:
+                        Get Event
+                        compare dig so same event
+                        verify sigs via cigars
+                        If successful then remove from escrow table
+        """
+
+        ims = bytearray()
+        key = ekey = b''  # both start same. when not same means escrows found
+        while True:  # break when done
+            for ekey, etriplet in self.baser.getUreItemsNextIter(key=key):
+                try:
+                    pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
+                    ediger, eprefixer, ecigar = detriplet(etriplet)
+
+                    # check date if expired then remove escrow.
+                    dtb = self.baser.getDts(dgKey(pre, bytes(ediger.qb64b)))
+                    if dtb is None:  # othewise is a datetime as bytes
+                        # no date time so raise ValidationError which unescrows below
+                        blogger.info("Kevery unescrow error: Missing event datetime"
+                                 " at dig = %s\n", ediger.qb64b)
+
+                        raise ValidationError("Missing escrowed event datetime "
+                                              "at dig = {}.".format(ediger.qb64b))
+
+                    # do date math here and discard if stale nowIso8601() bytes
+                    dtnow =  datetime.datetime.now(datetime.timezone.utc)
+                    dte = fromIso8601(bytes(dtb))
+                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutURE):
+                        # escrow stale so raise ValidationError which unescrows below
+                        blogger.info("Kevery unescrow error: Stale event escrow "
+                                 " at dig = %s\n", ediger.qb64b)
+
+                        raise ValidationError("Stale event escrow "
+                                              "at dig = {}.".format(ediger.qb64b))
+
+                    # get dig of the receipted event using pre and sn lastEvt
+                    raw = self.baser.getKeLast(snKey(pre, sn))
+                    if raw is None:
+                        # no event so keep in escrow
+                        blogger.info("Kevery unescrow error: Missing receipted "
+                                 "event at pre=%s sn=%x\n", (pre, sn))
+
+                        raise UnverifiedReceiptError("Missing receipted evt at pre={} "
+                                              " sn={:x}".format(pre, sn))
+
+                    dig = bytes(raw)
+                    # get receipted event using pre and edig
+                    raw = self.baser.getEvt(dgKey(pre, dig))
+                    if raw is None:
+                        # no event so keep in escrow
+                        blogger.info("Kevery unescrow error: Missing receipted "
+                                 "event at pre=%s sn=%x\n", (pre, sn))
+
+                        raise UnverifiedReceiptError("Missing receipted evt at pre={} "
+                                              " sn={:x}".format(pre, sn))
+
+                    serder = Serder(raw=bytes(raw))  # receipted event
+
+                    #  compare digs
+                    if not ediger.compare(ser=serder.raw, diger=ediger):
+                        blogger.info("Kevery unescrow error: Bad receipt dig."
+                             "pre=%s sn=%x receipter=%s\n", (pre, sn, eprefixer.qb64))
+
+                        raise ValidationError("Bad escrowed receipt dig at "
+                                          "pre={} sn={:x} receipter={}."
+                                          "".format( pre, sn, eprefixer.qb64))
+
+                    #  verify sig verfer key is prefixer from triplet
+                    ecigar.verfer = Verfer(qb64b=eprefixer.qb64b)
+                    if not ecigar.verfer.verify(ecigar.raw, serder.raw):
+                        # no sigs so raise ValidationError which unescrows below
+                        blogger.info("Kevery unescrow error: Bad receipt sig."
+                                 "pre=%s sn=%x receipter=%s\n", (pre, sn, eprefixer.qb64))
+
+                        raise ValidationError("Bad escrowed receipt sig at "
+                                              "pre={} sn={:x} receipter={}."
+                                              "".format( pre, sn, eprefixer.qb64))
+
+                    # write receipt couplet to database
+                    couplet = ecigar.verfer.qb64b + ecigar.qb64b
+                    self.baser.addRct(key=dgKey(pre, serder.dig), val=couplet)
+
+
+                except UnverifiedReceiptError as ex:
+                    # still waiting on missing prior event to validate
+                    # only happens if we process above
+                    if blogger.isEnabledFor(logging.DEBUG):  # adds exception data
+                        blogger.exception("Kevery unescrow failed: %s\n", ex.args[0])
+                    else:
+                        blogger.error("Kevery unescrow failed: %s\n", ex.args[0])
+
+                except Exception as ex:  # log diagnostics errors etc
+                    # error other than out of order so remove from OO escrow
+                    self.baser.delUre(snKey(pre, sn), etriplet)  # removes one escrow at key val
+                    if blogger.isEnabledFor(logging.DEBUG):  # adds exception data
+                        blogger.exception("Kevery unescrowed: %s\n", ex.args[0])
+                    else:
+                        blogger.error("Kevery unescrowed: %s\n", ex.args[0])
+
+                else:  # unescrow succeeded, remove from escrow
+                    # We don't remove all escrows at pre,sn because some might be
+                    # duplicitous so we process remaining escrows in spite of found
+                    # valid event escrow.
+                    self.baser.delUre(snKey(pre, sn), etriplet)  # removes one escrow at key val
+                    blogger.info("Kevery unescrow succeeded for event = %s\n", serder.ked)
+
+            if ekey == key:  # still same so no escrows found on last while iteration
+                break
+            key = ekey #  setup next while iteration, with key after ekey
+
+
     def processDuplicitous(self):
         """
         Process events escrowed by Kever that are likely duplicitous.
@@ -2122,7 +2319,7 @@ class Kevery:
         while True:  # break when done
             for ekey, edig in self.baser.getLdeItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySn(bytes(ekey))  # get pre and sn from escrow item
+                    pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
