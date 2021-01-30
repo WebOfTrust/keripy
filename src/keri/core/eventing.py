@@ -826,7 +826,7 @@ class Kever:
                                        [verfer.qb64 for verfer in self.verfers],
                                        ked))
 
-        self.prefixer = Prefixer(qb64=ked["i"])
+        self.prefixer = Prefixer(qb64=serder.pre)
         if not self.prefixer.verify(ked=ked):  # invalid prefix
             raise ValidationError("Invalid prefix = {} for inception evt = {}."
                                   "".format(self.prefixer.qb64, ked))

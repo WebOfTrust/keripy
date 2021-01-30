@@ -366,12 +366,16 @@ class CryMat:
             code is str of derivation code
             index is int of count of attached receipts for CryCntDex codes
 
-        When raw provided then validate that code is correct for length of raw
+        Needs (raw and code) or qb64b or qb64 or qb2 else raises EmptyMaterialError
+        When raw and code provided then validate that code is correct for length of raw
             and assign .raw
-        Else when qb64 or qb2 provided extract and assign .raw and .code
+        Else when qb64b or qb64 or qb2 provided extract and assign .raw and .code
 
         """
-        if raw is not None:  #  raw provided so infil with code
+        if raw is not None:  #  raw provided
+            if not code:
+                raise EmptyMaterialError("Improper initialization need raw and code"
+                                         " or qb64b or qb64 or qb2.")
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
             pad = self._pad(raw)
@@ -408,7 +412,8 @@ class CryMat:
             self._exfil(encodeB64(qb2))
 
         else:
-            raise EmptyMaterialError("Improper initialization need raw or b64 or b2.")
+            raise EmptyMaterialError("Improper initialization need raw and code"
+                                     " or qb64b or qb64 or qb2.")
 
 
     @staticmethod
@@ -1508,7 +1513,7 @@ class Prefixer(CryMat):
     Properties:
 
     Methods:
-        verify():  Verifies derivation of aid prefix
+        verify():  Verifies derivation of aid prefix from a ked
 
     Hidden:
         ._pad is method to compute  .pad property
@@ -1524,11 +1529,22 @@ class Prefixer(CryMat):
     # element labels to exclude in digest or signature derivation from delegated inception dip
     DipExcludes = ["i"]
 
-    def __init__(self, raw=None, code=CryOneDex.Ed25519N, ked=None,
+    def __init__(self, raw=None, code=None, ked=None,
                  seed=None, secret=None, **kwa):
         """
         assign ._derive to derive derivatin of aid prefix from ked
         assign ._verify to verify derivation of aid prefix  from ked
+
+        Default code is None to force EmptyMaterialError when only raw provided but
+        not code.
+
+        Inherited Parameters:
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
 
         Parameters:
             seed is bytes seed when signature derivation
@@ -1539,8 +1555,12 @@ class Prefixer(CryMat):
         try:
             super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
-            if not ked or not code:
+            if not  ked or (not code and "i" not in ked):
                 raise  ex
+
+            if not code:  # get code from pre in ked
+                super(Prefixer, self).__init__(qb64=ked["i"], code=code, **kwa)
+                code = self.code
 
             if code == CryOneDex.Ed25519N:
                 self._derive = self._derive_ed25519N
@@ -1553,7 +1573,7 @@ class Prefixer(CryMat):
             else:
                 raise ValueError("Unsupported code = {} for prefixer.".format(code))
 
-            # use ked to derive aid prefix
+            # use ked and ._derive from code to derive aid prefix and code
             raw, code = self._derive(ked=ked, seed=seed, secret=secret)
             super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
 
@@ -1579,24 +1599,29 @@ class Prefixer(CryMat):
             seed is only used for sig derivation it is the secret key/secret
 
         """
+        if ked["t"] not in (Ilks.icp, Ilks.dip):
+            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
         return (self._derive(ked=ked, seed=seed, secret=secret))
 
 
-    def verify(self, ked):
+    def verify(self, ked, prefixed=False):
         """
-        Returns True if derivation from iked for .code matches .qb64,
+        Returns True if derivation from ked for .code matches .qb64 and
+                If prefixed also verifies ked["i"] matches .qb64
                 False otherwise
 
         Parameters:
             ked is inception key event dict
         """
-        return (self._verify(ked=ked, pre=self.qb64))
+        if ked["t"] not in (Ilks.icp, Ilks.dip):
+            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
+        return (self._verify(ked=ked, pre=self.qb64, prefixed=prefixed))
 
 
     def _derive_ed25519N(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic nontransferable Ed25519 prefix (qb64)
-            as derived from key event dict ked
+            as derived from inception key event dict ked keys[0]
         """
         ked = dict(ked)  # make copy so don't clobber original ked
         try:
@@ -1610,7 +1635,7 @@ class Prefixer(CryMat):
                                   " = {}".format(ex))
 
         if verfer.code not in [CryOneDex.Ed25519N]:
-            raise DerivationError("Invalid derivation code = {}."
+            raise DerivationError("Mismatch derivation code = {}."
                                   "".format(verfer.code))
 
         try:
@@ -1624,14 +1649,14 @@ class Prefixer(CryMat):
         return (verfer.raw, verfer.code)
 
 
-    def _verify_ed25519N(self, ked, pre):
+    def _verify_ed25519N(self, ked, pre, prefixed=False):
         """
         Returns True if verified  False otherwise
         Verify derivation of fully qualified Base64 pre from inception iked dict
 
         Parameters:
             ked is inception key event dict
-            pre is Base64 fully qualified prefix
+            pre is Base64 fully qualified prefix default to .qb64
         """
         try:
             keys = ked["k"]
@@ -1639,6 +1664,9 @@ class Prefixer(CryMat):
                 return False
 
             if keys[0] != pre:
+                return False
+
+            if prefixed and ked["i"] != pre:
                 return False
 
             if ked["n"]:  # must be empty
@@ -1653,7 +1681,7 @@ class Prefixer(CryMat):
     def _derive_ed25519(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
-            as derived from key event dict ked
+            as derived from inception key event dict ked keys[0]
         """
         ked = dict(ked)  # make copy so don't clobber original ked
         try:
@@ -1667,13 +1695,13 @@ class Prefixer(CryMat):
                                   " = {}".format(ex))
 
         if verfer.code not in [CryOneDex.Ed25519]:
-            raise DerivationError("Invalid derivation code = {}"
+            raise DerivationError("Mismatch derivation code = {}"
                                   "".format(verfer.code))
 
         return (verfer.raw, verfer.code)
 
 
-    def _verify_ed25519(self, ked, pre):
+    def _verify_ed25519(self, ked, pre, prefixed=False):
         """
         Returns True if verified False otherwise
         Verify derivation of fully qualified Base64 prefix from
@@ -1681,7 +1709,7 @@ class Prefixer(CryMat):
 
         Parameters:
             ked is inception key event dict
-            pre is Base64 fully qualified prefix
+            pre is Base64 fully qualified prefix default to .qb64
         """
         try:
             keys = ked["k"]
@@ -1690,6 +1718,10 @@ class Prefixer(CryMat):
 
             if keys[0] != pre:
                 return False
+
+            if prefixed and ked["i"] != pre:
+                return False
+
         except Exception as ex:
             return False
 
@@ -1699,7 +1731,7 @@ class Prefixer(CryMat):
     def _derive_blake3_256(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic Ed25519 pre (qb64)
-            as derived from key event dict ked
+            as derived from inception key event dict ked
         """
         ked = dict(ked)  # make copy so don't clobber original ked
         ilk = ked["t"]
@@ -1723,7 +1755,7 @@ class Prefixer(CryMat):
         return (dig, CryOneDex.Blake3_256)
 
 
-    def _verify_blake3_256(self, ked, pre):
+    def _verify_blake3_256(self, ked, pre, prefixed=False):
         """
         Returns True if verified False otherwise
         Verify derivation of fully qualified Base64 prefix from
@@ -1731,12 +1763,15 @@ class Prefixer(CryMat):
 
         Parameters:
             ked is inception key event dict
-            pre is Base64 fully qualified
+            pre is Base64 fully qualified default to .qb64
         """
         try:
             raw, code =  self._derive_blake3_256(ked=ked)
             crymat = CryMat(raw=raw, code=CryOneDex.Blake3_256)
             if crymat.qb64 != pre:
+                return False
+
+            if prefixed and ked["i"] != pre:
                 return False
 
         except Exception as ex:
@@ -1748,7 +1783,7 @@ class Prefixer(CryMat):
     def _derive_sig_ed25519(self, ked, seed=None, secret=None):
         """
         Returns tuple (raw, code) of basic Ed25519 pre (qb64)
-            as derived from key event dict ked
+            as derived from inception key event dict ked
         """
         ked = dict(ked)  # make copy so don't clobber original ked
         ilk = ked["t"]
@@ -1797,7 +1832,7 @@ class Prefixer(CryMat):
         return (cigar.raw, CryTwoDex.Ed25519)
 
 
-    def _verify_sig_ed25519(self, ked, pre):
+    def _verify_sig_ed25519(self, ked, pre, prefixed=False):
         """
         Returns True if verified False otherwise
         Verify derivation of fully qualified Base64 prefix from
@@ -1805,28 +1840,29 @@ class Prefixer(CryMat):
 
         Parameters:
             ked is inception key event dict
-            pre is Base64 fully qualified prefix
+            pre is Base64 fully qualified prefix default to .qb64
         """
         try:
-            ilk = ked["t"]
+            dked = dict(ked)  # make copy so don't clobber original ked
+            ilk = dked["t"]
             if ilk == Ilks.icp:
-                labels = [key for key in ked if key not in self.IcpExcludes]
+                labels = [key for key in dked if key not in self.IcpExcludes]
             elif ilk == Ilks.dip:
-                labels = [key for key in ked if key not in self.DipExcludes]
+                labels = [key for key in dked if key not in self.DipExcludes]
             else:
                 raise DerivationError("Invalid ilk = {} to derive prefix.".format(ilk))
 
             # put in dummy pre to get size correct
-            ked["i"] = "{}".format(self.Dummy*CryTwoSizes[CryTwoDex.Ed25519])
-            serder = Serder(ked=ked)
-            ked = serder.ked  # use updated ked with valid vs element
+            dked["i"] = "{}".format(self.Dummy*CryTwoSizes[CryTwoDex.Ed25519])
+            serder = Serder(ked=dked)
+            dked = serder.ked  # use updated ked with valid vs element
 
             for l in labels:
-                if l not in ked:
+                if l not in dked:
                     raise DerivationError("Missing element = {} from ked.".format(l))
 
             try:
-                keys = ked["k"]
+                keys = dked["k"]
                 if len(keys) != 1:
                     raise DerivationError("Basic derivation needs at most 1 key "
                                           " got {} keys instead".format(len(keys)))
@@ -1836,8 +1872,11 @@ class Prefixer(CryMat):
                                       " = {}".format(ex))
 
             if verfer.code not in [CryOneDex.Ed25519]:
-                raise DerivationError("Invalid derivation code = {}"
+                raise DerivationError("Mismatched derivation code = {}"
                                       "".format(verfer.code))
+
+            if prefixed and ked["i"] != pre:
+                return False
 
             cigar = Cigar(qb64=pre, verfer=verfer)
 

@@ -194,6 +194,12 @@ def test_crymat():
     with pytest.raises(EmptyMaterialError):
         crymat = CryMat()
 
+    with pytest.raises(EmptyMaterialError):
+        crymat = CryMat(raw=verkey, code=None)
+
+    with pytest.raises(EmptyMaterialError):
+        crymat = CryMat(raw=verkey, code='')
+
     crymat = CryMat(raw=verkey)
     assert crymat.raw == verkey
     assert crymat.code == CryOneDex.Ed25519N
@@ -1046,6 +1052,8 @@ def test_prefixer():
     """
     Test the support functionality for prefixer subclass of crymat
     """
+    preN = 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
+    pre = 'DrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = (b'\xacr\xda\xc83~\x99r\xaf\xeb`\xc0\x8cR\xd7\xd7\xf69\xc8E\x1e\xd2\xf0='
@@ -1061,52 +1069,94 @@ def test_prefixer():
     with pytest.raises(EmptyMaterialError):
         prefixer = Prefixer()
 
+    with pytest.raises(EmptyMaterialError):
+        prefixer = Prefixer(raw=verkey, code=None)
+
+    with pytest.raises(EmptyMaterialError):
+        prefixer = Prefixer(raw=verkey, code='')
+
     with pytest.raises(ValueError):
         prefixer = Prefixer(raw=verkey, code=CryOneDex.SHA2_256)
 
     # test creation given raw and code no derivation
-    prefixer = Prefixer(raw=verkey)  # defaults provide Ed25519N prefixer
+    prefixer = Prefixer(raw=verkey, code=CryOneDex.Ed25519N)  # default code is None
     assert prefixer.code == CryOneDex.Ed25519N
     assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
     assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
 
-    ked = dict(k=[prefixer.qb64], n="")
+    ked = dict(k=[prefixer.qb64], n="", t="icp")
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    ked = dict(k=[prefixer.qb64], n="ABC")
+    ked = dict(k=[prefixer.qb64], n="ABC", t="icp")
     assert prefixer.verify(ked=ked) == False
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     prefixer = Prefixer(raw=verkey, code=CryOneDex.Ed25519)  # defaults provide Ed25519N prefixer
     assert prefixer.code == CryOneDex.Ed25519
     assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
     assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
 
-    ked = dict(k=[prefixer.qb64])
+    ked = dict(k=[prefixer.qb64], t="icp")
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
-    prefixer = Prefixer(raw=verfer.raw)
+    prefixer = Prefixer(raw=verfer.raw, code=CryOneDex.Ed25519N)
     assert prefixer.code == CryOneDex.Ed25519N
     assert prefixer.verify(ked=ked) == False
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # Test basic derivation from ked
-    ked = dict(k=[verfer.qb64], n="")
+    ked = dict(k=[verfer.qb64], n="",  t="icp")
     prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519)
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
+    ked = dict(k=[verfer.qb64], n="",  t="icp")  #  ked without prefix
+    with pytest.raises(EmptyMaterialError):  # no code and no pre in ked
+        prefixer = Prefixer(ked=ked)
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)  # verfer code not match pre code
+    ked = dict(k=[verfer.qb64], n="",  t="icp", i=preN)
     with pytest.raises(DerivationError):
         prefixer = Prefixer(ked=ked)
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
+    ked = dict(k=[verfer.qb64], n="",  t="icp", i=pre)
+    with pytest.raises(DerivationError):
+        prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519N)  # verfer code not match code
 
     verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
-    ked = dict(k=[verfer.qb64], n="")
-    prefixer = Prefixer(ked=ked)
+    ked = dict(k=[verfer.qb64], n="",  t="icp", i=pre)
+    prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519N)  # verfer code match code but not pre code
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    ked = dict(k=[verfer.qb64], n="ABCD")
-    with pytest.raises(DerivationError):
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    ked = dict(k=[verfer.qb64], n="",  t="icp", i=preN)
+    prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519N)  # verfer code match code and pre code
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == True
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    ked = dict(k=[verfer.qb64], n="",  t="icp", i=preN)
+    prefixer = Prefixer(ked=ked)  # verfer code match pre code
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == True
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    ked = dict(k=[verfer.qb64], n="",  t="icp")
+    with pytest.raises(EmptyMaterialError):
         prefixer = Prefixer(ked=ked)
+
+    ked = dict(k=[verfer.qb64], n="ABCD",  t="icp")
+    with pytest.raises(DerivationError):
+        prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519)
 
     # Test digest derivation from inception ked
     vs = Versify(version=Version, kind=Serials.json, size=0)
@@ -1134,6 +1184,7 @@ def test_prefixer():
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
     assert prefixer.qb64 == 'E_P7GKEdbet8OudlQvqILlGn7Fll5q6zfddiSXc-XY5Y'
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # test with Nexter
     nexter = Nexter(sith="1", keys=[nxtfer.qb64])
@@ -1152,6 +1203,7 @@ def test_prefixer():
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
     assert prefixer.qb64 == 'E7iQvEO7xsRE8UfBB0DCWnksY8ju-9madY3jJ1Y-eYPE'
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # test with fractionally weighted sith
     secrets = [
@@ -1190,6 +1242,7 @@ def test_prefixer():
     prefixer1 = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
     assert prefixer1.qb64 == 'En6Ks1QPlek3GMHFTDlr-ufdZzQyHay_E2k5wTNB_MHM'
     assert prefixer1.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # now test with different sith but same weights in two clauses
     sith = [["1/2", "1/2"], ["1"]]
@@ -1208,6 +1261,7 @@ def test_prefixer():
     prefixer2 = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
     assert prefixer2.qb64 == 'EITG4HqxAlyOrQBYW9utR7W_iJmq4NmOI9IrPicZfK5E'
     assert prefixer2.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
     assert prefixer2.qb64 !=  prefixer1.qb64  # semantic diff -> syntactic diff
 
     sith = "1"
@@ -1232,6 +1286,7 @@ def test_prefixer():
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
     assert prefixer.qb64 == 'EZHlPj5b4zrbJgd72n2sg3v5GYlam_BiX7Sl58mPRP84'
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     #  Test signature derivation
 
@@ -1268,10 +1323,12 @@ def test_prefixer():
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, seed=seed)
     assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
     assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     """ Done Test """
 
@@ -2160,4 +2217,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_serder()
+    test_prefixer()

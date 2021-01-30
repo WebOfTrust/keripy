@@ -407,7 +407,7 @@ def test_kever():
 
 
         # Derive AID from ked
-        aid0 = Prefixer(ked=ked0, code = CryOneDex.Ed25519)
+        aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519)
         assert aid0.code == CryOneDex.Ed25519
         assert aid0.qb64 == skp0.verfer.qb64
 
@@ -463,7 +463,7 @@ def test_kever():
 
         # Derive AID from ked
         with pytest.raises(DerivationError):
-            aid0 = Prefixer(ked=ked0, code = CryOneDex.Ed25519N)
+            aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519N)
 
         # assert aid0.code == CryOneDex.Ed25519N
         # assert aid0.qb64 == skp0.verfer.qb64
@@ -1590,7 +1590,7 @@ def test_receipt():
 
     # create receipt signer prefixer  default code is non-transferable
     valSigner = Signer(qb64=valSecrets[0], transferable=False)
-    valPrefixer = Prefixer(qb64=valSigner.verfer.qb64, )
+    valPrefixer = Prefixer(qb64=valSigner.verfer.qb64)
     assert valPrefixer.code == CryOneDex.Ed25519N
     valpre = valPrefixer.qb64
     assert valpre == 'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
@@ -2890,7 +2890,7 @@ def test_process_nontransferable():
         del msgb0[:len(rsig.qb64)]
 
     # verify pre
-    raid0 = Prefixer(qb64=rser0.ked["i"])
+    raid0 = Prefixer(qb64=rser0.pre)
     assert raid0.verify(ked=rser0.ked)
     """ Done Test """
 
@@ -2980,7 +2980,7 @@ def test_process_transferable():
         del msgb0[:len(rsig.qb64)]
 
     # verify pre
-    raid0 = Prefixer(qb64=rser0.ked["i"])
+    raid0 = Prefixer(qb64=rser0.pre)
     assert raid0.verify(ked=rser0.ked)
 
     #verify nxt digest from event is still valid
