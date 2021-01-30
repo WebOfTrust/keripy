@@ -827,7 +827,7 @@ class Kever:
                                        ked))
 
         self.prefixer = Prefixer(qb64=serder.pre)
-        if not self.prefixer.verify(ked=ked):  # invalid prefix
+        if not self.prefixer.verify(ked=ked, prefixed=True):  # invalid prefix
             raise ValidationError("Invalid prefix = {} for inception evt = {}."
                                   "".format(self.prefixer.qb64, ked))
 
@@ -1583,53 +1583,49 @@ class Kevery:
                 return None
 
 
-    def escrowOOEvent(self, serder, sigers, pre, sn):
+    def escrowOOEvent(self, serder, sigers):
         """
         Update associated logs for escrow of Out-of-Order event
 
         Parameters:
             serder is Serder instance of  event
             sigers is list of Siger instance for  event
-            pre is str qb64 of identifier prefix of event
-            sn is int sequence number of event
         """
-        dgkey = dgKey(pre, serder.dig)
+        dgkey = dgKey(serder.preb, serder.digb)
         self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addOoe(snKey(pre, sn), serder.digb)
+        self.baser.addOoe(snKey(serder.preb, serder.sn), serder.digb)
         # log escrowed
         blogger.info("Kevery process: escrowed out of order event = %s\n", serder.ked)
 
 
-    def escrowLDEvent(self, serder, sigers, pre, sn):
+    def escrowLDEvent(self, serder, sigers):
         """
         Update associated logs for escrow of Likely Duplicitous event
 
         Parameters:
             serder is Serder instance of  event
             sigers is list of Siger instance for  event
-            pre is str qb64 of identifier prefix of event
-            sn is int sequence number of event
         """
-        dgkey = dgKey(pre, serder.dig)
+        dgkey = dgKey(serder.preb, serder.digb)
         self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addLde(snKey(pre, sn), serder.digb)
+        self.baser.addLde(snKey(serder.preb, serder.sn), serder.digb)
         # log duplicitous
         blogger.info("Kevery process: escrowed likely duplicitous event = %s\n", serder.ked)
 
 
-    def escrowUREvent(self, dig, cigars, pre, sn):
+    def escrowUREvent(self, serder, cigars, dig):
         """
         Update associated logs for escrow of Unverified Event Receipt (non-transferable)
 
         Parameters:
-            dig instance of receipted event provided in receipt
+            serder instance of receipt msg not receipted event
             cigars is list of Cigar instances for event receipt
-            pre is str qb64 of identifier prefix of event
-            sn is int sequence number of event
+            dig is digest in receipt of receipted event not serder.dig because
+                serder is of receipt not receipted event
         """
         # note receipt dig algo may not match database dig also so must always
         # serder.compare to match. So receipts for same event may have different
@@ -1638,15 +1634,15 @@ class Kevery:
         # dig, witness prefix, sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for same reason. Must
         # lookup last event by sn not by dig.
-        self.baser.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
+        self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
         for cigar in cigars:  # escrow each triplet
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid triplets
             triplet = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
-            self.baser.addUre(key=snKey(pre, sn), val=triplet)  # should be snKey
+            self.baser.addUre(key=snKey(serder.preb, serder.sn), val=triplet)  # should be snKey
         # log escrowed
         blogger.info("Kevery process: escrowed unverified receipt of pre= %s "
-                     " sn=%x dig=%s\n", pre, sn, dig)
+                     " sn=%x dig=%s\n", serder.pre, serder.sn, dig)
 
 
     def escrowVREvent(self, edig, esn, sigers, pre, sn, dig):
@@ -1690,12 +1686,12 @@ class Kevery:
         """
         # fetch ked ilk  pre, sn, dig to see how to process
         ked = serder.ked
-        try:  # see if pre in event validates
-            prefixer = Prefixer(qb64b=serder.preb)
-        except Exception as ex:
+        try:  # see if code of pre is supported and matches size of pre
+            Prefixer(qb64b=serder.preb)
+        except Exception as ex:  # if unsupported code or bad size raises error
             raise ValidationError("Invalid pre = {} for evt = {}."
                                   "".format(serder.pre, ked))
-        pre = prefixer.qb64
+        pre = serder.pre
         ked = serder.ked
         sn = self.validateSN(ked)
         ilk = ked["t"]
@@ -1716,7 +1712,7 @@ class Kevery:
                 self.cues.append(dict(pre=pre, serder=serder))
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
-                self.escrowOOEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+                self.escrowOOEvent(serder=serder, sigers=sigers)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre
@@ -1737,7 +1733,7 @@ class Kevery:
                         kever.logEvent(serder, sigers)  # idempotent update db logs
 
                 else:   # escrow likely duplicitous event
-                    self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+                    self.escrowLDEvent(serder=serder, sigers=sigers)
                     raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
             else:  # rot, drt, or ixn, so sn matters
@@ -1746,7 +1742,7 @@ class Kevery:
 
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
-                    self.escrowOOEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+                    self.escrowOOEvent(serder=serder, sigers=sigers)
                     raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
                 elif ((sn == sno) or  # new inorder event or recovery
@@ -1774,7 +1770,7 @@ class Kevery:
                             kever.logEvent(serder, sigers)  # idempotent update db logs
 
                     else:   # escrow likely duplicitous event
-                        self.escrowLDEvent(serder=serder, sigers=sigers, pre=pre, sn=sn)
+                        self.escrowLDEvent(serder=serder, sigers=sigers)
                         raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
 
@@ -1796,7 +1792,7 @@ class Kevery:
         """
         # fetch  pre dig to process
         ked = serder.ked
-        pre = ked["i"]
+        pre = serder.pre
         sn = self.validateSN(ked)
 
         # Only accept receipt if for last seen version of event at sn
@@ -1825,7 +1821,7 @@ class Kevery:
                     self.baser.addRct(key=dgkey, val=couplet)
 
         else:  # no events to be receipted yet at that sn so escrow
-            self.escrowUREvent(ked["d"], cigars, pre, sn)
+            self.escrowUREvent(serder, cigars, dig=ked["d"])  # digest in receipt
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
 
