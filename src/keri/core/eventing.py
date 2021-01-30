@@ -159,32 +159,32 @@ def dequadlet(quadlet):
     return (prefixer, seqnumber, diger, siger)
 
 
-def dequintlet(quintlet):
+def dequinlet(quinlet):
     """
-    Returns tuple (quintuple) of (ediger, prefixer, seqnumber, diger, siger)
-    from concatenated bytes
-    of quintlet made up of qb64 or qb64b versions of dig+pre+snu+dig+sig
-    Quintlet is used for unverified escrows of validator receipts signed
+    Returns tuple (quintuple) of (ediger, seal prefixer, seal seqner, seal diger, siger)
+    from concatenated bytes of quinlet made up of qb64 or qb64b versions of
+    edig+spre+ssnu+sdig+sig
+    Quinlet is used for unverified escrows of validator receipts signed
     by transferable prefix keys
 
     Parameters:
-        quintlet is bytes concatenation of dig+pre+snu+dig+sig from receipt
+        quinlet is bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
     """
-    if isinstance(quintlet, memoryview):
-        quintlet = bytes(quintlet)
-    if hasattr(quintlet, "encode"):
-        quintlet = quintlet.encode("utf-8")  # convert to bytes
+    if isinstance(quinlet, memoryview):
+        quinlet = bytes(quinlet)
+    if hasattr(quinlet, "encode"):
+        quinlet = quinlet.encode("utf-8")  # convert to bytes
 
-    ediger = Diger(qb64b=quintlet)  #  diger of receipted event
-    quintlet = quintlet[len(diger.qb64b):]  # strip off dig
-    prefixer = Prefixer(qb64b=quintlet)  # prefixer of recipter
-    quintlet = quintlet[len(prefixer.qb64b):]  # strip off pre
-    seqnumber = Seqner(qb64b=quintlet)  # seqnumber of receipting event
-    quintlet = quintlet[len(prefixer.qb64b):]  # strip off snu
-    diger = Diger(qb64b=quintlet)  # diger of receipting event
-    quintlet = quintlet[len(diger.qb64b):]  # strip off dig
-    siger = Siger(qb64b=quintlet)  #  indexed siger of event
-    return (ediger, prefixer, seqnumber, diger, siger)
+    ediger = Diger(qb64b=quinlet)  #  diger of receipted event
+    quinlet = quinlet[len(sdiger.qb64b):]  # strip off dig
+    sprefixer = Prefixer(qb64b=quinlet)  # prefixer of recipter
+    quinlet = quinlet[len(sprefixer.qb64b):]  # strip off pre
+    sseqner = Seqner(qb64b=quinlet)  # seqnumber of receipting event
+    quinlet = quinlet[len(sprefixer.qb64b):]  # strip off snu
+    sdiger = Diger(qb64b=quinlet)  # diger of receipting event
+    quinlet = quinlet[len(sdiger.qb64b):]  # strip off dig
+    siger = Siger(qb64b=quinlet)  #  indexed siger of event
+    return (ediger, sprefixer, sseqner, sdiger, siger)
 
 
 
@@ -1645,17 +1645,24 @@ class Kevery:
                      " sn=%x dig=%s\n", serder.pre, serder.sn, dig)
 
 
-    def escrowVREvent(self, edig, esn, sigers, pre, sn, dig):
+    def escrowVREvent(self, serder, sigers, seal, dig):
         """
         Update associated logs for escrow of Unverified Validator Event Receipt
         (transferable)
 
         Parameters:
-            edig instance of receipted event provided in receipt
-            sigers is list of Siger instances for event receipt
-            pre is str qb64 of identifier prefix of event
-            sn is int sequence number of event
-            dig instance of receipted event provided in receipt
+            serder instance of receipt message not receipted event
+            sigers is list of Siger instances attached to receipt message
+            seal is SealEvent instance (namedTuple)
+            dig is digest of receipted event provided in receipt
+
+            # convert sn in seal to fully qualified SeqNumber 24 bytes, raw 16 bytes
+            sealet = seal.i.encode("utf-8") + Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8")
+            for siger in sigers:  # escrow quadlets one for each sig
+                quadlet = sealet + siger.qb64b
+                dgkey = dgKey(pre=pre, dig=ked["d"])  # dig in receipt not dig of receipt
+                self.baser.addVre(key=dgkey, val=quadlet)
+
         """
         # Receipt dig algo may not match database dig. So must always
         # serder.compare to match. So receipts for same event may have different
@@ -1665,12 +1672,13 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for same reason. Must
         # lookup last event by sn not by dig.
-        self.baser.putDts(dgKey(pre, edig), nowIso8601().encode("utf-8"))
+        self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
+        sealet = seal.i.encode("utf-8") + Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8")
         for siger in sigers:  # escrow each quintlet
             if not siger.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid quintlets
-            quintlet = edig.encode("utf-8") + siger.verfer.qb64b + siger.qb64b
-            self.baser.addVre(key=snKey(pre, sn), val=triplet)  # should be snKey
+            quinlet = edig.encode("utf-8") + sealet +  siger.qb64b  # quinlet
+            self.baser.addVre(key=snKey(pre, sn), val=quinlet)  # should be snKey
         # log escrowed
         blogger.info("Kevery process: escrowed unverified validator receipt of pre= %s "
                      " sn=%x dig=%s\n", pre, sn, dig)
@@ -1849,16 +1857,13 @@ class Kevery:
         """
         # fetch  pre, dig,seal to process
         ked = serder.ked
-        pre = ked["i"]
+        pre = serder.pre
         sn = self.validateSN(ked)
 
-        seal = SealEvent(**ked["a"])
-        # convert sn in seal to fully qualified SeqNumber 24 bytes, raw 16 bytes
-        sealet = seal.i.encode("utf-8") + Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8")
 
         # Only accept receipt if for last seen version of event at sn
-        snkey = snKey(pre=pre, sn=sn)
-        ldig = self.baser.getKeLast(key=snkey)  # retrieve dig of last event at sn.
+        ldig = self.baser.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
+        seal = SealEvent(**ked["a"])
 
         if ldig is not None and seal.i in self.kevers:  #  verify digs match last seen and receipt dig
             # both receipted event and receipter in database
@@ -1867,50 +1872,54 @@ class Kevery:
 
             # retrieve event by dig assumes if ldig is not None that event exists at ldig
             dgkey = dgKey(pre=pre, dig=ldig)
-            raw = bytes(self.baser.getEvt(key=dgkey))  # retrieve receipted event at dig
+            lraw = bytes(self.baser.getEvt(key=dgkey))  # retrieve receipted event at dig
             # assumes db ensures that raw must not be none
-            lserder = Serder(raw=raw)  # deserialize event raw
+            lserder = Serder(raw=lraw)  # deserialize event raw
 
             if not lserder.compare(dig=ked["d"]):  # stale receipt at sn discard
                 raise ValidationError("Stale receipt at sn = {} for rct = {}."
                                       "".format(ked["s"], ked))
 
             # retrieve dig of last event at sn.
-            sigdig = self.baser.getKeLast(key=snKey(pre=seal.i, sn=int(seal.s, 16)))
+            sdig = self.baser.getKeLast(key=snKey(pre=seal.i, sn=int(seal.s, 16)))
 
-            sigraw = self.baser.getEvt(key=dgKey(pre=seal.i, dig=bytes(sigdig)))
-            if sigraw is None:
+            sraw = self.baser.getEvt(key=dgKey(pre=seal.i, dig=bytes(sdig)))
+            if sraw is None:
                 raise ValidationError("Missing seal est. event dig = {} for "
                                       "receipt from pre ={}."
                                       "".format(seal.d, seal.i))
 
-            sigSerder = Serder(raw=bytes(sigraw))
-            if not sigSerder.compare(dig=seal.d):  # seal dig not match event
+            ssrdr = Serder(raw=bytes(sraw))
+            if not ssrdr.compare(dig=seal.d):  # seal dig not match event
                 raise ValidationError("Bad chit seal at sn = {} for rct = {}."
                                       "".format(seal.s, ked))
 
-            verfers = sigSerder.verfers
+            verfers = ssrdr.verfers
             if not verfers:
                 raise ValidationError("Invalid seal est. event dig = {} for "
                                       "receipt from pre ={} no keys."
                                       "".format(seal.d, seal.i))
 
-            raw = bytes(raw)
+            # convert sn in seal to fully qualified SeqNumber 24 bytes, raw 16 bytes
+            sealet = seal.i.encode("utf-8") + Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8")
+
             for siger in sigers:  # verify sigs
                 if siger.index >= len(verfers):
                     raise ValidationError("Index = {} to large for keys."
                                           "".format(siger.index))
 
                 siger.verfer = verfers[siger.index]  # assign verfer
-                if siger.verfer.verify(siger.raw, raw):  # verify sig
+                if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
                     # good sig so write receipt quadlet to database
                     quadlet = sealet + siger.qb64b
                     self.baser.addVrc(key=dgkey, val=quadlet)  # dups kept
 
         else:  # escrow  either receiptor or event not yet in database
+            # convert sn in seal to fully qualified SeqNumber 24 bytes, raw 16 bytes
+            sealet = seal.i.encode("utf-8") + Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8")
             for siger in sigers:  # escrow quadlets one for each sig
                 quadlet = sealet + siger.qb64b
-                dgkey = dgKey(pre=pre, dig=ked["d"])  # should use lserder.dig ?
+                dgkey = dgKey(pre=pre, dig=ked["d"])  # dig in receipt not dig of receipt
                 self.baser.addVre(key=dgkey, val=quadlet)
 
 
