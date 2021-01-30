@@ -661,43 +661,73 @@ class CryCounter(CryMat):
         return self.index
 
 
-class SeqNumber(CryMat):
+class Seqner(CryMat):
     """
-    SeqNumber is subclass of CryMat, cryptographic material,
-    SeqNumber provides fully qualified format for sequence numbers when
-    used as attached cryptographic material items in its .sn property.
+    Seqner is subclass of CryMat, cryptographic material, for sequence numbers
+    Seqner provides fully qualified format for sequence numbers when
+    used as attached cryptographic material items.
 
-    Useful when parsing attached receipt quadlets from stream or database
+    Useful when parsing attached receipt groupings with sn from stream or database
 
-    Changes default initialization code = CryTwoDex.Salt_128
+    Uses default initialization code = CryTwoDex.Salt_128
     Raises error on init if code not CryTwoDex.Salt_128
-
-    See CryMat for inherited attributes and properties:
 
     Attributes:
 
+    Inherited Properties:  (See CryMat)
+        .pad  is int number of pad chars given raw
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+
     Properties:
         .sn is int sequence number
+        .snh is hex string representation of sequence number no leading zeros
+
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
+
 
     Methods:
 
 
     """
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=CryTwoDex.Salt_128, sn=None, **kwa):
+                 code=CryTwoDex.Salt_128, sn=None, snh=None, **kwa):
         """
+        Inhereited Parameters:  (see CryMat)
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
 
-        Parameters:  See CryMat for inherted parameters
+
+        Parameters:
             sn is int sequence number
+            snh is hex string of sequence number
 
         """
         if sn is None:
-            sn = 0
+            if snh is None:
+                sn = 0
+            else:
+                sn = int(snh, 16)
 
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             raw = sn.to_bytes(CryRawSizes[CryTwoDex.Salt_128], 'big')
 
-        super(SeqNumber, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
+        super(Seqner, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                          code=code, **kwa)
 
         if self.code != CryTwoDex.Salt_128:
@@ -708,9 +738,17 @@ class SeqNumber(CryMat):
     def sn(self):
         """
         Property sn:
-        Returns. raw converted to int
+        Returns .raw converted to int
         """
         return int.from_bytes(self.raw, 'big')
+
+    @property
+    def snh(self):
+        """
+        Property snh:
+        Returns .raw converted to hex str
+        """
+        return "{:x}".format(self.sn)
 
 
 class Verfer(CryMat):
@@ -2403,6 +2441,7 @@ class Serder:
         .dig  is qb64 digest from .diger
         .digb is qb64b digest from .diger
         .verfers is list of Verfers converted from .ked["k"]
+        .sn is int sequence number converted from .ked["s"]
 
     Hidden Attributes:
           ._raw is bytes of serialized event only
@@ -2651,6 +2690,7 @@ class Serder:
         self._kind = kind
         self._size = size
         self._version = version
+        self._diger = Diger(ser=self._raw, code=self._code)
 
 
     @property
@@ -2704,6 +2744,14 @@ class Serder:
             keys =  []
 
         return [Verfer(qb64=key) for key in keys]
+
+    @property
+    def sn(self):
+        """
+        Returns int of .ked["s"] (sequence number)
+        sn (sequence number) property getter
+        """
+        return int(self.ked["s"], 16)
 
 
 

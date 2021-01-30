@@ -35,7 +35,7 @@ from keri.core.coring import (SigSelDex, SigCntDex, SigCntSizes, SigCntRawSizes,
                               SigFiveDex, SigFiveSizes, SigFiveRawSizes,
                               SigSizes, SigRawSizes, MINSIGSIZE)
 from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat, SigCounter, SeqNumber, Siger
+from keri.core.coring import SigMat, SigCounter, Seqner, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import Serder, Tholder
@@ -464,14 +464,15 @@ def test_crycounter():
     """ Done Test """
 
 
-def test_seqnumber():
+def test_seqner():
     """
-    Test SeqNumber subclass of CryMat
+    Test Seqner sequence number subclass of CryMat
     """
-    number = SeqNumber()  #  defaults to zero
+    number = Seqner()  #  defaults to zero
     assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAAAA'
     assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAAA'
     assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -482,115 +483,137 @@ def test_seqnumber():
     snqb2 = b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
     with pytest.raises(ValidationError):
-        number = SeqNumber(raw=b'')
+        number = Seqner(raw=b'')
 
-    number = SeqNumber(qb64b=snqb64b)
+    number = Seqner(qb64b=snqb64b)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb64=snqb64)
+    number = Seqner(qb64=snqb64)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb2=snqb2)
+    number = Seqner(qb2=snqb2)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(raw=snraw)
+    number = Seqner(raw=snraw)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    # test priority lower for sn
-    number = SeqNumber(qb64b=snqb64b, sn=5)
+    # test priority lower for sn and snh
+    number = Seqner(qb64b=snqb64b, sn=5, snh='a')
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb64=snqb64, sn=5)
+    number = Seqner(qb64=snqb64, sn=5, snh='a')
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb2=snqb2, sn=5)
+    number = Seqner(qb2=snqb2, sn=5, snh='a')
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(raw=snraw, sn=5)
+    number = Seqner(raw=snraw, sn=5, snh='a')
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    #test other sn
-    number = SeqNumber(sn=5)
+    number = Seqner(sn=5, snh='a')
     assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05'
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 5
+    assert number.snh == '5'
     assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAABQ'
     assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAABQ'
     assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00P'
 
+    number = Seqner(snh='a')
+    assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\n'
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 10
+    assert number.snh == 'a'
+    assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAACg'
+    assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAACg'
+    assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xa0'
+
+    # More tests
     snraw = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05'
     snqb64b = b'0AAAAAAAAAAAAAAAAAAAAABQ'
     snqb64 = '0AAAAAAAAAAAAAAAAAAAAABQ'
     snqb2 = b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00P'
 
-    number = SeqNumber(qb64b=snqb64b)
+    number = Seqner(qb64b=snqb64b)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 5
+    assert number.snh == '5'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb64=snqb64)
+    number = Seqner(qb64=snqb64)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 5
+    assert number.snh == '5'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb2=snqb2, sn=5)
+    number = Seqner(qb2=snqb2, sn=5)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 5
+    assert number.snh == '5'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(raw=snraw, sn=5)
+    number = Seqner(raw=snraw, sn=5)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 5
+    assert number.snh == '5'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
@@ -1771,6 +1794,7 @@ def test_serder():
     assert serder.size == 60
     assert serder.verfers == []
     assert serder.raw == b'{"v":"KERI10JSON00003c_","i":"ABCDEFG","s":"0001","t":"rot"}'
+    assert serder.sn == 1
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert e1s == b'{"v":"KERI10JSON00003c_","i":"ABCDEFG","s":"0001","t":"rot"}'
@@ -1882,6 +1906,7 @@ def test_serder():
     assert evt1.size == size1
     assert evt1.raw == e1ss[:size1]
     assert evt1.version == vers1
+    assert evt1.sn == 1
 
     # test digest properties .diger and .dig
     assert evt1.diger.qb64 == evt1.dig
@@ -1900,6 +1925,7 @@ def test_serder():
     assert evt1.raw == e1ss[:size1]
     assert evt1.version == vers1
     assert evt1.diger.code == CryOneDex.Blake3_256
+    assert serder.sn == 1
 
     evt2 = Serder(raw=e2ss)
     assert evt2.kind == kind2
@@ -1945,6 +1971,8 @@ def test_serder():
     assert evt1.size == size2
     assert evt1.raw == e2ss[:size2]
     assert evt1.version == vers1
+    assert evt1.dig == 'EbUOh76KAyZRbHsi9_uixhnX3zkcmN2bkIh-enCOmPRU'
+    assert evt1.diger.verify(evt1.raw)
 
     #  round trip
     evt2 = Serder(raw=evt1.raw)
@@ -2126,4 +2154,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_prefixer()
+    test_serder()

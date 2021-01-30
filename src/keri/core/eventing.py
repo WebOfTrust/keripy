@@ -31,7 +31,7 @@ from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
 
 from .coring import Versify, Serials, Ilks, CryOneDex
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
-from .coring import CryMat, CryRawSizes, CryTwoDex, SeqNumber
+from .coring import CryMat, CryRawSizes, CryTwoDex, Seqner
 from .coring import CryCounter, Cigar
 from .coring import SigCounter, Siger
 
@@ -151,7 +151,7 @@ def dequadlet(quadlet):
 
     prefixer = Prefixer(qb64b=quadlet)
     quadlet = quadlet[len(prefixer.qb64b):]  # strip off pre
-    seqnumber = SeqNumber(qb64b=quadlet)
+    seqnumber = Seqner(qb64b=quadlet)
     quadlet = quadlet[len(prefixer.qb64b):]  # strip off snu
     diger = Diger(qb64b=quadlet)
     quadlet = quadlet[len(diger.qb64b):]  # strip off dig
@@ -179,7 +179,7 @@ def dequintlet(quintlet):
     quintlet = quintlet[len(diger.qb64b):]  # strip off dig
     prefixer = Prefixer(qb64b=quintlet)  # prefixer of recipter
     quintlet = quintlet[len(prefixer.qb64b):]  # strip off pre
-    seqnumber = SeqNumber(qb64b=quintlet)  # seqnumber of receipting event
+    seqnumber = Seqner(qb64b=quintlet)  # seqnumber of receipting event
     quintlet = quintlet[len(prefixer.qb64b):]  # strip off snu
     diger = Diger(qb64b=quintlet)  # diger of receipting event
     quintlet = quintlet[len(diger.qb64b):]  # strip off dig
@@ -1652,7 +1652,7 @@ class Kevery:
         self.baser.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
         for cigar in cigars:  # escrow each triplet
             if cigar.verfer.transferable:  # skip transferable verfers
-                continue  # skip invalid couplets
+                continue  # skip invalid triplets
             triplet = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
             self.baser.addUre(key=snKey(pre, sn), val=triplet)  # should be snKey
         # log escrowed
@@ -1660,7 +1660,7 @@ class Kevery:
                      " sn=%x dig=%s\n", pre, sn, dig)
 
 
-    def escrowVREvent(self, edig, sigers, pre, sn, dig):
+    def escrowVREvent(self, edig, esn, sigers, pre, sn, dig):
         """
         Update associated logs for escrow of Unverified Validator Event Receipt
         (transferable)
@@ -1680,11 +1680,11 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for same reason. Must
         # lookup last event by sn not by dig.
-        self.baser.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
-        for siger in sigers:  # escrow each triplet
-            if siger.verfer.transferable:  # skip transferable verfers
-                continue  # skip invalid couplets
-            triplet = dig.encode("utf-8") + siger.verfer.qb64b + siger.qb64b
+        self.baser.putDts(dgKey(pre, edig), nowIso8601().encode("utf-8"))
+        for siger in sigers:  # escrow each quintlet
+            if not siger.verfer.transferable:  # skip transferable verfers
+                continue  # skip invalid quintlets
+            quintlet = edig.encode("utf-8") + siger.verfer.qb64b + siger.qb64b
             self.baser.addVre(key=snKey(pre, sn), val=triplet)  # should be snKey
         # log escrowed
         blogger.info("Kevery process: escrowed unverified validator receipt of pre= %s "
@@ -1869,7 +1869,7 @@ class Kevery:
 
         seal = SealEvent(**ked["a"])
         # convert sn in seal to fully qualified SeqNumber 24 bytes, raw 16 bytes
-        sealet = seal.i.encode("utf-8") + SeqNumber(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8")
+        sealet = seal.i.encode("utf-8") + Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8")
 
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)

@@ -18,7 +18,7 @@ from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, CryCounter, SeqNumber
+from keri.core.coring import CryMat, CryCounter, Seqner
 from keri.core.coring import Verfer, Signer, Diger, Nexter, Prefixer
 from keri.core.coring import generateSigners, generateSecrets
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
@@ -2020,7 +2020,7 @@ def test_direct_mode():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
         assert bytes(result[0]) == (b'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg0AAAAAAAAAAAAAAAAAAAAAAAEGFSGYH2'
@@ -2054,7 +2054,7 @@ def test_direct_mode():
         result = coeKevery.baser.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
                                                    dig=fake))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2107,7 +2107,7 @@ def test_direct_mode():
         result = valKevery.baser.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
                                                     dig=valKever.serder.diger.qb64))
         assert bytes(result[0]) == (coeKever.prefixer.qb64b +
-                                    SeqNumber(sn=coeKever.sn).qb64b +
+                                    Seqner(sn=coeKever.sn).qb64b +
                                     coeKever.serder.diger.qb64b +
                                     siger.qb64b)
         assert bytes(result[0]) == (b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w0AAAAAAAAAAAAAAAAAAAAAAAEEnwxEm5'
@@ -2198,7 +2198,7 @@ def test_direct_mode():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2285,7 +2285,7 @@ def test_direct_mode():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2510,7 +2510,7 @@ def test_direct_mode_cbor_mgpk():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
         assert bytes(result[0]) == (b'E-5yGMmTDo6Qkr4G36Jy91gz5bF2y_Ef-s_S0jIfaoOY0AAAAAAAAAAAAAAAAAAAAAAAEHJmsEzp'
@@ -2544,7 +2544,7 @@ def test_direct_mode_cbor_mgpk():
         result = coeKevery.baser.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
                                                    dig=fake))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2595,7 +2595,7 @@ def test_direct_mode_cbor_mgpk():
         result = valKevery.baser.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
                                                     dig=valKever.serder.diger.qb64))
         assert bytes(result[0]) == (coeKever.prefixer.qb64b +
-                                    SeqNumber(sn=coeKever.sn).qb64b +
+                                    Seqner(sn=coeKever.sn).qb64b +
                                     coeKever.serder.diger.qb64b +
                                     siger.qb64b)
         assert bytes(result[0]) == (b'EMejbZsIeOI5TTb73MKIVbjkYFURM8iREGeX5CyaxJvU0AAAAAAAAAAAAAAAAAAAAAAAEyAyl33W'
@@ -2687,7 +2687,7 @@ def test_direct_mode_cbor_mgpk():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2774,7 +2774,7 @@ def test_direct_mode_cbor_mgpk():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
