@@ -778,8 +778,10 @@ class Kever:
         self.config(serder=serder, estOnly=estOnly)  # assign config traits perms
 
         # validates if not escrows as needed and raises validation error
-        self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
-                          tholder=self.tholder, sn=self.sn)
+        self.validateSigs(serder=serder,
+                          sigers=sigers,
+                          verfers=serder.verfers,
+                          tholder=self.tholder)
 
         if ilk == Ilks.dip:
             seal = self.validateSeal(serder=serder, sigers=sigers)
@@ -884,7 +886,7 @@ class Kever:
             raise ValidationError("Unexpected event = {} in nontransferable "
                                   " state.".format(serder.ked))
         ked = serder.ked
-        if ked["i"] != self.prefixer.qb64:
+        if serder.pre != self.prefixer.qb64:
             raise ValidationError("Mismatch event aid prefix = {} expecting"
                                   " = {} for evt = {}.".format(ked["i"],
                                                                self.prefixer.qb64,
@@ -908,8 +910,10 @@ class Kever:
             tholder, toad, wits = self.rotate(serder, sn)
 
             # validates and escrows as needed raises ValidationError if not successful
-            self.validateSigs(serder=serder, sigers=sigers, verfers=serder.verfers,
-                              tholder=tholder, sn=sn)
+            self.validateSigs(serder=serder,
+                              sigers=sigers,
+                              verfers=serder.verfers,
+                              tholder=tholder)
 
             if ilk == Ilks.drt:
                 seal = self.validateSeal(serder=serder, sigers=sigers)
@@ -960,8 +964,10 @@ class Kever:
 
             # interaction event use sith and keys from pre-existing Kever state
             # validates and escrows as needed
-            self.validateSigs(serder=serder, sigers=sigers, verfers=self.verfers,
-                              tholder=self.tholder, sn=sn)
+            self.validateSigs(serder=serder,
+                              sigers=sigers,
+                              verfers=self.verfers,
+                              tholder=self.tholder)
 
             # update state
             self.sn = sn
@@ -1166,7 +1172,7 @@ class Kever:
 
 
 
-    def validateSigs(self, serder, sigers, verfers, tholder, sn):
+    def validateSigs(self, serder, sigers, verfers, tholder):
         """
         Validate signatures by validating sith indexs and verifying signatures
 
@@ -1187,27 +1193,13 @@ class Kever:
 
         indices = self.verifySigs(serder, sigers, verfers)
 
-        ## verify indexes of attached signatures against verifiers
-        #for siger in sigers:
-            #if siger.index >= len(verfers):
-                #raise ValidationError("Index = {} to large for keys for evt = "
-                                      #"{}.".format(siger.index, serder.ked))
-            #siger.verfer = verfers[siger.index]  # assign verfer
-
-        ## verify signatures
-        #indices = []
-        #for siger in sigers:
-            #if siger.verfer.verify(siger.raw, serder.raw):
-                #indices.append(siger.index)
-
         if not indices:  # must have a least one verified
             raise ValidationError("No verified signatures among {} for evt = {}."
                                   "".format([siger.qb64 for siger in sigers],
                                             serder.ked))
 
         if not tholder.satisfy(indices):  #  at least one but not enough
-            self.escrowPSEvent(serder=serder, sigers=sigers,
-                                   pre=self.prefixer.qb64b, sn=sn)
+            self.escrowPSEvent(serder=serder, sigers=sigers)
 
             raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                   " for evt = {}.".format(tholder.sith,
@@ -1241,8 +1233,7 @@ class Kever:
             #  escrow event here
             inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
             sn = self.validateSN(ked=serder.ked, inceptive=inceptive)
-            self.escrowPSEvent(serder=serder, sigers=sigers,
-                             pre=self.prefixer.qb64b, sn=sn)
+            self.escrowPSEvent(serder=serder, sigers=sigers)
             raise MissingDelegatingSealError("No delegating event at seal = {} for "
                                              "evt = {}.".format(serder.ked["da"],
                                                      serder.ked))
@@ -1315,7 +1306,7 @@ class Kever:
         blogger.info("Kever process: added valid event to KEL event = %s\n", serder.ked)
 
 
-    def escrowPSEvent(self, serder, sigers, pre, sn):
+    def escrowPSEvent(self, serder, sigers):
         """
         Update associated logs for escrow of partially signed event
         or fully signed delegated event but without delegating event
@@ -1323,8 +1314,6 @@ class Kever:
         Parameters:
             serder is Serder instance of  event
             sigers is list of Siger instance for  event
-            pre is str qb64 of identifier prefix of event
-            sn is int sequence number of event
         """
         dgkey = dgKey(serder.preb, serder.digb)
         self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
