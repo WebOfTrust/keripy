@@ -2442,6 +2442,8 @@ class Serder:
         .digb is qb64b digest from .diger
         .verfers is list of Verfers converted from .ked["k"]
         .sn is int sequence number converted from .ked["s"]
+        .pre is qb64 str of identifier prefix from .ked["i"]
+        .preb is qb64b bytes of identifier prefix from .ked["i"]
 
     Hidden Attributes:
           ._raw is bytes of serialized event only
@@ -2752,6 +2754,24 @@ class Serder:
         sn (sequence number) property getter
         """
         return int(self.ked["s"], 16)
+
+
+    @property
+    def pre(self):
+        """
+        Returns str qb64  of .ked["i"] (identifier prefix)
+        pre (identifier prefix) property getter
+        """
+        return self.ked["i"]
+
+
+    @property
+    def preb(self):
+        """
+        Returns bytes qb64b  of .ked["i"] (identifier prefix)
+        preb (identifier prefix) property getter
+        """
+        return self.pre.encode("utf-8")
 
 
 

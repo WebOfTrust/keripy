@@ -829,8 +829,8 @@ class Kever:
             raise ValidationError("Invalid prefix = {} for inception evt = {}."
                                   "".format(self.prefixer.qb64, ked))
 
-        sn = self.validateSN(sn=ked["s"], ked=ked, inceptive=True)
-        self.sn = sn
+
+        self.sn = self.validateSN(ked=ked, inceptive=True)
         self.serder = serder  # need whole serder for digest agility comparisons
 
         nxt = ked["n"]
@@ -890,7 +890,7 @@ class Kever:
                                                                self.prefixer.qb64,
                                                                ked))
 
-        sn = self.validateSN(sn=ked["s"], ked=ked, inceptive=False)
+        sn = self.validateSN(ked=ked, inceptive=False)
         ilk = ked["t"]
 
         if ilk in (Ilks.rot, Ilks.drt) :  # rotation (or delegated rotation) event
@@ -1110,29 +1110,29 @@ class Kever:
 
         return (tholder, toad, wits)
 
-    def validateSN(self, sn, ked, inceptive=False):
+    def validateSN(self, ked, inceptive=False):
         """
         Returns int validated from hex str sn in ked
 
         Parameters:
-           sn is hex char sequence number of event or seal in an event
-           ked is key event dict of associated event
+           ked is key event dict of associated event or message such as seal
         """
+        sn = ked["s"]
         if len(sn) > 32:
-            raise ValidationError("Invalid sn = {} too large for evt = {}."
+            raise ValidationError("Oversize sn = {} for evt={}."
                                   "".format(sn, ked))
         try:
             sn = int(sn, 16)
         except Exception as ex:
-            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
+            raise ValidationError("Noninteger sn = {} for evt={}.".format(sn, ked))
 
         if inceptive:
             if sn != 0:
-                raise ValidationError("Nonzero sn = {} for inception evt = {}."
+                raise ValidationError("Nonzero sn = {} for inception evt={}."
                                       "".format(sn, ked))
         else:
             if sn == 0:
-                raise ValidationError("Zero sn = {} for non=inception evt = {}."
+                raise ValidationError("Zero sn = {} for non-inception evt={}."
                                       "".format(sn, ked))
         return sn
 
@@ -1232,15 +1232,15 @@ class Kever:
         seal = SealLocation(**serder.ked["da"])
         # seal has pre sn ilk dig (prior dig)
 
-        ssn = self.validateSN(sn=seal.s, ked=serder.ked, inceptive=False)
+        ssn = self.validateSN(ked=seal._asdict(), inceptive=False)
 
         # get the dig of the delegating event
         key = snKey(pre=seal.i, sn=ssn)
-        raw = self.baser.getKeLast(key)
-        if raw is None:  # no delegating event at key
+        raw = self.baser.getKeLast(key)  # get dig of delegating event
+        if raw is None:  # no delegating event at key pre, sn
             #  escrow event here
             inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
-            sn = self.validateSN(serder.ked["s"], serder.ked, inceptive=inceptive)
+            sn = self.validateSN(ked=serder.ked, inceptive=inceptive)
             self.escrowPSEvent(serder=serder, sigers=sigers,
                              pre=self.prefixer.qb64b, sn=sn)
             raise MissingDelegatingSealError("No delegating event at seal = {} for "
@@ -1326,11 +1326,11 @@ class Kever:
             pre is str qb64 of identifier prefix of event
             sn is int sequence number of event
         """
-        dgkey = dgKey(pre, serder.digb)
+        dgkey = dgKey(serder.preb, serder.digb)
         self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addPse(snKey(pre, sn), serder.digb)
+        self.baser.addPse(snKey(serder.preb, serder.sn), serder.digb)
         blogger.info("Kever process: escrowed partial signature or delegated "
                      "event = %s\n", serder.ked)
 

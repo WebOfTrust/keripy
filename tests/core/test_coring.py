@@ -1795,6 +1795,8 @@ def test_serder():
     assert serder.verfers == []
     assert serder.raw == b'{"v":"KERI10JSON00003c_","i":"ABCDEFG","s":"0001","t":"rot"}'
     assert serder.sn == 1
+    assert serder.pre == "ABCDEFG"
+    assert serder.preb == b"ABCDEFG"
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert e1s == b'{"v":"KERI10JSON00003c_","i":"ABCDEFG","s":"0001","t":"rot"}'
@@ -1907,6 +1909,8 @@ def test_serder():
     assert evt1.raw == e1ss[:size1]
     assert evt1.version == vers1
     assert evt1.sn == 1
+    assert serder.pre == "ABCDEFG"
+    assert serder.preb == b"ABCDEFG"
 
     # test digest properties .diger and .dig
     assert evt1.diger.qb64 == evt1.dig
@@ -1926,6 +1930,8 @@ def test_serder():
     assert evt1.version == vers1
     assert evt1.diger.code == CryOneDex.Blake3_256
     assert serder.sn == 1
+    assert serder.pre == "ABCDEFG"
+    assert serder.preb == b"ABCDEFG"
 
     evt2 = Serder(raw=e2ss)
     assert evt2.kind == kind2
