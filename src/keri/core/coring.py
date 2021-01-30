@@ -1490,18 +1490,33 @@ class Nexter(CryMat):
 
 class Prefixer(CryMat):
     """
-    DigAider is CryMat subclass for autonomic identifier prefix using
+    Prefixer is CryMat subclass for autonomic identifier prefix using
     derivation as determined by code from ked
 
-    See CryMat for other inherited attributes and properties:
-
     Attributes:
+
+    Inherited Properties:  (see CryMat)
+        .pad  is int number of pad chars given raw
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .nontrans is Boolean, True when non-transferable derivation code False otherwise
 
     Properties:
 
     Methods:
         verify():  Verifies derivation of aid prefix
 
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
     """
     Dummy = "#"  # dummy spaceholder char for pre. Must not be a valid Base64 char
     # element labels to exclude in digest or signature derivation from inception icp
@@ -1552,12 +1567,6 @@ class Prefixer(CryMat):
             self._verify = self._verify_sig_ed25519
         else:
             raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
-
-        #if ked and not self.verify(ked):
-            #raise DerivationError("Error verifying derived prefix = {} with code "
-                                  #"= {} from ked = {}.".format(self.qb64,
-                                                               #self.code,
-                                                               #ked))
 
 
     def derive(self, ked, seed=None, secret=None):

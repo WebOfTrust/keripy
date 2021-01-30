@@ -1691,10 +1691,10 @@ class Kevery:
         # fetch ked ilk  pre, sn, dig to see how to process
         ked = serder.ked
         try:  # see if pre in event validates
-            prefixer = Prefixer(qb64=ked["i"])
+            prefixer = Prefixer(qb64b=serder.preb)
         except Exception as ex:
             raise ValidationError("Invalid pre = {} for evt = {}."
-                                  "".format(ked["i"], ked))
+                                  "".format(serder.pre, ked))
         pre = prefixer.qb64
         ked = serder.ked
         sn = self.validateSN(ked)
