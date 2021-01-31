@@ -32,7 +32,8 @@ from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import TraitDex, LastEstLoc, decouplet, detriplet, dequinlet
+from keri.core.eventing import TraitDex, LastEstLoc
+from keri.core.eventing import decouplet, detriplet, dequadlet, dequinlet
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
                                 delcept, deltate)
@@ -109,12 +110,50 @@ def test_detriplet():
 
     """end test"""
 
+def test_dequadlet():
+    """
+    test test_dequadlet function
+    """
+    spre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    ssnu = '0AAAAAAAAAAAAAAAAAAAAABQ'
+    sdig = 'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    sig = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    quadlet = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, siger = dequadlet(quadlet)
+    assert sprefixer.qb64 == spre
+    assert sseqner.qb64 == ssnu
+    assert sdiger.qb64 == sdig
+    assert siger.qb64 == sig
+
+    # bytes
+    spre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    ssnu = b'0AAAAAAAAAAAAAAAAAAAAABQ'
+    sdig = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    sig = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    quadlet = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, sigar = dequadlet(quadlet)
+    assert sprefixer.qb64b == spre
+    assert sseqner.qb64b == ssnu
+    assert sdiger.qb64b == sdig
+    assert siger.qb64b == sig
+
+
+    quadlet = memoryview(quadlet)
+    quadlet = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, sigar = dequadlet(quadlet)
+    assert sprefixer.qb64b == spre
+    assert sseqner.qb64b == ssnu
+    assert sdiger.qb64b == sdig
+    assert siger.qb64b == sig
+
+    """end test"""
+
 
 def test_dequinlet():
     """
     test dequinlet function
-
-    Something wrong with test
     """
     edig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
     spre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
@@ -3172,4 +3211,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_direct_mode()
+    test_dequadlet()

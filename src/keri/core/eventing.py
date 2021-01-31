@@ -152,12 +152,12 @@ def dequadlet(quadlet):
 
     prefixer = Prefixer(qb64b=quadlet)
     quadlet = quadlet[len(prefixer.qb64b):]  # strip off pre
-    seqnumber = Seqner(qb64b=quadlet)
-    quadlet = quadlet[len(prefixer.qb64b):]  # strip off snu
+    seqner = Seqner(qb64b=quadlet)
+    quadlet = quadlet[len(seqner.qb64b):]  # strip off snu
     diger = Diger(qb64b=quadlet)
     quadlet = quadlet[len(diger.qb64b):]  # strip off dig
     siger = Siger(qb64b=quadlet)
-    return (prefixer, seqnumber, diger, siger)
+    return (prefixer, seqner, diger, siger)
 
 
 def dequinlet(quinlet):

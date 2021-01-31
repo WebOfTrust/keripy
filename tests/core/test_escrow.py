@@ -1266,22 +1266,24 @@ def test_unverified_trans_receipt_escrow():
         # verify receipts
         receipts = kvy.baser.getVrcs(dbing.dgKey(pre, icpdig))
         assert len(receipts) == 3
-        #rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
-        #assert rctPrefixer.qb64 == wit0pre
-
+        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadlet(receipts[0])
+        assert rctPrefixer.qb64 == rpre
+        assert rctSeqner.sn == 0
+        assert rctDiger.qb64 == ricpdig
 
         receipts = kvy.baser.getVrcs(dbing.dgKey(pre, ixndig))
         assert len(receipts) == 3
-        #rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
-        #assert rctPrefixer.qb64 == wit0pre
-
+        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadlet(receipts[0])
+        assert rctPrefixer.qb64 == rpre
+        assert rctSeqner.sn == 1
+        assert rctDiger.qb64 == rrotdig
 
         receipts = kvy.baser.getVrcs(dbing.dgKey(pre, rotdig))
         assert len(receipts) == 3
-        #rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
-        #assert rctPrefixer.qb64 == wit0pre
-
-
+        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadlet(receipts[0])
+        assert rctPrefixer.qb64 == rpre
+        assert rctSeqner.sn == 1
+        assert rctDiger.qb64 == rrotdig
 
     assert not os.path.exists(kpr.path)
     assert not os.path.exists(db.path)
