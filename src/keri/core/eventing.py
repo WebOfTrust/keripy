@@ -1349,6 +1349,7 @@ class Kevery:
     TimeoutPSE = 3600  # seconds to timeout partial signed escrows
     TimeoutOOE = 1200  # seconds to timeout out of order escrows
     TimeoutURE = 3600  # seconds to timeout unverified receipt escrows
+    TimeoutVRE = 3600  # seconds to timeout nverified transferable receipt escrows
     TimeoutLDE = 3600  # seconds to timeout likely duplicitous escrows
 
     def __init__(self, ims=None, cues=None, kevers=None, baser=None, framed=True):
@@ -1916,12 +1917,6 @@ class Kevery:
                                   "missing associated event for transferable "
                                   "validator receipt={}.".format(ked))
 
-            #sealet = seal.i.encode("utf-8") + Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8")
-            #for siger in sigers:  # escrow quadlets one for each sig
-                #quadlet = sealet + siger.qb64b
-                #dgkey = dgKey(pre=pre, dig=ked["d"])  # dig in receipt not dig of receipt
-                #self.baser.addVre(key=dgkey, val=quadlet)
-
 
 
     def processEscrows(self):
@@ -1936,6 +1931,7 @@ class Kevery:
             self.processPartials()
             self.processDuplicitous()
             self.processUnverifieds()
+            self.processTransUnverifieds()
 
         except Exception as ex:  # log diagnostics errors etc
             if blogger.isEnabledFor(logging.DEBUG):
@@ -2301,13 +2297,12 @@ class Kevery:
                     dig = bytes(raw)
                     # get receipted event using pre and edig
                     raw = self.baser.getEvt(dgKey(pre, dig))
-                    if raw is None:
-                        # no event so keep in escrow
-                        blogger.info("Kevery unescrow error: Missing receipted "
-                                 "event at pre=%s sn=%x\n", (pre, sn))
+                    if raw is None:  # receipted event superseded so remove from escrow
+                        blogger.info("Kevery unescrow error: Invalid receipted "
+                                 "event refereance at pre=%s sn=%x\n", (pre, sn))
 
-                        raise UnverifiedReceiptError("Missing receipted evt at pre={} "
-                                              " sn={:x}".format(pre, sn))
+                        raise ValidationError("Invalid receipted evt reference"
+                                          " at pre={} sn={:x}".format(pre, sn))
 
                     serder = Serder(raw=bytes(raw))  # receipted event
 
@@ -2415,7 +2410,7 @@ class Kevery:
             for ekey, equinlet in self.baser.getUreItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
-                    ediger, sprefixer, ecigar = detriplet(equinlet)
+                    ediger, sprefixer, ssegner, sdiger, siger = dequinlet(equinlet)
 
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(ediger.qb64b)))
@@ -2430,7 +2425,7 @@ class Kevery:
                     # do date math here and discard if stale nowIso8601() bytes
                     dtnow =  datetime.datetime.now(datetime.timezone.utc)
                     dte = fromIso8601(bytes(dtb))
-                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutURE):
+                    if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutVRE):
                         # escrow stale so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Stale event escrow "
                                  " at dig = %s\n", ediger.qb64b)
@@ -2451,13 +2446,12 @@ class Kevery:
                     dig = bytes(raw)
                     # get receipted event using pre and edig
                     raw = self.baser.getEvt(dgKey(pre, dig))
-                    if raw is None:
-                        # no event so keep in escrow
-                        blogger.info("Kevery unescrow error: Missing receipted "
-                                 "event at pre=%s sn=%x\n", (pre, sn))
+                    if raw is None:  #  receipted event superseded so remove from escrow
+                        blogger.info("Kevery unescrow error: Invalid receipted "
+                                 "event referenace at pre=%s sn=%x\n", (pre, sn))
 
-                        raise UnverifiedTransferableReceiptError("Missing receipted evt at pre={} "
-                                              " sn={:x}".format(pre, sn))
+                        raise ValidationError("Invalid receipted evt reference "
+                                              "at pre={} sn={:x}".format(pre, sn))
 
                     serder = Serder(raw=bytes(raw))  # receipted event
 
@@ -2470,20 +2464,53 @@ class Kevery:
                                           "pre={} sn={:x} receipter={}."
                                           "".format( pre, sn, eprefixer.qb64))
 
-                    #  verify sig verfer key is prefixer from triplet
-                    ecigar.verfer = Verfer(qb64b=eprefixer.qb64b)
-                    if not ecigar.verfer.verify(ecigar.raw, serder.raw):
-                        # no sigs so raise ValidationError which unescrows below
-                        blogger.info("Kevery unescrow error: Bad receipt sig."
-                                 "pre=%s sn=%x receipter=%s\n", (pre, sn, eprefixer.qb64))
+                    # get receipter's last est event
+                    # retrieve dig of last event at sn of receipter.
+                    sdig = self.baser.getKeLast(key=snKey(pre=sprefixer.qb64b,
+                                                          sn=ssegner.sn))
+                    if sdig is None:
+                        # no event so keep in escrow
+                        blogger.info("Kevery unescrow error: Missing receipted "
+                                 "event at pre=%s sn=%x\n", (pre, sn))
 
-                        raise ValidationError("Bad escrowed receipt sig at "
+                        raise UnverifiedTransferableReceiptError("Missing receipted evt at pre={} "
+                                              " sn={:x}".format(pre, sn))
+
+                    # retrieve last event itself of receipter
+                    sraw = self.baser.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
+                    # assumes db ensures that sraw must not be none because sdig was in KE
+                    sserder = Serder(raw=bytes(sraw))
+                    if not sserder.compare(diger=sdiger):  # seal dig not match event
+                        # this unescrows
+                        raise ValidationError("Bad chit seal at sn = {} for rct = {}."
+                                              "".format(seal.s, ked))
+
+                    #verify sigs and if so write quadlet to database
+                    verfers = sserder.verfers
+                    if not verfers:
+                        raise ValidationError("Invalid seal est. event dig = {} for "
+                                              "receipt from pre ={} no keys."
+                                              "".format(sdiger.qb64, sprefixer.qb64))
+
+                    # Set up quadlet
+                    sealet = sprefixer.qb64b + sseqner.qb64b + sdiger.qb64b
+
+                    if siger.index >= len(verfers):
+                        raise ValidationError("Index = {} to large for keys."
+                                                  "".format(siger.index))
+
+                    siger.verfer = verfers[siger.index]  # assign verfer
+                    if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
+                        blogger.info("Kevery unescrow error: Bad trans receipt sig."
+                                 "pre=%s sn=%x receipter=%s\n", (pre, sn, sprefixer.qb64))
+
+                        raise ValidationError("Bad escrowed trans receipt sig at "
                                               "pre={} sn={:x} receipter={}."
-                                              "".format( pre, sn, eprefixer.qb64))
+                                              "".format( pre, sn, sprefixer.qb64))
 
-                    # write receipt couplet to database
-                    couplet = ecigar.verfer.qb64b + ecigar.qb64b
-                    self.baser.addRct(key=dgKey(pre, serder.dig), val=couplet)
+                    # good sig so write receipt quadlet to database
+                    quadlet = sealet + siger.qb64b
+                    self.baser.addVrc(key=dgKey(pre, serder.dig), val=quadlet)
 
 
                 except UnverifiedTransferableReceiptError as ex:
@@ -2496,7 +2523,7 @@ class Kevery:
 
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than out of order so remove from OO escrow
-                    self.baser.delUre(snKey(pre, sn), equinlet)  # removes one escrow at key val
+                    self.baser.delVre(snKey(pre, sn), equinlet)  # removes one escrow at key val
                     if blogger.isEnabledFor(logging.DEBUG):  # adds exception data
                         blogger.exception("Kevery unescrowed: %s\n", ex.args[0])
                     else:
@@ -2506,7 +2533,7 @@ class Kevery:
                     # We don't remove all escrows at pre,sn because some might be
                     # duplicitous so we process remaining escrows in spite of found
                     # valid event escrow.
-                    self.baser.delUre(snKey(pre, sn), equinlet)  # removes one escrow at key val
+                    self.baser.delVre(snKey(pre, sn), equinlet)  # removes one escrow at key val
                     blogger.info("Kevery unescrow succeeded for event = %s\n", serder.ked)
 
             if ekey == key:  # still same so no escrows found on last while iteration
