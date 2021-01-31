@@ -2483,7 +2483,7 @@ class Kevery:
                     if not sserder.compare(diger=sdiger):  # seal dig not match event
                         # this unescrows
                         raise ValidationError("Bad chit seal at sn = {} for rct = {}."
-                                              "".format(seal.s, ked))
+                                              "".format(sseqner.sn, sserder.ked))
 
                     #verify sigs and if so write quadlet to database
                     verfers = sserder.verfers
