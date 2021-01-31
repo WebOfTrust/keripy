@@ -68,11 +68,20 @@ class LikelyDuplicitousError(ValidationError):
         raise LikelyDuplicitousError("error message")
     """
 
+
 class UnverifiedReceiptError(ValidationError):
     """
     Error reciept is unverfied
     Usage:
         raise UnverifiedReceiptError("error message")
+    """
+
+
+class UnverifiedTransferableReceiptError(ValidationError):
+    """
+    Error reciept from transferable identifier (validator) is unverfied
+    Usage:
+        raise UnverifiedTransferableReceiptError("error message")
     """
 
 
