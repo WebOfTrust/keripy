@@ -1669,7 +1669,7 @@ class Kevery:
         # lookup last event by sn not by dig.
         self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
         prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
-                  Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8"))
+                  Seqner(sn=seal.s).qb64b + seal.d.encode("utf-8"))
         for siger in sigers:  # escrow each quintlet
             quinlet = prelet +  siger.qb64b  # quinlet
             self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quinlet)
@@ -2407,7 +2407,7 @@ class Kevery:
         ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, equinlet in self.baser.getUreItemsNextIter(key=key):
+            for ekey, equinlet in self.baser.getVreItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
                     ediger, sprefixer, ssegner, sdiger, siger = dequinlet(equinlet)
