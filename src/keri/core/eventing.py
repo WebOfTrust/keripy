@@ -1669,7 +1669,7 @@ class Kevery:
         # lookup last event by sn not by dig.
         self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
         prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
-                  Seqner(sn=seal.s).qb64b + seal.d.encode("utf-8"))
+                  Seqner(snh=seal.s).qb64b + seal.d.encode("utf-8"))
         for siger in sigers:  # escrow each quintlet
             quinlet = prelet +  siger.qb64b  # quinlet
             self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quinlet)
@@ -2410,7 +2410,7 @@ class Kevery:
             for ekey, equinlet in self.baser.getVreItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
-                    ediger, sprefixer, ssegner, sdiger, siger = dequinlet(equinlet)
+                    ediger, sprefixer, sseqner, sdiger, siger = dequinlet(equinlet)
 
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(ediger.qb64b)))
@@ -2467,7 +2467,7 @@ class Kevery:
                     # get receipter's last est event
                     # retrieve dig of last event at sn of receipter.
                     sdig = self.baser.getKeLast(key=snKey(pre=sprefixer.qb64b,
-                                                          sn=ssegner.sn))
+                                                          sn=sseqner.sn))
                     if sdig is None:
                         # no event so keep in escrow
                         blogger.info("Kevery unescrow error: Missing receipted "

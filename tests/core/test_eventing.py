@@ -3172,4 +3172,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_direct_mode_cbor_mgpk()
+    test_direct_mode()

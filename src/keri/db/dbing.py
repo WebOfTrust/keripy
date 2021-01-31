@@ -1345,6 +1345,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Write each entry from list of bytes receipt quadlets vals to key
+        quadlet is spre+ssnu+sdig+sig
         Adds to existing receipts at key if any
         Returns True If no error
         Apparently always returns True (is this how .put works with dupsort=True)
@@ -1357,6 +1358,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Add receipt quadlet val bytes as dup to key in db
+        quadlet is spre+ssnu+sdig+sig
         Adds to existing values at key if any
         Returns True if written else False if dup val already exists
         Duplicates are inserted in lexocographic order not insertion order.
@@ -1368,6 +1370,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Return list of receipt quadlet at key
+        quadlet is spre+ssnu+sdig+sig
         Returns empty list if no entry at key
         Duplicates are retrieved in lexocographic order not insertion order.
         """
@@ -1378,6 +1381,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Return iterator of receipt quadlets at key
+        quadlet is spre+ssnu+sdig+sig
         Raises StopIteration Error when empty
         Duplicates are retrieved in lexocographic order not insertion order.
         """

@@ -1020,7 +1020,7 @@ def test_unverified_trans_receipt_escrow():
 
         # create chit receipt(s) of inception message
         seal = eventing.SealEvent(i=rpre,
-                                  s=rsrdr.sn,
+                                  s=rsrdr.ked["s"],
                                   d=rsrdr.dig)
         reserder = eventing.chit(pre=pre, sn=0, dig=icpdig, seal=seal)
         # sign event not receipt
@@ -1091,8 +1091,8 @@ def test_unverified_trans_receipt_escrow():
         # create receipt(s) of interaction message with receipter rotation message
         # create chit receipt(s) of interaction message
         seal = eventing.SealEvent(i=rpre,
-                                      s=rsrdr.sn,
-                                      d=rsrdr.dig)
+                                  s=rsrdr.ked["s"],
+                                  d=rsrdr.dig)
         reserder = eventing.chit(pre=pre, sn=1, dig=ixndig, seal=seal)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
@@ -1154,7 +1154,7 @@ def test_unverified_trans_receipt_escrow():
         # create receipt(s) of rotation message with rotation message of receipter
         # create chit receipt(s) of interaction message
         seal = eventing.SealEvent(i=rpre,
-                                      s=rsrdr.sn,
+                                      s= rsrdr.ked["s"],
                                       d=rsrdr.dig)
         reserder = eventing.chit(pre=pre, sn=2, dig=rotdig, seal=seal)
         # sign event not receipt
@@ -1264,24 +1264,23 @@ def test_unverified_trans_receipt_escrow():
         assert len(kvy.baser.getVres(dbing.snKey(pre, 2))) == 0
 
         # verify receipts
-        receipts = kvy.baser.getRcts(dbing.dgKey(pre, icpdig))
-        assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
-        assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[1])
-        assert rctPrefixer.qb64 == wit1pre
-        receipts = kvy.baser.getRcts(dbing.dgKey(pre, ixndig))
-        assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
-        assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[1])
-        assert rctPrefixer.qb64 == wit1pre
-        receipts = kvy.baser.getRcts(dbing.dgKey(pre, rotdig))
-        assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
-        assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[1])
-        assert rctPrefixer.qb64 == wit1pre
+        receipts = kvy.baser.getVrcs(dbing.dgKey(pre, icpdig))
+        assert len(receipts) == 3
+        #rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
+        #assert rctPrefixer.qb64 == wit0pre
+
+
+        receipts = kvy.baser.getVrcs(dbing.dgKey(pre, ixndig))
+        assert len(receipts) == 3
+        #rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
+        #assert rctPrefixer.qb64 == wit0pre
+
+
+        receipts = kvy.baser.getVrcs(dbing.dgKey(pre, rotdig))
+        assert len(receipts) == 3
+        #rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
+        #assert rctPrefixer.qb64 == wit0pre
+
 
 
     assert not os.path.exists(kpr.path)
