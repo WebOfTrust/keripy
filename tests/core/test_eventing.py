@@ -2102,9 +2102,10 @@ def test_direct_mode():
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if receipt quadlet in escrow database
-        result = coeKevery.baser.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                   dig=fake))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
+        result = coeKevery.baser.getVres(key=snKey(pre=coeKever.prefixer.qb64,
+                                                   sn=10))
+        assert bytes(result[0]) == (fake.encode("utf-8") +
+                                    valKever.prefixer.qb64b +
                                     Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
@@ -2377,6 +2378,7 @@ def test_direct_mode():
 
     """ Done Test """
 
+
 def test_direct_mode_cbor_mgpk():
     """
     Test direct mode with transverable validator event receipts but using
@@ -2592,12 +2594,14 @@ def test_direct_mode_cbor_mgpk():
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if in escrow database
-        result = coeKevery.baser.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                   dig=fake))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    Seqner(sn=valKever.sn).qb64b +
-                                    valKever.serder.diger.qb64b +
-                                    siger.qb64b)
+        result = coeKevery.baser.getVres(key=snKey(pre=coeKever.prefixer.qb64,
+                                                       sn=10))
+        assert bytes(result[0]) == (fake.encode("utf-8") +
+                                        valKever.prefixer.qb64b +
+                                        Seqner(sn=valKever.sn).qb64b +
+                                        valKever.serder.diger.qb64b +
+                                        siger.qb64b)
+
 
         # Send receipt from coe to val
         # create receipt of val's inception
@@ -3168,4 +3172,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_dequinlet()
+    test_direct_mode_cbor_mgpk()
