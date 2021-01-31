@@ -2458,11 +2458,11 @@ class Kevery:
                     #  compare digs
                     if not ediger.compare(ser=serder.raw, diger=ediger):
                         blogger.info("Kevery unescrow error: Bad receipt dig."
-                             "pre=%s sn=%x receipter=%s\n", (pre, sn, eprefixer.qb64))
+                             "pre=%s sn=%x receipter=%s\n", (pre, sn, sprefixer.qb64))
 
                         raise ValidationError("Bad escrowed receipt dig at "
                                           "pre={} sn={:x} receipter={}."
-                                          "".format( pre, sn, eprefixer.qb64))
+                                          "".format( pre, sn, sprefixer.qb64))
 
                     # get receipter's last est event
                     # retrieve dig of last event at sn of receipter.
