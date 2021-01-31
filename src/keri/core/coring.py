@@ -541,7 +541,7 @@ class CryMat:
 
         pad = cs % 4  # pad is remainder pre mod 4
         # strip off prepended code and append pad characters
-        base = qb64b[cs:] + pad * BASE64_PAD
+        base = qb64b[cs:] + (pad * BASE64_PAD)
         raw = decodeB64(base)
 
         if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths

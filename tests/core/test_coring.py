@@ -880,6 +880,23 @@ def test_diger():
     assert diger.code == CryOneDex.Blake3_256
     assert len(diger.raw) == CryOneRawSizes[diger.code]
     assert diger.verify(ser=ser)
+    assert diger.qb64b == b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+
+    digb = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    dig =  'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    diger = Diger(qb64b=digb)
+    assert diger.qb64b == digb
+    assert diger.qb64 == dig
+    assert diger.code == CryOneDex.Blake3_256
+
+    diger = Diger(qb64=dig)
+    assert diger.qb64 == dig
+    assert diger.qb64b == digb
+    assert diger.code == CryOneDex.Blake3_256
+
+    pig = b'sLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E='
+    raw = decodeB64(pig)
+    assert pig == encodeB64(raw)
 
     dig = hashlib.blake2b(ser, digest_size=32).digest()
     diger = Diger(raw=dig, code=CryOneDex.Blake2b_256)
@@ -2217,4 +2234,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_prefixer()
+    test_diger()

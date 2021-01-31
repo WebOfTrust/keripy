@@ -176,11 +176,11 @@ def dequinlet(quinlet):
         quinlet = quinlet.encode("utf-8")  # convert to bytes
 
     ediger = Diger(qb64b=quinlet)  #  diger of receipted event
-    quinlet = quinlet[len(sdiger.qb64b):]  # strip off dig
+    quinlet = quinlet[len(ediger.qb64b):]  # strip off dig
     sprefixer = Prefixer(qb64b=quinlet)  # prefixer of recipter
     quinlet = quinlet[len(sprefixer.qb64b):]  # strip off pre
     sseqner = Seqner(qb64b=quinlet)  # seqnumber of receipting event
-    quinlet = quinlet[len(sprefixer.qb64b):]  # strip off snu
+    quinlet = quinlet[len(sseqner.qb64b):]  # strip off snu
     sdiger = Diger(qb64b=quinlet)  # diger of receipting event
     quinlet = quinlet[len(sdiger.qb64b):]  # strip off dig
     siger = Siger(qb64b=quinlet)  #  indexed siger of event
