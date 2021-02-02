@@ -72,7 +72,7 @@ class Ogler():
             headDirPath is str for custom headDirPath for log file
             clear is Boolean True means clear .path when closing in reopen
         """
-        self.name = name
+        self.name = name if name else 'main'
         self.level = level  # basic logger level
         self.temp = True if temp else False
         self.headDirPath = headDirPath
@@ -94,7 +94,7 @@ class Ogler():
 
 
 
-    def reopen(self, temp=None, headDirPath=None, clear=False):
+    def reopen(self, name=None, temp=None, headDirPath=None, clear=False):
         """
         Use or Create if not preexistent, directory path for lmdb at .path
         First closes .path if already opened. If cleat is True then also clears
@@ -103,19 +103,36 @@ class Ogler():
         Open lmdb and assign to .env
 
         Parameters:
+            name is optional name
+                if None or unchanged then ignore otherwise recreate path
+                    When recreating path, If not provided use .name
             temp is optional boolean:
                 If None ignore Otherwise
                     Assign to .temp
-                    If True then open temporary directory, clear on close
-                    If False then open persistent directory, do not clear on close
+                    If True then open temporary directory,
+                    If False then open persistent directory
             headDirPath is optional str head directory pathname of main database
-                If not provided use default .HeadDirpath
+                if None or unchanged then ignore otherwise recreate path
+                   When recreating path, If not provided use default .HeadDirpath
             clear is Boolean True means clear .path when closing
         """
         if self.opened:
             self.close(clear=clear)
 
-        if not self.path:  # need to recreate self.path
+        if not name or name == self.name:
+            name = None  # don't need to recreate path because of name change
+
+        if temp is None or temp == self.temp:
+            temp = None
+
+        if not headDirPath or headDirPath == self.headDirPath:
+            headDirPath = None
+
+        if not self.path or name is not None or temp is not None or headDirPath is not None:
+            # need to recreate self.path
+            if name is not None:
+                self.name = name
+
             if temp is not None:
                 self.temp = True if temp else False
 
@@ -178,7 +195,7 @@ class Ogler():
            clear is boolean, True means clear lmdb directory
         """
         self.opened = False
-        if clear:  
+        if clear:
             self.clearDirPath()
 
     def clearDirPath(self):
@@ -206,6 +223,7 @@ class Ogler():
             blogger.addHandler(self.baseFileHandler)
         return blogger
 
+
     def getFlogger(self, name=__name__, level=None):
         """
         Returns Failure Logger
@@ -224,6 +242,7 @@ class Ogler():
         if self.opened:
             flogger.addHandler(self.failFileHandler)  # output to file
         return flogger
+
 
     def getLoggers(self, name=__name__):
         """

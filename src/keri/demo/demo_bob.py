@@ -72,7 +72,9 @@ def parseArgs(version=__version__):
 def main():
     args = parseArgs(version=__version__)
 
-    ogling.ogler.level = logging.DEBUG  # default to debug level
+    # ogling.ogler.level = logging.DEBUG  # default to debug level
+    # ogler = ogling.Ogler(name=args.name, level=logging.INFO, temp=True, clear=True)
+    ogling.ogler.reopen(temp=True, clear=True)
 
     runDemo(name=args.name,
             remote=args.remote,
