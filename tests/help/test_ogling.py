@@ -69,9 +69,8 @@ def test_ogler():
                             'Test blogger at error level\n'
                             '***Fail: Test flogger at error level\n')
 
-    path = ogler.path
     ogler.close()  # but do not clear
-    assert os.path.exists(path)
+    assert os.path.exists(ogler.path)
     assert ogler.opened == False
 
     ogler.reopen(temp=True)

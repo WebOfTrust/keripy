@@ -71,7 +71,6 @@ class Ogler():
                                          Otherwise use  headDirpath
             headDirPath is str for custom headDirPath for log file
             clear is Boolean True means clear .path when closing in reopen
-
         """
         self.name = name
         self.level = level  # basic logger level
@@ -111,6 +110,7 @@ class Ogler():
                     If False then open persistent directory, do not clear on close
             headDirPath is optional str head directory pathname of main database
                 If not provided use default .HeadDirpath
+            clear is Boolean True means clear .path when closing
         """
         if self.opened:
             self.close(clear=clear)
@@ -178,7 +178,7 @@ class Ogler():
            clear is boolean, True means clear lmdb directory
         """
         self.opened = False
-        if clear:  # or self.temp
+        if clear:  
             self.clearDirPath()
 
     def clearDirPath(self):
