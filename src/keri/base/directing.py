@@ -7,10 +7,13 @@ simple direct mode demo support classes
 """
 from hio.base import doing, tyming
 from hio.core.tcp import clienting, serving
-from .. import kering
 from ..db import dbing
 from ..core import coring, eventing
 
+
+from ..help import ogling
+
+blogger, flogger = ogling.ogler.getLoggers()
 
 class Habitat():
     """
@@ -633,6 +636,7 @@ class BobDirector(Director):
                 tyme = (yield (self.tock))
 
             print("{}:\n connected to {}.\n\n".format(self.hab.pre, self.client.ha))
+            blogger.info("**** %s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
             # Inception Event 0
             sn =  0

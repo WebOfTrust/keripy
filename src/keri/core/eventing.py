@@ -2299,7 +2299,7 @@ class Kevery:
                     raw = self.baser.getEvt(dgKey(pre, dig))
                     if raw is None:  # receipted event superseded so remove from escrow
                         blogger.info("Kevery unescrow error: Invalid receipted "
-                                 "event refereance at pre=%s sn=%x\n", (pre, sn))
+                                 "event refereance at pre=%s sn=%x\n", pre, sn)
 
                         raise ValidationError("Invalid receipted evt reference"
                                           " at pre={} sn={:x}".format(pre, sn))
@@ -2309,7 +2309,7 @@ class Kevery:
                     #  compare digs
                     if not ediger.compare(ser=serder.raw, diger=ediger):
                         blogger.info("Kevery unescrow error: Bad receipt dig."
-                             "pre=%s sn=%x receipter=%s\n", (pre, sn, sprefixer.qb64))
+                             "pre=%s sn=%x receipter=%s\n", pre, sn, sprefixer.qb64)
 
                         raise ValidationError("Bad escrowed receipt dig at "
                                           "pre={} sn={:x} receipter={}."
@@ -2320,7 +2320,7 @@ class Kevery:
                     if not cigar.verfer.verify(cigar.raw, serder.raw):
                         # no sigs so raise ValidationError which unescrows below
                         blogger.info("Kevery unescrow error: Bad receipt sig."
-                                 "pre=%s sn=%x receipter=%s\n", (pre, sn, sprefixer.qb64))
+                                 "pre=%s sn=%x receipter=%s\n", pre, sn, sprefixer.qb64)
 
                         raise ValidationError("Bad escrowed receipt sig at "
                                               "pre={} sn={:x} receipter={}."
@@ -2448,7 +2448,7 @@ class Kevery:
                     raw = self.baser.getEvt(dgKey(pre, dig))
                     if raw is None:  #  receipted event superseded so remove from escrow
                         blogger.info("Kevery unescrow error: Invalid receipted "
-                                 "event referenace at pre=%s sn=%x\n", (pre, sn))
+                                 "event referenace at pre=%s sn=%x\n", pre, sn)
 
                         raise ValidationError("Invalid receipted evt reference "
                                               "at pre={} sn={:x}".format(pre, sn))
@@ -2471,7 +2471,7 @@ class Kevery:
                     if sdig is None:
                         # no event so keep in escrow
                         blogger.info("Kevery unescrow error: Missing receipted "
-                                 "event at pre=%s sn=%x\n", (pre, sn))
+                                 "event at pre=%s sn=%x\n", pre, sn)
 
                         raise UnverifiedTransferableReceiptError("Missing receipted evt at pre={} "
                                               " sn={:x}".format(pre, sn))
@@ -2502,7 +2502,7 @@ class Kevery:
                     siger.verfer = verfers[siger.index]  # assign verfer
                     if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
                         blogger.info("Kevery unescrow error: Bad trans receipt sig."
-                                 "pre=%s sn=%x receipter=%s\n", (pre, sn, sprefixer.qb64))
+                                 "pre=%s sn=%x receipter=%s\n", pre, sn, sprefixer.qb64)
 
                         raise ValidationError("Bad escrowed trans receipt sig at "
                                               "pre={} sn={:x} receipter={}."

@@ -72,9 +72,12 @@ def parseArgs(version=__version__):
 def main():
     args = parseArgs(version=__version__)
 
-    # ogling.ogler.level = logging.DEBUG  # default to debug level
-    # ogler = ogling.Ogler(name=args.name, level=logging.INFO, temp=True, clear=True)
-    ogling.ogler.reopen(temp=True, clear=True)
+    ogling.ogler.level = logging.INFO
+    ogling.ogler.reopen(name=args.name, temp=True, clear=True)
+
+    blogger, flogger = ogling.ogler.getLoggers()
+
+    blogger.info("******* Starting Demo for %s.******\n\n", args.name)
 
     runDemo(name=args.name,
             remote=args.remote,
