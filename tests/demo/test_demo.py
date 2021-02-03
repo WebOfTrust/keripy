@@ -574,6 +574,8 @@ def test_run_demo():
     expire =  1.0
     doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, bobDoer])
     doist.do()
+
+    ogling.ogler.level = logging.CRITICAL
     """End Test"""
 
 

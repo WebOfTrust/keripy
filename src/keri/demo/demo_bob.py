@@ -85,6 +85,9 @@ def main():
             local=args.local,
             expire=args.expire)
 
+    blogger.info("\n******* Ended Demo for %s listening on %s connecting to "
+                 "%s.******\n\n", args.name, args.local, args.remote)
+
 
 if __name__ == "__main__":
     main()

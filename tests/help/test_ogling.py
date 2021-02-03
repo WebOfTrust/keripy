@@ -106,7 +106,7 @@ def test_ogler():
     ogler.close(clear=True)
     assert not os.path.exists(path)
     assert ogler.opened == False
-
+    ogling.ogler.level = logging.CRITICAL
     """End Test"""
 
 def test_init_ogler():
