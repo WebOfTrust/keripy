@@ -1304,7 +1304,7 @@ class Kever:
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
-        blogger.info("Kever process: added valid event to KEL event = %s\n", serder.ked)
+        blogger.info("Kever process: Added valid event to KEL event = %s\n", serder.ked)
 
 
     def escrowPSEvent(self, serder, sigers):
@@ -1321,7 +1321,7 @@ class Kever:
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addPse(snKey(serder.preb, serder.sn), serder.digb)
-        blogger.info("Kever process: escrowed partial signature or delegated "
+        blogger.info("Kever process: Escrowed partial signature or delegated "
                      "event = %s\n", serder.ked)
 
 

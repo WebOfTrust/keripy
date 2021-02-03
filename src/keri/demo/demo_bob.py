@@ -77,7 +77,8 @@ def main():
 
     blogger, flogger = ogling.ogler.getLoggers()
 
-    blogger.info("******* Starting Demo for %s.******\n\n", args.name)
+    blogger.info("\n******* Starting Demo for %s listening on %s connecting to "
+                 "%s.******\n\n", args.name, args.local, args.remote)
 
     runDemo(name=args.name,
             remote=args.remote,

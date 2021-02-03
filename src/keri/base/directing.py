@@ -631,12 +631,11 @@ class BobDirector(Director):
             # recur context
             tyme = (yield (self.tock))  # yields tock then waits for next send
 
+            blogger.info("**** %s:\nWaiting for connection to remote  %s.\n\n", self.hab.pre, self.client.ha)
             while (not self.client.connected):
-                # print("{} waiting for connection to remote.\n".format(self.hab.pre))
                 tyme = (yield (self.tock))
 
-            print("{}:\n connected to {}.\n\n".format(self.hab.pre, self.client.ha))
-            blogger.info("**** %s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
+            blogger.info("**** %s:\nConnected to %s.\n\n", self.hab.pre, self.client.ha)
 
             # Inception Event 0
             sn =  0
@@ -656,7 +655,8 @@ class BobDirector(Director):
 
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
-            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+            blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
+
             del msg[:]  #  clear msg
 
             tyme = (yield (self.tock))
@@ -687,7 +687,7 @@ class BobDirector(Director):
 
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
-            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+            blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
             del msg[:]  #  clear msg
 
             tyme = (yield (self.tock))
@@ -714,7 +714,7 @@ class BobDirector(Director):
 
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
-            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+            blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
             del msg[:]  #  clear msg
 
             tyme = (yield (self.tock))
@@ -977,8 +977,8 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
     kevers = dict()
     hab = Habitat(secrets=secrets, kevers=kevers, db=db)
 
-    print("Direct Mode demo of {} as {} on TCP port {} to port {}.\n\n"
-          "".format(name, hab.pre, localPort, remotePort))
+    blogger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
+                 hab.pre, name, localPort, remotePort)
 
     client = clienting.Client(host='127.0.0.1', port=remotePort)
     clientDoer = doing.ClientDoer(client=client)
