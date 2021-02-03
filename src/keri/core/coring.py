@@ -1402,7 +1402,7 @@ class Nexter(CryMat):
             if not digs and not keys and not ked:
                 raise ex
             if code == CryOneDex.Blake3_256:
-                self._digest = self._digest_blake3_256
+                self._digest = self._blake3_256
             else:
                 raise ValueError("Unsupported code = {} for nexter.".format(code))
 
@@ -1412,7 +1412,7 @@ class Nexter(CryMat):
 
         else:
             if self.code == CryOneDex.Blake3_256:
-                self._digest = self._digest_blake3_256
+                self._digest = self._blake3_256
             else:
                 raise ValueError("Unsupported code = {} for nexter.".format(code))
 
@@ -1482,7 +1482,7 @@ class Nexter(CryMat):
 
 
     @staticmethod
-    def _digest_blake3_256(raw):
+    def _blake3_256(raw):
         """
         Returns digest of raw using Blake3_256
 
