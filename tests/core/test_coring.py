@@ -35,7 +35,7 @@ from keri.core.coring import (SigSelDex, SigCntDex, SigCntSizes, SigCntRawSizes,
                               SigFiveDex, SigFiveSizes, SigFiveRawSizes,
                               SigSizes, SigRawSizes, MINSIGSIZE)
 from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat, SigCounter, SeqNumber, Siger
+from keri.core.coring import SigMat, SigCounter, Seqner, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import Serder, Tholder
@@ -193,6 +193,12 @@ def test_crymat():
 
     with pytest.raises(EmptyMaterialError):
         crymat = CryMat()
+
+    with pytest.raises(EmptyMaterialError):
+        crymat = CryMat(raw=verkey, code=None)
+
+    with pytest.raises(EmptyMaterialError):
+        crymat = CryMat(raw=verkey, code='')
 
     crymat = CryMat(raw=verkey)
     assert crymat.raw == verkey
@@ -464,14 +470,15 @@ def test_crycounter():
     """ Done Test """
 
 
-def test_seqnumber():
+def test_seqner():
     """
-    Test SeqNumber subclass of CryMat
+    Test Seqner sequence number subclass of CryMat
     """
-    number = SeqNumber()  #  defaults to zero
+    number = Seqner()  #  defaults to zero
     assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAAAA'
     assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAAA'
     assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -482,115 +489,137 @@ def test_seqnumber():
     snqb2 = b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
     with pytest.raises(ValidationError):
-        number = SeqNumber(raw=b'')
+        number = Seqner(raw=b'')
 
-    number = SeqNumber(qb64b=snqb64b)
+    number = Seqner(qb64b=snqb64b)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb64=snqb64)
+    number = Seqner(qb64=snqb64)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb2=snqb2)
+    number = Seqner(qb2=snqb2)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(raw=snraw)
+    number = Seqner(raw=snraw)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    # test priority lower for sn
-    number = SeqNumber(qb64b=snqb64b, sn=5)
+    # test priority lower for sn and snh
+    number = Seqner(qb64b=snqb64b, sn=5, snh='a')
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb64=snqb64, sn=5)
+    number = Seqner(qb64=snqb64, sn=5, snh='a')
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb2=snqb2, sn=5)
+    number = Seqner(qb2=snqb2, sn=5, snh='a')
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(raw=snraw, sn=5)
+    number = Seqner(raw=snraw, sn=5, snh='a')
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 0
+    assert number.snh == '0'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    #test other sn
-    number = SeqNumber(sn=5)
+    number = Seqner(sn=5, snh='a')
     assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05'
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 5
+    assert number.snh == '5'
     assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAABQ'
     assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAABQ'
     assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00P'
 
+    number = Seqner(snh='a')
+    assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\n'
+    assert number.code == CryTwoDex.Salt_128
+    assert number.sn == 10
+    assert number.snh == 'a'
+    assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAACg'
+    assert number.qb64b == b'0AAAAAAAAAAAAAAAAAAAAACg'
+    assert number.qb2 == b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xa0'
+
+    # More tests
     snraw = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05'
     snqb64b = b'0AAAAAAAAAAAAAAAAAAAAABQ'
     snqb64 = '0AAAAAAAAAAAAAAAAAAAAABQ'
     snqb2 = b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00P'
 
-    number = SeqNumber(qb64b=snqb64b)
+    number = Seqner(qb64b=snqb64b)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 5
+    assert number.snh == '5'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb64=snqb64)
+    number = Seqner(qb64=snqb64)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 5
+    assert number.snh == '5'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(qb2=snqb2, sn=5)
+    number = Seqner(qb2=snqb2, sn=5)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 5
+    assert number.snh == '5'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
 
-    number = SeqNumber(raw=snraw, sn=5)
+    number = Seqner(raw=snraw, sn=5)
     assert number.raw == snraw
     assert number.code == CryTwoDex.Salt_128
     assert number.sn == 5
+    assert number.snh == '5'
     assert number.qb64 == snqb64
     assert number.qb64b == snqb64b
     assert number.qb2 == snqb2
@@ -851,6 +880,23 @@ def test_diger():
     assert diger.code == CryOneDex.Blake3_256
     assert len(diger.raw) == CryOneRawSizes[diger.code]
     assert diger.verify(ser=ser)
+    assert diger.qb64b == b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+
+    digb = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    dig =  'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    diger = Diger(qb64b=digb)
+    assert diger.qb64b == digb
+    assert diger.qb64 == dig
+    assert diger.code == CryOneDex.Blake3_256
+
+    diger = Diger(qb64=dig)
+    assert diger.qb64 == dig
+    assert diger.qb64b == digb
+    assert diger.code == CryOneDex.Blake3_256
+
+    pig = b'sLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E='
+    raw = decodeB64(pig)
+    assert pig == encodeB64(raw)
 
     dig = hashlib.blake2b(ser, digest_size=32).digest()
     diger = Diger(raw=dig, code=CryOneDex.Blake2b_256)
@@ -1023,6 +1069,8 @@ def test_prefixer():
     """
     Test the support functionality for prefixer subclass of crymat
     """
+    preN = 'BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
+    pre = 'DrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE'
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = (b'\xacr\xda\xc83~\x99r\xaf\xeb`\xc0\x8cR\xd7\xd7\xf69\xc8E\x1e\xd2\xf0='
@@ -1038,52 +1086,94 @@ def test_prefixer():
     with pytest.raises(EmptyMaterialError):
         prefixer = Prefixer()
 
+    with pytest.raises(EmptyMaterialError):
+        prefixer = Prefixer(raw=verkey, code=None)
+
+    with pytest.raises(EmptyMaterialError):
+        prefixer = Prefixer(raw=verkey, code='')
+
     with pytest.raises(ValueError):
         prefixer = Prefixer(raw=verkey, code=CryOneDex.SHA2_256)
 
     # test creation given raw and code no derivation
-    prefixer = Prefixer(raw=verkey)  # defaults provide Ed25519N prefixer
+    prefixer = Prefixer(raw=verkey, code=CryOneDex.Ed25519N)  # default code is None
     assert prefixer.code == CryOneDex.Ed25519N
     assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
     assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
 
-    ked = dict(k=[prefixer.qb64], n="")
+    ked = dict(k=[prefixer.qb64], n="", t="icp")
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    ked = dict(k=[prefixer.qb64], n="ABC")
+    ked = dict(k=[prefixer.qb64], n="ABC", t="icp")
     assert prefixer.verify(ked=ked) == False
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     prefixer = Prefixer(raw=verkey, code=CryOneDex.Ed25519)  # defaults provide Ed25519N prefixer
     assert prefixer.code == CryOneDex.Ed25519
     assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
     assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
 
-    ked = dict(k=[prefixer.qb64])
+    ked = dict(k=[prefixer.qb64], t="icp")
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
-    prefixer = Prefixer(raw=verfer.raw)
+    prefixer = Prefixer(raw=verfer.raw, code=CryOneDex.Ed25519N)
     assert prefixer.code == CryOneDex.Ed25519N
     assert prefixer.verify(ked=ked) == False
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # Test basic derivation from ked
-    ked = dict(k=[verfer.qb64], n="")
+    ked = dict(k=[verfer.qb64], n="",  t="icp")
     prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519)
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
+    ked = dict(k=[verfer.qb64], n="",  t="icp")  #  ked without prefix
+    with pytest.raises(EmptyMaterialError):  # no code and no pre in ked
+        prefixer = Prefixer(ked=ked)
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)  # verfer code not match pre code
+    ked = dict(k=[verfer.qb64], n="",  t="icp", i=preN)
     with pytest.raises(DerivationError):
         prefixer = Prefixer(ked=ked)
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
+    ked = dict(k=[verfer.qb64], n="",  t="icp", i=pre)
+    with pytest.raises(DerivationError):
+        prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519N)  # verfer code not match code
 
     verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
-    ked = dict(k=[verfer.qb64], n="")
-    prefixer = Prefixer(ked=ked)
+    ked = dict(k=[verfer.qb64], n="",  t="icp", i=pre)
+    prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519N)  # verfer code match code but not pre code
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    ked = dict(k=[verfer.qb64], n="ABCD")
-    with pytest.raises(DerivationError):
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    ked = dict(k=[verfer.qb64], n="",  t="icp", i=preN)
+    prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519N)  # verfer code match code and pre code
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == True
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    ked = dict(k=[verfer.qb64], n="",  t="icp", i=preN)
+    prefixer = Prefixer(ked=ked)  # verfer code match pre code
+    assert prefixer.qb64 == verfer.qb64
+    assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == True
+
+    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    ked = dict(k=[verfer.qb64], n="",  t="icp")
+    with pytest.raises(EmptyMaterialError):
         prefixer = Prefixer(ked=ked)
+
+    ked = dict(k=[verfer.qb64], n="ABCD",  t="icp")
+    with pytest.raises(DerivationError):
+        prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519)
 
     # Test digest derivation from inception ked
     vs = Versify(version=Version, kind=Serials.json, size=0)
@@ -1111,6 +1201,7 @@ def test_prefixer():
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
     assert prefixer.qb64 == 'E_P7GKEdbet8OudlQvqILlGn7Fll5q6zfddiSXc-XY5Y'
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # test with Nexter
     nexter = Nexter(sith="1", keys=[nxtfer.qb64])
@@ -1129,6 +1220,7 @@ def test_prefixer():
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
     assert prefixer.qb64 == 'E7iQvEO7xsRE8UfBB0DCWnksY8ju-9madY3jJ1Y-eYPE'
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # test with fractionally weighted sith
     secrets = [
@@ -1167,6 +1259,7 @@ def test_prefixer():
     prefixer1 = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
     assert prefixer1.qb64 == 'En6Ks1QPlek3GMHFTDlr-ufdZzQyHay_E2k5wTNB_MHM'
     assert prefixer1.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # now test with different sith but same weights in two clauses
     sith = [["1/2", "1/2"], ["1"]]
@@ -1185,6 +1278,7 @@ def test_prefixer():
     prefixer2 = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
     assert prefixer2.qb64 == 'EITG4HqxAlyOrQBYW9utR7W_iJmq4NmOI9IrPicZfK5E'
     assert prefixer2.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
     assert prefixer2.qb64 !=  prefixer1.qb64  # semantic diff -> syntactic diff
 
     sith = "1"
@@ -1209,6 +1303,7 @@ def test_prefixer():
     prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
     assert prefixer.qb64 == 'EZHlPj5b4zrbJgd72n2sg3v5GYlam_BiX7Sl58mPRP84'
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     #  Test signature derivation
 
@@ -1245,10 +1340,12 @@ def test_prefixer():
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, seed=seed)
     assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
     assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
     assert prefixer.verify(ked=ked) == True
+    assert prefixer.verify(ked=ked, prefixed=True) == False
 
     """ Done Test """
 
@@ -1771,6 +1868,9 @@ def test_serder():
     assert serder.size == 60
     assert serder.verfers == []
     assert serder.raw == b'{"v":"KERI10JSON00003c_","i":"ABCDEFG","s":"0001","t":"rot"}'
+    assert serder.sn == 1
+    assert serder.pre == "ABCDEFG"
+    assert serder.preb == b"ABCDEFG"
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     assert e1s == b'{"v":"KERI10JSON00003c_","i":"ABCDEFG","s":"0001","t":"rot"}'
@@ -1882,6 +1982,9 @@ def test_serder():
     assert evt1.size == size1
     assert evt1.raw == e1ss[:size1]
     assert evt1.version == vers1
+    assert evt1.sn == 1
+    assert serder.pre == "ABCDEFG"
+    assert serder.preb == b"ABCDEFG"
 
     # test digest properties .diger and .dig
     assert evt1.diger.qb64 == evt1.dig
@@ -1900,6 +2003,9 @@ def test_serder():
     assert evt1.raw == e1ss[:size1]
     assert evt1.version == vers1
     assert evt1.diger.code == CryOneDex.Blake3_256
+    assert serder.sn == 1
+    assert serder.pre == "ABCDEFG"
+    assert serder.preb == b"ABCDEFG"
 
     evt2 = Serder(raw=e2ss)
     assert evt2.kind == kind2
@@ -1945,6 +2051,8 @@ def test_serder():
     assert evt1.size == size2
     assert evt1.raw == e2ss[:size2]
     assert evt1.version == vers1
+    assert evt1.dig == 'EbUOh76KAyZRbHsi9_uixhnX3zkcmN2bkIh-enCOmPRU'
+    assert evt1.diger.verify(evt1.raw)
 
     #  round trip
     evt2 = Serder(raw=evt1.raw)
@@ -2126,4 +2234,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_prefixer()
+    test_diger()

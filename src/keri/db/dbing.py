@@ -104,6 +104,8 @@ def splitKey(key):
     Accepts either bytes or str key
     Raises ValueError if key does not split into exactly two elements
     """
+    if isinstance(key, memoryview):
+        key = bytes(key)
     if hasattr(key, "encode"):
         sep = "."
     else:
@@ -120,6 +122,8 @@ def splitKeySn(key):
     Accepts either bytes or str key
 
     """
+    if isinstance(key, memoryview):
+        key = bytes(key)
     pre, sn = splitKey(key)
     sn = int(sn, 16)
     return (pre, sn)
@@ -893,12 +897,12 @@ class Baser(LMDBer):
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .ures is named sub DB of unverified event receipt escrowed couplets from
-            non-transferable signers. Each couplet is concatenation of fully
-            qualified non-transferable identfier prefix plus fully qualified
-            event signature by witness, watcher, or validator
-            dgKey
-            SB is keyed by controller prefix plus digest
+        .ures is named sub DB of unverified event receipt escrowed triples from
+            non-transferable signers. Each triplet is concatenation of fully
+            qualified receipted event digest, non-transferable event identfier prefix,
+            plus receipt event signature by witness, watcher, or validator
+            snKey
+            SB is keyed by receipted event controller prefix plus sn
             of serialized event
             More than one value per DB key is allowed
 
@@ -1221,69 +1225,127 @@ class Baser(LMDBer):
 
     def putUres(self, key, vals):
         """
-        Use dgKey()
-        Write each entry from list of bytes receipt couplets vals to key
+        Use snKey()
+        Write each entry from list of bytes receipt triples vals to key
+        Triplet is dig + pre + sig
         Adds to existing receipts at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
         """
-        return self.putVals(self.ures, key, vals)
+        return self.putIoVals(self.ures, key, vals)
 
 
     def addUre(self, key, val):
         """
-        Use dgKey()
-        Add receipt couplet val bytes as dup to key in db
+        Use snKey()
+        Add receipt triplet val bytes as dup to key in db
+        Triplet is dig + pre + sig
         Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
         """
-        return self.addVal(self.ures, key, val)
+        return self.addIoVal(self.ures, key, val)
 
 
     def getUres(self, key):
         """
-        Use dgKey()
-        Return list of receipt couplets at key
+        Use snKey()
+        Return list of receipt triplets at key
+        Triplet is dig + pre + sig
         Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
+        Duplicates are retrieved in insertion order.
         """
-        return self.getVals(self.ures, key)
+        return self.getIoVals(self.ures, key)
 
 
     def getUresIter(self, key):
         """
-        Use dgKey()
-        Return iterator of receipt couplets at key
+        Use snKey()
+        Return iterator of receipt triplets at key
+        Triplet is dig + pre + sig
         Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
+        Duplicates are retrieved in insertion order.
         """
-        return self.getValsIter(self.ures, key)
+        return self.getIoValsIter(self.ures, key)
+
+
+    def getUreLast(self, key):
+        """
+        Use snKey()
+        Return last inserted dup partial signed escrowed event triplet val at key
+        Triplet is dig + pre + sig
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValLast(self.ures, key)
+
+
+    def getUreItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of partial signed escrowed event triplet items at next
+        key after key.
+        Item is (key, val) where proem has already been stripped from val
+        val is triplet dig + pre + sig
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.ures, key, skip)
+
+
+    def getUreItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of partial signed escrowed event triplet items at next
+        key after key.
+        Items is (key, val) where proem has already been stripped from val
+        val is triplet dig + pre + sig
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.ures, key, skip)
 
 
     def cntUres(self, key):
         """
-        Use dgKey()
-        Return count of receipt couplets at key
+        Use snKey()
+        Return count of receipt triplets at key
         Returns zero if no entry at key
         """
-        return self.cntVals(self.ures, key)
+        return self.cntIoVals(self.ures, key)
 
 
-    def delUres(self, key, val=b''):
+    def delUres(self, key):
         """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
+        Use snKey()
+        Deletes all values at key in db.
+        Returns True If key exists in database Else False
         """
-        return self.delVals(self.ures, key, val)
+        return self.delIoVals(self.ures, key)
+
+
+    def delUre(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.ures, key, val)
 
 
     def putVrcs(self, key, vals):
         """
         Use dgKey()
         Write each entry from list of bytes receipt quadlets vals to key
+        quadlet is spre+ssnu+sdig+sig
         Adds to existing receipts at key if any
         Returns True If no error
         Apparently always returns True (is this how .put works with dupsort=True)
@@ -1296,6 +1358,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Add receipt quadlet val bytes as dup to key in db
+        quadlet is spre+ssnu+sdig+sig
         Adds to existing values at key if any
         Returns True if written else False if dup val already exists
         Duplicates are inserted in lexocographic order not insertion order.
@@ -1307,6 +1370,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Return list of receipt quadlet at key
+        quadlet is spre+ssnu+sdig+sig
         Returns empty list if no entry at key
         Duplicates are retrieved in lexocographic order not insertion order.
         """
@@ -1317,6 +1381,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Return iterator of receipt quadlets at key
+        quadlet is spre+ssnu+sdig+sig
         Raises StopIteration Error when empty
         Duplicates are retrieved in lexocographic order not insertion order.
         """
@@ -1343,63 +1408,120 @@ class Baser(LMDBer):
 
     def putVres(self, key, vals):
         """
-        Use dgKey()
-        Write each entry from list of bytes receipt quadlets vals to key
+        Use snKey()
+        Write each entry from list of bytes receipt quinlets vals to key
+        Quinlet is edig + spre + ssnu + sdig +sig
         Adds to existing receipts at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
         """
-        return self.putVals(self.vres, key, vals)
+        return self.putIoVals(self.vres, key, vals)
 
 
     def addVre(self, key, val):
         """
-        Use dgKey()
-        Add receipt quadlet val bytes as dup to key in db
+        Use snKey()
+        Add receipt quinlet val bytes as dup to key in db
+        Quinlet is edig + spre + ssnu + sdig +sig
         Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
         """
-        return self.addVal(self.vres, key, val)
+        return self.addIoVal(self.vres, key, val)
 
 
     def getVres(self, key):
         """
-        Use dgKey()
-        Return list of receipt quadlet at key
+        Use snKey()
+        Return list of receipt quinlets at key
+        Quinlet is edig + spre + ssnu + sdig +sig
         Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
+        Duplicates are retrieved in insertion order.
         """
-        return self.getVals(self.vres, key)
+        return self.getIoVals(self.vres, key)
 
 
     def getVresIter(self, key):
         """
-        Use dgKey()
-        Return iterator of receipt quadlets at key
+        Use snKey()
+        Return iterator of receipt quinlets at key
+        Quinlet is edig + spre + ssnu + sdig +sig
         Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
+        Duplicates are retrieved in insertion order.
         """
-        return self.getValsIter(self.vres, key)
+        return self.getIoValsIter(self.vres, key)
+
+
+    def getVreLast(self, key):
+        """
+        Use snKey()
+        Return last inserted dup partial signed escrowed event quinlet val at key
+        Quinlet is edig + spre + ssnu + sdig +sig
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValLast(self.vres, key)
+
+
+    def getVreItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of partial signed escrowed event quinlet items at next
+        key after key.
+        Item is (key, val) where proem has already been stripped from val
+        val is Quinlet is edig + spre + ssnu + sdig +sig
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.vres, key, skip)
+
+
+    def getVreItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of partial signed escrowed event quinlet items at next
+        key after key.
+        Items is (key, val) where proem has already been stripped from val
+        val is Quinlet is edig + spre + ssnu + sdig +sig
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.vres, key, skip)
 
 
     def cntVres(self, key):
         """
-        Use dgKey()
-        Return count of receipt quadlets at key
+        Use snKey()
+        Return count of receipt quinlets at key
         Returns zero if no entry at key
         """
-        return self.cntVals(self.vres, key)
+        return self.cntIoVals(self.vres, key)
 
 
-    def delVres(self, key, val=b''):
+    def delVres(self, key):
         """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
+         Use snKey()
+        Deletes all values at key in db.
+        Returns True If key exists in database Else False
         """
-        return self.delVals(self.vres, key, val)
+        return self.delIoVals(self.vres, key)
+
+
+    def delVre(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.vres, key, val)
 
 
     def putKes(self, key, vals):
@@ -1563,7 +1685,7 @@ class Baser(LMDBer):
         Item is (key, val) where proem has already been stripped from val
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
-        Returns None if no entry at key
+        Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
         return self.getIoItemsNext(self.pses, key, skip)
@@ -1596,10 +1718,6 @@ class Baser(LMDBer):
         Use snKey()
         Deletes all values at key in db.
         Returns True If key  exists in db Else False
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
         """
         return self.delIoVals(self.pses, key)
 
@@ -1611,7 +1729,6 @@ class Baser(LMDBer):
         Returns True If dup at  exists in db Else False
 
         Parameters:
-            db is opened named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
             val is dup val (does not include insertion ordering proem)
         """
@@ -1660,6 +1777,32 @@ class Baser(LMDBer):
         return self.getIoValLast(self.ooes, key)
 
 
+    def getOoeItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of out of order escrowed event dig items at next key after key.
+        Item is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.ooes, key, skip)
+
+
+    def getOoeItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of out of order escrowed event dig items at next key after key.
+        Items is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.ooes, key, skip)
+
+
     def cntOoes(self, key):
         """
         Use snKey()
@@ -1676,6 +1819,20 @@ class Baser(LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.ooes, key)
+
+
+    def delOoe(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.ooes, key, val)
 
 
     def putDes(self, key, vals):
@@ -1801,6 +1958,32 @@ class Baser(LMDBer):
         return self.getIoValLast(self.ldes, key)
 
 
+    def getLdeItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of likely duplicitous escrowed event dig items at next key after key.
+        Item is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.ldes, key, skip)
+
+
+    def getLdeItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of likely duplicitous escrowed event dig items at next key after key.
+        Items is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.ldes, key, skip)
+
+
     def cntLdes(self, key):
         """
         Use snKey()
@@ -1817,6 +2000,21 @@ class Baser(LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.ldes, key)
+
+
+    def delLde(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.ldes, key, val)
+
 
 
 class BaserDoer(doing.Doer):

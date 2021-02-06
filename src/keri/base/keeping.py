@@ -47,7 +47,7 @@ class PubLot:
     """
     Public key list with indexes and datetime created
     """
-    pubs: list = field(default_factory=list)  # empty list of fully qualified Base64 public keys.
+    pubs: list = field(default_factory=list)  # list of fully qualified Base64 public keys. defaults to empty .
     ridx: int = 0  # index of rotation (est event) that uses public key set
     kidx: int = 0  # index of key in sequence of public keys
     dt:   str = ""  #  datetime ISO8601 when key set created
@@ -604,7 +604,7 @@ class Creator:
         return ''
 
 
-class RandyCreator(Creator):
+class RandoCreator(Creator):
     """
     Class for creating a key pair based on re-randomizing each seed algorithm.
 
@@ -627,7 +627,7 @@ class RandyCreator(Creator):
         Parameters:
 
         """
-        super(RandyCreator, self).__init__(**kwa)
+        super(RandoCreator, self).__init__(**kwa)
 
 
     def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
@@ -636,9 +636,10 @@ class RandyCreator(Creator):
         Returns list of signers one per kidx in kidxs
 
         Parameters:
-            ridx is int rotation index for key pair set
-            kidx is int starting key index for key pair set
-            count is into number of key pairs in set
+            codes is list of derivation codes one per key pair to create
+            count is count of key pairs to create is codes not provided
+            code is derivation code to use for count key pairs if codes not provided
+            transferable is Boolean, True means use trans deriv code. Otherwise nontrans
         """
         signers = []
         if not codes:  # if not codes make list len count of same code
@@ -672,6 +673,10 @@ class SaltyCreator(Creator):
         Setup Creator.
 
         Parameters:
+            salt is unique salt from which to derive private key
+            stem is path modifier wsed with salt to derive private keys.
+                    if stem is None then uses pidx
+            tier is derivation criticality that determines how much hashing to use.
 
         """
         super(SaltyCreator, self).__init__(**kwa)
@@ -715,7 +720,6 @@ class SaltyCreator(Creator):
             pidx is int prefix index for key pair sequence
             ridx is int rotation index for key pair set
             kidx is int starting key index for key pair set
-            level is security level for salter
             transferable is Boolean, True means use trans deriv code. Otherwise nontrans
             temp is Boolean True means use temp level for testing
         """
@@ -763,7 +767,7 @@ class Creatory:
 
         """
         if algo == Algos.randy:
-            self._make = self._makeNovel
+            self._make = self._makeRandy
         elif algo == Algos.salty:
             self._make = self._makeSalty
         else:
@@ -776,11 +780,11 @@ class Creatory:
         return (self._make(**kwa))
 
 
-    def _makeNovel(self, **kwa):
+    def _makeRandy(self, **kwa):
         """
 
         """
-        return RandyCreator(**kwa)
+        return RandoCreator(**kwa)
 
     def _makeSalty(self, **kwa):
         """
@@ -908,18 +912,24 @@ class Manager:
                 when ncodes not provided
             dcode is str derivation code of next key digests
             algo is str key creation algorithm code
-            salt is str qb64 random salt when salty algorithm used
-            tier is str security tier code with salty algorithm used
-            rooted is Boolean true means derive incept salt from root salt if
-                salt not provide else generate random salt
-            transferable is if each public key uses transferable code or not
-                default is transferable special case is non-transferable
-                not the same as if the derived identifier prefix is transferable
-                the derived prefix is set elsewhere
-            temp is temporary for testing it modifies tier if salty algorithm
+            salt is str qb64 salt for randomization when salty algorithm used
+            stem is path modifier used with salt to derive private keys when using
+                salty agorithms. if stem is None then uses pidx
+            tier is str security criticality tier code when using salty algorithm
+            rooted is Boolean true means derive incept salt from root salt when
+                incept salt not provided. Otherwise use incept salt only
+            transferable is Boolean, True means each public key uses transferable
+                derivation code. Default is transferable. Special case is non-transferable
+                Use case for incept to use transferable = False is for basic
+                derivation of non-transferable identifier prefix.
+                When the derivation process of the identifier prefix is
+                transferable then one should not use non-transferable for the
+                associated public key(s).
+            temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
 
         When both ncodes is empty and ncount is 0 then the nxt is null and will
-            not be rotatable (non-transferable prefix)
+            not be rotatable. This makes the identifier non-transferable in effect
+            even when the identifer prefix is transferable.
 
         """
         pidx, rootSalt, rootTier = self.setup()  # default pidx, salt, tier
@@ -1065,9 +1075,17 @@ class Manager:
             code is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
             dcode is str derivation code of next key digests
-            transferable is if public key is transferable or not
-                default is transferable special case is non-transferable
-            temp is temporary for testing it modifies tier if salty algorithm
+            transferable is Boolean, True means each public key uses transferable
+                derivation code. Default is transferable. Special case is non-transferable
+                Normally no use case for rotation to use transferable = False.
+                When the derivation process of the identifier prefix is
+                transferable then one should not use transferable = False for the
+                associated public key(s).
+            temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
+
+        When both ncodes is empty and ncount is 0 then the nxt is null and will
+            not be rotatable. This makes the identifier non-transferable in effect
+            even when the identifer prefix is transferable.
 
         """
         rawprm = self.keeper.getPrm(key=pre)

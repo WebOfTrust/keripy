@@ -72,12 +72,21 @@ def parseArgs(version=__version__):
 def main():
     args = parseArgs(version=__version__)
 
-    ogling.ogler.level = logging.DEBUG  # default to debug level
+    ogling.ogler.level = logging.INFO
+    ogling.ogler.reopen(name=args.name, temp=True, clear=True)
+
+    blogger, flogger = ogling.ogler.getLoggers()
+
+    blogger.info("\n******* Starting Demo for %s listening on %s connecting to "
+                 "%s.******\n\n", args.name, args.local, args.remote)
 
     runDemo(name=args.name,
             remote=args.remote,
             local=args.local,
             expire=args.expire)
+
+    blogger.info("\n******* Ended Demo for %s listening on %s connecting to "
+                 "%s.******\n\n", args.name, args.local, args.remote)
 
 
 if __name__ == "__main__":

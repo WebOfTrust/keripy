@@ -18,7 +18,7 @@ from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, CryCounter, SeqNumber
+from keri.core.coring import CryMat, CryCounter, Seqner
 from keri.core.coring import Verfer, Signer, Diger, Nexter, Prefixer
 from keri.core.coring import generateSigners, generateSecrets
 from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
@@ -33,6 +33,7 @@ from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc
+from keri.core.eventing import decouplet, detriplet, dequadlet, dequinlet
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
                                 delcept, deltate)
@@ -43,6 +44,158 @@ from keri.db.dbing import dgKey, snKey, openDB, Baser
 from keri.help import ogling
 
 blogger, flogger = ogling.ogler.getLoggers()
+
+
+
+def test_decouplet():
+    """
+    test decouplet function
+    """
+    pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    couplet = pre + sig
+    prefixer, cigar = decouplet(couplet)
+    assert prefixer.qb64 == pre
+    assert cigar.qb64 == sig
+
+    # bytes
+    pre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    couplet = pre + sig
+    prefixer, cigar = decouplet(couplet)
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
+
+    couplet = memoryview(couplet)
+    prefixer, cigar = decouplet(couplet)
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
+
+    """end test"""
+
+
+def test_detriplet():
+    """
+    test detriplet function
+    """
+    dig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    triplet = dig + pre + sig
+    diger, prefixer, cigar = detriplet(triplet)
+    assert diger.qb64 == dig
+    assert prefixer.qb64 == pre
+    assert cigar.qb64 == sig
+
+    # bytes
+    dig = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    pre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sig = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    triplet = dig + pre + sig
+    diger, prefixer, cigar = detriplet(triplet)
+    assert diger.qb64b == dig
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
+
+
+    triplet = memoryview(triplet)
+    diger, prefixer, cigar = detriplet(triplet)
+    assert diger.qb64b == dig
+    assert prefixer.qb64b == pre
+    assert cigar.qb64b == sig
+
+    """end test"""
+
+def test_dequadlet():
+    """
+    test test_dequadlet function
+    """
+    spre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    ssnu = '0AAAAAAAAAAAAAAAAAAAAABQ'
+    sdig = 'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    sig = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    quadlet = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, siger = dequadlet(quadlet)
+    assert sprefixer.qb64 == spre
+    assert sseqner.qb64 == ssnu
+    assert sdiger.qb64 == sdig
+    assert siger.qb64 == sig
+
+    # bytes
+    spre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    ssnu = b'0AAAAAAAAAAAAAAAAAAAAABQ'
+    sdig = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    sig = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    quadlet = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, sigar = dequadlet(quadlet)
+    assert sprefixer.qb64b == spre
+    assert sseqner.qb64b == ssnu
+    assert sdiger.qb64b == sdig
+    assert siger.qb64b == sig
+
+
+    quadlet = memoryview(quadlet)
+    quadlet = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, sigar = dequadlet(quadlet)
+    assert sprefixer.qb64b == spre
+    assert sseqner.qb64b == ssnu
+    assert sdiger.qb64b == sdig
+    assert siger.qb64b == sig
+
+    """end test"""
+
+
+def test_dequinlet():
+    """
+    test dequinlet function
+    """
+    edig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    spre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    ssnu = '0AAAAAAAAAAAAAAAAAAAAABQ'
+    sdig = 'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    sig = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    sealet = spre + ssnu + sdig
+    quinlet = edig + sealet + sig
+    ediger, sprefixer, sseqner, sdiger, siger = dequinlet(quinlet)
+    assert ediger.qb64 == edig
+    assert sprefixer.qb64 == spre
+    assert sseqner.qb64 == ssnu
+    assert sdiger.qb64 == sdig
+    assert siger.qb64 == sig
+
+    # bytes
+    edig = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    spre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    ssnu = b'0AAAAAAAAAAAAAAAAAAAAABQ'
+    sdig = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    sig = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    quinlet = edig + spre + ssnu + sdig + sig
+    ediger, sprefixer, sseqner, sdiger, sigar = dequinlet(quinlet)
+    assert ediger.qb64b == edig
+    assert sprefixer.qb64b == spre
+    assert sseqner.qb64b == ssnu
+    assert sdiger.qb64b == sdig
+    assert siger.qb64b == sig
+
+
+    quinlet = memoryview(quinlet)
+    quinlet = edig + spre + ssnu + sdig + sig
+    ediger, sprefixer, sseqner, sdiger, sigar = dequinlet(quinlet)
+    assert ediger.qb64b == edig
+    assert sprefixer.qb64b == spre
+    assert sseqner.qb64b == ssnu
+    assert sdiger.qb64b == sdig
+    assert siger.qb64b == sig
+
+    """end test"""
 
 
 def test_lastestloc():
@@ -344,7 +497,7 @@ def test_kever():
 
 
         # Derive AID from ked
-        aid0 = Prefixer(ked=ked0, code = CryOneDex.Ed25519)
+        aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519)
         assert aid0.code == CryOneDex.Ed25519
         assert aid0.qb64 == skp0.verfer.qb64
 
@@ -400,7 +553,7 @@ def test_kever():
 
         # Derive AID from ked
         with pytest.raises(DerivationError):
-            aid0 = Prefixer(ked=ked0, code = CryOneDex.Ed25519N)
+            aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519N)
 
         # assert aid0.code == CryOneDex.Ed25519N
         # assert aid0.qb64 == skp0.verfer.qb64
@@ -1527,7 +1680,7 @@ def test_receipt():
 
     # create receipt signer prefixer  default code is non-transferable
     valSigner = Signer(qb64=valSecrets[0], transferable=False)
-    valPrefixer = Prefixer(qb64=valSigner.verfer.qb64, )
+    valPrefixer = Prefixer(qb64=valSigner.verfer.qb64)
     assert valPrefixer.code == CryOneDex.Ed25519N
     valpre = valPrefixer.qb64
     assert valpre == 'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
@@ -1614,9 +1767,9 @@ def test_receipt():
 
         coeKevery.processAll(ims=res)  #  coe process the escrow receipt from val
         #  check if in escrow database
-        result = coeKevery.baser.getUres(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                        dig=fake))
-        assert bytes(result[0]) == valPrefixer.qb64b + valCigar.qb64b
+        result = coeKevery.baser.getUres(key=snKey(pre=coeKever.prefixer.qb64,
+                                                        sn=2))
+        assert bytes(result[0]) == fake.encode("utf-8") + valPrefixer.qb64b + valCigar.qb64b
 
         # create receipt stale use invalid dig and valid sn so bad receipt
         fake = reserder.dig  # some other dig
@@ -1957,7 +2110,7 @@ def test_direct_mode():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
         assert bytes(result[0]) == (b'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg0AAAAAAAAAAAAAAAAAAAAAAAEGFSGYH2'
@@ -1988,10 +2141,11 @@ def test_direct_mode():
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if receipt quadlet in escrow database
-        result = coeKevery.baser.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                   dig=fake))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+        result = coeKevery.baser.getVres(key=snKey(pre=coeKever.prefixer.qb64,
+                                                   sn=10))
+        assert bytes(result[0]) == (fake.encode("utf-8") +
+                                    valKever.prefixer.qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2044,7 +2198,7 @@ def test_direct_mode():
         result = valKevery.baser.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
                                                     dig=valKever.serder.diger.qb64))
         assert bytes(result[0]) == (coeKever.prefixer.qb64b +
-                                    SeqNumber(sn=coeKever.sn).qb64b +
+                                    Seqner(sn=coeKever.sn).qb64b +
                                     coeKever.serder.diger.qb64b +
                                     siger.qb64b)
         assert bytes(result[0]) == (b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w0AAAAAAAAAAAAAAAAAAAAAAAEEnwxEm5'
@@ -2135,7 +2289,7 @@ def test_direct_mode():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2222,7 +2376,7 @@ def test_direct_mode():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2262,6 +2416,7 @@ def test_direct_mode():
     assert not os.path.exists(coeKever.baser.path)
 
     """ Done Test """
+
 
 def test_direct_mode_cbor_mgpk():
     """
@@ -2447,7 +2602,7 @@ def test_direct_mode_cbor_mgpk():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
         assert bytes(result[0]) == (b'E-5yGMmTDo6Qkr4G36Jy91gz5bF2y_Ef-s_S0jIfaoOY0AAAAAAAAAAAAAAAAAAAAAAAEHJmsEzp'
@@ -2478,12 +2633,14 @@ def test_direct_mode_cbor_mgpk():
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if in escrow database
-        result = coeKevery.baser.getVres(key=dgKey(pre=coeKever.prefixer.qb64,
-                                                   dig=fake))
-        assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
-                                    valKever.serder.diger.qb64b +
-                                    siger.qb64b)
+        result = coeKevery.baser.getVres(key=snKey(pre=coeKever.prefixer.qb64,
+                                                       sn=10))
+        assert bytes(result[0]) == (fake.encode("utf-8") +
+                                        valKever.prefixer.qb64b +
+                                        Seqner(sn=valKever.sn).qb64b +
+                                        valKever.serder.diger.qb64b +
+                                        siger.qb64b)
+
 
         # Send receipt from coe to val
         # create receipt of val's inception
@@ -2532,7 +2689,7 @@ def test_direct_mode_cbor_mgpk():
         result = valKevery.baser.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
                                                     dig=valKever.serder.diger.qb64))
         assert bytes(result[0]) == (coeKever.prefixer.qb64b +
-                                    SeqNumber(sn=coeKever.sn).qb64b +
+                                    Seqner(sn=coeKever.sn).qb64b +
                                     coeKever.serder.diger.qb64b +
                                     siger.qb64b)
         assert bytes(result[0]) == (b'EMejbZsIeOI5TTb73MKIVbjkYFURM8iREGeX5CyaxJvU0AAAAAAAAAAAAAAAAAAAAAAAEyAyl33W'
@@ -2624,7 +2781,7 @@ def test_direct_mode_cbor_mgpk():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2711,7 +2868,7 @@ def test_direct_mode_cbor_mgpk():
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
-                                    SeqNumber(sn=valKever.sn).qb64b +
+                                    Seqner(sn=valKever.sn).qb64b +
                                     valKever.serder.diger.qb64b +
                                     siger.qb64b)
 
@@ -2827,7 +2984,7 @@ def test_process_nontransferable():
         del msgb0[:len(rsig.qb64)]
 
     # verify pre
-    raid0 = Prefixer(qb64=rser0.ked["i"])
+    raid0 = Prefixer(qb64=rser0.pre)
     assert raid0.verify(ked=rser0.ked)
     """ Done Test """
 
@@ -2917,7 +3074,7 @@ def test_process_transferable():
         del msgb0[:len(rsig.qb64)]
 
     # verify pre
-    raid0 = Prefixer(qb64=rser0.ked["i"])
+    raid0 = Prefixer(qb64=rser0.pre)
     assert raid0.verify(ked=rser0.ked)
 
     #verify nxt digest from event is still valid
@@ -3054,4 +3211,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_multisig_digprefix()
+    test_dequadlet()
