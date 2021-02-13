@@ -44,10 +44,12 @@ l
 ['a', 'aa', 'aaa', 'b', 'ba', 'baa']
 
 """
+
 import os
 import shutil
 import tempfile
 import stat
+import datetime
 
 from contextlib import contextmanager
 
@@ -1148,7 +1150,67 @@ class Baser(LMDBer):
         Deletes value at key.
         Returns True If key exists in database Else False
         """
-        return self.delVal(self.fse, key)
+        return self.delVal(self.fses, key)
+
+
+    def appendFse(self, pre, dts, val):
+        """
+        Uses dtKey(pre, dts) for entries.
+
+        Append val to end of db entries with same pre at key = dtKey(pre,dts)
+        unless already entry at that key then increment dts by 1 microsecond.
+
+        If datetime in key is less than or equal to datetime of last entry
+        Then increment datetime of final entry by one microsecond.
+        Returns dts used to write
+
+        Uses dts to find last entry at pre by setting range and then comparing
+        if entry >= pre has same pre or not. If same pre then increment
+        dts by one microsend and set. If not then just set.
+
+        Parameters:
+            pre is bytes identifier prefix for event
+            dts is iso8601 TZ aware datetime bytes
+            val is event digest
+
+        """
+        key = dtKey(pre, dts)
+
+        with self.env.begin(db=self.fses, write=True, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  # no later values than key
+                txn.put(key, val, overwrite=False)
+                return dts
+
+            ckey = cursor.key()
+            cpre, cdts = splitKey(ckey, sep=b'|')
+            if cpre != pre:  #  range ok dts is after last event for pre
+                txn.put(key, val, overwrite=False)
+                return dts
+
+            # must already be key in db with same pre that is later than or equal
+            for ckey in cursor.iternext(values=False):  # return key at cursor
+                cpre, cdts = splitKey(ckey, sep=b'|')
+                if cpre != pre:  # prev is now the last event for pre
+                   break
+
+            # iterator either goes off end of database whereupon cursor.key() is empty
+            # or hits different pre in either case need to recover
+            if not cursor.key():  # went off end of database
+                cursor.last()  # cursor state bad so recover by setting to last
+            else:  # encountered next pre so backup
+                cursor.prev()  # back up
+            # cursor.key() is now same pre but cdts >= dts so increment
+            cpre, cdts = splitKey(cursor.key(), sep=b'|')
+
+            # increment by 1 microsecond to ensure monotonic
+            dts = helping.toIso8601(helping.fromIso8601(cdts) +
+                                    datetime.timedelta(microseconds=1))
+            key = dtKey(pre, dts)
+            txn.put(key, val, overwrite=False)
+            return dts
+
+
 
 
     def putDts(self, key, val):

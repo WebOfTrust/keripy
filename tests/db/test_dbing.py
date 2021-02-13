@@ -7,11 +7,11 @@ import pytest
 
 import os
 import json
-
+import datetime
 import lmdb
 
 from keri.db.dbing import clearDatabaserDir, openLMDB, openDB
-from keri.db.dbing import dgKey, snKey, dtKey,  splitKey, splitKeySn, splitKeyDt
+from keri.db.dbing import dgKey, snKey, dtKey, splitKey, splitKeySn, splitKeyDt
 from keri.db.dbing import LMDBer, Baser
 
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
@@ -636,6 +636,154 @@ def test_baser():
         assert db.getEvt(key) == skedb
         assert db.delEvt(key) == True
         assert db.getEvt(key) == None
+
+        # test first seen event sub db
+        preA = b'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
+        preB = b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
+        preC = b'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
+
+        dts0 = b'2021-02-13T21:31:23.543715+00:00'
+        dts1 = b'2021-02-13T21:31:37.309287+00:00'
+        dts2 = b'2021-02-13T21:31:58.200582+00:00'
+        dts3 = b'2021-02-13T21:33:29.151598+00:00'
+        dts4 = b'2021-02-13T21:33:52.098736+00:00'
+
+        digU = b'ER73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
+        digV = b'EA4vCeJswIBJlO3RqE-wsE72Vt3wAceJ_LzqKvbDtBSY'
+        digW = b'EyAyl33W9ja_wLX85UrzRnL4KNzlsIKIA7CrD04nVX1w'
+        digX = b'EEnwxEm5Bg5s5aTLsgQCNpubIYzwlvMwZIzdOM0Z3u7o'
+        digY = b'Enrq74_Q11S2vHx1gpK_46Ik5Q7Yy9K1zZ5BavqGDKnk'
+        digZ = b'E-5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w'
+
+        keyA4 = dtKey(preA, dts4)
+        assert db.getFse(keyA4) == None
+        assert db.delFse(keyA4) == False
+        assert db.putFse(keyA4, val=digX) == True
+        assert db.getFse(keyA4) == digX
+        assert db.putFse(keyA4, val=digX) == False
+        assert db.setFse(keyA4, val=digX) == True
+        assert db.getFse(keyA4) == digX
+        assert db.delFse(keyA4) == True
+        assert db.getFse(keyA4) == None
+
+        #  test appendFse
+        # empty database
+        keyB1 = dtKey(preB, dts1)
+        assert db.getFse(keyB1) == None
+        dts = db.appendFse(preB, dts1, digY )
+        assert dts == dts1
+        assert db.getFse(keyB1) == digY
+        assert db.delFse(keyB1) == True
+        assert db.getFse(keyB1) == None
+
+        # earlier pre in database only
+        assert db.putFse(keyA4, val=digX) == True
+        dts = db.appendFse(preB, dts1, digY )
+        assert dts == dts1
+        assert db.getFse(keyB1) == digY
+        assert db.delFse(keyB1) == True
+        assert db.getFse(keyB1) == None
+
+        # earlier and later pre in db but not same pre
+        keyC0 = dtKey(preC, dts0)
+        assert db.putFse(keyC0, val=digZ) == True
+        dts = db.appendFse(preB, dts1, digY )
+        assert dts == dts1
+        assert db.getFse(keyB1) == digY
+        assert db.delFse(keyB1) == True
+        assert db.getFse(keyB1) == None
+
+        # later pre only
+        assert db.delFse(keyA4) == True
+        assert db.getFse(keyA4) == None
+        dts = db.appendFse(preB, dts1, digY )
+        assert dts == dts1
+        assert db.getFse(keyB1) == digY
+
+
+        # earlier but same pre only
+        assert db.delFse(keyC0) == True
+        assert db.getFse(keyC0) == None
+        assert db.delFse(keyB1) == True
+        assert db.getFse(keyB1) == None
+        dts = db.appendFse(preB, dts1, digY )
+        assert dts == dts1
+        assert db.getFse(keyB1) == digY
+        keyB2 = dtKey(preB, dts2)
+        dts = db.appendFse(preB, dts2, digZ )
+        assert dts == dts2
+        assert db.getFse(keyB2) == digZ
+        keyB3 = dtKey(preB, dts3)
+        dts = db.appendFse(preB, dts3, digX )
+        assert dts == dts3
+        assert db.getFse(keyB3) == digX
+
+        # same key as last so increment
+        dts3a = db.appendFse(preB, dts3, digU )
+        assert dts3a != dts3
+        assert (fromIso8601(dts3a) - fromIso8601(dts3)) == datetime.timedelta(microseconds=1)
+        keyB3a = dtKey(preB, dts3a)
+        assert db.getFse(keyB3a) == digU
+
+        # same key as earlier than last so find last and then increment
+        dts3b = db.appendFse(preB, dts1, digV )
+        assert dts3b != dts3a
+        assert (fromIso8601(dts3b) - fromIso8601(dts3a)) == datetime.timedelta(microseconds=1)
+        assert (fromIso8601(dts3b) - fromIso8601(dts3)) == datetime.timedelta(microseconds=2)
+        keyB3b = dtKey(preB, dts3b)
+        assert db.getFse(keyB3b) == digV
+
+
+        # replay database
+
+        # later not same pre
+        assert db.delFse(keyB1) == True
+        assert db.getFse(keyB1) == None
+        assert db.delFse(keyB2) == True
+        assert db.getFse(keyB2) == None
+        assert db.delFse(keyB3) == True
+        assert db.getFse(keyB3) == None
+        assert db.delFse(keyB3a) == True
+        assert db.getFse(keyB3a) == None
+        assert db.delFse(keyB3b) == True
+        assert db.getFse(keyB3b) == None
+        keyC0 = dtKey(preC, dts0)
+        assert db.putFse(keyC0, val=digZ) == True
+
+        dts = db.appendFse(preB, dts1, digY )
+        assert dts == dts1
+        assert db.getFse(keyB1) == digY
+        keyB2 = dtKey(preB, dts2)
+        dts = db.appendFse(preB, dts2, digZ )
+        assert dts == dts2
+        assert db.getFse(keyB2) == digZ
+        keyB3 = dtKey(preB, dts3)
+        dts = db.appendFse(preB, dts3, digX )
+        assert dts == dts3
+        assert db.getFse(keyB3) == digX
+
+        # same key as last so increment
+        dts3a = db.appendFse(preB, dts3, digU )
+        assert dts3a != dts3
+        assert (fromIso8601(dts3a) - fromIso8601(dts3)) == datetime.timedelta(microseconds=1)
+        keyB3a = dtKey(preB, dts3a)
+        assert db.getFse(keyB3a) == digU
+
+        # same key as earlier than last so find last and then increment
+        dts3b = db.appendFse(preB, dts1, digV )
+        assert dts3b != dts3a
+        assert (fromIso8601(dts3b) - fromIso8601(dts3a)) == datetime.timedelta(microseconds=1)
+        assert (fromIso8601(dts3b) - fromIso8601(dts3)) == datetime.timedelta(microseconds=2)
+        keyB3b = dtKey(preB, dts3b)
+        assert db.getFse(keyB3b) == digV
+
+        # replay database
+
+        # Test .dtss datetime stamps
+
+        key = dgKey(preb, digb)
+        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
+                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
 
         # test .dtss sub db methods
         val1 = b'2020-08-22T17:50:09.988921+00:00'
@@ -1810,4 +1958,4 @@ def test_usebaser():
     """ End Test """
 
 if __name__ == "__main__":
-    test_key_funcs()
+    test_baser()
