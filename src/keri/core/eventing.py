@@ -792,7 +792,8 @@ class Kever:
             self.delegated = False
             self.delegator = None
 
-        self.logEvent(serder, sigers)  # idempotent update db logs
+        #  .validateSigs above ensures threshold met otherwise raises exception
+        self.logEvent(serder, sigers, first=True)  # First seen accepted
 
 
     @property
@@ -940,7 +941,8 @@ class Kever:
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(s=self.sn, d=self.serder.diger.qb64)
 
-            self.logEvent(serder, sigers)  # update logs
+            #  .validateSigs above ensures threshold met otherwise raises exception
+            self.logEvent(serder, sigers, first=True)  # First seen accepted
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -975,7 +977,8 @@ class Kever:
             self.serder = serder  # need for digest agility includes .serder.diger
             self.ilk = ilk
 
-            self.logEvent(serder, sigers)  # update logs
+            #  .validateSigs above ensure threshold met otherwise raises exception
+            self.logEvent(serder, sigers, first=True)  # First seen accepted
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -1069,7 +1072,8 @@ class Kever:
                                   "".format(self.nexter.qb64, tholder.thold, keys, ked))
 
         # compute wits from cuts and adds use set
-        # verify set math
+        # verify set math uses ordered set to ensure that witness list is strictly
+        #  ordered so that indexed signatures work
         witset = oset(self.wits)
         cuts = ked["wr"]
         cutset = oset(cuts)
@@ -1290,7 +1294,7 @@ class Kever:
         return seal
 
 
-    def logEvent(self, serder, sigers):
+    def logEvent(self, serder, sigers, first=False):
         """
         Update associated logs for verified event.
         Update is idempotent. Logs will not write dup at key if already exists.
@@ -1298,9 +1302,17 @@ class Kever:
         Parameters:
             serder is Serder instance of current event
             sigers is list of Siger instance for current event
+            first is Boolean True means first seen accepted log of event.
+                    Otherwise means idempotent log of event to accept additional
+                    signatures beyond the threshold provided for first seen
         """
         dgkey = dgKey(self.prefixer.qb64b, self.serder.diger.qb64b)
-        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+        dtsb = nowIso8601().encode("utf-8")
+        if first:
+            self.baser.setDts(dgkey, dtsb)  #  first seen so dts is first seen
+        else:
+            self.baser.putDts(dgkey, dtsb)  #  do not change dts if already
+
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
@@ -1731,7 +1743,8 @@ class Kevery:
                     indices = kever.verifySigs(serder=serder,
                                                sigers=sigers,
                                                verfers=eserder.verfers)
-                    if indices:  # verified signature so log sigs
+                    if indices:  # at least one verified signature so log sigs
+                        # not first seen update
                         kever.logEvent(serder, sigers)  # idempotent update db logs
 
                 else:   # escrow likely duplicitous event
@@ -1768,7 +1781,8 @@ class Kevery:
                         indices = kever.verifySigs(serder=serder,
                                                    sigers=sigers,
                                                    verfers=eserder.verfers)
-                        if indices:  # verified signature so log sigs
+                        if indices:  # at least one verified signature so log sigs
+                            # not first seen update
                             kever.logEvent(serder, sigers)  # idempotent update db logs
 
                     else:   # escrow likely duplicitous event

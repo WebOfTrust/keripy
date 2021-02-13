@@ -5,10 +5,11 @@ tests escrows in database primarily logic in Kevery and Kever from keri.core.eve
 """
 import os
 import time
+import datetime
 import pytest
 
 from keri import kering
-from keri.help import ogling
+from keri.help import ogling, helping
 from keri.db import dbing
 from keri.base import keeping
 from keri.core import coring
@@ -91,6 +92,9 @@ def test_partial_signed_escrow():
         sigs = kvy.baser.getSigs(dbing.dgKey(pre, srdr.dig))  #  but sigs is more
         assert len(sigs) == 2
 
+        # get DTS set by escrow date time stamp on event
+        edtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+
         # verify Kevery process partials escrow now unescrows correctly given
         # two signatures and assuming not stale
         kvy.processPartials()
@@ -101,6 +105,11 @@ def test_partial_signed_escrow():
         # escrows now empty
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0
+
+        # get DTS set by first seen event acceptance date time stamp
+        adtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+        # ensure accept time is later than escrow time, default timedelta is zero
+        assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
 
         # send duplicate message with all three sigs
         msg = bytearray(srdr.raw)
@@ -113,6 +122,10 @@ def test_partial_signed_escrow():
         assert len(sigs) == 3
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0  # escrow stays gone
+
+        # get DTS after partial last sig should not change dts from first accepted
+        pdtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+        assert pdtsb == adtsb
 
         # create interaction event for
         srdr = eventing.interact(pre=kvr.prefixer.qb64,
@@ -187,12 +200,20 @@ def test_partial_signed_escrow():
         assert len(escrows) == 1
         assert escrows[0] == srdr.digb  #  escrow entry for event
 
+        # get DTS set by escrow date time stamp on event
+        edtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+
         # Process partials but now escrow not stale
         kvy.processPartials()
         assert kvr.serder.dig == srdr.dig  # key state updated so event was validated
         assert kvr.sn == 1  # key state successfully updated
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0  # escrow gone
+
+        # get DTS set by first seen event acceptance date time stamp
+        adtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+        # ensure accept time is later than escrow time, default timedelta is zero
+        assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
 
         # send duplicate message but add last sig
         msg = bytearray(srdr.raw)
@@ -204,6 +225,10 @@ def test_partial_signed_escrow():
         assert len(sigs) == 3
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0  # escrow stays gone
+
+        # get DTS after partial last sig should not change dts from first accepted
+        pdtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+        assert pdtsb == adtsb
 
         # Create rotation event
         # get current keys as verfers and next digests as digers
@@ -274,9 +299,17 @@ def test_partial_signed_escrow():
         kvy.processAll(ims=bytearray(msg))  # process local copy of msg
         assert kvr.serder.diger.qb64 != srdr.dig  # key state not updated
 
+        # get DTS set by escrow date time stamp on event
+        edtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+
         # process escrow
         kvy.processPartials()
         assert kvr.serder.diger.qb64 == srdr.dig  # key state updated
+
+        # get DTS set by first seen event acceptance date time stamp
+        adtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+        # ensure accept time is later than escrow time, default timedelta is zero
+        assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
 
     assert not os.path.exists(kpr.path)
     assert not os.path.exists(db.path)
@@ -1292,5 +1325,5 @@ def test_unverified_trans_receipt_escrow():
 
 
 if __name__ == "__main__":
-    test_unverified_trans_receipt_escrow()
+    test_partial_signed_escrow()
 
