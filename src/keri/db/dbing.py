@@ -61,6 +61,7 @@ except ImportError:
 from hio.base import doing
 
 from  ..kering import KeriError
+from  ..help import helping
 
 
 class DatabaseError(KeriError):
@@ -76,7 +77,7 @@ MaxProem = int("f"*(ProemSize-1), 16)
 
 def dgKey(pre, dig):
     """
-    Returns bytes DB key from concatenation of qualified Base64 prefix
+    Returns bytes DB key from concatenation of '.' with qualified Base64 prefix
     bytes pre and qualified Base64 bytes digest of serialized event
     If pre or dig are str then converts to bytes
     """
@@ -84,13 +85,12 @@ def dgKey(pre, dig):
         pre = pre.encode("utf-8")  # convert str to bytes
     if hasattr(dig, "encode"):
         dig = dig.encode("utf-8")  # convert str to bytes
-
     return (b'%s.%s' %  (pre, dig))
 
 
 def snKey(pre, sn):
     """
-    Returns bytes DB key from concatenation of qualified Base64 prefix
+    Returns bytes DB key from concatenation with '.' of qualified Base64 prefix
     bytes pre and int sn (sequence number) of event
     """
     if hasattr(pre, "encode"):
@@ -98,18 +98,41 @@ def snKey(pre, sn):
     return (b'%s.%032x' % (pre, sn))
 
 
-def splitKey(key):
+def dtKey(pre, dts):
     """
-    Returns duple of pre and either dig or sn str by splitting key at '.'
+    Returns bytes DB key from concatenation of '|' qualified Base64 prefix
+    bytes pre and bytes dts datetime string of extended tz aware ISO8601
+    datetime of event
+
+    '2021-02-13T19:16:50.750302+00:00'
+
+    """
+    if hasattr(pre, "encode"):
+        pre = pre.encode("utf-8")  # convert str to bytes
+    if hasattr(dts, "encode"):
+        dts = dts.encode("utf-8")  # convert str to bytes
+    return (b'%s|%s' % (pre, dts))
+
+
+def splitKey(key, sep=b'.'):
+    """
+    Returns duple of pre and either dig or sn str or dts datetime str by
+    splitting key at bytes sep
     Accepts either bytes or str key
     Raises ValueError if key does not split into exactly two elements
+
+    Parameters:
+       key is database key with split at sep
+       sep is bytes separator character. default is b'.'
     """
     if isinstance(key, memoryview):
         key = bytes(key)
-    if hasattr(key, "encode"):
-        sep = "."
+    if hasattr(key, "encode"):  # str not bytes
+        if hasattr(sep, 'decode'):  # make sep match bytes or str
+            sep = sep.decode("utf-8")
     else:
-        sep = b'.'
+        if hasattr(sep, 'encode'):  # make sep match bytes or str
+            sep = sep.encode("utf-8")
     splits = key.split(sep)
     if len(splits) != 2:
         raise  ValueError("Unsplitable key = {}".format(key))
@@ -127,6 +150,22 @@ def splitKeySn(key):
     pre, sn = splitKey(key)
     sn = int(sn, 16)
     return (pre, sn)
+
+
+def splitKeyDt(key):
+    """
+    Returns list of pre and dts converted to datetime from key
+    dts is TZ aware Iso8601 '2021-02-13T19:16:50.750302+00:00'
+
+    Accepts either bytes or str key
+    """
+    if isinstance(key, memoryview):
+        key = bytes(key)
+    pre, dts = splitKey(key, sep=b'|')
+    if hasattr(dts, "decode"):
+        dts = dts.decode("utf-8")
+    dt = helping.fromIso8601(dts)
+    return (pre, dt)
 
 
 def clearDatabaserDir(path):
@@ -878,11 +917,21 @@ class Baser(LMDBer):
             DB is keyed by identifer prefix plus digest of serialized event
             Only one value per DB key is allowed
 
+        .fses isnamed sub DB of digests that indexes events in first 'seen'
+            accepted order for replay and cloning of event log. Only one value
+            per DB key is allowed. Provides append only ordering of accepted
+            first seen events.
+            dtKey
+            DB is keyed by identifier prefix plus monotonically increasing datatime
+            stamp bytes in extended ISO 8601 format
+            Value is digest of serialized event used to lookup event in .evts sub DB
+
         .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
+            the datetime when the event was first escrosed and then later first
+            seen by log. Used for escrows timeouts and extended validation.
             dgKey
-            the datetime when the event was first seen by log.
-            Used for escrows timeouts and extended validation.
             DB is keyed by identifer prefix plus digest of serialized event
+            Value is ISO 8601 datetime stamp bytes
 
         .sigs is named sub DB of fully qualified event signatures
             dgKey
@@ -1010,6 +1059,7 @@ class Baser(LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.evts = self.env.open_db(key=b'evts.')
+        self.fses = self.env.open_db(key=b'fses.')
         self.dtss = self.env.open_db(key=b'dtss.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
@@ -1060,6 +1110,45 @@ class Baser(LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.evts, key)
+
+
+    def putFse(self, key, val):
+        """
+        Use dtKey()
+        Write event digest bytes val to key
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        return self.putVal(self.fses, key, val)
+
+
+    def setFse(self, key, val):
+        """
+        Use dtKey()
+        Write event digest bytes val to key
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.fses, key, val)
+
+
+    def getFse(self, key):
+        """
+        Use dtKey()
+        Return event digest at key
+        Returns None if no entry at key
+        """
+        return self.getVal(self.fses, key)
+
+
+    def delFse(self, key):
+        """
+        Use dtKey()
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.fse, key)
 
 
     def putDts(self, key, val):

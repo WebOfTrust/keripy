@@ -11,7 +11,8 @@ import json
 import lmdb
 
 from keri.db.dbing import clearDatabaserDir, openLMDB, openDB
-from keri.db.dbing import dgKey, snKey, splitKey, splitKeySn, LMDBer, Baser
+from keri.db.dbing import dgKey, snKey, dtKey,  splitKey, splitKeySn, splitKeyDt
+from keri.db.dbing import LMDBer, Baser
 
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
 from keri.core.coring import CryCntDex, CryOneDex, CryTwoDex, CryFourDex
@@ -30,6 +31,7 @@ def test_key_funcs():
     pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     dig = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
     sn = 3
+    dts = b'2021-02-13T19:16:50.750302+00:00'
 
     assert snKey(pre, sn) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                         b'.00000000000000000000000000000003')
@@ -42,9 +44,16 @@ def test_key_funcs():
 
     assert splitKey(dgKey(pre, dig)) == (pre, dig)
 
+    assert dtKey(pre, dts) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                        b'|2021-02-13T19:16:50.750302+00:00')
+
+    assert splitKey(dtKey(pre, dts), sep=b'|') == (pre, dts)
+    assert splitKeyDt(dtKey(pre, dts)) == (pre, fromIso8601(dts.decode("utf-8")))
+
     #  Str
     pre = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     dig = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
+    dts = '2021-02-13T19:16:50.750302+00:00'
 
     assert snKey(pre, sn) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                         b'.00000000000000000000000000000003')
@@ -56,6 +65,13 @@ def test_key_funcs():
                                          b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
 
     assert splitKey(dgKey(pre, dig).decode("utf-8")) == (pre, dig)
+
+    assert dtKey(pre, dts) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                b'|2021-02-13T19:16:50.750302+00:00')
+
+    assert splitKey(dtKey(pre, dts).decode("utf-8"), sep=b'|') == (pre, dts)
+    assert splitKeyDt(dtKey(pre, dts).decode("utf-8")) == (pre, fromIso8601(dts))
+
 
     with pytest.raises(TypeError):
         snKey(pre, sn='3')
@@ -71,6 +87,7 @@ def test_key_funcs():
     pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     dig = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
     sn = 3
+    dts = b'2021-02-13T19:16:50.750302+00:00'
 
     key = memoryview(snKey(pre, sn))
     assert splitKey(key) == (pre, b'%032x' % sn)
@@ -78,6 +95,10 @@ def test_key_funcs():
 
     key = memoryview(dgKey(pre, dig))
     assert splitKey(key) == (pre, dig)
+
+    key = memoryview(dtKey(pre, dts))
+    assert splitKey(key, sep=b'|') == (pre, dts)
+    assert splitKeyDt(key) == (pre, fromIso8601(dts.decode("utf-8")))
 
     """Done Test"""
 
@@ -1789,4 +1810,4 @@ def test_usebaser():
     """ End Test """
 
 if __name__ == "__main__":
-    test_baser()
+    test_key_funcs()
