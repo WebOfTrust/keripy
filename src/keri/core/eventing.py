@@ -136,27 +136,27 @@ def detriplet(triplet):
     return (diger, prefixer, cigar)
 
 
-def dequadlet(quadlet):
+def dequarlet(quarlet):
     """
     Returns tuple (quadruple) of (prefixer, seqner, diger, siger) from concatenated bytes
-    of quadlet made up of qb64 or qb64b versions of spre+ssnu+sdig+sig
-    Quadlet is used for receipts signed by transferable prefix keys
+    of quarlet made up of qb64 or qb64b versions of spre+ssnu+sdig+sig
+    Quarlet is used for receipts signed by transferable prefix keys
 
     Parameters:
-        quadlet is bytes concatenation of pre+snu+dig+sig from receipt
+        quarlet is bytes concatenation of pre+snu+dig+sig from receipt
     """
-    if isinstance(quadlet, memoryview):
-        quadlet = bytes(quadlet)
-    if hasattr(quadlet, "encode"):
-        quadlet = quadlet.encode("utf-8")  # convert to bytes
+    if isinstance(quarlet, memoryview):
+        quarlet = bytes(quarlet)
+    if hasattr(quarlet, "encode"):
+        quarlet = quarlet.encode("utf-8")  # convert to bytes
 
-    prefixer = Prefixer(qb64b=quadlet)
-    quadlet = quadlet[len(prefixer.qb64b):]  # strip off pre
-    seqner = Seqner(qb64b=quadlet)
-    quadlet = quadlet[len(seqner.qb64b):]  # strip off snu
-    diger = Diger(qb64b=quadlet)
-    quadlet = quadlet[len(diger.qb64b):]  # strip off dig
-    siger = Siger(qb64b=quadlet)
+    prefixer = Prefixer(qb64b=quarlet)
+    quarlet = quarlet[len(prefixer.qb64b):]  # strip off pre
+    seqner = Seqner(qb64b=quarlet)
+    quarlet = quarlet[len(seqner.qb64b):]  # strip off snu
+    diger = Diger(qb64b=quarlet)
+    quarlet = quarlet[len(diger.qb64b):]  # strip off dig
+    siger = Siger(qb64b=quarlet)
     return (prefixer, seqner, diger, siger)
 
 
@@ -1925,9 +1925,9 @@ class Kevery:
 
                 siger.verfer = verfers[siger.index]  # assign verfer
                 if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
-                    # good sig so write receipt quadlet to database
-                    quadlet = sealet + siger.qb64b
-                    self.baser.addVrc(key=dgkey, val=quadlet)  # dups kept
+                    # good sig so write receipt quarlet to database
+                    quarlet = sealet + siger.qb64b
+                    self.baser.addVrc(key=dgkey, val=quarlet)  # dups kept
 
         else:  # escrow  either receiptor or receipted event not yet in database
             self.escrowVREvent(serder, sigers, seal, dig=ked["d"])
@@ -2385,10 +2385,10 @@ class Kevery:
         been accepted into the receipted's KEL or the establishment event of the
         receiptor has not been accepted into the receipter's KEL.
         Without either event there is no way to know where to store the receipt
-        quadlets.
+        quarlets.
 
         The escrow is a quinlet with dig+spre+ssnu+sdig+sig
-        the verified receipt is just the quadlet spre+ssnu+sdig+sig that is
+        the verified receipt is just the quarlet spre+ssnu+sdig+sig that is
         stored by event dig
 
         Escrowed items are indexed in database table keyed by prefix and
@@ -2503,14 +2503,14 @@ class Kevery:
                         raise ValidationError("Bad chit seal at sn = {} for rct = {}."
                                               "".format(sseqner.sn, sserder.ked))
 
-                    #verify sigs and if so write quadlet to database
+                    #verify sigs and if so write quarlet to database
                     verfers = sserder.verfers
                     if not verfers:
                         raise ValidationError("Invalid seal est. event dig = {} for "
                                               "receipt from pre ={} no keys."
                                               "".format(sdiger.qb64, sprefixer.qb64))
 
-                    # Set up quadlet
+                    # Set up quarlet
                     sealet = sprefixer.qb64b + sseqner.qb64b + sdiger.qb64b
 
                     if siger.index >= len(verfers):
@@ -2526,9 +2526,9 @@ class Kevery:
                                               "pre={} sn={:x} receipter={}."
                                               "".format( pre, sn, sprefixer.qb64))
 
-                    # good sig so write receipt quadlet to database
-                    quadlet = sealet + siger.qb64b
-                    self.baser.addVrc(key=dgKey(pre, serder.dig), val=quadlet)
+                    # good sig so write receipt quarlet to database
+                    quarlet = sealet + siger.qb64b
+                    self.baser.addVrc(key=dgKey(pre, serder.dig), val=quarlet)
 
 
                 except UnverifiedTransferableReceiptError as ex:
