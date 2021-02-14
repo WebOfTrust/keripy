@@ -941,7 +941,7 @@ class Baser(LMDBer):
             More than one value per DB key is allowed
 
         .rcts is named sub DB of event receipt couplets from nontransferable
-            signers. Each couplet is concatenation of fully qualified
+            signers. Each couple is concatenation of fully qualified
             non-transferale prefix plus fully qualified event signature
             by witness, watcher, or validator.
             dgKey
@@ -1380,7 +1380,7 @@ class Baser(LMDBer):
     def addRct(self, key, val):
         """
         Use dgKey()
-        Add receipt couplet val bytes as dup to key in db
+        Add receipt couple val bytes as dup to key in db
         Adds to existing values at key if any
         Returns True if written else False if dup val already exists
         Duplicates are inserted in lexocographic order not insertion order.

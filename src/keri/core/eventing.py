@@ -95,23 +95,23 @@ SealLocation = namedtuple("SealLocation", 'i s t p')
 # Cues are dataclasses may be converted tofrom dicts easily
 
 
-def decouplet(couplet):
+def decouple(couple):
     """
     Returns tuple (duple) of (prefixer, cigar) from concatenated bytes
-    of couplet made up of qb64 or qb64b versions of pre+sig
-    Couplet is used for receipts signed by nontransferable prefix keys
+    of couple made up of qb64 or qb64b versions of pre+sig
+    couple is used for receipts signed by nontransferable prefix keys
 
     Parameters:
-        couplet is bytes concatenation of pre+sig from receipt
+        couple is bytes concatenation of pre+sig from receipt
     """
-    if isinstance(couplet, memoryview):
-        couplet = bytes(couplet)
-    if hasattr(couplet, "encode"):
-        couplet = couplet.encode("utf-8")  # convert to bytes
+    if isinstance(couple, memoryview):
+        couple = bytes(couple)
+    if hasattr(couple, "encode"):
+        couple = couple.encode("utf-8")  # convert to bytes
 
-    prefixer = Prefixer(qb64b=couplet)
-    couplet = couplet[len(prefixer.qb64b):]  # strip off pre
-    cigar = Cigar(qb64b=couplet)
+    prefixer = Prefixer(qb64b=couple)
+    couple = couple[len(prefixer.qb64b):]  # strip off pre
+    cigar = Cigar(qb64b=couple)
     return (prefixer, cigar)
 
 
@@ -1491,7 +1491,7 @@ class Kevery:
             # cigar itself has the attached signature
             cigars = []  # List of cigars to hold couplets
             if ncpts:
-                for i in range(ncpts): # extract each attached couplet
+                for i in range(ncpts): # extract each attached couple
                     # check here for type of attached couplets qb64 or qb2
                     verfer = Verfer(qb64b=ims)  # qb64
                     del ims[:len(verfer.qb64)]  # strip off identifier prefix
@@ -1510,7 +1510,7 @@ class Kevery:
                     del ims[:len(cigar.qb64)]  # strip off signature
 
             if not cigars:
-                raise ValidationError("Missing attached receipt couplet(s)"
+                raise ValidationError("Missing attached receipt couple(s)"
                                       " for evt = {}.".formate(serder.ked))
 
             self.processReceipt(serder, cigars)
@@ -1800,7 +1800,7 @@ class Kevery:
 
         Parameters:
             serder is Serder instance of serialized receipt message
-            cigars is list of Cigar instances that contain receipt couplet
+            cigars is list of Cigar instances that contain receipt couple
                 signature in .raw and public key in .verfer
 
         Receipt dict labels
@@ -1831,14 +1831,14 @@ class Kevery:
                 raise ValidationError("Stale receipt at sn = {} for rct = {}."
                                       "".format(ked["s"], ked))
 
-            # process each couplet verify sig and write to db
+            # process each couple verify sig and write to db
             for cigar in cigars:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
                 if cigar.verfer.verify(cigar.raw, lserder.raw):
-                    # write receipt couplet to database
-                    couplet = cigar.verfer.qb64b + cigar.qb64b
-                    self.baser.addRct(key=dgkey, val=couplet)
+                    # write receipt couple to database
+                    couple = cigar.verfer.qb64b + cigar.qb64b
+                    self.baser.addRct(key=dgkey, val=couple)
 
         else:  # no events to be receipted yet at that sn so escrow
             self.escrowUREvent(serder, cigars, dig=ked["d"])  # digest in receipt
@@ -2239,7 +2239,7 @@ class Kevery:
         Without the event there is no way to know where to store the receipt couplets.
 
         The escrow is a triplet with dig+spre+sig the verified receipt is just the
-        couplet spre+sig that is stored by event dig
+        couple spre+sig that is stored by event dig
 
         Escrowed items are indexed in database table keyed by prefix and
         sn with duplicates given by different recipt triplet inserted in insertion order.
@@ -2344,9 +2344,9 @@ class Kevery:
                                               "pre={} sn={:x} receipter={}."
                                               "".format( pre, sn, sprefixer.qb64))
 
-                    # write receipt couplet to database
-                    couplet = cigar.verfer.qb64b + cigar.qb64b
-                    self.baser.addRct(key=dgKey(pre, serder.dig), val=couplet)
+                    # write receipt couple to database
+                    couple = cigar.verfer.qb64b + cigar.qb64b
+                    self.baser.addRct(key=dgKey(pre, serder.dig), val=couple)
 
 
                 except UnverifiedReceiptError as ex:

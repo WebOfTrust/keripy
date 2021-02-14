@@ -33,7 +33,7 @@ from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc
-from keri.core.eventing import decouplet, detriplet, dequadruple, dequinlet
+from keri.core.eventing import decouple, detriplet, dequadruple, dequinlet
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
                                 delcept, deltate)
@@ -47,15 +47,15 @@ blogger, flogger = ogling.ogler.getLoggers()
 
 
 
-def test_decouplet():
+def test_decouple():
     """
-    test decouplet function
+    test decouple function
     """
     pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
     sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
-    couplet = pre + sig
-    prefixer, cigar = decouplet(couplet)
+    couple = pre + sig
+    prefixer, cigar = decouple(couple)
     assert prefixer.qb64 == pre
     assert cigar.qb64 == sig
 
@@ -63,13 +63,13 @@ def test_decouplet():
     pre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
     sig = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
-    couplet = pre + sig
-    prefixer, cigar = decouplet(couplet)
+    couple = pre + sig
+    prefixer, cigar = decouple(couple)
     assert prefixer.qb64b == pre
     assert cigar.qb64b == sig
 
-    couplet = memoryview(couplet)
-    prefixer, cigar = decouplet(couplet)
+    couple = memoryview(couple)
+    prefixer, cigar = decouple(couple)
     assert prefixer.qb64b == pre
     assert cigar.qb64b == sig
 
