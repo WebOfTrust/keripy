@@ -127,6 +127,10 @@ def test_partial_signed_escrow():
         pdtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
         assert pdtsb == adtsb
 
+        # get first seen
+        fsdig = kvy.baser.getFse(dbing.dtKey(pre, adtsb))
+        assert fsdig == srdr.digb
+
         # create interaction event for
         srdr = eventing.interact(pre=kvr.prefixer.qb64,
                                     dig=kvr.serder.diger.qb64,
@@ -230,6 +234,10 @@ def test_partial_signed_escrow():
         pdtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
         assert pdtsb == adtsb
 
+        # get first seen
+        fsdig = kvy.baser.getFse(dbing.dtKey(pre, adtsb))
+        assert fsdig == srdr.digb
+
         # Create rotation event
         # get current keys as verfers and next digests as digers
         verfers, digers = mgr.rotate(pre=pre, count=5, temp=True)
@@ -310,6 +318,10 @@ def test_partial_signed_escrow():
         adtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
         # ensure accept time is later than escrow time, default timedelta is zero
         assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
+
+        # get first seen
+        fsdig = kvy.baser.getFse(dbing.dtKey(pre, adtsb))
+        assert fsdig == srdr.digb
 
     assert not os.path.exists(kpr.path)
     assert not os.path.exists(db.path)
