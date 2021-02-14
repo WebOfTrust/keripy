@@ -733,8 +733,12 @@ def test_baser():
         keyB3b = dtKey(preB, dts3b)
         assert db.getFse(keyB3b) == digV
 
-
         # replay database
+        digs = [bytes(dig) for dig in db.getFseValsIter(preB)]
+        assert digs == [digY, digZ, digX, digU, digV]
+
+        items = [(bytes(dts), bytes(dig)) for dts, dig in db.getFseItemsIter(preB)]
+        assert items == [(dts1, digY), (dts2, digZ), (dts3, digX), (dts3a, digU), (dts3b, digV)]
 
         # later not same pre
         assert db.delFse(keyB1) == True
@@ -778,6 +782,11 @@ def test_baser():
         assert db.getFse(keyB3b) == digV
 
         # replay database
+        digs = [bytes(dig) for dig in db.getFseValsIter(preB)]
+        assert digs == [digY, digZ, digX, digU, digV]
+
+        items = [(bytes(dts), bytes(dig)) for dts, dig in db.getFseItemsIter(preB)]
+        assert items == [(dts1, digY), (dts2, digZ), (dts3, digX), (dts3a, digU), (dts3b, digV)]
 
         # Test .dtss datetime stamps
 

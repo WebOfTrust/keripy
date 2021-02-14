@@ -1205,12 +1205,64 @@ class Baser(LMDBer):
 
             # increment by 1 microsecond to ensure monotonic
             dts = helping.toIso8601(helping.fromIso8601(cdts) +
-                                    datetime.timedelta(microseconds=1))
+                                    datetime.timedelta(microseconds=1)).encode("utf-8")
             key = dtKey(pre, dts)
             txn.put(key, val, overwrite=False)
             return dts
 
 
+    def getFseValsIter(self, pre):
+        """
+        Returns iterator of all vals in first seen order for all events
+        with same prefix.
+        Values are event digests for lookup in .evts sub db
+        .fses subdb uses dtKey(pre, dts) for entris
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            pre is bytes of itdentifier prefix
+
+        """
+
+        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = dtKey(pre, "")  # before any entry at pre
+            if not cursor.set_range(key):  #  moves to val at key >= key
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # return key, val at cursor
+                cpre, dts = splitKey(key, sep=b'|')
+                if cpre != pre:  # prev is now the last event for pre
+                    break  # done
+                yield val
+
+
+    def getFseItemsIter(self, pre):
+        """
+        Returns iterator of all (dts, dig) items in first seen order for all events
+        with same prefix. Where dts is date time stamp first seen and dig is
+        event digest for lookup in .evts sub db
+        .fses subdb uses dtKey(pre, dts) for entris
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            pre is bytes of itdentifier prefix
+
+        """
+
+        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = dtKey(pre, "")  # before any entry at pre
+            if not cursor.set_range(key):  #  moves to val at key >= key
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # return key, val at cursor
+                cpre, dts = splitKey(key, sep=b'|')
+                if cpre != pre:  # prev is now the last event for pre
+                    break  # done
+                yield (dts, val)
 
 
     def putDts(self, key, val):
@@ -1745,9 +1797,9 @@ class Baser(LMDBer):
 
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
+        db is opened as named sub db with dupsort=True
 
         Parameters:
-            db is opened named sub db with dupsort=True
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
         """
@@ -1766,9 +1818,9 @@ class Baser(LMDBer):
 
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
+        db is opened as named sub db with dupsort=True
 
         Parameters:
-            db is opened named sub db with dupsort=True
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
         """
