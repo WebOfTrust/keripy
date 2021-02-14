@@ -239,8 +239,8 @@ class Reactor(doing.Doer):
             # check for chit from remote pre for own inception
             dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
             found = False
-            for quarlet in self.hab.db.getVrcsIter(dgkey):
-                if bytes(quarlet).decode("utf-8").startswith(cuePre):
+            for quadruple in self.hab.db.getVrcsIter(dgkey):
+                if bytes(quadruple).decode("utf-8").startswith(cuePre):
                     found = True
                     break
 
@@ -509,8 +509,8 @@ class Reactant(tyming.Tymee):
             # check for chit from remote pre for own inception
             dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
             found = False
-            for quarlet in self.hab.db.getVrcsIter(dgkey):
-                if quarlet.startswith(bytes(cuePre)):
+            for quadruple in self.hab.db.getVrcsIter(dgkey):
+                if quadruple.startswith(bytes(cuePre)):
                     found = True
                     break
 

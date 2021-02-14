@@ -33,7 +33,7 @@ from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc
-from keri.core.eventing import decouplet, detriplet, dequarlet, dequinlet
+from keri.core.eventing import decouplet, detriplet, dequadruple, dequinlet
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
                                 delcept, deltate)
@@ -110,17 +110,17 @@ def test_detriplet():
 
     """end test"""
 
-def test_dequarlet():
+def test_dequadruple():
     """
-    test test_dequarlet function
+    test test_dequadruple function
     """
     spre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
     ssnu = '0AAAAAAAAAAAAAAAAAAAAABQ'
     sdig = 'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
     sig = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    quarlet = spre + ssnu + sdig + sig
-    sprefixer, sseqner, sdiger, siger = dequarlet(quarlet)
+    quadruple = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, siger = dequadruple(quadruple)
     assert sprefixer.qb64 == spre
     assert sseqner.qb64 == ssnu
     assert sdiger.qb64 == sdig
@@ -132,17 +132,17 @@ def test_dequarlet():
     sdig = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
     sig = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    quarlet = spre + ssnu + sdig + sig
-    sprefixer, sseqner, sdiger, sigar = dequarlet(quarlet)
+    quadruple = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple)
     assert sprefixer.qb64b == spre
     assert sseqner.qb64b == ssnu
     assert sdiger.qb64b == sdig
     assert siger.qb64b == sig
 
 
-    quarlet = memoryview(quarlet)
-    quarlet = spre + ssnu + sdig + sig
-    sprefixer, sseqner, sdiger, sigar = dequarlet(quarlet)
+    quadruple = memoryview(quadruple)
+    quadruple = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple)
     assert sprefixer.qb64b == spre
     assert sseqner.qb64b == ssnu
     assert sdiger.qb64b == sdig
@@ -2106,7 +2106,7 @@ def test_direct_mode():
 
         # check if val Kever in coe's .kevers
         assert valpre in coeKevery.kevers
-        #  check if receipt quarlet from val in receipt database
+        #  check if receipt quadruple from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
@@ -2140,7 +2140,7 @@ def test_direct_mode():
                                  b'QYfI_04HoP_A_fvlU_b099fiEJyDSA2Cg')
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
-        #  check if receipt quarlet in escrow database
+        #  check if receipt quadruple in escrow database
         result = coeKevery.baser.getVres(key=snKey(pre=coeKever.prefixer.qb64,
                                                    sn=10))
         assert bytes(result[0]) == (fake.encode("utf-8") +
@@ -2194,7 +2194,7 @@ def test_direct_mode():
         # Simulate send to val of coe's receipt of val's inception message
         valKevery.processAll(ims=cmsg)  #  coe process val's incept and receipt
 
-        #  check if receipt quarlet from coe in val's receipt database
+        #  check if receipt quadruple from coe in val's receipt database
         result = valKevery.baser.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
                                                     dig=valKever.serder.diger.qb64))
         assert bytes(result[0]) == (coeKever.prefixer.qb64b +
@@ -2285,7 +2285,7 @@ def test_direct_mode():
         # Simulate send to coe of val's receipt of coe's rotation message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
-        #  check if receipt quarlet from val in receipt database
+        #  check if receipt quadruple from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
@@ -2372,7 +2372,7 @@ def test_direct_mode():
         # Simulate send to coe of val's receipt of coe's rotation message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
-        #  check if receipt quarlet from val in receipt database
+        #  check if receipt quadruple from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
@@ -2598,7 +2598,7 @@ def test_direct_mode_cbor_mgpk():
 
         # check if val Kever in coe's .kevers
         assert valpre in coeKevery.kevers
-        #  check if receipt quarlet from val in receipt database
+        #  check if receipt quadruple from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
@@ -3211,4 +3211,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_dequarlet()
+    test_dequadruple()

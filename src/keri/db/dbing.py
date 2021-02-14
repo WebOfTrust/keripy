@@ -957,24 +957,24 @@ class Baser(LMDBer):
             of serialized event
             More than one value per DB key is allowed
 
-        .vrcs is named sub DB of event validator receipt quarlets from transferable
-            signers. Each quarlet is concatenation of  four fully qualified items
+        .vrcs is named sub DB of event validator receipt quadruples from transferable
+            signers. Each quadruple is concatenation of  four fully qualified items
             of validator. These are transferable prefix, plus latest establishment
             event sequence number plus latest establishment event digest,
             plus event signature.
             When latest establishment event is multisig then there will
-            be multiple quarlets one per signing key, each a dup at same db key.
+            be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .vres is named sub DB of unverified event validator receipt escrowed
-            quarlets from transferable signers. Each quarlet is concatenation of
+            quadruples from transferable signers. Each quadruple is concatenation of
             four fully qualified items  of validator. These are transferable prefix,
             plus latest establishment event sequence number plus latest
             establishment event digest, plus event signature.
             When latest establishment event is multisig then there will
-            be multiple quarlets one per signing key, each a dup at same db key.
+            be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
@@ -1547,8 +1547,8 @@ class Baser(LMDBer):
     def putVrcs(self, key, vals):
         """
         Use dgKey()
-        Write each entry from list of bytes receipt quarlets vals to key
-        quarlet is spre+ssnu+sdig+sig
+        Write each entry from list of bytes receipt quadruples vals to key
+        quadruple is spre+ssnu+sdig+sig
         Adds to existing receipts at key if any
         Returns True If no error
         Apparently always returns True (is this how .put works with dupsort=True)
@@ -1560,8 +1560,8 @@ class Baser(LMDBer):
     def addVrc(self, key, val):
         """
         Use dgKey()
-        Add receipt quarlet val bytes as dup to key in db
-        quarlet is spre+ssnu+sdig+sig
+        Add receipt quadruple val bytes as dup to key in db
+        quadruple is spre+ssnu+sdig+sig
         Adds to existing values at key if any
         Returns True if written else False if dup val already exists
         Duplicates are inserted in lexocographic order not insertion order.
@@ -1572,8 +1572,8 @@ class Baser(LMDBer):
     def getVrcs(self, key):
         """
         Use dgKey()
-        Return list of receipt quarlet at key
-        quarlet is spre+ssnu+sdig+sig
+        Return list of receipt quadruple at key
+        quadruple is spre+ssnu+sdig+sig
         Returns empty list if no entry at key
         Duplicates are retrieved in lexocographic order not insertion order.
         """
@@ -1583,8 +1583,8 @@ class Baser(LMDBer):
     def getVrcsIter(self, key):
         """
         Use dgKey()
-        Return iterator of receipt quarlets at key
-        quarlet is spre+ssnu+sdig+sig
+        Return iterator of receipt quadruples at key
+        quadruple is spre+ssnu+sdig+sig
         Raises StopIteration Error when empty
         Duplicates are retrieved in lexocographic order not insertion order.
         """
@@ -1594,7 +1594,7 @@ class Baser(LMDBer):
     def cntVrcs(self, key):
         """
         Use dgKey()
-        Return count of receipt quarlets at key
+        Return count of receipt quadruples at key
         Returns zero if no entry at key
         """
         return self.cntVals(self.vrcs, key)
