@@ -21,12 +21,14 @@ msgpack 1.0.0+
 simplejson 3.17.0+
 cbor2 5.1.0+
 
+
 $ pip3 install -U lmdb
 $ pip3 install -U pysodium
 $ pip3 install -U blake3
 $ pip3 install -U msgpack
 $ pip3 install -U simplejson
 $ pip3 install -U cbor2
+
 
 
 libsodium cypto_pwhash is argon21d so don't need seperate package
@@ -314,9 +316,9 @@ https://medium.com/@joehonton/cipher-suites-demystified-ada2e97be9c9
 
 ### Testing
 * Install pytest: `pip install pytest`
-* Run the test suites: 
+* Run the test suites:
     ```
     pytest tests/ --ignore tests/demo/
     pytest tests/demo/
     ```
-    
+

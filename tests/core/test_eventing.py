@@ -1929,7 +1929,7 @@ def test_receipt():
 
 def test_direct_mode():
     """
-    Test direct mode with transverable validator event receipts
+    Test direct mode with transferable validator event receipts
 
     """
     # manual process to generate a list of secrets
