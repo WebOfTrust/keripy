@@ -160,31 +160,31 @@ def dequadruple(quadruple):
     return (prefixer, seqner, diger, siger)
 
 
-def dequinlet(quinlet):
+def dequintuple(quintuple):
     """
-    Returns tuple (quintuple) of (ediger, seal prefixer, seal seqner, seal diger, siger)
-    from concatenated bytes of quinlet made up of qb64 or qb64b versions of
-    edig+spre+ssnu+sdig+sig
-    Quinlet is used for unverified escrows of validator receipts signed
+    Returns tuple of (ediger, seal prefixer, seal seqner, seal diger, siger)
+    from concatenated bytes of quintuple made up of qb64 or qb64b versions of
+    quntipuple given by  concatenation of  edig+spre+ssnu+sdig+sig
+    Quintuple is used for unverified escrows of validator receipts signed
     by transferable prefix keys
 
     Parameters:
-        quinlet is bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
+        quintuple is bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
     """
-    if isinstance(quinlet, memoryview):
-        quinlet = bytes(quinlet)
-    if hasattr(quinlet, "encode"):
-        quinlet = quinlet.encode("utf-8")  # convert to bytes
+    if isinstance(quintuple, memoryview):
+        quintuple = bytes(quintuple)
+    if hasattr(quintuple, "encode"):
+        quintuple = quintuple.encode("utf-8")  # convert to bytes
 
-    ediger = Diger(qb64b=quinlet)  #  diger of receipted event
-    quinlet = quinlet[len(ediger.qb64b):]  # strip off dig
-    sprefixer = Prefixer(qb64b=quinlet)  # prefixer of recipter
-    quinlet = quinlet[len(sprefixer.qb64b):]  # strip off pre
-    sseqner = Seqner(qb64b=quinlet)  # seqnumber of receipting event
-    quinlet = quinlet[len(sseqner.qb64b):]  # strip off snu
-    sdiger = Diger(qb64b=quinlet)  # diger of receipting event
-    quinlet = quinlet[len(sdiger.qb64b):]  # strip off dig
-    siger = Siger(qb64b=quinlet)  #  indexed siger of event
+    ediger = Diger(qb64b=quintuple)  #  diger of receipted event
+    quintuple = quintuple[len(ediger.qb64b):]  # strip off dig
+    sprefixer = Prefixer(qb64b=quintuple)  # prefixer of recipter
+    quintuple = quintuple[len(sprefixer.qb64b):]  # strip off pre
+    sseqner = Seqner(qb64b=quintuple)  # seqnumber of receipting event
+    quintuple = quintuple[len(sseqner.qb64b):]  # strip off snu
+    sdiger = Diger(qb64b=quintuple)  # diger of receipting event
+    quintuple = quintuple[len(sdiger.qb64b):]  # strip off dig
+    siger = Siger(qb64b=quintuple)  #  indexed siger of event
     return (ediger, sprefixer, sseqner, sdiger, siger)
 
 
@@ -1687,8 +1687,8 @@ class Kevery:
         prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
                   Seqner(snh=seal.s).qb64b + seal.d.encode("utf-8"))
         for siger in sigers:  # escrow each quintlet
-            quinlet = prelet +  siger.qb64b  # quinlet
-            self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quinlet)
+            quintuple = prelet +  siger.qb64b  # quintuple
+            self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quintuple)
         # log escrowed
         blogger.info("Kevery process: escrowed unverified transferabe validator "
                      "receipt of pre= %s sn=%x dig=%s\n", serder.pre, serder.sn, dig)
@@ -2387,26 +2387,26 @@ class Kevery:
         Without either event there is no way to know where to store the receipt
         quadruples.
 
-        The escrow is a quinlet with dig+spre+ssnu+sdig+sig
+        The escrow is a quintuple with dig+spre+ssnu+sdig+sig
         the verified receipt is just the quadruple spre+ssnu+sdig+sig that is
         stored by event dig
 
         Escrowed items are indexed in database table keyed by prefix and
-        sn with duplicates given by different receipt quinlet inserted in insertion order.
+        sn with duplicates given by different receipt quintuple inserted in insertion order.
         This allows FIFO processing of escrows of events with same prefix and sn
         but different digest.
 
         Uses  .baser.addVre(self, key, val) which is IOVal with dups.
 
-        Value is quinlet
+        Value is quintuple
 
         Original Escrow steps:
             self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
             prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
                   Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8"))
             for siger in sigers:  # escrow each quintlet
-                quinlet = prelet +  siger.qb64b  # quinlet
-                self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quinlet)
+                quintuple = prelet +  siger.qb64b  # quintuple
+                self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quintuple)
             where:
                 dig is dig in receipt of receipted event
                 sigers is list of Siger instances for receipted event
@@ -2428,7 +2428,7 @@ class Kevery:
             for ekey, equinlet in self.baser.getVreItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
-                    ediger, sprefixer, sseqner, sdiger, siger = dequinlet(equinlet)
+                    ediger, sprefixer, sseqner, sdiger, siger = dequintuple(equinlet)
 
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(ediger.qb64b)))

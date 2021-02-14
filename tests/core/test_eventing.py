@@ -33,7 +33,7 @@ from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc
-from keri.core.eventing import decouple, detriple, dequadruple, dequinlet
+from keri.core.eventing import decouple, detriple, dequadruple, dequintuple
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
                                 delcept, deltate)
@@ -151,9 +151,9 @@ def test_dequadruple():
     """end test"""
 
 
-def test_dequinlet():
+def test_dequintuple():
     """
-    test dequinlet function
+    test dequintuple function
     """
     edig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
     spre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
@@ -162,8 +162,8 @@ def test_dequinlet():
     sig = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
     sealet = spre + ssnu + sdig
-    quinlet = edig + sealet + sig
-    ediger, sprefixer, sseqner, sdiger, siger = dequinlet(quinlet)
+    quintuple = edig + sealet + sig
+    ediger, sprefixer, sseqner, sdiger, siger = dequintuple(quintuple)
     assert ediger.qb64 == edig
     assert sprefixer.qb64 == spre
     assert sseqner.qb64 == ssnu
@@ -177,8 +177,8 @@ def test_dequinlet():
     sdig = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
     sig = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    quinlet = edig + spre + ssnu + sdig + sig
-    ediger, sprefixer, sseqner, sdiger, sigar = dequinlet(quinlet)
+    quintuple = edig + spre + ssnu + sdig + sig
+    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple)
     assert ediger.qb64b == edig
     assert sprefixer.qb64b == spre
     assert sseqner.qb64b == ssnu
@@ -186,9 +186,9 @@ def test_dequinlet():
     assert siger.qb64b == sig
 
 
-    quinlet = memoryview(quinlet)
-    quinlet = edig + spre + ssnu + sdig + sig
-    ediger, sprefixer, sseqner, sdiger, sigar = dequinlet(quinlet)
+    quintuple = memoryview(quintuple)
+    quintuple = edig + spre + ssnu + sdig + sig
+    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple)
     assert ediger.qb64b == edig
     assert sprefixer.qb64b == spre
     assert sseqner.qb64b == ssnu

@@ -1624,7 +1624,7 @@ class Baser(LMDBer):
     def addVre(self, key, val):
         """
         Use snKey()
-        Add receipt quinlet val bytes as dup to key in db
+        Add receipt quintuple val bytes as dup to key in db
         Quinlet is edig + spre + ssnu + sdig +sig
         Adds to existing values at key if any
         Returns True If at least one of vals is added as dup, False otherwise
@@ -1658,7 +1658,7 @@ class Baser(LMDBer):
     def getVreLast(self, key):
         """
         Use snKey()
-        Return last inserted dup partial signed escrowed event quinlet val at key
+        Return last inserted dup partial signed escrowed event quintuple val at key
         Quinlet is edig + spre + ssnu + sdig +sig
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1669,7 +1669,7 @@ class Baser(LMDBer):
     def getVreItemsNext(self, key=b'', skip=True):
         """
         Use snKey()
-        Return all dups of partial signed escrowed event quinlet items at next
+        Return all dups of partial signed escrowed event quintuple items at next
         key after key.
         Item is (key, val) where proem has already been stripped from val
         val is Quinlet is edig + spre + ssnu + sdig +sig
@@ -1684,7 +1684,7 @@ class Baser(LMDBer):
     def getVreItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
-        Return iterator of partial signed escrowed event quinlet items at next
+        Return iterator of partial signed escrowed event quintuple items at next
         key after key.
         Items is (key, val) where proem has already been stripped from val
         val is Quinlet is edig + spre + ssnu + sdig +sig

@@ -1087,7 +1087,7 @@ def test_unverified_trans_receipt_escrow():
 
         escrows = kvy.baser.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.dequinlet(escrows[0])
+        diger, sprefixer, sseqner, sdiger, siger = eventing.dequintuple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert sprefixer.qb64 == rpre
         assert sseqner.sn == 0
@@ -1159,7 +1159,7 @@ def test_unverified_trans_receipt_escrow():
 
         escrows = kvy.baser.getVres(dbing.snKey(pre, 1))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.dequinlet(escrows[0])
+        diger, sprefixer, sseqner, sdiger, siger = eventing.dequintuple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert sprefixer.qb64 == rpre
         assert sseqner.sn == 1
@@ -1221,7 +1221,7 @@ def test_unverified_trans_receipt_escrow():
 
         escrows = kvy.baser.getVres(dbing.snKey(pre, 2))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.dequinlet(escrows[0])
+        diger, sprefixer, sseqner, sdiger, siger = eventing.dequintuple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert sprefixer.qb64 == rpre
         assert sseqner.sn == 1
