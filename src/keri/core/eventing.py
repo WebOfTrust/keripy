@@ -115,24 +115,24 @@ def decouple(couple):
     return (prefixer, cigar)
 
 
-def detriplet(triplet):
+def detriple(triple):
     """
     Returns tuple (triple) of (diger, prefixer, cigar) from concatenated bytes
-    of triplet made up of qb64 or qb64b versions of dig+pre+sig
+    of triple made up of qb64 or qb64b versions of dig+pre+sig
     Triplet is used for escrows of unverified receipts signed by nontransferable prefix keys
 
     Parameters:
-        triplet is bytes concatenation of dig+pre+sig from receipt
+        triple is bytes concatenation of dig+pre+sig from receipt
     """
-    if isinstance(triplet, memoryview):
-        triplet = bytes(triplet)
-    if hasattr(triplet, "encode"):
-        triplet = triplet.encode("utf-8")  # convert to bytes
-    diger = Diger(qb64b=triplet)
-    triplet = triplet[len(diger.qb64b):]  # strip off dig
-    prefixer = Prefixer(qb64b=triplet)
-    triplet = triplet[len(prefixer.qb64b):]  # strip off pre
-    cigar = Cigar(qb64b=triplet)
+    if isinstance(triple, memoryview):
+        triple = bytes(triple)
+    if hasattr(triple, "encode"):
+        triple = triple.encode("utf-8")  # convert to bytes
+    diger = Diger(qb64b=triple)
+    triple = triple[len(diger.qb64b):]  # strip off dig
+    prefixer = Prefixer(qb64b=triple)
+    triple = triple[len(prefixer.qb64b):]  # strip off pre
+    cigar = Cigar(qb64b=triple)
     return (diger, prefixer, cigar)
 
 
@@ -1648,16 +1648,16 @@ class Kevery:
         # note receipt dig algo may not match database dig also so must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
-        # different dup at same key, sn.  Escrow needs to be triplet with
+        # different dup at same key, sn.  Escrow needs to be triple with
         # dig, witness prefix, sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for same reason. Must
         # lookup last event by sn not by dig.
         self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
-        for cigar in cigars:  # escrow each triplet
+        for cigar in cigars:  # escrow each triple
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid triplets
-            triplet = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
-            self.baser.addUre(key=snKey(serder.preb, serder.sn), val=triplet)  # should be snKey
+            triple = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
+            self.baser.addUre(key=snKey(serder.preb, serder.sn), val=triple)  # should be snKey
         # log escrowed
         blogger.info("Kevery process: escrowed unverified receipt of pre= %s "
                      " sn=%x dig=%s\n", serder.pre, serder.sn, dig)
@@ -2238,25 +2238,25 @@ class Kevery:
         A receipt is unverified if the associated event has not been accepted into its KEL.
         Without the event there is no way to know where to store the receipt couplets.
 
-        The escrow is a triplet with dig+spre+sig the verified receipt is just the
+        The escrow is a triple with dig+spre+sig the verified receipt is just the
         couple spre+sig that is stored by event dig
 
         Escrowed items are indexed in database table keyed by prefix and
-        sn with duplicates given by different recipt triplet inserted in insertion order.
+        sn with duplicates given by different recipt triple inserted in insertion order.
         This allows FIFO processing of escrows for events with same prefix and
         sn but different digest.
 
         Uses  .baser.addUre(self, key, val) which is IOVal with dups.
 
-        Value is triplet
+        Value is triple
 
         Original Escrow steps:
             self.baser.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
-            for cigar in cigars:  # escrow each triplet
+            for cigar in cigars:  # escrow each triple
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
-                triplet = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
-                self.baser.addUre(key=snKey(pre, sn), val=triplet)  # should be snKey
+                triple = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
+                self.baser.addUre(key=snKey(pre, sn), val=triple)  # should be snKey
             where:
                 dig is dig in receipt of receipted event
                 cigars is list of cigars instances for receipted event
@@ -2279,7 +2279,7 @@ class Kevery:
             for ekey, etriplet in self.baser.getUreItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
-                    ediger, sprefixer, cigar = detriplet(etriplet)
+                    ediger, sprefixer, cigar = detriple(etriplet)
 
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(ediger.qb64b)))
@@ -2333,7 +2333,7 @@ class Kevery:
                                           "pre={} sn={:x} receipter={}."
                                           "".format( pre, sn, sprefixer.qb64))
 
-                    #  verify sig verfer key is prefixer from triplet
+                    #  verify sig verfer key is prefixer from triple
                     cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
                     if not cigar.verfer.verify(cigar.raw, serder.raw):
                         # no sigs so raise ValidationError which unescrows below

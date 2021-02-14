@@ -949,7 +949,7 @@ class Baser(LMDBer):
             More than one value per DB key is allowed
 
         .ures is named sub DB of unverified event receipt escrowed triples from
-            non-transferable signers. Each triplet is concatenation of fully
+            non-transferable signers. Each triple is concatenation of fully
             qualified receipted event digest, non-transferable event identfier prefix,
             plus receipt event signature by witness, watcher, or validator
             snKey
@@ -1441,7 +1441,7 @@ class Baser(LMDBer):
     def addUre(self, key, val):
         """
         Use snKey()
-        Add receipt triplet val bytes as dup to key in db
+        Add receipt triple val bytes as dup to key in db
         Triplet is dig + pre + sig
         Adds to existing values at key if any
         Returns True If at least one of vals is added as dup, False otherwise
@@ -1475,7 +1475,7 @@ class Baser(LMDBer):
     def getUreLast(self, key):
         """
         Use snKey()
-        Return last inserted dup partial signed escrowed event triplet val at key
+        Return last inserted dup partial signed escrowed event triple val at key
         Triplet is dig + pre + sig
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1486,10 +1486,10 @@ class Baser(LMDBer):
     def getUreItemsNext(self, key=b'', skip=True):
         """
         Use snKey()
-        Return all dups of partial signed escrowed event triplet items at next
+        Return all dups of partial signed escrowed event triple items at next
         key after key.
         Item is (key, val) where proem has already been stripped from val
-        val is triplet dig + pre + sig
+        val is triple dig + pre + sig
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
         Returns empty list if no entry at key
@@ -1501,10 +1501,10 @@ class Baser(LMDBer):
     def getUreItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
-        Return iterator of partial signed escrowed event triplet items at next
+        Return iterator of partial signed escrowed event triple items at next
         key after key.
         Items is (key, val) where proem has already been stripped from val
-        val is triplet dig + pre + sig
+        val is triple dig + pre + sig
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
         Raises StopIteration Error when empty

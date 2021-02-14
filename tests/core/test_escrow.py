@@ -799,11 +799,11 @@ def test_unverified_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         escrows = kvy.baser.getUres(dbing.snKey(pre, 0))  # so escrowed receipts
         assert len(escrows) == 2
-        diger, prefixer, cigar = eventing.detriplet(escrows[0])
+        diger, prefixer, cigar = eventing.detriple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit0pre
         assert cigar.qb64 == wit0Cigar.qb64
-        diger, prefixer, cigar = eventing.detriplet(escrows[1])
+        diger, prefixer, cigar = eventing.detriple(escrows[1])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit1pre
         assert cigar.qb64 == wit1Cigar.qb64
@@ -844,11 +844,11 @@ def test_unverified_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         escrows = kvy.baser.getUres(dbing.snKey(pre, 1))  # so escrowed receipts
         assert len(escrows) == 2
-        diger, prefixer, cigar = eventing.detriplet(escrows[0])
+        diger, prefixer, cigar = eventing.detriple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit0pre
         assert cigar.qb64 == wit0Cigar.qb64
-        diger, prefixer, cigar = eventing.detriplet(escrows[1])
+        diger, prefixer, cigar = eventing.detriple(escrows[1])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit1pre
         assert cigar.qb64 == wit1Cigar.qb64
@@ -904,11 +904,11 @@ def test_unverified_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         escrows = kvy.baser.getUres(dbing.snKey(pre, 2))  # so escrowed receipts
         assert len(escrows) == 2
-        diger, prefixer, cigar = eventing.detriplet(escrows[0])
+        diger, prefixer, cigar = eventing.detriple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit0pre
         assert cigar.qb64 == wit0Cigar.qb64
-        diger, prefixer, cigar = eventing.detriplet(escrows[1])
+        diger, prefixer, cigar = eventing.detriple(escrows[1])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit1pre
         assert cigar.qb64 == wit1Cigar.qb64
