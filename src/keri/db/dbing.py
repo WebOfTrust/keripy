@@ -1172,7 +1172,6 @@ class Baser(LMDBer):
             pre is bytes identifier prefix for event
             dts is iso8601 TZ aware datetime bytes
             val is event digest
-
         """
         key = dtKey(pre, dts)
 
@@ -1222,47 +1221,90 @@ class Baser(LMDBer):
 
         Parameters:
             pre is bytes of itdentifier prefix
-
         """
-
         with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             key = dtKey(pre, "")  # before any entry at pre
             if not cursor.set_range(key):  #  moves to val at key >= key
                 return  # no values end of db
 
-            for key, val in cursor.iternext():  # return key, val at cursor
+            for key, val in cursor.iternext():  # get key, val at cursor
                 cpre, dts = splitKey(key, sep=b'|')
                 if cpre != pre:  # prev is now the last event for pre
                     break  # done
-                yield val
+                yield val  # dig of event
 
 
     def getFseItemsIter(self, pre):
         """
         Returns iterator of all (dts, dig) items in first seen order for all events
-        with same prefix. Where dts is date time stamp first seen and dig is
-        event digest for lookup in .evts sub db
+        with same prefix.
         .fses subdb uses dtKey(pre, dts) for entris
+        Values are tuples of (dts, dig): Where dts is date time stamp first seen
+        and dig is event digest for lookup in .evts sub db.
 
         Raises StopIteration Error when empty.
 
         Parameters:
             pre is bytes of itdentifier prefix
-
         """
-
         with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             key = dtKey(pre, "")  # before any entry at pre
             if not cursor.set_range(key):  #  moves to val at key >= key
                 return  # no values end of db
 
-            for key, val in cursor.iternext():  # return key, val at cursor
+            for key, val in cursor.iternext():  # get key, val at cursor
                 cpre, dts = splitKey(key, sep=b'|')
                 if cpre != pre:  # prev is now the last event for pre
                     break  # done
-                yield (dts, val)
+                yield (dts, val)  # (dts, dig) of event
+
+
+    def getFseValsAllPreIter(self, key=b''):
+        """
+        Returns iterator of all vals in first seen order for all events
+        for all prefixes in database.
+        Values are event digests for lookup in .evts sub db
+        .fses subdb uses dtKey(pre, dts) for entries
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            key is key location in db to resume replay, If empty then start at
+                first key in database
+        """
+        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  # moves to val at key >= key, first if empty
+                return  # no values empty db raises stop iteration
+            for key, val in cursor.iternext():  # get key, val at cursor
+                yield val  #  dig of event
+
+
+    def getFseItemsAllPreIter(self, key=b''):
+        """
+        Returns iterator of all (dts, dig) items in first seen order for all events
+        for all prefixes in database. Items are sorted by key which is given
+        by dtKey(pre,dts).
+        .fses subdb uses dtKey(pre, dts) for entries
+        Values are tuples of (dts, dig): Where dts is date time stamp first seen
+        and dig is event digest for lookup in .evts sub db.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            key is key location in db to resume replay, If empty then start at
+                first key in database
+        """
+        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # return key, val at cursor
+                cpre, dts = splitKey(key, sep=b'|')
+                yield (dts, val)  # (dts, dig) of event
 
 
     def putDts(self, key, val):

@@ -700,7 +700,6 @@ def test_baser():
         assert dts == dts1
         assert db.getFse(keyB1) == digY
 
-
         # earlier but same pre only
         assert db.delFse(keyC0) == True
         assert db.getFse(keyC0) == None
@@ -733,14 +732,30 @@ def test_baser():
         keyB3b = dtKey(preB, dts3b)
         assert db.getFse(keyB3b) == digV
 
-        # replay database
+        # replay preB events in database
         digs = [bytes(dig) for dig in db.getFseValsIter(preB)]
         assert digs == [digY, digZ, digX, digU, digV]
 
         items = [(bytes(dts), bytes(dig)) for dts, dig in db.getFseItemsIter(preB)]
         assert items == [(dts1, digY), (dts2, digZ), (dts3, digX), (dts3a, digU), (dts3b, digV)]
 
+        # replay all events in database
+        assert db.putFse(keyA4, val=digX) == True
+        assert db.putFse(keyC0, val=digZ) == True
+
+        digs = [bytes(dig) for dig in db.getFseValsAllPreIter()]
+        assert digs == [digX, digY, digZ, digX, digU, digV, digZ]
+
+        items = [(bytes(dts), bytes(dig)) for dts, dig in db.getFseItemsAllPreIter()]
+        assert items == [(dts4, digX), (dts1, digY), (dts2, digZ), (dts3, digX),
+                         (dts3a, digU), (dts3b, digV), (dts0, digZ)]
+
+
         # later not same pre
+        assert db.delFse(keyA4) == True
+        assert db.getFse(keyA4) == None
+        assert db.delFse(keyC0) == True
+        assert db.getFse(keyC0) == None
         assert db.delFse(keyB1) == True
         assert db.getFse(keyB1) == None
         assert db.delFse(keyB2) == True
@@ -781,12 +796,22 @@ def test_baser():
         keyB3b = dtKey(preB, dts3b)
         assert db.getFse(keyB3b) == digV
 
-        # replay database
+        # replay preB events in database
         digs = [bytes(dig) for dig in db.getFseValsIter(preB)]
         assert digs == [digY, digZ, digX, digU, digV]
 
         items = [(bytes(dts), bytes(dig)) for dts, dig in db.getFseItemsIter(preB)]
         assert items == [(dts1, digY), (dts2, digZ), (dts3, digX), (dts3a, digU), (dts3b, digV)]
+
+        # replay all events in database
+        assert db.putFse(keyA4, val=digX) == True
+
+        digs = [bytes(dig) for dig in db.getFseValsAllPreIter()]
+        assert digs == [digX, digY, digZ, digX, digU, digV, digZ]
+
+        items = [(bytes(dts), bytes(dig)) for dts, dig in db.getFseItemsAllPreIter()]
+        assert items == [(dts4, digX), (dts1, digY), (dts2, digZ), (dts3, digX),
+                             (dts3a, digU), (dts3b, digV), (dts0, digZ)]
 
         # Test .dtss datetime stamps
 
