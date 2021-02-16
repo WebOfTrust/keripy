@@ -173,7 +173,7 @@ class CryOneCodex:
     Blake2s_256:          str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
     SHA3_256:             str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
     SHA2_256:             str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
-    ECDSA_secp256k1_Seed: str = 'J'  #  ECDSA secp256k1 448 bit random Seed for private key
+    ECDSA_256k1_Seed:     str = 'J'  #  ECDSA secp256k1 256 bit random Seed for private key
     Ed448_Seed:           str = 'K'  #  Ed448 448 bit random Seed for private key
     X448:                 str = 'L'  #  X448 public encryption key, converted from Ed448
 
@@ -205,9 +205,9 @@ class CryTwoCodex:
 
     Note binary length of everything in CryTwoCodex results in 2 Base64 pad bytes.
     """
-    Salt_128:    str = '0A'  # 128 bit random seed.
-    Ed25519:     str = '0B'  # Ed25519 signature.
-    ECDSA_256k1: str = '0C'  # ECDSA secp256k1 signature.
+    Salt_128:          str = '0A'  # 128 bit random seed.
+    Ed25519_Sig:       str = '0B'  # Ed25519 signature.
+    ECDSA_256k1_Sig:   str = '0C'  # ECDSA secp256k1 signature.
 
 
     def __iter__(self):
@@ -241,7 +241,7 @@ class CryFourCodex:
     ECDSA_256k1:   str = "1AAB"  # Ed25519 public verification or encryption key, basic derivation
     Ed448N:        str = "1AAC"  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:         str = "1AAD"  # Ed448 public signing verification key. Basic derivation.
-    Ed448_Sig:      str = "1AAE"  # Ed448 signature. Self-signing derivation.
+    Ed448_Sig:     str = "1AAE"  # Ed448 signature. Self-signing derivation.
 
     def __iter__(self):
         return iter(astuple(self))
@@ -323,6 +323,330 @@ CryDigDex = CryDigCodex()  #  Make instance
 Tierage = namedtuple("Tierage", 'low med high')
 
 Tiers = Tierage(low='low', med='med', high='high')
+
+# namedtuple for entries in derivation code tables
+# firm is the int size in chars of the stable part of the code
+# soft is the int size in chars of the unstable part of the code, if any, such as index or count
+# full is the int size in chars of the both parts of code plus appended material if any
+# full may be None if full size is variable not fixed
+Sizage = namedtuple("Sizage", "firm, soft, full")
+
+@dataclass(frozen=True)
+class MatterCodex:
+    """
+    MatterCodex is codex firm part of all matter derivation codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519_Seed:         str = 'A'  #  Ed25519 256 bit random seed for private key
+    Ed25519N:             str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
+    X25519:               str = 'C'  #  X25519 public encryption key, converted from Ed25519.
+    Ed25519:              str = 'D'  #  Ed25519 verification key basic derivation
+    Blake3_256:           str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:          str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:          str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:             str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:             str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
+    ECDSA_256k1_Seed:     str = 'J'  #  ECDSA secp256k1 256 bit random Seed for private key
+    Ed448_Seed:           str = 'K'  #  Ed448 448 bit random Seed for private key
+    X448:                 str = 'L'  #  X448 public encryption key, converted from Ed448
+    Salt_128:             str = '0A'  # 128 bit random seed or 128 bit number
+    Ed25519_Sig:          str = '0B'  # Ed25519 signature.
+    ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
+    ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    ECDSA_256k1:          str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
+    Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
+    Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
+    Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
+
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables inclusion text with "in"
+
+MatDex = MatterCodex()
+
+class Matter:
+    """
+    Matter is fully qualified cryptographic material primitive base class for
+    non-indexed primitives.
+
+    Sub classes are derivation code and key event element context specific.
+
+    Includes the following attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .pad  is int number of pad chars given raw
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
+
+    """
+    Codes = {}
+
+    Codex = None
+
+    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
+                 code=CryOneDex.Ed25519N, index=0):
+        """
+        Validate as fully qualified
+        Parameters:
+            raw is bytes of unqualified crypto material usable for crypto operations
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+            code is str of derivation code
+            index is int of count of attached receipts for CryCntDex codes
+
+        Needs (raw and code) or qb64b or qb64 or qb2 else raises EmptyMaterialError
+        When raw and code provided then validate that code is correct for length of raw
+            and assign .raw
+        Else when qb64b or qb64 or qb2 provided extract and assign .raw and .code
+
+        """
+        if raw is not None:  #  raw provided
+            if not code:
+                raise EmptyMaterialError("Improper initialization need raw and code"
+                                         " or qb64b or qb64 or qb2.")
+            if not isinstance(raw, (bytes, bytearray)):
+                raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
+            pad = self._pad(raw)
+            if (not ( (pad == 1 and (code in CryOneDex)) or  # One or Five or Nine
+                      (pad == 2 and (code in CryTwoDex)) or  # Two or Six or Ten
+                      (pad == 0 and (code in CryFourDex)) or # Four or Eight
+                      (pad == 0 and (code in CryCntDex)) )):  # Cnt Four
+
+                raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
+
+            if (code in CryCntDex and ((index < 0) or (index > CRYCNTMAX))):
+                raise ValidationError("Invalid index={} for code={}.".format(index, code))
+
+            raw = raw[:CryRawSizes[code]]  #  allows longer by truncating if stream
+            if len(raw) != CryRawSizes[code]:  # forbids shorter
+                raise ValidationError("Unexpected raw size={} for code={}"
+                                      " not size={}.".format(len(raw),
+                                                             code,
+                                                             CryRawSizes[code]))
+
+            self._code = code
+            self._index = index
+            self._raw = bytes(raw)  # crypto ops require bytes not bytearray
+
+        elif qb64b is not None:
+            self._exfil(qb64b)
+
+        elif qb64 is not None:
+            if hasattr(qb64, "encode"):  #  ._exfil expects bytes not str
+                qb64 = qb64.encode("utf-8")  #  greedy so do not use on stream
+            self._exfil(qb64)
+
+        elif qb2 is not None:  # rewrite to use direct binary exfiltration
+            self._exfil(encodeB64(qb2))
+
+        else:
+            raise EmptyMaterialError("Improper initialization need raw and code"
+                                     " or qb64b or qb64 or qb2.")
+
+
+    @staticmethod
+    def _pad(raw):
+        """
+        Returns number of pad characters that would result from converting raw
+        to Base64 encoding
+        raw is bytes or bytearray
+        """
+        m = len(raw) % 3
+        return (3 - m if m else 0)
+
+
+    @property
+    def pad(self):
+        """
+        Returns number of pad characters that would result from converting
+        self.raw to Base64 encoding
+        self.raw is raw is bytes or bytearray
+        """
+        return self._pad(self._raw)
+
+
+    @property
+    def code(self):
+        """
+        Returns ._code
+        Makes .code read only
+        """
+        return self._code
+
+
+    @property
+    def raw(self):
+        """
+        Returns ._raw
+        Makes .raw read only
+        """
+        return self._raw
+
+
+    @property
+    def index(self):
+        """
+        Returns ._index
+        Makes .index read only
+        """
+        return self._index
+
+
+    def _infil(self):
+        """
+        Returns fully qualified base64 bytes given self.pad, self.code, self.count
+        and self.raw
+        code is Codex value
+        count is attached receipt couple count when applicable for CryCntDex codes
+        raw is bytes or bytearray
+        """
+        if self._code in CryCntDex:
+            l = CryIdxSizes[self._code]  # count length b64 characters
+            # full is pre code + index
+            full = "{}{}".format(self._code, IntToB64(self._index, l=l))
+        else:
+            full = self._code
+
+        pad = self.pad
+        # valid pad for code length
+        if len(full) % 4 != pad:  # pad is not remainder of len(code) % 4
+            raise ValidationError("Invalid code = {} for converted raw pad = {}."
+                                  .format(full, self.pad))
+        # prepending derivation code and strip off trailing pad characters
+        return (full.encode("utf-8") + encodeB64(self._raw)[:-pad])
+
+
+    def _exfil(self, qb64b):
+        """
+        Extracts self.code and self.raw from qualified base64 bytes qb64b
+        """
+        if len(qb64b) < MINCRYSIZE:  # Need more bytes
+            raise ShortageError("Need more bytes.")
+
+        cs = 1  # code size  initially 1 to extract selector
+        code = qb64b[:cs].decode("utf-8")  #  convert to str
+        index = 0
+
+        # need to map code to length so can only consume proper number of chars
+        #  from front of qb64 so can use with full identifiers not just prefixes
+
+        if code in CryOneDex:  # One Char code
+            qb64b = qb64b[:CryOneSizes[code]]  # strip of full crymat
+
+        elif code == CrySelDex.two: # first char of two char code
+            cs += 1  # increase code size
+            code = qb64b[0:cs].decode("utf-8")  #  get full code, convert to str
+            if code not in CryTwoDex:
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
+            qb64b = qb64b[:CryTwoSizes[code]]  # strip of full crymat
+
+        elif code == CrySelDex.four: # first char of four char cnt code
+            cs += 3  # increase code size
+            code = qb64b[0:cs].decode("utf-8")  #  get full code, convert to str
+            if code not in CryFourDex:
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
+            qb64b = qb64b[:CryFourSizes[code]]  # strip of full crymat
+
+        elif code == CrySelDex.dash:  #  '-' 2 char code + 2 char index count
+            cs += 1  # increase code size
+            code = qb64b[0:cs].decode("utf-8")  #  get full code, convert to str
+            if code not in CryCntDex:  # 4 char = 2 code + 2 index
+                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
+            qb64b = qb64b[:CryCntSizes[code]]  # strip of full crymat
+            cs += 2  # increase code size
+            index = B64ToInt(qb64b[cs-2:cs].decode("utf-8"))  # last two characters for index
+
+        else:
+            raise ValueError("Improperly coded material = {}".format(qb64b))
+
+        if len(qb64b) != CrySizes[code]:  # must be correct length
+            if len(qb64b) <  CrySizes[code]:  #  need more bytes
+                raise ShortageError("Need more bytes.")
+            else:
+                raise ValidationError("Bad qb64b size expected {}, got {} "
+                                      "bytes.".format(CrySizes[code],
+                                                      len(qb64b)))
+
+        pad = cs % 4  # pad is remainder pre mod 4
+        # strip off prepended code and append pad characters
+        base = qb64b[cs:] + pad * BASE64_PAD
+        raw = decodeB64(base)
+
+        if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
+            raise ValueError("Improperly qualified material = {}".format(qb64b))
+
+        self._code = code
+        self._index = index
+        self._raw = raw
+
+
+    @property
+    def qb64b(self):
+        """
+        Property qb64b:
+        Returns Fully Qualified Base64 Version encoded as bytes
+        Assumes self.raw and self.code are correctly populated
+        """
+        return self._infil()
+
+
+    @property
+    def qb64(self):
+        """
+        Property qb64:
+        Returns Fully Qualified Base64 Version
+        Assumes self.raw and self.code are correctly populated
+        """
+        return self.qb64b.decode("utf-8")
+
+
+    @property
+    def qb2(self):
+        """
+        Property qb2:
+        Returns Fully Qualified Binary Version Bytes
+        redo to use b64 to binary decode table since faster
+        """
+        # rewrite to do direct binary infiltration by
+        # decode self.code as bits and prepend to self.raw
+        return decodeB64(self._infil())
+
+
+    @property
+    def transferable(self):
+        """
+        Property transferable:
+        Returns True if identifier does not have non-transferable derivation code,
+                False otherwise
+        """
+        return(self.code not in CryNonTransDex)
+
+
+    @property
+    def digestive(self):
+        """
+        Property digestable:
+        Returns True if identifier has digest derivation code,
+                False otherwise
+        """
+        return(self.code in CryDigDex)
 
 
 class CryMat:
@@ -970,7 +1294,7 @@ class Signer(CryMat):
         """
         sig = pysodium.crypto_sign_detached(ser, seed + verfer.raw)
         if index is None:
-            return Cigar(raw=sig, code=CryTwoDex.Ed25519, verfer=verfer)
+            return Cigar(raw=sig, code=CryTwoDex.Ed25519_Sig, verfer=verfer)
         else:
             return Siger(raw=sig,
                           code=SigTwoDex.Ed25519,
@@ -1568,7 +1892,7 @@ class Prefixer(CryMat):
                 self._derive = self._derive_ed25519
             elif code == CryOneDex.Blake3_256:
                 self._derive = self._derive_blake3_256
-            elif code == CryTwoDex.Ed25519:
+            elif code == CryTwoDex.Ed25519_Sig:
                 self._derive = self._derive_sig_ed25519
             else:
                 raise ValueError("Unsupported code = {} for prefixer.".format(code))
@@ -1583,7 +1907,7 @@ class Prefixer(CryMat):
             self._verify = self._verify_ed25519
         elif self.code == CryOneDex.Blake3_256:
             self._verify = self._verify_blake3_256
-        elif code == CryTwoDex.Ed25519:
+        elif code == CryTwoDex.Ed25519_Sig:
             self._verify = self._verify_sig_ed25519
         else:
             raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
@@ -1795,7 +2119,7 @@ class Prefixer(CryMat):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
-        ked["i"] = "{}".format(self.Dummy*CryTwoSizes[CryTwoDex.Ed25519])
+        ked["i"] = "{}".format(self.Dummy*CryTwoSizes[CryTwoDex.Ed25519_Sig])
         serder = Serder(ked=ked)
         ked = serder.ked  # use updated ked with valid vs element
 
@@ -1829,7 +2153,7 @@ class Prefixer(CryMat):
 
         # sig = pysodium.crypto_sign_detached(ser, signer.raw + verfer.raw)
 
-        return (cigar.raw, CryTwoDex.Ed25519)
+        return (cigar.raw, CryTwoDex.Ed25519_Sig)
 
 
     def _verify_sig_ed25519(self, ked, pre, prefixed=False):
@@ -1853,7 +2177,7 @@ class Prefixer(CryMat):
                 raise DerivationError("Invalid ilk = {} to derive prefix.".format(ilk))
 
             # put in dummy pre to get size correct
-            dked["i"] = "{}".format(self.Dummy*CryTwoSizes[CryTwoDex.Ed25519])
+            dked["i"] = "{}".format(self.Dummy*CryTwoSizes[CryTwoDex.Ed25519_Sig])
             serder = Serder(ked=dked)
             dked = serder.ked  # use updated ked with valid vs element
 

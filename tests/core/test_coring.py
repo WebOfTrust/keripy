@@ -89,7 +89,7 @@ def test_cryderivationcodes():
     assert CryOneDex.Blake2s_256 == 'G'
     assert CryOneDex.SHA3_256 == 'H'
     assert CryOneDex.SHA2_256 == 'I'
-    assert CryOneDex.ECDSA_secp256k1_Seed == 'J'
+    assert CryOneDex.ECDSA_256k1_Seed == 'J'
     assert CryOneDex.Ed448_Seed == 'K'
     assert CryOneDex.X448 == 'L'
 
@@ -101,8 +101,8 @@ def test_cryderivationcodes():
         assert x in CryOneRawSizes
 
     assert CryTwoDex.Salt_128 == '0A'
-    assert CryTwoDex.Ed25519 == '0B'
-    assert CryTwoDex.ECDSA_256k1 == '0C'
+    assert CryTwoDex.Ed25519_Sig == '0B'
+    assert CryTwoDex.ECDSA_256k1_Sig == '0C'
 
     assert 'A' not in CryTwoDex
 
@@ -285,9 +285,9 @@ def test_crymat():
             b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
             b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
 
-    crymat = CryMat(raw=sig, code=CryTwoDex.Ed25519)
+    crymat = CryMat(raw=sig, code=CryTwoDex.Ed25519_Sig)
     assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519_Sig
     assert crymat.qb64 == qsig64
     assert crymat.qb64b == qsig64b
     assert crymat.qb2 == qsigB2
@@ -295,20 +295,20 @@ def test_crymat():
 
     crymat = CryMat(qb64b=qsig64b)
     assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519_Sig
 
     crymat = CryMat(qb64=qsig64)
     assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519_Sig
 
     qsig64b  = qsig64.encode("utf-8")  #  test bytes input
     crymat = CryMat(qb64=qsig64b)
     assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519_Sig
 
     crymat = CryMat(qb2=qsigB2)
     assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519_Sig
 
     """ Done Test """
 
@@ -675,7 +675,7 @@ def test_cigar():
     qsig64 = '0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
     cigar = Cigar(qb64=qsig64)
-    assert cigar.code == CryTwoDex.Ed25519
+    assert cigar.code == CryTwoDex.Ed25519_Sig
     assert cigar.qb64 == qsig64
     assert cigar.verfer == None
 
@@ -704,7 +704,7 @@ def test_signer():
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     crymat = signer.sign(ser)
-    assert crymat.code == CryTwoDex.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519_Sig
     assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
     result = signer.verfer.verify(crymat.raw, ser)
     assert result == True
@@ -730,7 +730,7 @@ def test_signer():
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     crymat = signer.sign(ser)
-    assert crymat.code == CryTwoDex.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519_Sig
     assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
     result = signer.verfer.verify(crymat.raw, ser)
     assert result == True
@@ -754,7 +754,7 @@ def test_signer():
     assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
 
     crymat = signer.sign(ser)
-    assert crymat.code == CryTwoDex.Ed25519
+    assert crymat.code == CryTwoDex.Ed25519_Sig
     assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
     result = signer.verfer.verify(crymat.raw, ser)
     assert result == True
@@ -1337,12 +1337,12 @@ def test_prefixer():
                c=cnfg,  # list of config ordered mappings may be empty
                )
 
-    prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, seed=seed)
+    prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519_Sig, seed=seed)
     assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
+    prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519_Sig, secret=secret)
     assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
