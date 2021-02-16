@@ -44,10 +44,12 @@ l
 ['a', 'aa', 'aaa', 'b', 'ba', 'baa']
 
 """
+
 import os
 import shutil
 import tempfile
 import stat
+import datetime
 
 from contextlib import contextmanager
 
@@ -61,6 +63,7 @@ except ImportError:
 from hio.base import doing
 
 from  ..kering import KeriError
+from  ..help import helping
 
 
 class DatabaseError(KeriError):
@@ -70,13 +73,13 @@ class DatabaseError(KeriError):
         raise DatabaseError("error message")
     """
 
-MaxHexDigits =  6
-MaxForks = int("f"*MaxHexDigits, 16)  # 16777215
+ProemSize =  33
+MaxProem = int("f"*(ProemSize-1), 16)
 
 
 def dgKey(pre, dig):
     """
-    Returns bytes DB key from concatenation of qualified Base64 prefix
+    Returns bytes DB key from concatenation of '.' with qualified Base64 prefix
     bytes pre and qualified Base64 bytes digest of serialized event
     If pre or dig are str then converts to bytes
     """
@@ -84,18 +87,87 @@ def dgKey(pre, dig):
         pre = pre.encode("utf-8")  # convert str to bytes
     if hasattr(dig, "encode"):
         dig = dig.encode("utf-8")  # convert str to bytes
-
     return (b'%s.%s' %  (pre, dig))
 
 
 def snKey(pre, sn):
     """
-    Returns bytes DB key from concatenation of qualified Base64 prefix
+    Returns bytes DB key from concatenation with '.' of qualified Base64 prefix
     bytes pre and int sn (sequence number) of event
     """
     if hasattr(pre, "encode"):
         pre = pre.encode("utf-8")  # convert str to bytes
     return (b'%s.%032x' % (pre, sn))
+
+
+def dtKey(pre, dts):
+    """
+    Returns bytes DB key from concatenation of '|' qualified Base64 prefix
+    bytes pre and bytes dts datetime string of extended tz aware ISO8601
+    datetime of event
+
+    '2021-02-13T19:16:50.750302+00:00'
+
+    """
+    if hasattr(pre, "encode"):
+        pre = pre.encode("utf-8")  # convert str to bytes
+    if hasattr(dts, "encode"):
+        dts = dts.encode("utf-8")  # convert str to bytes
+    return (b'%s|%s' % (pre, dts))
+
+
+def splitKey(key, sep=b'.'):
+    """
+    Returns duple of pre and either dig or sn str or dts datetime str by
+    splitting key at bytes sep
+    Accepts either bytes or str key
+    Raises ValueError if key does not split into exactly two elements
+
+    Parameters:
+       key is database key with split at sep
+       sep is bytes separator character. default is b'.'
+    """
+    if isinstance(key, memoryview):
+        key = bytes(key)
+    if hasattr(key, "encode"):  # str not bytes
+        if hasattr(sep, 'decode'):  # make sep match bytes or str
+            sep = sep.decode("utf-8")
+    else:
+        if hasattr(sep, 'encode'):  # make sep match bytes or str
+            sep = sep.encode("utf-8")
+    splits = key.split(sep)
+    if len(splits) != 2:
+        raise  ValueError("Unsplitable key = {}".format(key))
+    return tuple(splits)
+
+
+def splitKeySn(key):
+    """
+    Returns list of pre and int sn from key
+    Accepts either bytes or str key
+
+    """
+    if isinstance(key, memoryview):
+        key = bytes(key)
+    pre, sn = splitKey(key)
+    sn = int(sn, 16)
+    return (pre, sn)
+
+
+def splitKeyDt(key):
+    """
+    Returns list of pre and dts converted to datetime from key
+    dts is TZ aware Iso8601 '2021-02-13T19:16:50.750302+00:00'
+
+    Accepts either bytes or str key
+    """
+    if isinstance(key, memoryview):
+        key = bytes(key)
+    pre, dts = splitKey(key, sep=b'|')
+    if hasattr(dts, "decode"):
+        dts = dts.decode("utf-8")
+    dt = helping.fromIso8601(dts)
+    return (pre, dt)
 
 
 def clearDatabaserDir(path):
@@ -462,17 +534,19 @@ class LMDBer:
             return count
 
 
-    def delVals(self,db, key, dupdata=True):
+    def delVals(self, db, key, val=b''):
         """
-        Deletes all values at key in db.
-        Returns True If key exists in db Else False
+        Deletes all values at key in db if val=b'' else deletes the dup
+        that equals val
+        Returns True If key (and val if not empty) exists in db Else False
 
         Parameters:
             db is opened named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
+            val is bytes of dup val at key to delete
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            return (txn.delete(key))
+            return (txn.delete(key, val))
 
 
     def putIoVals(self, db, key, vals):
@@ -480,40 +554,41 @@ class LMDBer:
         Write each entry from list of bytes vals to key in db in insertion order
         Adds to existing values at key if any
         Returns True If at least one of vals is added as dup, False otherwise
+        Assumes DB opened with dupsort=True
 
-        Duplicates preserve insertion order.
-        Because lmdb is lexocographic an insertion ordering value is prepended to
+        Duplicates at a given key preserve insertion order of duplicate.
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
         all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Prefix is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates. With prepended ordinal must explicity
-        check for duplicate values before insertion. Uses a python set for the
-        duplicate inclusion test. Set inclusion scales with O(1) whereas list
-        inclusion scales with O(n).
+        Duplicates are ordered as a pair of key plus value so prepending proem
+        to each value changes duplicate ordering. Proem is 33 characters long.
+        With 32 character hex string followed by '.' for essentiall unlimited
+        number of values which will be limited by memory.
+        With prepended proem ordinal must explicity check for duplicate values
+        before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
 
         Parameters:
             db is opened named sub db with dupsort=False
             key is bytes of key within sub db's keyspace
             vals is list of bytes of values to be written
         """
+
+        result = False
         dups = set(self.getIoVals(db, key))  #get preexisting dups if any
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            cnt = 0
+            idx = 0
             cursor = txn.cursor()
-            if cursor.set_key(key):
-                cnt = cursor.count()
-            result = False
+            if cursor.set_key(key): # move to key if any
+                if cursor.last_dup(): # move to last dup
+                    idx = 1 + int(bytes(cursor.value()[:32]), 16)  # get last index as int
+
             for val in vals:
                 if val not in dups:
-                    if cnt > MaxForks:
-                        raise DatabaseError("Too many recovery forks at key = "
-                                            "{}.".format(key))
-                    result = True
-                    val = (b'%06x.' % (cnt)) +  val  # prepend ordering prefix
+                    val = (b'%032x.' % (idx)) +  val  # prepend ordering proem
                     txn.put(key, val, dupdata=True)
-                    cnt += 1
-            return result
+                    idx += 1
+                    result = True
+        return result
 
 
     def addIoVal(self, db, key, val):
@@ -521,42 +596,23 @@ class LMDBer:
         Add val bytes as dup in insertion order to key in db
         Adds to existing values at key if any
         Returns True if written else False if val is already a dup
-
-        Duplicates preserve insertion order.
+        Actual value written include prepended proem ordinal
+        Assumes DB opened with dupsort=True
 
         Parameters:
             db is opened named sub db with dupsort=False
             key is bytes of key within sub db's keyspace
             val is bytes of value to be written
         """
-        dups = set(self.getIoVals(db, key))  #get preexisting dups if any
-        with self.env.begin(db=db, write=True, buffers=True) as txn:
-            cnt = 0
-            cursor = txn.cursor()
-            if cursor.set_key(key):
-                cnt = cursor.count()
-            result = False
-            if val not in dups:
-                if cnt > MaxForks:
-                    raise DatabaseError("Too many recovery forks at key = "
-                                        "{}.".format(key))
-                val = (b'%06x.' % (cnt)) +  val  # prepend ordering prefix
-                result = txn.put(key, val, dupdata=True)
-            return result
+        return self.putIoVals(db, key, [val])
 
 
     def getIoVals(self, db, key):
         """
-        Return list of values at key in db in insertion order
+        Return list of duplicate values at key in db in insertion order
         Returns empty list if no entry at key
-
-        Duplicates are retrieved in insertion order.
-        Because lmdb is lexocographic an insertion ordering value is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Prefix is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates,
+        Removes prepended proem ordinal from each val  before returning
+        Assumes DB opened with dupsort=True
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -567,23 +623,37 @@ class LMDBer:
             cursor = txn.cursor()
             vals = []
             if cursor.set_key(key):  # moves to first_dup
-                # slice off prepended ordering prefix
-                vals = [val[7:] for val in cursor.iternext_dup()]
+                # slice off prepended ordering proem
+                vals = [val[33:] for val in cursor.iternext_dup()]
             return vals
 
 
-    def getIoValsLast(self, db, key):
+    def getIoValsIter(self, db, key):
+        """
+        Return iterator of all duplicate values at key in db in insertion order
+        Raises StopIteration Error when no remaining dup items = empty.
+        Removes prepended proem ordinal from each val before returning
+        Assumes DB opened with dupsort=True
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            vals = []
+            if cursor.set_key(key):  # moves to first_dup
+                for val in cursor.iternext_dup():
+                    yield val[33:]  # slice off prepended ordering proem
+
+
+    def getIoValLast(self, db, key):
         """
         Return last added dup value at key in db in insertion order
         Returns None no entry at key
-
-        Duplicates are retrieved in insertion order.
-        Because lmdb is lexocographic an insertion ordering value is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Prefix is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates,
+        Removes prepended proem ordinal from val before returning
+        Assumes DB opened with dupsort=True
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -595,18 +665,86 @@ class LMDBer:
             val = None
             if cursor.set_key(key):  # move to first_dup
                 if cursor.last_dup(): # move to last_dup
-                    val = cursor.value()[7:]  # slice off prepended ordering prefix
+                    val = cursor.value()[33:]  # slice off prepended ordering proem
             return val
+
+
+    def getIoItemsNext(self, db, key=b"", skip=True):
+        """
+        Return list of all dup items at next key after key in db in insertion order.
+        Item is (key, val) with proem stripped from val stored in db.
+        If key == b'' then returns list of dup items at first key in db.
+        If skip is False and key is not empty then returns dup items at key
+        Returns empty list if no entries at next key after key
+
+        If key is empty then gets io items (key, io value) at first key in db
+        Use the return key from items as next key for next call to function in
+        order to iterate through the database
+
+        Assumes DB opened with dupsort=True
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace or empty string
+            skip is Boolean If True skips to next key if key is not empty string
+                    Othewise don't skip for first pass
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            items = []
+            if cursor.set_range(key):  # moves to first_dup at key
+                found = True
+                if skip and key and cursor.key() == key:  # skip to next key
+                    found = cursor.next_nodup()  # skip to next key not dup if any
+                if found:
+                    # slice off prepended ordering prefix on value in item
+                    items = [(key, val[33:]) for key, val in cursor.iternext_dup(keys=True)]
+            return items
+
+
+    def getIoItemsNextIter(self, db, key=b"", skip=True):
+        """
+        Return iterator of all dup items at next key after key in db in insertion order.
+        Item is (key, val) with proem stripped from val stored in db.
+        If key = b'' then returns list of dup items at first key in db.
+        If skip is False and key is not empty then returns dup items at key
+        Raises StopIteration Error when no remaining dup items = empty.
+
+        If key is empty then gets io items (key, io value) at first key in db
+        Use the return key from items as next key for next call to function in
+        order to iterate through the database
+
+        Assumes DB opened with dupsort=True
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace or empty
+            skip is Boolean If True skips to next key if key is not empty string
+                    Othewise don't skip for first pass
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if cursor.set_range(key):  # moves to first_dup at key
+                found = True
+                if skip and key and cursor.key() == key:  # skip to next key
+                    found = cursor.next_nodup()  # skip to next key not dup if any
+                if found:
+                    for key, val in cursor.iternext_dup(keys=True):
+                        yield (key, val[33:]) # slice off prepended ordering prefix
 
 
     def cntIoVals(self, db, key):
         """
         Return count of dup values at key in db, or zero otherwise
+        Assumes DB opened with dupsort=True
 
         Parameters:
             db is opened named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
         """
+
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             count = 0
@@ -615,17 +753,57 @@ class LMDBer:
             return count
 
 
-    def delIoVals(self,db, key, dupdata=True):
+    def delIoVals(self,db, key):
         """
-        Deletes all values at key in db.
-        Returns True If key exists in db Else False
+        Deletes all values at key in db if key present.
+        Returns True If key exists and dups deleted Else False
+        Assumes DB opened with dupsort=True
 
         Parameters:
             db is opened named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
         """
+
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             return (txn.delete(key))
+
+
+    def delIoVal(self, db, key, val):
+        """
+        Deletes dup io val at key in db. Performs strip search to find match.
+        Strips proems and then searches.
+        Returns True if delete else False if val not present
+        Assumes DB opened with dupsort=True
+
+        Duplicates at a given key preserve insertion order of duplicate.
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
+        all values that makes lexocographic order that same as insertion order
+        Duplicates are ordered as a pair of key plus value so prepending proem
+        to each value changes duplicate ordering. Proem is 33 characters long.
+        With 32 character hex string followed by '.' for essentially unlimited
+        number of values which will be limited by memory.
+
+        Does a linear search so not very efficient when not deleting from the front.
+        This is hack for supporting escrow which needs to delete individual dup.
+        The problem is that escrow is not fixed buts stuffs gets added and
+        deleted which just adds to the value of the proem. 2**16 is an impossibly
+        large number so the proem will not max out practically. But its not
+        and elegant solution. So maybe escrows need to use a different approach.
+        But really didn't want to add another database just for escrows.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is bytes of key within sub db's keyspace
+            val is bytes of value to be deleted without intersion ordering proem
+        """
+
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            cursor = txn.cursor()
+            if cursor.set_key(key):  # move to first_dup
+                for proval in cursor.iternext_dup():  #  value with proem
+                    if val == proval[33:]:  #  strip of proem
+                        return cursor.delete()
+        return False
 
 
     def getIoValsAllPreIter(self, db, pre):
@@ -635,16 +813,11 @@ class LMDBer:
         starting with zero. Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
+        Removes prepended proem ordinal from each val before returning
 
         Raises StopIteration Error when empty.
 
         Duplicates are retrieved in insertion order.
-        Because lmdb is lexocographic an insertion ordering value is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Prefix is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates,
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -657,27 +830,23 @@ class LMDBer:
             while cursor.set_key(key):  # moves to first_dup
                 for val in cursor.iternext_dup():
                     # slice off prepended ordering prefix
-                    yield val[7:]
+                    yield val[33:]
                 key = snKey(pre, cnt:=cnt+1)
 
 
-    def getIoValsLastAllPreIter(self, db, pre):
+    def getIoValLastAllPreIter(self, db, pre):
         """
-        Returns iterator of last only dup vals in insertion order for all entries
-        with same prefix across all sequence numbers in order without gaps
-        starting with zero. Stops if gap or different pre.
+        Returns iterator of last only of dup vals of each key in insertion order
+        for all entries with same prefix across all sequence numbers in order
+        without gaps starting with zero. Stops if gap or different pre.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
+        Removes prepended proem ordinal from each val before returning
 
         Raises StopIteration Error when empty.
 
         Duplicates are retrieved in insertion order.
-        Because lmdb is lexocographic an insertion ordering value is prepended to
-        all values that makes lexocographic order that same as insertion order
-        Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Prefix is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates,
+
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -689,7 +858,7 @@ class LMDBer:
             key = snKey(pre, cnt:=0)
             while cursor.set_key(key):  # moves to first_dup
                 if cursor.last_dup(): # move to last_dup
-                    yield cursor.value()[7:]  # slice off prepended ordering prefix
+                    yield cursor.value()[33:]  # slice off prepended ordering prefix
                 key = snKey(pre, cnt:=cnt+1)
 
 
@@ -700,16 +869,16 @@ class LMDBer:
         Stops when pre is different.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
+        Removes prepended proem ordinal from each val before returning
 
         Raises StopIteration Error when empty.
 
         Duplicates are retrieved in insertion order.
-        Because lmdb is lexocographic an insertion ordering value is prepended to
+        Because lmdb is lexocographic an insertion ordering proem is prepended to
         all values that makes lexocographic order that same as insertion order
         Duplicates are ordered as a pair of key plus value so prepending prefix
-        to each value changes duplicate ordering. Prefix is 7 characters long.
-        With 6 character hex string followed by '.' for a max
-        of 2**24 = 16,777,216 duplicates,
+        to each value changes duplicate ordering. Proem is 17 characters long.
+        With 16 character hex string followed by '.'.
 
         Parameters:
             db is opened named sub db with dupsort=True
@@ -725,8 +894,7 @@ class LMDBer:
                 if front != pre:
                     break
                 for val in cursor.iternext_dup():
-                    # slice off prepended ordering prefix
-                    yield val[7:]
+                    yield val[33:]  # slice off prepended ordering prefix
                 cnt = int(back, 16)
                 key = snKey(pre, cnt:=cnt+1)
 
@@ -751,11 +919,21 @@ class Baser(LMDBer):
             DB is keyed by identifer prefix plus digest of serialized event
             Only one value per DB key is allowed
 
+        .fses isnamed sub DB of digests that indexes events in first 'seen'
+            accepted order for replay and cloning of event log. Only one value
+            per DB key is allowed. Provides append only ordering of accepted
+            first seen events.
+            dtKey
+            DB is keyed by identifier prefix plus monotonically increasing datatime
+            stamp bytes in extended ISO 8601 format
+            Value is digest of serialized event used to lookup event in .evts sub DB
+
         .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
+            the datetime when the event was first escrosed and then later first
+            seen by log. Used for escrows timeouts and extended validation.
             dgKey
-            the datetime when the event was first seen by log.
-            Used for escrows timeouts and extended validation.
             DB is keyed by identifer prefix plus digest of serialized event
+            Value is ISO 8601 datetime stamp bytes
 
         .sigs is named sub DB of fully qualified event signatures
             dgKey
@@ -763,40 +941,40 @@ class Baser(LMDBer):
             More than one value per DB key is allowed
 
         .rcts is named sub DB of event receipt couplets from nontransferable
-            signers. Each couplet is concatenation of fully qualified
+            signers. Each couple is concatenation of fully qualified
             non-transferale prefix plus fully qualified event signature
             by witness, watcher, or validator.
             dgKey
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .ures is named sub DB of unverified event receipt escrowed couplets from
-            non-transferable signers. Each couplet is concatenation of fully
-            qualified non-transferable identfier prefix plus fully qualified
-            event signature by witness, watcher, or validator
-            dgKey
-            SB is keyed by controller prefix plus digest
+        .ures is named sub DB of unverified event receipt escrowed triples from
+            non-transferable signers. Each triple is concatenation of fully
+            qualified receipted event digest, non-transferable event identfier prefix,
+            plus receipt event signature by witness, watcher, or validator
+            snKey
+            SB is keyed by receipted event controller prefix plus sn
             of serialized event
             More than one value per DB key is allowed
 
-        .vrcs is named sub DB of event validator receipt quadlets from transferable
-            signers. Each quadlet is concatenation of  four fully qualified items
+        .vrcs is named sub DB of event validator receipt quadruples from transferable
+            signers. Each quadruple is concatenation of  four fully qualified items
             of validator. These are transferable prefix, plus latest establishment
             event sequence number plus latest establishment event digest,
             plus event signature.
             When latest establishment event is multisig then there will
-            be multiple quadlets one per signing key, each a dup at same db key.
+            be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .vres is named sub DB of unverified event validator receipt escrowed
-            quadlets from transferable signers. Each quadlet is concatenation of
+            quadruples from transferable signers. Each quadruple is concatenation of
             four fully qualified items  of validator. These are transferable prefix,
             plus latest establishment event sequence number plus latest
             establishment event digest, plus event signature.
             When latest establishment event is multisig then there will
-            be multiple quadlets one per signing key, each a dup at same db key.
+            be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
@@ -883,6 +1061,7 @@ class Baser(LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.evts = self.env.open_db(key=b'evts.')
+        self.fses = self.env.open_db(key=b'fses.')
         self.dtss = self.env.open_db(key=b'dtss.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
@@ -906,6 +1085,7 @@ class Baser(LMDBer):
         """
         return self.putVal(self.evts, key, val)
 
+
     def setEvt(self, key, val):
         """
         Use dgKey()
@@ -914,6 +1094,7 @@ class Baser(LMDBer):
         Returns True If val successfully written Else False
         """
         return self.setVal(self.evts, key, val)
+
 
     def getEvt(self, key):
         """
@@ -931,6 +1112,199 @@ class Baser(LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.evts, key)
+
+
+    def putFse(self, key, val):
+        """
+        Use dtKey()
+        Write event digest bytes val to key
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        return self.putVal(self.fses, key, val)
+
+
+    def setFse(self, key, val):
+        """
+        Use dtKey()
+        Write event digest bytes val to key
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.fses, key, val)
+
+
+    def getFse(self, key):
+        """
+        Use dtKey()
+        Return event digest at key
+        Returns None if no entry at key
+        """
+        return self.getVal(self.fses, key)
+
+
+    def delFse(self, key):
+        """
+        Use dtKey()
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.fses, key)
+
+
+    def appendFse(self, pre, dts, val):
+        """
+        Uses dtKey(pre, dts) for entries.
+
+        Append val to end of db entries with same pre at key = dtKey(pre,dts)
+        unless already entry at that key then increment dts by 1 microsecond.
+
+        If datetime in key is less than or equal to datetime of last entry
+        Then increment datetime of final entry by one microsecond.
+        Returns dts used to write
+
+        Uses dts to find last entry at pre by setting range and then comparing
+        if entry >= pre has same pre or not. If same pre then increment
+        dts by one microsend and set. If not then just set.
+
+        Parameters:
+            pre is bytes identifier prefix for event
+            dts is iso8601 TZ aware datetime bytes
+            val is event digest
+        """
+        key = dtKey(pre, dts)
+
+        with self.env.begin(db=self.fses, write=True, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  # no later values than key
+                txn.put(key, val, overwrite=False)
+                return dts
+
+            ckey = cursor.key()
+            cpre, cdts = splitKey(ckey, sep=b'|')
+            if cpre != pre:  #  range ok dts is after last event for pre
+                txn.put(key, val, overwrite=False)
+                return dts
+
+            # must already be key in db with same pre that is later than or equal
+            for ckey in cursor.iternext(values=False):  # return key at cursor
+                cpre, cdts = splitKey(ckey, sep=b'|')
+                if cpre != pre:  # prev is now the last event for pre
+                   break
+
+            # iterator either goes off end of database whereupon cursor.key() is empty
+            # or hits different pre in either case need to recover
+            if not cursor.key():  # went off end of database
+                cursor.last()  # cursor state bad so recover by setting to last
+            else:  # encountered next pre so backup
+                cursor.prev()  # back up
+            # cursor.key() is now same pre but cdts >= dts so increment
+            cpre, cdts = splitKey(cursor.key(), sep=b'|')
+
+            # increment by 1 microsecond to ensure monotonic
+            dts = helping.toIso8601(helping.fromIso8601(cdts) +
+                                    datetime.timedelta(microseconds=1)).encode("utf-8")
+            key = dtKey(pre, dts)
+            txn.put(key, val, overwrite=False)
+            return dts
+
+
+    def getFseValsIter(self, pre):
+        """
+        Returns iterator of all vals in first seen order for all events
+        with same prefix.
+        Values are event digests for lookup in .evts sub db
+        .fses subdb uses dtKey(pre, dts) for entris
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            pre is bytes of itdentifier prefix
+        """
+        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = dtKey(pre, "")  # before any entry at pre
+            if not cursor.set_range(key):  #  moves to val at key >= key
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # get key, val at cursor
+                cpre, dts = splitKey(key, sep=b'|')
+                if cpre != pre:  # prev is now the last event for pre
+                    break  # done
+                yield val  # dig of event
+
+
+    def getFseItemsIter(self, pre):
+        """
+        Returns iterator of all (dts, dig) items in first seen order for all events
+        with same prefix.
+        .fses subdb uses dtKey(pre, dts) for entris
+        Values are tuples of (dts, dig): Where dts is date time stamp first seen
+        and dig is event digest for lookup in .evts sub db.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            pre is bytes of itdentifier prefix
+        """
+        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = dtKey(pre, "")  # before any entry at pre
+            if not cursor.set_range(key):  #  moves to val at key >= key
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # get key, val at cursor
+                cpre, dts = splitKey(key, sep=b'|')
+                if cpre != pre:  # prev is now the last event for pre
+                    break  # done
+                yield (dts, val)  # (dts, dig) of event
+
+
+    def getFseValsAllPreIter(self, key=b''):
+        """
+        Returns iterator of all vals in first seen order for all events
+        for all prefixes in database.
+        Values are event digests for lookup in .evts sub db
+        .fses subdb uses dtKey(pre, dts) for entries
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            key is key location in db to resume replay, If empty then start at
+                first key in database
+        """
+        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  # moves to val at key >= key, first if empty
+                return  # no values empty db raises stop iteration
+            for key, val in cursor.iternext():  # get key, val at cursor
+                yield val  #  dig of event
+
+
+    def getFseItemsAllPreIter(self, key=b''):
+        """
+        Returns iterator of all (dts, dig) items in first seen order for all events
+        for all prefixes in database. Items are sorted by key which is given
+        by dtKey(pre,dts).
+        .fses subdb uses dtKey(pre, dts) for entries
+        Values are tuples of (dts, dig): Where dts is date time stamp first seen
+        and dig is event digest for lookup in .evts sub db.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            key is key location in db to resume replay, If empty then start at
+                first key in database
+        """
+        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # return key, val at cursor
+                cpre, dts = splitKey(key, sep=b'|')
+                yield (dts, val)  # (dts, dig) of event
 
 
     def putDts(self, key, val):
@@ -1015,16 +1389,6 @@ class Baser(LMDBer):
         return self.addVal(self.sigs, key, val)
 
 
-    def getSigs(self, key):
-        """
-        Use dgKey()
-        Return list of signatures at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.sigs, key)
-
-
     def cntSigs(self, key):
         """
         Use dgKey()
@@ -1034,13 +1398,13 @@ class Baser(LMDBer):
         return self.cntVals(self.sigs, key)
 
 
-    def delSigs(self, key):
+    def delSigs(self, key, val=b''):
         """
         Use dgKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
+        Deletes all values at key if val = b'' else deletes dup val = val.
+        Returns True If key exists in database (or key, val if val not b'') Else False
         """
-        return self.delVals(self.sigs, key)
+        return self.delVals(self.sigs, key, val)
 
 
     def putRcts(self, key, vals):
@@ -1058,7 +1422,7 @@ class Baser(LMDBer):
     def addRct(self, key, val):
         """
         Use dgKey()
-        Add receipt couplet val bytes as dup to key in db
+        Add receipt couple val bytes as dup to key in db
         Adds to existing values at key if any
         Returns True if written else False if dup val already exists
         Duplicates are inserted in lexocographic order not insertion order.
@@ -1095,80 +1459,138 @@ class Baser(LMDBer):
         return self.cntVals(self.rcts, key)
 
 
-    def delRcts(self, key):
+    def delRcts(self, key, val=b''):
         """
         Use dgKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
+        Deletes all values at key if val = b'' else deletes dup val = val.
+        Returns True If key exists in database (or key, val if val not b'') Else False
         """
-        return self.delVals(self.rcts, key)
+        return self.delVals(self.rcts, key, val)
 
 
     def putUres(self, key, vals):
         """
-        Use dgKey()
-        Write each entry from list of bytes receipt couplets vals to key
+        Use snKey()
+        Write each entry from list of bytes receipt triples vals to key
+        Triplet is dig + pre + sig
         Adds to existing receipts at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
         """
-        return self.putVals(self.ures, key, vals)
+        return self.putIoVals(self.ures, key, vals)
 
 
     def addUre(self, key, val):
         """
-        Use dgKey()
-        Add receipt couplet val bytes as dup to key in db
+        Use snKey()
+        Add receipt triple val bytes as dup to key in db
+        Triplet is dig + pre + sig
         Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
         """
-        return self.addVal(self.ures, key, val)
+        return self.addIoVal(self.ures, key, val)
 
 
     def getUres(self, key):
         """
-        Use dgKey()
-        Return list of receipt couplets at key
+        Use snKey()
+        Return list of receipt triplets at key
+        Triplet is dig + pre + sig
         Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
+        Duplicates are retrieved in insertion order.
         """
-        return self.getVals(self.ures, key)
+        return self.getIoVals(self.ures, key)
 
 
     def getUresIter(self, key):
         """
-        Use dgKey()
-        Return iterator of receipt couplets at key
+        Use snKey()
+        Return iterator of receipt triplets at key
+        Triplet is dig + pre + sig
         Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
+        Duplicates are retrieved in insertion order.
         """
-        return self.getValsIter(self.ures, key)
+        return self.getIoValsIter(self.ures, key)
+
+
+    def getUreLast(self, key):
+        """
+        Use snKey()
+        Return last inserted dup partial signed escrowed event triple val at key
+        Triplet is dig + pre + sig
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValLast(self.ures, key)
+
+
+    def getUreItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of partial signed escrowed event triple items at next
+        key after key.
+        Item is (key, val) where proem has already been stripped from val
+        val is triple dig + pre + sig
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.ures, key, skip)
+
+
+    def getUreItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of partial signed escrowed event triple items at next
+        key after key.
+        Items is (key, val) where proem has already been stripped from val
+        val is triple dig + pre + sig
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.ures, key, skip)
 
 
     def cntUres(self, key):
         """
-        Use dgKey()
-        Return count of receipt couplets at key
+        Use snKey()
+        Return count of receipt triplets at key
         Returns zero if no entry at key
         """
-        return self.cntVals(self.ures, key)
+        return self.cntIoVals(self.ures, key)
 
 
     def delUres(self, key):
         """
-        Use dgKey()
-        Deletes all values at key.
+        Use snKey()
+        Deletes all values at key in db.
         Returns True If key exists in database Else False
         """
-        return self.delVals(self.ures, key)
+        return self.delIoVals(self.ures, key)
+
+
+    def delUre(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.ures, key, val)
 
 
     def putVrcs(self, key, vals):
         """
         Use dgKey()
-        Write each entry from list of bytes receipt quadlets vals to key
+        Write each entry from list of bytes receipt quadruples vals to key
+        quadruple is spre+ssnu+sdig+sig
         Adds to existing receipts at key if any
         Returns True If no error
         Apparently always returns True (is this how .put works with dupsort=True)
@@ -1180,7 +1602,8 @@ class Baser(LMDBer):
     def addVrc(self, key, val):
         """
         Use dgKey()
-        Add receipt quadlet val bytes as dup to key in db
+        Add receipt quadruple val bytes as dup to key in db
+        quadruple is spre+ssnu+sdig+sig
         Adds to existing values at key if any
         Returns True if written else False if dup val already exists
         Duplicates are inserted in lexocographic order not insertion order.
@@ -1191,7 +1614,8 @@ class Baser(LMDBer):
     def getVrcs(self, key):
         """
         Use dgKey()
-        Return list of receipt quadlet at key
+        Return list of receipt quadruple at key
+        quadruple is spre+ssnu+sdig+sig
         Returns empty list if no entry at key
         Duplicates are retrieved in lexocographic order not insertion order.
         """
@@ -1201,7 +1625,8 @@ class Baser(LMDBer):
     def getVrcsIter(self, key):
         """
         Use dgKey()
-        Return iterator of receipt quadlets at key
+        Return iterator of receipt quadruples at key
+        quadruple is spre+ssnu+sdig+sig
         Raises StopIteration Error when empty
         Duplicates are retrieved in lexocographic order not insertion order.
         """
@@ -1211,80 +1636,137 @@ class Baser(LMDBer):
     def cntVrcs(self, key):
         """
         Use dgKey()
-        Return count of receipt quadlets at key
+        Return count of receipt quadruples at key
         Returns zero if no entry at key
         """
         return self.cntVals(self.vrcs, key)
 
 
-    def delVrcs(self, key):
+    def delVrcs(self, key, val=b''):
         """
         Use dgKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
+        Deletes all values at key if val = b'' else deletes dup val = val.
+        Returns True If key exists in database (or key, val if val not b'') Else False
         """
-        return self.delVals(self.vrcs, key)
+        return self.delVals(self.vrcs, key, val)
 
 
     def putVres(self, key, vals):
         """
-        Use dgKey()
-        Write each entry from list of bytes receipt quadlets vals to key
+        Use snKey()
+        Write each entry from list of bytes receipt quinlets vals to key
+        Quinlet is edig + spre + ssnu + sdig +sig
         Adds to existing receipts at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
         """
-        return self.putVals(self.vres, key, vals)
+        return self.putIoVals(self.vres, key, vals)
 
 
     def addVre(self, key, val):
         """
-        Use dgKey()
-        Add receipt quadlet val bytes as dup to key in db
+        Use snKey()
+        Add receipt quintuple val bytes as dup to key in db
+        Quinlet is edig + spre + ssnu + sdig +sig
         Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
         """
-        return self.addVal(self.vres, key, val)
+        return self.addIoVal(self.vres, key, val)
 
 
     def getVres(self, key):
         """
-        Use dgKey()
-        Return list of receipt quadlet at key
+        Use snKey()
+        Return list of receipt quinlets at key
+        Quinlet is edig + spre + ssnu + sdig +sig
         Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
+        Duplicates are retrieved in insertion order.
         """
-        return self.getVals(self.vres, key)
+        return self.getIoVals(self.vres, key)
 
 
     def getVresIter(self, key):
         """
-        Use dgKey()
-        Return iterator of receipt quadlets at key
+        Use snKey()
+        Return iterator of receipt quinlets at key
+        Quinlet is edig + spre + ssnu + sdig +sig
         Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
+        Duplicates are retrieved in insertion order.
         """
-        return self.getValsIter(self.vres, key)
+        return self.getIoValsIter(self.vres, key)
+
+
+    def getVreLast(self, key):
+        """
+        Use snKey()
+        Return last inserted dup partial signed escrowed event quintuple val at key
+        Quinlet is edig + spre + ssnu + sdig +sig
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValLast(self.vres, key)
+
+
+    def getVreItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of partial signed escrowed event quintuple items at next
+        key after key.
+        Item is (key, val) where proem has already been stripped from val
+        val is Quinlet is edig + spre + ssnu + sdig +sig
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.vres, key, skip)
+
+
+    def getVreItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of partial signed escrowed event quintuple items at next
+        key after key.
+        Items is (key, val) where proem has already been stripped from val
+        val is Quinlet is edig + spre + ssnu + sdig +sig
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.vres, key, skip)
 
 
     def cntVres(self, key):
         """
-        Use dgKey()
-        Return count of receipt quadlets at key
+        Use snKey()
+        Return count of receipt quinlets at key
         Returns zero if no entry at key
         """
-        return self.cntVals(self.vres, key)
+        return self.cntIoVals(self.vres, key)
 
 
     def delVres(self, key):
         """
-        Use dgKey()
-        Deletes all values at key.
+         Use snKey()
+        Deletes all values at key in db.
         Returns True If key exists in database Else False
         """
-        return self.delVals(self.vres, key)
+        return self.delIoVals(self.vres, key)
+
+
+    def delVre(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.vres, key, val)
 
 
     def putKes(self, key, vals):
@@ -1326,7 +1808,7 @@ class Baser(LMDBer):
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsLast(self.kels, key)
+        return self.getIoValLast(self.kels, key)
 
 
     def cntKes(self, key):
@@ -1346,6 +1828,7 @@ class Baser(LMDBer):
         """
         return self.delIoVals(self.kels, key)
 
+
     def getKelIter(self, pre):
         """
         Returns iterator of all dup vals in insertion order for all entries
@@ -1356,9 +1839,9 @@ class Baser(LMDBer):
 
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
+        db is opened as named sub db with dupsort=True
 
         Parameters:
-            db is opened named sub db with dupsort=True
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
         """
@@ -1369,23 +1852,23 @@ class Baser(LMDBer):
 
     def getKelEstIter(self, pre):
         """
-        Returns iterator of last dup vals in insertion order for all entries
-        with same prefix across all sequence numbers without gaps. Stops if
-        encounters gap.
+        Returns iterator of last one of dup vals at each key in insertion order
+        for all entries with same prefix across all sequence numbers without gaps.
+        Stops if encounters gap.
         Assumes that key is combination of prefix and sequence number given
         by .snKey().
 
         Raises StopIteration Error when empty.
         Duplicates are retrieved in insertion order.
+        db is opened as named sub db with dupsort=True
 
         Parameters:
-            db is opened named sub db with dupsort=True
             pre is bytes of itdentifier prefix prepended to sn in key
                 within sub db's keyspace
         """
         if hasattr(pre, "encode"):
             pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getIoValsLastAllPreIter(self.kels, pre)
+        return self.getIoValLastAllPreIter(self.kels, pre)
 
 
     def putPses(self, key, vals):
@@ -1420,14 +1903,50 @@ class Baser(LMDBer):
         return self.getIoVals(self.pses, key)
 
 
-    def getPsesLast(self, key):
+    def getPsesIter(self, key):
+        """
+        Use sgKey()
+        Return iterator of partial signed escrowed event dig vals at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsIter(self.pses, key)
+
+
+    def getPseLast(self, key):
         """
         Use snKey()
         Return last inserted dup partial signed escrowed event dig val at key
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsLast(self.pses, key)
+        return self.getIoValLast(self.pses, key)
+
+
+    def getPseItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of partial signed escrowed event dig items at next key after key.
+        Item is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.pses, key, skip)
+
+
+    def getPseItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of partial signed escrowed event dig items at next key after key.
+        Items is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.pses, key, skip)
 
 
     def cntPses(self, key):
@@ -1442,10 +1961,23 @@ class Baser(LMDBer):
     def delPses(self, key):
         """
         Use snKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
+        Deletes all values at key in db.
+        Returns True If key  exists in db Else False
         """
         return self.delIoVals(self.pses, key)
+
+
+    def delPse(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.pses, key, val)
 
 
     def putOoes(self, key, vals):
@@ -1480,14 +2012,40 @@ class Baser(LMDBer):
         return self.getIoVals(self.ooes, key)
 
 
-    def getOoesLast(self, key):
+    def getOoeLast(self, key):
         """
         Use snKey()
-        Return last inserted dup out of order escrow event dig at key
+        Return last inserted dup val of out of order escrow event dig vals at key
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsLast(self.ooes, key)
+        return self.getIoValLast(self.ooes, key)
+
+
+    def getOoeItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of out of order escrowed event dig items at next key after key.
+        Item is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.ooes, key, skip)
+
+
+    def getOoeItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of out of order escrowed event dig items at next key after key.
+        Items is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.ooes, key, skip)
 
 
     def cntOoes(self, key):
@@ -1506,6 +2064,20 @@ class Baser(LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.ooes, key)
+
+
+    def delOoe(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.ooes, key, val)
 
 
     def putDes(self, key, vals):
@@ -1540,15 +2112,15 @@ class Baser(LMDBer):
         return self.getIoVals(self.dels, key)
 
 
-    def getDesLast(self, key):
+    def getDeLast(self, key):
         """
         Use snKey()
-        Return last inserted dup duplicitous event dig vals at key
+        Return last inserted dup value of duplicitous event dig vals at key
         Returns None if no entry at key
 
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsLast(self.dels, key)
+        return self.getIoValLast(self.dels, key)
 
 
     def cntDes(self, key):
@@ -1621,14 +2193,40 @@ class Baser(LMDBer):
         return self.getIoVals(self.ldes, key)
 
 
-    def getLdesLast(self, key):
+    def getLdeLast(self, key):
         """
         Use snKey()
-        Return last inserted dup likely duplicitous event dig at key
+        Return last inserted dup val of likely duplicitous event dig vals at key
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
-        return self.getIoValsLast(self.ldes, key)
+        return self.getIoValLast(self.ldes, key)
+
+
+    def getLdeItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of likely duplicitous escrowed event dig items at next key after key.
+        Item is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.ldes, key, skip)
+
+
+    def getLdeItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of likely duplicitous escrowed event dig items at next key after key.
+        Items is (key, val) where proem has already been stripped from val
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.ldes, key, skip)
 
 
     def cntLdes(self, key):
@@ -1647,6 +2245,21 @@ class Baser(LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.ldes, key)
+
+
+    def delLde(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.ldes, key, val)
+
 
 
 class BaserDoer(doing.Doer):

@@ -19,7 +19,7 @@ def initOgler(level=logging.CRITICAL, **kwa):
     Critical is most severe to restrict logging by default
 
     This should be called in package .__init__ to insure that global ogler is
-    define by default. Users and then reset level and reopen log file if need be
+    defined by default. Users may then reset level and reopen log file if need be
     before calling ogler.getLoggers()
     """
     global ogler
@@ -47,7 +47,7 @@ class Ogler():
     AltTailDirPath = ".keri/log"
 
     def __init__(self, name='main', level=logging.ERROR, temp=False,
-                 headDirPath=None, reopen=False):
+                 headDirPath=None, reopen=False, clear=False):
         """
         Init Loggery factory instance
 
@@ -70,9 +70,9 @@ class Ogler():
             temp is Boolean If file then True means use temp direction
                                          Otherwise use  headDirpath
             headDirPath is str for custom headDirPath for log file
-
+            clear is Boolean True means clear .path when closing in reopen
         """
-        self.name = name
+        self.name = name if name else 'main'
         self.level = level  # basic logger level
         self.temp = True if temp else False
         self.headDirPath = headDirPath
@@ -90,75 +90,100 @@ class Ogler():
         self.failConsoleHandler.setFormatter(self.failFormatter)
 
         if reopen:
-            self.reopen(headDirPath=self.headDirPath)
+            self.reopen(headDirPath=self.headDirPath, clear=clear)
 
 
 
-    def reopen(self, temp=None, headDirPath=None):
+    def reopen(self, name=None, temp=None, headDirPath=None, clear=False):
         """
         Use or Create if not preexistent, directory path for lmdb at .path
+        First closes .path if already opened. If cleat is True then also clears
+        .path before reopening
+
         Open lmdb and assign to .env
 
         Parameters:
+            name is optional name
+                if None or unchanged then ignore otherwise recreate path
+                    When recreating path, If not provided use .name
             temp is optional boolean:
                 If None ignore Otherwise
                     Assign to .temp
-                    If True then open temporary directory, clear on close
-                    If False then open persistent directory, do not clear on close
+                    If True then open temporary directory,
+                    If False then open persistent directory
             headDirPath is optional str head directory pathname of main database
-                If not provided use default .HeadDirpath
+                if None or unchanged then ignore otherwise recreate path
+                   When recreating path, If not provided use default .HeadDirpath
+            clear is Boolean True means clear .path when closing
         """
-        if temp is not None:
-            self.temp = True if temp else False
+        if self.opened:
+            self.close(clear=clear)
 
-        if headDirPath is None:
-            headDirPath = self.headDirPath
+        if not name or name == self.name:
+            name = None  # don't need to recreate path because of name change
 
-        if self.temp:
-            headDirPath = tempfile.mkdtemp(prefix="keri_log_", suffix="_test", dir="/tmp")
-            self.path = os.path.abspath(
-                                os.path.join(headDirPath,
-                                             self.TailDirPath))
-            os.makedirs(self.path)
+        if temp is None or temp == self.temp:
+            temp = None
 
-        else:
-            if not headDirPath:
-                headDirPath = self.HeadDirPath
+        if not headDirPath or headDirPath == self.headDirPath:
+            headDirPath = None
 
-            self.path = os.path.abspath(
-                                os.path.expanduser(
+        if not self.path or name is not None or temp is not None or headDirPath is not None:
+            # need to recreate self.path
+            if name is not None:
+                self.name = name
+
+            if temp is not None:
+                self.temp = True if temp else False
+
+            if headDirPath is None:
+                headDirPath = self.headDirPath
+
+            if self.temp:
+                headDirPath = tempfile.mkdtemp(prefix="keri_log_", suffix="_test", dir="/tmp")
+                self.path = os.path.abspath(
                                     os.path.join(headDirPath,
-                                                 self.TailDirPath)))
+                                                 self.TailDirPath))
+                os.makedirs(self.path)
 
-            if not os.path.exists(self.path):
-                try:
-                    os.makedirs(self.path)
-                except OSError as ex:
-                    headDirPath = self.AltHeadDirPath
-                    self.path = os.path.abspath(
-                                        os.path.expanduser(
-                                            os.path.join(headDirPath,
-                                                         self.AltTailDirPath)))
-                    if not os.path.exists(self.path):
-                        os.makedirs(self.path)
             else:
-                if not os.access(self.path, os.R_OK | os.W_OK):
-                    headDirPath = self.AltHeadDirPath
-                    self.path = os.path.abspath(
-                                        os.path.expanduser(
-                                            os.path.join(headDirPath,
-                                                         self.AltTailDirPath)))
-                    if not os.path.exists(self.path):
+                if not headDirPath:
+                    headDirPath = self.HeadDirPath
+
+                self.path = os.path.abspath(
+                                    os.path.expanduser(
+                                        os.path.join(headDirPath,
+                                                     self.TailDirPath)))
+
+                if not os.path.exists(self.path):
+                    try:
                         os.makedirs(self.path)
+                    except OSError as ex:
+                        headDirPath = self.AltHeadDirPath
+                        self.path = os.path.abspath(
+                                            os.path.expanduser(
+                                                os.path.join(headDirPath,
+                                                             self.AltTailDirPath)))
+                        if not os.path.exists(self.path):
+                            os.makedirs(self.path)
+                else:
+                    if not os.access(self.path, os.R_OK | os.W_OK):
+                        headDirPath = self.AltHeadDirPath
+                        self.path = os.path.abspath(
+                                            os.path.expanduser(
+                                                os.path.join(headDirPath,
+                                                             self.AltTailDirPath)))
+                        if not os.path.exists(self.path):
+                            os.makedirs(self.path)
 
-        fileName = "{}.log".format(self.name)
-        self.path = os.path.join(self.path, fileName)
+            fileName = "{}.log".format(self.name)
+            self.path = os.path.join(self.path, fileName)
 
-        #create file handlers and assign formatters
-        self.baseFileHandler = logging.FileHandler(self.path)
-        self.baseFileHandler.setFormatter(self.baseFormatter)
-        self.failFileHandler = logging.FileHandler(self.path)
-        self.failFileHandler.setFormatter(self.failFormatter)
+            #create file handlers and assign formatters
+            self.baseFileHandler = logging.FileHandler(self.path)
+            self.baseFileHandler.setFormatter(self.baseFormatter)
+            self.failFileHandler = logging.FileHandler(self.path)
+            self.failFileHandler.setFormatter(self.failFormatter)
 
         self.opened = True
 
@@ -170,7 +195,7 @@ class Ogler():
            clear is boolean, True means clear lmdb directory
         """
         self.opened = False
-        if clear or self.temp:
+        if clear:
             self.clearDirPath()
 
     def clearDirPath(self):
@@ -179,6 +204,7 @@ class Ogler():
         """
         if os.path.exists(self.path):
             shutil.rmtree(os.path.dirname(self.path))
+            self.path = None
 
 
     def getBlogger(self, name=__name__, level=None):
@@ -196,6 +222,7 @@ class Ogler():
         if self.opened:
             blogger.addHandler(self.baseFileHandler)
         return blogger
+
 
     def getFlogger(self, name=__name__, level=None):
         """
@@ -215,6 +242,7 @@ class Ogler():
         if self.opened:
             flogger.addHandler(self.failFileHandler)  # output to file
         return flogger
+
 
     def getLoggers(self, name=__name__):
         """
