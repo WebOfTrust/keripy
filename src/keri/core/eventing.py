@@ -95,96 +95,96 @@ SealLocation = namedtuple("SealLocation", 'i s t p')
 # Cues are dataclasses may be converted tofrom dicts easily
 
 
-def decouplet(couplet):
+def decouple(couple):
     """
     Returns tuple (duple) of (prefixer, cigar) from concatenated bytes
-    of couplet made up of qb64 or qb64b versions of pre+sig
-    Couplet is used for receipts signed by nontransferable prefix keys
+    of couple made up of qb64 or qb64b versions of pre+sig
+    couple is used for receipts signed by nontransferable prefix keys
 
     Parameters:
-        couplet is bytes concatenation of pre+sig from receipt
+        couple is bytes concatenation of pre+sig from receipt
     """
-    if isinstance(couplet, memoryview):
-        couplet = bytes(couplet)
-    if hasattr(couplet, "encode"):
-        couplet = couplet.encode("utf-8")  # convert to bytes
+    if isinstance(couple, memoryview):
+        couple = bytes(couple)
+    if hasattr(couple, "encode"):
+        couple = couple.encode("utf-8")  # convert to bytes
 
-    prefixer = Prefixer(qb64b=couplet)
-    couplet = couplet[len(prefixer.qb64b):]  # strip off pre
-    cigar = Cigar(qb64b=couplet)
+    prefixer = Prefixer(qb64b=couple)
+    couple = couple[len(prefixer.qb64b):]  # strip off pre
+    cigar = Cigar(qb64b=couple)
     return (prefixer, cigar)
 
 
-def detriplet(triplet):
+def detriple(triple):
     """
     Returns tuple (triple) of (diger, prefixer, cigar) from concatenated bytes
-    of triplet made up of qb64 or qb64b versions of dig+pre+sig
+    of triple made up of qb64 or qb64b versions of dig+pre+sig
     Triplet is used for escrows of unverified receipts signed by nontransferable prefix keys
 
     Parameters:
-        triplet is bytes concatenation of dig+pre+sig from receipt
+        triple is bytes concatenation of dig+pre+sig from receipt
     """
-    if isinstance(triplet, memoryview):
-        triplet = bytes(triplet)
-    if hasattr(triplet, "encode"):
-        triplet = triplet.encode("utf-8")  # convert to bytes
-    diger = Diger(qb64b=triplet)
-    triplet = triplet[len(diger.qb64b):]  # strip off dig
-    prefixer = Prefixer(qb64b=triplet)
-    triplet = triplet[len(prefixer.qb64b):]  # strip off pre
-    cigar = Cigar(qb64b=triplet)
+    if isinstance(triple, memoryview):
+        triple = bytes(triple)
+    if hasattr(triple, "encode"):
+        triple = triple.encode("utf-8")  # convert to bytes
+    diger = Diger(qb64b=triple)
+    triple = triple[len(diger.qb64b):]  # strip off dig
+    prefixer = Prefixer(qb64b=triple)
+    triple = triple[len(prefixer.qb64b):]  # strip off pre
+    cigar = Cigar(qb64b=triple)
     return (diger, prefixer, cigar)
 
 
-def dequadlet(quadlet):
+def dequadruple(quadruple):
     """
     Returns tuple (quadruple) of (prefixer, seqner, diger, siger) from concatenated bytes
-    of quadlet made up of qb64 or qb64b versions of spre+ssnu+sdig+sig
-    Quadlet is used for receipts signed by transferable prefix keys
+    of quadruple made up of qb64 or qb64b versions of spre+ssnu+sdig+sig
+    quadruple is used for receipts signed by transferable prefix keys
 
     Parameters:
-        quadlet is bytes concatenation of pre+snu+dig+sig from receipt
+        quadruple is bytes concatenation of pre+snu+dig+sig from receipt
     """
-    if isinstance(quadlet, memoryview):
-        quadlet = bytes(quadlet)
-    if hasattr(quadlet, "encode"):
-        quadlet = quadlet.encode("utf-8")  # convert to bytes
+    if isinstance(quadruple, memoryview):
+        quadruple = bytes(quadruple)
+    if hasattr(quadruple, "encode"):
+        quadruple = quadruple.encode("utf-8")  # convert to bytes
 
-    prefixer = Prefixer(qb64b=quadlet)
-    quadlet = quadlet[len(prefixer.qb64b):]  # strip off pre
-    seqner = Seqner(qb64b=quadlet)
-    quadlet = quadlet[len(seqner.qb64b):]  # strip off snu
-    diger = Diger(qb64b=quadlet)
-    quadlet = quadlet[len(diger.qb64b):]  # strip off dig
-    siger = Siger(qb64b=quadlet)
+    prefixer = Prefixer(qb64b=quadruple)
+    quadruple = quadruple[len(prefixer.qb64b):]  # strip off pre
+    seqner = Seqner(qb64b=quadruple)
+    quadruple = quadruple[len(seqner.qb64b):]  # strip off snu
+    diger = Diger(qb64b=quadruple)
+    quadruple = quadruple[len(diger.qb64b):]  # strip off dig
+    siger = Siger(qb64b=quadruple)
     return (prefixer, seqner, diger, siger)
 
 
-def dequinlet(quinlet):
+def dequintuple(quintuple):
     """
-    Returns tuple (quintuple) of (ediger, seal prefixer, seal seqner, seal diger, siger)
-    from concatenated bytes of quinlet made up of qb64 or qb64b versions of
-    edig+spre+ssnu+sdig+sig
-    Quinlet is used for unverified escrows of validator receipts signed
+    Returns tuple of (ediger, seal prefixer, seal seqner, seal diger, siger)
+    from concatenated bytes of quintuple made up of qb64 or qb64b versions of
+    quntipuple given by  concatenation of  edig+spre+ssnu+sdig+sig
+    Quintuple is used for unverified escrows of validator receipts signed
     by transferable prefix keys
 
     Parameters:
-        quinlet is bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
+        quintuple is bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
     """
-    if isinstance(quinlet, memoryview):
-        quinlet = bytes(quinlet)
-    if hasattr(quinlet, "encode"):
-        quinlet = quinlet.encode("utf-8")  # convert to bytes
+    if isinstance(quintuple, memoryview):
+        quintuple = bytes(quintuple)
+    if hasattr(quintuple, "encode"):
+        quintuple = quintuple.encode("utf-8")  # convert to bytes
 
-    ediger = Diger(qb64b=quinlet)  #  diger of receipted event
-    quinlet = quinlet[len(ediger.qb64b):]  # strip off dig
-    sprefixer = Prefixer(qb64b=quinlet)  # prefixer of recipter
-    quinlet = quinlet[len(sprefixer.qb64b):]  # strip off pre
-    sseqner = Seqner(qb64b=quinlet)  # seqnumber of receipting event
-    quinlet = quinlet[len(sseqner.qb64b):]  # strip off snu
-    sdiger = Diger(qb64b=quinlet)  # diger of receipting event
-    quinlet = quinlet[len(sdiger.qb64b):]  # strip off dig
-    siger = Siger(qb64b=quinlet)  #  indexed siger of event
+    ediger = Diger(qb64b=quintuple)  #  diger of receipted event
+    quintuple = quintuple[len(ediger.qb64b):]  # strip off dig
+    sprefixer = Prefixer(qb64b=quintuple)  # prefixer of recipter
+    quintuple = quintuple[len(sprefixer.qb64b):]  # strip off pre
+    sseqner = Seqner(qb64b=quintuple)  # seqnumber of receipting event
+    quintuple = quintuple[len(sseqner.qb64b):]  # strip off snu
+    sdiger = Diger(qb64b=quintuple)  # diger of receipting event
+    quintuple = quintuple[len(sdiger.qb64b):]  # strip off dig
+    siger = Siger(qb64b=quintuple)  #  indexed siger of event
     return (ediger, sprefixer, sseqner, sdiger, siger)
 
 
@@ -792,7 +792,8 @@ class Kever:
             self.delegated = False
             self.delegator = None
 
-        self.logEvent(serder, sigers)  # idempotent update db logs
+        #  .validateSigs above ensures threshold met otherwise raises exception
+        self.logEvent(serder, sigers, first=True)  # First seen accepted
 
 
     @property
@@ -940,7 +941,8 @@ class Kever:
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(s=self.sn, d=self.serder.diger.qb64)
 
-            self.logEvent(serder, sigers)  # update logs
+            #  .validateSigs above ensures threshold met otherwise raises exception
+            self.logEvent(serder, sigers, first=True)  # First seen accepted
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -975,7 +977,8 @@ class Kever:
             self.serder = serder  # need for digest agility includes .serder.diger
             self.ilk = ilk
 
-            self.logEvent(serder, sigers)  # update logs
+            #  .validateSigs above ensure threshold met otherwise raises exception
+            self.logEvent(serder, sigers, first=True)  # First seen accepted
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -1069,7 +1072,8 @@ class Kever:
                                   "".format(self.nexter.qb64, tholder.thold, keys, ked))
 
         # compute wits from cuts and adds use set
-        # verify set math
+        # verify set math uses ordered set to ensure that witness list is strictly
+        #  ordered so that indexed signatures work
         witset = oset(self.wits)
         cuts = ked["wr"]
         cutset = oset(cuts)
@@ -1290,7 +1294,7 @@ class Kever:
         return seal
 
 
-    def logEvent(self, serder, sigers):
+    def logEvent(self, serder, sigers, first=False):
         """
         Update associated logs for verified event.
         Update is idempotent. Logs will not write dup at key if already exists.
@@ -1298,12 +1302,24 @@ class Kever:
         Parameters:
             serder is Serder instance of current event
             sigers is list of Siger instance for current event
+            first is Boolean True means first seen accepted log of event.
+                    Otherwise means idempotent log of event to accept additional
+                    signatures beyond the threshold provided for first seen
         """
         dgkey = dgKey(self.prefixer.qb64b, self.serder.diger.qb64b)
-        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+        dtsb = nowIso8601().encode("utf-8")
+        if first:
+            self.baser.setDts(dgkey, dtsb)  #  first seen so dts is first seen
+        else:
+            self.baser.putDts(dgkey, dtsb)  #  do not change dts if already
+
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
+        if first:  # append event dig to first seen database in order
+            dtsb = self.baser.appendFse(self.prefixer.qb64b, dtsb, self.serder.diger.qb64b)
+            blogger.info("Kever process: First seen at %s\nKEL event = %s\n",
+                         dtsb.decode("utf-8"), serder.ked)
         blogger.info("Kever process: Added valid event to KEL event = %s\n", serder.ked)
 
 
@@ -1475,7 +1491,7 @@ class Kevery:
             # cigar itself has the attached signature
             cigars = []  # List of cigars to hold couplets
             if ncpts:
-                for i in range(ncpts): # extract each attached couplet
+                for i in range(ncpts): # extract each attached couple
                     # check here for type of attached couplets qb64 or qb2
                     verfer = Verfer(qb64b=ims)  # qb64
                     del ims[:len(verfer.qb64)]  # strip off identifier prefix
@@ -1494,7 +1510,7 @@ class Kevery:
                     del ims[:len(cigar.qb64)]  # strip off signature
 
             if not cigars:
-                raise ValidationError("Missing attached receipt couplet(s)"
+                raise ValidationError("Missing attached receipt couple(s)"
                                       " for evt = {}.".formate(serder.ked))
 
             self.processReceipt(serder, cigars)
@@ -1632,16 +1648,16 @@ class Kevery:
         # note receipt dig algo may not match database dig also so must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
-        # different dup at same key, sn.  Escrow needs to be triplet with
+        # different dup at same key, sn.  Escrow needs to be triple with
         # dig, witness prefix, sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for same reason. Must
         # lookup last event by sn not by dig.
         self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
-        for cigar in cigars:  # escrow each triplet
+        for cigar in cigars:  # escrow each triple
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid triplets
-            triplet = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
-            self.baser.addUre(key=snKey(serder.preb, serder.sn), val=triplet)  # should be snKey
+            triple = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
+            self.baser.addUre(key=snKey(serder.preb, serder.sn), val=triple)  # should be snKey
         # log escrowed
         blogger.info("Kevery process: escrowed unverified receipt of pre= %s "
                      " sn=%x dig=%s\n", serder.pre, serder.sn, dig)
@@ -1671,8 +1687,8 @@ class Kevery:
         prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
                   Seqner(snh=seal.s).qb64b + seal.d.encode("utf-8"))
         for siger in sigers:  # escrow each quintlet
-            quinlet = prelet +  siger.qb64b  # quinlet
-            self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quinlet)
+            quintuple = prelet +  siger.qb64b  # quintuple
+            self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quintuple)
         # log escrowed
         blogger.info("Kevery process: escrowed unverified transferabe validator "
                      "receipt of pre= %s sn=%x dig=%s\n", serder.pre, serder.sn, dig)
@@ -1731,7 +1747,8 @@ class Kevery:
                     indices = kever.verifySigs(serder=serder,
                                                sigers=sigers,
                                                verfers=eserder.verfers)
-                    if indices:  # verified signature so log sigs
+                    if indices:  # at least one verified signature so log sigs
+                        # not first seen update
                         kever.logEvent(serder, sigers)  # idempotent update db logs
 
                 else:   # escrow likely duplicitous event
@@ -1768,7 +1785,8 @@ class Kevery:
                         indices = kever.verifySigs(serder=serder,
                                                    sigers=sigers,
                                                    verfers=eserder.verfers)
-                        if indices:  # verified signature so log sigs
+                        if indices:  # at least one verified signature so log sigs
+                            # not first seen update
                             kever.logEvent(serder, sigers)  # idempotent update db logs
 
                     else:   # escrow likely duplicitous event
@@ -1782,7 +1800,7 @@ class Kevery:
 
         Parameters:
             serder is Serder instance of serialized receipt message
-            cigars is list of Cigar instances that contain receipt couplet
+            cigars is list of Cigar instances that contain receipt couple
                 signature in .raw and public key in .verfer
 
         Receipt dict labels
@@ -1813,14 +1831,14 @@ class Kevery:
                 raise ValidationError("Stale receipt at sn = {} for rct = {}."
                                       "".format(ked["s"], ked))
 
-            # process each couplet verify sig and write to db
+            # process each couple verify sig and write to db
             for cigar in cigars:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
                 if cigar.verfer.verify(cigar.raw, lserder.raw):
-                    # write receipt couplet to database
-                    couplet = cigar.verfer.qb64b + cigar.qb64b
-                    self.baser.addRct(key=dgkey, val=couplet)
+                    # write receipt couple to database
+                    couple = cigar.verfer.qb64b + cigar.qb64b
+                    self.baser.addRct(key=dgkey, val=couple)
 
         else:  # no events to be receipted yet at that sn so escrow
             self.escrowUREvent(serder, cigars, dig=ked["d"])  # digest in receipt
@@ -1907,9 +1925,9 @@ class Kevery:
 
                 siger.verfer = verfers[siger.index]  # assign verfer
                 if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
-                    # good sig so write receipt quadlet to database
-                    quadlet = sealet + siger.qb64b
-                    self.baser.addVrc(key=dgkey, val=quadlet)  # dups kept
+                    # good sig so write receipt quadruple to database
+                    quadruple = sealet + siger.qb64b
+                    self.baser.addVrc(key=dgkey, val=quadruple)  # dups kept
 
         else:  # escrow  either receiptor or receipted event not yet in database
             self.escrowVREvent(serder, sigers, seal, dig=ked["d"])
@@ -2220,25 +2238,25 @@ class Kevery:
         A receipt is unverified if the associated event has not been accepted into its KEL.
         Without the event there is no way to know where to store the receipt couplets.
 
-        The escrow is a triplet with dig+spre+sig the verified receipt is just the
-        couplet spre+sig that is stored by event dig
+        The escrow is a triple with dig+spre+sig the verified receipt is just the
+        couple spre+sig that is stored by event dig
 
         Escrowed items are indexed in database table keyed by prefix and
-        sn with duplicates given by different recipt triplet inserted in insertion order.
+        sn with duplicates given by different recipt triple inserted in insertion order.
         This allows FIFO processing of escrows for events with same prefix and
         sn but different digest.
 
         Uses  .baser.addUre(self, key, val) which is IOVal with dups.
 
-        Value is triplet
+        Value is triple
 
         Original Escrow steps:
             self.baser.putDts(dgKey(pre, dig), nowIso8601().encode("utf-8"))
-            for cigar in cigars:  # escrow each triplet
+            for cigar in cigars:  # escrow each triple
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
-                triplet = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
-                self.baser.addUre(key=snKey(pre, sn), val=triplet)  # should be snKey
+                triple = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
+                self.baser.addUre(key=snKey(pre, sn), val=triple)  # should be snKey
             where:
                 dig is dig in receipt of receipted event
                 cigars is list of cigars instances for receipted event
@@ -2261,7 +2279,7 @@ class Kevery:
             for ekey, etriplet in self.baser.getUreItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
-                    ediger, sprefixer, cigar = detriplet(etriplet)
+                    ediger, sprefixer, cigar = detriple(etriplet)
 
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(ediger.qb64b)))
@@ -2315,7 +2333,7 @@ class Kevery:
                                           "pre={} sn={:x} receipter={}."
                                           "".format( pre, sn, sprefixer.qb64))
 
-                    #  verify sig verfer key is prefixer from triplet
+                    #  verify sig verfer key is prefixer from triple
                     cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
                     if not cigar.verfer.verify(cigar.raw, serder.raw):
                         # no sigs so raise ValidationError which unescrows below
@@ -2326,9 +2344,9 @@ class Kevery:
                                               "pre={} sn={:x} receipter={}."
                                               "".format( pre, sn, sprefixer.qb64))
 
-                    # write receipt couplet to database
-                    couplet = cigar.verfer.qb64b + cigar.qb64b
-                    self.baser.addRct(key=dgKey(pre, serder.dig), val=couplet)
+                    # write receipt couple to database
+                    couple = cigar.verfer.qb64b + cigar.qb64b
+                    self.baser.addRct(key=dgKey(pre, serder.dig), val=couple)
 
 
                 except UnverifiedReceiptError as ex:
@@ -2367,28 +2385,28 @@ class Kevery:
         been accepted into the receipted's KEL or the establishment event of the
         receiptor has not been accepted into the receipter's KEL.
         Without either event there is no way to know where to store the receipt
-        quadlets.
+        quadruples.
 
-        The escrow is a quinlet with dig+spre+ssnu+sdig+sig
-        the verified receipt is just the quadlet spre+ssnu+sdig+sig that is
+        The escrow is a quintuple with dig+spre+ssnu+sdig+sig
+        the verified receipt is just the quadruple spre+ssnu+sdig+sig that is
         stored by event dig
 
         Escrowed items are indexed in database table keyed by prefix and
-        sn with duplicates given by different receipt quinlet inserted in insertion order.
+        sn with duplicates given by different receipt quintuple inserted in insertion order.
         This allows FIFO processing of escrows of events with same prefix and sn
         but different digest.
 
         Uses  .baser.addVre(self, key, val) which is IOVal with dups.
 
-        Value is quinlet
+        Value is quintuple
 
         Original Escrow steps:
             self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
             prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
                   Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8"))
             for siger in sigers:  # escrow each quintlet
-                quinlet = prelet +  siger.qb64b  # quinlet
-                self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quinlet)
+                quintuple = prelet +  siger.qb64b  # quintuple
+                self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quintuple)
             where:
                 dig is dig in receipt of receipted event
                 sigers is list of Siger instances for receipted event
@@ -2410,7 +2428,7 @@ class Kevery:
             for ekey, equinlet in self.baser.getVreItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
-                    ediger, sprefixer, sseqner, sdiger, siger = dequinlet(equinlet)
+                    ediger, sprefixer, sseqner, sdiger, siger = dequintuple(equinlet)
 
                     # check date if expired then remove escrow.
                     dtb = self.baser.getDts(dgKey(pre, bytes(ediger.qb64b)))
@@ -2485,14 +2503,14 @@ class Kevery:
                         raise ValidationError("Bad chit seal at sn = {} for rct = {}."
                                               "".format(sseqner.sn, sserder.ked))
 
-                    #verify sigs and if so write quadlet to database
+                    #verify sigs and if so write quadruple to database
                     verfers = sserder.verfers
                     if not verfers:
                         raise ValidationError("Invalid seal est. event dig = {} for "
                                               "receipt from pre ={} no keys."
                                               "".format(sdiger.qb64, sprefixer.qb64))
 
-                    # Set up quadlet
+                    # Set up quadruple
                     sealet = sprefixer.qb64b + sseqner.qb64b + sdiger.qb64b
 
                     if siger.index >= len(verfers):
@@ -2508,9 +2526,9 @@ class Kevery:
                                               "pre={} sn={:x} receipter={}."
                                               "".format( pre, sn, sprefixer.qb64))
 
-                    # good sig so write receipt quadlet to database
-                    quadlet = sealet + siger.qb64b
-                    self.baser.addVrc(key=dgKey(pre, serder.dig), val=quadlet)
+                    # good sig so write receipt quadruple to database
+                    quadruple = sealet + siger.qb64b
+                    self.baser.addVrc(key=dgKey(pre, serder.dig), val=quadruple)
 
 
                 except UnverifiedTransferableReceiptError as ex:

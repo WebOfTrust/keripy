@@ -33,7 +33,7 @@ from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc
-from keri.core.eventing import decouplet, detriplet, dequadlet, dequinlet
+from keri.core.eventing import decouple, detriple, dequadruple, dequintuple
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
                                 delcept, deltate)
@@ -47,15 +47,15 @@ blogger, flogger = ogling.ogler.getLoggers()
 
 
 
-def test_decouplet():
+def test_decouple():
     """
-    test decouplet function
+    test decouple function
     """
     pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
     sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
-    couplet = pre + sig
-    prefixer, cigar = decouplet(couplet)
+    couple = pre + sig
+    prefixer, cigar = decouple(couple)
     assert prefixer.qb64 == pre
     assert cigar.qb64 == sig
 
@@ -63,29 +63,29 @@ def test_decouplet():
     pre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
     sig = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
-    couplet = pre + sig
-    prefixer, cigar = decouplet(couplet)
+    couple = pre + sig
+    prefixer, cigar = decouple(couple)
     assert prefixer.qb64b == pre
     assert cigar.qb64b == sig
 
-    couplet = memoryview(couplet)
-    prefixer, cigar = decouplet(couplet)
+    couple = memoryview(couple)
+    prefixer, cigar = decouple(couple)
     assert prefixer.qb64b == pre
     assert cigar.qb64b == sig
 
     """end test"""
 
 
-def test_detriplet():
+def test_detriple():
     """
-    test detriplet function
+    test detriple function
     """
     dig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
     pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
     sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
-    triplet = dig + pre + sig
-    diger, prefixer, cigar = detriplet(triplet)
+    triple = dig + pre + sig
+    diger, prefixer, cigar = detriple(triple)
     assert diger.qb64 == dig
     assert prefixer.qb64 == pre
     assert cigar.qb64 == sig
@@ -95,32 +95,32 @@ def test_detriplet():
     pre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
     sig = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
-    triplet = dig + pre + sig
-    diger, prefixer, cigar = detriplet(triplet)
+    triple = dig + pre + sig
+    diger, prefixer, cigar = detriple(triple)
     assert diger.qb64b == dig
     assert prefixer.qb64b == pre
     assert cigar.qb64b == sig
 
 
-    triplet = memoryview(triplet)
-    diger, prefixer, cigar = detriplet(triplet)
+    triple = memoryview(triple)
+    diger, prefixer, cigar = detriple(triple)
     assert diger.qb64b == dig
     assert prefixer.qb64b == pre
     assert cigar.qb64b == sig
 
     """end test"""
 
-def test_dequadlet():
+def test_dequadruple():
     """
-    test test_dequadlet function
+    test test_dequadruple function
     """
     spre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
     ssnu = '0AAAAAAAAAAAAAAAAAAAAABQ'
     sdig = 'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
     sig = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    quadlet = spre + ssnu + sdig + sig
-    sprefixer, sseqner, sdiger, siger = dequadlet(quadlet)
+    quadruple = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, siger = dequadruple(quadruple)
     assert sprefixer.qb64 == spre
     assert sseqner.qb64 == ssnu
     assert sdiger.qb64 == sdig
@@ -132,17 +132,17 @@ def test_dequadlet():
     sdig = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
     sig = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    quadlet = spre + ssnu + sdig + sig
-    sprefixer, sseqner, sdiger, sigar = dequadlet(quadlet)
+    quadruple = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple)
     assert sprefixer.qb64b == spre
     assert sseqner.qb64b == ssnu
     assert sdiger.qb64b == sdig
     assert siger.qb64b == sig
 
 
-    quadlet = memoryview(quadlet)
-    quadlet = spre + ssnu + sdig + sig
-    sprefixer, sseqner, sdiger, sigar = dequadlet(quadlet)
+    quadruple = memoryview(quadruple)
+    quadruple = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple)
     assert sprefixer.qb64b == spre
     assert sseqner.qb64b == ssnu
     assert sdiger.qb64b == sdig
@@ -151,9 +151,9 @@ def test_dequadlet():
     """end test"""
 
 
-def test_dequinlet():
+def test_dequintuple():
     """
-    test dequinlet function
+    test dequintuple function
     """
     edig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
     spre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
@@ -162,8 +162,8 @@ def test_dequinlet():
     sig = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
     sealet = spre + ssnu + sdig
-    quinlet = edig + sealet + sig
-    ediger, sprefixer, sseqner, sdiger, siger = dequinlet(quinlet)
+    quintuple = edig + sealet + sig
+    ediger, sprefixer, sseqner, sdiger, siger = dequintuple(quintuple)
     assert ediger.qb64 == edig
     assert sprefixer.qb64 == spre
     assert sseqner.qb64 == ssnu
@@ -177,8 +177,8 @@ def test_dequinlet():
     sdig = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
     sig = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
-    quinlet = edig + spre + ssnu + sdig + sig
-    ediger, sprefixer, sseqner, sdiger, sigar = dequinlet(quinlet)
+    quintuple = edig + spre + ssnu + sdig + sig
+    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple)
     assert ediger.qb64b == edig
     assert sprefixer.qb64b == spre
     assert sseqner.qb64b == ssnu
@@ -186,9 +186,9 @@ def test_dequinlet():
     assert siger.qb64b == sig
 
 
-    quinlet = memoryview(quinlet)
-    quinlet = edig + spre + ssnu + sdig + sig
-    ediger, sprefixer, sseqner, sdiger, sigar = dequinlet(quinlet)
+    quintuple = memoryview(quintuple)
+    quintuple = edig + spre + ssnu + sdig + sig
+    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple)
     assert ediger.qb64b == edig
     assert sprefixer.qb64b == spre
     assert sseqner.qb64b == ssnu
@@ -1929,7 +1929,7 @@ def test_receipt():
 
 def test_direct_mode():
     """
-    Test direct mode with transverable validator event receipts
+    Test direct mode with transferable validator event receipts
 
     """
     # manual process to generate a list of secrets
@@ -2106,7 +2106,7 @@ def test_direct_mode():
 
         # check if val Kever in coe's .kevers
         assert valpre in coeKevery.kevers
-        #  check if receipt quadlet from val in receipt database
+        #  check if receipt quadruple from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
@@ -2140,7 +2140,7 @@ def test_direct_mode():
                                  b'QYfI_04HoP_A_fvlU_b099fiEJyDSA2Cg')
 
         coeKevery.processAll(ims=vmsg)  #  coe process the escrow receipt from val
-        #  check if receipt quadlet in escrow database
+        #  check if receipt quadruple in escrow database
         result = coeKevery.baser.getVres(key=snKey(pre=coeKever.prefixer.qb64,
                                                    sn=10))
         assert bytes(result[0]) == (fake.encode("utf-8") +
@@ -2194,7 +2194,7 @@ def test_direct_mode():
         # Simulate send to val of coe's receipt of val's inception message
         valKevery.processAll(ims=cmsg)  #  coe process val's incept and receipt
 
-        #  check if receipt quadlet from coe in val's receipt database
+        #  check if receipt quadruple from coe in val's receipt database
         result = valKevery.baser.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
                                                     dig=valKever.serder.diger.qb64))
         assert bytes(result[0]) == (coeKever.prefixer.qb64b +
@@ -2285,7 +2285,7 @@ def test_direct_mode():
         # Simulate send to coe of val's receipt of coe's rotation message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
-        #  check if receipt quadlet from val in receipt database
+        #  check if receipt quadruple from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
@@ -2372,7 +2372,7 @@ def test_direct_mode():
         # Simulate send to coe of val's receipt of coe's rotation message
         coeKevery.processAll(ims=vmsg)  #  coe process val's incept and receipt
 
-        #  check if receipt quadlet from val in receipt database
+        #  check if receipt quadruple from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                         dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
@@ -2598,7 +2598,7 @@ def test_direct_mode_cbor_mgpk():
 
         # check if val Kever in coe's .kevers
         assert valpre in coeKevery.kevers
-        #  check if receipt quadlet from val in receipt database
+        #  check if receipt quadruple from val in receipt database
         result = coeKevery.baser.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
                                                     dig=coeKever.serder.diger.qb64))
         assert bytes(result[0]) == (valKever.prefixer.qb64b +
@@ -3211,4 +3211,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_dequadlet()
+    test_dequadruple()

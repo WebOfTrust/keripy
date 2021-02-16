@@ -469,7 +469,7 @@ class CryMat:
         Returns fully qualified base64 bytes given self.pad, self.code, self.count
         and self.raw
         code is Codex value
-        count is attached receipt couplet count when applicable for CryCntDex codes
+        count is attached receipt couple count when applicable for CryCntDex codes
         raw is bytes or bytearray
         """
         if self._code in CryCntDex:
@@ -1902,7 +1902,7 @@ BASE64_PAD = b'='
 
 # Mappings between Base64 Encode Index and Decode Characters
 #  B64ChrByIdx is dict where each key is a B64 index and each value is the B64 char
-#  B64IdxByChr is dict where each key is a B64 chars and each value is the B64 index
+#  B64IdxByChr is dict where each key is a B64 char and each value is the B64 index
 # Map Base64 index to char
 B64ChrByIdx = dict((index, char) for index,  char in enumerate([chr(x) for x in range(65, 91)]))
 B64ChrByIdx.update([(index + 26, char) for index,  char in enumerate([chr(x) for x in range(97, 123)])])
