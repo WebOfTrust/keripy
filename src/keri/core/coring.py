@@ -469,7 +469,7 @@ class CryMat:
         Returns fully qualified base64 bytes given self.pad, self.code, self.count
         and self.raw
         code is Codex value
-        count is attached receipt couplet count when applicable for CryCntDex codes
+        count is attached receipt couple count when applicable for CryCntDex codes
         raw is bytes or bytearray
         """
         if self._code in CryCntDex:

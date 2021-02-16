@@ -941,7 +941,7 @@ class Baser(LMDBer):
             More than one value per DB key is allowed
 
         .rcts is named sub DB of event receipt couplets from nontransferable
-            signers. Each couplet is concatenation of fully qualified
+            signers. Each couple is concatenation of fully qualified
             non-transferale prefix plus fully qualified event signature
             by witness, watcher, or validator.
             dgKey
@@ -949,7 +949,7 @@ class Baser(LMDBer):
             More than one value per DB key is allowed
 
         .ures is named sub DB of unverified event receipt escrowed triples from
-            non-transferable signers. Each triplet is concatenation of fully
+            non-transferable signers. Each triple is concatenation of fully
             qualified receipted event digest, non-transferable event identfier prefix,
             plus receipt event signature by witness, watcher, or validator
             snKey
@@ -957,24 +957,24 @@ class Baser(LMDBer):
             of serialized event
             More than one value per DB key is allowed
 
-        .vrcs is named sub DB of event validator receipt quadlets from transferable
-            signers. Each quadlet is concatenation of  four fully qualified items
+        .vrcs is named sub DB of event validator receipt quadruples from transferable
+            signers. Each quadruple is concatenation of  four fully qualified items
             of validator. These are transferable prefix, plus latest establishment
             event sequence number plus latest establishment event digest,
             plus event signature.
             When latest establishment event is multisig then there will
-            be multiple quadlets one per signing key, each a dup at same db key.
+            be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .vres is named sub DB of unverified event validator receipt escrowed
-            quadlets from transferable signers. Each quadlet is concatenation of
+            quadruples from transferable signers. Each quadruple is concatenation of
             four fully qualified items  of validator. These are transferable prefix,
             plus latest establishment event sequence number plus latest
             establishment event digest, plus event signature.
             When latest establishment event is multisig then there will
-            be multiple quadlets one per signing key, each a dup at same db key.
+            be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
@@ -1172,7 +1172,6 @@ class Baser(LMDBer):
             pre is bytes identifier prefix for event
             dts is iso8601 TZ aware datetime bytes
             val is event digest
-
         """
         key = dtKey(pre, dts)
 
@@ -1222,47 +1221,90 @@ class Baser(LMDBer):
 
         Parameters:
             pre is bytes of itdentifier prefix
-
         """
-
         with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             key = dtKey(pre, "")  # before any entry at pre
             if not cursor.set_range(key):  #  moves to val at key >= key
                 return  # no values end of db
 
-            for key, val in cursor.iternext():  # return key, val at cursor
+            for key, val in cursor.iternext():  # get key, val at cursor
                 cpre, dts = splitKey(key, sep=b'|')
                 if cpre != pre:  # prev is now the last event for pre
                     break  # done
-                yield val
+                yield val  # dig of event
 
 
     def getFseItemsIter(self, pre):
         """
         Returns iterator of all (dts, dig) items in first seen order for all events
-        with same prefix. Where dts is date time stamp first seen and dig is
-        event digest for lookup in .evts sub db
+        with same prefix.
         .fses subdb uses dtKey(pre, dts) for entris
+        Values are tuples of (dts, dig): Where dts is date time stamp first seen
+        and dig is event digest for lookup in .evts sub db.
 
         Raises StopIteration Error when empty.
 
         Parameters:
             pre is bytes of itdentifier prefix
-
         """
-
         with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             key = dtKey(pre, "")  # before any entry at pre
             if not cursor.set_range(key):  #  moves to val at key >= key
                 return  # no values end of db
 
-            for key, val in cursor.iternext():  # return key, val at cursor
+            for key, val in cursor.iternext():  # get key, val at cursor
                 cpre, dts = splitKey(key, sep=b'|')
                 if cpre != pre:  # prev is now the last event for pre
                     break  # done
-                yield (dts, val)
+                yield (dts, val)  # (dts, dig) of event
+
+
+    def getFseValsAllPreIter(self, key=b''):
+        """
+        Returns iterator of all vals in first seen order for all events
+        for all prefixes in database.
+        Values are event digests for lookup in .evts sub db
+        .fses subdb uses dtKey(pre, dts) for entries
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            key is key location in db to resume replay, If empty then start at
+                first key in database
+        """
+        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  # moves to val at key >= key, first if empty
+                return  # no values empty db raises stop iteration
+            for key, val in cursor.iternext():  # get key, val at cursor
+                yield val  #  dig of event
+
+
+    def getFseItemsAllPreIter(self, key=b''):
+        """
+        Returns iterator of all (dts, dig) items in first seen order for all events
+        for all prefixes in database. Items are sorted by key which is given
+        by dtKey(pre,dts).
+        .fses subdb uses dtKey(pre, dts) for entries
+        Values are tuples of (dts, dig): Where dts is date time stamp first seen
+        and dig is event digest for lookup in .evts sub db.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            key is key location in db to resume replay, If empty then start at
+                first key in database
+        """
+        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # return key, val at cursor
+                cpre, dts = splitKey(key, sep=b'|')
+                yield (dts, val)  # (dts, dig) of event
 
 
     def putDts(self, key, val):
@@ -1380,7 +1422,7 @@ class Baser(LMDBer):
     def addRct(self, key, val):
         """
         Use dgKey()
-        Add receipt couplet val bytes as dup to key in db
+        Add receipt couple val bytes as dup to key in db
         Adds to existing values at key if any
         Returns True if written else False if dup val already exists
         Duplicates are inserted in lexocographic order not insertion order.
@@ -1441,7 +1483,7 @@ class Baser(LMDBer):
     def addUre(self, key, val):
         """
         Use snKey()
-        Add receipt triplet val bytes as dup to key in db
+        Add receipt triple val bytes as dup to key in db
         Triplet is dig + pre + sig
         Adds to existing values at key if any
         Returns True If at least one of vals is added as dup, False otherwise
@@ -1475,7 +1517,7 @@ class Baser(LMDBer):
     def getUreLast(self, key):
         """
         Use snKey()
-        Return last inserted dup partial signed escrowed event triplet val at key
+        Return last inserted dup partial signed escrowed event triple val at key
         Triplet is dig + pre + sig
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1486,10 +1528,10 @@ class Baser(LMDBer):
     def getUreItemsNext(self, key=b'', skip=True):
         """
         Use snKey()
-        Return all dups of partial signed escrowed event triplet items at next
+        Return all dups of partial signed escrowed event triple items at next
         key after key.
         Item is (key, val) where proem has already been stripped from val
-        val is triplet dig + pre + sig
+        val is triple dig + pre + sig
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
         Returns empty list if no entry at key
@@ -1501,10 +1543,10 @@ class Baser(LMDBer):
     def getUreItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
-        Return iterator of partial signed escrowed event triplet items at next
+        Return iterator of partial signed escrowed event triple items at next
         key after key.
         Items is (key, val) where proem has already been stripped from val
-        val is triplet dig + pre + sig
+        val is triple dig + pre + sig
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
         Raises StopIteration Error when empty
@@ -1547,8 +1589,8 @@ class Baser(LMDBer):
     def putVrcs(self, key, vals):
         """
         Use dgKey()
-        Write each entry from list of bytes receipt quadlets vals to key
-        quadlet is spre+ssnu+sdig+sig
+        Write each entry from list of bytes receipt quadruples vals to key
+        quadruple is spre+ssnu+sdig+sig
         Adds to existing receipts at key if any
         Returns True If no error
         Apparently always returns True (is this how .put works with dupsort=True)
@@ -1560,8 +1602,8 @@ class Baser(LMDBer):
     def addVrc(self, key, val):
         """
         Use dgKey()
-        Add receipt quadlet val bytes as dup to key in db
-        quadlet is spre+ssnu+sdig+sig
+        Add receipt quadruple val bytes as dup to key in db
+        quadruple is spre+ssnu+sdig+sig
         Adds to existing values at key if any
         Returns True if written else False if dup val already exists
         Duplicates are inserted in lexocographic order not insertion order.
@@ -1572,8 +1614,8 @@ class Baser(LMDBer):
     def getVrcs(self, key):
         """
         Use dgKey()
-        Return list of receipt quadlet at key
-        quadlet is spre+ssnu+sdig+sig
+        Return list of receipt quadruple at key
+        quadruple is spre+ssnu+sdig+sig
         Returns empty list if no entry at key
         Duplicates are retrieved in lexocographic order not insertion order.
         """
@@ -1583,8 +1625,8 @@ class Baser(LMDBer):
     def getVrcsIter(self, key):
         """
         Use dgKey()
-        Return iterator of receipt quadlets at key
-        quadlet is spre+ssnu+sdig+sig
+        Return iterator of receipt quadruples at key
+        quadruple is spre+ssnu+sdig+sig
         Raises StopIteration Error when empty
         Duplicates are retrieved in lexocographic order not insertion order.
         """
@@ -1594,7 +1636,7 @@ class Baser(LMDBer):
     def cntVrcs(self, key):
         """
         Use dgKey()
-        Return count of receipt quadlets at key
+        Return count of receipt quadruples at key
         Returns zero if no entry at key
         """
         return self.cntVals(self.vrcs, key)
@@ -1624,7 +1666,7 @@ class Baser(LMDBer):
     def addVre(self, key, val):
         """
         Use snKey()
-        Add receipt quinlet val bytes as dup to key in db
+        Add receipt quintuple val bytes as dup to key in db
         Quinlet is edig + spre + ssnu + sdig +sig
         Adds to existing values at key if any
         Returns True If at least one of vals is added as dup, False otherwise
@@ -1658,7 +1700,7 @@ class Baser(LMDBer):
     def getVreLast(self, key):
         """
         Use snKey()
-        Return last inserted dup partial signed escrowed event quinlet val at key
+        Return last inserted dup partial signed escrowed event quintuple val at key
         Quinlet is edig + spre + ssnu + sdig +sig
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
@@ -1669,7 +1711,7 @@ class Baser(LMDBer):
     def getVreItemsNext(self, key=b'', skip=True):
         """
         Use snKey()
-        Return all dups of partial signed escrowed event quinlet items at next
+        Return all dups of partial signed escrowed event quintuple items at next
         key after key.
         Item is (key, val) where proem has already been stripped from val
         val is Quinlet is edig + spre + ssnu + sdig +sig
@@ -1684,7 +1726,7 @@ class Baser(LMDBer):
     def getVreItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
-        Return iterator of partial signed escrowed event quinlet items at next
+        Return iterator of partial signed escrowed event quintuple items at next
         key after key.
         Items is (key, val) where proem has already been stripped from val
         val is Quinlet is edig + spre + ssnu + sdig +sig
