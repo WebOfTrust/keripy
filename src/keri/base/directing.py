@@ -92,10 +92,9 @@ class Director(doing.Doer):
         """
         super(Director, self).__init__(**kwa)
         self.hab = hab
-        self.client = client  #  use client for tx only
+        self.client = client  # use client for tx only
         self.kevery = eventing.Kevery(kevers=self.hab.kevers,
                                       baser=self.hab.db)
-
 
     def do(self, tymist, tock=0.0, **opts):
         """
@@ -111,7 +110,6 @@ class Director(doing.Doer):
             while (True):  # recur context
                 tyme = (yield (tock))  # yields tock then waits for next send
 
-
         except GeneratorExit:  # close context, forced exit due to .close
             pass
 
@@ -121,7 +119,7 @@ class Director(doing.Doer):
         finally:  # exit context,  unforced exit due to normal exit of try
             pass
 
-        return True # return value of yield from, or yield ex.value of StopIteration
+        return True  # return value of yield from, or yield ex.value of StopIteration
 
 
 class Reactor(doing.Doer):
@@ -168,12 +166,11 @@ class Reactor(doing.Doer):
         """
         super(Reactor, self).__init__(**kwa)
         self.hab = hab
-        self.client = client  #  use client for both rx and tx
+        self.client = client  # use client for both rx and tx
         self.kevery = eventing.Kevery(ims=self.client.rxbs,
                                       kevers=self.hab.kevers,
                                       baser=self.hab.db,
                                       framed=False)
-
 
     def do(self, tymist, tock=0.0, **opts):
         """
@@ -190,8 +187,6 @@ class Reactor(doing.Doer):
                 tyme = (yield (tock))  # yields tock then waits for next send
                 self.service()
 
-
-
         except GeneratorExit:  # close context, forced exit due to .close
             pass
 
@@ -201,8 +196,7 @@ class Reactor(doing.Doer):
         finally:  # exit context,  unforced exit due to normal exit of try
             pass
 
-        return True # return value of yield from, or yield ex.value of StopIteration
-
+        return True  # return value of yield from, or yield ex.value of StopIteration
 
     def service(self):
         """
@@ -214,7 +208,6 @@ class Reactor(doing.Doer):
             self.kevery.processAll()
             self.processCues()
 
-
     def processCues(self):
         """
         Process all cues in .kevery
@@ -224,7 +217,6 @@ class Reactor(doing.Doer):
             cue = self.kevery.cues.popleft()
             print("{} sent cue:\n{}\n\n".format(self.hab.pre, cue))
             self.processCue(cue=cue)
-
 
     def processCue(self, cue):
         """
@@ -248,7 +240,6 @@ class Reactor(doing.Doer):
                 self.sendOwnInception()
 
         self.sendOwnChit(cuePre, cueSerder)
-
 
     def sendOwnChit(self, cuePre, cueSerder):
         """
@@ -284,10 +275,9 @@ class Reactor(doing.Doer):
             self.kevery.processOne(ims=bytearray(msg), framed=True)  # make copy
 
             # send to remote
-            self.client.tx(bytes(msg))  #  make copy because tx uses deque
+            self.client.tx(bytes(msg))  # make copy because tx uses deque
             print("{} sent chit:\n{}\n\n".format(self.hab.pre, bytes(msg)))
             del msg[:]
-
 
     def sendOwnInception(self):
         """
@@ -298,20 +288,20 @@ class Reactor(doing.Doer):
         counter = coring.SigCounter()  # default is count = 1
         # sign serialization, returns Siger if index provided
         siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
-        #  create serialized message
+        # create serialized message
         msg = bytearray(self.hab.inception.raw)
         msg.extend(counter.qb64b)
         msg.extend(siger.qb64b)
 
         # check valid by creating own Kever using own Kevery
-        #self.kevery.processOne(ims=bytearray(msg))  # copy of msg
-        #kever = self.kevery.kevers[self.hab.pre]
-        #assert kever.prefixer.qb64 == self.hab.pre
+        # self.kevery.processOne(ims=bytearray(msg))  # copy of msg
+        # kever = self.kevery.kevers[self.hab.pre]
+        # assert kever.prefixer.qb64 == self.hab.pre
 
         # send to connected remote
         self.client.tx(bytes(msg))  # make copy for now fix later
         print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
-        del msg[:]  #  clear msg
+        del msg[:]  # clear msg
 
 
 class Directant(doing.Doer):
@@ -359,9 +349,8 @@ class Directant(doing.Doer):
         """
         super(Directant, self).__init__(**kwa)
         self.hab = hab
-        self.server = server  #  use server for cx
+        self.server = server  # use server for cx
         self.rants = dict()
-
 
     def do(self, tymist, tock=0.0, **opts):
         """
@@ -379,7 +368,6 @@ class Directant(doing.Doer):
                 self.serviceConnects()
                 self.serviceRants()
 
-
         except GeneratorExit:  # close context, forced exit due to .close
             pass
 
@@ -389,8 +377,7 @@ class Directant(doing.Doer):
         finally:  # exit context,  unforced exit due to normal exit of try
             pass
 
-        return True # return value of yield from, or yield ex.value of StopIteration
-
+        return True  # return value of yield from, or yield ex.value of StopIteration
 
     def closeConnection(self, ca):
         """
@@ -398,10 +385,9 @@ class Directant(doing.Doer):
         """
         if ca in self.rants:
             del self.rants[ca]
-        if ca in self.server.ixes:  #  incomer still there
-            self.server.ixes[ca].serviceTxes()  #  send final bytes to socket
+        if ca in self.server.ixes:  # incomer still there
+            self.server.ixes[ca].serviceTxes()  # send final bytes to socket
         self.server.removeIx(ca)
-
 
     def serviceConnects(self):
         """
@@ -436,7 +422,6 @@ class Directant(doing.Doer):
                     self.closeConnection(ca)
 
 
-
 class Reactant(tyming.Tymee):
     """
     Direct Mode KERI Reactant (Contextor) class with TCP Incomer and Kevery
@@ -463,7 +448,7 @@ class Reactant(tyming.Tymee):
        ._tymist is Tymist instance reference
     """
 
-    def __init__(self, hab, incomer,  persistent =True, **kwa):
+    def __init__(self, hab, incomer,  persistent=True, **kwa):
         """
         Initialize instance.
 
@@ -476,13 +461,12 @@ class Reactant(tyming.Tymee):
         """
         super(Reactant, self).__init__(**kwa)
         self.hab = hab
-        self.incomer = incomer  #  use incomer for both rx and tx
+        self.incomer = incomer  # use incomer for both rx and tx
         self.kevery = eventing.Kevery(ims=self.incomer.rxbs,
                                       kevers=self.hab.kevers,
                                       baser=self.hab.db,
                                       framed=False)
         self.persistent = True if persistent else False
-
 
     def processCues(self):
         """
@@ -494,7 +478,6 @@ class Reactant(tyming.Tymee):
             cue = self.kevery.cues.popleft()
             print("{} sent cue:\n{}\n\n".format(self.hab.pre, cue))
             self.processCue(cue=cue)
-
 
     def processCue(self, cue):
         """
@@ -553,10 +536,9 @@ class Reactant(tyming.Tymee):
             self.kevery.processOne(ims=bytearray(msg), framed=True)  # make copy
 
             # send to remote
-            self.incomer.tx(bytes(msg))  #  make copy because tx uses deque
+            self.incomer.tx(bytes(msg))  # make copy because tx uses deque
             print("{} sent chit:\n{}\n\n".format(self.hab.pre, bytes(msg)))
             del msg[:]
-
 
     def sendOwnInception(self):
         """
@@ -573,16 +555,14 @@ class Reactant(tyming.Tymee):
         msg.extend(siger.qb64b)
 
         # check valid by creating own Kever using own Kevery
-        #self.kevery.processOne(ims=bytearray(msg))  # copy of msg
-        #kever = self.kevery.kevers[self.hab.pre]
-        #assert kever.prefixer.qb64 == self.hab.pre
+        # self.kevery.processOne(ims=bytearray(msg))  # copy of msg
+        # kever = self.kevery.kevers[self.hab.pre]
+        # assert kever.prefixer.qb64 == self.hab.pre
 
         # send to connected remote
         self.incomer.tx(bytes(msg))  # make copy for now fix later
         print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
-        del msg[:]  #  clear msg
-
-
+        del msg[:]  # clear msg
 
 
 class BobDirector(Director):
@@ -615,7 +595,6 @@ class BobDirector(Director):
        ._tymist is Tymist instance reference
        ._tock is hidden attribute for .tock property
     """
-
 
     def do(self, tymist, tock=0.0, **opts):
         """
@@ -656,9 +635,7 @@ class BobDirector(Director):
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
             blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
-
             del msg[:]  #  clear msg
-
             tyme = (yield (self.tock))
 
             # Rotation Event 1
@@ -689,11 +666,10 @@ class BobDirector(Director):
             self.client.tx(bytes(msg))  # make copy for now fix later
             blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
             del msg[:]  #  clear msg
-
             tyme = (yield (self.tock))
 
             # Next Event 2 Interaction
-            sn += 1  #  do not increment esn
+            sn += 1  # do not increment esn
 
             serder = eventing.interact(pre=kever.prefixer.qb64,
                                        dig=kever.serder.diger.qb64,
@@ -716,9 +692,7 @@ class BobDirector(Director):
             self.client.tx(bytes(msg))  # make copy for now fix later
             blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
             del msg[:]  #  clear msg
-
             tyme = (yield (self.tock))
-
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -730,7 +704,6 @@ class BobDirector(Director):
             pass
 
         return True # return value of yield from, or yield ex.value of StopIteration
-
 
 
 class SamDirector(Director):
@@ -763,7 +736,6 @@ class SamDirector(Director):
        ._tymist is Tymist instance reference
        ._tock is hidden attribute for .tock property
     """
-
 
     def do(self, tymist, tock=0.0, **opts):
         """
@@ -804,13 +776,12 @@ class SamDirector(Director):
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
             print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
-            del msg[:]  #  clear msg
+            del msg[:]  # clear msg
 
             tyme = (yield (self.tock))
 
-
             # Next Event 1 Interaction
-            sn += 1  #  do not increment esn
+            sn += 1  # do not increment esn
 
             serder = eventing.interact(pre=kever.prefixer.qb64,
                                        dig=kever.serder.diger.qb64,
@@ -832,7 +803,7 @@ class SamDirector(Director):
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
             print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
-            del msg[:]  #  clear msg
+            del msg[:]  # clear msg
 
             tyme = (yield (self.tock))
 
@@ -863,11 +834,9 @@ class SamDirector(Director):
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
             print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
-            del msg[:]  #  clear msg
+            del msg[:]  # clear msg
 
             tyme = (yield (self.tock))
-
-
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -878,8 +847,7 @@ class SamDirector(Director):
         finally:  # exit context,  unforced exit due to normal exit of try
             pass
 
-        return True # return value of yield from, or yield ex.value of StopIteration
-
+        return True  # return value of yield from, or yield ex.value of StopIteration
 
 
 class EveDirector(Director):
@@ -913,7 +881,6 @@ class EveDirector(Director):
        ._tock is hidden attribute for .tock property
     """
 
-
     def do(self, tymist, tock=0.0, **opts):
         """
         Generator method to run this doer
@@ -942,7 +909,6 @@ class EveDirector(Director):
             kever = self.kevery.kevers[self.hab.pre]
             assert kever.prefixer.qb64 == self.hab.pre
 
-
             tyme = (yield (tock))
 
             while (not self.client.connected):
@@ -951,8 +917,6 @@ class EveDirector(Director):
 
             print("{}:\n connected to {}.\n\n".format(self.hab.pre, self.client.ha))
             tyme = (yield (self.tock))
-
-
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -963,7 +927,7 @@ class EveDirector(Director):
         finally:  # exit context,  unforced exit due to normal exit of try
             pass
 
-        return True # return value of yield from, or yield ex.value of StopIteration
+        return True  # return value of yield from, or yield ex.value of StopIteration
 
 
 def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
@@ -997,7 +961,6 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
     # Reactants created on demand
 
     return [dbDoer, clientDoer, director, reactor, serverDoer, directant]
-
 
 
 def runController(doers, limit=0.0):
