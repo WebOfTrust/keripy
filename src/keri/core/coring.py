@@ -338,21 +338,27 @@ class MatterCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519_Seed:         str = 'A'  #  Ed25519 256 bit random seed for private key
-    Ed25519N:             str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
-    X25519:               str = 'C'  #  X25519 public encryption key, converted from Ed25519.
-    Ed25519:              str = 'D'  #  Ed25519 verification key basic derivation
-    Blake3_256:           str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256:          str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256:          str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
-    SHA3_256:             str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
-    SHA2_256:             str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
-    ECDSA_256k1_Seed:     str = 'J'  #  ECDSA secp256k1 256 bit random Seed for private key
-    Ed448_Seed:           str = 'K'  #  Ed448 448 bit random Seed for private key
-    X448:                 str = 'L'  #  X448 public encryption key, converted from Ed448
+    Ed25519_Seed:         str = 'A'  # Ed25519 256 bit random seed for private key
+    Ed25519N:             str = 'B'  # Ed25519 verification key non-transferable, basic derivation.
+    X25519:               str = 'C'  # X25519 public encryption key, converted from Ed25519.
+    Ed25519:              str = 'D'  # Ed25519 verification key basic derivation
+    Blake3_256:           str = 'E'  # Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:          str = 'F'  # Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:          str = 'G'  # Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:             str = 'H'  # SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:             str = 'I'  # SHA2 256 bit digest self-addressing derivation.
+    ECDSA_256k1_Seed:     str = 'J'  # ECDSA secp256k1 256 bit random Seed for private key
+    Ed448_Seed:           str = 'K'  # Ed448 448 bit random Seed for private key
+    X448:                 str = 'L'  # X448 public encryption key, converted from Ed448
+    ShortTag:             str = 'M'  # Tag 3 Base64 chars or short 2 byte number
     Salt_128:             str = '0A'  # 128 bit random seed or 128 bit number
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
+    Blake3_512:           str = '0D'  # Blake3 512 bit digest self-addressing derivation.
+    Blake2b_512:          str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
+    SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
+    SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
+    LongTag:              str = '0H'  # Tag 6 Base64 chars or long 4 byte number
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
