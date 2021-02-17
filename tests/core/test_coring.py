@@ -29,6 +29,8 @@ from keri.core.coring import (CrySelDex, CryCntDex,
                               CrySizes, CryRawSizes, MINCRYSIZE)
 
 from keri.core.coring import MatDex, Sizage, Matter
+from keri.core.coring import InDex, Bigage, Indexer
+
 from keri.core.coring import (CryMat, CryCounter, Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
@@ -37,6 +39,7 @@ from keri.core.coring import (SigSelDex, SigCntDex, SigCntSizes, SigCntRawSizes,
                               SigFourDex, SigFourSizes, SigFourRawSizes,
                               SigFiveDex, SigFiveSizes, SigFiveRawSizes,
                               SigSizes, SigRawSizes, MINSIGSIZE)
+
 from keri.core.coring import IntToB64, B64ToInt
 from keri.core.coring import SigMat, SigCounter, Seqner, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
@@ -2283,36 +2286,37 @@ def test_matter():
 
     # Codes table with sizes of code (hard) and full primitive material
     assert Matter.Codes == {
-                            'A': Sizage(code=1, full=44),
-                            'B': Sizage(code=1, full=44),
-                            'C': Sizage(code=1, full=44),
-                            'D': Sizage(code=1, full=44),
-                            'E': Sizage(code=1, full=44),
-                            'F': Sizage(code=1, full=44),
-                            'G': Sizage(code=1, full=44),
-                            'H': Sizage(code=1, full=44),
-                            'I': Sizage(code=1, full=44),
-                            'J': Sizage(code=1, full=44),
-                            'K': Sizage(code=1, full=76),
-                            'L': Sizage(code=1, full=76),
-                            'M': Sizage(code=1, full=4),
-                            '0A': Sizage(code=2, full=24),
-                            '0B': Sizage(code=2, full=88),
-                            '0C': Sizage(code=2, full=88),
-                            '0D': Sizage(code=2, full=88),
-                            '0E': Sizage(code=2, full=88),
-                            '0F': Sizage(code=2, full=88),
-                            '0G': Sizage(code=2, full=88),
-                            '0H': Sizage(code=2, full=8),
-                            '1AAA': Sizage(code=4, full=48),
-                            '1AAB': Sizage(code=4, full=48),
-                            '1AAC': Sizage(code=4, full=80),
-                            '1AAD': Sizage(code=4, full=80),
-                            '1AAE': Sizage(code=4, full=56)
-                           }
+                            'A': Sizage(hs=1, ss=0, fs=44),
+                            'B': Sizage(hs=1, ss=0, fs=44),
+                            'C': Sizage(hs=1, ss=0, fs=44),
+                            'D': Sizage(hs=1, ss=0, fs=44),
+                            'E': Sizage(hs=1, ss=0, fs=44),
+                            'F': Sizage(hs=1, ss=0, fs=44),
+                            'G': Sizage(hs=1, ss=0, fs=44),
+                            'H': Sizage(hs=1, ss=0, fs=44),
+                            'I': Sizage(hs=1, ss=0, fs=44),
+                            'J': Sizage(hs=1, ss=0, fs=44),
+                            'K': Sizage(hs=1, ss=0, fs=76),
+                            'L': Sizage(hs=1, ss=0, fs=76),
+                            'M': Sizage(hs=1, ss=0, fs=4),
+                            '0A': Sizage(hs=2, ss=0, fs=24),
+                            '0B': Sizage(hs=2, ss=0, fs=88),
+                            '0C': Sizage(hs=2, ss=0, fs=88),
+                            '0D': Sizage(hs=2, ss=0, fs=88),
+                            '0E': Sizage(hs=2, ss=0, fs=88),
+                            '0F': Sizage(hs=2, ss=0, fs=88),
+                            '0G': Sizage(hs=2, ss=0, fs=88),
+                            '0H': Sizage(hs=2, ss=0, fs=8),
+                            '1AAA': Sizage(hs=4, ss=0, fs=48),
+                            '1AAB': Sizage(hs=4, ss=0, fs=48),
+                            '1AAC': Sizage(hs=4, ss=0, fs=80),
+                            '1AAD': Sizage(hs=4, ss=0, fs=80),
+                            '1AAE': Sizage(hs=4, ss=0, fs=56)
+                        }
 
-    assert Matter.Codes['A'].code == 1  # code size
-    assert Matter.Codes['A'].full == 44  # full size
+    assert Matter.Codes['A'].hs == 1  # hard size
+    assert Matter.Codes['A'].ss == 0  # soft size
+    assert Matter.Codes['A'].fs == 44  # full size
 
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
@@ -2360,7 +2364,7 @@ def test_matter():
     # test truncates extra bytes from qb64 parameter
     longprefix = prefix + "ABCD"  # extra bytes in size
     matter = Matter(qb64=longprefix)
-    assert len(matter.qb64) == Matter.Codes[matter.code].full
+    assert len(matter.qb64) == Matter.Codes[matter.code].fs
 
     # test raises ShortageError if not enough bytes in qb64 parameter
     shortprefix = prefix[:-4]  # too few bytes in  size
@@ -2443,6 +2447,200 @@ def test_matter():
     assert matter.code == MatDex.Ed25519_Sig
 
     """ Done Test """
+
+
+
+def test_indexer():
+    """
+    Test Indexer class
+    """
+    with pytest.raises(EmptyMaterialError):
+        sigmat = Indexer()
+
+    assert SigTwoDex.Ed25519 ==  'A'  # Ed25519 signature.
+    assert SigTwoDex.ECDSA_256k1 == 'B'  # ECDSA secp256k1 signature.
+
+    assert SigTwoSizes[SigTwoDex.Ed25519] == 88
+    assert SigTwoSizes[SigTwoDex.ECDSA_256k1] == 88
+
+    cs = IntToB64(0)
+    assert cs == "A"
+    i = B64ToInt(cs)
+    assert i == 0
+
+    cs = IntToB64(27)
+    assert cs == "b"
+    i = B64ToInt(cs)
+    assert i == 27
+
+    cs = IntToB64(27, l=2)
+    assert cs == "Ab"
+    i = B64ToInt(cs)
+    assert i == 27
+
+    cs = IntToB64(80)
+    assert cs == "BQ"
+    i = B64ToInt(cs)
+    assert i == 80
+
+    cs = IntToB64(4095)
+    assert cs == '__'
+    i = B64ToInt(cs)
+    assert i == 4095
+
+    cs = IntToB64(4096)
+    assert cs == 'BAA'
+    i = B64ToInt(cs)
+    assert i == 4096
+
+    cs = IntToB64(6011)
+    assert cs == "Bd7"
+    i = B64ToInt(cs)
+    assert i == 6011
+
+    # Test attached signature code (empty raw)
+    qsc = SigCntDex.Base64 + IntToB64(0, l=2)
+    assert qsc == '-AAA'
+
+    qscb = qsc.encode("utf-8")
+    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=0)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb64b == qscb
+    assert sigmat.qb2 == b'\xf8\x00\x00'
+
+    sigmat = SigMat(qb64b=qscb)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb64b == qscb
+    assert sigmat.qb2 == b'\xf8\x00\x00'
+
+    sigmat = SigMat(qb64=qsc)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb64b == qscb
+    assert sigmat.qb2 == b'\xf8\x00\x00'
+
+    sigmat = SigMat(qb64=qscb)  #  also works for bytes
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb64b == qscb
+    assert sigmat.qb2 == b'\xf8\x00\x00'
+
+    idx = 5
+    qsc = SigCntDex.Base64 + IntToB64(idx, l=2)
+    assert qsc == '-AAF'
+    qscb = qsc.encode("utf-8")
+    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=idx)
+    assert sigmat.raw == b''
+    assert sigmat.code == SigCntDex.Base64
+    assert sigmat.index == 5
+    assert sigmat.qb64 == qsc
+    assert sigmat.qb64b == qscb
+    assert sigmat.qb2 == b'\xf8\x00\x05'
+
+    # Test signatures
+    sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
+           b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
+           b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
+    assert len(sig) == 64
+
+    sig64b = encodeB64(sig)
+    sig64 = sig64b.decode("utf-8")
+    assert len(sig64) == 88
+    assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
+
+    qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    assert len(qsig64) == 88
+    qsig64b = qsig64.encode("utf-8")
+    qbin = decodeB64(qsig64b)
+    assert len(qbin) == 66
+    assert qbin == (b'\x00\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+                    b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
+                    b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
+
+
+    sigmat = SigMat(raw=sig)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.index == 0
+    assert sigmat.qb64 == qsig64
+    assert sigmat.qb2 == qbin
+
+    # test wrong size of raw
+    longsig = sig + bytes([10, 11, 12])
+    sigmat = SigMat(raw=longsig)
+
+    shortsig = sig[:-3]
+    with pytest.raises(ValidationError):
+        sigmat = SigMat(raw=shortsig)
+
+    sigmat = SigMat(qb64b=qsig64b)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.index == 0
+
+    sigmat = SigMat(qb64=qsig64)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.index == 0
+
+    sigmat = SigMat(qb64=qsig64b)  # test with bytes not str
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.index == 0
+
+    # test wrong size of qb64
+    longqsig64 = qsig64 + "ABCD"
+    oksigmat = SigMat(qb64=longqsig64)
+    assert len(oksigmat.qb64) == SigSizes[oksigmat.code]
+
+    shortqsig64 = qsig64[:-4]  # too short
+    with pytest.raises(ShortageError):
+        oksigmat = SigMat(qb64=shortqsig64)
+
+    sigmat = SigMat(qb64=qsig64.encode("utf-8"))  # test bytes not str
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.raw == sig
+    assert sigmat.qb64 == qsig64
+    assert sigmat.qb64b == qsig64.encode("utf-8")
+
+    sigmat = SigMat(qb2=qbin)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.index == 0
+
+    sigmat = SigMat(raw=sig, code=SigTwoDex.Ed25519, index=5)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.index == 5
+    qsig64 = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    assert sigmat.qb64 == qsig64
+    qbin = (b'\x00Y\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+            b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
+            b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
+    assert sigmat.qb2 == qbin
+
+    sigmat = SigMat(qb64=qsig64)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.index == 5
+
+    sigmat = SigMat(qb2=qbin)
+    assert sigmat.raw == sig
+    assert sigmat.code == SigTwoDex.Ed25519
+    assert sigmat.index == 5
+    """ Done Test """
+
 
 
 if __name__ == "__main__":
