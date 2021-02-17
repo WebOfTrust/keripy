@@ -324,12 +324,14 @@ Tierage = namedtuple("Tierage", 'low med high')
 
 Tiers = Tierage(low='low', med='med', high='high')
 
-# namedtuple for entries in derivation code tables
+
+# namedtuple for entries in Indexer and Counter derivation code tables
 # hard is the int size in chars of the stable part of the code
 # soft is the int size in chars of the unstable part of the code, if any, such as index or count
 # full is the int size in chars of the both parts of code plus appended material if any
 # full may be None if full size is variable not fixed
 Sizage = namedtuple("Sizage", "hard, soft, full")
+
 
 @dataclass(frozen=True)
 class MatterCodex:
@@ -436,7 +438,7 @@ class Matter:
 
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=CryOneDex.Ed25519N, index=0):
+                 code=MatDex.Ed25519N, index=0):
         """
         Validate as fully qualified
         Parameters:
@@ -459,23 +461,18 @@ class Matter:
                                          " or qb64b or qb64 or qb2.")
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
-            pad = self._pad(raw)
-            if (not ( (pad == 1 and (code in CryOneDex)) or  # One or Five or Nine
-                      (pad == 2 and (code in CryTwoDex)) or  # Two or Six or Ten
-                      (pad == 0 and (code in CryFourDex)) or # Four or Eight
-                      (pad == 0 and (code in CryCntDex)) )):  # Cnt Four
 
-                raise ValidationError("Wrong code={} for raw={}.".format(code, raw))
+            if code not in self.Codes:
+                raise ValidationError("Unsupported code={}.".format(code))
 
-            if (code in CryCntDex and ((index < 0) or (index > CRYCNTMAX))):
-                raise ValidationError("Invalid index={} for code={}.".format(index, code))
+            rawsize = (self.Codes[code].full - (self.Codes[code].hard + self.Codes[code].soft)) * 3 // 4
 
-            raw = raw[:CryRawSizes[code]]  #  allows longer by truncating if stream
-            if len(raw) != CryRawSizes[code]:  # forbids shorter
-                raise ValidationError("Unexpected raw size={} for code={}"
-                                      " not size={}.".format(len(raw),
-                                                             code,
-                                                             CryRawSizes[code]))
+            raw = raw[:rawsize]  # copy only exact size from raw stream
+            if len(raw) != rawsize:  # forbids shorter
+                raise ValidationError("Not enougth raw bytes for code={}"
+                                      "expected {} got {}.".format(code,
+                                                             rawsize,
+                                                             len(raw)))
 
             self._code = code
             self._index = index
@@ -683,6 +680,7 @@ class Matter:
                 False otherwise
         """
         return(self.code in CryDigDex)
+
 
 
 class CryMat:

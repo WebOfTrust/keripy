@@ -2332,7 +2332,117 @@ def test_matter():
         matter = Matter(raw=verkey, code='')
 
     matter = Matter(raw=verkey)
+    assert matter.raw == verkey
+    assert matter.code == MatDex.Ed25519N
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
 
+    assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
+    assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
+
+    matter._exfil(prefixb)
+    assert matter.code == MatDex.Ed25519N
+    assert matter.raw == verkey
+
+    matter = Matter(qb64b=prefixb)
+    assert matter.code == MatDex.Ed25519N
+    assert matter.raw == verkey
+
+    matter = Matter(qb64=prefix)
+    assert matter.code == MatDex.Ed25519N
+    assert matter.raw == verkey
+
+    matter = Matter(qb64=prefixb)  #  works for either
+    assert matter.code == MatDex.Ed25519N
+    assert matter.raw == verkey
+
+    # test truncates extra bytes from qb64 parameter
+    longprefix = prefix + "ABCD"  # extra bytes in size
+    matter = Matter(qb64=longprefix)
+    assert len(matter.qb64) == Matter.Codes[matter.code].full
+
+    # test raises ShortageError if not enough bytes in qb64 parameter
+    shortprefix = prefix[:-4]  # too few bytes in  size
+    with pytest.raises(ShortageError):
+        matter = Matter(qb64=shortprefix)
+
+    matter = Matter(qb2=prebin)
+    assert matter.code == MatDex.Ed25519N
+    assert matter.raw == verkey
+
+    matter = Matter(qb64=prefix.encode("utf-8"))  # test bytes not str
+    assert matter.code == MatDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64 == prefix
+    assert matter.qb64b == prefix.encode("utf-8")
+
+    # test truncates extra bytes from raw parameter
+    longverkey = verkey + bytes([10, 11, 12])  # extra bytes
+    matter = Matter(raw=longverkey)
+
+    # test raises ShortageError if not enough bytes in raw parameter
+    shortverkey =  verkey[:-3]  # not enough bytes
+    with pytest.raises(ValidationError):
+        matter = Matter(raw=shortverkey)
+
+    # test prefix on full identifier
+    full = prefix + ":mystuff/mypath/toresource?query=what#fragment"
+    matter = Matter(qb64=full)
+    assert matter.code == MatDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+
+    # test nongreedy prefixb on full identifier
+    full = prefixb + b":mystuff/mypath/toresource?query=what#fragment"
+    matter = Matter(qb64b=full)
+    assert matter.code == MatDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+
+    sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
+           b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
+           b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
+    sig64b = encodeB64(sig)
+    assert sig64b == b'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
+    sig64 =  sig64b.decode("utf-8")
+    assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
+
+    qsig64 = '0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qsig64b = b'0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    qsigB2 = (b'\xd0\x19\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+            b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
+            b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
+
+    matter = Matter(raw=sig, code=MatDex.Ed25519_Sig)
+    assert matter.raw == sig
+    assert matter.code == MatDex.Ed25519_Sig
+    assert matter.qb64 == qsig64
+    assert matter.qb64b == qsig64b
+    assert matter.qb2 == qsigB2
+    assert matter.transferable == True
+
+    matter = Matter(qb64b=qsig64b)
+    assert matter.raw == sig
+    assert matter.code == MatDex.Ed25519_Sig
+
+    matter = Matter(qb64=qsig64)
+    assert matter.raw == sig
+    assert matter.code == MatDex.Ed25519_Sig
+
+    qsig64b  = qsig64.encode("utf-8")  #  test bytes input
+    matter = Matter(qb64=qsig64b)
+    assert matter.raw == sig
+    assert matter.code == MatDex.Ed25519_Sig
+
+    matter = Matter(qb2=qsigB2)
+    assert matter.raw == sig
+    assert matter.code == MatDex.Ed25519_Sig
+
+    """ Done Test """
 
 
 if __name__ == "__main__":
