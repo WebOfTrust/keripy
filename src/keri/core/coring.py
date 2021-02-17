@@ -325,12 +325,10 @@ Tierage = namedtuple("Tierage", 'low med high')
 Tiers = Tierage(low='low', med='med', high='high')
 
 
-# namedtuple for entries in Indexer and Counter derivation code tables
+# namedtuple for size entries in matter derivation code tables
 # hard is the int size in chars of the stable part of the code
-# soft is the int size in chars of the unstable part of the code, if any, such as index or count
 # full is the int size in chars of the both parts of code plus appended material if any
-# full may be None if full size is variable not fixed
-Sizage = namedtuple("Sizage", "hard, soft, full")
+Sizage = namedtuple("Sizage", "hard, full")
 
 
 @dataclass(frozen=True)
@@ -373,6 +371,48 @@ class MatterCodex:
 
 MatDex = MatterCodex()
 
+@dataclass(frozen=True)
+class NonTransCodex:
+    """
+    NonTransCodex is codex all non-transferable derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519N:      str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
+    ECDSA_256k1N:  str = "1AAA"  # ECDSA secp256k1 verification key non-transferable, basic derivation.
+    Ed448N:        str = "1AAC"  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+NonTransDex = NonTransCodex()  #  Make instance
+
+
+@dataclass(frozen=True)
+class DigCodex:
+    """
+    DigCodex is codex all digest derivation codes. This is needed to ensure
+    delegated inception using a self-addressing derivation i.e. digest derivation
+    code.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Blake3_256:           str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
+    Blake2b_256:          str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
+    Blake2s_256:          str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
+    SHA3_256:             str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
+    SHA2_256:             str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
+    Blake3_512:           str = '0D'  # Blake3 512 bit digest self-addressing derivation.
+    Blake2b_512:          str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
+    SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
+    SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+DigDex =DigCodex()  #  Make instance
+
+
 class Matter:
     """
     Matter is fully qualified cryptographic material primitive base class for
@@ -408,48 +448,48 @@ class Matter:
     Sizes.update({chr(c): 1 for c in range(97, 97+26)})
     Sizes.update([('0', 2), ('1', 4), ('2', 5), ('3', 6), ('4', 8), ('5', 9), ('6', 10)])
     Codes = {
-                'A': Sizage(hard=1, soft=0, full=44),
-                'B': Sizage(hard=1, soft=0, full=44),
-                'C': Sizage(hard=1, soft=0, full=44),
-                'D': Sizage(hard=1, soft=0, full=44),
-                'E': Sizage(hard=1, soft=0, full=44),
-                'F': Sizage(hard=1, soft=0, full=44),
-                'G': Sizage(hard=1, soft=0, full=44),
-                'H': Sizage(hard=1, soft=0, full=44),
-                'I': Sizage(hard=1, soft=0, full=44),
-                'J': Sizage(hard=1, soft=0, full=44),
-                'K': Sizage(hard=1, soft=0, full=76),
-                'L': Sizage(hard=1, soft=0, full=76),
-                'M': Sizage(hard=1, soft=0, full=4),
-                '0A': Sizage(hard=2, soft=0, full=24),
-                '0B': Sizage(hard=2, soft=0, full=88),
-                '0C': Sizage(hard=2, soft=0, full=88),
-                '0D': Sizage(hard=2, soft=0, full=88),
-                '0E': Sizage(hard=2, soft=0, full=88),
-                '0F': Sizage(hard=2, soft=0, full=88),
-                '0G': Sizage(hard=2, soft=0, full=88),
-                '0H': Sizage(hard=2, soft=0, full=8),
-                '1AAA': Sizage(hard=4, soft=0, full=48),
-                '1AAB': Sizage(hard=4, soft=0, full=48),
-                '1AAC': Sizage(hard=4, soft=0, full=80),
-                '1AAD': Sizage(hard=4, soft=0, full=80),
-                '1AAE': Sizage(hard=4, soft=0, full=56),
+                'A': Sizage(hard=1, full=44),
+                'B': Sizage(hard=1, full=44),
+                'C': Sizage(hard=1, full=44),
+                'D': Sizage(hard=1, full=44),
+                'E': Sizage(hard=1, full=44),
+                'F': Sizage(hard=1, full=44),
+                'G': Sizage(hard=1, full=44),
+                'H': Sizage(hard=1, full=44),
+                'I': Sizage(hard=1, full=44),
+                'J': Sizage(hard=1, full=44),
+                'K': Sizage(hard=1, full=76),
+                'L': Sizage(hard=1, full=76),
+                'M': Sizage(hard=1, full=4),
+                '0A': Sizage(hard=2, full=24),
+                '0B': Sizage(hard=2, full=88),
+                '0C': Sizage(hard=2, full=88),
+                '0D': Sizage(hard=2, full=88),
+                '0E': Sizage(hard=2, full=88),
+                '0F': Sizage(hard=2, full=88),
+                '0G': Sizage(hard=2, full=88),
+                '0H': Sizage(hard=2, full=8),
+                '1AAA': Sizage(hard=4, full=48),
+                '1AAB': Sizage(hard=4, full=48),
+                '1AAC': Sizage(hard=4, full=80),
+                '1AAD': Sizage(hard=4, full=80),
+                '1AAE': Sizage(hard=4, full=56),
             }
 
 
-    def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=MatDex.Ed25519N, index=0):
+    def __init__(self, raw=None, code=MatDex.Ed25519N, qb64b=None, qb64=None, qb2=None):
         """
         Validate as fully qualified
         Parameters:
             raw is bytes of unqualified crypto material usable for crypto operations
+            code is str of stable (hard) part of derivation code
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
 
-        Needs (raw and code) or qb64b or qb64 or qb2 else raises EmptyMaterialError
+
+        Needs either (raw and code) or qb64b or qb64 or qb2
+        Otherwise raises EmptyMaterialError
         When raw and code provided then validate that code is correct for length of raw
             and assign .raw
         Else when qb64b or qb64 or qb2 provided extract and assign .raw and .code
@@ -457,15 +497,15 @@ class Matter:
         """
         if raw is not None:  #  raw provided
             if not code:
-                raise EmptyMaterialError("Improper initialization need raw and code"
-                                         " or qb64b or qb64 or qb2.")
+                raise EmptyMaterialError("Improper initialization need either "
+                                         "(raw and code) or qb64b or qb64 or qb2.")
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
 
             if code not in self.Codes:
                 raise ValidationError("Unsupported code={}.".format(code))
 
-            rawsize = (self.Codes[code].full - (self.Codes[code].hard + self.Codes[code].soft)) * 3 // 4
+            rawsize = (self.Codes[code].full - self.Codes[code].hard) * 3 // 4
 
             raw = raw[:rawsize]  # copy only exact size from raw stream
             if len(raw) != rawsize:  # forbids shorter
@@ -475,7 +515,6 @@ class Matter:
                                                              len(raw)))
 
             self._code = code
-            self._index = index
             self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
         elif qb64b is not None:
@@ -490,8 +529,8 @@ class Matter:
             self._exfil(encodeB64(qb2))
 
         else:
-            raise EmptyMaterialError("Improper initialization need raw and code"
-                                     " or qb64b or qb64 or qb2.")
+            raise EmptyMaterialError("Improper initialization need either "
+                                     "(raw and code) or qb64b or qb64 or qb2.")
 
 
     @staticmethod
@@ -533,15 +572,6 @@ class Matter:
         return self._raw
 
 
-    @property
-    def index(self):
-        """
-        Returns ._index
-        Makes .index read only
-        """
-        return self._index
-
-
     def _infil(self):
         """
         Returns fully qualified base64 bytes given self.pad, self.code, self.count
@@ -550,20 +580,15 @@ class Matter:
         count is attached receipt couple count when applicable for CryCntDex codes
         raw is bytes or bytearray
         """
-        if self._code in CryCntDex:
-            l = CryIdxSizes[self._code]  # count length b64 characters
-            # full is pre code + index
-            full = "{}{}".format(self._code, IntToB64(self._index, l=l))
-        else:
-            full = self._code
+        both = self._code
 
         pad = self.pad
         # valid pad for code length
-        if len(full) % 4 != pad:  # pad is not remainder of len(code) % 4
+        if len(both) % 4 != pad:  # pad is not remainder of len(code) % 4
             raise ValidationError("Invalid code = {} for converted raw pad = {}."
-                                  .format(full, self.pad))
+                                  .format(both, self.pad))
         # prepending derivation code and strip off trailing pad characters
-        return (full.encode("utf-8") + encodeB64(self._raw)[:-pad])
+        return (both.encode("utf-8") + encodeB64(self._raw)[:-pad])
 
 
     def _exfil(self, qb64b):
@@ -597,14 +622,6 @@ class Matter:
                 raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
             qb64b = qb64b[:CryFourSizes[code]]  # strip of full crymat
 
-        elif code == CrySelDex.dash:  #  '-' 2 char code + 2 char index count
-            cs += 1  # increase code size
-            code = qb64b[0:cs].decode("utf-8")  #  get full code, convert to str
-            if code not in CryCntDex:  # 4 char = 2 code + 2 index
-                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
-            qb64b = qb64b[:CryCntSizes[code]]  # strip of full crymat
-            cs += 2  # increase code size
-            index = B64ToInt(qb64b[cs-2:cs].decode("utf-8"))  # last two characters for index
 
         else:
             raise ValueError("Improperly coded material = {}".format(qb64b))
@@ -669,7 +686,7 @@ class Matter:
         Returns True if identifier does not have non-transferable derivation code,
                 False otherwise
         """
-        return(self.code not in CryNonTransDex)
+        return(self.code not in NonTransDex)
 
 
     @property
@@ -679,8 +696,79 @@ class Matter:
         Returns True if identifier has digest derivation code,
                 False otherwise
         """
-        return(self.code in CryDigDex)
+        return(self.code in DigDex)
 
+
+
+# namedtuple for size entries in Indexer and Counter derivation code tables
+# hard is the int size in chars of the stable part of the code
+# soft is the int size in chars of the unstable part of the code, if any, such as index or count
+# full is the int size in chars of the both parts of code plus appended material if any
+# full may be None if full size is variable not fixed
+Bigage = namedtuple("Bigage", "hard, soft, full")
+
+class Indexer:
+    """
+    Indexer is fully qualified cryptographic material primitive base class for
+    indexed primitives.
+
+    Sub classes are derivation code and key event element context specific.
+
+    Includes the following attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .pad  is int number of pad chars given raw
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .index is int count of attached crypto material by context (receipts)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+
+    Hidden:
+        ._pad is method to compute  .pad property
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._index is int value for .index property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
+
+    """
+    Codex = MatDex
+    Sizes = ({chr(c): 1 for c in range(65, 65+26)})
+    Sizes.update({chr(c): 1 for c in range(97, 97+26)})
+    Sizes.update([('0', 2), ('1', 4), ('2', 5), ('3', 6), ('4', 8), ('5', 9), ('6', 10)])
+    Codes = {
+                'A': Bigage(hard=1, soft=0, full=44),
+                'B': Bigage(hard=1, soft=0, full=44),
+                'C': Bigage(hard=1, soft=0, full=44),
+                'D': Bigage(hard=1, soft=0, full=44),
+                'E': Bigage(hard=1, soft=0, full=44),
+                'F': Bigage(hard=1, soft=0, full=44),
+                'G': Bigage(hard=1, soft=0, full=44),
+                'H': Bigage(hard=1, soft=0, full=44),
+                'I': Bigage(hard=1, soft=0, full=44),
+                'J': Bigage(hard=1, soft=0, full=44),
+                'K': Bigage(hard=1, soft=0, full=76),
+                'L': Bigage(hard=1, soft=0, full=76),
+                'M': Bigage(hard=1, soft=0, full=4),
+                '0A': Bigage(hard=2, soft=0, full=24),
+                '0B': Bigage(hard=2, soft=0, full=88),
+                '0C': Bigage(hard=2, soft=0, full=88),
+                '0D': Bigage(hard=2, soft=0, full=88),
+                '0E': Bigage(hard=2, soft=0, full=88),
+                '0F': Bigage(hard=2, soft=0, full=88),
+                '0G': Bigage(hard=2, soft=0, full=88),
+                '0H': Bigage(hard=2, soft=0, full=8),
+                '1AAA': Bigage(hard=4, soft=0, full=48),
+                '1AAB': Bigage(hard=4, soft=0, full=48),
+                '1AAC': Bigage(hard=4, soft=0, full=80),
+                '1AAD': Bigage(hard=4, soft=0, full=80),
+                '1AAE': Bigage(hard=4, soft=0, full=56),
+            }
 
 
 class CryMat:

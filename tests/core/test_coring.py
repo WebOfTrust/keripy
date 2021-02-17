@@ -2281,36 +2281,35 @@ def test_matter():
     }
 
     assert Matter.Codes == {
-                            'A': Sizage(hard=1, soft=0, full=44),
-                            'B': Sizage(hard=1, soft=0, full=44),
-                            'C': Sizage(hard=1, soft=0, full=44),
-                            'D': Sizage(hard=1, soft=0, full=44),
-                            'E': Sizage(hard=1, soft=0, full=44),
-                            'F': Sizage(hard=1, soft=0, full=44),
-                            'G': Sizage(hard=1, soft=0, full=44),
-                            'H': Sizage(hard=1, soft=0, full=44),
-                            'I': Sizage(hard=1, soft=0, full=44),
-                            'J': Sizage(hard=1, soft=0, full=44),
-                            'K': Sizage(hard=1, soft=0, full=76),
-                            'L': Sizage(hard=1, soft=0, full=76),
-                            'M': Sizage(hard=1, soft=0, full=4),
-                            '0A': Sizage(hard=2, soft=0, full=24),
-                            '0B': Sizage(hard=2, soft=0, full=88),
-                            '0C': Sizage(hard=2, soft=0, full=88),
-                            '0D': Sizage(hard=2, soft=0, full=88),
-                            '0E': Sizage(hard=2, soft=0, full=88),
-                            '0F': Sizage(hard=2, soft=0, full=88),
-                            '0G': Sizage(hard=2, soft=0, full=88),
-                            '0H': Sizage(hard=2, soft=0, full=8),
-                            '1AAA': Sizage(hard=4, soft=0, full=48),
-                            '1AAB': Sizage(hard=4, soft=0, full=48),
-                            '1AAC': Sizage(hard=4, soft=0, full=80),
-                            '1AAD': Sizage(hard=4, soft=0, full=80),
-                            '1AAE': Sizage(hard=4, soft=0, full=56)
-    }
+                            'A': Sizage(hard=1, full=44),
+                            'B': Sizage(hard=1, full=44),
+                            'C': Sizage(hard=1, full=44),
+                            'D': Sizage(hard=1, full=44),
+                            'E': Sizage(hard=1, full=44),
+                            'F': Sizage(hard=1, full=44),
+                            'G': Sizage(hard=1, full=44),
+                            'H': Sizage(hard=1, full=44),
+                            'I': Sizage(hard=1, full=44),
+                            'J': Sizage(hard=1, full=44),
+                            'K': Sizage(hard=1, full=76),
+                            'L': Sizage(hard=1, full=76),
+                            'M': Sizage(hard=1, full=4),
+                            '0A': Sizage(hard=2, full=24),
+                            '0B': Sizage(hard=2, full=88),
+                            '0C': Sizage(hard=2, full=88),
+                            '0D': Sizage(hard=2, full=88),
+                            '0E': Sizage(hard=2, full=88),
+                            '0F': Sizage(hard=2, full=88),
+                            '0G': Sizage(hard=2, full=88),
+                            '0H': Sizage(hard=2, full=8),
+                            '1AAA': Sizage(hard=4, full=48),
+                            '1AAB': Sizage(hard=4, full=48),
+                            '1AAC': Sizage(hard=4, full=80),
+                            '1AAD': Sizage(hard=4, full=80),
+                            '1AAE': Sizage(hard=4, full=56)
+                           }
 
     assert Matter.Codes['A'].hard == 1
-    assert Matter.Codes['A'].soft == 0
     assert Matter.Codes['A'].full == 44
 
 
