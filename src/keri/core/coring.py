@@ -443,6 +443,7 @@ class Matter:
 
     """
     Codex = MatDex
+    # Sizes is table of hard (stable) size of code which is whole size for Matter
     Sizes = ({chr(c): 1 for c in range(65, 65+26)})  # size of hard part of code
     Sizes.update({chr(c): 1 for c in range(97, 97+26)})
     Sizes.update([('0', 2), ('1', 4), ('2', 5), ('3', 6), ('4', 8), ('5', 9), ('6', 10)])
@@ -657,10 +658,10 @@ class Matter:
         qb64b = qb64b[:fs]  # fully qualified primitive code plus material
 
         # strip off prepended code and append pad characters
-        ps = cs % 4  # pad size ps = cs mod 4
-        base = qb64b[cs:] + ps * BASE64_PAD
+        ps = bs % 4  # pad size ps = bs mod 4
+        base = qb64b[bs:] + ps * BASE64_PAD
         raw = decodeB64(base)
-        if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
+        if len(raw) != (len(qb64b) - bs) * 3 // 4:  # exact lengths
             raise ValueError("Improperly qualified material = {}".format(qb64b))
 
         self._code = code
@@ -2527,9 +2528,10 @@ class Indexer:
 
     """
     Codex = InDex
-    Sizes = ({chr(c): 2 for c in range(65, 65+26)})
-    Sizes.update({chr(c): 2 for c in range(97, 97+26)})
-    Sizes.update([('0', 4), ('1', 5), ('2', 6), ('3', 8), ('4', 9), ('5', 10)])
+    # Sizes is table of hard (stable) size of code
+    Sizes = ({chr(c): 1 for c in range(65, 65+26)})
+    Sizes.update({chr(c): 1 for c in range(97, 97+26)})
+    Sizes.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 3), ('5', 4)])
     Codes = {
                 'A': Bigage(hard=1, soft=1, full=88),
                 'B': Bigage(hard=1, soft=1, full=88),
@@ -2570,14 +2572,14 @@ class Indexer:
                 raise DerivationCodeError("Unsupported code={}.".format(code))
 
             hs, ss, fs = self.Codes[code] # get sizes for code
-            cs = hs + ss
+            bs = hs + ss  # both hard + soft code size
             if index < 0 or index > (64 ** ss - 1):
                 raise ValidationError("Invalid index={} for code={}.".format(index, code))
 
             if not fs:  # compute fs from index
-                fs = ((index * 4) - cs%4) + cs
+                fs = ((index * 4) - bs%4) + bs
 
-            rawsize = (fs - cs) * 3 // 4
+            rawsize = (fs - bs) * 3 // 4
 
             raw = raw[:rawsize]  # copy only exact size from raw stream
             if len(raw) != rawsize:  # forbids shorter
@@ -2691,20 +2693,20 @@ class Indexer:
         Returns fully qualified attached sig base64 bytes computed from
         self.raw, self.code and self.index.
         """
-        code = self.code  # codex value chars
-        index = self.index  # index value int
+        code = self.code  # codex value chars hard code
+        index = self.index  # index value int used for soft
         raw = self.raw  # bytes or bytearray
 
         hs, ss, fs = self.Sizes(code)
         if not fs:  # compute fs from index
-            cs = hs + ss
-            fs = ((index * 4) - cs%4) + cs
+            bs = hs + ss  # both hard + soft size
+            fs = ((index * 4) - bs%4) + bs
 
         # both is hard code + converted index
         both =  "{}{}".format(code, IntToB64(index, l=ss))
 
         ps = (3 - (len(raw) % 3)) % 3  # pad size
-        # check valid pad size for code size
+        # check valid pad size for whole code size
         if len(both) % 4 != ps:  # pad size is not remainder of len(code) % 4
             raise ValidationError("Invalid code = {} for converted raw pad size = {}."
                                   .format(both, ps))
@@ -2730,151 +2732,44 @@ class Indexer:
             else:
                 raise DerivationCodeError("Unsupported code start char={}.".format(first))
 
-        cs = self.Sizes[first]  # get whole code size
+        cs = self.Sizes[first]  # get hard code size
         if len(qb64b) < cs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
 
-        hard = qb64b[:hs].decode("utf-8")  # get hard code
+        hard = qb64b[:cs].decode("utf-8")  # get hard code
         if hard not in self.Codes:
             raise DerivationCodeError("Unsupported code ={}.".format(hard))
 
-        soft = None
-
         hs, ss, fs = self.Codes[code]
+        bs = hs + ss  # both hard + soft code size
 
-
-        if (hs + ss) != cs:
+        if hs != cs:
             raise ValueError("Bad .Codes or .Sizes table entries for code={}."
                              " cs={} != hs ={} ss={}".format(code, cs, hs, ss))
 
+        if len(qb64b) < bs:  # need more bytes
+            raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
+
+        index = B64ToInt(qb64b[hs:hs+ss].decode("utf-8"))  # get index
+
         if not fs:  # compute fs from index
-            cs = hs + ss
-            fs = ((index * 4) - cs%4) + cs
+            fs = ((index * 4) - bs%4) + bs
 
         if len(qb64b) < fs:  # need more bytes
             raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
+
         qb64b = qb64b[:fs]  # fully qualified primitive code plus material
 
         # strip off prepended code and append pad characters
-        ps = cs % 4  # pad size ps = cs mod 4
-        base = qb64b[cs:] + ps * BASE64_PAD
+        ps = bs % 4  # pad size ps = cs mod 4
+        base = qb64b[bs:] + ps * BASE64_PAD
         raw = decodeB64(base)
-        if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
+        if len(raw) != (len(qb64b) - bs) * 3 // 4:  # exact lengths
             raise ValueError("Improperly qualified material = {}".format(qb64b))
 
         self._code = code
+        sekf._index = index
         self._raw = raw
-
-
-
-    def _exfil(self, qb64b):
-        """
-        Extracts self.code and self.raw from qualified base64 bytes qb64b
-        """
-        if not qb64b:  # empty need more bytes
-            raise ShortageError("Empty material, Need more characters.")
-
-        first = qb64b[:1].decode("utf-8")  # extract first char code selector
-        if first not in self.Sizes:
-            if first == '-':
-                raise UnexpectedCountCodeError("Unexpected count code start"
-                                               "while extracing Matter.")
-            elif first == '_':
-                raise UnexpectedOpodeError("Unexpected  op code start"
-                                               "while extracing Matter.")
-            else:
-                raise DerivationCodeError("Unsupported code start char={}.".format(first))
-
-        cs = self.Sizes[first]  # get size of hard part of code
-        if len(qb64b) < cs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
-        hard = qb64b[:cs].decode("utf-8")  # get hard part of code
-        if hard not in self.Codes:
-            raise DerivationCodeError("Unsupported code ={}.".format(hard))
-
-        fs = self.Codes[hard].full  # get full size of primitive, code plus material
-        if len(qb64b) < fs:  # need more bytes
-            raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
-        qb64b = qb64b[:fs]  # fully qualified primitive code plus material
-
-
-
-        pad = cs % 4  # pad is remainder pre mod 4
-        # strip off prepended code and append pad characters
-        base = qb64b[cs:] + pad * BASE64_PAD
-        raw = decodeB64(base)
-
-        if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
-            raise ValueError("Improperly qualified material = {}".format(qb64b))
-
-        self._code = code
-        self._index = index
-        self._raw = raw
-
-
-
-    def _exfil(self, qb64b):
-        """
-        Extracts self.code,self.index, and self.raw from qualified base64 qb64
-        """
-        if len(qb64b) < MINSIGSIZE:  # Need more bytes
-            raise ShortageError("Need more bytes.")
-
-        cs = 1  # code size  initially 1 to extract selector or one char code
-        code = qb64b[:cs].decode("utf-8")  # get front code, convert to str
-        if hasattr(code, "decode"):  # converts bytes like to str
-            code = code.decode("utf-8")
-        index = 0
-
-        # need to map code to length so can only consume proper number of chars
-        # from front of qb64 so can use with full identifiers not just prefixes
-
-        if code in SigTwoDex:  # 2 char = 1 code + 1 index
-            qb64b = qb64b[:SigTwoSizes[code]]  # strip of full sigmat
-            cs += 1
-            index = B64IdxByChr[qb64b[cs-1:cs].decode("utf-8")]  # one character for index
-
-        elif code == SigSelDex.four:  #  '0'
-            cs += 1
-            code = qb64b[0:cs].decode("utf-8")  # get front code, convert to str
-            if code not in SigFourDex:  # 4 char = 2 code + 2 index
-                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
-            qb64b = qb64b[:SigFourSizes[code]]  # strip of full sigmat
-            cs += 2
-            index = B64ToInt(qb64b[cs-2:cs].decode("utf-8"))  # two characters for index
-
-        elif code == SigSelDex.dash:  #  '-'
-            cs += 1
-            code = qb64b[0:cs].decode("utf-8")  # get front code, convert to str
-            if code not in SigCntDex:  # 4 char = 2 code + 2 index
-                raise ValidationError("Invalid derivation code = {} in {}.".format(code, qb64b))
-            qb64b = qb64b[:SigCntSizes[code]]  # strip of full sigmat
-            cs += 2
-            index = B64ToInt(qb64b[cs-2:cs].decode("utf-8"))  # two characters for index
-
-        else:
-            raise ValueError("Improperly coded material = {}".format(qb64b))
-
-        if len(qb64b) != SigSizes[code]:  # not correct length
-            if len(qb64b) <  SigSizes[code]:  #  need more bytes
-                raise ShortageError("Need more bytes.")
-            else:
-                raise ValidationError("Bad qb64b size expected {}, got {} "
-                                      "bytes.".format(SigSizes[code],
-                                                      len(qb64b)))
-
-        pad = cs % 4  # pad is remainder pre mod 4
-        # strip off prepended code and append pad characters
-        base = qb64b[cs:] + pad * BASE64_PAD
-        raw = decodeB64(base)
-
-        if len(raw) != (len(qb64b) - cs) * 3 // 4:  # exact lengths
-            raise ValueError("Improperly qualified material = {}".format(qb64b))
-
-        self._code = code
-        self._index = index
-        self._raw = raw
-
 
 
 class SigMat:
