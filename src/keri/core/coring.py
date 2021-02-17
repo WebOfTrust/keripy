@@ -638,15 +638,17 @@ class Matter:
             else:
                 raise DerivationCodeError("Unsupported code start char={}.".format(first))
 
-        cs = self.Sizes[first]  # get whole code size
+        cs = self.Sizes[first]  # get hard code size
         if len(qb64b) < cs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
-        code = qb64b[:cs].decode("utf-8")  # get code
+
+        code = qb64b[:cs].decode("utf-8")  # extract jard code
         if code not in self.Codes:
             raise DerivationCodeError("Unsupported code ={}.".format(code))
 
         hs, ss, fs = self.Codes[code]
-        if (hs + ss) != cs or ss != 0:  # ss=0  for Matter codes
+        bs = hs + ss  # both hs and ss
+        if bs != cs or ss != 0:  # ss=0  for Matter codes
             raise ValueError("Bad .Codes or .Sizes table entries for code={}."
                              " cs={} != hs ={} ss={}".format(code, cs, hs, ss))
 
@@ -2731,14 +2733,23 @@ class Indexer:
         cs = self.Sizes[first]  # get whole code size
         if len(qb64b) < cs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
-        code = qb64b[:cs].decode("utf-8")  # get code
-        if code not in self.Codes:
-            raise DerivationCodeError("Unsupported code ={}.".format(code))
+
+        hard = qb64b[:hs].decode("utf-8")  # get hard code
+        if hard not in self.Codes:
+            raise DerivationCodeError("Unsupported code ={}.".format(hard))
+
+        soft = None
 
         hs, ss, fs = self.Codes[code]
-        if (hs + ss) != cs or ss != 0:  # ss=0  for Matter codes
+
+
+        if (hs + ss) != cs:
             raise ValueError("Bad .Codes or .Sizes table entries for code={}."
                              " cs={} != hs ={} ss={}".format(code, cs, hs, ss))
+
+        if not fs:  # compute fs from index
+            cs = hs + ss
+            fs = ((index * 4) - cs%4) + cs
 
         if len(qb64b) < fs:  # need more bytes
             raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
