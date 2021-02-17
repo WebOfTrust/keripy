@@ -9,6 +9,7 @@ import pysodium
 import blake3
 import json
 import hashlib
+import dataclasses
 
 import msgpack
 import cbor2 as cbor
@@ -26,6 +27,8 @@ from keri.core.coring import (CrySelDex, CryCntDex,
                               CryTwoDex, CryTwoSizes, CryTwoRawSizes,
                               CryFourDex, CryFourSizes, CryFourRawSizes,
                               CrySizes, CryRawSizes, MINCRYSIZE)
+
+from keri.core.coring import MatDex, Sizage, Matter
 from keri.core.coring import (CryMat, CryCounter, Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
@@ -2232,6 +2235,105 @@ def test_tholder():
     """ Done Test """
 
 
+def test_matter():
+    """
+    Test Matter class
+    """
+    assert dataclasses.asdict(MatDex) == {
+                                            'Ed25519_Seed': 'A',
+                                            'Ed25519N': 'B',
+                                            'X25519': 'C',
+                                            'Ed25519': 'D',
+                                            'Blake3_256': 'E',
+                                            'Blake2b_256': 'F',
+                                            'Blake2s_256': 'G',
+                                            'SHA3_256': 'H',
+                                            'SHA2_256': 'I',
+                                            'ECDSA_256k1_Seed': 'J',
+                                            'Ed448_Seed': 'K',
+                                            'X448': 'L',
+                                            'ShortTag': 'M',
+                                            'Salt_128': '0A',
+                                            'Ed25519_Sig': '0B',
+                                            'ECDSA_256k1_Sig': '0C',
+                                            'Blake3_512': '0D',
+                                            'Blake2b_512': '0E',
+                                            'SHA3_512': '0F',
+                                            'SHA2_512': '0G',
+                                            'LongTag': '0H',
+                                            'ECDSA_256k1N': '1AAA',
+                                            'ECDSA_256k1': '1AAB',
+                                            'Ed448N': '1AAC',
+                                            'Ed448': '1AAD',
+                                            'Ed448_Sig': '1AAE'
+                                         }
+
+    assert Matter.Codex == MatDex
+
+    assert Matter.Firsts == {
+        'A': 1,'B': 1,'C': 1,'D': 1,'E': 1,'F': 1,'G': 1,'H': 1,'I': 1,'J': 1,
+        'K': 1,'L': 1,'M': 1,'N': 1,'O': 1,'P': 1,'Q': 1,'R': 1,'S': 1,'T': 1,
+        'U': 1,'V': 1,'W': 1,'X': 1,'Y': 1,'Z': 1,
+        'a': 1,'b': 1,'c': 1,'d': 1,'e': 1,'f': 1,'g': 1,'h': 1,'i': 1,'j': 1,
+        'k': 1,'l': 1,'m': 1,'n': 1,'o': 1,'p': 1,'q': 1,'r': 1,'s': 1,'t': 1,
+        'u': 1,'v': 1,'w': 1,'x': 1,'y': 1,'z': 1,
+        '0': 2,'1': 4,'2': 5,'3': 6,'4': 8,'5': 9,'6': 10
+    }
+
+    assert Matter.Codes == {
+                            'A': Sizage(hard=1, soft=0, full=44),
+                            'B': Sizage(hard=1, soft=0, full=44),
+                            'C': Sizage(hard=1, soft=0, full=44),
+                            'D': Sizage(hard=1, soft=0, full=44),
+                            'E': Sizage(hard=1, soft=0, full=44),
+                            'F': Sizage(hard=1, soft=0, full=44),
+                            'G': Sizage(hard=1, soft=0, full=44),
+                            'H': Sizage(hard=1, soft=0, full=44),
+                            'I': Sizage(hard=1, soft=0, full=44),
+                            'J': Sizage(hard=1, soft=0, full=44),
+                            'K': Sizage(hard=1, soft=0, full=76),
+                            'L': Sizage(hard=1, soft=0, full=76),
+                            'M': Sizage(hard=1, soft=0, full=4),
+                            '0A': Sizage(hard=2, soft=0, full=24),
+                            '0B': Sizage(hard=2, soft=0, full=88),
+                            '0C': Sizage(hard=2, soft=0, full=88),
+                            '0D': Sizage(hard=2, soft=0, full=88),
+                            '0E': Sizage(hard=2, soft=0, full=88),
+                            '0F': Sizage(hard=2, soft=0, full=88),
+                            '0G': Sizage(hard=2, soft=0, full=88),
+                            '0H': Sizage(hard=2, soft=0, full=8),
+                            '1AAA': Sizage(hard=4, soft=0, full=48),
+                            '1AAB': Sizage(hard=4, soft=0, full=48),
+                            '1AAC': Sizage(hard=4, soft=0, full=80),
+                            '1AAD': Sizage(hard=4, soft=0, full=80),
+                            '1AAE': Sizage(hard=4, soft=0, full=56)
+    }
+
+    assert Matter.Codes['A'].hard == 1
+    assert Matter.Codes['A'].soft == 0
+    assert Matter.Codes['A'].full == 44
+
+
+
+    # verkey,  sigkey = pysodium.crypto_sign_keypair()
+    verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
+    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  #  str
+    prefixb = prefix.encode("utf-8")  # bytes
+    prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
+              b'IS\xf3\x874\xbao\x90\x8c')  # pure base 2 binary qb2
+
+    with pytest.raises(EmptyMaterialError):
+        matter = Matter()
+
+    with pytest.raises(EmptyMaterialError):
+        matter = Matter(raw=verkey, code=None)
+
+    with pytest.raises(EmptyMaterialError):
+        matter = Matter(raw=verkey, code='')
+
+    matter = Matter(raw=verkey)
+
+
 
 if __name__ == "__main__":
-    test_diger()
+    test_matter()

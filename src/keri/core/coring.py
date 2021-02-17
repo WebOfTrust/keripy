@@ -325,11 +325,11 @@ Tierage = namedtuple("Tierage", 'low med high')
 Tiers = Tierage(low='low', med='med', high='high')
 
 # namedtuple for entries in derivation code tables
-# firm is the int size in chars of the stable part of the code
+# hard is the int size in chars of the stable part of the code
 # soft is the int size in chars of the unstable part of the code, if any, such as index or count
 # full is the int size in chars of the both parts of code plus appended material if any
 # full may be None if full size is variable not fixed
-Sizage = namedtuple("Sizage", "firm, soft, full")
+Sizage = namedtuple("Sizage", "hard, soft, full")
 
 @dataclass(frozen=True)
 class MatterCodex:
@@ -401,9 +401,39 @@ class Matter:
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
-    Codes = {}
+    Codex = MatDex
+    Firsts = ({chr(c): 1 for c in range(65, 65+26)})
+    Firsts.update({chr(c): 1 for c in range(97, 97+26)})
+    Firsts.update([('0', 2), ('1', 4), ('2', 5), ('3', 6), ('4', 8), ('5', 9), ('6', 10)])
+    Codes = {
+                'A': Sizage(hard=1, soft=0, full=44),
+                'B': Sizage(hard=1, soft=0, full=44),
+                'C': Sizage(hard=1, soft=0, full=44),
+                'D': Sizage(hard=1, soft=0, full=44),
+                'E': Sizage(hard=1, soft=0, full=44),
+                'F': Sizage(hard=1, soft=0, full=44),
+                'G': Sizage(hard=1, soft=0, full=44),
+                'H': Sizage(hard=1, soft=0, full=44),
+                'I': Sizage(hard=1, soft=0, full=44),
+                'J': Sizage(hard=1, soft=0, full=44),
+                'K': Sizage(hard=1, soft=0, full=76),
+                'L': Sizage(hard=1, soft=0, full=76),
+                'M': Sizage(hard=1, soft=0, full=4),
+                '0A': Sizage(hard=2, soft=0, full=24),
+                '0B': Sizage(hard=2, soft=0, full=88),
+                '0C': Sizage(hard=2, soft=0, full=88),
+                '0D': Sizage(hard=2, soft=0, full=88),
+                '0E': Sizage(hard=2, soft=0, full=88),
+                '0F': Sizage(hard=2, soft=0, full=88),
+                '0G': Sizage(hard=2, soft=0, full=88),
+                '0H': Sizage(hard=2, soft=0, full=8),
+                '1AAA': Sizage(hard=4, soft=0, full=48),
+                '1AAB': Sizage(hard=4, soft=0, full=48),
+                '1AAC': Sizage(hard=4, soft=0, full=80),
+                '1AAD': Sizage(hard=4, soft=0, full=80),
+                '1AAE': Sizage(hard=4, soft=0, full=56),
+            }
 
-    Codex = None
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=CryOneDex.Ed25519N, index=0):
