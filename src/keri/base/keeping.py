@@ -748,7 +748,7 @@ class Creatory:
         """
         """
         return RandoCreator(**kwa)
-      
+
 
     def _makeSalty(self, **kwa):
         """
@@ -862,7 +862,7 @@ class Manager:
             icodes is list of private key derivation codes qb64 str
                 one per incepting key pair
             icount is int count of incepting public keys when icodes not provided
-            icode is str derivation code qb64  of all icount incepting public keys
+            icode is str derivation code qb64  of all icount incepting private keys
                 when icodes list not provided
             ncodes is list of private key derivation codes qb64 str
                 one per next key pair
