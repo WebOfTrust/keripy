@@ -108,3 +108,27 @@ class DerivationError(ValidationError):
     Usage:
         raise DerivationError("error message")
     """
+
+
+class DerivationCodeError(ValidationError):
+    """
+    Derivation Code cryppto material conversion errors
+    Usage:
+        raise DerivationCodeError("error message")
+    """
+
+
+class UnexpectedCountCodeError(DerivationCodeError):
+    """
+    Encountered count code start char "-" unexpectantly
+    Usage:
+        raise DerivationCodeError("error message")
+    """
+
+
+class UnexpectedOpcodeCodeError(DerivationCodeError):
+    """
+    Encountered opcode code start char "_" unexpectantly
+    Usage:
+        raise DerivationCodeError("error message")
+    """

@@ -2270,6 +2270,7 @@ def test_matter():
 
     assert Matter.Codex == MatDex
 
+    # first character of code with hard size of code
     assert Matter.Sizes == {
         'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1, 'F': 1, 'G': 1, 'H': 1, 'I': 1,
         'J': 1, 'K': 1, 'L': 1, 'M': 1, 'N': 1, 'O': 1, 'P': 1 ,'Q': 1, 'R': 1,
@@ -2280,38 +2281,38 @@ def test_matter():
         '0': 2, '1': 4, '2': 5, '3': 6, '4': 8, '5': 9, '6': 10
     }
 
+    # Codes table with sizes of code (hard) and full primitive material
     assert Matter.Codes == {
-                            'A': Sizage(hard=1, full=44),
-                            'B': Sizage(hard=1, full=44),
-                            'C': Sizage(hard=1, full=44),
-                            'D': Sizage(hard=1, full=44),
-                            'E': Sizage(hard=1, full=44),
-                            'F': Sizage(hard=1, full=44),
-                            'G': Sizage(hard=1, full=44),
-                            'H': Sizage(hard=1, full=44),
-                            'I': Sizage(hard=1, full=44),
-                            'J': Sizage(hard=1, full=44),
-                            'K': Sizage(hard=1, full=76),
-                            'L': Sizage(hard=1, full=76),
-                            'M': Sizage(hard=1, full=4),
-                            '0A': Sizage(hard=2, full=24),
-                            '0B': Sizage(hard=2, full=88),
-                            '0C': Sizage(hard=2, full=88),
-                            '0D': Sizage(hard=2, full=88),
-                            '0E': Sizage(hard=2, full=88),
-                            '0F': Sizage(hard=2, full=88),
-                            '0G': Sizage(hard=2, full=88),
-                            '0H': Sizage(hard=2, full=8),
-                            '1AAA': Sizage(hard=4, full=48),
-                            '1AAB': Sizage(hard=4, full=48),
-                            '1AAC': Sizage(hard=4, full=80),
-                            '1AAD': Sizage(hard=4, full=80),
-                            '1AAE': Sizage(hard=4, full=56)
+                            'A': Sizage(code=1, full=44),
+                            'B': Sizage(code=1, full=44),
+                            'C': Sizage(code=1, full=44),
+                            'D': Sizage(code=1, full=44),
+                            'E': Sizage(code=1, full=44),
+                            'F': Sizage(code=1, full=44),
+                            'G': Sizage(code=1, full=44),
+                            'H': Sizage(code=1, full=44),
+                            'I': Sizage(code=1, full=44),
+                            'J': Sizage(code=1, full=44),
+                            'K': Sizage(code=1, full=76),
+                            'L': Sizage(code=1, full=76),
+                            'M': Sizage(code=1, full=4),
+                            '0A': Sizage(code=2, full=24),
+                            '0B': Sizage(code=2, full=88),
+                            '0C': Sizage(code=2, full=88),
+                            '0D': Sizage(code=2, full=88),
+                            '0E': Sizage(code=2, full=88),
+                            '0F': Sizage(code=2, full=88),
+                            '0G': Sizage(code=2, full=88),
+                            '0H': Sizage(code=2, full=8),
+                            '1AAA': Sizage(code=4, full=48),
+                            '1AAB': Sizage(code=4, full=48),
+                            '1AAC': Sizage(code=4, full=80),
+                            '1AAD': Sizage(code=4, full=80),
+                            '1AAE': Sizage(code=4, full=56)
                            }
 
-    assert Matter.Codes['A'].hard == 1
-    assert Matter.Codes['A'].full == 44
-
+    assert Matter.Codes['A'].code == 1  # code size
+    assert Matter.Codes['A'].full == 44  # full size
 
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
