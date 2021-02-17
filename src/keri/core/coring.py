@@ -402,9 +402,9 @@ class Matter:
 
     """
     Codex = MatDex
-    Firsts = ({chr(c): 1 for c in range(65, 65+26)})
-    Firsts.update({chr(c): 1 for c in range(97, 97+26)})
-    Firsts.update([('0', 2), ('1', 4), ('2', 5), ('3', 6), ('4', 8), ('5', 9), ('6', 10)])
+    Sizes = ({chr(c): 1 for c in range(65, 65+26)})
+    Sizes.update({chr(c): 1 for c in range(97, 97+26)})
+    Sizes.update([('0', 2), ('1', 4), ('2', 5), ('3', 6), ('4', 8), ('5', 9), ('6', 10)])
     Codes = {
                 'A': Sizage(hard=1, soft=0, full=44),
                 'B': Sizage(hard=1, soft=0, full=44),
