@@ -2237,29 +2237,25 @@ class Prefixer(CryMat):
         return True
 
 
-
-
-
+# Base64 utilities
 BASE64_PAD = b'='
-
 
 # Mappings between Base64 Encode Index and Decode Characters
 #  B64ChrByIdx is dict where each key is a B64 index and each value is the B64 char
 #  B64IdxByChr is dict where each key is a B64 char and each value is the B64 index
 # Map Base64 index to char
-B64ChrByIdx = dict((index, char) for index,  char in enumerate([chr(x) for x in range(65, 91)]))
-B64ChrByIdx.update([(index + 26, char) for index,  char in enumerate([chr(x) for x in range(97, 123)])])
-B64ChrByIdx.update([(index + 52, char) for index,  char in enumerate([chr(x) for x in range(48, 58)])])
+B64ChrByIdx = dict((index, char) for index, char in enumerate([chr(x) for x in range(65, 91)]))
+B64ChrByIdx.update([(index + 26, char) for index, char in enumerate([chr(x) for x in range(97, 123)])])
+B64ChrByIdx.update([(index + 52, char) for index, char in enumerate([chr(x) for x in range(48, 58)])])
 B64ChrByIdx[62] = '-'
 B64ChrByIdx[63] = '_'
-
-B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}  # map char to Base64 index
+# Map char to Base64 index
+B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}
 
 def IntToB64(i, l=1):
     """
     Returns conversion of int i to Base64 str
-
-    l is min number of b64 digits padded with Base4 zeros "A"
+    l is min number of b64 digits left padded with Base64 0 == "A" char
     """
     d = deque()  # deque of characters base64
     d.appendleft(B64ChrByIdx[i % 64])
@@ -2274,11 +2270,10 @@ def IntToB64(i, l=1):
 def B64ToInt(cs):
     """
     Returns conversion of Base64 str cs to int
-
     """
     i = 0
     for e, c in enumerate(reversed(cs)):
-        i += B64IdxByChr[c] * 64 ** e
+        i |= B64IdxByChr[c] << (e * 6)  # same as i += B64IdxByChr[c] * (64 ** e)
     return i
 
 

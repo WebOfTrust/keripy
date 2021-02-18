@@ -2689,4 +2689,4 @@ def test_indexer():
 
 
 if __name__ == "__main__":
-    test_indexer()
+    test_b64_conversions()
