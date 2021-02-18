@@ -365,7 +365,7 @@ class MatterCodex:
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion text with "in"
 
-MatDex = MatterCodex()
+MtrDex = MatterCodex()
 
 @dataclass(frozen=True)
 class NonTransCodex:
@@ -442,7 +442,7 @@ class Matter:
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
-    Codex = MatDex
+    Codex = MtrDex
     # Sizes is table of hard (stable) size of code which is whole size for Matter
     Sizes = ({chr(c): 1 for c in range(65, 65+26)})  # size of hard part of code
     Sizes.update({chr(c): 1 for c in range(97, 97+26)})
@@ -478,7 +478,7 @@ class Matter:
             }
 
 
-    def __init__(self, raw=None, code=MatDex.Ed25519N, qb64b=None, qb64=None, qb2=None):
+    def __init__(self, raw=None, code=MtrDex.Ed25519N, qb64b=None, qb64=None, qb2=None):
         """
         Validate as fully qualified
         Parameters:
@@ -2470,15 +2470,6 @@ SigRawSizes.update(SigFourRawSizes)
 SigRawSizes.update(SigFiveRawSizes)
 
 
-
-# namedtuple for size entries in Indexer and Counter derivation code tables
-# hard is the int size in chars of the stable part of the code
-# soft is the int size in chars of the unstable part of the code, if any, such as index or count
-# full is the int size in chars of the both parts of code plus appended material if any
-# full may be None if full size is variable not fixed
-Bigage = namedtuple("Bigage", "hard, soft, full")
-
-
 @dataclass(frozen=True)
 class IndexerCodex:
     """
@@ -2495,7 +2486,7 @@ class IndexerCodex:
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion text with "in"
 
-InDex = IndexerCodex()
+IdrDex = IndexerCodex()
 
 
 class Indexer:
@@ -2527,20 +2518,20 @@ class Indexer:
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
-    Codex = InDex
+    Codex = IdrDex
     # Sizes is table of hard (stable) size of code
     Sizes = ({chr(c): 1 for c in range(65, 65+26)})
     Sizes.update({chr(c): 1 for c in range(97, 97+26)})
     Sizes.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 3), ('5', 4)])
     Codes = {
-                'A': Bigage(hard=1, soft=1, full=88),
-                'B': Bigage(hard=1, soft=1, full=88),
-                'C': Bigage(hard=1, soft=1, full=None),
-                '0A': Bigage(hard=2, soft=2, full=156),
-                '0B': Bigage(hard=2, soft=2, full=None),
+                'A': Sizage(hs=1, ss=1, fs=88),
+                'B': Sizage(hs=1, ss=1, fs=88),
+                'C': Sizage(hs=1, ss=1, fs=None),
+                '0A': Sizage(hs=2, ss=2, fs=156),
+                '0B': Sizage(hs=2, ss=2, fs=None),
             }
 
-    def __init__(self, raw=None, code=InDex.Ed25519_Sig, index=0,
+    def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0,
                  qb64b=None, qb64=None, qb2=None):
         """
         Validate as fully qualified
@@ -2697,7 +2688,7 @@ class Indexer:
         index = self.index  # index value int used for soft
         raw = self.raw  # bytes or bytearray
 
-        hs, ss, fs = self.Sizes(code)
+        hs, ss, fs = self.Codes[code]
         if not fs:  # compute fs from index
             bs = hs + ss  # both hard + soft size
             fs = ((index * 4) - bs%4) + bs
@@ -2707,11 +2698,11 @@ class Indexer:
 
         ps = (3 - (len(raw) % 3)) % 3  # pad size
         # check valid pad size for whole code size
-        if len(both) % 4 != ps:  # pad size is not remainder of len(code) % 4
+        if len(both) % 4 != ps:  # pad size is not remainder of len(both) % 4
             raise ValidationError("Invalid code = {} for converted raw pad size = {}."
                                   .format(both, ps))
         # prepending full derivation code with index and strip off trailing pad characters
-        return (both.encode("utf-8") + encodeB64(code)[:-ps])
+        return (both.encode("utf-8") + encodeB64(raw)[:-ps])
 
 
     def _exfil(self, qb64b):
@@ -2740,7 +2731,7 @@ class Indexer:
         if hard not in self.Codes:
             raise DerivationCodeError("Unsupported code ={}.".format(hard))
 
-        hs, ss, fs = self.Codes[code]
+        hs, ss, fs = self.Codes[hard]
         bs = hs + ss  # both hard + soft code size
 
         if hs != cs:
@@ -2767,8 +2758,8 @@ class Indexer:
         if len(raw) != (len(qb64b) - bs) * 3 // 4:  # exact lengths
             raise ValueError("Improperly qualified material = {}".format(qb64b))
 
-        self._code = code
-        sekf._index = index
+        self._code = hard
+        self._index = index
         self._raw = raw
 
 

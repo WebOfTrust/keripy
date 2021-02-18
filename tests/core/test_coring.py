@@ -28,8 +28,7 @@ from keri.core.coring import (CrySelDex, CryCntDex,
                               CryFourDex, CryFourSizes, CryFourRawSizes,
                               CrySizes, CryRawSizes, MINCRYSIZE)
 
-from keri.core.coring import MatDex, Sizage, Matter
-from keri.core.coring import InDex, Bigage, Indexer
+from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer
 
 from keri.core.coring import (CryMat, CryCounter, Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
@@ -2242,7 +2241,7 @@ def test_matter():
     """
     Test Matter class
     """
-    assert dataclasses.asdict(MatDex) == {
+    assert dataclasses.asdict(MtrDex) == {
                                             'Ed25519_Seed': 'A',
                                             'Ed25519N': 'B',
                                             'X25519': 'C',
@@ -2271,7 +2270,7 @@ def test_matter():
                                             'Ed448_Sig': '1AAE'
                                          }
 
-    assert Matter.Codex == MatDex
+    assert Matter.Codex == MtrDex
 
     # first character of code with hard size of code
     assert Matter.Sizes == {
@@ -2337,7 +2336,7 @@ def test_matter():
 
     matter = Matter(raw=verkey)
     assert matter.raw == verkey
-    assert matter.code == MatDex.Ed25519N
+    assert matter.code == MtrDex.Ed25519N
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
     assert matter.transferable == False
@@ -2346,19 +2345,19 @@ def test_matter():
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
 
     matter._exfil(prefixb)
-    assert matter.code == MatDex.Ed25519N
+    assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
 
     matter = Matter(qb64b=prefixb)
-    assert matter.code == MatDex.Ed25519N
+    assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
 
     matter = Matter(qb64=prefix)
-    assert matter.code == MatDex.Ed25519N
+    assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
 
     matter = Matter(qb64=prefixb)  #  works for either
-    assert matter.code == MatDex.Ed25519N
+    assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
 
     # test truncates extra bytes from qb64 parameter
@@ -2372,11 +2371,11 @@ def test_matter():
         matter = Matter(qb64=shortprefix)
 
     matter = Matter(qb2=prebin)
-    assert matter.code == MatDex.Ed25519N
+    assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
 
     matter = Matter(qb64=prefix.encode("utf-8"))  # test bytes not str
-    assert matter.code == MatDex.Ed25519N
+    assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
     assert matter.qb64 == prefix
     assert matter.qb64b == prefix.encode("utf-8")
@@ -2393,7 +2392,7 @@ def test_matter():
     # test prefix on full identifier
     full = prefix + ":mystuff/mypath/toresource?query=what#fragment"
     matter = Matter(qb64=full)
-    assert matter.code == MatDex.Ed25519N
+    assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -2401,7 +2400,7 @@ def test_matter():
     # test nongreedy prefixb on full identifier
     full = prefixb + b":mystuff/mypath/toresource?query=what#fragment"
     matter = Matter(qb64b=full)
-    assert matter.code == MatDex.Ed25519N
+    assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
@@ -2421,9 +2420,9 @@ def test_matter():
             b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
             b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
 
-    matter = Matter(raw=sig, code=MatDex.Ed25519_Sig)
+    matter = Matter(raw=sig, code=MtrDex.Ed25519_Sig)
     assert matter.raw == sig
-    assert matter.code == MatDex.Ed25519_Sig
+    assert matter.code == MtrDex.Ed25519_Sig
     assert matter.qb64 == qsig64
     assert matter.qb64b == qsig64b
     assert matter.qb2 == qsigB2
@@ -2431,37 +2430,27 @@ def test_matter():
 
     matter = Matter(qb64b=qsig64b)
     assert matter.raw == sig
-    assert matter.code == MatDex.Ed25519_Sig
+    assert matter.code == MtrDex.Ed25519_Sig
 
     matter = Matter(qb64=qsig64)
     assert matter.raw == sig
-    assert matter.code == MatDex.Ed25519_Sig
+    assert matter.code == MtrDex.Ed25519_Sig
 
     qsig64b  = qsig64.encode("utf-8")  #  test bytes input
     matter = Matter(qb64=qsig64b)
     assert matter.raw == sig
-    assert matter.code == MatDex.Ed25519_Sig
+    assert matter.code == MtrDex.Ed25519_Sig
 
     matter = Matter(qb2=qsigB2)
     assert matter.raw == sig
-    assert matter.code == MatDex.Ed25519_Sig
+    assert matter.code == MtrDex.Ed25519_Sig
 
     """ Done Test """
 
-
-
-def test_indexer():
+def test_b64_conversions():
     """
-    Test Indexer class
+    Test Base64 index and count conversion utility routines
     """
-    with pytest.raises(EmptyMaterialError):
-        sigmat = Indexer()
-
-    assert SigTwoDex.Ed25519 ==  'A'  # Ed25519 signature.
-    assert SigTwoDex.ECDSA_256k1 == 'B'  # ECDSA secp256k1 signature.
-
-    assert SigTwoSizes[SigTwoDex.Ed25519] == 88
-    assert SigTwoSizes[SigTwoDex.ECDSA_256k1] == 88
 
     cs = IntToB64(0)
     assert cs == "A"
@@ -2498,54 +2487,53 @@ def test_indexer():
     i = B64ToInt(cs)
     assert i == 6011
 
-    # Test attached signature code (empty raw)
-    qsc = SigCntDex.Base64 + IntToB64(0, l=2)
-    assert qsc == '-AAA'
+    """End Test"""
 
-    qscb = qsc.encode("utf-8")
-    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=0)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
 
-    sigmat = SigMat(qb64b=qscb)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
+def test_indexer():
+    """
+    Test Indexer class
+    """
+    assert dataclasses.asdict(IdrDex) == {
+                                           'Ed25519_Sig': 'A',
+                                           'ECDSA_256k1_Sig': 'B',
+                                           'ShortString': 'C',
+                                           'Ed448_Sig': '0A',
+                                           'LongString': '0B'
+                                         }
 
-    sigmat = SigMat(qb64=qsc)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
 
-    sigmat = SigMat(qb64=qscb)  #  also works for bytes
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
+    assert IdrDex.Ed25519_Sig ==  'A'  # Ed25519 signature.
+    assert IdrDex.ECDSA_256k1_Sig == 'B'  # ECDSA secp256k1 signature.
 
-    idx = 5
-    qsc = SigCntDex.Base64 + IntToB64(idx, l=2)
-    assert qsc == '-AAF'
-    qscb = qsc.encode("utf-8")
-    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=idx)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 5
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x05'
+    assert Indexer.Codex == IdrDex
+
+    # first character of code with hard size of code
+    assert Indexer.Sizes == {
+       'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1, 'F': 1, 'G': 1, 'H': 1, 'I': 1,
+       'J': 1, 'K': 1, 'L': 1, 'M': 1, 'N': 1, 'O': 1, 'P': 1, 'Q': 1, 'R': 1,
+       'S': 1, 'T': 1, 'U': 1, 'V': 1, 'W': 1, 'X': 1, 'Y': 1, 'Z': 1,
+       'a': 1, 'b': 1, 'c': 1, 'd': 1, 'e': 1, 'f': 1, 'g': 1, 'h': 1, 'i': 1,
+       'j': 1, 'k': 1, 'l': 1, 'm': 1, 'n': 1, 'o': 1, 'p': 1, 'q': 1, 'r': 1,
+       's': 1, 't': 1, 'u': 1, 'v': 1, 'w': 1, 'x': 1, 'y': 1, 'z': 1,
+       '0': 2, '1': 2, '2': 2, '3': 2, '4': 3, '5': 4
+    }
+
+    # Codes table with sizes of code (hard) and full primitive material
+    assert Indexer.Codes == {
+                                'A': Sizage(hs=1, ss=1, fs=88),
+                                'B': Sizage(hs=1, ss=1, fs=88),
+                                'C': Sizage(hs=1, ss=1, fs=None),
+                                '0A': Sizage(hs=2, ss=2, fs=156),
+                                '0B': Sizage(hs=2, ss=2, fs=None)
+                            }
+
+    assert Indexer.Codes['A'].hs == 1  # hard size
+    assert Indexer.Codes['A'].ss == 1  # soft size
+    assert Indexer.Codes['A'].fs == 88  # full size
+
+    with pytest.raises(EmptyMaterialError):
+        indexer = Indexer()
 
     # Test signatures
     sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
@@ -2559,89 +2547,114 @@ def test_indexer():
     assert len(sig64) == 88
     assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
 
-    qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    # replace pad "==" with code "AA"
+    qsc = IdrDex.Ed25519_Sig + IntToB64(0, l=1)
+    assert qsc == 'AA'
+    qscb = qsc.encode("utf-8")
+    qsig64 = qsc + sig64[:-2]
+    assert qsig64 == 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
     assert len(qsig64) == 88
     qsig64b = qsig64.encode("utf-8")
-    qbin = decodeB64(qsig64b)
-    assert len(qbin) == 66
-    assert qbin == (b'\x00\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+
+    qsig2b = decodeB64(qsig64b)
+    assert len(qsig2b) == 66
+    assert qsig2b == (b'\x00\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
                     b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
                     b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
 
 
-    sigmat = SigMat(raw=sig)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsig64
-    assert sigmat.qb2 == qbin
+    indexer = Indexer(raw=sig)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 0
+    assert indexer.qb64 == qsig64
+    assert indexer.qb2 == qsig2b
 
     # test wrong size of raw
     longsig = sig + bytes([10, 11, 12])
-    sigmat = SigMat(raw=longsig)
+    indexer = Indexer(raw=longsig)
 
     shortsig = sig[:-3]
     with pytest.raises(ValidationError):
-        sigmat = SigMat(raw=shortsig)
+        indexer = Indexer(raw=shortsig)
 
-    sigmat = SigMat(qb64b=qsig64b)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
+    indexer = Indexer(qb64b=qsig64b)  # test with bytes not str
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 0
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
 
-    sigmat = SigMat(qb64=qsig64)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
+    indexer = Indexer(qb64=qsig64)  # test with str not bytes
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 0
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
 
-    sigmat = SigMat(qb64=qsig64b)  # test with bytes not str
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-
-    # test wrong size of qb64
+    # test truncates extra bytes from qb64 parameter
     longqsig64 = qsig64 + "ABCD"
-    oksigmat = SigMat(qb64=longqsig64)
-    assert len(oksigmat.qb64) == SigSizes[oksigmat.code]
+    indexer = Indexer(qb64=longqsig64)
+    assert len(indexer.qb64) == Indexer.Codes[indexer.code].fs
 
+    # test raises ShortageError if not enough bytes in qb64 parameter
     shortqsig64 = qsig64[:-4]  # too short
     with pytest.raises(ShortageError):
-        oksigmat = SigMat(qb64=shortqsig64)
+        indexer = Indexer(qb64=shortqsig64)
 
-    sigmat = SigMat(qb64=qsig64.encode("utf-8"))  # test bytes not str
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.raw == sig
-    assert sigmat.qb64 == qsig64
-    assert sigmat.qb64b == qsig64.encode("utf-8")
+    indexer = Indexer(qb2=qsig2b)  #  test with qb2
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 0
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
 
-    sigmat = SigMat(qb2=qbin)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
+    # test with non-zero index=5
+    # replace pad "==" with code "AF"
+    qsc = IdrDex.Ed25519_Sig + IntToB64(5, l=1)
+    assert qsc == 'AF'
+    qscb = qsc.encode("utf-8")
+    qsig64 = qsc + sig64[:-2]
+    assert qsig64 == 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    assert len(qsig64) == 88
+    qsig64b = qsig64.encode("utf-8")
 
-    sigmat = SigMat(raw=sig, code=SigTwoDex.Ed25519, index=5)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 5
-    qsig64 = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-    assert sigmat.qb64 == qsig64
-    qbin = (b'\x00Y\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+    qsig2b = (b'\x00Y\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
             b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
             b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
-    assert sigmat.qb2 == qbin
 
-    sigmat = SigMat(qb64=qsig64)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 5
+    indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=5)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
 
-    sigmat = SigMat(qb2=qbin)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 5
+
+    indexer = Indexer(qb2=qsig2b)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+    indexer = Indexer(qb64=qsig64)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+
     """ Done Test """
 
 
 
 if __name__ == "__main__":
-    test_matter()
+    test_indexer()
