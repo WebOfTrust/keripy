@@ -2674,7 +2674,14 @@ def test_indexer():
     assert indexer.qb64 == lq64
     assert indexer.qb2 == b'\xd0\x10\x04\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
 
-
+    # index zero for empty label
+    indexer = Indexer(raw=lraw, code=IdrDex.Label, index=0)
+    assert indexer.raw == b''
+    assert indexer.code == IdrDex.Label
+    assert indexer.index == 0
+    assert indexer.qb64b == b'0BAA'
+    assert indexer.qb64 == '0BAA'
+    assert indexer.qb2 == b'\xd0\x10\x00'
 
 
     """ Done Test """
