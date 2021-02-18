@@ -2252,6 +2252,7 @@ B64ChrByIdx[63] = '_'
 # Map char to Base64 index
 B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}
 
+
 def IntToB64(i, l=1):
     """
     Returns conversion of int i to Base64 str
@@ -2266,6 +2267,7 @@ def IntToB64(i, l=1):
     for j in range(l - len(d)):  # range(x)  x <= 0 means do not iterate
         d.appendleft("A")
     return ( "".join(d))
+
 
 def B64ToInt(cs):
     """
