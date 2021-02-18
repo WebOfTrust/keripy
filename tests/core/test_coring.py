@@ -2650,9 +2650,9 @@ def test_indexer():
     assert indexer.qb2 == qsig2b
 
     #  Label Code (variable length)
-    # last character must be A which is all zeros otherwise will not round trip
     label = b'Hello_World_Peep'
     index = len(label) // 4
+    assert not len(label) % 4
     assert index == 4
     lraw = decodeB64(label)
     assert len(lraw) == len(label) * 3 // 4
