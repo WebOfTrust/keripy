@@ -618,7 +618,7 @@ class Matter:
             raise ValidationError("Invalid code = {} for converted raw pad size= {}."
                                   .format(code, ps))
         # prepend derivation code and strip off trailing pad characters
-        return (code.encode("utf-8") + encodeB64(raw)[:-ps])
+        return (code.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
 
 
     def _exfil(self, qb64b):
@@ -2479,9 +2479,8 @@ class IndexerCodex:
     """
     Ed25519_Sig:        str = 'A'  # Ed25519 signature.
     ECDSA_256k1_Sig:    str = 'B'  # ECDSA secp256k1 signature.
-    ShortString:        str = 'C'  # Variable length string up to 62 chars
     Ed448_Sig:          str = '0A'  # Ed448 signature.
-    LongString:         str = '0B'  # Variable length string up to 4095 quadlets of chars
+    Label:              str = '0B'  # Variable len bytes label L=N*4 <= 4095 char quadlets
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion text with "in"
@@ -2526,7 +2525,6 @@ class Indexer:
     Codes = {
                 'A': Sizage(hs=1, ss=1, fs=88),
                 'B': Sizage(hs=1, ss=1, fs=88),
-                'C': Sizage(hs=1, ss=1, fs=None),
                 '0A': Sizage(hs=2, ss=2, fs=156),
                 '0B': Sizage(hs=2, ss=2, fs=None),
             }
@@ -2568,7 +2566,10 @@ class Indexer:
                 raise ValidationError("Invalid index={} for code={}.".format(index, code))
 
             if not fs:  # compute fs from index
-                fs = ((index * 4) - bs%4) + bs
+                if bs % 4:
+                    raise ValidationError("Whole code size not multiple of 4 for "
+                                          "variable length material. bs={}.".format(bs))
+                fs = (index * 4) + bs
 
             rawsize = (fs - bs) * 3 // 4
 
@@ -2689,9 +2690,12 @@ class Indexer:
         raw = self.raw  # bytes or bytearray
 
         hs, ss, fs = self.Codes[code]
+        bs = hs + ss  # both hard + soft size
         if not fs:  # compute fs from index
-            bs = hs + ss  # both hard + soft size
-            fs = ((index * 4) - bs%4) + bs
+            if bs % 4:
+                raise ValidationError("Whole code size not multiple of 4 for "
+                                      "variable length material. bs={}.".format(bs))
+            fs = (index * 4) + bs
 
         # both is hard code + converted index
         both =  "{}{}".format(code, IntToB64(index, l=ss))
@@ -2702,7 +2706,7 @@ class Indexer:
             raise ValidationError("Invalid code = {} for converted raw pad size = {}."
                                   .format(both, ps))
         # prepending full derivation code with index and strip off trailing pad characters
-        return (both.encode("utf-8") + encodeB64(raw)[:-ps])
+        return (both.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
 
 
     def _exfil(self, qb64b):
@@ -2718,7 +2722,7 @@ class Indexer:
                 raise UnexpectedCountCodeError("Unexpected count code start"
                                                "while extracing Matter.")
             elif first == '_':
-                raise UnexpectedOpodeError("Unexpected  op code start"
+                raise UnexpectedOpcodeError("Unexpected  op code start"
                                                "while extracing Matter.")
             else:
                 raise DerivationCodeError("Unsupported code start char={}.".format(first))
@@ -2744,7 +2748,10 @@ class Indexer:
         index = B64ToInt(qb64b[hs:hs+ss].decode("utf-8"))  # get index
 
         if not fs:  # compute fs from index
-            fs = ((index * 4) - bs%4) + bs
+            if bs % 4:
+                raise ValidationError("Whole code size not multiple of 4 for "
+                                      "variable length material. bs={}.".format(bs))
+            fs = (index * 4) + bs
 
         if len(qb64b) < fs:  # need more bytes
             raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))

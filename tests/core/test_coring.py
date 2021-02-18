@@ -2497,9 +2497,8 @@ def test_indexer():
     assert dataclasses.asdict(IdrDex) == {
                                            'Ed25519_Sig': 'A',
                                            'ECDSA_256k1_Sig': 'B',
-                                           'ShortString': 'C',
                                            'Ed448_Sig': '0A',
-                                           'LongString': '0B'
+                                           'Label': '0B'
                                          }
 
 
@@ -2523,7 +2522,6 @@ def test_indexer():
     assert Indexer.Codes == {
                                 'A': Sizage(hs=1, ss=1, fs=88),
                                 'B': Sizage(hs=1, ss=1, fs=88),
-                                'C': Sizage(hs=1, ss=1, fs=None),
                                 '0A': Sizage(hs=2, ss=2, fs=156),
                                 '0B': Sizage(hs=2, ss=2, fs=None)
                             }
@@ -2650,6 +2648,33 @@ def test_indexer():
     assert indexer.qb64 == qsig64
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
+
+    #  Label Code (variable length)
+    # last character must be A which is all zeros otherwise will not round trip
+    label = b'Hello_World_Peep'
+    index = len(label) // 4
+    assert index == 4
+    lraw = decodeB64(label)
+    assert len(lraw) == len(label) * 3 // 4
+    assert lraw == b'\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
+    ltext = encodeB64(lraw)
+    assert ltext == b'Hello_World_Peep' == label
+    qsc = IdrDex.Label + IntToB64(index, l=2)
+    assert qsc == '0BAE'
+    qscb = qsc.encode("utf-8")
+    lq64b = qscb + label
+    assert lq64b == b"0BAEHello_World_Peep"
+    lq64 = lq64b.decode("utf-8")
+
+    indexer = Indexer(raw=lraw, code=IdrDex.Label, index=index)
+    assert indexer.raw == lraw
+    assert indexer.code == IdrDex.Label
+    assert indexer.index == index
+    assert indexer.qb64b == lq64b
+    assert indexer.qb64 == lq64
+    assert indexer.qb2 == b'\xd0\x10\x04\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
+
+
 
 
     """ Done Test """
