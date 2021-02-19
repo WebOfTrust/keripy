@@ -2254,7 +2254,7 @@ def test_matter():
                                             'ECDSA_256k1_Seed': 'J',
                                             'Ed448_Seed': 'K',
                                             'X448': 'L',
-                                            'ShortTag': 'M',
+                                            'Short': 'M',
                                             'Salt_128': '0A',
                                             'Ed25519_Sig': '0B',
                                             'ECDSA_256k1_Sig': '0C',
@@ -2262,12 +2262,13 @@ def test_matter():
                                             'Blake2b_512': '0E',
                                             'SHA3_512': '0F',
                                             'SHA2_512': '0G',
-                                            'LongTag': '0H',
+                                            'Long': '0H',
                                             'ECDSA_256k1N': '1AAA',
                                             'ECDSA_256k1': '1AAB',
                                             'Ed448N': '1AAC',
                                             'Ed448': '1AAD',
-                                            'Ed448_Sig': '1AAE'
+                                            'Ed448_Sig': '1AAE',
+                                            'Tag': '1AAF'
                                          }
 
     assert Matter.Codex == MtrDex

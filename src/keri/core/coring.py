@@ -346,7 +346,7 @@ class MatterCodex:
     ECDSA_256k1_Seed:     str = 'J'  # ECDSA secp256k1 256 bit random Seed for private key
     Ed448_Seed:           str = 'K'  # Ed448 448 bit random Seed for private key
     X448:                 str = 'L'  # X448 public encryption key, converted from Ed448
-    ShortTag:             str = 'M'  # Tag 3 Base64 chars or short 2 byte number
+    Short:                str = 'M'  # Short 2 byte number
     Salt_128:             str = '0A'  # 128 bit random seed or 128 bit number
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -354,12 +354,13 @@ class MatterCodex:
     Blake2b_512:          str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
     SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
     SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
-    LongTag:              str = '0H'  # Tag 6 Base64 chars or long 4 byte number
+    Long:                 str = '0H'  # Long 4 byte number
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
+    Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
 
 
     def __iter__(self):
@@ -2765,6 +2766,308 @@ class Indexer:
         self._code = hard
         self._index = index
         self._raw = raw
+
+
+
+@dataclass(frozen=True)
+class CounterCodex:
+    """
+    CounterCodex is codex hard (stable) part of all counter derivation codes.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519_Sig:        str = 'A'  # Ed25519 signature.
+    ECDSA_256k1_Sig:    str = 'B'  # ECDSA secp256k1 signature.
+    Ed448_Sig:          str = '0A'  # Ed448 signature.
+    Label:              str = '0B'  # Variable len bytes label L=N*4 <= 4095 char quadlets
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables inclusion text with "in"
+
+CtrDex = CounterCodex()
+
+
+class Counter:
+    """
+    Counter is fully qualified cryptographic material primitive base class for
+    counter primitives (framing composition grouping count codes).
+
+    Sub classes are derivation code and key event element context specific.
+
+    Includes the following attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .code is  str derivation code to indicate cypher suite
+        .raw is bytes crypto material only without code
+        .pad  is int number of pad chars given raw
+        .count is int count of grouped following material (not part of counter)
+        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
+        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
+        .qb2  is bytes in binary with derivation code + crypto material
+
+    Hidden:
+        ._code is str value for .code property
+        ._raw is bytes value for .raw property
+        ._pad is method to compute  .pad property
+        ._count is int value for .count property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
+
+    """
+    Codex = IdrDex
+    # Sizes is table of hard (stable) size of code
+    Sizes = ({chr(c): 1 for c in range(65, 65+26)})
+    Sizes.update({chr(c): 1 for c in range(97, 97+26)})
+    Sizes.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 3), ('5', 4)])
+    Codes = {
+                'A': Sizage(hs=1, ss=1, fs=88),
+                'B': Sizage(hs=1, ss=1, fs=88),
+                '0A': Sizage(hs=2, ss=2, fs=156),
+                '0B': Sizage(hs=2, ss=2, fs=None),
+            }
+
+    def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, count=0,
+                 qb64b=None, qb64=None, qb2=None):
+        """
+        Validate as fully qualified
+        Parameters:
+            raw is bytes of unqualified crypto material usable for crypto operations
+            code is str of stable (hard) part of derivation code
+            count is int count for following group of items (primitives or groups)
+            qb64b is bytes of fully qualified crypto material
+            qb64 is str or bytes  of fully qualified crypto material
+            qb2 is bytes of fully qualified crypto material
+
+
+        Needs either (raw and code and count) or qb64b or qb64 or qb2
+        Otherwise raises EmptyMaterialError
+        When raw and code and count provided then validate that code is correct
+        for length of raw  and assign .raw
+        Else when qb64b or qb64 or qb2 provided extract and assign
+        .raw and .code and .count
+
+        """
+        if raw is not None:  #  raw provided
+            if not code:
+                raise EmptyMaterialError("Improper initialization need either "
+                                         "(raw and code) or qb64b or qb64 or qb2.")
+            if not isinstance(raw, (bytes, bytearray)):
+                raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
+
+            if code not in self.Codes:
+                raise DerivationCodeError("Unsupported code={}.".format(code))
+
+            hs, ss, fs = self.Codes[code] # get sizes for code
+            bs = hs + ss  # both hard + soft code size
+            if count < 0 or count > (64 ** ss - 1):
+                raise ValidationError("Invalid count={} for code={}.".format(count, code))
+
+            if not fs:  # compute fs from count
+                if bs % 4:
+                    raise ValidationError("Whole code size not multiple of 4 for "
+                                          "variable length material. bs={}.".format(bs))
+                fs = (count * 4) + bs
+
+            rawsize = (fs - bs) * 3 // 4
+
+            raw = raw[:rawsize]  # copy only exact size from raw stream
+            if len(raw) != rawsize:  # forbids shorter
+                raise ValidationError("Not enougth raw bytes for code={}"
+                                      "and count={} ,expected {} got {}."
+                                      "".format(code, count, rawsize, len(raw)))
+
+            self._code = code
+            self._count = count
+            self._raw = bytes(raw)  # crypto ops require bytes not bytearray
+
+        elif qb64b is not None:
+            self._exfil(qb64b)
+
+        elif qb64 is not None:
+            if hasattr(qb64, "encode"):  #  ._exfil expects bytes not str
+                qb64 = qb64.encode("utf-8")  #  greedy so do not use on stream
+            self._exfil(qb64)
+
+        elif qb2 is not None:  # rewrite to use direct binary exfiltration
+            self._exfil(encodeB64(qb2))
+
+        else:
+            raise EmptyMaterialError("Improper initialization need either "
+                                     "(raw and code and index) or qb64b or "
+                                     "qb64 or qb2.")
+
+
+    @property
+    def code(self):
+        """
+        Returns ._code
+        Makes .code read only
+        """
+        return self._code
+
+
+    @property
+    def raw(self):
+        """
+        Returns ._raw
+        Makes .raw read only
+        """
+        return self._raw
+
+
+    @staticmethod
+    def _pad(raw):
+        """
+        Returns number of pad characters that would result from converting raw
+        to Base64 encoding
+        raw is bytes or bytearray
+        """
+        m = len(raw) % 3
+        return (3 - m if m else 0)
+
+
+    @property
+    def pad(self):
+        """
+        Returns number of pad characters that would result from converting
+        self.raw to Base64 encoding
+        self.raw is raw is bytes or bytearray
+        """
+        return self._pad(self._raw)
+
+
+    @property
+    def count(self):
+        """
+        Returns ._count
+        Makes ._count read only
+        """
+        return self._count
+
+
+    @property
+    def qb64b(self):
+        """
+        Property qb64b:
+        Returns Fully Qualified Base64 Version encoded as bytes
+        Assumes self.raw and self.code are correctly populated
+        """
+        return self._infil()
+
+
+    @property
+    def qb64(self):
+        """
+        Property qb64:
+        Returns Fully Qualified Base64 Version
+        Assumes self.raw and self.code are correctly populated
+        """
+        return self.qb64b.decode("utf-8")
+
+
+    @property
+    def qb2(self):
+        """
+        Property qb2:
+        Returns Fully Qualified Binary Version Bytes
+        redo to use b64 to binary decode table since faster
+        """
+        # rewrite to do direct binary infiltration by
+        # decode self.code as bits and prepend to self.raw
+        return decodeB64(self._infil())
+
+
+    def _infil(self):
+        """
+        Returns fully qualified attached sig base64 bytes computed from
+        self.raw, self.code and self.count.
+        """
+        code = self.code  # codex value chars hard code
+        count = self.count  # index value int used for soft
+        raw = self.raw  # bytes or bytearray
+
+        hs, ss, fs = self.Codes[code]
+        bs = hs + ss  # both hard + soft size
+        if not fs:  # compute fs from index
+            if bs % 4:
+                raise ValidationError("Whole code size not multiple of 4 for "
+                                      "variable length material. bs={}.".format(bs))
+            fs = (count * 4) + bs
+
+        # both is hard code + converted index
+        both =  "{}{}".format(code, IntToB64(count, l=ss))
+
+        ps = (3 - (len(raw) % 3)) % 3  # pad size
+        # check valid pad size for whole code size
+        if len(both) % 4 != ps:  # pad size is not remainder of len(both) % 4
+            raise ValidationError("Invalid code = {} for converted raw pad size = {}."
+                                  .format(both, ps))
+        # prepending full derivation code with index and strip off trailing pad characters
+        return (both.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
+
+
+    def _exfil(self, qb64b):
+        """
+        Extracts self.code and self.raw from qualified base64 bytes qb64b
+        """
+        if not qb64b:  # empty need more bytes
+            raise ShortageError("Empty material, Need more characters.")
+
+        first = qb64b[:1].decode("utf-8")  # extract first char code selector
+        if first not in self.Sizes:
+            if first == '-':
+                raise UnexpectedCountCodeError("Unexpected count code start"
+                                               "while extracing Matter.")
+            elif first == '_':
+                raise UnexpectedOpcodeError("Unexpected  op code start"
+                                               "while extracing Matter.")
+            else:
+                raise DerivationCodeError("Unsupported code start char={}.".format(first))
+
+        cs = self.Sizes[first]  # get hard code size
+        if len(qb64b) < cs:  # need more bytes
+            raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
+
+        hard = qb64b[:cs].decode("utf-8")  # get hard code
+        if hard not in self.Codes:
+            raise DerivationCodeError("Unsupported code ={}.".format(hard))
+
+        hs, ss, fs = self.Codes[hard]
+        bs = hs + ss  # both hard + soft code size
+
+        if hs != cs:
+            raise ValueError("Bad .Codes or .Sizes table entries for code={}."
+                             " cs={} != hs ={} ss={}".format(code, cs, hs, ss))
+
+        if len(qb64b) < bs:  # need more bytes
+            raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
+
+        count = B64ToInt(qb64b[hs:hs+ss].decode("utf-8"))  # extract count
+
+        if not fs:  # compute fs from count
+            if bs % 4:
+                raise ValidationError("Whole code size not multiple of 4 for "
+                                      "variable length material. bs={}.".format(bs))
+            fs = (count * 4) + bs
+
+        if len(qb64b) < fs:  # need more bytes
+            raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
+
+        qb64b = qb64b[:fs]  # fully qualified primitive code plus material
+
+        # strip off prepended code and append pad characters
+        ps = bs % 4  # pad size ps = cs mod 4
+        base = qb64b[bs:] + ps * BASE64_PAD
+        raw = decodeB64(base)
+        if len(raw) != (len(qb64b) - bs) * 3 // 4:  # exact lengths
+            raise ValueError("Improperly qualified material = {}".format(qb64b))
+
+        self._code = hard
+        self._count = count
+        self._raw = raw
+
 
 
 class SigMat:
