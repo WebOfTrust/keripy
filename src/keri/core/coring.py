@@ -476,6 +476,7 @@ class Matter:
                 '1AAC': Sizage(hs=4, ss=0, fs=80),
                 '1AAD': Sizage(hs=4, ss=0, fs=80),
                 '1AAE': Sizage(hs=4, ss=0, fs=56),
+                '1AAF': Sizage(hs=4, ss=0, fs=8),
             }
 
 
@@ -2616,27 +2617,6 @@ class Indexer:
         return self._raw
 
 
-    @staticmethod
-    def _pad(raw):
-        """
-        Returns number of pad characters that would result from converting raw
-        to Base64 encoding
-        raw is bytes or bytearray
-        """
-        m = len(raw) % 3
-        return (3 - m if m else 0)
-
-
-    @property
-    def pad(self):
-        """
-        Returns number of pad characters that would result from converting
-        self.raw to Base64 encoding
-        self.raw is raw is bytes or bytearray
-        """
-        return self._pad(self._raw)
-
-
     @property
     def index(self):
         """
@@ -2776,10 +2756,32 @@ class CounterCodex:
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
     """
-    Ed25519_Sig:        str = 'A'  # Ed25519 signature.
-    ECDSA_256k1_Sig:    str = 'B'  # ECDSA secp256k1 signature.
-    Ed448_Sig:          str = '0A'  # Ed448 signature.
-    Label:              str = '0B'  # Variable len bytes label L=N*4 <= 4095 char quadlets
+
+    ControllerIdxSigs:              str =  '-A'  # Qualified Base64 Indexed Signature.
+    WitnessIdxSigs:                 str =  '-B'  # Qualified Base64 Indexed Signature.
+    NonTransReceiptCouples:         str =  '-C'  # Composed Base64 Couple, pre + sig.
+    TransReceiptQuadruples:         str =  '-D'  # Composed Base64 Quadruple, pre + snu + dig + sig.
+    MessageDataGroups:              str =  '-U'  # Composed Message Data Group or Primitive
+    AttachedMaterialQuadlets:       str =  '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    MessageDataMaterialQuadlets:    str =  '-W'  # Composed Grouped Message Data Quadlet (4 char each)
+    CombinedMaterialQuadlets:       str =  '-X'  # Combined Message Data + Attachments Quadlet (4 char each)
+    MaterialGroups:                 str =  '-Y'  # Composed Generic Material Group or Primitive
+    Material:                       str =  '-Z'  # Composed Generic Material Quadlet (4 char each)
+    AnchorSealGroups:               str =  '-a'  # Composed Anchor Seal Material Group
+    ConfigTraits:                   str =  '-c'  # Composed Config Trait Material Group
+    DigestSealQuadlets:             str =  '-d'  # Composed Digest Seal Quadlet (4 char each)
+    EventSealQuadlets:              str =  '-e'  # Composed Event Seal Quadlet (4 char each)
+    Keys:                           str =  '-k'  # Composed Key Material Primitive
+    LocationSealQuadlets:           str =  '-l'  # Composed Location Seal Quadlet (4 char each)
+    RootDigestSealQuadlets:         str =  '-r'  # Composed Root Digest Seal Quadlet (4 char each)
+    Witnesses:                      str =  '-w'  # Composed Witness Prefix Material Primitive
+    BigMessageDataGroups:           str =  '-0U'  # Composed Message Data Group or Primitive
+    BigAttachedMaterialQuadlets:    str =  '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
+    BigMessageDataMaterialQuadlets: str =  '-0W'  # Composed Grouped Message Data Quadlet (4 char each)
+    BigCombinedMaterialQuadlets:    str =  '-0X'  # Combined Message Data + Attachments Quadlet (4 char each)
+    BigMaterialGroups:              str =  '-0Y'  # Composed Generic Material Group or Primitive
+    BigMaterial:                    str =  '-0Z'  # Composed Generic Material Quadlet (4 char each)
+
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion text with "in"
@@ -2816,24 +2818,42 @@ class Counter:
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
-    Codex = IdrDex
+    Codex = CtrDex
     # Sizes is table of hard (stable) size of code
-    Sizes = ({chr(c): 1 for c in range(65, 65+26)})
-    Sizes.update({chr(c): 1 for c in range(97, 97+26)})
-    Sizes.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 3), ('5', 4)])
+    Sizes = ({chr(c): 2 for c in range(65, 65+26)})
+    Sizes.update({chr(c): 2 for c in range(97, 97+26)})
+    Sizes.update([('0', 3)])
     Codes = {
-                'A': Sizage(hs=1, ss=1, fs=88),
-                'B': Sizage(hs=1, ss=1, fs=88),
-                '0A': Sizage(hs=2, ss=2, fs=156),
-                '0B': Sizage(hs=2, ss=2, fs=None),
+                '-A': Sizage(hs=2, ss=2, fs=4),
+                '-B': Sizage(hs=2, ss=2, fs=4),
+                '-C': Sizage(hs=2, ss=2, fs=4),
+                '-D': Sizage(hs=2, ss=2, fs=4),
+                '-U': Sizage(hs=2, ss=2, fs=4),
+                '-V': Sizage(hs=2, ss=2, fs=4),
+                '-W': Sizage(hs=2, ss=2, fs=4),
+                '-X': Sizage(hs=2, ss=2, fs=4),
+                '-Y': Sizage(hs=2, ss=2, fs=4),
+                '-Z': Sizage(hs=2, ss=2, fs=4),
+                '-a': Sizage(hs=2, ss=2, fs=4),
+                '-c': Sizage(hs=2, ss=2, fs=4),
+                '-d': Sizage(hs=2, ss=2, fs=4),
+                '-e': Sizage(hs=2, ss=2, fs=4),
+                '-k': Sizage(hs=2, ss=2, fs=4),
+                '-l': Sizage(hs=2, ss=2, fs=4),
+                '-r': Sizage(hs=2, ss=2, fs=4),
+                '-w': Sizage(hs=2, ss=2, fs=4),
+                '-0U': Sizage(hs=3, ss=5, fs=8),
+                '-0V': Sizage(hs=3, ss=5, fs=8),
+                '-0W': Sizage(hs=3, ss=5, fs=8),
+                '-0X': Sizage(hs=3, ss=5, fs=8),
+                '-0Y': Sizage(hs=3, ss=5, fs=8),
+                '-0Z': Sizage(hs=3, ss=5, fs=8)
             }
 
-    def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, count=0,
-                 qb64b=None, qb64=None, qb2=None):
+    def __init__(self, code=None, count=0, qb64b=None, qb64=None, qb2=None):
         """
         Validate as fully qualified
         Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
             code is str of stable (hard) part of derivation code
             count is int count for following group of items (primitives or groups)
             qb64b is bytes of fully qualified crypto material
@@ -2841,46 +2861,28 @@ class Counter:
             qb2 is bytes of fully qualified crypto material
 
 
-        Needs either (raw and code and count) or qb64b or qb64 or qb2
+        Needs either (code and count) or qb64b or qb64 or qb2
         Otherwise raises EmptyMaterialError
-        When raw and code and count provided then validate that code is correct
-        for length of raw  and assign .raw
+        When code and count provided then validate that code and count are correct
         Else when qb64b or qb64 or qb2 provided extract and assign
-        .raw and .code and .count
+        .code and .count
 
         """
-        if raw is not None:  #  raw provided
-            if not code:
-                raise EmptyMaterialError("Improper initialization need either "
-                                         "(raw and code) or qb64b or qb64 or qb2.")
-            if not isinstance(raw, (bytes, bytearray)):
-                raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
-
+        if code is not None:  #  code provided
             if code not in self.Codes:
                 raise DerivationCodeError("Unsupported code={}.".format(code))
 
             hs, ss, fs = self.Codes[code] # get sizes for code
             bs = hs + ss  # both hard + soft code size
+            if fs != bs or bs % 4:  # fs must be bs and multiple of 4 for count codes
+                raise ValidationError("Whole code size not full size or not "
+                                      "multiple of 4. bs={} fs={}.".format(bs, fs))
+
             if count < 0 or count > (64 ** ss - 1):
                 raise ValidationError("Invalid count={} for code={}.".format(count, code))
 
-            if not fs:  # compute fs from count
-                if bs % 4:
-                    raise ValidationError("Whole code size not multiple of 4 for "
-                                          "variable length material. bs={}.".format(bs))
-                fs = (count * 4) + bs
-
-            rawsize = (fs - bs) * 3 // 4
-
-            raw = raw[:rawsize]  # copy only exact size from raw stream
-            if len(raw) != rawsize:  # forbids shorter
-                raise ValidationError("Not enougth raw bytes for code={}"
-                                      "and count={} ,expected {} got {}."
-                                      "".format(code, count, rawsize, len(raw)))
-
             self._code = code
             self._count = count
-            self._raw = bytes(raw)  # crypto ops require bytes not bytearray
 
         elif qb64b is not None:
             self._exfil(qb64b)
@@ -2895,7 +2897,7 @@ class Counter:
 
         else:
             raise EmptyMaterialError("Improper initialization need either "
-                                     "(raw and code and index) or qb64b or "
+                                     "(code and cound) or qb64b or "
                                      "qb64 or qb2.")
 
 
@@ -2906,36 +2908,6 @@ class Counter:
         Makes .code read only
         """
         return self._code
-
-
-    @property
-    def raw(self):
-        """
-        Returns ._raw
-        Makes .raw read only
-        """
-        return self._raw
-
-
-    @staticmethod
-    def _pad(raw):
-        """
-        Returns number of pad characters that would result from converting raw
-        to Base64 encoding
-        raw is bytes or bytearray
-        """
-        m = len(raw) % 3
-        return (3 - m if m else 0)
-
-
-    @property
-    def pad(self):
-        """
-        Returns number of pad characters that would result from converting
-        self.raw to Base64 encoding
-        self.raw is raw is bytes or bytearray
-        """
-        return self._pad(self._raw)
 
 
     @property

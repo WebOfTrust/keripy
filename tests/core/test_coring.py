@@ -2311,7 +2311,8 @@ def test_matter():
                             '1AAB': Sizage(hs=4, ss=0, fs=48),
                             '1AAC': Sizage(hs=4, ss=0, fs=80),
                             '1AAD': Sizage(hs=4, ss=0, fs=80),
-                            '1AAE': Sizage(hs=4, ss=0, fs=56)
+                            '1AAE': Sizage(hs=4, ss=0, fs=56),
+                            '1AAF': Sizage(hs=4, ss=0, fs=8)
                         }
 
     assert Matter.Codes['A'].hs == 1  # hard size
@@ -2690,4 +2691,4 @@ def test_indexer():
 
 
 if __name__ == "__main__":
-    test_b64_conversions()
+    test_matter()
