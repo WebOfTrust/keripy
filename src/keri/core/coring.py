@@ -24,7 +24,7 @@ import hashlib
 
 from ..kering import (ValidationError, VersionError, EmptyMaterialError,
                       DerivationError, ShortageError,  DerivationCodeError,
-                      UnexpectedCountCodeError, UnexpectedOpcodeCodeError)
+                      UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import Versionage, Version
 from ..help.helping import extractValues
 
@@ -636,7 +636,7 @@ class Matter:
                 raise UnexpectedCountCodeError("Unexpected count code start"
                                                "while extracing Matter.")
             elif first == '_':
-                raise UnexpectedOpodeError("Unexpected  op code start"
+                raise UnexpectedOpCodeError("Unexpected  op code start"
                                                "while extracing Matter.")
             else:
                 raise DerivationCodeError("Unsupported code start char={}.".format(first))
@@ -2675,6 +2675,9 @@ class Indexer:
                                       "variable length material. bs={}.".format(bs))
             fs = (index * 4) + bs
 
+        if index < 0 or index > (64 ** ss - 1):
+            raise ValidationError("Invalid index={} for code={}.".format(index, code))
+
         # both is hard code + converted index
         both =  "{}{}".format(code, IntToB64(index, l=ss))
 
@@ -2700,7 +2703,7 @@ class Indexer:
                 raise UnexpectedCountCodeError("Unexpected count code start"
                                                "while extracing Matter.")
             elif first == '_':
-                raise UnexpectedOpcodeError("Unexpected  op code start"
+                raise UnexpectedOpCodeError("Unexpected  op code start"
                                                "while extracing Matter.")
             else:
                 raise DerivationCodeError("Unsupported code start char={}.".format(first))
@@ -2958,26 +2961,24 @@ class Counter:
         """
         code = self.code  # codex value chars hard code
         count = self.count  # index value int used for soft
-        raw = self.raw  # bytes or bytearray
 
         hs, ss, fs = self.Codes[code]
         bs = hs + ss  # both hard + soft size
-        if not fs:  # compute fs from index
-            if bs % 4:
-                raise ValidationError("Whole code size not multiple of 4 for "
-                                      "variable length material. bs={}.".format(bs))
-            fs = (count * 4) + bs
+        if fs != bs or bs % 4:  # fs must be bs and multiple of 4 for count codes
+            raise ValidationError("Whole code size not full size or not "
+                                  "multiple of 4. bs={} fs={}.".format(bs, fs))
+        if count < 0 or count > (64 ** ss - 1):
+            raise ValidationError("Invalid count={} for code={}.".format(count, code))
 
         # both is hard code + converted index
-        both =  "{}{}".format(code, IntToB64(count, l=ss))
+        both = "{}{}".format(code, IntToB64(count, l=ss))
 
-        ps = (3 - (len(raw) % 3)) % 3  # pad size
         # check valid pad size for whole code size
-        if len(both) % 4 != ps:  # pad size is not remainder of len(both) % 4
-            raise ValidationError("Invalid code = {} for converted raw pad size = {}."
-                                  .format(both, ps))
+        if len(both) % 4:  # no pad
+            raise ValidationError("Invalid size = {} of {} not a multiple of 4."
+                                  .format(len(both), both))
         # prepending full derivation code with index and strip off trailing pad characters
-        return (both.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
+        return (both.encode("utf-8"))
 
 
     def _exfil(self, qb64b):
@@ -2987,13 +2988,10 @@ class Counter:
         if not qb64b:  # empty need more bytes
             raise ShortageError("Empty material, Need more characters.")
 
-        first = qb64b[:1].decode("utf-8")  # extract first char code selector
+        first = qb64b[:2].decode("utf-8")  # extract first two char code selector
         if first not in self.Sizes:
-            if first == '-':
-                raise UnexpectedCountCodeError("Unexpected count code start"
-                                               "while extracing Matter.")
-            elif first == '_':
-                raise UnexpectedOpcodeError("Unexpected  op code start"
+            if first == '_':
+                raise UnexpectedOpCodeError("Unexpected  op code start"
                                                "while extracing Matter.")
             else:
                 raise DerivationCodeError("Unsupported code start char={}.".format(first))
@@ -3009,37 +3007,17 @@ class Counter:
         hs, ss, fs = self.Codes[hard]
         bs = hs + ss  # both hard + soft code size
 
-        if hs != cs:
+        if hs != cs or bs != fs or bs % 4:
             raise ValueError("Bad .Codes or .Sizes table entries for code={}."
-                             " cs={} != hs ={} ss={}".format(code, cs, hs, ss))
+                             " cs={} != hs ={} ss={} fs={}".format(code, cs, hs, ss, fs))
 
         if len(qb64b) < bs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
 
         count = B64ToInt(qb64b[hs:hs+ss].decode("utf-8"))  # extract count
 
-        if not fs:  # compute fs from count
-            if bs % 4:
-                raise ValidationError("Whole code size not multiple of 4 for "
-                                      "variable length material. bs={}.".format(bs))
-            fs = (count * 4) + bs
-
-        if len(qb64b) < fs:  # need more bytes
-            raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
-
-        qb64b = qb64b[:fs]  # fully qualified primitive code plus material
-
-        # strip off prepended code and append pad characters
-        ps = bs % 4  # pad size ps = cs mod 4
-        base = qb64b[bs:] + ps * BASE64_PAD
-        raw = decodeB64(base)
-        if len(raw) != (len(qb64b) - bs) * 3 // 4:  # exact lengths
-            raise ValueError("Improperly qualified material = {}".format(qb64b))
-
         self._code = hard
         self._count = count
-        self._raw = raw
-
 
 
 class SigMat:

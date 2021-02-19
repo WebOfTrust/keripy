@@ -126,7 +126,7 @@ class UnexpectedCountCodeError(DerivationCodeError):
     """
 
 
-class UnexpectedOpcodeCodeError(DerivationCodeError):
+class UnexpectedOpCodeError(DerivationCodeError):
     """
     Encountered opcode code start char "_" unexpectantly
     Usage:
