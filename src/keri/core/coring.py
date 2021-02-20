@@ -94,6 +94,50 @@ Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct vrc')  # Event ilk (type 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
               vrc='vrc')
 
+def generateSigners(salt=None, count=8, transferable=True):
+    """
+    Returns list of Signers for Ed25519
+
+    Parameters:
+        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
+            in list are derived
+            random salt created if not provided
+        count is number of signers in list
+        transferable is boolean true means signer.verfer code is transferable
+                                non-transferable otherwise
+    """
+    if not salt:
+        salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+
+    signers = []
+    for i in range(count):
+        path = "{:x}".format(i)
+        # algorithm default is argon2id
+        seed = pysodium.crypto_pwhash(outlen=32,
+                                      passwd=path,
+                                      salt=salt,
+                                      opslimit=pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+                                      memlimit=pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
+                                      alg=pysodium.crypto_pwhash_ALG_DEFAULT)
+
+        signers.append(Signer(raw=seed, transferable=transferable))
+
+    return signers
+
+
+def generateSecrets(salt=None, count=8):
+    """
+    Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
+
+    Parameters:
+        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
+            in list are derived
+            random salt created if not provided
+        count is number of signers in list
+    """
+    signers = generateSigners(salt=salt, count=count)
+
+    return [signer.qb64 for signer in signers]  #  fetch the qb64 as secret
 
 
 @dataclass(frozen=True)
@@ -910,52 +954,6 @@ class Salter(Matter):
         return (Signer(raw=seed, code=code, transferable=transferable))
 
 
-def generateSigners(salt=None, count=8, transferable=True):
-    """
-    Returns list of Signers for Ed25519
-
-    Parameters:
-        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
-            in list are derived
-            random salt created if not provided
-        count is number of signers in list
-        transferable is boolean true means signer.verfer code is transferable
-                                non-transferable otherwise
-    """
-    if not salt:
-        salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-
-    signers = []
-    for i in range(count):
-        path = "{:x}".format(i)
-        # algorithm default is argon2id
-        seed = pysodium.crypto_pwhash(outlen=32,
-                                      passwd=path,
-                                      salt=salt,
-                                      opslimit=pysodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
-                                      memlimit=pysodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
-                                      alg=pysodium.crypto_pwhash_ALG_DEFAULT)
-
-        signers.append(Signer(raw=seed, transferable=transferable))
-
-    return signers
-
-
-def generateSecrets(salt=None, count=8):
-    """
-    Returns list of fully qualified Base64 secret seeds for Ed25519 private keys
-
-    Parameters:
-        salt is bytes 16 byte long root cryptomatter from which seeds for Signers
-            in list are derived
-            random salt created if not provided
-        count is number of signers in list
-    """
-    signers = generateSigners(salt=salt, count=count)
-
-    return [signer.qb64 for signer in signers]  #  fetch the qb64 as secret
-
-
 class Diger(Matter):
     """
     Diger is CryMat subclass with method to verify digest of serialization
@@ -1762,10 +1760,6 @@ def B64ToInt(cs):
     return i
 
 
-
-
-
-
 @dataclass(frozen=True)
 class IndexerCodex:
     """
@@ -2056,6 +2050,49 @@ class Indexer:
         self._raw = raw
 
 
+class Siger(Indexer):
+    """
+    Siger is subclass of SigMat, indexed signature material,
+    Adds .verfer property which is instance of Verfer that provides
+          associated signature verifier.
+
+    See SigMat for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .verfer is Verfer object instance
+
+    Methods:
+
+
+    """
+    def __init__(self, verfer=None, **kwa):
+        """
+        Assign verfer to ._verfer
+
+        Parameters:  See CryMat for inherted parameters
+            verfer if Verfer instance if any
+
+        """
+        super(Siger, self).__init__(**kwa)
+
+        self._verfer = verfer
+
+    @property
+    def verfer(self):
+        """
+        Property verfer:
+        Returns Verfer instance
+        Assumes ._verfer is correctly assigned
+        """
+        return self._verfer
+
+    @verfer.setter
+    def verfer(self, verfer):
+        """ verfer property setter """
+        self._verfer = verfer
+
 
 @dataclass(frozen=True)
 class CounterCodex:
@@ -2323,51 +2360,6 @@ class Counter:
 
         self._code = hard
         self._count = count
-
-
-class Siger(Indexer):
-    """
-    Siger is subclass of SigMat, indexed signature material,
-    Adds .verfer property which is instance of Verfer that provides
-          associated signature verifier.
-
-    See SigMat for inherited attributes and properties:
-
-    Attributes:
-
-    Properties:
-        .verfer is Verfer object instance
-
-    Methods:
-
-
-    """
-    def __init__(self, verfer=None, **kwa):
-        """
-        Assign verfer to ._verfer
-
-        Parameters:  See CryMat for inherted parameters
-            verfer if Verfer instance if any
-
-        """
-        super(Siger, self).__init__(**kwa)
-
-        self._verfer = verfer
-
-    @property
-    def verfer(self):
-        """
-        Property verfer:
-        Returns Verfer instance
-        Assumes ._verfer is correctly assigned
-        """
-        return self._verfer
-
-    @verfer.setter
-    def verfer(self, verfer):
-        """ verfer property setter """
-        self._verfer = verfer
-
 
 
 class Serder:
