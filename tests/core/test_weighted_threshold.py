@@ -51,7 +51,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
+                                    count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -82,7 +83,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=wesK.verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
+                                    count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -116,7 +118,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
+                                    count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -156,7 +159,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
+                                    count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -197,7 +201,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
+                                    count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)

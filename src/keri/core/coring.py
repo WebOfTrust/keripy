@@ -2853,7 +2853,7 @@ class Counter:
                 '-0Z': Sizage(hs=3, ss=5, fs=8)
             }
 
-    def __init__(self, code=None, count=0, qb64b=None, qb64=None, qb2=None):
+    def __init__(self, code=None, count=1, qb64b=None, qb64=None, qb2=None):
         """
         Validate as fully qualified
         Parameters:

@@ -934,13 +934,13 @@ def test_counter():
 
 
     # create code manually
-    count = 0
+    count = 1
     qsc = CtrDex.ControllerIdxSigs + IntToB64(count, l=2)
-    assert qsc == '-AAA'
+    assert qsc == '-AAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
-    counter = Counter(code=CtrDex.ControllerIdxSigs)  #  default count = 0
+    counter = Counter(code=CtrDex.ControllerIdxSigs)  #  default count = 1
     assert counter.code == CtrDex.ControllerIdxSigs
     assert counter.count == count
     assert counter.qb64b == qscb
@@ -1183,162 +1183,7 @@ def test_crymat():
 
     """ Done Test """
 
-def test_crycounter():
-    """
-    Test CryCounter subclass of CryMat
-    """
-    # with pytest.raises(EmptyMaterialError):
-    #    counter = SigCounter()
 
-    qsc = CryCntDex.Base64 + IntToB64(1, l=2)
-    assert qsc == '-AAB'
-    qscb = qsc.encode("utf-8")
-    assert qscb == b'-AAB'
-
-    counter = CryCounter()
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = CryCounter(raw=b'')
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = CryCounter(qb64b=qscb)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = CryCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = CryCounter(qb64=qscb)  #  also works with bytes
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = CryCounter(raw=b'', count=1)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = CryCounter(raw=b'', count=0)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 0
-    assert counter.qb64 == '-AAA'
-    assert counter.qb64b == b'-AAA'
-    assert counter.qb2 == b'\xf8\x00\x00'
-
-
-    cnt = 5
-    qsc = SigCntDex.Base64 + IntToB64(cnt, l=2)
-    assert qsc == '-AAF'
-    qscb = qsc.encode("utf-8")
-    assert qscb == b'-AAF'
-
-    counter = CryCounter(count=cnt)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x05'
-
-    counter = CryCounter(qb64b=qscb)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x05'
-
-    counter = CryCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x05'
-
-    counter = CryCounter(qb64=qscb)  #  bytes also
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x05'
-
-    cnt = 5
-    qsc = CryCntDex.Base2 + IntToB64(cnt, l=2)
-    assert qsc == '-BAF'
-    qscb = qsc.encode("utf-8")
-    assert qscb == b'-BAF'
-
-    counter = CryCounter(code=CryCntDex.Base2, count=cnt)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base2
-    assert counter.index == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x10\x05'
-
-    counter = CryCounter(qb64b=qscb)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base2
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x10\x05'
-
-    counter = CryCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base2
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x10\x05'
-
-    counter = CryCounter(qb64=qscb)  #  bytes also
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base2
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x10\x05'
-    """ Done Test """
 
 
 def test_seqner():
@@ -2412,91 +2257,6 @@ def test_sigmat():
     assert sigmat.index == 5
     """ Done Test """
 
-def test_sigcounter():
-    """
-    Test SigCounter subclass of Sigmat
-    """
-    # with pytest.raises(EmptyMaterialError):
-    #    counter = SigCounter()
-
-    qsc = SigCntDex.Base64 + IntToB64(1, l=2)
-    assert qsc == '-AAB'
-
-    counter = SigCounter()
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = SigCounter(raw=b'')
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = SigCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = SigCounter(raw=b'', count=1)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == 1
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = SigCounter(raw=b'', count=0)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == 0
-    assert counter.qb64 == '-AAA'
-    assert counter.qb2 == b'\xf8\x00\x00'
-
-
-    cnt = 5
-    qsc = SigCntDex.Base64 + IntToB64(cnt, l=2)
-    assert qsc == '-AAF'
-    counter = SigCounter(count=cnt)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x05'
-
-    counter = SigCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x05'
-
-    cnt = 5
-    qsc = SigCntDex.Base2 + IntToB64(cnt, l=2)
-    assert qsc == '-BAF'
-    counter = SigCounter(code=SigCntDex.Base2, count=cnt)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base2
-    assert counter.index == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x10\x05'
-
-    counter = SigCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base2
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x10\x05'
-    """ Done Test """
 
 
 def test_siger():
@@ -3105,4 +2865,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_matter()
+    test_counter()

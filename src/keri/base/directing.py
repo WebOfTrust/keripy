@@ -259,7 +259,7 @@ class Reactor(doing.Doer):
                                  dig=cueSerder.dig,
                                  seal=seal)
         # sign cueSerder event not receipt
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         # use signer that matcher current verfer  # not multisig
         verfer = kever.verfers[0]
         siger = None
@@ -285,7 +285,7 @@ class Reactor(doing.Doer):
         """
         # send own inception
         esn = 0
-        counter = coring.SigCounter()  # default is count = 1
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization, returns Siger if index provided
         siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
         # create serialized message
@@ -520,7 +520,7 @@ class Reactant(tyming.Tymee):
                                  dig=cueSerder.dig,
                                  seal=seal)
         # sign cueSerder event not receipt
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         # use signer that matcher current verfer  # not multisig
         verfer = kever.verfers[0]
         siger = None
@@ -546,7 +546,7 @@ class Reactant(tyming.Tymee):
         """
         # send own inception
         esn = 0
-        counter = coring.SigCounter()  # default is count = 1
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization, returns Siger if index provided
         siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
         #  create serialized message
@@ -619,7 +619,7 @@ class BobDirector(Director):
             # Inception Event 0
             sn =  0
             esn = 0
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization, returns Siger if index provided
             siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
             #  create serialized message
@@ -650,7 +650,7 @@ class BobDirector(Director):
                         nxt=coring.Nexter(keys=[self.hab.signers[esn+1].verfer.qb64]).qb64,
                         sn=sn)
             # create sig counter
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization
             siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
 
@@ -676,7 +676,7 @@ class BobDirector(Director):
                                        sn=sn)
 
             # create sig counter
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization
             siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
 
@@ -760,7 +760,7 @@ class SamDirector(Director):
             # Inception Event 0
             sn =  0
             esn = 0
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization, returns Siger if index provided
             siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
             #  create serialized message
@@ -788,7 +788,7 @@ class SamDirector(Director):
                                        sn=sn)
 
             # create sig counter
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization
             siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
 
@@ -819,7 +819,7 @@ class SamDirector(Director):
                                 nxt=coring.Nexter(keys=[self.hab.signers[esn+1].verfer.qb64]).qb64,
                                 sn=sn)
             # create sig counter
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization
             siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
 
@@ -896,7 +896,7 @@ class EveDirector(Director):
             tyme = (yield (tock))  # yields tock then waits for next send
 
             esn = 0
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization, returns Siger if index provided
             siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
             #  create serialized message
