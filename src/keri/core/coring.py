@@ -95,95 +95,6 @@ Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
               vrc='vrc')
 
 
-# Mapping of Code to Size
-# Total size  qb64
-CryCntSizes = {
-                "-A": 4,
-                "-B": 4,
-              }
-
-# size of index portion of code qb64
-CryCntIdxSizes = {
-                   "-A": 2,
-                   "-B": 2,
-                 }
-
-# total size of raw unqualified
-CryCntRawSizes = {
-                   "-A": 0,
-                   "-B": 0,
-                 }
-
-CRYCNTMAX = 4095  # maximum count value given two base 64 digits
-
-
-
-# Mapping of Code to Size
-CryOneSizes = {
-               "A": 44, "B": 44, "C": 44, "D": 44, "E": 44, "F": 44,
-               "G": 44, "H": 44, "I": 44, "J": 44, "K": 76, "L": 76,
-              }
-
-# Mapping of Code to Size
-CryOneRawSizes = {
-               "A": 32, "B": 32, "C": 32, "D": 32, "E": 32, "F": 32,
-               "G": 32, "H": 32, "I": 32, "J": 32, "K": 56, "L": 56,
-              }
-
-
-
-
-
-
-# Mapping of Code to Size
-CryTwoSizes = {
-               "0A": 24,
-               "0B": 88,
-               "0B": 88,
-              }
-
-CryTwoRawSizes = {
-                  "0A": 16,
-                  "0B": 64,
-                  "0B": 64,
-                 }
-
-
-
-
-# Mapping of Code to Size
-CryFourSizes = {
-                "1AAA": 48,
-                "1AAB": 48,
-                "1AAC": 80,
-                "1AAD": 80,
-                "1AAE": 156,
-               }
-
-CryFourRawSizes = {
-                   "1AAA": 33,
-                   "1AAB": 33,
-                   "1AAC": 57,
-                   "1AAD": 57,
-                   "1AAE": 114,
-                  }
-
-# all sizes in one dict
-CrySizes = dict(CryCntSizes)
-CrySizes.update(CryOneSizes)
-CrySizes.update(CryTwoSizes)
-CrySizes.update(CryFourSizes)
-
-MINCRYSIZE = min(CrySizes.values())
-
-# all sizes in one dict
-CryRawSizes = dict(CryCntRawSizes)
-CryRawSizes.update(CryOneRawSizes)
-CryRawSizes.update(CryTwoRawSizes)
-CryRawSizes.update(CryFourRawSizes)
-
-# all sizes in one dict
-CryIdxSizes = dict(CryCntIdxSizes)
 
 @dataclass(frozen=True)
 class CryNonTransCodex:
@@ -1658,7 +1569,7 @@ class Prefixer(Matter):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
-        ked["i"] = "{}".format(self.Dummy*CryOneSizes[MtrDex.Blake3_256])
+        ked["i"] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake3_256].fs)
         serder = Serder(ked=ked)
         ked = serder.ked  # use updated ked with valid vs element
 
@@ -1710,7 +1621,7 @@ class Prefixer(Matter):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
-        ked["i"] = "{}".format(self.Dummy*CryTwoSizes[MtrDex.Ed25519_Sig])
+        ked["i"] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Ed25519_Sig].fs)
         serder = Serder(ked=ked)
         ked = serder.ked  # use updated ked with valid vs element
 
@@ -1768,7 +1679,7 @@ class Prefixer(Matter):
                 raise DerivationError("Invalid ilk = {} to derive prefix.".format(ilk))
 
             # put in dummy pre to get size correct
-            dked["i"] = "{}".format(self.Dummy*CryTwoSizes[MtrDex.Ed25519_Sig])
+            dked["i"] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Ed25519_Sig].fs)
             serder = Serder(ked=dked)
             dked = serder.ked  # use updated ked with valid vs element
 
