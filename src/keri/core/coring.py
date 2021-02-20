@@ -94,22 +94,6 @@ Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct vrc')  # Event ilk (type 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
               vrc='vrc')
 
-@dataclass(frozen=True)
-class CrySelectCodex:
-    """
-    Select codex of selector characters for cyptographic material
-    Only provide defined characters.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    two:  str = '0'  # use two character table.
-    four: str = '1'  # use four character table.
-    dash: str = '-'  # use four character count table.
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-CrySelDex = CrySelectCodex()  # Make instance
-
 
 # Mapping of Code to Size
 # Total size  qb64
@@ -133,33 +117,6 @@ CryCntRawSizes = {
 CRYCNTMAX = 4095  # maximum count value given two base 64 digits
 
 
-@dataclass(frozen=True)
-class CryOneCodex:
-    """
-    CryOneCodex is codex of one character length derivation codes
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-
-    Note binary length of everything in CryOneCodex results in 1 Base64 pad byte.
-    """
-    Ed25519_Seed:         str = 'A'  #  Ed25519 256 bit random seed for private key
-    Ed25519N:             str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
-    X25519:               str = 'C'  #  X25519 public encryption key, converted from Ed25519.
-    Ed25519:              str = 'D'  #  Ed25519 verification key basic derivation
-    Blake3_256:           str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256:          str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256:          str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
-    SHA3_256:             str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
-    SHA2_256:             str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
-    ECDSA_256k1_Seed:     str = 'J'  #  ECDSA secp256k1 256 bit random Seed for private key
-    Ed448_Seed:           str = 'K'  #  Ed448 448 bit random Seed for private key
-    X448:                 str = 'L'  #  X448 public encryption key, converted from Ed448
-
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-CryOneDex = CryOneCodex()  # Make instance
 
 # Mapping of Code to Size
 CryOneSizes = {
@@ -174,24 +131,9 @@ CryOneRawSizes = {
               }
 
 
-@dataclass(frozen=True)
-class CryTwoCodex:
-    """
-    CryTwoCodex is codex of two character length derivation codes
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-
-    Note binary length of everything in CryTwoCodex results in 2 Base64 pad bytes.
-    """
-    Salt_128:          str = '0A'  # 128 bit random seed.
-    Ed25519_Sig:       str = '0B'  # Ed25519 signature.
-    ECDSA_256k1_Sig:   str = '0C'  # ECDSA secp256k1 signature.
 
 
-    def __iter__(self):
-        return iter(astuple(self))
 
-CryTwoDex = CryTwoCodex()  #  Make instance
 
 # Mapping of Code to Size
 CryTwoSizes = {
@@ -206,25 +148,8 @@ CryTwoRawSizes = {
                   "0B": 64,
                  }
 
-@dataclass(frozen=True)
-class CryFourCodex:
-    """
-    CryFourCodex codex of four character length derivation codes
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Note binary length of everything in CryFourCodex results in 0 Base64 pad bytes.
-    """
-    ECDSA_256k1N:  str = "1AAA"  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    ECDSA_256k1:   str = "1AAB"  # Ed25519 public verification or encryption key, basic derivation
-    Ed448N:        str = "1AAC"  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
-    Ed448:         str = "1AAD"  # Ed448 public signing verification key. Basic derivation.
-    Ed448_Sig:     str = "1AAE"  # Ed448 signature. Self-signing derivation.
 
-    def __iter__(self):
-        return iter(astuple(self))
-
-CryFourDex = CryFourCodex()  #  Make instance
 
 # Mapping of Code to Size
 CryFourSizes = {
@@ -688,7 +613,7 @@ class Seqner(Matter):
 
     """
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=CryTwoDex.Salt_128, sn=None, snh=None, **kwa):
+                 code=MtrDex.Salt_128, sn=None, snh=None, **kwa):
         """
         Inhereited Parameters:  (see CryMat)
             raw is bytes of unqualified crypto material usable for crypto operations
@@ -711,12 +636,12 @@ class Seqner(Matter):
                 sn = int(snh, 16)
 
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
-            raw = sn.to_bytes(CryRawSizes[CryTwoDex.Salt_128], 'big')
+            raw = sn.to_bytes(CryRawSizes[MtrDex.Salt_128], 'big')
 
         super(Seqner, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                          code=code, **kwa)
 
-        if self.code != CryTwoDex.Salt_128:
+        if self.code != MtrDex.Salt_128:
             raise ValidationError("Invalid code = {} for SeqNumber."
                                   "".format(self.code))
 
@@ -759,7 +684,7 @@ class Verfer(Matter):
         """
         super(Verfer, self).__init__(**kwa)
 
-        if self.code in [CryOneDex.Ed25519N, CryOneDex.Ed25519]:
+        if self.code in [MtrDex.Ed25519N, MtrDex.Ed25519]:
             self._verify = self._ed25519
         else:
             raise ValueError("Unsupported code = {} for verifier.".format(self.code))
@@ -877,7 +802,7 @@ class Signer(Matter):
         sign: create signature
 
     """
-    def __init__(self,raw=None, code=CryOneDex.Ed25519_Seed, transferable=True, **kwa):
+    def __init__(self,raw=None, code=MtrDex.Ed25519_Seed, transferable=True, **kwa):
         """
         Assign signing cipher suite function to ._sign
 
@@ -891,18 +816,18 @@ class Signer(Matter):
         try:
             super(Signer, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
-            if code == CryOneDex.Ed25519_Seed:
+            if code == MtrDex.Ed25519_Seed:
                 raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
                 super(Signer, self).__init__(raw=raw, code=code, **kwa)
             else:
                 raise ValueError("Unsupported signer code = {}.".format(code))
 
-        if self.code == CryOneDex.Ed25519_Seed:
+        if self.code == MtrDex.Ed25519_Seed:
             self._sign = self._ed25519
             verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
             verfer = Verfer(raw=verkey,
-                                code=CryOneDex.Ed25519 if transferable
-                                                    else CryOneDex.Ed25519N )
+                                code=MtrDex.Ed25519 if transferable
+                                                    else MtrDex.Ed25519N )
         else:
             raise ValueError("Unsupported signer code = {}.".format(self.code))
 
@@ -951,7 +876,7 @@ class Signer(Matter):
         """
         sig = pysodium.crypto_sign_detached(ser, seed + verfer.raw)
         if index is None:
-            return Cigar(raw=sig, code=CryTwoDex.Ed25519_Sig, verfer=verfer)
+            return Cigar(raw=sig, code=MtrDex.Ed25519_Sig, verfer=verfer)
         else:
             return Siger(raw=sig,
                           code=SigTwoDex.Ed25519,
@@ -992,7 +917,7 @@ class Salter(Matter):
     """
     Tier = Tiers.low
 
-    def __init__(self,raw=None, code=CryTwoDex.Salt_128, tier=None, **kwa):
+    def __init__(self,raw=None, code=MtrDex.Salt_128, tier=None, **kwa):
         """
         Initialize salter's raw and code
 
@@ -1010,19 +935,19 @@ class Salter(Matter):
         try:
             super(Salter, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
-            if code == CryTwoDex.Salt_128:
+            if code == MtrDex.Salt_128:
                 raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
                 super(Salter, self).__init__(raw=raw, code=code, **kwa)
             else:
                 raise ValueError("Unsupported salter code = {}.".format(code))
 
-        if self.code not in (CryTwoDex.Salt_128, ):
+        if self.code not in (MtrDex.Salt_128, ):
             raise ValueError("Unsupported salter code = {}.".format(self.code))
 
         self.tier = tier if tier is not None else self.Tier
 
 
-    def signer(self, path="", tier=None, code=CryOneDex.Ed25519_Seed,
+    def signer(self, path="", tier=None, code=MtrDex.Ed25519_Seed,
                transferable=True, temp=False):
         """
         Returns Signer instance whose .raw secret is derived from path and
@@ -1142,7 +1067,7 @@ class Diger(Matter):
         ._exfil is method to extract .code and .raw from fully qualified Base64
 
     """
-    def __init__(self, raw=None, ser=None, code=CryOneDex.Blake3_256, **kwa):
+    def __init__(self, raw=None, ser=None, code=MtrDex.Blake3_256, **kwa):
         """
         Assign digest verification function to ._verify
 
@@ -1165,30 +1090,30 @@ class Diger(Matter):
         except EmptyMaterialError as ex:
             if not ser:
                 raise ex
-            if code == CryOneDex.Blake3_256:
+            if code == MtrDex.Blake3_256:
                 dig = blake3.blake3(ser).digest()
-            elif code == CryOneDex.Blake2b_256:
+            elif code == MtrDex.Blake2b_256:
                 dig = hashlib.blake2b(ser, digest_size=32).digest()
-            elif code == CryOneDex.Blake2s_256:
+            elif code == MtrDex.Blake2s_256:
                 dig = hashlib.blake2s(ser, digest_size=32).digest()
-            elif code == CryOneDex.SHA3_256:
+            elif code == MtrDex.SHA3_256:
                 dig = hashlib.sha3_256(ser).digest()
-            elif code == CryOneDex.SHA2_256:
+            elif code == MtrDex.SHA2_256:
                 dig = hashlib.sha256(ser).digest()
             else:
                 raise ValueError("Unsupported code = {} for digester.".format(code))
 
             super(Diger, self).__init__(raw=dig, code=code, **kwa)
 
-        if self.code == CryOneDex.Blake3_256:
+        if self.code == MtrDex.Blake3_256:
             self._verify = self._blake3_256
-        elif self.code == CryOneDex.Blake2b_256:
+        elif self.code == MtrDex.Blake2b_256:
             self._verify = self._blake2b_256
-        elif self.code == CryOneDex.Blake2s_256:
+        elif self.code == MtrDex.Blake2s_256:
             self._verify = self._blake2s_256
-        elif self.code == CryOneDex.SHA3_256:
+        elif self.code == MtrDex.SHA3_256:
             self._verify = self._sha3_256
-        elif self.code == CryOneDex.SHA2_256:
+        elif self.code == MtrDex.SHA2_256:
             self._verify = self._sha2_256
         else:
             raise ValueError("Unsupported code = {} for digester.".format(self.code))
@@ -1343,7 +1268,7 @@ class Nexter(Matter):
 
     """
     def __init__(self, limen=None, sith=None, digs=None, keys=None, ked=None,
-                 code=CryOneDex.Blake3_256, **kwa):
+                 code=MtrDex.Blake3_256, **kwa):
         """
         Assign digest verification function to ._verify
 
@@ -1382,7 +1307,7 @@ class Nexter(Matter):
         except EmptyMaterialError as ex:
             if not digs and not keys and not ked:
                 raise ex
-            if code == CryOneDex.Blake3_256:
+            if code == MtrDex.Blake3_256:
                 self._digest = self._blake3_256
             else:
                 raise ValueError("Unsupported code = {} for nexter.".format(code))
@@ -1392,7 +1317,7 @@ class Nexter(Matter):
             super(Nexter, self).__init__(raw=raw, code=code, **kwa)  # attaches code etc
 
         else:
-            if self.code == CryOneDex.Blake3_256:
+            if self.code == MtrDex.Blake3_256:
                 self._digest = self._blake3_256
             else:
                 raise ValueError("Unsupported code = {} for nexter.".format(code))
@@ -1543,13 +1468,13 @@ class Prefixer(Matter):
                 super(Prefixer, self).__init__(qb64=ked["i"], code=code, **kwa)
                 code = self.code
 
-            if code == CryOneDex.Ed25519N:
+            if code == MtrDex.Ed25519N:
                 self._derive = self._derive_ed25519N
-            elif code == CryOneDex.Ed25519:
+            elif code == MtrDex.Ed25519:
                 self._derive = self._derive_ed25519
-            elif code == CryOneDex.Blake3_256:
+            elif code == MtrDex.Blake3_256:
                 self._derive = self._derive_blake3_256
-            elif code == CryTwoDex.Ed25519_Sig:
+            elif code == MtrDex.Ed25519_Sig:
                 self._derive = self._derive_sig_ed25519
             else:
                 raise ValueError("Unsupported code = {} for prefixer.".format(code))
@@ -1558,13 +1483,13 @@ class Prefixer(Matter):
             raw, code = self._derive(ked=ked, seed=seed, secret=secret)
             super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
 
-        if self.code == CryOneDex.Ed25519N:
+        if self.code == MtrDex.Ed25519N:
             self._verify = self._verify_ed25519N
-        elif self.code == CryOneDex.Ed25519:
+        elif self.code == MtrDex.Ed25519:
             self._verify = self._verify_ed25519
-        elif self.code == CryOneDex.Blake3_256:
+        elif self.code == MtrDex.Blake3_256:
             self._verify = self._verify_blake3_256
-        elif code == CryTwoDex.Ed25519_Sig:
+        elif code == MtrDex.Ed25519_Sig:
             self._verify = self._verify_sig_ed25519
         else:
             raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
@@ -1615,12 +1540,12 @@ class Prefixer(Matter):
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verfer.code not in [CryOneDex.Ed25519N]:
+        if verfer.code not in [MtrDex.Ed25519N]:
             raise DerivationError("Mismatch derivation code = {}."
                                   "".format(verfer.code))
 
         try:
-            if verfer.code == CryOneDex.Ed25519N and ked["n"]:
+            if verfer.code == MtrDex.Ed25519N and ked["n"]:
                 raise DerivationError("Non-empty nxt = {} for non-transferable"
                                       " code = {}".format(ked["n"],
                                                           verfer.code))
@@ -1675,7 +1600,7 @@ class Prefixer(Matter):
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verfer.code not in [CryOneDex.Ed25519]:
+        if verfer.code not in [MtrDex.Ed25519]:
             raise DerivationError("Mismatch derivation code = {}"
                                   "".format(verfer.code))
 
@@ -1724,7 +1649,7 @@ class Prefixer(Matter):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
-        ked["i"] = "{}".format(self.Dummy*CryOneSizes[CryOneDex.Blake3_256])
+        ked["i"] = "{}".format(self.Dummy*CryOneSizes[MtrDex.Blake3_256])
         serder = Serder(ked=ked)
         ked = serder.ked  # use updated ked with valid vs element
 
@@ -1733,7 +1658,7 @@ class Prefixer(Matter):
                 raise DerivationError("Missing element = {} from ked.".format(l))
 
         dig =  blake3.blake3(serder.raw).digest()
-        return (dig, CryOneDex.Blake3_256)
+        return (dig, MtrDex.Blake3_256)
 
 
     def _verify_blake3_256(self, ked, pre, prefixed=False):
@@ -1748,7 +1673,7 @@ class Prefixer(Matter):
         """
         try:
             raw, code =  self._derive_blake3_256(ked=ked)
-            crymat = Matter(raw=raw, code=CryOneDex.Blake3_256)
+            crymat = Matter(raw=raw, code=MtrDex.Blake3_256)
             if crymat.qb64 != pre:
                 return False
 
@@ -1776,7 +1701,7 @@ class Prefixer(Matter):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
-        ked["i"] = "{}".format(self.Dummy*CryTwoSizes[CryTwoDex.Ed25519_Sig])
+        ked["i"] = "{}".format(self.Dummy*CryTwoSizes[MtrDex.Ed25519_Sig])
         serder = Serder(ked=ked)
         ked = serder.ked  # use updated ked with valid vs element
 
@@ -1794,7 +1719,7 @@ class Prefixer(Matter):
             raise DerivationError("Error extracting public key ="
                                   " = {}".format(ex))
 
-        if verfer.code not in [CryOneDex.Ed25519]:
+        if verfer.code not in [MtrDex.Ed25519]:
             raise DerivationError("Invalid derivation code = {}"
                                   "".format(verfer.code))
 
@@ -1810,7 +1735,7 @@ class Prefixer(Matter):
 
         # sig = pysodium.crypto_sign_detached(ser, signer.raw + verfer.raw)
 
-        return (cigar.raw, CryTwoDex.Ed25519_Sig)
+        return (cigar.raw, MtrDex.Ed25519_Sig)
 
 
     def _verify_sig_ed25519(self, ked, pre, prefixed=False):
@@ -1834,7 +1759,7 @@ class Prefixer(Matter):
                 raise DerivationError("Invalid ilk = {} to derive prefix.".format(ilk))
 
             # put in dummy pre to get size correct
-            dked["i"] = "{}".format(self.Dummy*CryTwoSizes[CryTwoDex.Ed25519_Sig])
+            dked["i"] = "{}".format(self.Dummy*CryTwoSizes[MtrDex.Ed25519_Sig])
             serder = Serder(ked=dked)
             dked = serder.ked  # use updated ked with valid vs element
 
@@ -1852,7 +1777,7 @@ class Prefixer(Matter):
                 raise DerivationError("Error extracting public key ="
                                       " = {}".format(ex))
 
-            if verfer.code not in [CryOneDex.Ed25519]:
+            if verfer.code not in [MtrDex.Ed25519]:
                 raise DerivationError("Mismatched derivation code = {}"
                                       "".format(verfer.code))
 
@@ -2712,7 +2637,7 @@ class Serder:
         loads and jumps of json use str whereas cbor and msgpack use bytes
 
     """
-    def __init__(self, raw=b'', ked=None, kind=None, code=CryOneDex.Blake3_256):
+    def __init__(self, raw=b'', ked=None, kind=None, code=MtrDex.Blake3_256):
         """
         Deserialize if raw provided
         Serialize if ked provided but not raw

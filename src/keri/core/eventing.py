@@ -30,11 +30,11 @@ from ..kering import Versionage, Version
 from ..help.helping import nowIso8601, fromIso8601, toIso8601
 from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
 
-from .coring import Versify, Serials, Ilks, CryOneDex
+from .coring import Versify, Serials, Ilks
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
-from .coring import CryRawSizes, CryTwoDex, Seqner
+from .coring import CryRawSizes, MtrDex, Seqner
 from .coring import Siger, Cigar
-from .coring import CtrDex, Counter
+from .coring import MtrDex, IdrDex, CtrDex, Counter
 
 from ..help import ogling
 
@@ -570,7 +570,7 @@ def delcept(keys,
                )
 
     if code is None:
-        code = CryOneDex.Blake3_256  # Default digest
+        code = MtrDex.Blake3_256  # Default digest
 
     # raises derivation error if non-empty nxt but ephemeral code
     prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code

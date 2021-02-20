@@ -42,7 +42,7 @@ def test_directing_basic():
     # bob inception transferable (nxt digest not empty)
     bobSerder = eventing.incept(keys=[bobSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[bobSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
     assert bob == 'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
@@ -64,7 +64,7 @@ def test_directing_basic():
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
@@ -203,7 +203,7 @@ def test_direct_mode():
     # bob inception transferable (nxt digest not empty)
     bobSerder = eventing.incept(keys=[bobSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[bobSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
     assert bob == 'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
@@ -226,7 +226,7 @@ def test_direct_mode():
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
@@ -357,7 +357,7 @@ def test_direct_mode_sam():
     # bob inception transferable (nxt digest not empty)
     bobSerder = eventing.incept(keys=[bobSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[bobSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
     assert bob == 'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
@@ -380,7 +380,7 @@ def test_direct_mode_sam():
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'

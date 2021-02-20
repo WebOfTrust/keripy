@@ -15,7 +15,7 @@ from keri.kering import Version
 from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
                          ShortageError)
 
-from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
+from keri.core.coring import MtrDex, MtrDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
 from keri.core.coring import Seqner
@@ -267,8 +267,8 @@ def test_keyeventfuncs():
 
     # Inception: Non-transferable (ephemeral) case
     signer0 = Signer(raw=seed, transferable=False)  #  original signing keypair non transferable
-    assert signer0.code == CryOneDex.Ed25519_Seed
-    assert signer0.verfer.code == CryOneDex.Ed25519N
+    assert signer0.code == MtrDex.Ed25519_Seed
+    assert signer0.verfer.code == MtrDex.Ed25519N
     keys0 = [signer0.verfer.qb64]
     serder = incept(keys=keys0)  #  default nxt is empty so abandoned
     assert serder.ked["i"] == 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
@@ -280,12 +280,12 @@ def test_keyeventfuncs():
 
     with pytest.raises(DerivationError):
         # non-empty nxt wtih non-transferable code
-        serder = incept(keys=keys0, code=CryOneDex.Ed25519N, nxt="ABCDE")
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, nxt="ABCDE")
 
     # Inception: Transferable Case but abandoned in incept so equivalent
     signer0 = Signer(raw=seed)  #  original signing keypair transferable default
-    assert signer0.code == CryOneDex.Ed25519_Seed
-    assert signer0.verfer.code == CryOneDex.Ed25519
+    assert signer0.code == MtrDex.Ed25519_Seed
+    assert signer0.verfer.code == MtrDex.Ed25519
     keys0 = [signer0.verfer.qb64]
     serder = incept(keys=keys0)  #  default nxt is empty so abandoned
     assert serder.ked["i"] == 'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
@@ -300,8 +300,8 @@ def test_keyeventfuncs():
     seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
             b'\x98Y\xdd\xe8')
     signer1 = Signer(raw=seed1)  #  next signing keypair transferable is default
-    assert signer1.code == CryOneDex.Ed25519_Seed
-    assert signer1.verfer.code == CryOneDex.Ed25519
+    assert signer1.code == MtrDex.Ed25519_Seed
+    assert signer1.verfer.code == MtrDex.Ed25519
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
     nexter1 = Nexter(keys=keys1)  # dfault sith is 1
@@ -326,8 +326,8 @@ def test_keyeventfuncs():
     seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
             b'e\xf9AL\x1aeK\xafj\xa1pB')
     signer2 = Signer(raw=seed2)  #  next signing keypair transferable is default
-    assert signer2.code == CryOneDex.Ed25519_Seed
-    assert signer2.verfer.code == CryOneDex.Ed25519
+    assert signer2.code == MtrDex.Ed25519_Seed
+    assert signer2.verfer.code == MtrDex.Ed25519
     keys2 = [signer2.verfer.qb64]
     # compute nxt digest
     nexter2 = Nexter(keys=keys2)
@@ -363,7 +363,7 @@ def test_keyeventfuncs():
                            b'"s":"0","t":"rct","d":"EoLKHoaFmo5VFzaOpCQXmUo5Wxf_cRuIbx7LcyBS69lQ"}')
 
     # ValReceipt  chit
-    serderA = incept(keys=keys0, nxt=nxt1, code=CryOneDex.Blake3_256)
+    serderA = incept(keys=keys0, nxt=nxt1, code=MtrDex.Blake3_256)
     seal = SealEvent(i=serderA.ked["i"], s=serderA.ked["s"], d=serderA.dig)
     assert seal.i == serderA.ked["i"]
     assert seal.d == serderA.dig
@@ -385,8 +385,8 @@ def test_keyeventfuncs():
     seedD = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
             b'\x98Y\xdd\xe8')
     signerD = Signer(raw=seedD)  #  next signing keypair transferable is default
-    assert signerD.code == CryOneDex.Ed25519_Seed
-    assert signerD.verfer.code == CryOneDex.Ed25519
+    assert signerD.code == MtrDex.Ed25519_Seed
+    assert signerD.verfer.code == MtrDex.Ed25519
     keysD = [signerD.verfer.qb64]
     # compute nxt digest
     nexterD = Nexter(keys=keysD)  # default sith is 1
@@ -415,8 +415,8 @@ def test_keyeventfuncs():
     seedR = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
             b'e\xf9AL\x1aeK\xafj\xa1pB')
     signerR = Signer(raw=seedR)  #  next signing keypair transferable is default
-    assert signerR.code == CryOneDex.Ed25519_Seed
-    assert signerR.verfer.code == CryOneDex.Ed25519
+    assert signerR.code == MtrDex.Ed25519_Seed
+    assert signerR.verfer.code == MtrDex.Ed25519
     keysR = [signerR.verfer.qb64]
     # compute nxt digest
     nexterR = Nexter(keys=keysR)  # default sith is 1
@@ -465,15 +465,15 @@ def test_kever():
         # create current key
         sith = 1  #  one signer
         skp0 = Signer()  #  original signing keypair transferable default
-        assert skp0.code == CryOneDex.Ed25519_Seed
-        assert skp0.verfer.code == CryOneDex.Ed25519
+        assert skp0.code == MtrDex.Ed25519_Seed
+        assert skp0.verfer.code == MtrDex.Ed25519
         keys = [skp0.verfer.qb64]
 
         # create next key
         nxtsith = "1" #  one signer
         skp1 = Signer()  #  next signing keypair transferable is default
-        assert skp1.code == CryOneDex.Ed25519_Seed
-        assert skp1.verfer.code == CryOneDex.Ed25519
+        assert skp1.code == MtrDex.Ed25519_Seed
+        assert skp1.verfer.code == MtrDex.Ed25519
         nxtkeys = [skp1.verfer.qb64]
         # compute nxt digest
         nexter = Nexter(sith=nxtsith, keys=nxtkeys)
@@ -497,8 +497,8 @@ def test_kever():
 
 
         # Derive AID from ked
-        aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519)
-        assert aid0.code == CryOneDex.Ed25519
+        aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519)
+        assert aid0.code == MtrDex.Ed25519
         assert aid0.qb64 == skp0.verfer.qb64
 
         # update ked with pre
@@ -520,15 +520,15 @@ def test_kever():
         # create current key
         sith = 1  #  one signer
         skp0 = Signer(transferable=False)  #  original signing keypair non-transferable
-        assert skp0.code == CryOneDex.Ed25519_Seed
-        assert skp0.verfer.code == CryOneDex.Ed25519N
+        assert skp0.code == MtrDex.Ed25519_Seed
+        assert skp0.verfer.code == MtrDex.Ed25519N
         keys = [skp0.verfer.qb64]
 
         # create next key Error case
         nxtsith = "1" #  one signer
         skp1 = Signer()  #  next signing keypair transferable is default
-        assert skp1.code == CryOneDex.Ed25519_Seed
-        assert skp1.verfer.code == CryOneDex.Ed25519
+        assert skp1.code == MtrDex.Ed25519_Seed
+        assert skp1.verfer.code == MtrDex.Ed25519
         nxtkeys = [skp1.verfer.qb64]
         # compute nxt digest
         nexter = Nexter(sith=nxtsith, keys=nxtkeys)
@@ -553,9 +553,9 @@ def test_kever():
 
         # Derive AID from ked
         with pytest.raises(DerivationError):
-            aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519N)
+            aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519N)
 
-        # assert aid0.code == CryOneDex.Ed25519N
+        # assert aid0.code == MtrDex.Ed25519N
         # assert aid0.qb64 == skp0.verfer.qb64
 
         # update ked with pre
@@ -593,9 +593,9 @@ def test_kever():
 
 
         # Derive AID from ked
-        aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519N)
+        aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519N)
 
-        assert aid0.code == CryOneDex.Ed25519N
+        assert aid0.code == MtrDex.Ed25519N
         assert aid0.qb64 == skp0.verfer.qb64
 
         # update ked with pre
@@ -1269,7 +1269,7 @@ def test_multisig_digprefix():
         keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
         nxtkeys = [signers[3].verfer.qb64, signers[4].verfer.qb64, signers[5].verfer.qb64]
         sith = "2"
-        code = CryOneDex.Blake3_256  # Blake3 digest of incepting data
+        code = MtrDex.Blake3_256  # Blake3 digest of incepting data
         serder = incept(keys=keys,
                         code=code,
                         sith=sith,
@@ -1681,7 +1681,7 @@ def test_receipt():
     # create receipt signer prefixer  default code is non-transferable
     valSigner = Signer(qb64=valSecrets[0], transferable=False)
     valPrefixer = Prefixer(qb64=valSigner.verfer.qb64)
-    assert valPrefixer.code == CryOneDex.Ed25519N
+    assert valPrefixer.code == MtrDex.Ed25519N
     valpre = valPrefixer.qb64
     assert valpre == 'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
 
@@ -1986,7 +1986,7 @@ def test_direct_mode():
         # Coe Event 0  Inception Transferable (nxt digest not empty)
         coeSerder = incept(keys=[coeSigners[cesn].verfer.qb64],
                         nxt=Nexter(keys=[coeSigners[cesn+1].verfer.qb64]).qb64,
-                        code=CryOneDex.Blake3_256)
+                        code=MtrDex.Blake3_256)
 
         assert csn == int(coeSerder.ked["s"], 16) == 0
         coepre = coeSerder.ked["i"]
@@ -2016,7 +2016,7 @@ def test_direct_mode():
         # Val Event 0  Inception Transferable (nxt digest not empty)
         valSerder = incept(keys=[valSigners[vesn].verfer.qb64],
                             nxt=Nexter(keys=[valSigners[vesn+1].verfer.qb64]).qb64,
-                            code=CryOneDex.Blake3_256)
+                            code=MtrDex.Blake3_256)
 
         assert vsn == int(valSerder.ked["s"], 16) == 0
         valpre = valSerder.ked["i"]
@@ -2478,7 +2478,7 @@ def test_direct_mode_cbor_mgpk():
         # Coe Event 0  Inception Transferable (nxt digest not empty)
         coeSerder = incept(keys=[coeSigners[cesn].verfer.qb64],
                            nxt=Nexter(keys=[coeSigners[cesn+1].verfer.qb64]).qb64,
-                           code=CryOneDex.Blake3_256,
+                           code=MtrDex.Blake3_256,
                            kind=Serials.cbor)
 
         assert csn == int(coeSerder.ked["s"], 16) == 0
@@ -2508,7 +2508,7 @@ def test_direct_mode_cbor_mgpk():
         # Val Event 0  Inception Transferable (nxt digest not empty)
         valSerder = incept(keys=[valSigners[vesn].verfer.qb64],
                             nxt=Nexter(keys=[valSigners[vesn+1].verfer.qb64]).qb64,
-                            code=CryOneDex.Blake3_256,
+                            code=MtrDex.Blake3_256,
                             kind=Serials.mgpk)
 
         assert vsn == int(valSerder.ked["s"], 16) == 0
@@ -2916,12 +2916,12 @@ def test_process_nontransferable():
 
     # Ephemeral (Nontransferable) case
     skp0 = Signer(transferable=False)  #  original signing keypair non transferable
-    assert skp0.code == CryOneDex.Ed25519_Seed
-    assert skp0.verfer.code == CryOneDex.Ed25519N
+    assert skp0.code == MtrDex.Ed25519_Seed
+    assert skp0.verfer.code == MtrDex.Ed25519N
 
     # Derive AID by merely assigning verifier public key
     aid0 = Prefixer(qb64=skp0.verfer.qb64)
-    assert aid0.code == CryOneDex.Ed25519N
+    assert aid0.code == MtrDex.Ed25519N
 
     # Ephemeral may be used without inception event
     # but when used with inception event must be compatible event
@@ -2997,15 +2997,15 @@ def test_process_transferable():
     # create current key
     sith = 1  #  one signer
     skp0 = Signer()  #  original signing keypair transferable default
-    assert skp0.code == CryOneDex.Ed25519_Seed
-    assert skp0.verfer.code == CryOneDex.Ed25519
+    assert skp0.code == MtrDex.Ed25519_Seed
+    assert skp0.verfer.code == MtrDex.Ed25519
     keys = [skp0.verfer.qb64]
 
     # create next key
     nxtsith = "1" #  one signer
     skp1 = Signer()  #  next signing keypair transferable is default
-    assert skp1.code == CryOneDex.Ed25519_Seed
-    assert skp1.verfer.code == CryOneDex.Ed25519
+    assert skp1.code == MtrDex.Ed25519_Seed
+    assert skp1.verfer.code == MtrDex.Ed25519
     nxtkeys = [skp1.verfer.qb64]
     # compute nxt digest
     nexter = Nexter(sith=nxtsith, keys=nxtkeys)
@@ -3029,8 +3029,8 @@ def test_process_transferable():
 
 
     # Derive AID from ked
-    aid0 = Prefixer(ked=ked0, code=CryOneDex.Ed25519)
-    assert aid0.code == CryOneDex.Ed25519
+    aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519)
+    assert aid0.code == MtrDex.Ed25519
     assert aid0.qb64 == skp0.verfer.qb64
 
     # update ked with pre
@@ -3102,7 +3102,7 @@ def test_process_manual():
     assert len(verkey) == 32
 
     # create qualified pre in basic format
-    aidmat = Matter(raw=verkey, code=CryOneDex.Ed25519)
+    aidmat = Matter(raw=verkey, code=MtrDex.Ed25519)
     assert aidmat.qb64 == 'Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
 
     # create qualified next public key in basic format
@@ -3118,7 +3118,7 @@ def test_process_manual():
     assert len(verkey) == 32
 
     # create qualified nxt key in basic format
-    nxtkeymat = Matter(raw=verkey, code=CryOneDex.Ed25519)
+    nxtkeymat = Matter(raw=verkey, code=MtrDex.Ed25519)
     assert nxtkeymat.qb64 == 'D9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
 
     # create nxt digest
@@ -3132,7 +3132,7 @@ def test_process_manual():
     nxtdig = blake3.blake3(nxtsraw).digest()
     assert nxtdig == b'\xdeWy\xd3=\xcb`\xce\xe9\x99\x0cF\xdd\xb2C6\x03\xa7F\rS\xd6\xfem\x99\x89\xac`<\xaa\x88\xd2'
 
-    nxtdigmat = Matter(raw=nxtdig, code=CryOneDex.Blake3_256)
+    nxtdigmat = Matter(raw=nxtdig, code=MtrDex.Blake3_256)
     assert nxtdigmat.qb64 == 'E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI'
 
     sn =  0
@@ -3164,7 +3164,7 @@ def test_process_manual():
     assert txsrdr.size == 230
 
     txdig = blake3.blake3(txsrdr.raw).digest()
-    txdigmat = Matter(raw=txdig, code=CryOneDex.Blake3_256)
+    txdigmat = Matter(raw=txdig, code=MtrDex.Blake3_256)
     assert txdigmat.qb64 == 'Ea-gtTKs7O4bJUXI5Rl7FM1xYgv-GtLd322iMGe0UZV8'
 
     assert txsrdr.dig == txdigmat.qb64
@@ -3197,7 +3197,7 @@ def test_process_manual():
     rxaidqb64 = rxsrdr.ked["i"]
     rxaidmat = Matter(qb64=rxaidqb64)
     assert rxaidmat.qb64 == aidmat.qb64
-    assert rxaidmat.code == CryOneDex.Ed25519
+    assert rxaidmat.code == MtrDex.Ed25519
 
     rxverqb64 = rxsrdr.ked["k"][index]
     rxvermat = Matter(qb64=rxverqb64)

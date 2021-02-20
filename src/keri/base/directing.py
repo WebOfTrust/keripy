@@ -43,7 +43,7 @@ class Habitat():
         self.signers = [coring.Signer(qb64=secret) for secret in self.secrets]
         self.inception = eventing.incept(keys=[self.signers[0].verfer.qb64],
                         nxt=coring.Nexter(keys=[self.signers[1].verfer.qb64]).qb64,
-                        code=coring.CryOneDex.Blake3_256)
+                        code=coring.MtrDex.Blake3_256)
         self.pre = self.inception.ked["i"]
 
 

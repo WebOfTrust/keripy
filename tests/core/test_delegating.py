@@ -44,7 +44,7 @@ def test_delegation():
         verfers, digers = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
         bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                  nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         bobPre = bobSrdr.ked["i"]
         assert bobPre == 'EiBlVttjqvySMbA4ShN19rSrz3D0ioNW-Uj92Ri7XnFE'

@@ -42,7 +42,7 @@ def test_weighted():
                                   sith=sith,
                                  nxt=coring.Nexter(sith=nxtsith,
                                                    digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         wesPre = wesSrdr.ked["i"]
 

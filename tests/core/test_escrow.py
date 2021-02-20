@@ -43,7 +43,7 @@ def test_partial_signed_escrow():
                                   sith=sith,
                                  nxt=coring.Nexter(sith=nxtsith,
                                                    digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
 
@@ -357,7 +357,7 @@ def test_missing_delegator_escrow():
         verfers, digers = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
         bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                  nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         bobPre = bobSrdr.ked["i"]
 
@@ -568,7 +568,7 @@ def test_out_of_order_escrow():
                                   sith=sith,
                                  nxt=coring.Nexter(sith=nxtsith,
                                                    digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
         icpdig = srdr.dig
@@ -769,7 +769,7 @@ def test_unverified_receipt_escrow():
                                   sith=sith,
                                  nxt=coring.Nexter(sith=nxtsith,
                                                    digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
         icpdig = srdr.dig
@@ -1032,7 +1032,7 @@ def test_unverified_trans_receipt_escrow():
                                   sith=sith,
                                  nxt=coring.Nexter(sith=nxtsith,
                                                    digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
         icpdig = srdr.dig
@@ -1059,7 +1059,7 @@ def test_unverified_trans_receipt_escrow():
                                 sith=rsith,
                                 nxt=coring.Nexter(sith=rsith,
                                                   digs=[diger.qb64 for diger in rdigers]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
         rpre = rsrdr.ked["i"]
         ricpdig = rsrdr.dig
