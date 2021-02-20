@@ -21,19 +21,32 @@ msgpack 1.0.0+
 simplejson 3.17.0+
 cbor2 5.1.0+
 
+
+```shell
+$ pip3 install -U lmdb pysodium blake3 msgpack simplejson cbor2
+```
+
+or separately
+
+```shell
 $ pip3 install -U lmdb
 $ pip3 install -U pysodium
 $ pip3 install -U blake3
 $ pip3 install -U msgpack
 $ pip3 install -U simplejson
 $ pip3 install -U cbor2
+```
+
 
 
 libsodium cypto_pwhash is argon21d so don't need seperate package
 but for future reference
 
 argon2-cffi 19.2.0+
+
+```shell
 $ pip3 install -U argon2-cffi
+```
 
 ## Python Binding Types
 https://realpython.com/python-bindings-overview/
@@ -58,8 +71,9 @@ Python bindings for the official Rust implementation of BLAKE3, based on PyO3. T
 
 Uses binary wheels
 
+```shell
 $ pip3 install blake3
-
+```
 
 ### Seed Stretching
 
@@ -238,13 +252,18 @@ https://pythonspeed.com/articles/faster-json-library/
 
 #### simplejson
 most complete support but slower than ujsonn or rapidjson
+
+```shell
 $ pip3 install -U simplejson
+```
 
 #### ujson
 
 fastest but not many options
 
+```shell
 $ pip install ujson
+```
 
 #### python-rapidjson
  almost as fact as ujson but supports more options
@@ -252,17 +271,24 @@ $ pip install ujson
 ### msgpack
 
 msgpack 1.0.0+
+```shell
 $ pip3 install -U msgpack
+```
 
 ### cbor
 
 cbor2 5.1.0
 https://pypi.org/project/cbor2/
 
+```shell
 $ pip3 install -U cbor2
+```
 
 Not sure if cbor2 uses libcbor or not
+
+```shell
 $ brew install libcbor
+```
 
 libcbor 0.7.0
 
@@ -314,9 +340,13 @@ https://medium.com/@joehonton/cipher-suites-demystified-ada2e97be9c9
 
 ### Testing
 * Install pytest: `pip install pytest`
+
 * Run the test suites: 
-    ```
-    pytest tests/ --ignore tests/demo/
-    pytest tests/demo/
-    ```
+
+```shell
+pytest tests/ --ignore tests/demo/
+pytest tests/demo/
+```
     
+
+

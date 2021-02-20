@@ -5,10 +5,11 @@ tests escrows in database primarily logic in Kevery and Kever from keri.core.eve
 """
 import os
 import time
+import datetime
 import pytest
 
 from keri import kering
-from keri.help import ogling
+from keri.help import ogling, helping
 from keri.db import dbing
 from keri.base import keeping
 from keri.core import coring
@@ -91,6 +92,9 @@ def test_partial_signed_escrow():
         sigs = kvy.baser.getSigs(dbing.dgKey(pre, srdr.dig))  #  but sigs is more
         assert len(sigs) == 2
 
+        # get DTS set by escrow date time stamp on event
+        edtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+
         # verify Kevery process partials escrow now unescrows correctly given
         # two signatures and assuming not stale
         kvy.processPartials()
@@ -101,6 +105,11 @@ def test_partial_signed_escrow():
         # escrows now empty
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0
+
+        # get DTS set by first seen event acceptance date time stamp
+        adtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+        # ensure accept time is later than escrow time, default timedelta is zero
+        assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
 
         # send duplicate message with all three sigs
         msg = bytearray(srdr.raw)
@@ -113,6 +122,14 @@ def test_partial_signed_escrow():
         assert len(sigs) == 3
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0  # escrow stays gone
+
+        # get DTS after partial last sig should not change dts from first accepted
+        pdtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+        assert pdtsb == adtsb
+
+        # get first seen
+        fsdig = kvy.baser.getFse(dbing.dtKey(pre, adtsb))
+        assert fsdig == srdr.digb
 
         # create interaction event for
         srdr = eventing.interact(pre=kvr.prefixer.qb64,
@@ -187,12 +204,20 @@ def test_partial_signed_escrow():
         assert len(escrows) == 1
         assert escrows[0] == srdr.digb  #  escrow entry for event
 
+        # get DTS set by escrow date time stamp on event
+        edtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+
         # Process partials but now escrow not stale
         kvy.processPartials()
         assert kvr.serder.dig == srdr.dig  # key state updated so event was validated
         assert kvr.sn == 1  # key state successfully updated
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0  # escrow gone
+
+        # get DTS set by first seen event acceptance date time stamp
+        adtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+        # ensure accept time is later than escrow time, default timedelta is zero
+        assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
 
         # send duplicate message but add last sig
         msg = bytearray(srdr.raw)
@@ -204,6 +229,14 @@ def test_partial_signed_escrow():
         assert len(sigs) == 3
         escrows = kvy.baser.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 0  # escrow stays gone
+
+        # get DTS after partial last sig should not change dts from first accepted
+        pdtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+        assert pdtsb == adtsb
+
+        # get first seen
+        fsdig = kvy.baser.getFse(dbing.dtKey(pre, adtsb))
+        assert fsdig == srdr.digb
 
         # Create rotation event
         # get current keys as verfers and next digests as digers
@@ -274,9 +307,21 @@ def test_partial_signed_escrow():
         kvy.processAll(ims=bytearray(msg))  # process local copy of msg
         assert kvr.serder.diger.qb64 != srdr.dig  # key state not updated
 
+        # get DTS set by escrow date time stamp on event
+        edtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+
         # process escrow
         kvy.processPartials()
         assert kvr.serder.diger.qb64 == srdr.dig  # key state updated
+
+        # get DTS set by first seen event acceptance date time stamp
+        adtsb = bytes(kvy.baser.getDts(dbing.dgKey(pre, srdr.digb)))
+        # ensure accept time is later than escrow time, default timedelta is zero
+        assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
+
+        # get first seen
+        fsdig = kvy.baser.getFse(dbing.dtKey(pre, adtsb))
+        assert fsdig == srdr.digb
 
     assert not os.path.exists(kpr.path)
     assert not os.path.exists(db.path)
@@ -754,11 +799,11 @@ def test_unverified_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         escrows = kvy.baser.getUres(dbing.snKey(pre, 0))  # so escrowed receipts
         assert len(escrows) == 2
-        diger, prefixer, cigar = eventing.detriplet(escrows[0])
+        diger, prefixer, cigar = eventing.detriple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit0pre
         assert cigar.qb64 == wit0Cigar.qb64
-        diger, prefixer, cigar = eventing.detriplet(escrows[1])
+        diger, prefixer, cigar = eventing.detriple(escrows[1])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit1pre
         assert cigar.qb64 == wit1Cigar.qb64
@@ -799,11 +844,11 @@ def test_unverified_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         escrows = kvy.baser.getUres(dbing.snKey(pre, 1))  # so escrowed receipts
         assert len(escrows) == 2
-        diger, prefixer, cigar = eventing.detriplet(escrows[0])
+        diger, prefixer, cigar = eventing.detriple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit0pre
         assert cigar.qb64 == wit0Cigar.qb64
-        diger, prefixer, cigar = eventing.detriplet(escrows[1])
+        diger, prefixer, cigar = eventing.detriple(escrows[1])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit1pre
         assert cigar.qb64 == wit1Cigar.qb64
@@ -859,11 +904,11 @@ def test_unverified_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         escrows = kvy.baser.getUres(dbing.snKey(pre, 2))  # so escrowed receipts
         assert len(escrows) == 2
-        diger, prefixer, cigar = eventing.detriplet(escrows[0])
+        diger, prefixer, cigar = eventing.detriple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit0pre
         assert cigar.qb64 == wit0Cigar.qb64
-        diger, prefixer, cigar = eventing.detriplet(escrows[1])
+        diger, prefixer, cigar = eventing.detriple(escrows[1])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit1pre
         assert cigar.qb64 == wit1Cigar.qb64
@@ -924,21 +969,21 @@ def test_unverified_receipt_escrow():
         # verify receipts
         receipts = kvy.baser.getRcts(dbing.dgKey(pre, icpdig))
         assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
+        rctPrefixer, rctCigar = eventing.decouple(receipts[0])
         assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[1])
+        rctPrefixer, rctCigar = eventing.decouple(receipts[1])
         assert rctPrefixer.qb64 == wit1pre
         receipts = kvy.baser.getRcts(dbing.dgKey(pre, ixndig))
         assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
+        rctPrefixer, rctCigar = eventing.decouple(receipts[0])
         assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[1])
+        rctPrefixer, rctCigar = eventing.decouple(receipts[1])
         assert rctPrefixer.qb64 == wit1pre
         receipts = kvy.baser.getRcts(dbing.dgKey(pre, rotdig))
         assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[0])
+        rctPrefixer, rctCigar = eventing.decouple(receipts[0])
         assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.decouplet(receipts[1])
+        rctPrefixer, rctCigar = eventing.decouple(receipts[1])
         assert rctPrefixer.qb64 == wit1pre
 
 
@@ -1042,7 +1087,7 @@ def test_unverified_trans_receipt_escrow():
 
         escrows = kvy.baser.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.dequinlet(escrows[0])
+        diger, sprefixer, sseqner, sdiger, siger = eventing.dequintuple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert sprefixer.qb64 == rpre
         assert sseqner.sn == 0
@@ -1114,7 +1159,7 @@ def test_unverified_trans_receipt_escrow():
 
         escrows = kvy.baser.getVres(dbing.snKey(pre, 1))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.dequinlet(escrows[0])
+        diger, sprefixer, sseqner, sdiger, siger = eventing.dequintuple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert sprefixer.qb64 == rpre
         assert sseqner.sn == 1
@@ -1176,7 +1221,7 @@ def test_unverified_trans_receipt_escrow():
 
         escrows = kvy.baser.getVres(dbing.snKey(pre, 2))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.dequinlet(escrows[0])
+        diger, sprefixer, sseqner, sdiger, siger = eventing.dequintuple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert sprefixer.qb64 == rpre
         assert sseqner.sn == 1
@@ -1266,21 +1311,21 @@ def test_unverified_trans_receipt_escrow():
         # verify receipts
         receipts = kvy.baser.getVrcs(dbing.dgKey(pre, icpdig))
         assert len(receipts) == 3
-        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadlet(receipts[0])
+        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadruple(receipts[0])
         assert rctPrefixer.qb64 == rpre
         assert rctSeqner.sn == 0
         assert rctDiger.qb64 == ricpdig
 
         receipts = kvy.baser.getVrcs(dbing.dgKey(pre, ixndig))
         assert len(receipts) == 3
-        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadlet(receipts[0])
+        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadruple(receipts[0])
         assert rctPrefixer.qb64 == rpre
         assert rctSeqner.sn == 1
         assert rctDiger.qb64 == rrotdig
 
         receipts = kvy.baser.getVrcs(dbing.dgKey(pre, rotdig))
         assert len(receipts) == 3
-        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadlet(receipts[0])
+        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadruple(receipts[0])
         assert rctPrefixer.qb64 == rpre
         assert rctSeqner.sn == 1
         assert rctDiger.qb64 == rrotdig
@@ -1292,5 +1337,5 @@ def test_unverified_trans_receipt_escrow():
 
 
 if __name__ == "__main__":
-    test_unverified_trans_receipt_escrow()
+    test_partial_signed_escrow()
 
