@@ -18,7 +18,7 @@ from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
 from keri.core.coring import CrySelDex, CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
 from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import CryMat, CryCounter, Seqner
+from keri.core.coring import Seqner
 from keri.core.coring import MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
 from keri.core.coring import Verfer, Signer, Diger, Nexter, Prefixer
 from keri.core.coring import generateSigners, generateSecrets
@@ -27,7 +27,6 @@ from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
 from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
 from keri.core.coring import SigSizes, SigRawSizes
 from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat, SigCounter
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever
 from keri.core.coring import Serder
@@ -2976,7 +2975,7 @@ def test_process_nontransferable():
     # extract attached sigs
     keys = rser0.ked["k"]
     for i in range(nrsigs): # verify each attached signature
-        rsig = SigMat(qb64=msgb0)
+        rsig = Indexer(qb64=msgb0)
         assert rsig.index == 0
         verfer = Verfer(qb64=keys[rsig.index])
         assert verfer.qb64 == aid0.qb64
@@ -3066,7 +3065,7 @@ def test_process_transferable():
     # extract attached sigs
     keys = rser0.ked["k"]
     for i in range(nrsigs): # verify each attached signature
-        rsig = SigMat(qb64=msgb0)
+        rsig = Indexer(qb64=msgb0)
         assert rsig.index == 0
         verfer = Verfer(qb64=keys[rsig.index])
         assert verfer.qb64 == aid0.qb64
@@ -3103,7 +3102,7 @@ def test_process_manual():
     assert len(verkey) == 32
 
     # create qualified pre in basic format
-    aidmat = CryMat(raw=verkey, code=CryOneDex.Ed25519)
+    aidmat = Matter(raw=verkey, code=CryOneDex.Ed25519)
     assert aidmat.qb64 == 'Dr5awcPswp9CkGMncHYbCOpj3P3Qb3i7MyzuKsKJP50s'
 
     # create qualified next public key in basic format
@@ -3119,7 +3118,7 @@ def test_process_manual():
     assert len(verkey) == 32
 
     # create qualified nxt key in basic format
-    nxtkeymat = CryMat(raw=verkey, code=CryOneDex.Ed25519)
+    nxtkeymat = Matter(raw=verkey, code=CryOneDex.Ed25519)
     assert nxtkeymat.qb64 == 'D9URPQjo8zRYYm4NMpQyYWJBDGrMwT6UP4zlspt9YGDU'
 
     # create nxt digest
@@ -3133,7 +3132,7 @@ def test_process_manual():
     nxtdig = blake3.blake3(nxtsraw).digest()
     assert nxtdig == b'\xdeWy\xd3=\xcb`\xce\xe9\x99\x0cF\xdd\xb2C6\x03\xa7F\rS\xd6\xfem\x99\x89\xac`<\xaa\x88\xd2'
 
-    nxtdigmat = CryMat(raw=nxtdig, code=CryOneDex.Blake3_256)
+    nxtdigmat = Matter(raw=nxtdig, code=CryOneDex.Blake3_256)
     assert nxtdigmat.qb64 == 'E3ld50z3LYM7pmQxG3bJDNgOnRg1T1v5tmYmsYDyqiNI'
 
     sn =  0
@@ -3165,7 +3164,7 @@ def test_process_manual():
     assert txsrdr.size == 230
 
     txdig = blake3.blake3(txsrdr.raw).digest()
-    txdigmat = CryMat(raw=txdig, code=CryOneDex.Blake3_256)
+    txdigmat = Matter(raw=txdig, code=CryOneDex.Blake3_256)
     assert txdigmat.qb64 == 'Ea-gtTKs7O4bJUXI5Rl7FM1xYgv-GtLd322iMGe0UZV8'
 
     assert txsrdr.dig == txdigmat.qb64
@@ -3176,7 +3175,7 @@ def test_process_manual():
     result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
     assert not result  # None if verifies successfully else raises ValueError
 
-    txsigmat = SigMat(raw=sig0raw, code=SigTwoDex.Ed25519, index=index)
+    txsigmat = Indexer(raw=sig0raw, code=SigTwoDex.Ed25519, index=index)
     assert txsigmat.qb64 == 'AAACj90Gx1W_YKEIKBuCB3H4_dNIUEXYpkm-oCW9MhnbqYqFKb4BhZU9PQRuVfExEPcvlrzzuxB-1B4ALXwOhqDQ'
     assert len(txsigmat.qb64) == 88
     assert txsigmat.index == index
@@ -3192,16 +3191,16 @@ def test_process_manual():
 
     rxsigqb64 = msgb[rxsrdr.size:].decode("utf-8")
     assert len(rxsigqb64) == len(txsigmat.qb64)
-    rxsigmat = SigMat(qb64=rxsigqb64)
+    rxsigmat = Indexer(qb64=rxsigqb64)
     assert rxsigmat.index == index
 
     rxaidqb64 = rxsrdr.ked["i"]
-    rxaidmat = CryMat(qb64=rxaidqb64)
+    rxaidmat = Matter(qb64=rxaidqb64)
     assert rxaidmat.qb64 == aidmat.qb64
     assert rxaidmat.code == CryOneDex.Ed25519
 
     rxverqb64 = rxsrdr.ked["k"][index]
-    rxvermat = CryMat(qb64=rxverqb64)
+    rxvermat = Matter(qb64=rxverqb64)
     assert rxvermat.qb64 == rxaidmat.qb64  #  basic derivation same
 
     result = pysodium.crypto_sign_verify_detached(rxsigmat.raw, rxsrdr.raw, rxvermat.raw)

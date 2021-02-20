@@ -15,7 +15,7 @@ from keri.db.dbing import dgKey, snKey, dtKey, splitKey, splitKeySn, splitKeyDt
 from keri.db.dbing import LMDBer, Baser
 
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
-from keri.core.coring import CryCntDex, CryOneDex, CryTwoDex, CryFourDex
+from keri.core.coring import CryOneDex, CryTwoDex, CryFourDex
 from keri.core.coring import Serials, Vstrings, Versify
 
 from keri.core.eventing import incept, rotate, interact, Kever, Kevery

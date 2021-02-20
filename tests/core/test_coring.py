@@ -21,7 +21,7 @@ from fractions import Fraction
 from keri.kering import Version, Versionage
 from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
                          ShortageError)
-from keri.core.coring import (CrySelDex, CryCntDex,
+from keri.core.coring import (CrySelDex,
                               CryCntSizes, CryCntRawSizes, CryCntIdxSizes,
                               CryOneDex, CryOneSizes, CryOneRawSizes,
                               CryTwoDex, CryTwoSizes, CryTwoRawSizes,
@@ -30,17 +30,17 @@ from keri.core.coring import (CrySelDex, CryCntDex,
 
 from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
 
-from keri.core.coring import (CryMat, CryCounter, Verfer, Cigar, Signer, Salter,
+from keri.core.coring import (Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
-from keri.core.coring import (SigSelDex, SigCntDex, SigCntSizes, SigCntRawSizes,
+from keri.core.coring import (SigSelDex, SigCntSizes, SigCntRawSizes,
                               SigTwoDex, SigTwoSizes, SigTwoRawSizes,
                               SigFourDex, SigFourSizes, SigFourRawSizes,
                               SigFiveDex, SigFiveSizes, SigFiveRawSizes,
                               SigSizes, SigRawSizes, MINSIGSIZE)
 
 from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat, SigCounter, Seqner, Siger
+from keri.core.coring import Seqner, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import Serder, Tholder
@@ -1051,140 +1051,6 @@ def test_counter():
     """ Done Test """
 
 
-def test_crymat():
-    """
-    Test the support functionality for cryptographic material
-    """
-    # verkey,  sigkey = pysodium.crypto_sign_keypair()
-    verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
-    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  #  str
-    prefixb = prefix.encode("utf-8")  # bytes
-    prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
-              b'IS\xf3\x874\xbao\x90\x8c')  # pure base 2 binary qb2
-
-    with pytest.raises(EmptyMaterialError):
-        crymat = CryMat()
-
-    with pytest.raises(EmptyMaterialError):
-        crymat = CryMat(raw=verkey, code=None)
-
-    with pytest.raises(EmptyMaterialError):
-        crymat = CryMat(raw=verkey, code='')
-
-    crymat = CryMat(raw=verkey)
-    assert crymat.raw == verkey
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.qb64 == prefix
-    assert crymat.qb2 == prebin
-    assert crymat.transferable == False
-
-    assert crymat.qb64 == encodeB64(crymat.qb2).decode("utf-8")
-    assert crymat.qb2 == decodeB64(crymat.qb64.encode("utf-8"))
-
-    crymat._exfil(prefixb)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
-
-    crymat = CryMat(qb64b=prefixb)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
-
-    crymat = CryMat(qb64=prefix)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
-
-    crymat = CryMat(qb64=prefixb)  #  works for either
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
-
-
-    # test wrong size of qb64
-    longprefix = prefix + "ABCD"
-    okcrymat = CryMat(qb64=longprefix)
-    assert len(okcrymat.qb64) == CrySizes[okcrymat.code]
-
-    shortprefix = prefix[:-4]
-    with pytest.raises(ShortageError):
-        okcrymat = CryMat(qb64=shortprefix)
-
-    crymat = CryMat(qb2=prebin)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
-
-    crymat = CryMat(qb64=prefix.encode("utf-8"))  # test bytes not str
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
-    assert crymat.qb64 == prefix
-    assert crymat.qb64b == prefix.encode("utf-8")
-
-    # test wrong size of raw
-    longverkey = verkey + bytes([10, 11, 12])
-    crymat = CryMat(raw=longverkey)
-
-    shortverkey =  verkey[:-3]
-    with pytest.raises(ValidationError):
-        crymat = CryMat(raw=shortverkey)
-
-    # test prefix on full identifier
-    full = prefix + ":mystuff/mypath/toresource?query=what#fragment"
-    crymat = CryMat(qb64=full)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
-    assert crymat.qb64 == prefix
-    assert crymat.qb2 == prebin
-
-    # test nongreedy prefixb on full identifier
-    full = prefixb + b":mystuff/mypath/toresource?query=what#fragment"
-    crymat = CryMat(qb64b=full)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
-    assert crymat.qb64 == prefix
-    assert crymat.qb2 == prebin
-
-    sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
-           b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
-           b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
-
-    sig64b = encodeB64(sig)
-    assert sig64b == b'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
-    sig64 =  sig64b.decode("utf-8")
-    assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
-
-    qsig64 = '0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-    qsig64b = b'0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-    qsigB2 = (b'\xd0\x19\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
-            b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
-            b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
-
-    crymat = CryMat(raw=sig, code=CryTwoDex.Ed25519_Sig)
-    assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519_Sig
-    assert crymat.qb64 == qsig64
-    assert crymat.qb64b == qsig64b
-    assert crymat.qb2 == qsigB2
-    assert crymat.transferable == True
-
-    crymat = CryMat(qb64b=qsig64b)
-    assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519_Sig
-
-    crymat = CryMat(qb64=qsig64)
-    assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519_Sig
-
-    qsig64b  = qsig64.encode("utf-8")  #  test bytes input
-    crymat = CryMat(qb64=qsig64b)
-    assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519_Sig
-
-    crymat = CryMat(qb2=qsigB2)
-    assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519_Sig
-
-    """ Done Test """
-
-
-
 
 def test_seqner():
     """
@@ -2063,198 +1929,6 @@ def test_prefixer():
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    """ Done Test """
-
-
-def test_sigmat():
-    """
-    Test the support functionality for attached signature cryptographic material
-    """
-    with pytest.raises(EmptyMaterialError):
-        sigmet = SigMat()
-
-    assert SigTwoDex.Ed25519 ==  'A'  # Ed25519 signature.
-    assert SigTwoDex.ECDSA_256k1 == 'B'  # ECDSA secp256k1 signature.
-
-    assert SigTwoSizes[SigTwoDex.Ed25519] == 88
-    assert SigTwoSizes[SigTwoDex.ECDSA_256k1] == 88
-
-    cs = IntToB64(0)
-    assert cs == "A"
-    i = B64ToInt(cs)
-    assert i == 0
-
-    cs = IntToB64(27)
-    assert cs == "b"
-    i = B64ToInt(cs)
-    assert i == 27
-
-    cs = IntToB64(27, l=2)
-    assert cs == "Ab"
-    i = B64ToInt(cs)
-    assert i == 27
-
-    cs = IntToB64(80)
-    assert cs == "BQ"
-    i = B64ToInt(cs)
-    assert i == 80
-
-    cs = IntToB64(4095)
-    assert cs == '__'
-    i = B64ToInt(cs)
-    assert i == 4095
-
-    cs = IntToB64(4096)
-    assert cs == 'BAA'
-    i = B64ToInt(cs)
-    assert i == 4096
-
-    cs = IntToB64(6011)
-    assert cs == "Bd7"
-    i = B64ToInt(cs)
-    assert i == 6011
-
-    # Test attached signature code (empty raw)
-    qsc = SigCntDex.Base64 + IntToB64(0, l=2)
-    assert qsc == '-AAA'
-
-    qscb = qsc.encode("utf-8")
-    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=0)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
-
-    sigmat = SigMat(qb64b=qscb)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
-
-    sigmat = SigMat(qb64=qsc)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
-
-    sigmat = SigMat(qb64=qscb)  #  also works for bytes
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
-
-    idx = 5
-    qsc = SigCntDex.Base64 + IntToB64(idx, l=2)
-    assert qsc == '-AAF'
-    qscb = qsc.encode("utf-8")
-    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=idx)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 5
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x05'
-
-    # Test signatures
-    sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
-           b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
-           b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
-
-    assert len(sig) == 64
-
-    sig64b = encodeB64(sig)
-    sig64 = sig64b.decode("utf-8")
-    assert len(sig64) == 88
-    assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
-
-    qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-    assert len(qsig64) == 88
-    qsig64b = qsig64.encode("utf-8")
-    qbin = decodeB64(qsig64b)
-    assert len(qbin) == 66
-    assert qbin == (b'\x00\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
-                    b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
-                    b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
-
-
-    sigmat = SigMat(raw=sig)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsig64
-    assert sigmat.qb2 == qbin
-
-    # test wrong size of raw
-    longsig = sig + bytes([10, 11, 12])
-    sigmat = SigMat(raw=longsig)
-
-    shortsig = sig[:-3]
-    with pytest.raises(ValidationError):
-        sigmat = SigMat(raw=shortsig)
-
-    sigmat = SigMat(qb64b=qsig64b)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-
-    sigmat = SigMat(qb64=qsig64)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-
-    sigmat = SigMat(qb64=qsig64b)  # test with bytes not str
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-
-    # test wrong size of qb64
-    longqsig64 = qsig64 + "ABCD"
-    oksigmat = SigMat(qb64=longqsig64)
-    assert len(oksigmat.qb64) == SigSizes[oksigmat.code]
-
-    shortqsig64 = qsig64[:-4]  # too short
-    with pytest.raises(ShortageError):
-        oksigmat = SigMat(qb64=shortqsig64)
-
-    sigmat = SigMat(qb64=qsig64.encode("utf-8"))  # test bytes not str
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.raw == sig
-    assert sigmat.qb64 == qsig64
-    assert sigmat.qb64b == qsig64.encode("utf-8")
-
-    sigmat = SigMat(qb2=qbin)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-
-    sigmat = SigMat(raw=sig, code=SigTwoDex.Ed25519, index=5)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 5
-    qsig64 = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-    assert sigmat.qb64 == qsig64
-    qbin = (b'\x00Y\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
-            b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
-            b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
-    assert sigmat.qb2 == qbin
-
-    sigmat = SigMat(qb64=qsig64)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 5
-
-    sigmat = SigMat(qb2=qbin)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 5
     """ Done Test """
 
 

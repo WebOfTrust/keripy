@@ -32,9 +32,8 @@ from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
 
 from .coring import Versify, Serials, Ilks, CryOneDex
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
-from .coring import CryMat, CryRawSizes, CryTwoDex, Seqner
-from .coring import CryCounter, Cigar
-from .coring import SigCounter, Siger
+from .coring import CryRawSizes, CryTwoDex, Seqner
+from .coring import Siger, Cigar
 from .coring import CtrDex, Counter
 
 from ..help import ogling
