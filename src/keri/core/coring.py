@@ -221,7 +221,7 @@ class MatterCodex:
 
 
     def __iter__(self):
-        return iter(astuple(self))  # enables inclusion text with "in"
+        return iter(astuple(self))  # enables inclusion test with "in"
 
 MtrDex = MatterCodex()
 
@@ -1773,7 +1773,7 @@ class IndexerCodex:
     Label:              str = '0B'  # Variable len bytes label L=N*4 <= 4095 char quadlets
 
     def __iter__(self):
-        return iter(astuple(self))  # enables inclusion text with "in"
+        return iter(astuple(self))  # enables inclusion test with "in"
 
 IdrDex = IndexerCodex()
 
@@ -2129,7 +2129,7 @@ class CounterCodex:
 
 
     def __iter__(self):
-        return iter(astuple(self))  # enables inclusion text with "in"
+        return iter(astuple(self))  # enables inclusion test with "in"
 
 CtrDex = CounterCodex()
 
