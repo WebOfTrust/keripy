@@ -410,9 +410,9 @@ class Matter:
             if code not in self.Codes:
                 raise DerivationCodeError("Unsupported code={}.".format(code))
 
-            hs, ss, fs = self.Codes[code]  # get sizes
-            rawsize = (fs - (hs + ss)) * 3 // 4
-
+            #hs, ss, fs = self.Codes[code]  # get sizes
+            #rawsize = (fs - (hs + ss)) * 3 // 4
+            rawsize = Matter._rawSize(code)
             raw = raw[:rawsize]  # copy only exact size from raw stream
             if len(raw) != rawsize:  # forbids shorter
                 raise ValidationError("Not enougth raw bytes for code={}"
@@ -437,6 +437,15 @@ class Matter:
         else:
             raise EmptyMaterialError("Improper initialization need either "
                                      "(raw and code) or qb64b or qb64 or qb2.")
+
+
+    @classmethod
+    def _rawSize(cls, code):
+        """
+        Returns raw size in bytes for a given code
+        """
+        hs, ss, fs = cls.Codes[code]  # get sizes
+        return ( (fs - (hs + ss)) * 3 // 4 )
 
 
     @property
@@ -636,7 +645,7 @@ class Seqner(Matter):
                 sn = int(snh, 16)
 
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
-            raw = sn.to_bytes(CryRawSizes[MtrDex.Salt_128], 'big')
+            raw = sn.to_bytes(Matter._rawSize(MtrDex.Salt_128), 'big')
 
         super(Seqner, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                          code=code, **kwa)
@@ -879,7 +888,7 @@ class Signer(Matter):
             return Cigar(raw=sig, code=MtrDex.Ed25519_Sig, verfer=verfer)
         else:
             return Siger(raw=sig,
-                          code=SigTwoDex.Ed25519,
+                          code=IdrDex.Ed25519_Sig,
                           index=index,
                           verfer=verfer)
 
@@ -980,7 +989,7 @@ class Salter(Matter):
                 raise ValueError("Unsupported security tier = {}.".format(tier))
 
          # stretch algorithm is argon2id
-        seed = pysodium.crypto_pwhash(outlen=CryRawSizes[code],
+        seed = pysodium.crypto_pwhash(outlen=Matter._rawSize(code),
                                       passwd=path,
                                       salt=self.raw,
                                       opslimit=opslimit,
@@ -1384,7 +1393,7 @@ class Nexter(Matter):
         for kint in kints:
             sint ^= kint  # xor together
 
-        return (sint.to_bytes(CryRawSizes[code], 'big'))
+        return (sint.to_bytes(Matter._rawSize(code), 'big'))
 
 
     @staticmethod
@@ -1842,168 +1851,8 @@ def B64ToInt(cs):
     return i
 
 
-@dataclass(frozen=True)
-class SigSelectCodex:
-    """
-    SigSelectCodex codex of selector characters for attached signature cyptographic material
-    Only provide defined characters.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    four: str = '0'  # use four character table.
-    five: str = '1'  # use five character table.
-    six:  str = '2'  # use six character table.
-    dash: str = '-'  # use signature count table
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-SigSelDex = SigSelectCodex()  # Make instance
 
 
-# Mapping of Code to Size
-# Total size  qb64
-SigCntSizes = {
-                "-A": 4,
-                "-B": 4,
-              }
-
-# size of index portion of code qb64
-SigCntIdxSizes = {
-                   "-A": 2,
-                   "-B": 2,
-                 }
-
-# total size of raw unqualified
-SigCntRawSizes = {
-                   "-A": 0,
-                   "-B": 0,
-                 }
-
-SIGCNTMAX = 4095  # maximum count value given two base 64 digits
-
-
-@dataclass(frozen=True)
-class SigTwoCodex:
-    """
-    SigTwoCodex codex of two character length derivation codes for attached signatures
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-
-    Note binary length of everything in SigTwoCodex results in 2 Base64 pad bytes.
-
-    First code character selects signature cipher suite
-    Second code charater selects index into current signing key list
-    Only provide first character here
-    """
-    Ed25519: str =  'A'  # Ed25519 signature.
-    ECDSA_256k1: str = 'B'  # ECDSA secp256k1 signature.
-
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-SigTwoDex = SigTwoCodex()  #  Make instance
-
-# Mapping of Code to Size
-SigTwoSizes = {
-                "A": 88,
-                "B": 88,
-              }
-
-# size of index portion of code qb64
-SigTwoIdxSizes = {
-                   "A": 1,
-                   "B": 1,
-                 }
-
-SigTwoRawSizes = {
-                "A": 64,
-                "B": 64,
-              }
-
-
-SIGTWOMAX = 63  # maximum index value given one base64 digit
-
-@dataclass(frozen=True)
-class SigFourCodex:
-    """
-    SigFourCodex codex of four character length derivation codes
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-
-    Note binary length of everything in SigFourCodex results in 0 Base64 pad bytes.
-
-    First two code characters select signature cipher suite
-    Next two code charaters select index into current signing key list
-    Only provide first two characters here
-    """
-    Ed448: str =  '0A'  # Ed448 signature.
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-SigFourDex = SigFourCodex()  #  Make instance
-
-# Mapping of Code to Size
-SigFourSizes = {
-                "0A": 156,
-               }
-
-# size of index portion of code qb64
-SigFourIdxSizes = {
-                   "0A": 2,
-                 }
-
-SigFourRawSizes = {
-                "0A": 114,
-               }
-
-
-SIGFOURMAX = 4095  # maximum index value given two base 64 digits
-
-@dataclass(frozen=True)
-class SigFiveCodex:
-    """
-    Five codex of five character length derivation codes
-    Only provide defined codes. Undefined are left out so that inclusion
-    exclusion via 'in' operator works.
-
-    Note binary length of everything in Four results in 0 Base64 pad bytes.
-
-    First three code characters select signature cipher suite
-    Next two code charaters select index into current signing key list
-    Only provide first three characters here
-    """
-    def __iter__(self):
-        return iter(astuple(self))
-
-SigFiveDex = SigFiveCodex()  #  Make instance
-
-
-# Mapping of Code to Size
-SigFiveSizes = {}
-SigFiveIdxSizes = {}
-SigFiveRawSizes = {}
-
-SIGFIVEMAX = 4095  # maximum index value given two base 64 digits
-
-# all sizes in one dict
-SigSizes = dict(SigCntSizes)
-SigSizes.update(SigTwoSizes)
-SigSizes.update(SigFourSizes)
-SigSizes.update(SigFiveSizes)
-
-MINSIGSIZE = min(SigSizes.values())
-
-SigIdxSizes = dict(SigCntIdxSizes)
-SigIdxSizes.update(SigTwoIdxSizes)
-SigIdxSizes.update(SigFourIdxSizes)
-SigIdxSizes.update(SigFiveIdxSizes)
-
-SigRawSizes = dict(SigCntRawSizes)
-SigRawSizes.update(SigTwoRawSizes)
-SigRawSizes.update(SigFourRawSizes)
-SigRawSizes.update(SigFiveRawSizes)
 
 
 @dataclass(frozen=True)
@@ -2134,6 +1983,14 @@ class Indexer:
             raise EmptyMaterialError("Improper initialization need either "
                                      "(raw and code and index) or qb64b or "
                                      "qb64 or qb2.")
+
+    @classmethod
+    def _rawSize(cls, code):
+        """
+        Returns raw size in bytes for a given code
+        """
+        hs, ss, fs = cls.Codes[code]  # get sizes
+        return ( (fs - (hs + ss)) * 3 // 4 )
 
 
     @property

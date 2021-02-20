@@ -15,24 +15,12 @@ from keri.kering import Version
 from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
                          ShortageError)
 
-from keri.core.coring import MtrDex, MtrDex
-from keri.core.coring import CryOneSizes, CryOneRawSizes, CryTwoSizes, CryTwoRawSizes
-from keri.core.coring import CryFourSizes, CryFourRawSizes, CrySizes, CryRawSizes
-from keri.core.coring import Seqner
 from keri.core.coring import MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
-from keri.core.coring import Verfer, Signer, Diger, Nexter, Prefixer
-from keri.core.coring import generateSigners, generateSecrets
-from keri.core.coring import SigSelDex, SigTwoDex, SigTwoSizes, SigTwoRawSizes
-from keri.core.coring import SigFourDex, SigFourSizes, SigFourRawSizes
-from keri.core.coring import SigFiveDex, SigFiveSizes, SigFiveRawSizes
-from keri.core.coring import SigSizes, SigRawSizes
-from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import Serialage, Serials, Mimes, Vstrings
-from keri.core.coring import Versify, Deversify, Rever
+from keri.core.coring import Seqner, Verfer, Signer, Diger, Nexter, Prefixer
 from keri.core.coring import Serder
 from keri.core.coring import Ilkage, Ilks
 
-from keri.core.eventing import TraitDex, LastEstLoc
+from keri.core.eventing import TraitDex, LastEstLoc, Serials, Versify
 from keri.core.eventing import decouple, detriple, dequadruple, dequintuple
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
@@ -3175,7 +3163,7 @@ def test_process_manual():
     result = pysodium.crypto_sign_verify_detached(sig0raw, txsrdr.raw, aidmat.raw)
     assert not result  # None if verifies successfully else raises ValueError
 
-    txsigmat = Indexer(raw=sig0raw, code=SigTwoDex.Ed25519, index=index)
+    txsigmat = Indexer(raw=sig0raw, code=IdrDex.Ed25519_Sig, index=index)
     assert txsigmat.qb64 == 'AAACj90Gx1W_YKEIKBuCB3H4_dNIUEXYpkm-oCW9MhnbqYqFKb4BhZU9PQRuVfExEPcvlrzzuxB-1B4ALXwOhqDQ'
     assert len(txsigmat.qb64) == 88
     assert txsigmat.index == index

@@ -21,22 +21,13 @@ from fractions import Fraction
 from keri.kering import Version, Versionage
 from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
                          ShortageError)
-from keri.core.coring import (CryCntSizes, CryCntRawSizes, CryCntIdxSizes,
-                              CryOneSizes, CryOneRawSizes,
-                              MtrDex, CryTwoSizes, CryTwoRawSizes,
-                              MtrDex, CryFourSizes, CryFourRawSizes,
-                              CrySizes, CryRawSizes, MINCRYSIZE)
 
 from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
 
 from keri.core.coring import (Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
-from keri.core.coring import (SigSelDex, SigCntSizes, SigCntRawSizes,
-                              SigTwoDex, SigTwoSizes, SigTwoRawSizes,
-                              SigFourDex, SigFourSizes, SigFourRawSizes,
-                              SigFiveDex, SigFiveSizes, SigFiveRawSizes,
-                              SigSizes, SigRawSizes, MINSIGSIZE)
+
 
 from keri.core.coring import IntToB64, B64ToInt
 from keri.core.coring import Seqner, Siger
@@ -1165,22 +1156,22 @@ def test_signer():
     """
     signer = Signer()  # defaults provide Ed25519 signer Ed25519 verfer
     assert signer.code == MtrDex.Ed25519_Seed
-    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert len(signer.raw) == Matter._rawSize(signer.code)
     assert signer.verfer.code == MtrDex.Ed25519
-    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
 
     #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     crymat = signer.sign(ser)
     assert crymat.code == MtrDex.Ed25519_Sig
-    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    assert len(crymat.raw) == Matter._rawSize(crymat.code)
     result = signer.verfer.verify(crymat.raw, ser)
     assert result == True
 
     sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.code == IdrDex.Ed25519_Sig
+    assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
     assert sigmat.index == 0
     result = signer.verfer.verify(sigmat.raw, ser)
     assert result == True
@@ -1191,22 +1182,22 @@ def test_signer():
 
     signer = Signer(transferable=False)  # Ed25519N verifier
     assert signer.code == MtrDex.Ed25519_Seed
-    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert len(signer.raw) == Matter._rawSize(signer.code)
     assert signer.verfer.code == MtrDex.Ed25519N
-    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
 
     #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     crymat = signer.sign(ser)
     assert crymat.code == MtrDex.Ed25519_Sig
-    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    assert len(crymat.raw) == Matter._rawSize(crymat.code)
     result = signer.verfer.verify(crymat.raw, ser)
     assert result == True
 
     sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.code == IdrDex.Ed25519_Sig
+    assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
     assert sigmat.index == 0
     result = signer.verfer.verify(sigmat.raw, ser)
     assert result == True
@@ -1217,20 +1208,20 @@ def test_signer():
     seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     signer = Signer(raw=seed, code=MtrDex.Ed25519_Seed)
     assert signer.code == MtrDex.Ed25519_Seed
-    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    assert len(signer.raw) == Matter._rawSize(signer.code)
     assert signer.raw == seed
     assert signer.verfer.code == MtrDex.Ed25519
-    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
 
     crymat = signer.sign(ser)
     assert crymat.code == MtrDex.Ed25519_Sig
-    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    assert len(crymat.raw) == Matter._rawSize(crymat.code)
     result = signer.verfer.verify(crymat.raw, ser)
     assert result == True
 
     sigmat = signer.sign(ser, index=1)
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.code == IdrDex.Ed25519_Sig
+    assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
     assert sigmat.index == 1
     result = signer.verfer.verify(sigmat.raw, ser)
     assert result == True
@@ -1251,7 +1242,7 @@ def test_salter():
     """
     salter = Salter()  # defaults to CryTwoDex.Salt_128
     assert salter.code == MtrDex.Salt_128
-    assert len(salter.raw) == CryRawSizes[salter.code] == 16
+    assert len(salter.raw) == Matter._rawSize(salter.code) == 16
 
     raw = b'0123456789abcdef'
 
@@ -1261,17 +1252,17 @@ def test_salter():
 
     signer = salter.signer(path="01", temp=True)  # defaults to Ed25519
     assert signer.code == MtrDex.Ed25519_Seed
-    assert len(signer.raw) == CryRawSizes[signer.code]
+    assert len(signer.raw) ==  Matter._rawSize(signer.code)
     assert signer.verfer.code == MtrDex.Ed25519
-    assert len(signer.verfer.raw) == CryRawSizes[signer.verfer.code]
+    assert len(signer.verfer.raw) ==  Matter._rawSize(signer.verfer.code)
     assert signer.qb64 == 'Aw-yoFnFZ21ikGGtacpiK3AVrvuz3TZD6dfew9POqzRE'
     assert signer.verfer.qb64 == 'DVgXBkk4w3LcWScQIvy1RpBlEFTJD3EK_oXxyQb5QKsI'
 
     signer = salter.signer(path="01")  # defaults to Ed25519 temp = False level="low"
     assert signer.code == MtrDex.Ed25519_Seed
-    assert len(signer.raw) == CryRawSizes[signer.code]
+    assert len(signer.raw) ==  Matter._rawSize(signer.code)
     assert signer.verfer.code == MtrDex.Ed25519
-    assert len(signer.verfer.raw) == CryRawSizes[signer.verfer.code]
+    assert len(signer.verfer.raw) ==  Matter._rawSize(signer.verfer.code)
     assert signer.qb64 == 'ASSpCI1N7FYH19MumAmn-Vdbre0WVP5jT-aBDDDij50I'
     assert signer.verfer.qb64 == 'D8kbIf0fUz9JRJ_XxHNfw6p3KHETJkmkqbkSbQ-emxZ0'
 
@@ -1336,18 +1327,18 @@ def test_diger():
 
     diger = Diger(raw=dig)  # defaults provide Blake3_256 digester
     assert diger.code == MtrDex.Blake3_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
     assert not diger.verify(ser=ser+b'ABCDEF')
 
     diger = Diger(raw=dig, code=MtrDex.Blake3_256)
     assert diger.code == MtrDex.Blake3_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     diger = Diger(ser=ser)  # default code is  Blake3_256
     assert diger.code == MtrDex.Blake3_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
     assert diger.qb64b == b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
 
@@ -1370,45 +1361,45 @@ def test_diger():
     dig = hashlib.blake2b(ser, digest_size=32).digest()
     diger = Diger(raw=dig, code=MtrDex.Blake2b_256)
     assert diger.code == MtrDex.Blake2b_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     diger = Diger(ser=ser, code=MtrDex.Blake2b_256)
     assert diger.code == MtrDex.Blake2b_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     dig = hashlib.blake2s(ser, digest_size=32).digest()
     diger = Diger(raw=dig, code=MtrDex.Blake2s_256)
     assert diger.code == MtrDex.Blake2s_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     diger = Diger(ser=ser, code=MtrDex.Blake2s_256)
     assert diger.code == MtrDex.Blake2s_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     dig = hashlib.sha3_256(ser).digest()
     diger = Diger(raw=dig, code=MtrDex.SHA3_256)
     assert diger.code == MtrDex.SHA3_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     diger = Diger(ser=ser, code=MtrDex.SHA3_256)
     assert diger.code == MtrDex.SHA3_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     dig = hashlib.sha256(ser).digest()
     diger = Diger(raw=dig, code=MtrDex.SHA2_256)
     assert diger.code == MtrDex.SHA2_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     diger = Diger(ser=ser, code=MtrDex.SHA2_256)
     assert diger.code == MtrDex.SHA2_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -1477,13 +1468,13 @@ def test_nexter():
     for kint in kints:
         sint ^= kint  # xor together
 
-    raw = sint.to_bytes(CryRawSizes[MtrDex.Blake3_256], 'big')
+    raw = sint.to_bytes( Matter._rawSize(MtrDex.Blake3_256), 'big')
     assert raw == (b'\x0f\xc6/\x0e\xb5\xef\x1a\xe6\x88U\x9e\xbd^\xc0U\x03\x96\r\xda\x93S}\x03\x85\xc2\x07\xa5\xa1Q\xdeX\xab')
 
     nexter = Nexter(raw=raw)  # defaults provide Blake3_256 digest
     assert nexter.code == MtrDex.Blake3_256
     assert nexter.qb64 == 'ED8YvDrXvGuaIVZ69XsBVA5YN2pNTfQOFwgeloVHeWKs'
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(raw=raw)
     assert nexter.verify(raw=raw+b'ABCDEF') == False
 
@@ -1492,19 +1483,19 @@ def test_nexter():
 
     nexter = Nexter(digs=digs)  # compute sith from digs using default sith
     assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(digs=digs)
     assert nexter.verify(raw=raw)
 
     nexter = Nexter(sith=sith, digs=digs)  # compute sith from digs using default sith
     assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(sith=sith, digs=digs)
     assert nexter.verify(raw=raw)
 
     nexter = Nexter(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(sith=sith, keys=keys)
     assert nexter.verify(raw=raw)
     assert nexter.verify(raw=raw+b'ABCDEF') == False
@@ -1514,20 +1505,20 @@ def test_nexter():
 
     nexter = Nexter(keys=keys)  # compute sith from keys default sith
     assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(keys=keys)
     assert nexter.verify(raw=raw)
 
     nexter = Nexter(sith="2", keys=keys)  # defaults provide Blake3_256 digester
     assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(sith="2", keys=keys)
     assert nexter.verify(raw=raw)
 
     ked = dict(kt=sith, k=keys)  #  subsequent event
     nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
     assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(ked=ked)
     assert nexter.verify(raw=raw)
 
@@ -1567,8 +1558,8 @@ def test_prefixer():
     # test creation given raw and code no derivation
     prefixer = Prefixer(raw=verkey, code=MtrDex.Ed25519N)  # default code is None
     assert prefixer.code == MtrDex.Ed25519N
-    assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
-    assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
+    assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
+    assert len(prefixer.qb64) == Matter.Codes[prefixer.code].fs
 
     ked = dict(k=[prefixer.qb64], n="", t="icp")
     assert prefixer.verify(ked=ked) == True
@@ -1580,8 +1571,8 @@ def test_prefixer():
 
     prefixer = Prefixer(raw=verkey, code=MtrDex.Ed25519)  # defaults provide Ed25519N prefixer
     assert prefixer.code == MtrDex.Ed25519
-    assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
-    assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
+    assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
+    assert len(prefixer.qb64) == Matter.Codes[prefixer.code].fs
 
     ked = dict(k=[prefixer.qb64], t="icp")
     assert prefixer.verify(ked=ked) == True
@@ -1832,20 +1823,20 @@ def test_siger():
     assert qsig64b == b'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
     siger = Siger(qb64b=qsig64b)
-    assert siger.code == SigTwoDex.Ed25519
+    assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
 
 
     siger = Siger(qb64=qsig64)
-    assert siger.code == SigTwoDex.Ed25519
+    assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
 
     siger = Siger(qb64=qsig64b)  #  also bytes
-    assert siger.code == SigTwoDex.Ed25519
+    assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
@@ -2183,7 +2174,7 @@ def test_serder():
     assert evt1.diger.code == MtrDex.Blake3_256
     assert len(evt1.diger.raw) == 32
     assert len(evt1.dig) == 44
-    assert len(evt1.dig) == CryOneSizes[MtrDex.Blake3_256]
+    assert len(evt1.dig) == Matter.Codes[MtrDex.Blake3_256].fs
     assert evt1.dig == 'E4z66CxKHEo-6YCbIbpd1SqeXKVkLdh3j8CwUq31XA4o'
     assert evt1.diger.verify(evt1.raw)
 

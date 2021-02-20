@@ -31,10 +31,9 @@ from ..help.helping import nowIso8601, fromIso8601, toIso8601
 from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
 
 from .coring import Versify, Serials, Ilks
-from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
-from .coring import CryRawSizes, MtrDex, Seqner
-from .coring import Siger, Cigar
 from .coring import MtrDex, IdrDex, CtrDex, Counter
+from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
+from .coring import Seqner, Siger, Cigar
 
 from ..help import ogling
 
