@@ -146,6 +146,97 @@ def test_matter():
     assert Matter.Codes['A'].ss == 0  # soft size
     assert Matter.Codes['A'].fs == 44  # full size
 
+    # verify first hs Sizes matches hs in Codes for same first char
+    for ckey in Matter.Codes.keys():
+        assert Matter.Sizes[ckey[0]] == Matter.Codes[ckey].hs
+
+    #  verify all Codes have ss == 0
+    for val in Matter.Codes.values():
+        assert  val.ss == 0
+
+    # first character of code with hard size of code
+    assert Matter.Bizes == {
+        0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1,
+        12: 1, 13: 1, 14: 1, 15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1, 21: 1,
+        22: 1, 23: 1, 24: 1, 25: 1,
+        26: 1, 27: 1, 28: 1, 29: 1, 30: 1, 31: 1, 32: 1, 33: 1, 34: 1, 35: 1,
+        36: 1, 37: 1, 38: 1, 39: 1, 40: 1, 41: 1, 42: 1, 43: 1, 44: 1, 45: 1,
+        46: 1, 47: 1, 48: 1, 49: 1, 50: 1, 51: 1,
+        52: 2, 53: 4, 54: 5, 55: 6, 56: 8, 57: 9, 58: 10
+    }
+
+    assert Matter.Bodes == {
+                            0: Sizage(hs=1, ss=0, fs=44),
+                            1: Sizage(hs=1, ss=0, fs=44),
+                            2: Sizage(hs=1, ss=0, fs=44),
+                            3: Sizage(hs=1, ss=0, fs=44),
+                            4: Sizage(hs=1, ss=0, fs=44),
+                            5: Sizage(hs=1, ss=0, fs=44),
+                            6: Sizage(hs=1, ss=0, fs=44),
+                            7: Sizage(hs=1, ss=0, fs=44),
+                            8: Sizage(hs=1, ss=0, fs=44),
+                            9: Sizage(hs=1, ss=0, fs=44),
+                            10: Sizage(hs=1, ss=0, fs=76),
+                            11: Sizage(hs=1, ss=0, fs=76),
+                            12: Sizage(hs=1, ss=0, fs=4),
+                            3328: Sizage(hs=2, ss=0, fs=24),
+                            3329: Sizage(hs=2, ss=0, fs=88),
+                            3330: Sizage(hs=2, ss=0, fs=88),
+                            3331: Sizage(hs=2, ss=0, fs=88),
+                            3332: Sizage(hs=2, ss=0, fs=88),
+                            3333: Sizage(hs=2, ss=0, fs=88),
+                            3334: Sizage(hs=2, ss=0, fs=88),
+                            3335: Sizage(hs=2, ss=0, fs=8),
+                            13893632: Sizage(hs=4, ss=0, fs=48),
+                            13893633: Sizage(hs=4, ss=0, fs=48),
+                            13893634: Sizage(hs=4, ss=0, fs=80),
+                            13893635: Sizage(hs=4, ss=0, fs=80),
+                            13893636: Sizage(hs=4, ss=0, fs=56),
+                            13893637: Sizage(hs=4, ss=0, fs=8)
+                           }
+
+    #  octal representation
+    assert Matter.Bodes == {
+                            0o0: Sizage(hs=1, ss=0, fs=44),
+                            0o1: Sizage(hs=1, ss=0, fs=44),
+                            0o2: Sizage(hs=1, ss=0, fs=44),
+                            0o3: Sizage(hs=1, ss=0, fs=44),
+                            0o4: Sizage(hs=1, ss=0, fs=44),
+                            0o5: Sizage(hs=1, ss=0, fs=44),
+                            0o6: Sizage(hs=1, ss=0, fs=44),
+                            0o7: Sizage(hs=1, ss=0, fs=44),
+                            0o10: Sizage(hs=1, ss=0, fs=44),
+                            0o11: Sizage(hs=1, ss=0, fs=44),
+                            0o12: Sizage(hs=1, ss=0, fs=76),
+                            0o13: Sizage(hs=1, ss=0, fs=76),
+                            0o14: Sizage(hs=1, ss=0, fs=4),
+                            0o6400: Sizage(hs=2, ss=0, fs=24),
+                            0o6401: Sizage(hs=2, ss=0, fs=88),
+                            0o6402: Sizage(hs=2, ss=0, fs=88),
+                            0o6403: Sizage(hs=2, ss=0, fs=88),
+                            0o6404: Sizage(hs=2, ss=0, fs=88),
+                            0o6405: Sizage(hs=2, ss=0, fs=88),
+                            0o6406: Sizage(hs=2, ss=0, fs=88),
+                            0o6407: Sizage(hs=2, ss=0, fs=8),
+                            0o65000000: Sizage(hs=4, ss=0, fs=48),
+                            0o65000001: Sizage(hs=4, ss=0, fs=48),
+                            0o65000002: Sizage(hs=4, ss=0, fs=80),
+                            0o65000003: Sizage(hs=4, ss=0, fs=80),
+                            0o65000004: Sizage(hs=4, ss=0, fs=56),
+                            0o65000005: Sizage(hs=4, ss=0, fs=8)
+                           }
+
+    assert Matter.Bodes[0].hs == 1  # hard size
+    assert Matter.Bodes[0].ss == 0  # soft size
+    assert Matter.Bodes[0].fs == 44  # full size
+
+    # verify first hs Bizes matches hs in Bodes for same first sextet
+    #for ckey in Matter.Bodes.keys():
+        #assert Matter.Bizes[ckey[0]] == Matter.Bodes[ckey].hs
+
+    #  verify all Bodes have ss == 0
+    for val in Matter.Bodes.values():
+        assert  val.ss == 0
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
@@ -572,6 +663,14 @@ def test_indexer():
     assert Indexer.Codes['A'].ss == 1  # soft size
     assert Indexer.Codes['A'].fs == 88  # full size
 
+    # verify first hs Sizes matches hs in Codes for same first char
+    for ckey in Indexer.Codes.keys():
+        assert Indexer.Sizes[ckey[0]] == Indexer.Codes[ckey].hs
+
+    #  verify all Codes have ss > 0
+    for val in Indexer.Codes.values():
+        assert val.ss > 0
+
     with pytest.raises(EmptyMaterialError):
         indexer = Indexer()
 
@@ -807,9 +906,16 @@ def test_counter():
     assert Counter.Codes['-A'].ss == 2  # soft size
     assert Counter.Codes['-A'].fs == 4  # full size
 
+    # verify first hs Sizes matches hs in Codes for same first char
+    for ckey in Counter.Codes.keys():
+        assert Counter.Sizes[ckey[:2]] == Counter.Codes[ckey].hs
+
+    #  verify all Codes have ss > 0 and hs+ss=fs
+    for val in Counter.Codes.values():
+        assert val.ss > 0 and val.hs + val.ss == val.fs
+
     with pytest.raises(EmptyMaterialError):
         counter = Counter()
-
 
     # create code manually
     count = 1
@@ -2417,4 +2523,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_prefixer()
+    test_counter()

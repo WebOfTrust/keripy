@@ -94,6 +94,49 @@ Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct vrc')  # Event ilk (type 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
               vrc='vrc')
 
+# Base64 utilities
+BASE64_PAD = b'='
+
+# Mappings between Base64 Encode Index and Decode Characters
+#  B64ChrByIdx is dict where each key is a B64 index and each value is the B64 char
+#  B64IdxByChr is dict where each key is a B64 char and each value is the B64 index
+# Map Base64 index to char
+B64ChrByIdx = dict((index, char) for index, char in enumerate([chr(x) for x in range(65, 91)]))
+B64ChrByIdx.update([(index + 26, char) for index, char in enumerate([chr(x) for x in range(97, 123)])])
+B64ChrByIdx.update([(index + 52, char) for index, char in enumerate([chr(x) for x in range(48, 58)])])
+B64ChrByIdx[62] = '-'
+B64ChrByIdx[63] = '_'
+# Map char to Base64 index
+B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}
+
+
+def IntToB64(i, l=1):
+    """
+    Returns conversion of int i to Base64 str
+    l is min number of b64 digits left padded with Base64 0 == "A" char
+    """
+    d = deque()  # deque of characters base64
+    d.appendleft(B64ChrByIdx[i % 64])
+    i = i // 64
+    while i:
+        d.appendleft(B64ChrByIdx[i % 64])
+        i = i // 64
+    for j in range(l - len(d)):  # range(x)  x <= 0 means do not iterate
+        d.appendleft("A")
+    return ( "".join(d))
+
+
+def B64ToInt(s):
+    """
+    Returns conversion of Base64 str s to int
+    """
+    i = 0
+    for e, c in enumerate(reversed(s)):
+        i |= B64IdxByChr[c] << (e * 6)  # same as i += B64IdxByChr[c] * (64 ** e)
+    return i
+
+
+
 def generateSigners(salt=None, count=8, transferable=True):
     """
     Returns list of Signers for Ed25519
@@ -301,11 +344,17 @@ class Matter:
 
     """
     Codex = MtrDex
-    # Sizes is table of hard (stable) size of code which is whole size for Matter
+    # Sizes table maps from bytes Base64 first code char to int of hard size, hs,
+    # (stable) of code. The soft size, ss, (unstable) is always 0 for Matter.
     Sizes = ({chr(c): 1 for c in range(65, 65+26)})  # size of hard part of code
     Sizes.update({chr(c): 1 for c in range(97, 97+26)})
     Sizes.update([('0', 2), ('1', 4), ('2', 5), ('3', 6), ('4', 8), ('5', 9), ('6', 10)])
-    # soft size should always be 0 for Matter
+    # Bizes table maps from int sextet equivalent of bytes Base64 first code char to
+    # hard size, hs, of code. The soft size, ss is always 0 for Matter.
+    Bizes = ({B64ToInt(c): hs for c, hs in Sizes.items()})
+    # Codes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
+    # where hs is hard size, ss is soft size, and fs is full size
+    # soft size, ss, should always be 0 for Matter
     Codes = {
                 'A': Sizage(hs=1, ss=0, fs=44),
                 'B': Sizage(hs=1, ss=0, fs=44),
@@ -335,6 +384,9 @@ class Matter:
                 '1AAE': Sizage(hs=4, ss=0, fs=56),
                 '1AAF': Sizage(hs=4, ss=0, fs=8),
             }
+    # Bodes table maps int sextet equivalent hs chars of code to Sizage
+    # namedtuple of (hs, ss, fs)
+    Bodes = ({B64ToInt(s): val for s, val in Codes.items()})
 
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, qb64b=None, qb64=None, qb2=None):
@@ -494,6 +546,53 @@ class Matter:
         Extracts self.code and self.raw from qualified base64 bytes qb64b
         """
         if not qb64b:  # empty need more bytes
+            raise ShortageError("Empty material, Need more characters.")
+
+        first = qb64b[:1].decode("utf-8")  # extract first char code selector
+        if first not in self.Sizes:
+            if first[0] == '-':
+                raise UnexpectedCountCodeError("Unexpected count code start"
+                                               "while extracing Matter.")
+            elif first[0] == '_':
+                raise UnexpectedOpCodeError("Unexpected  op code start"
+                                               "while extracing Matter.")
+            else:
+                raise DerivationCodeError("Unsupported code start char={}.".format(first))
+
+        cs = self.Sizes[first]  # get hard code size
+        if len(qb64b) < cs:  # need more bytes
+            raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
+
+        code = qb64b[:cs].decode("utf-8")  # extract jard code
+        if code not in self.Codes:
+            raise DerivationCodeError("Unsupported code ={}.".format(code))
+
+        hs, ss, fs = self.Codes[code]
+        bs = hs + ss  # both hs and ss
+        if bs != cs or ss != 0:  # ss=0  for Matter codes
+            raise ValueError("Bad .Codes or .Sizes table entries for code={}."
+                             " cs={} != hs ={} ss={}".format(code, cs, hs, ss))
+
+        if len(qb64b) < fs:  # need more bytes
+            raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
+        qb64b = qb64b[:fs]  # fully qualified primitive code plus material
+
+        # strip off prepended code and append pad characters
+        ps = bs % 4  # pad size ps = bs mod 4
+        base = qb64b[bs:] + ps * BASE64_PAD
+        raw = decodeB64(base)
+        if len(raw) != (len(qb64b) - bs) * 3 // 4:  # exact lengths
+            raise ValueError("Improperly qualified material = {}".format(qb64b))
+
+        self._code = code
+        self._raw = raw
+
+
+    def _bexfil(self, qb2):
+        """
+        Extracts self.code and self.raw from qualified base2 bytes qb2
+        """
+        if not qb2:  # empty need more bytes
             raise ShortageError("Empty material, Need more characters.")
 
         first = qb64b[:1].decode("utf-8")  # extract first char code selector
@@ -1718,48 +1817,6 @@ class Prefixer(Matter):
         return True
 
 
-# Base64 utilities
-BASE64_PAD = b'='
-
-# Mappings between Base64 Encode Index and Decode Characters
-#  B64ChrByIdx is dict where each key is a B64 index and each value is the B64 char
-#  B64IdxByChr is dict where each key is a B64 char and each value is the B64 index
-# Map Base64 index to char
-B64ChrByIdx = dict((index, char) for index, char in enumerate([chr(x) for x in range(65, 91)]))
-B64ChrByIdx.update([(index + 26, char) for index, char in enumerate([chr(x) for x in range(97, 123)])])
-B64ChrByIdx.update([(index + 52, char) for index, char in enumerate([chr(x) for x in range(48, 58)])])
-B64ChrByIdx[62] = '-'
-B64ChrByIdx[63] = '_'
-# Map char to Base64 index
-B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}
-
-
-def IntToB64(i, l=1):
-    """
-    Returns conversion of int i to Base64 str
-    l is min number of b64 digits left padded with Base64 0 == "A" char
-    """
-    d = deque()  # deque of characters base64
-    d.appendleft(B64ChrByIdx[i % 64])
-    i = i // 64
-    while i:
-        d.appendleft(B64ChrByIdx[i % 64])
-        i = i // 64
-    for j in range(l - len(d)):  # range(x)  x <= 0 means do not iterate
-        d.appendleft("A")
-    return ( "".join(d))
-
-
-def B64ToInt(cs):
-    """
-    Returns conversion of Base64 str cs to int
-    """
-    i = 0
-    for e, c in enumerate(reversed(cs)):
-        i |= B64IdxByChr[c] << (e * 6)  # same as i += B64IdxByChr[c] * (64 ** e)
-    return i
-
-
 @dataclass(frozen=True)
 class IndexerCodex:
     """
@@ -1808,10 +1865,17 @@ class Indexer:
 
     """
     Codex = IdrDex
-    # Sizes is table of hard (stable) size of code
+    # Sizes table maps from bytes Base64 first code char to int of hard size, hs,
+    # (stable) of code. The soft size, ss, (unstable) is always > 0 for Indexer.
     Sizes = ({chr(c): 1 for c in range(65, 65+26)})
     Sizes.update({chr(c): 1 for c in range(97, 97+26)})
     Sizes.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 3), ('5', 4)])
+    # Bizes table maps from int sextet equivalent of bytes Base64 first code char to
+    # hard size, hs, of code. The soft size, ss, for Indexer is always > 0
+    Bizes = ({B64ToInt(c): hs for c, hs in Sizes.items()})
+    # Codes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
+    # where hs is hard size, ss is soft size, and fs is full size
+    # soft size, ss, should always be  > 0 for Indexer
     Codes = {
                 'A': Sizage(hs=1, ss=1, fs=88),
                 'B': Sizage(hs=1, ss=1, fs=88),
@@ -2164,10 +2228,19 @@ class Counter:
 
     """
     Codex = CtrDex
-    # Sizes is table of hard (stable) size of code
+    # Sizes table maps from bytes Base64 first two code chars to int of
+    # hard size, hs,(stable) of code. The soft size, ss, (unstable) for Counter
+    # is always > 0 and hs + ss = fs always
     Sizes = ({('-' +  chr(c)): 2 for c in range(65, 65+26)})
     Sizes.update({('-' + chr(c)): 2 for c in range(97, 97+26)})
     Sizes.update([('-0', 3)])
+    # Bizes table maps from int sextet equivalent of bytes Base64 first two
+    # code chars to hard size, hs, of code. The soft size, ss, is always > 0
+    # and hs+ss=fs for Counter
+    Bizes = ({B64ToInt(c): hs for c, hs in Sizes.items()})
+    # Codes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
+    # where hs is hard size, ss is soft size, and fs is full size
+    # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
     Codes = {
                 '-A': Sizage(hs=2, ss=2, fs=4),
                 '-B': Sizage(hs=2, ss=2, fs=4),
@@ -2194,6 +2267,8 @@ class Counter:
                 '-0Y': Sizage(hs=3, ss=5, fs=8),
                 '-0Z': Sizage(hs=3, ss=5, fs=8)
             }
+    #
+
 
     def __init__(self, code=None, count=1, qb64b=None, qb64=None, qb2=None):
         """
