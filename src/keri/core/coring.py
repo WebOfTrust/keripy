@@ -632,10 +632,10 @@ class Matter:
 
         first = qb64b[:1].decode("utf-8")  # extract first char code selector
         if first not in self.Sizes:
-            if first == '-':
+            if first[0] == '-':
                 raise UnexpectedCountCodeError("Unexpected count code start"
                                                "while extracing Matter.")
-            elif first == '_':
+            elif first[0] == '_':
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                                "while extracing Matter.")
             else:
@@ -2699,12 +2699,12 @@ class Indexer:
 
         first = qb64b[:1].decode("utf-8")  # extract first char code selector
         if first not in self.Sizes:
-            if first == '-':
+            if first[0] == '-':
                 raise UnexpectedCountCodeError("Unexpected count code start"
-                                               "while extracing Matter.")
-            elif first == '_':
+                                               "while extracing Indexer.")
+            elif first[0] == '_':
                 raise UnexpectedOpCodeError("Unexpected  op code start"
-                                               "while extracing Matter.")
+                                               "while extracing Indexer.")
             else:
                 raise DerivationCodeError("Unsupported code start char={}.".format(first))
 
@@ -2823,9 +2823,9 @@ class Counter:
     """
     Codex = CtrDex
     # Sizes is table of hard (stable) size of code
-    Sizes = ({chr(c): 2 for c in range(65, 65+26)})
-    Sizes.update({chr(c): 2 for c in range(97, 97+26)})
-    Sizes.update([('0', 3)])
+    Sizes = ({('-' +  chr(c)): 2 for c in range(65, 65+26)})
+    Sizes.update({('-' + chr(c)): 2 for c in range(97, 97+26)})
+    Sizes.update([('-0', 3)])
     Codes = {
                 '-A': Sizage(hs=2, ss=2, fs=4),
                 '-B': Sizage(hs=2, ss=2, fs=4),
@@ -2990,11 +2990,11 @@ class Counter:
 
         first = qb64b[:2].decode("utf-8")  # extract first two char code selector
         if first not in self.Sizes:
-            if first == '_':
-                raise UnexpectedOpCodeError("Unexpected  op code start"
-                                               "while extracing Matter.")
+            if first[0] == '_':
+                raise UnexpectedOpCodeError("Unexpected op code start"
+                                               "while extracing Counter.")
             else:
-                raise DerivationCodeError("Unsupported code start char={}.".format(first))
+                raise DerivationCodeError("Unsupported code start ={}.".format(first))
 
         cs = self.Sizes[first]  # get hard code size
         if len(qb64b) < cs:  # need more bytes

@@ -28,7 +28,7 @@ from keri.core.coring import (CrySelDex, CryCntDex,
                               CryFourDex, CryFourSizes, CryFourRawSizes,
                               CrySizes, CryRawSizes, MINCRYSIZE)
 
-from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer
+from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
 
 from keri.core.coring import (CryMat, CryCounter, Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
@@ -2342,6 +2342,7 @@ def test_matter():
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
     assert matter.transferable == False
+    assert matter.digestive == False
 
     assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
     assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
@@ -2398,6 +2399,8 @@ def test_matter():
     assert matter.raw == verkey
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
 
     # test nongreedy prefixb on full identifier
     full = prefixb + b":mystuff/mypath/toresource?query=what#fragment"
@@ -2406,6 +2409,8 @@ def test_matter():
     assert matter.raw == verkey
     assert matter.qb64 == prefix
     assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
 
     sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
            b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
@@ -2429,23 +2434,231 @@ def test_matter():
     assert matter.qb64b == qsig64b
     assert matter.qb2 == qsigB2
     assert matter.transferable == True
+    assert matter.digestive == False
 
     matter = Matter(qb64b=qsig64b)
     assert matter.raw == sig
     assert matter.code == MtrDex.Ed25519_Sig
+    assert matter.qb64 == qsig64
+    assert matter.qb64b == qsig64b
+    assert matter.qb2 == qsigB2
+    assert matter.transferable == True
+    assert matter.digestive == False
 
     matter = Matter(qb64=qsig64)
     assert matter.raw == sig
     assert matter.code == MtrDex.Ed25519_Sig
-
-    qsig64b  = qsig64.encode("utf-8")  #  test bytes input
-    matter = Matter(qb64=qsig64b)
-    assert matter.raw == sig
-    assert matter.code == MtrDex.Ed25519_Sig
+    assert matter.qb64 == qsig64
+    assert matter.qb64b == qsig64b
+    assert matter.qb2 == qsigB2
+    assert matter.transferable == True
+    assert matter.digestive == False
 
     matter = Matter(qb2=qsigB2)
     assert matter.raw == sig
     assert matter.code == MtrDex.Ed25519_Sig
+    assert matter.qb64 == qsig64
+    assert matter.qb64b == qsig64b
+    assert matter.qb2 == qsigB2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+
+    # test short
+    val = int("F77F", 16)
+    assert val == 63359
+    raw = val.to_bytes(2, 'big')
+    assert raw == b'\xf7\x7f'
+    txt = encodeB64(raw)
+    assert txt == b'938='
+    qb64b = MtrDex.Short.encode("utf-8") + txt[:-1]
+    assert qb64b == b'M938'
+    qb64 = qb64b.decode("utf-8")
+    qb2 = decodeB64(qb64b)
+    assert qb2 == b'3\xdd\xfc'
+
+    matter = Matter(raw=raw, code=MtrDex.Short)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Short
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64b=qb64b)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Short
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64=qb64)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Short
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb2=qb2)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Short
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test long
+    val = int("F7F33F7F", 16)
+    assert val == 4159913855
+    raw = val.to_bytes(4, 'big')
+    assert raw ==b'\xf7\xf3?\x7f'
+    txt = encodeB64(raw)
+    assert txt == b'9_M_fw=='
+    qb64b = MtrDex.Long.encode("utf-8") + txt[:-2]
+    assert qb64b == b'0H9_M_fw'
+    qb64 = qb64b.decode("utf-8")
+    qb2 = decodeB64(qb64b)
+    assert qb2 == b'\xd0\x7f\x7f3\xf7\xf0'
+
+    matter = Matter(raw=raw, code=MtrDex.Long)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Long
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64b=qb64b)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Long
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64=qb64)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Long
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb2=qb2)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Long
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test tag as number
+    val = int("F89CFF", 16)
+    assert val == 16293119
+    raw = val.to_bytes(3, 'big')
+    assert raw == b'\xf8\x9c\xff'
+    txt = encodeB64(raw)
+    assert txt == b'-Jz_'
+    qb64b = MtrDex.Tag.encode("utf-8") + txt
+    assert qb64b ==b'1AAF-Jz_'
+    qb64 = qb64b.decode("utf-8")
+    qb2 = decodeB64(qb64b)
+    assert qb2 == b'\xd4\x00\x05\xf8\x9c\xff'
+
+    matter = Matter(raw=raw, code=MtrDex.Tag)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64b=qb64b)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64=qb64)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb2=qb2)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test tag as chars
+    txt = b'icp_'
+    raw = decodeB64(txt)
+    assert raw == b'\x89\xca\x7f'
+    val = int.from_bytes(raw, 'big')
+    assert val == 9030271
+    qb64b = MtrDex.Tag.encode("utf-8") + txt
+    assert qb64b ==b'1AAFicp_'
+    qb64 = qb64b.decode("utf-8")
+    qb2 = decodeB64(qb64b)
+    assert qb2 == b'\xd4\x00\x05\x89\xca\x7f'
+
+    matter = Matter(raw=raw, code=MtrDex.Tag)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64b=qb64b)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64=qb64)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb2=qb2)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
 
     """ Done Test """
 
@@ -2684,11 +2897,209 @@ def test_indexer():
     assert indexer.qb64b == b'0BAA'
     assert indexer.qb64 == '0BAA'
     assert indexer.qb2 == b'\xd0\x10\x00'
-
-
     """ Done Test """
 
 
+def test_counter():
+    """
+    Test Counter class
+    """
+    assert dataclasses.asdict(CtrDex) == {
+                                            'ControllerIdxSigs': '-A',
+                                            'WitnessIdxSigs': '-B',
+                                            'NonTransReceiptCouples': '-C',
+                                            'TransReceiptQuadruples': '-D',
+                                            'MessageDataGroups': '-U',
+                                            'AttachedMaterialQuadlets': '-V',
+                                            'MessageDataMaterialQuadlets': '-W',
+                                            'CombinedMaterialQuadlets': '-X',
+                                            'MaterialGroups': '-Y',
+                                            'Material': '-Z',
+                                            'AnchorSealGroups': '-a',
+                                            'ConfigTraits': '-c',
+                                            'DigestSealQuadlets': '-d',
+                                            'EventSealQuadlets': '-e',
+                                            'Keys': '-k',
+                                            'LocationSealQuadlets': '-l',
+                                            'RootDigestSealQuadlets': '-r',
+                                            'Witnesses': '-w',
+                                            'BigMessageDataGroups': '-0U',
+                                            'BigAttachedMaterialQuadlets': '-0V',
+                                            'BigMessageDataMaterialQuadlets': '-0W',
+                                            'BigCombinedMaterialQuadlets': '-0X',
+                                            'BigMaterialGroups': '-0Y',
+                                            'BigMaterial': '-0Z'
+                                         }
+
+    assert CtrDex.ControllerIdxSigs ==  '-A'
+    assert CtrDex.WitnessIdxSigs == '-B'
+
+    assert Counter.Codex == CtrDex
+
+    # first character of code with hard size of code
+    assert Counter.Sizes == {
+       '-A': 2, '-B': 2, '-C': 2, '-D': 2, '-E': 2, '-F': 2, '-G': 2, '-H': 2, '-I': 2,
+       '-J': 2, '-K': 2, '-L': 2, '-M': 2, '-N': 2, '-O': 2, '-P': 2, '-Q': 2, '-R': 2,
+       '-S': 2, '-T': 2, '-U': 2, '-V': 2, '-W': 2, '-X': 2, '-Y': 2, '-Z': 2,
+       '-a': 2, '-b': 2, '-c': 2, '-d': 2, '-e': 2, '-f': 2, '-g': 2, '-h': 2, '-i': 2,
+       '-j': 2, '-k': 2, '-l': 2, '-m': 2, '-n': 2, '-o': 2, '-p': 2, '-q': 2, '-r': 2,
+       '-s': 2, '-t': 2, '-u': 2, '-v': 2, '-w': 2, '-x': 2, '-y': 2, '-z': 2,
+       '-0': 3
+    }
+
+    # Codes table with sizes of code (hard) and full primitive material
+    assert Counter.Codes == {
+                                '-A': Sizage(hs=2, ss=2, fs=4),
+                                '-B': Sizage(hs=2, ss=2, fs=4),
+                                '-C': Sizage(hs=2, ss=2, fs=4),
+                                '-D': Sizage(hs=2, ss=2, fs=4),
+                                '-U': Sizage(hs=2, ss=2, fs=4),
+                                '-V': Sizage(hs=2, ss=2, fs=4),
+                                '-W': Sizage(hs=2, ss=2, fs=4),
+                                '-X': Sizage(hs=2, ss=2, fs=4),
+                                '-Y': Sizage(hs=2, ss=2, fs=4),
+                                '-Z': Sizage(hs=2, ss=2, fs=4),
+                                '-a': Sizage(hs=2, ss=2, fs=4),
+                                '-c': Sizage(hs=2, ss=2, fs=4),
+                                '-d': Sizage(hs=2, ss=2, fs=4),
+                                '-e': Sizage(hs=2, ss=2, fs=4),
+                                '-k': Sizage(hs=2, ss=2, fs=4),
+                                '-l': Sizage(hs=2, ss=2, fs=4),
+                                '-r': Sizage(hs=2, ss=2, fs=4),
+                                '-w': Sizage(hs=2, ss=2, fs=4),
+                                '-0U': Sizage(hs=3, ss=5, fs=8),
+                                '-0V': Sizage(hs=3, ss=5, fs=8),
+                                '-0W': Sizage(hs=3, ss=5, fs=8),
+                                '-0X': Sizage(hs=3, ss=5, fs=8),
+                                '-0Y': Sizage(hs=3, ss=5, fs=8),
+                                '-0Z': Sizage(hs=3, ss=5, fs=8)
+                             }
+
+
+    assert Counter.Codes['-A'].hs == 2  # hard size
+    assert Counter.Codes['-A'].ss == 2  # soft size
+    assert Counter.Codes['-A'].fs == 4  # full size
+
+    with pytest.raises(EmptyMaterialError):
+        counter = Counter()
+
+
+    # create code manually
+    count = 0
+    qsc = CtrDex.ControllerIdxSigs + IntToB64(count, l=2)
+    assert qsc == '-AAA'
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    counter = Counter(code=CtrDex.ControllerIdxSigs)  #  default count = 0
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb64b=qscb)  # test with bytes not str
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb64=qsc)  # test with str not bytes
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb2=qscb2)  #  test with qb2
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    # test truncates extra bytes from qb64 parameter
+    longqsc64 = qsc + "ABCD"
+    counter = Counter(qb64=longqsc64)
+    assert len(counter.qb64) == Counter.Codes[counter.code].fs
+
+    # test raises ShortageError if not enough bytes in qb64 parameter
+    shortqsc64 = qsc[:-1]  # too short
+    with pytest.raises(ShortageError):
+        counter = Counter(qb64=shortqsc64)
+
+    # test with non-zero count=5
+    count =  5
+    qsc = CtrDex.ControllerIdxSigs + IntToB64(count, l=2)
+    assert qsc == '-AAF'
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count)
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb64b=qscb)  # test with bytes not str
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb64=qsc)  # test with str not bytes
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb2=qscb2)  #  test with qb2
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    # test with big codes index=1024
+    count = 1024
+    qsc = CtrDex.BigMessageDataGroups + IntToB64(count, l=5)
+    assert qsc == '-0UAAAQA'
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    counter = Counter(code=CtrDex.BigMessageDataGroups, count=count)
+    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb64b=qscb)  # test with bytes not str
+    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb64=qsc)  # test with str not bytes
+    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    counter = Counter(qb2=qscb2)  #  test with qb2
+    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    """ Done Test """
 
 if __name__ == "__main__":
     test_matter()
