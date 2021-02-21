@@ -498,8 +498,7 @@ class Matter:
                 qb64 = qb64.encode("utf-8")  #  greedy so do not use on stream
             self._exfil(qb64)
 
-        elif qb2 is not None:  # rewrite to use direct binary exfiltration
-            # self._exfil(encodeB64(qb2))
+        elif qb2 is not None:
             self._bexfil(qb2)
 
         else:
@@ -559,11 +558,7 @@ class Matter:
         """
         Property qb2:
         Returns Fully Qualified Binary Version Bytes
-        redo to use b64 to binary decode table since faster
         """
-        # rewrite to do direct binary infiltration by
-        # decode self.code as bits and prepend to self.raw
-        # return decodeB64(self._infil())
         return self._binfil()
 
 
@@ -2039,8 +2034,7 @@ class Indexer:
                 qb64 = qb64.encode("utf-8")  #  greedy so do not use on stream
             self._exfil(qb64)
 
-        elif qb2 is not None:  # rewrite to use direct binary exfiltration
-            # self._exfil(encodeB64(qb2))
+        elif qb2 is not None:
             self._bexfil(qb2)
 
         else:
@@ -2109,11 +2103,7 @@ class Indexer:
         """
         Property qb2:
         Returns Fully Qualified Binary Version Bytes
-        redo to use b64 to binary decode table since faster
         """
-        # rewrite to do direct binary infiltration by
-        # decode self.code as bits and prepend to self.raw
-        # return decodeB64(self._infil())
         return self._binfil()
 
 
@@ -2510,7 +2500,6 @@ class Counter:
             self._exfil(qb64)
 
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
-            # self._exfil(encodeB64(qb2))
             self._bexfil(qb2)
 
         else:
@@ -2562,11 +2551,7 @@ class Counter:
         """
         Property qb2:
         Returns Fully Qualified Binary Version Bytes
-        redo to use b64 to binary decode table since faster
         """
-        # rewrite to do direct binary infiltration by
-        # decode self.code as bits and prepend to self.raw
-        # return decodeB64(self._infil())
         return self._binfil()
 
     def _infil(self):
