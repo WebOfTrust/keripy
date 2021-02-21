@@ -26,7 +26,7 @@ from ..kering import (ValidationError, VersionError, EmptyMaterialError,
                       DerivationError, ShortageError,  DerivationCodeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import Versionage, Version
-from ..help.helping import extractValues
+from ..help.helping import sceil
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
@@ -94,6 +94,7 @@ Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct vrc')  # Event ilk (type 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
               vrc='vrc')
 
+
 # Base64 utilities
 BASE64_PAD = b'='
 
@@ -110,7 +111,7 @@ B64ChrByIdx[63] = '_'
 B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}
 
 
-def IntToB64(i, l=1):
+def intToB64(i, l=1):
     """
     Returns conversion of int i to Base64 str
     l is min number of b64 digits left padded with Base64 0 == "A" char
@@ -126,7 +127,7 @@ def IntToB64(i, l=1):
     return ( "".join(d))
 
 
-def B64ToInt(s):
+def b64ToInt(s):
     """
     Returns conversion of Base64 str s to int
     """
@@ -135,6 +136,39 @@ def B64ToInt(s):
         i |= B64IdxByChr[c] << (e * 6)  # same as i += B64IdxByChr[c] * (64 ** e)
     return i
 
+
+def b64ToB2(s):
+    """
+    Returns conversion (decode) of Base64 chars to Base2 bytes.
+    Where the number of total bytes is equal to the minimun number of octets
+    sufficient to hold the total converted concatenated sextets from s, with one
+    sextet per each Base64 decoded char of s. Assumes no pad chars in s.
+    This is useful for decoding code characters at the front of a Base64 encoded
+    string of characters.
+    """
+    i = b64ToInt(s)
+    i <<= 2 * (len(s) % 4)  # add 2 bits right padding for each sextet
+    n = sceil(len(s) * 3 / 4)  # compute min number of ocetets to hold all sextets
+    return (i.to_bytes(n, 'big'))
+
+
+def nabSextets(b, l):
+    """
+    Return first l sextets from front (left) of b as bytes.
+    Number of bytes is minimum sufficient to hold sextets.
+    Last byte returned is right bit padded with zeros
+    b is bytes or str
+    """
+    if hasattr(b, 'encode'):
+        b = b.encode("utf-8")  # convert to bytes
+    n = sceil(l * 3 / 4)  # number of bytes
+    if n > len(b):
+        raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
+    i = int.from_bytes(b[:n], 'big')
+    p = 2 * (l % 4)
+    i >>= p  #  strip of last bits
+    i <<= p  #  pad with empty bits
+    return (i.to_bytes(n, 'big'))
 
 
 def generateSigners(salt=None, count=8, transferable=True):
@@ -349,10 +383,7 @@ class Matter:
     Sizes = ({chr(c): 1 for c in range(65, 65+26)})  # size of hard part of code
     Sizes.update({chr(c): 1 for c in range(97, 97+26)})
     Sizes.update([('0', 2), ('1', 4), ('2', 5), ('3', 6), ('4', 8), ('5', 9), ('6', 10)])
-    # Bizes table maps from int sextet equivalent of bytes Base64 first code char to
-    # hard size, hs, of code. The soft size, ss is always 0 for Matter.
-    Bizes = ({B64ToInt(c): hs for c, hs in Sizes.items()})
-    # Codes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
+    # Codes table maps to Sizage namedtuple of (hs, ss, fs) from hs chars of code
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be 0 for Matter
     Codes = {
@@ -384,9 +415,12 @@ class Matter:
                 '1AAE': Sizage(hs=4, ss=0, fs=56),
                 '1AAF': Sizage(hs=4, ss=0, fs=8),
             }
-    # Bodes table maps int sextet equivalent hs chars of code to Sizage
-    # namedtuple of (hs, ss, fs)
-    Bodes = ({B64ToInt(s): val for s, val in Codes.items()})
+    # Bizes table maps to hard size, hs, of code from bytes holding sextets
+    # converted from first code char.
+    Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
+    # Bodes table maps to Sizage namedtuple of (hs, ss, fs) from bytes holding
+    # sextets converted from first hs chars of code.
+    Bodes = ({b64ToB2(s): val for s, val in Codes.items()})
 
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, qb64b=None, qb64=None, qb2=None):
@@ -1872,7 +1906,7 @@ class Indexer:
     Sizes.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 3), ('5', 4)])
     # Bizes table maps from int sextet equivalent of bytes Base64 first code char to
     # hard size, hs, of code. The soft size, ss, for Indexer is always > 0
-    Bizes = ({B64ToInt(c): hs for c, hs in Sizes.items()})
+    Bizes = ({b64ToInt(c): hs for c, hs in Sizes.items()})
     # Codes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 for Indexer
@@ -2042,7 +2076,7 @@ class Indexer:
             raise ValidationError("Invalid index={} for code={}.".format(index, code))
 
         # both is hard code + converted index
-        both =  "{}{}".format(code, IntToB64(index, l=ss))
+        both =  "{}{}".format(code, intToB64(index, l=ss))
 
         ps = (3 - (len(raw) % 3)) % 3  # pad size
         # check valid pad size for whole code size
@@ -2089,7 +2123,7 @@ class Indexer:
         if len(qb64b) < bs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
 
-        index = B64ToInt(qb64b[hs:hs+ss].decode("utf-8"))  # get index
+        index = b64ToInt(qb64b[hs:hs+ss].decode("utf-8"))  # get index
 
         if not fs:  # compute fs from index
             if bs % 4:
@@ -2237,7 +2271,7 @@ class Counter:
     # Bizes table maps from int sextet equivalent of bytes Base64 first two
     # code chars to hard size, hs, of code. The soft size, ss, is always > 0
     # and hs+ss=fs for Counter
-    Bizes = ({B64ToInt(c): hs for c, hs in Sizes.items()})
+    Bizes = ({b64ToInt(c): hs for c, hs in Sizes.items()})
     # Codes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
@@ -2388,7 +2422,7 @@ class Counter:
             raise ValidationError("Invalid count={} for code={}.".format(count, code))
 
         # both is hard code + converted index
-        both = "{}{}".format(code, IntToB64(count, l=ss))
+        both = "{}{}".format(code, intToB64(count, l=ss))
 
         # check valid pad size for whole code size
         if len(both) % 4:  # no pad
@@ -2431,7 +2465,7 @@ class Counter:
         if len(qb64b) < bs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
 
-        count = B64ToInt(qb64b[hs:hs+ss].decode("utf-8"))  # extract count
+        count = b64ToInt(qb64b[hs:hs+ss].decode("utf-8"))  # extract count
 
         self._code = hard
         self._count = count

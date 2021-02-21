@@ -21,15 +21,13 @@ from fractions import Fraction
 from keri.kering import Version, Versionage
 from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
                          ShortageError)
+from keri.help.helping import sceil
 
 from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
-
 from keri.core.coring import (Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
-
-
-from keri.core.coring import IntToB64, B64ToInt
+from keri.core.coring import intToB64, b64ToInt, b64ToB2, nabSextets
 from keri.core.coring import Seqner, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
@@ -62,6 +60,90 @@ def test_ilks():
     assert Ilks.vrc == 'vrc'
 
     """End Test """
+
+
+def test_b64_conversions():
+    """
+    Test Base64 conversion utility routines
+    """
+
+    cs = intToB64(0)
+    assert cs == "A"
+    i = b64ToInt(cs)
+    assert i == 0
+
+    cs = intToB64(27)
+    assert cs == "b"
+    i = b64ToInt(cs)
+    assert i == 27
+
+    cs = intToB64(27, l=2)
+    assert cs == "Ab"
+    i = b64ToInt(cs)
+    assert i == 27
+
+    cs = intToB64(80)
+    assert cs == "BQ"
+    i = b64ToInt(cs)
+    assert i == 80
+
+    cs = intToB64(4095)
+    assert cs == '__'
+    i = b64ToInt(cs)
+    assert i == 4095
+
+    cs = intToB64(4096)
+    assert cs == 'BAA'
+    i = b64ToInt(cs)
+    assert i == 4096
+
+    cs = intToB64(6011)
+    assert cs == "Bd7"
+    i = b64ToInt(cs)
+    assert i == 6011
+
+    s = "-BAC"
+    b = b64ToB2(s)
+    assert len(b) == 3
+    assert b == b'\xf8\x10\x02'
+    i = int.from_bytes(b, 'big')
+    assert i == 0o76010002
+    i >>= 2 *  (len(s) % 4)
+    assert i == 0o76010002
+    p = nabSextets(b, 4)
+    assert p == b'\xf8\x10\x02'
+
+    b = b64ToB2(s[:3])
+    assert len(b) == 3
+    assert b == b'\xf8\x10\x00'
+    i = int.from_bytes(b, 'big')
+    assert i == 0o76010000
+    i >>= 2 * (len(s[:3]) % 4)
+    assert i ==0o760100
+    p = nabSextets(b, 3)
+    assert p == b'\xf8\x10\x00'
+
+    b = b64ToB2(s[:2])
+    assert len(b) == 2
+    assert b == b'\xf8\x10'
+    i = int.from_bytes(b, 'big')
+    assert i == 0o174020
+    i >>= 2 * (len(s[:2]) % 4)
+    assert i == 0o7601
+    p = nabSextets(b, 2)
+    assert p == b'\xf8\x10'
+
+    b = b64ToB2(s[:1])
+    assert len(b) == 1
+    assert b == b'\xf8'
+    i = int.from_bytes(b, 'big')
+    assert i == 0o370
+    i >>= 2 * (len(s[:1]) % 4)
+    assert i == 0o76
+    p = nabSextets(b, 1)
+    assert p == b'\xf8'
+
+    """End Test"""
 
 
 def test_matter():
@@ -154,89 +236,30 @@ def test_matter():
     for val in Matter.Codes.values():
         assert  val.ss == 0
 
-    # first character of code with hard size of code
-    assert Matter.Bizes == {
-        0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1,
-        12: 1, 13: 1, 14: 1, 15: 1, 16: 1, 17: 1, 18: 1, 19: 1, 20: 1, 21: 1,
-        22: 1, 23: 1, 24: 1, 25: 1,
-        26: 1, 27: 1, 28: 1, 29: 1, 30: 1, 31: 1, 32: 1, 33: 1, 34: 1, 35: 1,
-        36: 1, 37: 1, 38: 1, 39: 1, 40: 1, 41: 1, 42: 1, 43: 1, 44: 1, 45: 1,
-        46: 1, 47: 1, 48: 1, 49: 1, 50: 1, 51: 1,
-        52: 2, 53: 4, 54: 5, 55: 6, 56: 8, 57: 9, 58: 10
-    }
+    # Bizes maps bytes of sextet of decoded first character of code with hard size of code
+    # verify equivalents of items for Sizes and Bizes
+    for skey, sval in Matter.Sizes.items():
+        ckey = b64ToB2(skey)
+        assert Matter.Bizes[ckey] == sval
 
-    assert Matter.Bodes == {
-                            0: Sizage(hs=1, ss=0, fs=44),
-                            1: Sizage(hs=1, ss=0, fs=44),
-                            2: Sizage(hs=1, ss=0, fs=44),
-                            3: Sizage(hs=1, ss=0, fs=44),
-                            4: Sizage(hs=1, ss=0, fs=44),
-                            5: Sizage(hs=1, ss=0, fs=44),
-                            6: Sizage(hs=1, ss=0, fs=44),
-                            7: Sizage(hs=1, ss=0, fs=44),
-                            8: Sizage(hs=1, ss=0, fs=44),
-                            9: Sizage(hs=1, ss=0, fs=44),
-                            10: Sizage(hs=1, ss=0, fs=76),
-                            11: Sizage(hs=1, ss=0, fs=76),
-                            12: Sizage(hs=1, ss=0, fs=4),
-                            3328: Sizage(hs=2, ss=0, fs=24),
-                            3329: Sizage(hs=2, ss=0, fs=88),
-                            3330: Sizage(hs=2, ss=0, fs=88),
-                            3331: Sizage(hs=2, ss=0, fs=88),
-                            3332: Sizage(hs=2, ss=0, fs=88),
-                            3333: Sizage(hs=2, ss=0, fs=88),
-                            3334: Sizage(hs=2, ss=0, fs=88),
-                            3335: Sizage(hs=2, ss=0, fs=8),
-                            13893632: Sizage(hs=4, ss=0, fs=48),
-                            13893633: Sizage(hs=4, ss=0, fs=48),
-                            13893634: Sizage(hs=4, ss=0, fs=80),
-                            13893635: Sizage(hs=4, ss=0, fs=80),
-                            13893636: Sizage(hs=4, ss=0, fs=56),
-                            13893637: Sizage(hs=4, ss=0, fs=8)
-                           }
-
-    #  octal representation
-    assert Matter.Bodes == {
-                            0o0: Sizage(hs=1, ss=0, fs=44),
-                            0o1: Sizage(hs=1, ss=0, fs=44),
-                            0o2: Sizage(hs=1, ss=0, fs=44),
-                            0o3: Sizage(hs=1, ss=0, fs=44),
-                            0o4: Sizage(hs=1, ss=0, fs=44),
-                            0o5: Sizage(hs=1, ss=0, fs=44),
-                            0o6: Sizage(hs=1, ss=0, fs=44),
-                            0o7: Sizage(hs=1, ss=0, fs=44),
-                            0o10: Sizage(hs=1, ss=0, fs=44),
-                            0o11: Sizage(hs=1, ss=0, fs=44),
-                            0o12: Sizage(hs=1, ss=0, fs=76),
-                            0o13: Sizage(hs=1, ss=0, fs=76),
-                            0o14: Sizage(hs=1, ss=0, fs=4),
-                            0o6400: Sizage(hs=2, ss=0, fs=24),
-                            0o6401: Sizage(hs=2, ss=0, fs=88),
-                            0o6402: Sizage(hs=2, ss=0, fs=88),
-                            0o6403: Sizage(hs=2, ss=0, fs=88),
-                            0o6404: Sizage(hs=2, ss=0, fs=88),
-                            0o6405: Sizage(hs=2, ss=0, fs=88),
-                            0o6406: Sizage(hs=2, ss=0, fs=88),
-                            0o6407: Sizage(hs=2, ss=0, fs=8),
-                            0o65000000: Sizage(hs=4, ss=0, fs=48),
-                            0o65000001: Sizage(hs=4, ss=0, fs=48),
-                            0o65000002: Sizage(hs=4, ss=0, fs=80),
-                            0o65000003: Sizage(hs=4, ss=0, fs=80),
-                            0o65000004: Sizage(hs=4, ss=0, fs=56),
-                            0o65000005: Sizage(hs=4, ss=0, fs=8)
-                           }
-
-    assert Matter.Bodes[0].hs == 1  # hard size
-    assert Matter.Bodes[0].ss == 0  # soft size
-    assert Matter.Bodes[0].fs == 44  # full size
+    # verify equivalents of items for Codes and Bodes
+    for skey, sval in Matter.Codes.items():
+        ckey = b64ToB2(skey)
+        assert Matter.Bodes[ckey] == sval
 
     # verify first hs Bizes matches hs in Bodes for same first sextet
-    #for ckey in Matter.Bodes.keys():
-        #assert Matter.Bizes[ckey[0]] == Matter.Bodes[ckey].hs
+    for ckey, cval in Matter.Bodes.items():
+        skey = nabSextets(ckey, 1)  # extract the first code char equivalent
+        assert Matter.Bizes[skey] == cval.hs  # hard sizes match
 
     #  verify all Bodes have ss == 0
     for val in Matter.Bodes.values():
         assert  val.ss == 0
+
+    assert Matter.Bodes[b'\x00'].hs == 1  # hard size
+    assert Matter.Bodes[b'\x00'].ss == 0  # soft size
+    assert Matter.Bodes[b'\x00'].fs == 44  # full size
+
 
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
@@ -580,47 +603,6 @@ def test_matter():
     """ Done Test """
 
 
-def test_b64_conversions():
-    """
-    Test Base64 index and count conversion utility routines
-    """
-
-    cs = IntToB64(0)
-    assert cs == "A"
-    i = B64ToInt(cs)
-    assert i == 0
-
-    cs = IntToB64(27)
-    assert cs == "b"
-    i = B64ToInt(cs)
-    assert i == 27
-
-    cs = IntToB64(27, l=2)
-    assert cs == "Ab"
-    i = B64ToInt(cs)
-    assert i == 27
-
-    cs = IntToB64(80)
-    assert cs == "BQ"
-    i = B64ToInt(cs)
-    assert i == 80
-
-    cs = IntToB64(4095)
-    assert cs == '__'
-    i = B64ToInt(cs)
-    assert i == 4095
-
-    cs = IntToB64(4096)
-    assert cs == 'BAA'
-    i = B64ToInt(cs)
-    assert i == 4096
-
-    cs = IntToB64(6011)
-    assert cs == "Bd7"
-    i = B64ToInt(cs)
-    assert i == 6011
-
-    """End Test"""
 
 
 def test_indexer():
@@ -687,7 +669,7 @@ def test_indexer():
     assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
 
     # replace pad "==" with code "AA"
-    qsc = IdrDex.Ed25519_Sig + IntToB64(0, l=1)
+    qsc = IdrDex.Ed25519_Sig + intToB64(0, l=1)
     assert qsc == 'AA'
     qscb = qsc.encode("utf-8")
     qsig64 = qsc + sig64[:-2]
@@ -753,7 +735,7 @@ def test_indexer():
 
     # test with non-zero index=5
     # replace pad "==" with code "AF"
-    qsc = IdrDex.Ed25519_Sig + IntToB64(5, l=1)
+    qsc = IdrDex.Ed25519_Sig + intToB64(5, l=1)
     assert qsc == 'AF'
     qscb = qsc.encode("utf-8")
     qsig64 = qsc + sig64[:-2]
@@ -800,7 +782,7 @@ def test_indexer():
     assert lraw == b'\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
     ltext = encodeB64(lraw)
     assert ltext == b'Hello_World_Peep' == label
-    qsc = IdrDex.Label + IntToB64(index, l=2)
+    qsc = IdrDex.Label + intToB64(index, l=2)
     assert qsc == '0BAE'
     qscb = qsc.encode("utf-8")
     lq64b = qscb + label
@@ -919,7 +901,7 @@ def test_counter():
 
     # create code manually
     count = 1
-    qsc = CtrDex.ControllerIdxSigs + IntToB64(count, l=2)
+    qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
     assert qsc == '-AAB'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
@@ -964,7 +946,7 @@ def test_counter():
 
     # test with non-zero count=5
     count =  5
-    qsc = CtrDex.ControllerIdxSigs + IntToB64(count, l=2)
+    qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
     assert qsc == '-AAF'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
@@ -999,7 +981,7 @@ def test_counter():
 
     # test with big codes index=1024
     count = 1024
-    qsc = CtrDex.BigMessageDataGroups + IntToB64(count, l=5)
+    qsc = CtrDex.BigMessageDataGroups + intToB64(count, l=5)
     assert qsc == '-0UAAAQA'
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
@@ -2523,4 +2505,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_counter()
+    test_matter()

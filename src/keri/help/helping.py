@@ -17,6 +17,27 @@ import pysodium
 from multidict import MultiDict  # base class for mdict defined below
 from orderedset import OrderedSet as oset
 
+# Utilities
+def isign(i):
+    """
+    Returns 1 if i > 0, -1 if i < 0, 0 otherwise
+    Integer sign function
+    """
+    return (1 if i > 0 else -1 if i < 0 else 0)
+
+
+def sceil(r):
+    """
+    Returns integer value that is symmetric ceiling of r away from zero
+    Symmetric ceiling function
+    Because int() provides a symmetric floor towards zero, just inc int(r) by:
+     1 when r - int(r) >  0  (r positive)
+    -1 when r - int(r) <  0  (r negative)
+     0 when r - int(r) == 0  (r integral already)
+    abs(r) > abs(int(r) or 0 when abs(r)
+    """
+    return (int(r) + isign(r - int(r)))
+
 
 def datify(cls, d):
     """
