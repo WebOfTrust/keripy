@@ -43,7 +43,7 @@ def test_partial_signed_escrow():
                                   sith=sith,
                                  nxt=coring.Nexter(sith=nxtsith,
                                                    digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
 
@@ -52,7 +52,7 @@ def test_partial_signed_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         msg.extend(counter.qb64b)
         msg.extend(sigers[0].qb64b)
 
@@ -80,7 +80,7 @@ def test_partial_signed_escrow():
 
         # Send message again but with signature from other siger
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         msg.extend(counter.qb64b)
         msg.extend(sigers[2].qb64b)
         # apply msg to Kevery to process
@@ -113,7 +113,8 @@ def test_partial_signed_escrow():
 
         # send duplicate message with all three sigs
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -140,7 +141,7 @@ def test_partial_signed_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=kvr.verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         msg.extend(counter.qb64b)
         msg.extend(sigers[1].qb64b)
 
@@ -153,7 +154,7 @@ def test_partial_signed_escrow():
 
         # add another sig
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         msg.extend(counter.qb64b)
         msg.extend(sigers[0].qb64b)
 
@@ -180,7 +181,7 @@ def test_partial_signed_escrow():
 
         # resend events to load escrow
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         msg.extend(counter.qb64b)
         msg.extend(sigers[1].qb64b)
 
@@ -193,7 +194,7 @@ def test_partial_signed_escrow():
 
         # add another sig
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         msg.extend(counter.qb64b)
         msg.extend(sigers[0].qb64b)
 
@@ -221,7 +222,7 @@ def test_partial_signed_escrow():
 
         # send duplicate message but add last sig
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         msg.extend(counter.qb64b)
         msg.extend(sigers[2].qb64b)
         kvy.processAll(ims=bytearray(msg))  # process local copy of msg
@@ -257,7 +258,8 @@ def test_partial_signed_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -285,7 +287,7 @@ def test_partial_signed_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=2)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=2)
         msg.extend(counter.qb64b)
         msg.extend(sigers[0].qb64b)
         msg.extend(sigers[3].qb64b)
@@ -299,7 +301,7 @@ def test_partial_signed_escrow():
         assert kvr.serder.diger.qb64 != srdr.dig  # key state not updated
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         msg.extend(counter.qb64b)
         msg.extend(sigers[1].qb64b)
 
@@ -355,7 +357,7 @@ def test_missing_delegator_escrow():
         verfers, digers = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
         bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                  nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         bobPre = bobSrdr.ked["i"]
 
@@ -364,7 +366,8 @@ def test_missing_delegator_escrow():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -406,7 +409,8 @@ def test_missing_delegator_escrow():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -421,7 +425,8 @@ def test_missing_delegator_escrow():
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
         msg = bytearray(delSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -497,7 +502,8 @@ def test_missing_delegator_escrow():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -514,7 +520,8 @@ def test_missing_delegator_escrow():
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
         msg = bytearray(delSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -561,7 +568,7 @@ def test_out_of_order_escrow():
                                   sith=sith,
                                  nxt=coring.Nexter(sith=nxtsith,
                                                    digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
         icpdig = srdr.dig
@@ -571,7 +578,8 @@ def test_out_of_order_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -584,7 +592,8 @@ def test_out_of_order_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -612,7 +621,8 @@ def test_out_of_order_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -759,7 +769,7 @@ def test_unverified_receipt_escrow():
                                   sith=sith,
                                  nxt=coring.Nexter(sith=nxtsith,
                                                    digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
         icpdig = srdr.dig
@@ -769,7 +779,8 @@ def test_unverified_receipt_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -782,7 +793,7 @@ def test_unverified_receipt_escrow():
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
 
-        recnt = coring.CryCounter(count=2)
+        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=2)
 
         msg = bytearray()
         msg.extend(reserder.raw)
@@ -814,7 +825,8 @@ def test_unverified_receipt_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -827,7 +839,7 @@ def test_unverified_receipt_escrow():
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
 
-        recnt = coring.CryCounter(count=2)
+        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=2)
 
         msg = bytearray()
         msg.extend(reserder.raw)
@@ -874,7 +886,8 @@ def test_unverified_receipt_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -887,7 +900,7 @@ def test_unverified_receipt_escrow():
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
 
-        recnt = coring.CryCounter(count=2)
+        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=2)
 
         msg = bytearray()
         msg.extend(reserder.raw)
@@ -1019,7 +1032,7 @@ def test_unverified_trans_receipt_escrow():
                                   sith=sith,
                                  nxt=coring.Nexter(sith=nxtsith,
                                                    digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         pre = srdr.ked["i"]
         icpdig = srdr.dig
@@ -1029,7 +1042,8 @@ def test_unverified_trans_receipt_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1045,7 +1059,7 @@ def test_unverified_trans_receipt_escrow():
                                 sith=rsith,
                                 nxt=coring.Nexter(sith=rsith,
                                                   digs=[diger.qb64 for diger in rdigers]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
         rpre = rsrdr.ked["i"]
         ricpdig = rsrdr.dig
@@ -1055,7 +1069,8 @@ def test_unverified_trans_receipt_escrow():
         rsigers = mgr.sign(ser=rsrdr.raw, verfers=rverfers)
 
         msg = bytearray(rsrdr.raw)
-        counter = coring.SigCounter(count=len(rsigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(rsigers))
         msg.extend(counter.qb64b)
         for siger in rsigers:
             msg.extend(siger.qb64b)
@@ -1070,7 +1085,8 @@ def test_unverified_trans_receipt_escrow():
         reserder = eventing.chit(pre=pre, sn=0, dig=icpdig, seal=seal)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        recnt = coring.CryCounter(count=len(resigers))
+        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                               count=len(resigers))
 
         msg = bytearray()
         msg.extend(reserder.raw)
@@ -1101,7 +1117,8 @@ def test_unverified_trans_receipt_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1126,7 +1143,8 @@ def test_unverified_trans_receipt_escrow():
         rsigers = mgr.sign(ser=rsrdr.raw, verfers=rverfers)
 
         msg = bytearray(rsrdr.raw)
-        counter = coring.SigCounter(count=len(rsigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(rsigers))
         msg.extend(counter.qb64b)
         for siger in rsigers:
             msg.extend(siger.qb64b)
@@ -1141,7 +1159,8 @@ def test_unverified_trans_receipt_escrow():
         reserder = eventing.chit(pre=pre, sn=1, dig=ixndig, seal=seal)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        recnt = coring.CryCounter(count=len(resigers))
+        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                               count=len(resigers))
 
 
         msg = bytearray()
@@ -1189,7 +1208,8 @@ def test_unverified_trans_receipt_escrow():
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         msg = bytearray(srdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -1204,7 +1224,8 @@ def test_unverified_trans_receipt_escrow():
         reserder = eventing.chit(pre=pre, sn=2, dig=rotdig, seal=seal)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        recnt = coring.CryCounter(count=len(resigers))
+        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                               count=len(resigers))
 
         msg = bytearray()
         msg.extend(reserder.raw)

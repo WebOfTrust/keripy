@@ -599,7 +599,7 @@ class RandoCreator(Creator):
         """
         super(RandoCreator, self).__init__(**kwa)
 
-    def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
+    def create(self, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
                transferable=True, **kwa):
         """
         Returns list of signers one per kidx in kidxs
@@ -672,7 +672,7 @@ class SaltyCreator(Creator):
         """
         return self.salter.tier
 
-    def create(self, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
+    def create(self, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
                pidx=0, ridx=0, kidx=0, transferable=True, temp=False, **kwa):
         """
         Returns list of signers one per kidx in kidxs
@@ -748,7 +748,7 @@ class Creatory:
         """
         """
         return RandoCreator(**kwa)
-      
+
 
     def _makeSalty(self, **kwa):
         """
@@ -841,9 +841,9 @@ class Manager:
         """
         self.keeper.setGbl(b"pidx", b"%x" % pidx)
 
-    def incept(self, icodes=None, icount=1, icode=coring.CryOneDex.Ed25519_Seed,
-                     ncodes=None, ncount=1, ncode=coring.CryOneDex.Ed25519_Seed,
-                     dcode=coring.CryOneDex.Blake3_256,
+    def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed,
+                     ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
+                     dcode=coring.MtrDex.Blake3_256,
                      algo=Algos.salty, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
         """
@@ -862,7 +862,7 @@ class Manager:
             icodes is list of private key derivation codes qb64 str
                 one per incepting key pair
             icount is int count of incepting public keys when icodes not provided
-            icode is str derivation code qb64  of all icount incepting public keys
+            icode is str derivation code qb64  of all icount incepting private keys
                 when icodes list not provided
             ncodes is list of private key derivation codes qb64 str
                 one per next key pair
@@ -1010,8 +1010,8 @@ class Manager:
         if not self.keeper.putPre(key=new, val=new):
             raise ValueError("Failed assiging new pre={}.".format(new))
 
-    def rotate(self, pre, codes=None, count=1, code=coring.CryOneDex.Ed25519_Seed,
-                     dcode=coring.CryOneDex.Blake3_256,
+    def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
+                     dcode=coring.MtrDex.Blake3_256,
                      transferable=True, temp=False):
         """
         Returns duple (verfers, digers) for rotation event of keys for pre where

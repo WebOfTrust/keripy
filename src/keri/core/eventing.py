@@ -30,11 +30,10 @@ from ..kering import Versionage, Version
 from ..help.helping import nowIso8601, fromIso8601, toIso8601
 from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
 
-from .coring import Versify, Serials, Ilks, CryOneDex
+from .coring import Versify, Serials, Ilks
+from .coring import MtrDex, IdrDex, CtrDex, Counter
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
-from .coring import CryMat, CryRawSizes, CryTwoDex, Seqner
-from .coring import CryCounter, Cigar
-from .coring import SigCounter, Siger
+from .coring import Seqner, Siger, Cigar
 
 from ..help import ogling
 
@@ -570,7 +569,7 @@ def delcept(keys,
                )
 
     if code is None:
-        code = CryOneDex.Blake3_256  # Default digest
+        code = MtrDex.Blake3_256  # Default digest
 
     # raises derivation error if non-empty nxt but ephemeral code
     prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
@@ -1448,7 +1447,7 @@ class Kevery:
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
             # extract sig counter if any for attached sigs
             try:
-                counter = SigCounter(qb64b=ims)  # qb64b
+                counter = Counter(qb64b=ims)  # qb64b
                 nsigs = counter.count
                 del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
@@ -1480,7 +1479,7 @@ class Kevery:
         elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
             # extract cry counter if any for attached receipt couplets
             try:
-                counter = CryCounter(qb64b=ims)  # qb64
+                counter = Counter(qb64b=ims)  # qb64
                 ncpts = counter.count
                 del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
@@ -1518,7 +1517,7 @@ class Kevery:
         elif ilk in [Ilks.vrc]:  # validator event receipt msg (transferable)
             # extract sig counter if any for attached sigs
             try:
-                counter = SigCounter(qb64b=ims)  # qb64
+                counter = Counter(qb64b=ims)  # qb64
                 nsigs = counter.count
                 del ims[:len(counter.qb64)]  # strip off counter
             except ValidationError as ex:
@@ -2043,7 +2042,7 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt sigs at "
                                               "dig = {}.".format(bytes(edig)))
 
-                    counter = SigCounter(count=len(sigs))
+                    counter = Counter(code=CtrDex.ControllerIdxSigs, count=len(sigs))
                     ims.extend(counter.qb64b)
                     for sig in sigs:  # stored in db as qb64b
                         ims.extend(sig)
@@ -2182,7 +2181,8 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt sigs at "
                                               "dig = {}.".format(bytes(edig)))
 
-                    counter = SigCounter(count=len(sigs))
+                    counter = Counter(code=CtrDex.ControllerIdxSigs,
+                                      count=len(sigs))
                     ims.extend(counter.qb64b)
                     for sig in sigs:  # stored in db as qb64b
                         ims.extend(sig)
@@ -2646,7 +2646,8 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt sigs at "
                                               "dig = {}.".format(bytes(edig)))
 
-                    counter = SigCounter(count=len(sigs))
+                    counter = Counter(code=CtrDex.ControllerIdxSigs,
+                                      count=len(sigs))
                     ims.extend(counter.qb64b)
                     for sig in sigs:  # stored in db as qb64b
                         ims.extend(sig)

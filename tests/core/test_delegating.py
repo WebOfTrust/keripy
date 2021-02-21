@@ -44,7 +44,7 @@ def test_delegation():
         verfers, digers = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
         bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                  nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         bobPre = bobSrdr.ked["i"]
         assert bobPre == 'EiBlVttjqvySMbA4ShN19rSrz3D0ioNW-Uj92Ri7XnFE'
@@ -54,7 +54,7 @@ def test_delegation():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -111,7 +111,8 @@ def test_delegation():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -136,7 +137,8 @@ def test_delegation():
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
         msg = bytearray(delSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -196,7 +198,8 @@ def test_delegation():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -220,7 +223,8 @@ def test_delegation():
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
         msg = bytearray(delSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)

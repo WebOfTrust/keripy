@@ -507,23 +507,23 @@ def test_creator():
     assert len(signers) == 1
     signer = signers[0]
     assert isinstance(signer, coring.Signer)
-    assert signer.code == coring.CryOneDex.Ed25519_Seed
-    assert signer.verfer.code == coring.CryOneDex.Ed25519
+    assert signer.code == coring.MtrDex.Ed25519_Seed
+    assert signer.verfer.code == coring.MtrDex.Ed25519
     assert signer.verfer.code not in coring.CryNonTransDex
 
     signers = creator.create(count=2, transferable=False)
     assert len(signers) == 2
     for signer in signers:
         assert isinstance(signer, coring.Signer)
-        assert signer.code == coring.CryOneDex.Ed25519_Seed
-        assert signer.verfer.code == coring.CryOneDex.Ed25519N
+        assert signer.code == coring.MtrDex.Ed25519_Seed
+        assert signer.verfer.code == coring.MtrDex.Ed25519N
         assert signer.verfer.code in coring.CryNonTransDex
 
     creator = keeping.SaltyCreator()
     assert isinstance(creator, keeping.SaltyCreator)
     assert isinstance(creator, keeping.Creator)
     assert isinstance(creator.salter, coring.Salter)
-    assert creator.salter.code == coring.CryTwoDex.Salt_128
+    assert creator.salter.code == coring.MtrDex.Salt_128
     assert creator.salt == creator.salter.qb64
     assert creator.stem == ''
     assert creator.tier == creator.salter.tier
@@ -531,16 +531,16 @@ def test_creator():
     assert len(signers) == 1
     signer = signers[0]
     assert isinstance(signer, coring.Signer)
-    assert signer.code == coring.CryOneDex.Ed25519_Seed
-    assert signer.verfer.code == coring.CryOneDex.Ed25519
+    assert signer.code == coring.MtrDex.Ed25519_Seed
+    assert signer.verfer.code == coring.MtrDex.Ed25519
     assert signer.verfer.code not in coring.CryNonTransDex
 
     signers = creator.create(count=2, transferable=False)
     assert len(signers) == 2
     for signer in signers:
         assert isinstance(signer, coring.Signer)
-        assert signer.code == coring.CryOneDex.Ed25519_Seed
-        assert signer.verfer.code == coring.CryOneDex.Ed25519N
+        assert signer.code == coring.MtrDex.Ed25519_Seed
+        assert signer.verfer.code == coring.MtrDex.Ed25519N
         assert signer.verfer.code in coring.CryNonTransDex
 
     raw = b'0123456789abcdef'
@@ -550,16 +550,16 @@ def test_creator():
     assert isinstance(creator, keeping.SaltyCreator)
     assert isinstance(creator, keeping.Creator)
     assert isinstance(creator.salter, coring.Salter)
-    assert creator.salter.code == coring.CryTwoDex.Salt_128
+    assert creator.salter.code == coring.MtrDex.Salt_128
     assert creator.salter.raw == raw
     assert creator.salter.qb64 == salt
     signers = creator.create()
     assert len(signers) == 1
     signer = signers[0]
     assert isinstance(signer, coring.Signer)
-    assert signer.code == coring.CryOneDex.Ed25519_Seed
+    assert signer.code == coring.MtrDex.Ed25519_Seed
     assert signer.qb64 == 'A8wl7SXA6nCdf0-S9fWaHbq-XMZiXpFaBYZyVzwIBAn0'
-    assert signer.verfer.code == coring.CryOneDex.Ed25519
+    assert signer.verfer.code == coring.MtrDex.Ed25519
     assert signer.verfer.code not in coring.CryNonTransDex
     assert signer.verfer.qb64 == 'DxnLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ'
 
@@ -567,9 +567,9 @@ def test_creator():
     assert len(signers) == 1
     signer = signers[0]
     assert isinstance(signer, coring.Signer)
-    assert signer.code == coring.CryOneDex.Ed25519_Seed
+    assert signer.code == coring.MtrDex.Ed25519_Seed
     assert signer.qb64 == 'AwasAzSejEulG1472bEZP7LNhKsoXAky40jgqWZKTbp4'
-    assert signer.verfer.code == coring.CryOneDex.Ed25519N
+    assert signer.verfer.code == coring.MtrDex.Ed25519N
     assert signer.verfer.code in coring.CryNonTransDex
     assert signer.verfer.qb64 == 'BVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
 
@@ -868,14 +868,14 @@ def test_manager():
                                          transferable=False, temp=True)
         wit0pre = verfers[0].qb64
         assert verfers[0].qb64 == 'B5M0jhHM3vTo15w12pOUYRwxJNaIVS96wSqbFZH-inyc'
-        assert verfers[0].code == coring.CryOneDex.Ed25519N
+        assert verfers[0].code == coring.MtrDex.Ed25519N
         assert not digers
 
         verfers, digers = manager.incept(ncount=0, salt=salt, stem="wit1",
                                          transferable=False, temp=True)
         wit1pre = verfers[0].qb64
         assert verfers[0].qb64 == 'BAH_nE1cfiGjEMK0Ac8U8N51npjBOjyZt3D-_QA4c4y0'
-        assert verfers[0].code == coring.CryOneDex.Ed25519N
+        assert verfers[0].code == coring.MtrDex.Ed25519N
         assert not digers
 
         assert wit0pre != wit1pre
