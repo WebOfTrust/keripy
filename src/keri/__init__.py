@@ -1,4 +1,4 @@
 # -*- encoding: utf-8 -*-
 
-__version__ = '0.1.14'  # also change in setup.py
+__version__ = '0.2.0'  # also change in setup.py
 
