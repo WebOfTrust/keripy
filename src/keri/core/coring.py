@@ -494,8 +494,6 @@ class Matter:
             self._exfil(qb64b)
 
         elif qb64 is not None:
-            if hasattr(qb64, "encode"):  #  ._exfil expects bytes not str
-                qb64 = qb64.encode("utf-8")  #  greedy so do not use on stream
             self._exfil(qb64)
 
         elif qb2 is not None:
@@ -605,7 +603,9 @@ class Matter:
         if not qb64b:  # empty need more bytes
             raise ShortageError("Empty material, Need more characters.")
 
-        first = qb64b[:1].decode("utf-8")  # extract first char code selector
+        first = qb64b[:1]  # extract first char code selector
+        if hasattr(first, "decode"):
+            first = first.decode("utf-8")
         if first not in self.Sizes:
             if first[0] == '-':
                 raise UnexpectedCountCodeError("Unexpected count code start"
@@ -620,7 +620,9 @@ class Matter:
         if len(qb64b) < cs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
 
-        code = qb64b[:cs].decode("utf-8")  # extract hard code
+        code = qb64b[:cs]  # extract hard code
+        if hasattr(code, "decode"):
+            code = code.decode("utf-8")
         if code not in self.Codes:
             raise DerivationCodeError("Unsupported code ={}.".format(code))
 
@@ -633,6 +635,8 @@ class Matter:
         if len(qb64b) < fs:  # need more bytes
             raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
         qb64b = qb64b[:fs]  # fully qualified primitive code plus material
+        if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
+            qb64b = qb64b.encode("utf-8")
 
         # strip off prepended code and append pad characters
         ps = bs % 4  # pad size ps = bs mod 4
@@ -2030,8 +2034,6 @@ class Indexer:
             self._exfil(qb64b)
 
         elif qb64 is not None:
-            if hasattr(qb64, "encode"):  #  ._exfil expects bytes not str
-                qb64 = qb64.encode("utf-8")  #  greedy so do not use on stream
             self._exfil(qb64)
 
         elif qb2 is not None:
@@ -2146,7 +2148,9 @@ class Indexer:
         if not qb64b:  # empty need more bytes
             raise ShortageError("Empty material, Need more characters.")
 
-        first = qb64b[:1].decode("utf-8")  # extract first char code selector
+        first = qb64b[:1]  # extract first char code selector
+        if hasattr(first, "decode"):
+            first = first.decode("utf-8")
         if first not in self.Sizes:
             if first[0] == '-':
                 raise UnexpectedCountCodeError("Unexpected count code start"
@@ -2161,7 +2165,9 @@ class Indexer:
         if len(qb64b) < cs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
 
-        hard = qb64b[:cs].decode("utf-8")  # get hard code
+        hard = qb64b[:cs] # get hard code
+        if hasattr(hard, "decode"):
+            hard = hard.decode("utf-8")
         if hard not in self.Codes:
             raise DerivationCodeError("Unsupported code ={}.".format(hard))
 
@@ -2175,7 +2181,10 @@ class Indexer:
         if len(qb64b) < bs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
 
-        index = b64ToInt(qb64b[hs:hs+ss].decode("utf-8"))  # get index
+        index = qb64b[hs:hs+ss]  # extract index chars
+        if hasattr(index, "decode"):
+            index = index.decode("utf-8")
+        index = b64ToInt(index)  # compute int index
 
         if not fs:  # compute fs from index
             if bs % 4:
@@ -2187,6 +2196,8 @@ class Indexer:
             raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
 
         qb64b = qb64b[:fs]  # fully qualified primitive code plus material
+        if hasattr(qb64b, "encode"):  # only convert extracted chars from stream
+            qb64b = qb64b.encode("utf-8")
 
         # strip off prepended code and append pad characters
         ps = bs % 4  # pad size ps = cs mod 4
@@ -2495,8 +2506,6 @@ class Counter:
             self._exfil(qb64b)
 
         elif qb64 is not None:
-            if hasattr(qb64, "encode"):  #  ._exfil expects bytes not str
-                qb64 = qb64.encode("utf-8")  #  greedy so do not use on stream
             self._exfil(qb64)
 
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
@@ -2588,7 +2597,9 @@ class Counter:
         if not qb64b:  # empty need more bytes
             raise ShortageError("Empty material, Need more characters.")
 
-        first = qb64b[:2].decode("utf-8")  # extract first two char code selector
+        first = qb64b[:2]  # extract first two char code selector
+        if hasattr(first, "decode"):
+            first = first.decode("utf-8")
         if first not in self.Sizes:
             if first[0] == '_':
                 raise UnexpectedOpCodeError("Unexpected op code start"
@@ -2600,7 +2611,9 @@ class Counter:
         if len(qb64b) < cs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
 
-        hard = qb64b[:cs].decode("utf-8")  # get hard code
+        hard = qb64b[:cs]  # get hard code
+        if hasattr(hard, "decode"):
+            hard = hard.decode("utf-8")
         if hard not in self.Codes:
             raise DerivationCodeError("Unsupported code ={}.".format(hard))
 
@@ -2614,7 +2627,10 @@ class Counter:
         if len(qb64b) < bs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
 
-        count = b64ToInt(qb64b[hs:hs+ss].decode("utf-8"))  # extract count
+        count = qb64b[hs:hs+ss]  # extract count chars
+        if hasattr(count, "decode"):
+            count = count.decode("utf-8")
+        count = b64ToInt(count)  # compute int count
 
         self._code = hard
         self._count = count
