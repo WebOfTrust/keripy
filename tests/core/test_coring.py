@@ -712,6 +712,13 @@ def test_indexer():
     for val in Indexer.Codes.values():
         assert val.ss > 0
 
+    # Bizes maps bytes of sextet of decoded first character of code with hard size of code
+    # verify equivalents of items for Sizes and Bizes
+    for skey, sval in Indexer.Sizes.items():
+        ckey = b64ToB2(skey)
+        assert Indexer.Bizes[ckey] == sval
+
+
     with pytest.raises(EmptyMaterialError):
         indexer = Indexer()
 
@@ -864,6 +871,24 @@ def test_indexer():
     assert indexer.qb64b == b'0BAA'
     assert indexer.qb64 == '0BAA'
     assert indexer.qb2 == b'\xd0\x10\x00'
+
+    # Test ._bexfil
+    indexer = Indexer(qb64=qsig64)  #
+    raw = indexer.raw
+    code = indexer.code
+    index = indexer.index
+    qb2 = indexer.qb2
+    indexer._bexfil(qb2)
+    assert indexer.raw == raw
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.qb64 == qsig64
+    assert indexer.qb2 == qb2
+
+    # Test ._binfil
+    # test = indexer._binfil()
+    # assert test == qb2
+
     """ Done Test """
 
 
@@ -954,6 +979,13 @@ def test_counter():
     #  verify all Codes have ss > 0 and hs+ss=fs
     for val in Counter.Codes.values():
         assert val.ss > 0 and val.hs + val.ss == val.fs
+
+    # Bizes maps bytes of sextet of decoded first character of code with hard size of code
+    # verify equivalents of items for Sizes and Bizes
+    for skey, sval in Counter.Sizes.items():
+        ckey = b64ToB2(skey)
+        assert Counter.Bizes[ckey] == sval
+
 
     with pytest.raises(EmptyMaterialError):
         counter = Counter()
@@ -2564,4 +2596,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_matter()
+    test_indexer()

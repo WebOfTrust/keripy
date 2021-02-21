@@ -1967,9 +1967,6 @@ class Indexer:
     Sizes = ({chr(c): 1 for c in range(65, 65+26)})
     Sizes.update({chr(c): 1 for c in range(97, 97+26)})
     Sizes.update([('0', 2), ('1', 2), ('2', 2), ('3', 2), ('4', 3), ('5', 4)])
-    # Bizes table maps from int sextet equivalent of bytes Base64 first code char to
-    # hard size, hs, of code. The soft size, ss, for Indexer is always > 0
-    Bizes = ({b64ToInt(c): hs for c, hs in Sizes.items()})
     # Codes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 for Indexer
@@ -1979,6 +1976,9 @@ class Indexer:
                 '0A': Sizage(hs=2, ss=2, fs=156),
                 '0B': Sizage(hs=2, ss=2, fs=None),
             }
+    # Bizes table maps to hard size, hs, of code from bytes holding sextets
+    # converted from first code char.
+    Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
 
     def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0,
                  qb64b=None, qb64=None, qb2=None):
@@ -2043,7 +2043,8 @@ class Indexer:
             self._exfil(qb64)
 
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
-            self._exfil(encodeB64(qb2))
+            # self._exfil(encodeB64(qb2))
+            self._bexfil(qb2)
 
         else:
             raise EmptyMaterialError("Improper initialization need either "
@@ -2181,7 +2182,7 @@ class Indexer:
 
         if hs != cs:
             raise ValueError("Bad .Codes or .Sizes table entries for code={}."
-                             " cs={} != hs ={} ss={}".format(code, cs, hs, ss))
+                             " cs={} != hs ={} ss={}".format(hard, cs, hs, ss))
 
         if len(qb64b) < bs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
@@ -2209,6 +2210,95 @@ class Indexer:
         self._code = hard
         self._index = index
         self._raw = raw
+
+
+    def _binfil(self):
+        """
+        Returns bytes of fully qualified base2 bytes, that is .qb2
+        self.code converted to Base2 + self.raw left shifted with pad bits
+        equivalent of Base64 decode of .qb64 into .qb2
+        """
+        code = self.code  # codex value
+        raw = self.raw  #  bytes or bytearray
+
+        hs, ss, fs = self.Codes[code]
+        bs = hs + ss
+        if len(code) != bs:
+            raise ValueError("Mismatch code size = {} with table = {}."
+                                          .format(bs, len(code)))
+        n = sceil(bs * 3 / 4)  # number of b2 bytes to hold b64 code
+        bcode = b64ToInt(code).to_bytes(n,'big')  # right aligned b2 code
+
+        full = bcode + raw
+        bfs = len(full)
+        if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
+            raise ValueError("Invalid code = {} for raw size= {}."
+                                          .format(code, len(raw)))
+
+        i = int.from_bytes(full, 'big') << (2 * (bs % 4))  # left shift in pad bits
+        return (i.to_bytes(bfs, 'big'))
+
+
+    def _bexfil(self, qb2):
+        """
+        Extracts self.code and self.raw from qualified base2 bytes qb2
+        """
+        if not qb2:  # empty need more bytes
+            raise ShortageError("Empty material, Need more bytes.")
+
+        first = nabSextets(qb2, 1)  # extract first sextet as code selector
+        if first not in self.Bizes:
+            if first[0] == b'\xf8':  # b64ToB2('-')
+                raise UnexpectedCountCodeError("Unexpected count code start"
+                                               "while extracing Matter.")
+            elif first[0] == b'\xfc':  #  b64ToB2('_')
+                raise UnexpectedOpCodeError("Unexpected  op code start"
+                                               "while extracing Matter.")
+            else:
+                raise DerivationCodeError("Unsupported code start sextet={}.".format(first))
+
+        cs = self.Bizes[first]  # get code hard size equvalent sextets
+        bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
+        if len(qb2) < bcs:  # need more bytes
+            raise ShortageError("Need {} more bytes.".format(bcs-len(qb2)))
+
+        # bode = nabSextets(qb2, cs)  # b2 version of hard part of code
+        hard = b2ToB64(qb2, cs)  # extract and convert hard part of code
+        if hard not in self.Codes:
+            raise DerivationCodeError("Unsupported code ={}.".format(hard))
+
+        hs, ss, fs = self.Codes[hard]
+        bs = hs + ss  # both hs and ss
+        if hs != cs :
+            raise ValueError("Bad .Codes or .Sizes table entries for code={}."
+                             " cs={} != hs ={} ss={}".format(hard, cs, hs, ss))
+
+        bbs = ceil(bs * 3 / 4)  # bbs is min bytes to hold bs sextets
+        if len(qb2) < bbs:  # need more bytes
+            raise ShortageError("Need {} more bytes.".format(bbs-len(qb2)))
+
+        both = b2ToB64(qb2, bs)  # extract and convert both hard and soft part of code
+        index = b64ToInt(both[hs:hs+ss])  # get index
+
+        bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
+        if len(qb2) < bfs:  # need more bytes
+            raise ShortageError("Need {} more bytes.".format(bfs-len(qb2)))
+
+        qb2 = qb2[:bfs]  # fully qualified primitive code plus material
+
+        # right shift to right align raw material
+        i = int.from_bytes(qb2, 'big')
+        i >>= 2 * (bs % 4)
+
+        raw = i.to_bytes(bfs, 'big')[bbs:]  # extract raw
+
+        if len(raw) != (len(qb2) - bbs):  # exact lengths
+            raise ValueError("Improperly qualified material = {}".format(qb2))
+
+        self._code = hard
+        self._index = index
+        self._raw = raw
+
 
 
 class Siger(Indexer):
@@ -2331,10 +2421,6 @@ class Counter:
     Sizes = ({('-' +  chr(c)): 2 for c in range(65, 65+26)})
     Sizes.update({('-' + chr(c)): 2 for c in range(97, 97+26)})
     Sizes.update([('-0', 3)])
-    # Bizes table maps from int sextet equivalent of bytes Base64 first two
-    # code chars to hard size, hs, of code. The soft size, ss, is always > 0
-    # and hs+ss=fs for Counter
-    Bizes = ({b64ToInt(c): hs for c, hs in Sizes.items()})
     # Codes table maps hs chars of code to Sizage namedtuple of (hs, ss, fs)
     # where hs is hard size, ss is soft size, and fs is full size
     # soft size, ss, should always be  > 0 and hs+ss=fs for Counter
@@ -2364,7 +2450,9 @@ class Counter:
                 '-0Y': Sizage(hs=3, ss=5, fs=8),
                 '-0Z': Sizage(hs=3, ss=5, fs=8)
             }
-    #
+    # Bizes table maps to hard size, hs, of code from bytes holding sextets
+    # converted from first two code char.
+    Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
 
 
     def __init__(self, code=None, count=1, qb64b=None, qb64=None, qb2=None):
@@ -2523,7 +2611,7 @@ class Counter:
 
         if hs != cs or bs != fs or bs % 4:
             raise ValueError("Bad .Codes or .Sizes table entries for code={}."
-                             " cs={} != hs ={} ss={} fs={}".format(code, cs, hs, ss, fs))
+                             " cs={} != hs ={} ss={} fs={}".format(hard, cs, hs, ss, fs))
 
         if len(qb64b) < bs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
