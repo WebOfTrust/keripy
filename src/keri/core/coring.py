@@ -127,10 +127,20 @@ def intToB64(i, l=1):
     return ( "".join(d))
 
 
+def intToB64b(i, l=1):
+    """
+    Returns conversion of int i to Base64 bytes
+    l is min number of b64 digits left padded with Base64 0 == "A" char
+    """
+    return (intToB64(i=i, l=l).encode("utf-8"))
+
+
 def b64ToInt(s):
     """
-    Returns conversion of Base64 str s to int
+    Returns conversion of Base64 str s or bytes to int
     """
+    if hasattr(s, 'decode'):
+        s = s.decode("utf-8")
     i = 0
     for e, c in enumerate(reversed(s)):
         i |= B64IdxByChr[c] << (e * 6)  # same as i += B64IdxByChr[c] * (64 ** e)
@@ -140,11 +150,12 @@ def b64ToInt(s):
 def b64ToB2(s):
     """
     Returns conversion (decode) of Base64 chars to Base2 bytes.
-    Where the number of total bytes is equal to the minimun number of octets
-    sufficient to hold the total converted concatenated sextets from s, with one
-    sextet per each Base64 decoded char of s. Assumes no pad chars in s.
-    This is useful for decoding code characters at the front of a Base64 encoded
-    string of characters.
+    Where the number of total bytes returned is equal to the minimun number of
+    octets sufficient to hold the total converted concatenated sextets from s,
+    with one sextet per each Base64 decoded char of s. Assumes no pad chars in s.
+    Sextets are left aligned with pad bits in last (rightmost) byte.
+    This is useful for decoding as bytes, code characters from the front of
+    a Base64 encoded string of characters.
     """
     i = b64ToInt(s)
     i <<= 2 * (len(s) % 4)  # add 2 bits right padding for each sextet
@@ -152,16 +163,34 @@ def b64ToB2(s):
     return (i.to_bytes(n, 'big'))
 
 
+def b2ToB64(b, l):
+    """
+    Returns conversion (encode) of l Base2 sextets from front of b to Base64 chars.
+    One char for each of l sextets from front (left) of b.
+    This is useful for encoding as code characters, sextets from the front of
+    a Base2 bytes (byte string). Must provide l because of ambiguity between l=3
+    and l=4. Both require 3 bytes in b.
+    """
+    if hasattr(b, 'encode'):
+        b = b.encode("utf-8")  # convert to bytes
+    n = sceil(l * 3 / 4)  # number of bytes needed for l sextets
+    if n > len(b):
+        raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
+    i = int.from_bytes(b[:n], 'big')
+    i >>= 2 * (l % 4)  #  shift out extra  bits
+    return (intToB64(i, l))
+
+
 def nabSextets(b, l):
     """
-    Return first l sextets from front (left) of b as bytes.
-    Number of bytes is minimum sufficient to hold sextets.
+    Return first l sextets from front (left) of b as bytes (byte string).
+    Length of bytes returned is minimum sufficient to hold all l sextets.
     Last byte returned is right bit padded with zeros
     b is bytes or str
     """
     if hasattr(b, 'encode'):
         b = b.encode("utf-8")  # convert to bytes
-    n = sceil(l * 3 / 4)  # number of bytes
+    n = sceil(l * 3 / 4)  # number of bytes needed for l sextets
     if n > len(b):
         raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
     i = int.from_bytes(b[:n], 'big')
@@ -597,7 +626,7 @@ class Matter:
         if len(qb64b) < cs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
 
-        code = qb64b[:cs].decode("utf-8")  # extract jard code
+        code = qb64b[:cs].decode("utf-8")  # extract hard code
         if code not in self.Codes:
             raise DerivationCodeError("Unsupported code ={}.".format(code))
 
@@ -629,22 +658,25 @@ class Matter:
         if not qb2:  # empty need more bytes
             raise ShortageError("Empty material, Need more characters.")
 
-        first = qb64b[:1].decode("utf-8")  # extract first char code selector
-        if first not in self.Sizes:
-            if first[0] == '-':
+        first = nabSextets(qb2, 1)  # extract first sextet as code selector
+        if first not in self.Bizes:
+            if first[0] == b'\xf8':  # b64ToB2('-')
                 raise UnexpectedCountCodeError("Unexpected count code start"
                                                "while extracing Matter.")
-            elif first[0] == '_':
+            elif first[0] == b'\xfc':  #  b64ToB2('_')
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                                "while extracing Matter.")
             else:
                 raise DerivationCodeError("Unsupported code start char={}.".format(first))
 
-        cs = self.Sizes[first]  # get hard code size
-        if len(qb64b) < cs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(cs-len(qb64b)))
+        cs = self.Bizes[first]  # get hard code size
+        bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold enough sextets for cs octets
+        if len(qb2) < bcs:  # need more bytes
+            raise ShortageError("Need {} more characters.".format(bcs-len(qb2)))
 
-        code = qb64b[:cs].decode("utf-8")  # extract jard code
+        bode = nabSextets(qb2, cs)  # b2 version of code
+        code = ""
+        # code = qb2[:bcs].decode("utf-8")  # extract hard code
         if code not in self.Codes:
             raise DerivationCodeError("Unsupported code ={}.".format(code))
 

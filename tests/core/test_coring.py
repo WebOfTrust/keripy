@@ -27,7 +27,7 @@ from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Co
 from keri.core.coring import (Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
-from keri.core.coring import intToB64, b64ToInt, b64ToB2, nabSextets
+from keri.core.coring import intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64, nabSextets
 from keri.core.coring import Seqner, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
@@ -72,8 +72,18 @@ def test_b64_conversions():
     i = b64ToInt(cs)
     assert i == 0
 
+    cs = intToB64b(0)
+    assert cs == b"A"
+    i = b64ToInt(cs)
+    assert i == 0
+
     cs = intToB64(27)
     assert cs == "b"
+    i = b64ToInt(cs)
+    assert i == 27
+
+    cs = intToB64b(27)
+    assert cs == b"b"
     i = b64ToInt(cs)
     assert i == 27
 
@@ -82,8 +92,18 @@ def test_b64_conversions():
     i = b64ToInt(cs)
     assert i == 27
 
+    cs = intToB64b(27, l=2)
+    assert cs == b"Ab"
+    i = b64ToInt(cs)
+    assert i == 27
+
     cs = intToB64(80)
     assert cs == "BQ"
+    i = b64ToInt(cs)
+    assert i == 80
+
+    cs = intToB64b(80)
+    assert cs == b"BQ"
     i = b64ToInt(cs)
     assert i == 80
 
@@ -92,8 +112,18 @@ def test_b64_conversions():
     i = b64ToInt(cs)
     assert i == 4095
 
+    cs = intToB64b(4095)
+    assert cs == b'__'
+    i = b64ToInt(cs)
+    assert i == 4095
+
     cs = intToB64(4096)
     assert cs == 'BAA'
+    i = b64ToInt(cs)
+    assert i == 4096
+
+    cs = intToB64b(4096)
+    assert cs == b'BAA'
     i = b64ToInt(cs)
     assert i == 4096
 
@@ -102,10 +132,17 @@ def test_b64_conversions():
     i = b64ToInt(cs)
     assert i == 6011
 
+    cs = intToB64b(6011)
+    assert cs == b"Bd7"
+    i = b64ToInt(cs)
+    assert i == 6011
+
     s = "-BAC"
-    b = b64ToB2(s)
+    b = b64ToB2(s[:])
     assert len(b) == 3
     assert b == b'\xf8\x10\x02'
+    t = b2ToB64(b, 4)
+    assert t == s[:]
     i = int.from_bytes(b, 'big')
     assert i == 0o76010002
     i >>= 2 *  (len(s) % 4)
@@ -116,6 +153,8 @@ def test_b64_conversions():
     b = b64ToB2(s[:3])
     assert len(b) == 3
     assert b == b'\xf8\x10\x00'
+    t = b2ToB64(b, 3)
+    assert t == s[:3]
     i = int.from_bytes(b, 'big')
     assert i == 0o76010000
     i >>= 2 * (len(s[:3]) % 4)
@@ -126,6 +165,8 @@ def test_b64_conversions():
     b = b64ToB2(s[:2])
     assert len(b) == 2
     assert b == b'\xf8\x10'
+    t = b2ToB64(b, 2)
+    assert t == s[:2]
     i = int.from_bytes(b, 'big')
     assert i == 0o174020
     i >>= 2 * (len(s[:2]) % 4)
@@ -136,6 +177,8 @@ def test_b64_conversions():
     b = b64ToB2(s[:1])
     assert len(b) == 1
     assert b == b'\xf8'
+    t = b2ToB64(b, 1)
+    assert t == s[:1]
     i = int.from_bytes(b, 'big')
     assert i == 0o370
     i >>= 2 * (len(s[:1]) % 4)
@@ -2505,4 +2548,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_matter()
+    test_b64_conversions()
