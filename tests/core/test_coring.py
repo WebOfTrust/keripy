@@ -643,6 +643,22 @@ def test_matter():
     assert matter.transferable == True
     assert matter.digestive == False
 
+    # Test ._bexfil
+    matter = Matter(qb64=prefix)  #
+    raw = matter.raw
+    code = matter.code
+    qb2 = matter.qb2
+    matter._bexfil(qb2)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == prefix
+    assert matter.qb2 == qb2
+
+    # Test ._binfil
+    test = matter._binfil()
+    assert test == qb2
+
+
     """ Done Test """
 
 
@@ -2548,4 +2564,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_b64_conversions()
+    test_matter()

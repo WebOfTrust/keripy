@@ -177,7 +177,7 @@ def b2ToB64(b, l):
     if n > len(b):
         raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
     i = int.from_bytes(b[:n], 'big')
-    i >>= 2 * (l % 4)  #  shift out extra  bits
+    i >>= 2 * (l % 4)  #  shift out padding bits make right aligned
     return (intToB64(i, l))
 
 
@@ -502,7 +502,8 @@ class Matter:
             self._exfil(qb64)
 
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
-            self._exfil(encodeB64(qb2))
+            # self._exfil(encodeB64(qb2))
+            self._bexfil(qb2)
 
         else:
             raise EmptyMaterialError("Improper initialization need either "
@@ -565,7 +566,8 @@ class Matter:
         """
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
-        return decodeB64(self._infil())
+        # return decodeB64(self._infil())
+        return self._binfil()
 
 
     @property
@@ -651,12 +653,39 @@ class Matter:
         self._raw = raw
 
 
+    def _binfil(self):
+        """
+        Returns bytes of fully qualified base2 bytes, that is .qb2
+        self.code converted to Base2 + self.raw left shifted with pad bits
+        equivalent of Base64 decode of .qb64 into .qb2
+        """
+        code = self.code  # codex value
+        raw = self.raw  #  bytes or bytearray
+
+        hs, ss, fs = self.Codes[code]
+        bs = hs + ss
+        if len(code) != bs:
+            raise ValueError("Mismatch code size = {} with table = {}."
+                                          .format(bs, len(code)))
+        n = sceil(bs * 3 / 4)  # number of b2 bytes to hold b64 code
+        bcode = b64ToInt(code).to_bytes(n,'big')  # right aligned b2 code
+
+        full = bcode + raw
+        bfs = len(full)
+        if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
+            raise ValueError("Invalid code = {} for raw size= {}."
+                                          .format(code, len(raw)))
+
+        i = int.from_bytes(full, 'big') << (2 * (bs % 4))  # left shift in pad bits
+        return (i.to_bytes(bfs, 'big'))
+
+
     def _bexfil(self, qb2):
         """
         Extracts self.code and self.raw from qualified base2 bytes qb2
         """
         if not qb2:  # empty need more bytes
-            raise ShortageError("Empty material, Need more characters.")
+            raise ShortageError("Empty material, Need more bytes.")
 
         first = nabSextets(qb2, 1)  # extract first sextet as code selector
         if first not in self.Bizes:
@@ -667,16 +696,15 @@ class Matter:
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                                "while extracing Matter.")
             else:
-                raise DerivationCodeError("Unsupported code start char={}.".format(first))
+                raise DerivationCodeError("Unsupported code start sextet={}.".format(first))
 
-        cs = self.Bizes[first]  # get hard code size
-        bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold enough sextets for cs octets
+        cs = self.Bizes[first]  # get code hard size equvalent sextets
+        bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
         if len(qb2) < bcs:  # need more bytes
-            raise ShortageError("Need {} more characters.".format(bcs-len(qb2)))
+            raise ShortageError("Need {} more bytes.".format(bcs-len(qb2)))
 
-        bode = nabSextets(qb2, cs)  # b2 version of code
-        code = ""
-        # code = qb2[:bcs].decode("utf-8")  # extract hard code
+        # bode = nabSextets(qb2, cs)  # b2 version of hard part of code
+        code = b2ToB64(qb2, cs)  # extract and convert hard part of code
         if code not in self.Codes:
             raise DerivationCodeError("Unsupported code ={}.".format(code))
 
@@ -686,16 +714,19 @@ class Matter:
             raise ValueError("Bad .Codes or .Sizes table entries for code={}."
                              " cs={} != hs ={} ss={}".format(code, cs, hs, ss))
 
-        if len(qb64b) < fs:  # need more bytes
-            raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
-        qb64b = qb64b[:fs]  # fully qualified primitive code plus material
+        bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
+        if len(qb2) < bfs:  # need more bytes
+            raise ShortageError("Need {} more bytes.".format(bfs-len(qb2)))
+        qb2 = qb2[:bfs]  # fully qualified primitive code plus material
 
-        # strip off prepended code and append pad characters
-        ps = bs % 4  # pad size ps = bs mod 4
-        base = qb64b[bs:] + ps * BASE64_PAD
-        raw = decodeB64(base)
-        if len(raw) != (len(qb64b) - bs) * 3 // 4:  # exact lengths
-            raise ValueError("Improperly qualified material = {}".format(qb64b))
+        # right shift to right align raw material
+        i = int.from_bytes(qb2, 'big')
+        i >>= 2 * (bs % 4)
+        bbs = ceil(bs * 3 / 4)  # bbs is min bytes to hold bs sextets
+        raw = i.to_bytes(bfs, 'big')[bbs:]  # extract raw
+
+        if len(raw) != (len(qb2) - bbs):  # exact lengths
+            raise ValueError("Improperly qualified material = {}".format(qb2))
 
         self._code = code
         self._raw = raw
