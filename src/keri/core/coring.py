@@ -2141,7 +2141,7 @@ class Indexer:
 
     def _exfil(self, qb64b):
         """
-        Extracts self.code and self.raw from qualified base64 bytes qb64b
+        Extracts self.code, self.index, and self.raw from qualified base64 bytes qb64b
         """
         if not qb64b:  # empty need more bytes
             raise ShortageError("Empty material, Need more characters.")
@@ -2203,8 +2203,8 @@ class Indexer:
     def _binfil(self):
         """
         Returns bytes of fully qualified base2 bytes, that is .qb2
-        self.code converted to Base2 + self.raw left shifted with pad bits
-        equivalent of Base64 decode of .qb64 into .qb2
+        self.code and self.index  converted to Base2 + self.raw left shifted
+        with pad bits equivalent of Base64 decode of .qb64 into .qb2
         """
         code = self.code  # codex chars hard code
         index = self.index  # index value int used for soft
@@ -2243,7 +2243,7 @@ class Indexer:
 
     def _bexfil(self, qb2):
         """
-        Extracts self.code and self.raw from qualified base2 bytes qb2
+        Extracts self.code, self.index, and self.raw from qualified base2 bytes qb2
         """
         if not qb2:  # empty need more bytes
             raise ShortageError("Empty material, Need more bytes.")
@@ -2557,7 +2557,7 @@ class Counter:
     def _infil(self):
         """
         Returns fully qualified attached sig base64 bytes computed from
-        self.raw, self.code and self.count.
+        self.code and self.count.
         """
         code = self.code  # codex value chars hard code
         count = self.count  # index value int used for soft
@@ -2583,7 +2583,7 @@ class Counter:
 
     def _exfil(self, qb64b):
         """
-        Extracts self.code and self.raw from qualified base64 bytes qb64b
+        Extracts self.code and self.count from qualified base64 bytes qb64b
         """
         if not qb64b:  # empty need more bytes
             raise ShortageError("Empty material, Need more characters.")
@@ -2623,7 +2623,7 @@ class Counter:
     def _binfil(self):
         """
         Returns bytes of fully qualified base2 bytes, that is .qb2
-        self.code converted to Base2 + self.raw left shifted with pad bits
+        self.code converted to Base2 left shifted with pad bits
         equivalent of Base64 decode of .qb64 into .qb2
         """
         code = self.code  # codex chars hard code
@@ -2649,7 +2649,7 @@ class Counter:
 
     def _bexfil(self, qb2):
         """
-        Extracts self.code and self.raw from qualified base2 bytes qb2
+        Extracts self.code and self.count from qualified base2 bytes qb2
         """
         if not qb2:  # empty need more bytes
             raise ShortageError("Empty material, Need more bytes.")
