@@ -2116,7 +2116,8 @@ class Indexer:
         """
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
-        return decodeB64(self._infil())
+        # return decodeB64(self._infil())
+        return self._binfil()
 
 
     def _infil(self):
@@ -2218,22 +2219,36 @@ class Indexer:
         self.code converted to Base2 + self.raw left shifted with pad bits
         equivalent of Base64 decode of .qb64 into .qb2
         """
-        code = self.code  # codex value
+        code = self.code  # codex chars hard code
+        index = self.index  # index value int used for soft
         raw = self.raw  #  bytes or bytearray
 
         hs, ss, fs = self.Codes[code]
         bs = hs + ss
-        if len(code) != bs:
+        if not fs:  # compute fs from index
+            if bs % 4:
+                raise ValueError("Whole code size not multiple of 4 for "
+                                      "variable length material. bs={}.".format(bs))
+            fs = (index * 4) + bs
+
+        if index < 0 or index > (64 ** ss - 1):
+            raise ValueError("Invalid index={} for code={}.".format(index, code))
+
+        # both is hard code + converted index
+        both =  "{}{}".format(code, intToB64(index, l=ss))
+
+        if len(both) != bs:
             raise ValueError("Mismatch code size = {} with table = {}."
-                                          .format(bs, len(code)))
-        n = sceil(bs * 3 / 4)  # number of b2 bytes to hold b64 code
-        bcode = b64ToInt(code).to_bytes(n,'big')  # right aligned b2 code
+                                          .format(bs, len(both)))
+
+        n = sceil(bs * 3 / 4)  # number of b2 bytes to hold b64 code + index
+        bcode = b64ToInt(both).to_bytes(n,'big')  # right aligned b2 code
 
         full = bcode + raw
         bfs = len(full)
         if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
             raise ValueError("Invalid code = {} for raw size= {}."
-                                          .format(code, len(raw)))
+                                          .format(both, len(raw)))
 
         i = int.from_bytes(full, 'big') << (2 * (bs % 4))  # left shift in pad bits
         return (i.to_bytes(bfs, 'big'))

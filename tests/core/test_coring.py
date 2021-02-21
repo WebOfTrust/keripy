@@ -886,8 +886,8 @@ def test_indexer():
     assert indexer.qb2 == qb2
 
     # Test ._binfil
-    # test = indexer._binfil()
-    # assert test == qb2
+    test = indexer._binfil()
+    assert test == qb2
 
     """ Done Test """
 
