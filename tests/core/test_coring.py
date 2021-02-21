@@ -285,25 +285,6 @@ def test_matter():
         ckey = b64ToB2(skey)
         assert Matter.Bizes[ckey] == sval
 
-    # verify equivalents of items for Codes and Bodes
-    for skey, sval in Matter.Codes.items():
-        ckey = b64ToB2(skey)
-        assert Matter.Bodes[ckey] == sval
-
-    # verify first hs Bizes matches hs in Bodes for same first sextet
-    for ckey, cval in Matter.Bodes.items():
-        skey = nabSextets(ckey, 1)  # extract the first code char equivalent
-        assert Matter.Bizes[skey] == cval.hs  # hard sizes match
-
-    #  verify all Bodes have ss == 0
-    for val in Matter.Bodes.values():
-        assert  val.ss == 0
-
-    assert Matter.Bodes[b'\x00'].hs == 1  # hard size
-    assert Matter.Bodes[b'\x00'].ss == 0  # soft size
-    assert Matter.Bodes[b'\x00'].fs == 44  # full size
-
-
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
     prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  #  str
@@ -360,6 +341,16 @@ def test_matter():
     matter = Matter(qb2=prebin)
     assert matter.code == MtrDex.Ed25519N
     assert matter.raw == verkey
+
+    # test truncates extra bytes from qb2 parameter
+    longprebin = prebin + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
+    matter = Matter(qb2=longprebin)
+    assert len(matter.qb64) == Matter.Codes[matter.code].fs
+
+    # test raises ShortageError if not enough bytes in qb2 parameter
+    shortprebin = prebin[:-4]  # too few bytes in  size
+    with pytest.raises(ShortageError):
+        matter = Matter(qb2=shortprebin)
 
     matter = Matter(qb64=prefix.encode("utf-8"))  # test bytes not str
     assert matter.code == MtrDex.Ed25519N
@@ -446,6 +437,8 @@ def test_matter():
     assert matter.qb2 == qsigB2
     assert matter.transferable == True
     assert matter.digestive == False
+
+
 
 
     # test short
@@ -799,6 +792,17 @@ def test_indexer():
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
 
+    # test truncates extra bytes from qb2 parameter
+    longqsig2b = qsig2b + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
+    indexer = Indexer(qb2=longqsig2b)
+    assert indexer.qb2 == qsig2b
+    assert len(indexer.qb64) == Indexer.Codes[indexer.code].fs
+
+    # test raises ShortageError if not enough bytes in qb2 parameter
+    shortqsig2b = qsig2b[:-4]  # too few bytes in  size
+    with pytest.raises(ShortageError):
+        indexer = Indexer(qb2=shortqsig2b)
+
     # test with non-zero index=5
     # replace pad "==" with code "AF"
     qsc = IdrDex.Ed25519_Sig + intToB64(5, l=1)
@@ -1035,6 +1039,17 @@ def test_counter():
     with pytest.raises(ShortageError):
         counter = Counter(qb64=shortqsc64)
 
+    # test truncates extra bytes from qb2 parameter
+    longqscb2 = qscb2 + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
+    counter = Counter(qb2=longqscb2)
+    assert counter.qb2 == qscb2
+    assert len(counter.qb64) == Counter.Codes[counter.code].fs
+
+    # test raises ShortageError if not enough bytes in qb2 parameter
+    shortqscb2 = qscb2[:-4]  # too few bytes in  size
+    with pytest.raises(ShortageError):
+        counter = Counter(qb2=shortqscb2)
+
     # test with non-zero count=5
     count =  5
     qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
@@ -1104,6 +1119,21 @@ def test_counter():
     assert counter.qb64b == qscb
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
+
+    # Test ._bexfil
+    counter = Counter(qb64=qsc)  #
+    code = counter.code
+    count = counter.count
+    qb2 = counter.qb2
+    counter._bexfil(qb2)
+    assert counter.code == code
+    assert counter.count == count
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qb2
+
+    # Test ._binfil
+    test = counter._binfil()
+    assert test == qb2
 
     """ Done Test """
 
@@ -2596,4 +2626,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_indexer()
+    test_counter()

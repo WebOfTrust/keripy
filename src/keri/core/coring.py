@@ -445,11 +445,8 @@ class Matter:
                 '1AAF': Sizage(hs=4, ss=0, fs=8),
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
-    # converted from first code char.
+    # converted from first code char. Used for ._bexfil.
     Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
-    # Bodes table maps to Sizage namedtuple of (hs, ss, fs) from bytes holding
-    # sextets converted from first hs chars of code.
-    Bodes = ({b64ToB2(s): val for s, val in Codes.items()})
 
 
     def __init__(self, raw=None, code=MtrDex.Ed25519N, qb64b=None, qb64=None, qb2=None):
@@ -1977,7 +1974,7 @@ class Indexer:
                 '0B': Sizage(hs=2, ss=2, fs=None),
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
-    # converted from first code char.
+    # converted from first code char. Used for ._bexfil.
     Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
 
     def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0,
@@ -2466,7 +2463,7 @@ class Counter:
                 '-0Z': Sizage(hs=3, ss=5, fs=8)
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
-    # converted from first two code char.
+    # converted from first two code char. Used for ._bexfil.
     Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
 
 
@@ -2513,7 +2510,8 @@ class Counter:
             self._exfil(qb64)
 
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
-            self._exfil(encodeB64(qb2))
+            # self._exfil(encodeB64(qb2))
+            self._bexfil(qb2)
 
         else:
             raise EmptyMaterialError("Improper initialization need either "
@@ -2568,8 +2566,8 @@ class Counter:
         """
         # rewrite to do direct binary infiltration by
         # decode self.code as bits and prepend to self.raw
-        return decodeB64(self._infil())
-
+        # return decodeB64(self._infil())
+        return self._binfil()
 
     def _infil(self):
         """
@@ -2587,7 +2585,7 @@ class Counter:
         if count < 0 or count > (64 ** ss - 1):
             raise ValidationError("Invalid count={} for code={}.".format(count, code))
 
-        # both is hard code + converted index
+        # both is hard code + converted count
         both = "{}{}".format(code, intToB64(count, l=ss))
 
         # check valid pad size for whole code size
@@ -2632,6 +2630,74 @@ class Counter:
             raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
 
         count = b64ToInt(qb64b[hs:hs+ss].decode("utf-8"))  # extract count
+
+        self._code = hard
+        self._count = count
+
+
+    def _binfil(self):
+        """
+        Returns bytes of fully qualified base2 bytes, that is .qb2
+        self.code converted to Base2 + self.raw left shifted with pad bits
+        equivalent of Base64 decode of .qb64 into .qb2
+        """
+        code = self.code  # codex chars hard code
+        count = self.count  # index value int used for soft
+
+        hs, ss, fs = self.Codes[code]
+        bs = hs + ss
+        if fs != bs or bs % 4:  # fs must be bs and multiple of 4 for count codes
+            raise ValueError("Whole code size not full size or not "
+                                  "multiple of 4. bs={} fs={}.".format(bs, fs))
+
+        if count < 0 or count > (64 ** ss - 1):
+            raise ValueError("Invalid count={} for code={}.".format(count, code))
+
+        # both is hard code + converted count
+        both =  "{}{}".format(code, intToB64(count, l=ss))
+        if len(both) != bs:
+            raise ValueError("Mismatch code size = {} with table = {}."
+                                          .format(bs, len(both)))
+
+        return (b64ToB2(both))  # convert to b2 left shift if any
+
+
+    def _bexfil(self, qb2):
+        """
+        Extracts self.code and self.raw from qualified base2 bytes qb2
+        """
+        if not qb2:  # empty need more bytes
+            raise ShortageError("Empty material, Need more bytes.")
+
+        first = nabSextets(qb2, 2)  # extract first two sextets as code selector
+        if first not in self.Bizes:
+            if first[0] == b'\xfc':  #  b64ToB2('_')
+                raise UnexpectedOpCodeError("Unexpected  op code start"
+                                               "while extracing Matter.")
+            else:
+                raise DerivationCodeError("Unsupported code start sextet={}.".format(first))
+
+        cs = self.Bizes[first]  # get code hard size equvalent sextets
+        bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
+        if len(qb2) < bcs:  # need more bytes
+            raise ShortageError("Need {} more bytes.".format(bcs-len(qb2)))
+
+        hard = b2ToB64(qb2, cs)  # extract and convert hard part of code
+        if hard not in self.Codes:
+            raise DerivationCodeError("Unsupported code ={}.".format(hard))
+
+        hs, ss, fs = self.Codes[hard]
+        bs = hs + ss  # both hs and ss
+        if hs != cs or bs != fs or bs % 4:
+            raise ValueError("Bad .Codes or .Sizes table entries for code={}."
+                             " cs={} != hs ={} ss={}".format(hard, cs, hs, ss))
+
+        bbs = ceil(bs * 3 / 4)  # bbs is min bytes to hold bs sextets
+        if len(qb2) < bbs:  # need more bytes
+            raise ShortageError("Need {} more bytes.".format(bbs-len(qb2)))
+
+        both = b2ToB64(qb2, bs)  # extract and convert both hard and soft part of code
+        count = b64ToInt(both[hs:hs+ss])  # get count
 
         self._code = hard
         self._count = count
