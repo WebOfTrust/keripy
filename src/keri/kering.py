@@ -29,6 +29,14 @@ class ShortageError(KeriError):
     """
 
 
+class EmptyMaterialError(KeriError):
+    """
+    Empty or Missing Crypto Material
+    Usage:
+        raise EmptyMaterialError("error message")
+    """
+
+
 class ValidationError(KeriError):
     """
     Validation related errors
@@ -94,12 +102,6 @@ class VersionError(ValidationError):
     """
 
 
-class EmptyMaterialError(ValidationError):
-    """
-    Empty or Missing Crypto Material
-    Usage:
-        raise EmptyMaterialError("error message")
-    """
 
 
 class DerivationError(ValidationError):

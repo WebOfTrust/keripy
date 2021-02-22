@@ -590,7 +590,7 @@ class Matter:
         ps = (3 - (len(raw) % 3)) % 3  # pad size
         # check valid pad size for code size
         if len(code) % 4 != ps:  # pad size is not remainder of len(code) % 4
-            raise ValidationError("Invalid code = {} for converted raw pad size= {}."
+            raise ValueError("Invalid code = {} for converted raw pad size= {}."
                                   .format(code, ps))
         # prepend derivation code and strip off trailing pad characters
         return (code.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
@@ -643,7 +643,7 @@ class Matter:
         base = qb64b[bs:] + ps * BASE64_PAD
         raw = decodeB64(base)
         if len(raw) != (len(qb64b) - bs) * 3 // 4:  # exact lengths
-            raise ValueError("Improperly qualified material = {}".format(qb64b))
+            raise ValidationError("Improperly qualified material = {}".format(qb64b))
 
         self._code = code
         self._raw = raw
@@ -722,7 +722,7 @@ class Matter:
         raw = i.to_bytes(bfs, 'big')[bbs:]  # extract raw
 
         if len(raw) != (len(qb2) - bbs):  # exact lengths
-            raise ValueError("Improperly qualified material = {}".format(qb2))
+            raise ValidationError("Improperly qualified material = {}".format(qb2))
 
         self._code = code
         self._raw = raw
@@ -2127,7 +2127,7 @@ class Indexer:
             fs = (index * 4) + bs
 
         if index < 0 or index > (64 ** ss - 1):
-            raise ValidationError("Invalid index={} for code={}.".format(index, code))
+            raise ValueError("Invalid index={} for code={}.".format(index, code))
 
         # both is hard code + converted index
         both =  "{}{}".format(code, intToB64(index, l=ss))
@@ -2135,7 +2135,7 @@ class Indexer:
         ps = (3 - (len(raw) % 3)) % 3  # pad size
         # check valid pad size for whole code size
         if len(both) % 4 != ps:  # pad size is not remainder of len(both) % 4
-            raise ValidationError("Invalid code = {} for converted raw pad size = {}."
+            raise ValueError("Invalid code = {} for converted raw pad size = {}."
                                   .format(both, ps))
         # prepending full derivation code with index and strip off trailing pad characters
         return (both.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
@@ -2204,7 +2204,7 @@ class Indexer:
         base = qb64b[bs:] + ps * BASE64_PAD
         raw = decodeB64(base)
         if len(raw) != (len(qb64b) - bs) * 3 // 4:  # exact lengths
-            raise ValueError("Improperly qualified material = {}".format(qb64b))
+            raise ValidationError("Improperly qualified material = {}".format(qb64b))
 
         self._code = hard
         self._index = index
@@ -2306,7 +2306,7 @@ class Indexer:
         raw = i.to_bytes(bfs, 'big')[bbs:]  # extract raw
 
         if len(raw) != (len(qb2) - bbs):  # exact lengths
-            raise ValueError("Improperly qualified material = {}".format(qb2))
+            raise ValidationError("Improperly qualified material = {}".format(qb2))
 
         self._code = hard
         self._index = index
@@ -2574,17 +2574,17 @@ class Counter:
         hs, ss, fs = self.Codes[code]
         bs = hs + ss  # both hard + soft size
         if fs != bs or bs % 4:  # fs must be bs and multiple of 4 for count codes
-            raise ValidationError("Whole code size not full size or not "
+            raise ValueError("Whole code size not full size or not "
                                   "multiple of 4. bs={} fs={}.".format(bs, fs))
         if count < 0 or count > (64 ** ss - 1):
-            raise ValidationError("Invalid count={} for code={}.".format(count, code))
+            raise ValueError("Invalid count={} for code={}.".format(count, code))
 
         # both is hard code + converted count
         both = "{}{}".format(code, intToB64(count, l=ss))
 
         # check valid pad size for whole code size
         if len(both) % 4:  # no pad
-            raise ValidationError("Invalid size = {} of {} not a multiple of 4."
+            raise ValueError("Invalid size = {} of {} not a multiple of 4."
                                   .format(len(both), both))
         # prepending full derivation code with index and strip off trailing pad characters
         return (both.encode("utf-8"))
