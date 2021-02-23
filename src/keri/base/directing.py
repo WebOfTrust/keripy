@@ -222,28 +222,31 @@ class Reactor(doing.Doer):
         """
         Process a cue in direct mode assumes chits
         """
-        cuePre = cue["pre"]
-        cueSerder = cue["serder"]
-        cueKed = cueSerder.ked
-        cueIlk = cueKed["t"]
+        cueKin = cue["kin"]  # type or kind of cue
 
-        if cueIlk == coring.Ilks.icp:
-            # check for chit from remote pre for own inception
+        cuedSerder = cue["serder"]
+        cuedKed = cuedSerder.ked
+        cuedPre = cuedKed["i"]
+        cuedIlk = cuedKed["t"]
+
+        if cuedIlk == coring.Ilks.icp:
+            # check for chit or recipt from remote pre for own inception
+            # need to add check for recipt based on type of cuedpre.
             dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
             found = False
             for quadruple in self.hab.db.getVrcsIter(dgkey):
-                if bytes(quadruple).decode("utf-8").startswith(cuePre):
+                if bytes(quadruple).decode("utf-8").startswith(cuedPre):
                     found = True
                     break
 
             if not found:  # no chit from remote so send own inception
                 self.sendOwnInception()
+        if cueKin == "chit":
+            self.sendOwnChit(cuedSerder)
 
-        self.sendOwnChit(cuePre, cueSerder)
-
-    def sendOwnChit(self, cuePre, cueSerder):
+    def sendOwnChit(self, cuedSerder):
         """
-        Send chit of event indicated by cuePre and cueSerder
+        Send chit of event indicated by cuedSerder
         """
         # send own chit of event
         # create seal of own last est event
@@ -252,11 +255,11 @@ class Reactor(doing.Doer):
                                   s="{:x}".format(kever.lastEst.s),
                                   d=kever.lastEst.d)
 
-        cueKed = cueSerder.ked
+        cuedKed = cuedSerder.ked
         # create validator receipt
-        reserder = eventing.chit(pre=cuePre,
-                                 sn=int(cueKed["s"], 16),
-                                 dig=cueSerder.dig,
+        reserder = eventing.chit(pre=cuedKed["i"],
+                                 sn=int(cuedKed["s"], 16),
+                                 dig=cuedSerder.dig,
                                  seal=seal)
         # sign cueSerder event not receipt
         counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
@@ -265,7 +268,7 @@ class Reactor(doing.Doer):
         siger = None
         for signer in self.hab.signers:
             if signer.verfer.qb64 == verfer.qb64:
-                siger = signer.sign(ser=cueSerder.raw, index=0)  # return Siger if index
+                siger = signer.sign(ser=cuedSerder.raw, index=0)  # return Siger if index
                 break
         if siger:
             # process own chit so have copy in own log
@@ -479,32 +482,37 @@ class Reactant(tyming.Tymee):
             print("{} sent cue:\n{}\n\n".format(self.hab.pre, cue))
             self.processCue(cue=cue)
 
+
     def processCue(self, cue):
         """
         Process a cue in direct mode assumes chits
         """
-        cuePre = cue["pre"]
-        cueSerder = cue["serder"]
-        cueKed = cueSerder.ked
-        cueIlk = cueKed["t"]
+        cueKin = cue["kin"]  # type or kind of cue
 
-        if cueIlk == coring.Ilks.icp:
+        cuedSerder = cue["serder"]
+        cuedKed = cuedSerder.ked
+        cuedPre = cuedKed["i"]
+        cuedIlk = cuedKed["t"]
+
+        if cuedIlk == coring.Ilks.icp:
             # check for chit from remote pre for own inception
             dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
             found = False
             for quadruple in self.hab.db.getVrcsIter(dgkey):
-                if quadruple.startswith(bytes(cuePre)):
+                if quadruple.startswith(bytes(cuedPre)):
                     found = True
                     break
 
             if not found:  # no chit from remote so send own inception
                 self.sendOwnInception()
 
-        self.sendOwnChit(cuePre, cueSerder)
+        if cueKin == "chit":
+            self.sendOwnChit(cuedSerder)
 
-    def sendOwnChit(self, cuePre, cueSerder):
+
+    def sendOwnChit(self, cuedSerder):
         """
-        Send chit of event indicated by cuePre and cueSerder
+        Send chit of event indicated by cuedSerder
         """
         # send own chit of event
         # create seal of own last est event
@@ -513,11 +521,11 @@ class Reactant(tyming.Tymee):
                                   s="{:x}".format(kever.lastEst.s),
                                   d=kever.lastEst.d)
 
-        cueKed = cueSerder.ked
+        cuedKed = cuedSerder.ked
         # create validator receipt
-        reserder = eventing.chit(pre=cuePre,
-                                 sn=int(cueKed["s"], 16),
-                                 dig=cueSerder.dig,
+        reserder = eventing.chit(pre=cuedKed["i"],
+                                 sn=int(cuedKed["s"], 16),
+                                 dig=cuedSerder.dig,
                                  seal=seal)
         # sign cueSerder event not receipt
         counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
@@ -526,7 +534,7 @@ class Reactant(tyming.Tymee):
         siger = None
         for signer in self.hab.signers:
             if signer.verfer.qb64 == verfer.qb64:
-                siger = signer.sign(ser=cueSerder.raw, index=0)  # return Siger if index
+                siger = signer.sign(ser=cuedSerder.raw, index=0)  # return Siger if index
                 break
         if siger:
             # process own chit so have copy in own log
