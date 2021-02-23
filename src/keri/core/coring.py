@@ -482,7 +482,7 @@ class Matter:
             rawsize = Matter._rawSize(code)
             raw = raw[:rawsize]  # copy only exact size from raw stream
             if len(raw) != rawsize:  # forbids shorter
-                raise ValidationError("Not enougth raw bytes for code={}"
+                raise ShortageError("Not enougth raw bytes for code={}"
                                       "expected {} got {}.".format(code,
                                                              rawsize,
                                                              len(raw)))
@@ -628,9 +628,9 @@ class Matter:
 
         hs, ss, fs = self.Codes[code]
         bs = hs + ss  # both hs and ss
-        if bs != cs or ss != 0:  # ss=0  for Matter codes
-            raise ValueError("Bad .Codes or .Sizes table entries for code={}."
-                             " cs={} != hs ={} ss={}".format(code, cs, hs, ss))
+        # assumes that unit tests on Matter and MatterCodex ensure that
+        # .Codes and .Sizes are well formed.
+        # hs == cs and ss == 0 and not fs % 4 and hs > 0 and fs > hs
 
         if len(qb64b) < fs:  # need more bytes
             raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
@@ -706,9 +706,9 @@ class Matter:
 
         hs, ss, fs = self.Codes[code]
         bs = hs + ss  # both hs and ss
-        if bs != cs or ss != 0:  # ss=0  for Matter codes
-            raise ValueError("Bad .Codes or .Sizes table entries for code={}."
-                             " cs={} != hs ={} ss={}".format(code, cs, hs, ss))
+        # assumes that unit tests on Matter and MatterCodex ensure that
+        # .Codes and .Sizes are well formed.
+        # hs == cs and ss == 0 and not fs % 4 and hs > 0 and fs > hs
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
         if len(qb2) < bfs:  # need more bytes
@@ -2022,7 +2022,7 @@ class Indexer:
 
             raw = raw[:rawsize]  # copy only exact size from raw stream
             if len(raw) != rawsize:  # forbids shorter
-                raise ValidationError("Not enougth raw bytes for code={}"
+                raise ShortageError("Not enougth raw bytes for code={}"
                                       "and index={} ,expected {} got {}."
                                       "".format(code, index, rawsize, len(raw)))
 
@@ -2122,7 +2122,7 @@ class Indexer:
         bs = hs + ss  # both hard + soft size
         if not fs:  # compute fs from index
             if bs % 4:
-                raise ValidationError("Whole code size not multiple of 4 for "
+                raise ValueError("Whole code size not multiple of 4 for "
                                       "variable length material. bs={}.".format(bs))
             fs = (index * 4) + bs
 
@@ -2173,10 +2173,9 @@ class Indexer:
 
         hs, ss, fs = self.Codes[hard]
         bs = hs + ss  # both hard + soft code size
-
-        if hs != cs:
-            raise ValueError("Bad .Codes or .Sizes table entries for code={}."
-                             " cs={} != hs ={} ss={}".format(hard, cs, hs, ss))
+        # assumes that unit tests on Indexer and IndexerCodex ensure that
+        # .Codes and .Sizes are well formed.
+        # hs == cs and hs > 0 and ss > 0 and (fs >= hs + ss if fs is not None else True)
 
         if len(qb64b) < bs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
@@ -2282,9 +2281,9 @@ class Indexer:
 
         hs, ss, fs = self.Codes[hard]
         bs = hs + ss  # both hs and ss
-        if hs != cs :
-            raise ValueError("Bad .Codes or .Sizes table entries for code={}."
-                             " cs={} != hs ={} ss={}".format(hard, cs, hs, ss))
+        # assumes that unit tests on Indexer and IndexerCodex ensure that
+        # .Codes and .Sizes are well formed.
+        # hs == cs and hs > 0 and ss > 0 and (fs >= hs + ss if fs is not None else True)
 
         bbs = ceil(bs * 3 / 4)  # bbs is min bytes to hold bs sextets
         if len(qb2) < bbs:  # need more bytes
@@ -2620,9 +2619,9 @@ class Counter:
         hs, ss, fs = self.Codes[hard]
         bs = hs + ss  # both hard + soft code size
 
-        if hs != cs or bs != fs or bs % 4:
-            raise ValueError("Bad .Codes or .Sizes table entries for code={}."
-                             " cs={} != hs ={} ss={} fs={}".format(hard, cs, hs, ss, fs))
+        # assumes that unit tests on Counter and CounterCodex ensure that
+        # .Codes and .Sizes are well formed.
+        # hs == cs and hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
 
         if len(qb64b) < bs:  # need more bytes
             raise ShortageError("Need {} more characters.".format(bs-len(qb64b)))
@@ -2689,9 +2688,9 @@ class Counter:
 
         hs, ss, fs = self.Codes[hard]
         bs = hs + ss  # both hs and ss
-        if hs != cs or bs != fs or bs % 4:
-            raise ValueError("Bad .Codes or .Sizes table entries for code={}."
-                             " cs={} != hs ={} ss={}".format(hard, cs, hs, ss))
+        # assumes that unit tests on Counter and CounterCodex ensure that
+        # .Codes and .Sizes are well formed.
+        # hs == cs and hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
 
         bbs = ceil(bs * 3 / 4)  # bbs is min bytes to hold bs sextets
         if len(qb2) < bbs:  # need more bytes

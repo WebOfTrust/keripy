@@ -275,9 +275,9 @@ def test_matter():
     for ckey in Matter.Codes.keys():
         assert Matter.Sizes[ckey[0]] == Matter.Codes[ckey].hs
 
-    #  verify all Codes have ss == 0
+    #  verify all Codes have  ss == 0 and not fs % 4 and hs > 0 and fs > hs
     for val in Matter.Codes.values():
-        assert  val.ss == 0
+        assert  val.ss == 0 and not val.fs % 4 and  val.hs > 0 and  val.fs > val.hs
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
@@ -364,7 +364,7 @@ def test_matter():
 
     # test raises ShortageError if not enough bytes in raw parameter
     shortverkey =  verkey[:-3]  # not enough bytes
-    with pytest.raises(ValidationError):
+    with pytest.raises(ShortageError):
         matter = Matter(raw=shortverkey)
 
     # test prefix on full identifier
@@ -701,9 +701,11 @@ def test_indexer():
     for ckey in Indexer.Codes.keys():
         assert Indexer.Sizes[ckey[0]] == Indexer.Codes[ckey].hs
 
-    #  verify all Codes have ss > 0
+    # verify all Codes have hs > 0 and ss > 0 and fs >= hs + ss if fs is not None
     for val in Indexer.Codes.values():
-        assert val.ss > 0
+        assert val.hs > 0 and val.ss > 0
+        if val.fs is not None:
+            assert val.fs >= val.hs + val.ss
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
@@ -755,7 +757,7 @@ def test_indexer():
     indexer = Indexer(raw=longsig)
 
     shortsig = sig[:-3]
-    with pytest.raises(ValidationError):
+    with pytest.raises(ShortageError):
         indexer = Indexer(raw=shortsig)
 
     indexer = Indexer(qb64b=qsig64b)  # test with bytes not str
@@ -980,9 +982,9 @@ def test_counter():
     for ckey in Counter.Codes.keys():
         assert Counter.Sizes[ckey[:2]] == Counter.Codes[ckey].hs
 
-    #  verify all Codes have ss > 0 and hs+ss=fs
+    #  verify all Codes have hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
     for val in Counter.Codes.values():
-        assert val.ss > 0 and val.hs + val.ss == val.fs
+        assert val.hs > 0 and val.ss > 0 and val.hs + val.ss == val.fs and not val.fs % 4
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes
@@ -1157,7 +1159,7 @@ def test_seqner():
     snqb64 = '0AAAAAAAAAAAAAAAAAAAAAAA'
     snqb2 = b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ShortageError):
         number = Seqner(raw=b'')
 
     number = Seqner(qb64b=snqb64b)
