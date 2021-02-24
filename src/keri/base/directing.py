@@ -172,6 +172,7 @@ class Reactor(doing.Doer):
                                       baser=self.hab.db,
                                       framed=False)
 
+
     def do(self, tymist, tock=0.0, **opts):
         """
         Generator method to run this doer
@@ -198,6 +199,7 @@ class Reactor(doing.Doer):
 
         return True  # return value of yield from, or yield ex.value of StopIteration
 
+
     def service(self):
         """
         Service responses
@@ -208,6 +210,7 @@ class Reactor(doing.Doer):
             self.kevery.processAll()
             self.processCues()
 
+
     def processCues(self):
         """
         Process all cues in .kevery
@@ -217,6 +220,7 @@ class Reactor(doing.Doer):
             cue = self.kevery.cues.popleft()
             print("{} sent cue:\n{}\n\n".format(self.hab.pre, cue))
             self.processCue(cue=cue)
+
 
     def processCue(self, cue):
         """
@@ -243,6 +247,7 @@ class Reactor(doing.Doer):
                 self.sendOwnInception()
 
         self.sendOwnChit(cuedSerder)
+
 
     def sendOwnChit(self, cuedSerder):
         """
@@ -281,6 +286,7 @@ class Reactor(doing.Doer):
             self.client.tx(bytes(msg))  # make copy because tx uses deque
             print("{} sent chit:\n{}\n\n".format(self.hab.pre, bytes(msg)))
             del msg[:]
+
 
     def sendOwnInception(self):
         """

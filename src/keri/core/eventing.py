@@ -1550,148 +1550,6 @@ class Kevery:
             raise ValidationError("Unexpected message ilk = {} for evt ="
                                   " {}.".format(ilk, serder.ked))
 
-    def validateSN(self, ked):
-        """
-        Returns int validated from hex str sn in ked
-
-        Parameters:
-           sn is hex char sequence number of event or seal in an event
-           ked is key event dict of associated event
-        """
-        sn = ked["s"]
-        if len(sn) > 32:
-            raise ValidationError("Invalid sn = {} too large for evt = {}."
-                                  "".format(sn, ked))
-        try:
-            sn = int(sn, 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
-
-        return sn
-
-    def fetchEstEvent(self, pre, sn):
-        """
-        Returns Serder instance of establishment event that is authoritative for
-        event in KEL for pre at sn.
-        Returns None if no event at sn accepted in KEL for pre
-
-        Parameters:
-            pre is qb64 of identifier prefix for KEL
-            sn is int sequence number of event in KEL of pre
-        """
-
-        found = False
-        while not found:
-            dig = bytes(self.baser.getKeLast(key=snKey(pre, sn)))
-            if not dig:
-                return None
-
-            # retrieve event by dig
-            raw = bytes(self.baser.getEvt(key=dgKey(pre=pre, dig=dig)))
-            if not raw:
-                return None
-
-            serder = Serder(raw=raw)  # deserialize event raw
-            if serder.ked["t"] in (Ilks.icp, Ilks.dip, Ilks.rot, Ilks.drt):
-                return serder  # establishment event so return
-
-            sn = int(serder.ked["s"], 16) - 1  # set sn to previous event
-            if sn < 0: # no more events
-                return None
-
-
-    def escrowOOEvent(self, serder, sigers):
-        """
-        Update associated logs for escrow of Out-of-Order event
-
-        Parameters:
-            serder is Serder instance of  event
-            sigers is list of Siger instance for  event
-        """
-        dgkey = dgKey(serder.preb, serder.digb)
-        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
-        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addOoe(snKey(serder.preb, serder.sn), serder.digb)
-        # log escrowed
-        blogger.info("Kevery process: escrowed out of order event = %s\n", serder.ked)
-
-
-    def escrowLDEvent(self, serder, sigers):
-        """
-        Update associated logs for escrow of Likely Duplicitous event
-
-        Parameters:
-            serder is Serder instance of  event
-            sigers is list of Siger instance for  event
-        """
-        dgkey = dgKey(serder.preb, serder.digb)
-        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
-        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addLde(snKey(serder.preb, serder.sn), serder.digb)
-        # log duplicitous
-        blogger.info("Kevery process: escrowed likely duplicitous event = %s\n", serder.ked)
-
-
-    def escrowUREvent(self, serder, cigars, dig):
-        """
-        Update associated logs for escrow of Unverified Event Receipt (non-transferable)
-
-        Parameters:
-            serder instance of receipt msg not receipted event
-            cigars is list of Cigar instances for event receipt
-            dig is digest in receipt of receipted event not serder.dig because
-                serder is of receipt not receipted event
-        """
-        # note receipt dig algo may not match database dig also so must always
-        # serder.compare to match. So receipts for same event may have different
-        # digs of that event due to different algos. So the escrow may have
-        # different dup at same key, sn.  Escrow needs to be triple with
-        # dig, witness prefix, sig stored at kel pre, sn so can compare digs
-        # with different algos.  Can't lookup by dig for same reason. Must
-        # lookup last event by sn not by dig.
-        self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
-        for cigar in cigars:  # escrow each triple
-            if cigar.verfer.transferable:  # skip transferable verfers
-                continue  # skip invalid triplets
-            triple = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
-            self.baser.addUre(key=snKey(serder.preb, serder.sn), val=triple)  # should be snKey
-        # log escrowed
-        blogger.info("Kevery process: escrowed unverified receipt of pre= %s "
-                     " sn=%x dig=%s\n", serder.pre, serder.sn, dig)
-
-
-    def escrowVREvent(self, serder, sigers, seal, dig):
-        """
-        Update associated logs for escrow of Unverified Validator Event Receipt
-        (transferable)
-
-        Parameters:
-            serder instance of receipt message not receipted event
-            sigers is list of Siger instances attached to receipt message
-            seal is SealEvent instance (namedTuple)
-            dig is digest of receipted event provided in receipt
-
-        """
-        # Receipt dig algo may not match database dig. So must always
-        # serder.compare to match. So receipts for same event may have different
-        # digs of that event due to different algos. So the escrow may have
-        # different dup at same key, sn.  Escrow needs to be quintlet with
-        # edig, validator prefix, validtor est event sn, validator est evvent dig
-        # and sig stored at kel pre, sn so can compare digs
-        # with different algos.  Can't lookup by dig for the same reason. Must
-        # lookup last event by sn not by dig.
-        self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
-        prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
-                  Seqner(snh=seal.s).qb64b + seal.d.encode("utf-8"))
-        for siger in sigers:  # escrow each quintlet
-            quintuple = prelet +  siger.qb64b  # quintuple
-            self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quintuple)
-        # log escrowed
-        blogger.info("Kevery process: escrowed unverified transferabe validator "
-                     "receipt of pre= %s sn=%x dig=%s\n", serder.pre, serder.sn, dig)
-
 
     def processEvent(self, serder, sigers):
         """
@@ -1937,6 +1795,148 @@ class Kevery:
                                   "missing associated event for transferable "
                                   "validator receipt={}.".format(ked))
 
+    def validateSN(self, ked):
+        """
+        Returns int validated from hex str sn in ked
+
+        Parameters:
+           sn is hex char sequence number of event or seal in an event
+           ked is key event dict of associated event
+        """
+        sn = ked["s"]
+        if len(sn) > 32:
+            raise ValidationError("Invalid sn = {} too large for evt = {}."
+                                  "".format(sn, ked))
+        try:
+            sn = int(sn, 16)
+        except Exception as ex:
+            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
+
+        return sn
+
+
+    def fetchEstEvent(self, pre, sn):
+        """
+        Returns Serder instance of establishment event that is authoritative for
+        event in KEL for pre at sn.
+        Returns None if no event at sn accepted in KEL for pre
+
+        Parameters:
+            pre is qb64 of identifier prefix for KEL
+            sn is int sequence number of event in KEL of pre
+        """
+
+        found = False
+        while not found:
+            dig = bytes(self.baser.getKeLast(key=snKey(pre, sn)))
+            if not dig:
+                return None
+
+            # retrieve event by dig
+            raw = bytes(self.baser.getEvt(key=dgKey(pre=pre, dig=dig)))
+            if not raw:
+                return None
+
+            serder = Serder(raw=raw)  # deserialize event raw
+            if serder.ked["t"] in (Ilks.icp, Ilks.dip, Ilks.rot, Ilks.drt):
+                return serder  # establishment event so return
+
+            sn = int(serder.ked["s"], 16) - 1  # set sn to previous event
+            if sn < 0: # no more events
+                return None
+
+
+    def escrowOOEvent(self, serder, sigers):
+        """
+        Update associated logs for escrow of Out-of-Order event
+
+        Parameters:
+            serder is Serder instance of  event
+            sigers is list of Siger instance for  event
+        """
+        dgkey = dgKey(serder.preb, serder.digb)
+        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.baser.putEvt(dgkey, serder.raw)
+        self.baser.addOoe(snKey(serder.preb, serder.sn), serder.digb)
+        # log escrowed
+        blogger.info("Kevery process: escrowed out of order event = %s\n", serder.ked)
+
+
+    def escrowLDEvent(self, serder, sigers):
+        """
+        Update associated logs for escrow of Likely Duplicitous event
+
+        Parameters:
+            serder is Serder instance of  event
+            sigers is list of Siger instance for  event
+        """
+        dgkey = dgKey(serder.preb, serder.digb)
+        self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))
+        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.baser.putEvt(dgkey, serder.raw)
+        self.baser.addLde(snKey(serder.preb, serder.sn), serder.digb)
+        # log duplicitous
+        blogger.info("Kevery process: escrowed likely duplicitous event = %s\n", serder.ked)
+
+
+    def escrowUREvent(self, serder, cigars, dig):
+        """
+        Update associated logs for escrow of Unverified Event Receipt (non-transferable)
+
+        Parameters:
+            serder instance of receipt msg not receipted event
+            cigars is list of Cigar instances for event receipt
+            dig is digest in receipt of receipted event not serder.dig because
+                serder is of receipt not receipted event
+        """
+        # note receipt dig algo may not match database dig also so must always
+        # serder.compare to match. So receipts for same event may have different
+        # digs of that event due to different algos. So the escrow may have
+        # different dup at same key, sn.  Escrow needs to be triple with
+        # dig, witness prefix, sig stored at kel pre, sn so can compare digs
+        # with different algos.  Can't lookup by dig for same reason. Must
+        # lookup last event by sn not by dig.
+        self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
+        for cigar in cigars:  # escrow each triple
+            if cigar.verfer.transferable:  # skip transferable verfers
+                continue  # skip invalid triplets
+            triple = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
+            self.baser.addUre(key=snKey(serder.preb, serder.sn), val=triple)  # should be snKey
+        # log escrowed
+        blogger.info("Kevery process: escrowed unverified receipt of pre= %s "
+                     " sn=%x dig=%s\n", serder.pre, serder.sn, dig)
+
+
+    def escrowVREvent(self, serder, sigers, seal, dig):
+        """
+        Update associated logs for escrow of Unverified Validator Event Receipt
+        (transferable)
+
+        Parameters:
+            serder instance of receipt message not receipted event
+            sigers is list of Siger instances attached to receipt message
+            seal is SealEvent instance (namedTuple)
+            dig is digest of receipted event provided in receipt
+
+        """
+        # Receipt dig algo may not match database dig. So must always
+        # serder.compare to match. So receipts for same event may have different
+        # digs of that event due to different algos. So the escrow may have
+        # different dup at same key, sn.  Escrow needs to be quintlet with
+        # edig, validator prefix, validtor est event sn, validator est evvent dig
+        # and sig stored at kel pre, sn so can compare digs
+        # with different algos.  Can't lookup by dig for the same reason. Must
+        # lookup last event by sn not by dig.
+        self.baser.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
+        prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
+                  Seqner(snh=seal.s).qb64b + seal.d.encode("utf-8"))
+        for siger in sigers:  # escrow each quintlet
+            quintuple = prelet +  siger.qb64b  # quintuple
+            self.baser.addVre(key=snKey(serder.preb, serder.sn), val=quintuple)
+        # log escrowed
+        blogger.info("Kevery process: escrowed unverified transferabe validator "
+                     "receipt of pre= %s sn=%x dig=%s\n", serder.pre, serder.sn, dig)
 
 
     def processEscrows(self):
