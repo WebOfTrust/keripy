@@ -1726,9 +1726,8 @@ class Kevery:
                 self.kevers[pre] = kever  # not exception so add to kevers
 
                 # create cue for receipt   direct mode for now
-                # need to differentiate controller's own type of identifier
-                # assume transferable so need chit for receipt.
-                self.cues.append(dict(kin="chit", serder=serder))
+                #  receipt of actual type is dependent on own type of identifier
+                self.cues.append(dict(kin="receipt", serder=serder))
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers)
@@ -1774,8 +1773,8 @@ class Kevery:
 
                     # create cue for receipt direct mode for now
                     # need to differentiate controller's own type of identifier
-                    # assume transferable so need chit for receipt.
-                    self.cues.append(dict(kin="chit", serder=serder))
+                    # need to know own type of identifier to know which type of receipt
+                    self.cues.append(dict(kin="receipt", serder=serder))
 
                 else:  # maybe duplicitous
                     # check if duplicate of existing valid accepted event

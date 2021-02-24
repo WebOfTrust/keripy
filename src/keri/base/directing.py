@@ -241,8 +241,8 @@ class Reactor(doing.Doer):
 
             if not found:  # no chit from remote so send own inception
                 self.sendOwnInception()
-        if cueKin == "chit":
-            self.sendOwnChit(cuedSerder)
+
+        self.sendOwnChit(cuedSerder)
 
     def sendOwnChit(self, cuedSerder):
         """
@@ -506,8 +506,7 @@ class Reactant(tyming.Tymee):
             if not found:  # no chit from remote so send own inception
                 self.sendOwnInception()
 
-        if cueKin == "chit":
-            self.sendOwnChit(cuedSerder)
+        self.sendOwnChit(cuedSerder)
 
 
     def sendOwnChit(self, cuedSerder):
