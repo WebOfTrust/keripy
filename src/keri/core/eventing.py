@@ -2711,36 +2711,3 @@ class Kevery:
         """
         pass
 
-
-    def processCuesIter(self, cue):
-        """
-        Iterate through cues in .cues
-        This is a stub  may not work because need to know habitat
-        So should each kevery have a reference to its habitat or not?
-
-        For each cue yield one or mre msg to send out
-        """
-        while self.cues:  # process any cues
-            # popleft each cue in .cues deque and process
-            cue = self.cues.popleft()
-            cueKin = cue["kin"]  # type or kind of cue
-
-
-            if cueKin in ("receipt", ):
-                cuedSerder = cue["serder"]
-                cuedKed = cuedSerder.ked
-
-                if cuedKed["t"] == coring.Ilks.icp:
-                    # check for chit or recipt from remote pre for own inception
-                    # need to add check for recipt based on type of cuedpre.
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
-                    found = False
-                    for quadruple in self.hab.db.getVrcsIter(dgkey):
-                        if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                            found = True
-                            break
-
-                    if not found:  # no chit from remote so send own inception
-                        yield self.prepareOwnInception()
-
-                yield self.prepareOwnChit(cuedSerder)

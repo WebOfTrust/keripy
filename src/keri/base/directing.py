@@ -227,26 +227,59 @@ class Reactor(doing.Doer):
         Process a cue in direct mode assumes chits
         """
         cueKin = cue["kin"]  # type or kind of cue
+        if cueKin in ("receipt", ):
+            cuedSerder = cue["serder"]
+            cuedKed = cuedSerder.ked
 
-        cuedSerder = cue["serder"]
-        cuedKed = cuedSerder.ked
-        cuedPre = cuedKed["i"]
-        cuedIlk = cuedKed["t"]
+            if  cuedKed["t"] == coring.Ilks.icp:
+                # check for chit or recipt from remote pre for own inception
+                # need to add check for recipt based on type of cuedpre.
+                dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+                found = False
+                for quadruple in self.hab.db.getVrcsIter(dgkey):
+                    if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
+                        found = True
+                        break
 
-        if cuedIlk == coring.Ilks.icp:
-            # check for chit or recipt from remote pre for own inception
-            # need to add check for recipt based on type of cuedpre.
-            dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
-            found = False
-            for quadruple in self.hab.db.getVrcsIter(dgkey):
-                if bytes(quadruple).decode("utf-8").startswith(cuedPre):
-                    found = True
-                    break
+                if not found:  # no chit from remote so send own inception
+                    self.sendOwnInception()
 
-            if not found:  # no chit from remote so send own inception
-                self.sendOwnInception()
+            self.sendOwnChit(cuedSerder)
 
-        self.sendOwnChit(cuedSerder)
+
+
+    def processCuesIter(self):
+        """
+        Iterate through cues in .cues
+        This is a stub  for future iterator/generator based processing
+
+        For each cue yield one or more msgs to send out
+        """
+        while self.kevery.cues:  # process any cues
+            # popleft each cue in .cues deque and process
+            cue = self.kevery.cues.popleft()
+            print("{} sent cue:\n{}\n\n".format(self.hab.pre, cue))
+            cueKin = cue["kin"]  # type or kind of cue
+
+            if cueKin in ("receipt", ):
+                cuedSerder = cue["serder"]
+                cuedKed = cuedSerder.ked
+
+                if cuedKed["t"] == coring.Ilks.icp:
+                    # check for chit or recipt from remote pre for own inception
+                    # need to add check for recipt based on type of cuedpre.
+                    dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+                    found = False
+                    for quadruple in self.hab.db.getVrcsIter(dgkey):
+                        if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
+                            found = True
+                            break
+
+                    if not found:  # no chit from remote so send own inception
+                        yield self.prepareOwnInception()
+
+                yield self.prepareOwnChit(cuedSerder)
+
 
 
     def sendOwnChit(self, cuedSerder):
