@@ -775,7 +775,7 @@ class Manager:
 
     def __init__(self, keeper=None, pidx=None, salt=None, tier=None):
         """
-        Setup Creator.
+        Setup Manager.
 
         Parameters:
             keeper is Keeper instance (LMDB)

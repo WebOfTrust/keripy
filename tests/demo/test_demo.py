@@ -11,11 +11,12 @@ import logging
 from hio.base import doing
 from hio.core.tcp import clienting, serving
 
-from keri.base import directing
+from keri.base import directing, keeping
 from keri.db import dbing
 from keri.core import eventing, coring
 
 from keri.help import ogling  # logger support
+
 
 def test_directing_basic():
     """
@@ -69,8 +70,8 @@ def test_directing_basic():
     eve = eveSerder.ked["i"]
     assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
-    with dbing.openDB(name="eve") as eveDB, \
-         dbing.openDB(name="bob") as bobDB:
+    with dbing.openDB(name="eve") as eveDB, keeping.openKeep(name="eve") as eveKeep, \
+         dbing.openDB(name="bob") as bobDB, keeping.openKeep(name="bob") as bobKeep:
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
@@ -78,7 +79,8 @@ def test_directing_basic():
         eveKevers = dict()
 
         # setup bob
-        bobHab = directing.Habitat(secrets=bobSecrets, kevers=bobKevers, db=bobDB)
+        bobHab = directing.Habitat(secrets=bobSecrets, keep=bobKeep,
+                                   kevers=bobKevers, db=bobDB)
         assert bobHab.db == bobDB
         assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
                 [signer.verfer.qb64 for signer in bobSigners])
@@ -110,7 +112,8 @@ def test_directing_basic():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(secrets=eveSecrets, kevers=eveKevers, db=eveDB)
+        eveHab = directing.Habitat(secrets=eveSecrets, keep=eveKeep,
+                                   kevers=eveKevers, db=eveDB)
         assert eveHab.db == eveDB
         assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
                     [signer.verfer.qb64 for signer in eveSigners])
@@ -231,8 +234,8 @@ def test_direct_mode():
     eve = eveSerder.ked["i"]
     assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
-    with dbing.openDB(name="eve") as eveDB, \
-         dbing.openDB(name="bob") as bobDB:
+    with dbing.openDB(name="eve") as eveDB, keeping.openKeep(name="eve") as eveKeep, \
+         dbing.openDB(name="bob") as bobDB, keeping.openKeep(name="bob") as bobKeep:
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
@@ -240,7 +243,8 @@ def test_direct_mode():
         eveKevers = dict()
 
         # setup bob
-        bobHab = directing.Habitat(secrets=bobSecrets, kevers=bobKevers, db=bobDB)
+        bobHab = directing.Habitat(secrets=bobSecrets, keep=bobKeep,
+                                   kevers=bobKevers, db=bobDB)
         assert bobHab.db == bobDB
         assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
                 [signer.verfer.qb64 for signer in bobSigners])
@@ -273,7 +277,8 @@ def test_direct_mode():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(secrets=eveSecrets, kevers=eveKevers, db=eveDB)
+        eveHab = directing.Habitat(secrets=eveSecrets, keep=eveKeep,
+                                   kevers=eveKevers, db=eveDB)
         assert eveHab.db == eveDB
         assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
                     [signer.verfer.qb64 for signer in eveSigners])
@@ -387,8 +392,8 @@ def test_direct_mode_sam():
 
 
 
-    with dbing.openDB(name="eve") as eveDB, \
-         dbing.openDB(name="bob") as bobDB:
+    with dbing.openDB(name="eve") as eveDB, keeping.openKeep(name="eve") as eveKeep, \
+         dbing.openDB(name="bob") as bobDB, keeping.openKeep(name="bob") as bobKeep:
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
@@ -396,7 +401,8 @@ def test_direct_mode_sam():
         eveKevers = dict()
 
         # setup bob
-        bobHab = directing.Habitat(secrets=bobSecrets, kevers=bobKevers, db=bobDB)
+        bobHab = directing.Habitat(secrets=bobSecrets, keep=bobKeep,
+                                   kevers=bobKevers, db=bobDB)
         assert bobHab.db == bobDB
         assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
                 [signer.verfer.qb64 for signer in bobSigners])
@@ -429,7 +435,8 @@ def test_direct_mode_sam():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(secrets=eveSecrets, kevers=eveKevers, db=eveDB)
+        eveHab = directing.Habitat(secrets=eveSecrets, keep=eveKeep,
+                                   kevers=eveKevers, db=eveDB)
         assert eveHab.db == eveDB
         assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
                     [signer.verfer.qb64 for signer in eveSigners])

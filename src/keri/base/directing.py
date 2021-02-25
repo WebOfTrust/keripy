@@ -9,6 +9,7 @@ from hio.base import doing, tyming
 from hio.core.tcp import clienting, serving
 from ..db import dbing
 from ..core import coring, eventing
+from . import keeping
 
 
 from ..help import ogling
@@ -22,13 +23,14 @@ class Habitat():
 
      Attributes:
         .secrets is list of secrets (replace later with keeper interface)
+        .keep is lmdb keep Keeper instance
         .kevers is dict of Kevers keyed by qb64 prefix
-        .db is s lmdb db Baser instance
+        .db is lmdb db Baser instance
         .signers is dict  of signers for each secret indexed by verfer qb64
         .inception is Serder of inception event
         .pre is qb64 prefix of local controller
     """
-    def __init__(self, secrets, kevers, db):
+    def __init__(self, secrets, keep, kevers, db):
         """
         Initialize instance.
 
@@ -38,6 +40,7 @@ class Habitat():
             db is lmdb db Baser instance
         """
         self.secrets = secrets
+        self.keep = keep
         self.kevers = kevers
         self.db = db
         self.signers = [coring.Signer(qb64=secret) for secret in self.secrets]
@@ -985,11 +988,12 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
     Setup and return doers list to run controller
     """
     # setup components
-    db = dbing.Baser(name=name, temp=True, reopen=False)
+    keep = keeping.Keeper(temp=True,  reopen=False) # opened later by doer
+    db = dbing.Baser(name=name, temp=True, reopen=False)  # opened later by doer
     dbDoer = dbing.BaserDoer(baser=db)
 
     kevers = dict()
-    hab = Habitat(secrets=secrets, kevers=kevers, db=db)
+    hab = Habitat(secrets=secrets, keep=keep, kevers=kevers, db=db)
 
     blogger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
                  hab.pre, name, localPort, remotePort)
