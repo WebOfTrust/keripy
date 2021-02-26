@@ -27,7 +27,7 @@ import stat
 import json
 
 from dataclasses import dataclass, asdict, field
-from collections import namedtuple
+from collections import namedtuple, deque
 
 from hio.base import doing
 
@@ -131,16 +131,20 @@ class Keeper(dbing.LMDBer):
         .prms is named sub DB whose values are serialized dicts of PrePrm instance
             Key is identifer prefix (fully qualified qb64)
             Value is  serialized parameter dict (JSON) of public key parameters
+            {
+                pidx: ,
+                algo: ,
+                salt: ,
+                stem: ,
+                tier: ,
+            }
         .sits is named sub DB whose values are serialized dicts of PreSit instance
             Key is identifer prefix (fully qualified qb64)
             Value is  serialized parameter dict (JSON) of public key situation
                 {
-                  algo: ,
-                  salt: ,
-                  tier: ,
                   old: { pubs: ridx:, kidx,  dt:},
                   new: { pubs: ridx:, kidx:, dt:},
-                  new: { pubs: ridx:, kidx:, dt:}
+                  nxt: { pubs: ridx:, kidx:, dt:}
                 }
 
     Properties:
@@ -219,6 +223,7 @@ class Keeper(dbing.LMDBer):
         self.prms = self.env.open_db(key=b'prms.')
         self.sits = self.env.open_db(key=b'sits.')
 
+
     # .gbls methods
     def putGbl(self, key, val):
         """
@@ -237,6 +242,7 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.gbls, key, val)
 
+
     def setGbl(self, key, val):
         """
         Write parameter as val to key
@@ -250,6 +256,7 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.gbls, key, val)
 
+
     def getGbl(self, key):
         """
         Return parameter val at key label
@@ -259,6 +266,7 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.gbls, key)
+
 
     def delGbl(self, key):
         """
@@ -270,6 +278,7 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.gbls, key)
+
 
     # .pris methods
     def putPri(self, key, val):
@@ -286,6 +295,7 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.pris, key, val)
 
+
     def setPri(self, key, val):
         """
         Write fully qualified private key as val to key
@@ -299,6 +309,7 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.pris, key, val)
 
+
     def getPri(self, key):
         """
         Return private key val at key
@@ -308,6 +319,7 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.pris, key)
+
 
     def delPri(self, key):
         """
@@ -319,6 +331,7 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.pris, key)
+
 
     # .pres methods
     def putPre(self, key, val):
@@ -335,6 +348,7 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.pres, key, val)
 
+
     def setPre(self, key, val):
         """
         Write fully qualified prefix as val to key
@@ -348,6 +362,7 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.pres, key, val)
 
+
     def getPre(self, key):
         """
         Return prefix val at key
@@ -357,6 +372,7 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.pres, key)
+
 
     def delPre(self, key):
         """
@@ -368,6 +384,7 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.pres, key)
+
 
     # .prms methods
     def putPrm(self, key, val):
@@ -384,6 +401,7 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.gbls, key, val)
 
+
     def setPrm(self, key, val):
         """
         Write serialized dict of PrePrm as val to key
@@ -397,6 +415,7 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.gbls, key, val)
 
+
     def getPrm(self, key):
         """
         Return serialized parameter dict at key
@@ -406,6 +425,7 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.gbls, key)
+
 
     def delPrm(self, key):
         """
@@ -417,6 +437,7 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.gbls, key)
+
 
     # .sits methods
     def putSit(self, key, val):
@@ -433,6 +454,7 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.putVal(self.sits, key, val)
 
+
     def setSit(self, key, val):
         """
         Write serialized parameter dict as val to key
@@ -446,6 +468,7 @@ class Keeper(dbing.LMDBer):
             val = val.encode("utf-8")  # convert str to bytes
         return self.setVal(self.sits, key, val)
 
+
     def getSit(self, key):
         """
         Return serialized parameter dict at key
@@ -455,6 +478,7 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.getVal(self.sits, key)
+
 
     def delSit(self, key):
         """
@@ -515,9 +539,11 @@ class KeeperDoer(doing.Doer):
         super(KeeperDoer, self).__init__(**kwa)
         self.keeper = keeper
 
+
     def enter(self):
         """"""
         self.keeper.reopen()
+
 
     def exit(self):
         """"""
@@ -795,6 +821,7 @@ class Manager:
         if self.keeper.opened:  # allows keeper db to opened asynchronously
             self.setup()  # first call to .setup with initialize database
 
+
     def setup(self):
         """
         Return triple (pidx, salt, tier) from .keeper.gbls. Assumes that db is open.
@@ -829,12 +856,14 @@ class Manager:
 
         return (pidx, salt, tier)
 
+
     def getPidx(self):
         """
         return pidx from .keeper. Assumes db initialized.
         pidx is prefix index for next new key sequence
         """
         return int(bytes(self.keeper.getGbl(b"pidx")), 16)
+
 
     def setPidx(self, pidx):
         """
@@ -843,9 +872,9 @@ class Manager:
         """
         self.keeper.setGbl(b"pidx", b"%x" % pidx)
 
+
     def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed,
                      ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
-                     dcode=coring.MtrDex.Blake3_256,
                      algo=Algos.salty, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
         """
@@ -871,7 +900,6 @@ class Manager:
             ncount is int count of next public keys when ncodes not provided
             ncode is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            dcode is str derivation code of next key digests
             algo is str key creation algorithm code
             salt is str qb64 salt for randomization when salty algorithm used
             stem is path modifier used with salt to derive private keys when using
@@ -944,6 +972,8 @@ class Manager:
         if not result:
             raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
+        self.setPidx(pidx + 1)  # increment for next inception
+
         result = self.keeper.putSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
         if not result:
             raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
@@ -953,8 +983,6 @@ class Manager:
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
-
-        self.setPidx(pidx + 1)  # increment for next inception
 
         return (verfers, digers)
 
@@ -1015,8 +1043,7 @@ class Manager:
 
 
     def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
-                     dcode=coring.MtrDex.Blake3_256,
-                     transferable=True, temp=False):
+                     transferable=True, temp=False, erase=True):
         """
         Returns duple (verfers, digers) for rotation event of keys for pre where
             verfers is list of current public key verfers
@@ -1034,7 +1061,6 @@ class Manager:
             count is int count of next public keys when icodes not provided
             code is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            dcode is str derivation code of next key digests
             transferable is Boolean, True means each public key uses transferable
                 derivation code. Default is transferable. Special case is non-transferable
                 Normally no use case for rotation to use transferable = False.
@@ -1042,6 +1068,7 @@ class Manager:
                 transferable then one should not use transferable = False for the
                 associated public key(s).
             temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
+            erase is Boolean. True means erase old private keys made stale by rotation
 
         When both ncodes is empty and ncount is 0 then the nxt is null and will
             not be rotatable. This makes the identifier non-transferable in effect
@@ -1103,10 +1130,12 @@ class Manager:
         for signer in signers:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
 
-        for pub in old.pubs:  # remove old prikeys
-            self.keeper.delPri(key=pub.encode("utf-8"))
+        if erase:
+            for pub in old.pubs:  # remove old prikeys
+                self.keeper.delPri(key=pub.encode("utf-8"))
 
         return (verfers, digers)
+
 
     def sign(self, ser, pubs=None, verfers=None, indexed=True):
         """
@@ -1160,23 +1189,56 @@ class Manager:
             return cigars
 
 
-    def ingest(self, secrets, algo=Algos.randy, salt=None, stem=None, tier=None,
-               rooted=True, transferable=True):
+    def ingest(self, secrecies, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
+               algo=Algos.salty, salt=None, stem=None, tier=None,
+               rooted=True, transferable=True, temp=False):
         """
-        Ingest list of secrets to incept associated externally generated key pair
-        into the database .
+        Ingest secrecies as a list of lists of secrets organized in event order
+        to register the sets of secrets of associated externally generated keypair
+        lists into the database.
+        Returns tuple of (verferies, digers) where verferies is a list of lists
+        of the corresponding public keys from secrecies and digers is the list
+        of digers for the digest of the newly created next keys after the last
+        entry in secrecies. Essentially ingest ends with the current keys as the
+        last key list in secrecies and the nxt keys are newly created as if a
+        rotation to the last set of keys was performed. Unlike rotate, however,
+        ingest does not delete any of the private keys it ingests. This must be
+        done separately if desired.
+
+        Each list in secrecies is an ordered list of private keys corresponding
+        to the public list in the key state for each establishment event in order.
+        The first list are the keys for the inception event, the next list for
+        the first rotation, and each subsequent list for the next rotation and
+        so on.
+
         May be used for import or recovery from backup.
-        Parameters are used to rotate to new key pairs that follow the ingested
-        sequence.
+        Method parameters specify the policy for generating new keys pairs for
+        rotations that follow the ingested list of lists. The parameters are used
+        to define how torotate to new key pairs that follow the ingested sequence.
 
         Parameters:
-            secrets is list of fully qualified secrets (private keys)
-
+            secrecies is list of lists of fully qualified secrets (private keys)
+            ncount is int count of next public keys when ncodes not provided
+            ncode is str derivation code qb64  of all ncount next public keys
+                when ncodes not provided
+            algo is str key creation algorithm code
+            salt is str qb64 salt for randomization when salty algorithm used
+            stem is path modifier used with salt to derive private keys when using
+                salty agorithms. if stem is None then uses pidx
+            tier is str security criticality tier code when using salty algorithm
+            rooted is Boolean true means derive incept salt from root salt when
+                incept salt not provided. Otherwise use incept salt only
+            transferable is Boolean, True means each public key uses transferable
+                derivation code. Default is transferable. Special case is non-transferable
+                Use case for incept to use transferable = False is for basic
+                derivation of non-transferable identifier prefix.
+                When the derivation process of the identifier prefix is
+                transferable then one should not use non-transferable for the
+                associated public key(s).
+            temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
 
         """
         pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for ingested sequence
-        ridx = 0
-        kidx = 0
 
         # configure parameters for creating new keys after ingested sequence
         if rooted and salt is None:  # use root salt instead of random salt
@@ -1187,45 +1249,77 @@ class Manager:
 
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
 
-        isigners = coring.Signer()
+        dt = ""
+        pubs = []
+        oridx = 0
+        okidx = 0
+        cridx = 0
+        ckidx = 0
+        ridx = 0
+        kidx = 0
+        verferies = []  # list of lists of verfers
+        first = True
+        secrecies = deque(secrecies)
+        while secrecies:
+            csecrets = secrecies.popleft()  # current
+            csigners = [coring.Signer(qb64=secret, transferable=transferable)
+                                                      for secret in csecrets]
+            csize = len(csigners)
+            verferies.append([signer.verfer for signer in csigners])
 
-        prefix = "" # index of key sequence defaults to zeroth public key
+            if first:
+                pp = PrePrm(pidx=pidx,
+                            algo=algo,
+                            salt=creator.salt,
+                            stem=creator.stem,
+                            tier=creator.tier)
+                pre = csigners[0].qb64b
+                result = self.keeper.putPre(key=pre, val=pre)
+                if not result:
+                    raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-        nsigners = coring.Signer()
+                result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
+                if not result:
+                    raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
-        keys = []
-        pp = PrePrm(pidx=pidx,
-                    algo=algo,
-                    salt=creator.salt,
-                    stem=creator.stem,
-                    tier=creator.tier)
+                self.setPidx(pidx + 1)  # increment for next inception
+                first = False
+
+            for signer in csigners:  # store secrets (private key val keyed by public key)
+                self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+
+            odt = dt
+            dt = helping.nowIso8601()
+            opubs = pubs
+            pubs = [signer.verfer.qb64 for signer in csigners]
+            okidx = ckidx  # old kidx
+            oridx = cridx  # old ridx
+            ckidx = kidx  # current kidx
+            cridx = ridx  # currrent ridx
+            ridx += 1  # next ridx
+            kidx += csize  # next kidx
+
+
+        # create nxt signers after ingested signers
+        nsigners = creator.create(count=ncount, code=ncode,
+                                  pidx=pidx, ridx=ridx, kidx=kidx,
+                                  transferable=transferable, temp=temp)
+
+        digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in nsigners]
+
+        for signer in nsigners:  # store secrets (private key val keyed by public key)
+            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
 
         dt = helping.nowIso8601()
-        #ps = PreSit(
-                    #new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
-                                   #ridx=ridx, kidx=kidx, dt=dt),
-                    #nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
-                                   #ridx=ridx+1, kidx=kidx+len(icodes), dt=dt))
+        old=PubLot(pubs=opubs, ridx=oridx, kidx=okidx, dt=odt)
+        new=PubLot(pubs=[signer.verfer.qb64 for signer in csigners],
+                           ridx=cridx, kidx=ckidx, dt=dt),
+        nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
+                           ridx=ridx, kidx=kidx, dt=dt)
 
-        #pre = verfers[0].qb64b
-        #result = self.keeper.putPre(key=pre, val=pre)
-        #if not result:
-            #raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
+        ps = PreSit(old=old, new=new, nxt=nxt)
+        result = self.keeper.setSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
+        if not result:
+            raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
-        #result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
-        #if not result:
-            #raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
-
-        #result = self.keeper.putSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
-        #if not result:
-            #raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
-
-        #for signer in isigners:  # store secrets (private key val keyed by public key)
-            #self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
-
-        #for signer in nsigners:  # store secrets (private key val keyed by public key)
-            #self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
-
-        #self.setPidx(pidx + 1)  # increment for next inception
-
-        return keys
+        return (verferies, digers)

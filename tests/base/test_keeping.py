@@ -880,6 +880,39 @@ def test_manager():
 
         assert wit0pre != wit1pre
 
+        # test .ingest of sequences of keys
+        secrecies = [
+                        ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc'],
+                        ['A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q'],
+                        ['AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y'],
+                        ['Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8'],
+                        ['A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E'],
+                        ['AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc'],
+                        ['AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw'],
+                        ['ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
+                    ]
+
+        pidx, rsalt, rtier = manager.setup()   #  verify current state
+        assert pidx == 6
+        assert rsalt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert rtier == coring.Tiers.low
+        verferies, digers = manager.ingest(secrecies=secrecies)
+        publicies = []
+        for verfers in verferies:
+            publicies.append([verfer.qb64 for verfer in verfers])
+        assert publicies == [
+                                ['DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'],
+                                ['DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI'],
+                                ['DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8'],
+                                ['DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ'],
+                                ['D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU'],
+                                ['D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM'],
+                                ['DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4'],
+                                ['DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg']
+                            ]
+
+        assert [diger.qb64 for diger in digers] == ['Ewt_7B0gfSE7DnMtmNEHiy8BGPVw5at2-e_JgJ1jAfEc']
+
     assert not os.path.exists(manager.keeper.path)
     assert not manager.keeper.opened
     """End Test"""
