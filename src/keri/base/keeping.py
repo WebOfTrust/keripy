@@ -575,7 +575,7 @@ class Creator:
         return ''
 
 
-class RandoCreator(Creator):
+class RandyCreator(Creator):
     """
     Class for creating a key pair based on re-randomizing each seed algorithm.
 
@@ -597,7 +597,7 @@ class RandoCreator(Creator):
         Parameters:
 
         """
-        super(RandoCreator, self).__init__(**kwa)
+        super(RandyCreator, self).__init__(**kwa)
 
     def create(self, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
                transferable=True, **kwa):
@@ -747,7 +747,7 @@ class Creatory:
     def _makeRandy(self, **kwa):
         """
         """
-        return RandoCreator(**kwa)
+        return RandyCreator(**kwa)
 
 
     def _makeSalty(self, **kwa):
@@ -768,18 +768,18 @@ class Manager:
     Methods:
 
     Hidden:
-       ._pidx is initial pidx use attribute because keeper may not be open on init
+       ._pidx is initial pidx prefix index use attribute because keeper may not be open on init
        ._salt is initial salt use attribute because keeper may not be open on init
        ._tier is initial security tier use attribute because keeper may not be open on init
     """
 
     def __init__(self, keeper=None, pidx=None, salt=None, tier=None):
         """
-        Setup Creator.
+        Setup Manager.
 
         Parameters:
             keeper is Keeper instance (LMDB)
-            pidx is int index of next created key pair sequence
+            pidx is int prefix index of next new created key pair sequence
             salt is qb64 of root salt. Makes random root salt if not provided
             tier is default SecTier for root salt
 
@@ -792,27 +792,27 @@ class Manager:
         self._salt = salt if salt is not None else coring.Salter().qb64
         self._tier = tier if tier is not None else coring.Tiers.low
 
-        if self.keeper.opened:
-            self.setup()
+        if self.keeper.opened:  # allows keeper db to opened asynchronously
+            self.setup()  # first call to .setup with initialize database
 
     def setup(self):
         """
-        Return triple (pidx, salt, tier) from .keeper.gbls if keeper is setup
-        Otherwise if .keeper.gbls not setup then initialize from
-        ._pidx, ._salt, and ._tier
-
-        This is so keeper may be opened later asynchronously  and first call
-        to .setup fills them in.
-
+        Return triple (pidx, salt, tier) from .keeper.gbls. Assumes that db is open.
+        If .keeper.gbls in database has not been initialized for the first time
+        then initializes them from ._pidx, ._salt, and ._tier
+        then assigns the default .gbls values for prefix id, salt and tier.
+        The initialization here enables asynchronous opening of keeper db after keeper
+        is instantiated and first call to retrieve setup will initial if it was
+        not before.
         """
-        raw = self.keeper.getGbl('pidx')
+        raw = self.keeper.getGbl('pidx')  # prefix id of next prefix
         if raw is None:
             pidx = self._pidx
             self.keeper.putGbl('pidx', b'%x' % pidx)
         else:
             pidx = int(bytes(raw), 16)
 
-        raw = self.keeper.getGbl('salt')
+        raw = self.keeper.getGbl('salt')  # default salt
         if raw is None:
             salt = self._salt
             self.keeper.putGbl('salt', salt)
@@ -820,7 +820,7 @@ class Manager:
         else:
             salt = bytes(raw).decode("utf-8")
 
-        raw = self.keeper.getGbl('tier')
+        raw = self.keeper.getGbl('tier')  # default tier
         if raw is None:
             tier = self._tier
             self.keeper.putGbl('tier', tier)
@@ -831,13 +831,15 @@ class Manager:
 
     def getPidx(self):
         """
-        return pidx from .keeper. Assumes setup
+        return pidx from .keeper. Assumes db initialized.
+        pidx is prefix index for next new key sequence
         """
         return int(bytes(self.keeper.getGbl(b"pidx")), 16)
 
     def setPidx(self, pidx):
         """
         Save .pidx to .keeper
+        pidx is prefix index for next new key sequence
         """
         self.keeper.setGbl(b"pidx", b"%x" % pidx)
 
@@ -891,9 +893,9 @@ class Manager:
             even when the identifer prefix is transferable.
 
         """
-        pidx, rootSalt, rootTier = self.setup()  # default pidx, salt, tier
-        ridx = 0
-        kidx = 0
+        pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for new sequence
+        ridx = 0  # rotation index
+        kidx = 0  # key pair index
 
         if rooted and salt is None:  # use root salt instead of random salt
             salt = rootSalt
@@ -956,6 +958,7 @@ class Manager:
 
         return (verfers, digers)
 
+
     def move(self, old, new):
         """
         Assigns new pre to old default .pres at old
@@ -1009,6 +1012,7 @@ class Manager:
         # make new so that if move again we reserve each one
         if not self.keeper.putPre(key=new, val=new):
             raise ValueError("Failed assiging new pre={}.".format(new))
+
 
     def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,
@@ -1154,3 +1158,74 @@ class Manager:
             for signer in signers:
                 cigars.append(signer.sign(ser))
             return cigars
+
+
+    def ingest(self, secrets, algo=Algos.randy, salt=None, stem=None, tier=None,
+               rooted=True, transferable=True):
+        """
+        Ingest list of secrets to incept associated externally generated key pair
+        into the database .
+        May be used for import or recovery from backup.
+        Parameters are used to rotate to new key pairs that follow the ingested
+        sequence.
+
+        Parameters:
+            secrets is list of fully qualified secrets (private keys)
+
+
+        """
+        pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for ingested sequence
+        ridx = 0
+        kidx = 0
+
+        # configure parameters for creating new keys after ingested sequence
+        if rooted and salt is None:  # use root salt instead of random salt
+            salt = rootSalt
+
+        if rooted and tier is None:  # use root tier as default
+            tier = rootTier
+
+        creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
+
+        isigners = coring.Signer()
+
+        prefix = "" # index of key sequence defaults to zeroth public key
+
+        nsigners = coring.Signer()
+
+        keys = []
+        pp = PrePrm(pidx=pidx,
+                    algo=algo,
+                    salt=creator.salt,
+                    stem=creator.stem,
+                    tier=creator.tier)
+
+        dt = helping.nowIso8601()
+        #ps = PreSit(
+                    #new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
+                                   #ridx=ridx, kidx=kidx, dt=dt),
+                    #nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
+                                   #ridx=ridx+1, kidx=kidx+len(icodes), dt=dt))
+
+        #pre = verfers[0].qb64b
+        #result = self.keeper.putPre(key=pre, val=pre)
+        #if not result:
+            #raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
+
+        #result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
+        #if not result:
+            #raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
+
+        #result = self.keeper.putSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
+        #if not result:
+            #raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
+
+        #for signer in isigners:  # store secrets (private key val keyed by public key)
+            #self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+
+        #for signer in nsigners:  # store secrets (private key val keyed by public key)
+            #self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+
+        #self.setPidx(pidx + 1)  # increment for next inception
+
+        return keys
