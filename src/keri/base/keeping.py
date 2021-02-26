@@ -1201,11 +1201,11 @@ class Manager:
                     tier=creator.tier)
 
         dt = helping.nowIso8601()
-        ps = PreSit(
-                    new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
-                                   ridx=ridx, kidx=kidx, dt=dt),
-                    nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
-                                   ridx=ridx+1, kidx=kidx+len(icodes), dt=dt))
+        #ps = PreSit(
+                    #new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
+                                   #ridx=ridx, kidx=kidx, dt=dt),
+                    #nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
+                                   #ridx=ridx+1, kidx=kidx+len(icodes), dt=dt))
 
         #pre = verfers[0].qb64b
         #result = self.keeper.putPre(key=pre, val=pre)
