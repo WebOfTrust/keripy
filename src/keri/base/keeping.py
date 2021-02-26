@@ -1187,11 +1187,11 @@ class Manager:
 
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
 
-        isigners = Signer()
+        isigners = coring.Signer()
 
         prefix = "" # index of key sequence defaults to zeroth public key
 
-        nsigners = Signer()
+        nsigners = coring.Signer()
 
         keys = []
         pp = PrePrm(pidx=pidx,
