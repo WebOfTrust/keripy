@@ -1193,7 +1193,7 @@ class Manager:
 
         nsigners = Signer()
 
-
+        keys = []
         pp = PrePrm(pidx=pidx,
                     algo=algo,
                     salt=creator.salt,
@@ -1207,25 +1207,25 @@ class Manager:
                     nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
                                    ridx=ridx+1, kidx=kidx+len(icodes), dt=dt))
 
-        pre = verfers[0].qb64b
-        result = self.keeper.putPre(key=pre, val=pre)
-        if not result:
-            raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
+        #pre = verfers[0].qb64b
+        #result = self.keeper.putPre(key=pre, val=pre)
+        #if not result:
+            #raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-        result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
-        if not result:
-            raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
+        #result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
+        #if not result:
+            #raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
-        result = self.keeper.putSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
-        if not result:
-            raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
+        #result = self.keeper.putSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
+        #if not result:
+            #raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
 
-        for signer in isigners:  # store secrets (private key val keyed by public key)
-            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+        #for signer in isigners:  # store secrets (private key val keyed by public key)
+            #self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
 
-        for signer in nsigners:  # store secrets (private key val keyed by public key)
-            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+        #for signer in nsigners:  # store secrets (private key val keyed by public key)
+            #self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
 
-        self.setPidx(pidx + 1)  # increment for next inception
+        #self.setPidx(pidx + 1)  # increment for next inception
 
-        return prefix
+        return keys
