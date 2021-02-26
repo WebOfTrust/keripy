@@ -768,7 +768,7 @@ class Manager:
     Methods:
 
     Hidden:
-       ._pidx is initial pidx use attribute because keeper may not be open on init
+       ._pidx is initial pidx prefix index use attribute because keeper may not be open on init
        ._salt is initial salt use attribute because keeper may not be open on init
        ._tier is initial security tier use attribute because keeper may not be open on init
     """
@@ -779,7 +779,7 @@ class Manager:
 
         Parameters:
             keeper is Keeper instance (LMDB)
-            pidx is int prefix id index of next new created key pair sequence
+            pidx is int prefix index of next new created key pair sequence
             salt is qb64 of root salt. Makes random root salt if not provided
             tier is default SecTier for root salt
 
@@ -832,14 +832,14 @@ class Manager:
     def getPidx(self):
         """
         return pidx from .keeper. Assumes db initialized.
-        pidx is prefix id for next new key sequence
+        pidx is prefix index for next new key sequence
         """
         return int(bytes(self.keeper.getGbl(b"pidx")), 16)
 
     def setPidx(self, pidx):
         """
         Save .pidx to .keeper
-        pidx is prefix id for next new key sequence
+        pidx is prefix index for next new key sequence
         """
         self.keeper.setGbl(b"pidx", b"%x" % pidx)
 
@@ -894,8 +894,8 @@ class Manager:
 
         """
         pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for new sequence
-        ridx = 0
-        kidx = 0
+        ridx = 0  # rotation index
+        kidx = 0  # key pair index
 
         if rooted and salt is None:  # use root salt instead of random salt
             salt = rootSalt
@@ -958,6 +958,7 @@ class Manager:
 
         return (verfers, digers)
 
+
     def move(self, old, new):
         """
         Assigns new pre to old default .pres at old
@@ -1011,6 +1012,7 @@ class Manager:
         # make new so that if move again we reserve each one
         if not self.keeper.putPre(key=new, val=new):
             raise ValueError("Failed assiging new pre={}.".format(new))
+
 
     def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
                      dcode=coring.MtrDex.Blake3_256,
@@ -1158,59 +1160,25 @@ class Manager:
             return cigars
 
 
-    def ingest(self):
+    def ingest(self, secrets, algo=Algos.randy, salt=None, stem=None, tier=None,
+               rooted=True, transferable=True):
         """
-        Ingest (import) an externally generated key pair sequence into the database.
-
-
-        Returns duple (verfers, digers) for inception event where
-            verfers is list of current public key verfers
-                public key is verfer.qb64
-            digers is list of next public key digers
-                digest to xor is diger.raw
-
-        Incept a prefix. Use first public key as temporary prefix.
-        Must .repre later to move pubsit dict to correct permanent prefix.
-        Store the dictified PreSit in the keeper under the first public key
-
+        Ingest list of secrets to incept associated externally generated key pair
+        into the database .
+        May be used for import or recovery from backup.
+        Parameters are used to rotate to new key pairs that follow the ingested
+        sequence.
 
         Parameters:
-            icodes is list of private key derivation codes qb64 str
-                one per incepting key pair
-            icount is int count of incepting public keys when icodes not provided
-            icode is str derivation code qb64  of all icount incepting private keys
-                when icodes list not provided
-            ncodes is list of private key derivation codes qb64 str
-                one per next key pair
-            ncount is int count of next public keys when ncodes not provided
-            ncode is str derivation code qb64  of all ncount next public keys
-                when ncodes not provided
-            dcode is str derivation code of next key digests
-            algo is str key creation algorithm code
-            salt is str qb64 salt for randomization when salty algorithm used
-            stem is path modifier used with salt to derive private keys when using
-                salty agorithms. if stem is None then uses pidx
-            tier is str security criticality tier code when using salty algorithm
-            rooted is Boolean true means derive incept salt from root salt when
-                incept salt not provided. Otherwise use incept salt only
-            transferable is Boolean, True means each public key uses transferable
-                derivation code. Default is transferable. Special case is non-transferable
-                Use case for incept to use transferable = False is for basic
-                derivation of non-transferable identifier prefix.
-                When the derivation process of the identifier prefix is
-                transferable then one should not use non-transferable for the
-                associated public key(s).
-            temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
+            secrets is list of fully qualified secrets (private keys)
 
-        When both ncodes is empty and ncount is 0 then the nxt is null and will
-            not be rotatable. This makes the identifier non-transferable in effect
-            even when the identifer prefix is transferable.
 
         """
-        pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for new sequence
+        pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for ingested sequence
         ridx = 0
         kidx = 0
 
+        # configure parameters for creating new keys after ingested sequence
         if rooted and salt is None:  # use root salt instead of random salt
             salt = rootSalt
 
@@ -1219,22 +1187,12 @@ class Manager:
 
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
 
-        if not icodes:  # all same code, make list of len icount of same code
-            icodes = [icode for i in range(icount)]
+        isigners = Signer()
 
-        isigners = creator.create(codes=icodes,
-                                  pidx=pidx, ridx=ridx, kidx=kidx,
-                                  transferable=transferable, temp=temp)
-        verfers = [signer.verfer for signer in isigners]
+        prefix = "" # index of key sequence defaults to zeroth public key
 
-        if not ncodes:  # all same code, make list of len ncount of same code
-            ncodes = [ncode for i in range(ncount)]
+        nsigners = Signer()
 
-        # count set to 0 to ensure does not create signers if ncodes is empty
-        nsigners = creator.create(codes=ncodes, count=0,
-                                  pidx=pidx, ridx=ridx+1, kidx=kidx+len(icodes),
-                                  transferable=transferable, temp=temp)
-        digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in nsigners]
 
         pp = PrePrm(pidx=pidx,
                     algo=algo,
@@ -1270,4 +1228,4 @@ class Manager:
 
         self.setPidx(pidx + 1)  # increment for next inception
 
-        return (verfers, digers)
+        return prefix
