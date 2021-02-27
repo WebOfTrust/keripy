@@ -82,6 +82,16 @@ class PrePrm:
     def __iter__(self):
         return iter(asdict(self))
 
+def riKey(pre, ri):
+    """
+    Returns bytes DB key from concatenation with '.' of qualified Base64 prefix
+    bytes pre and int ri (rotation index) of key rotation.
+    Inception has ri == 0
+    """
+    if hasattr(pre, "encode"):
+        pre = pre.encode("utf-8")  # convert str to bytes
+    return (b'%s.%032x' % (pre, ri))
+
 
 def openKeep(name="test", **kwa):
     """
@@ -146,6 +156,11 @@ class Keeper(dbing.LMDBer):
                   new: { pubs: ridx:, kidx:, dt:},
                   nxt: { pubs: ridx:, kidx:, dt:}
                 }
+        .pubs is named sub DB whose values are serialized lists of public keys
+            Key is prefix.ridx (rotation index as 32 char hex string)
+                use riKey(pre, ri)
+            Value is serialed list of fully qualified public keys that are the
+                current signing keys after the rotation given by rotation index
 
     Properties:
 
@@ -222,6 +237,7 @@ class Keeper(dbing.LMDBer):
         self.pres = self.env.open_db(key=b'pres.')
         self.prms = self.env.open_db(key=b'prms.')
         self.sits = self.env.open_db(key=b'sits.')
+        self.pubs = self.env.open_db(key=b'pubs.')
 
 
     # .gbls methods
@@ -490,6 +506,63 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.sits, key)
+
+    # .pubs methods
+    def putPubs(self, key, val):
+        """
+        Uses riKey(pre, ri)
+        Write serialized dict of PreSit as val to key
+        key is fully qualified prefix
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
+        return self.putVal(self.sits, key, val)
+
+
+    def setPubs(self, key, val):
+        """
+        Uses riKey(pre, ri)
+        Write serialized parameter dict as val to key
+        key is fully qualified prefix
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")  # convert str to bytes
+        return self.setVal(self.sits, key, val)
+
+
+    def getPubs(self, key):
+        """
+        Uses riKey(pre, ri)
+        Return serialized parameter dict at key
+        key is fully qualified prefix
+        Returns None if no entry at key
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        return self.getVal(self.sits, key)
+
+
+    def delPubs(self, key):
+        """
+        Uses riKey(pre, ri)
+        Deletes value at key.
+        key is fully qualified prefix
+        val is serialized parameter dict at key
+        Returns True If key exists in database Else False
+        """
+        if hasattr(key, "encode"):
+            key = key.encode("utf-8")  # convert str to bytes
+        return self.delVal(self.sits, key)
+
 
 
 class KeeperDoer(doing.Doer):
@@ -981,6 +1054,9 @@ class Manager:
         for signer in isigners:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
 
+        self.keeper.putPubs(key=riKey(pre, ri=ridx),
+                            val=json.dumps([verfer.qb64 for verfer in verfers]).encode("utf-8"))
+
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
 
@@ -1102,6 +1178,9 @@ class Manager:
             signer = coring.Signer(qb64b=pri,
                                    transferable=verfer.transferable)
             verfers.append(signer.verfer)
+
+        self.keeper.putPubs(key=riKey(pre, ri=ps.new.ridx),
+                            val=json.dumps(ps.new.pubs).encode("utf-8"))
 
         creator = Creatory(algo=pp.algo).make(salt=pp.salt, stem=pp.stem, tier=pp.tier)
 
@@ -1273,7 +1352,7 @@ class Manager:
                             salt=creator.salt,
                             stem=creator.stem,
                             tier=creator.tier)
-                pre = csigners[0].qb64b
+                pre = csigners[0].verfer.qb64b
                 result = self.keeper.putPre(key=pre, val=pre)
                 if not result:
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
@@ -1287,6 +1366,9 @@ class Manager:
 
             for signer in csigners:  # store secrets (private key val keyed by public key)
                 self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+
+            self.keeper.putPubs(key=riKey(pre, ri=ridx),
+                                val=json.dumps([signer.verfer.qb64 for signer in csigners]).encode("utf-8"))
 
             odt = dt
             dt = helping.nowIso8601()
@@ -1313,7 +1395,7 @@ class Manager:
         dt = helping.nowIso8601()
         old=PubLot(pubs=opubs, ridx=oridx, kidx=okidx, dt=odt)
         new=PubLot(pubs=[signer.verfer.qb64 for signer in csigners],
-                           ridx=cridx, kidx=ckidx, dt=dt),
+                           ridx=cridx, kidx=ckidx, dt=dt)
         nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
                            ridx=ridx, kidx=kidx, dt=dt)
 

@@ -144,6 +144,25 @@ def test_publot_pubsit():
     """End Test"""
 
 
+def test_key_funcs():
+    """
+    Test key utility functions
+    """
+    pre = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    preb = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    ri = 3
+
+    assert keeping.riKey(pre, ri) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                        b'.00000000000000000000000000000003')
+    assert keeping.riKey(preb, ri) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                        b'.00000000000000000000000000000003')
+
+    with pytest.raises(TypeError):
+        keeping.riKey(pre, sn='3')
+
+    """Done Test"""
+
+
 def test_openkeeper():
     """
     test contextmanager decorator for test Keeper databases
@@ -419,6 +438,26 @@ def test_keeper():
         assert keeper.delSit(key) == True
         assert keeper.getSit(key) == None
 
+        #  test .pubs sub db methods
+        key0 = keeping.riKey(prea, 0)
+        pubs1 = [puba.decode("utf-8"), pubb.decode("utf-8")]
+        pubs2 = [pubc.decode("utf-8")]
+        spubs1 = json.dumps(pubs1).encode("utf-8")
+        assert spubs1 == (b'["DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4", '
+                          b'"DoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-QiVgbRbyAIZG"]')
+        spubs2 = json.dumps(pubs2).encode("utf-8")
+        assert spubs2 == b'["DAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4G"]'
+        assert keeper.getPubs(key0) == None
+        assert keeper.delPubs(key0) == False
+        assert keeper.putPubs(key0, val=spubs1) == True
+        assert keeper.getPubs(key0) == spubs1
+        assert keeper.putPubs(key0, val=spubs2) == False
+        assert keeper.getPubs(key0) == spubs1
+        assert keeper.setPubs(key0, val=spubs2) == True
+        assert keeper.getPubs(key0) == spubs2
+        assert keeper.delPubs(key0) == True
+        assert keeper.getPubs(key0) == None
+
 
     assert not os.path.exists(keeper.path)
 
@@ -647,6 +686,10 @@ def test_manager():
         keys = [verfer.qb64 for verfer in verfers]
         assert keys == ps.new.pubs
 
+        # test .pubs db
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
+        assert pl == ps.new.pubs
+
         digs = [diger.qb64 for diger in  digers]
         assert digs == ['E8UYvbKn7KYw9e4F2DR-iduGtdA1o16ePAYjpyCYSeYo']
 
@@ -724,6 +767,10 @@ def test_manager():
 
         for pub in deadpubs:
             assert not manager.keeper.getPri(key=pub.encode("utf-8"))
+
+        # test .pubs db
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
+        assert pl == ps.new.pubs
 
         # salty algorithm rotate to null
 
@@ -910,6 +957,32 @@ def test_manager():
                                 ['DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4'],
                                 ['DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg']
                             ]
+
+        ipre = publicies[0][0]
+
+        # test .pris db
+        for i, pubs in enumerate(publicies):
+            pri0 = bytes(manager.keeper.getPri(key=pubs[0]))
+            assert pri0.decode("utf-8") == secrecies[i][0]
+            for pub in pubs:
+                pri = bytes(manager.keeper.getPri(key=pub))
+                assert pri
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 6
+
+        assert manager.getPidx() == 7
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=ipre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+        assert ps.new.ridx == 7
+        assert ps.new.pubs == publicies[ps.new.ridx]
+
+        # test .pubs db
+        for i, pubs in enumerate(publicies):
+            pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i))).decode("utf-8"))
+            assert pl == pubs
 
         assert [diger.qb64 for diger in digers] == ['Ewt_7B0gfSE7DnMtmNEHiy8BGPVw5at2-e_JgJ1jAfEc']
 
