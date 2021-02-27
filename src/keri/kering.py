@@ -37,6 +37,14 @@ class EmptyMaterialError(KeriError):
     """
 
 
+class ClosedError(KeriError):
+    """
+    Error attempting to use closed (unopened) resource such as file, database etc that is
+
+    Usage:
+        raise ClosedError("error message")
+    """
+
 class ValidationError(KeriError):
     """
     Validation related errors
@@ -100,8 +108,6 @@ class VersionError(ValidationError):
     Usage:
         raise VersionError("error message")
     """
-
-
 
 
 class DerivationError(ValidationError):

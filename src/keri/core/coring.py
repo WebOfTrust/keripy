@@ -730,7 +730,7 @@ class Matter:
 
 class Seqner(Matter):
     """
-    Seqner is subclass of CryMat, cryptographic material, for sequence numbers
+    Seqner is subclass of Matter, cryptographic material, for sequence numbers
     Seqner provides fully qualified format for sequence numbers when
     used as attached cryptographic material items.
 
@@ -741,7 +741,7 @@ class Seqner(Matter):
 
     Attributes:
 
-    Inherited Properties:  (See CryMat)
+    Inherited Properties:  (See Matter)
         .pad  is int number of pad chars given raw
         .code is  str derivation code to indicate cypher suite
         .raw is bytes crypto material only without code
@@ -771,7 +771,7 @@ class Seqner(Matter):
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.Salt_128, sn=None, snh=None, **kwa):
         """
-        Inhereited Parameters:  (see CryMat)
+        Inhereited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
@@ -820,10 +820,10 @@ class Seqner(Matter):
 
 class Verfer(Matter):
     """
-    Verfer is CryMat subclass with method to verify signature of serialization
+    Verfer is Matter subclass with method to verify signature of serialization
     using the .raw as verifier key and .code for signature cipher suite.
 
-    See CryMat for inherited attributes and properties:
+    See Matter for inherited attributes and properties:
 
     Attributes:
 
@@ -879,12 +879,12 @@ class Verfer(Matter):
 
 class Cigar(Matter):
     """
-    Cigar is CryMat subclass holding a nonindexed signature with verfer property.
-        From CryMat .raw is signature and .code is signature cipher suite
+    Cigar is Matter subclass holding a nonindexed signature with verfer property.
+        From Matter .raw is signature and .code is signature cipher suite
     Adds .verfer property to hold Verfer instance of associated verifier public key
         Verfer's .raw as verifier key and .code is verifier cipher suite.
 
-    See CryMat for inherited attributes and properties:
+    See Matter for inherited attributes and properties:
 
     Attributes:
 
@@ -940,14 +940,14 @@ class Cigar(Matter):
 
 class Signer(Matter):
     """
-    Signer is CryMat subclass with method to create signature of serialization
+    Signer is Matter subclass with method to create signature of serialization
     using the .raw as signing (private) key seed, .code as cipher suite for
     signing and new property .verfer whose property .raw is public key for signing.
     If not provided .verfer is generated from private key seed using .code
     as cipher suite for creating key-pair.
 
 
-    See CryMat for inherited attributes and properties:
+    See Matter for inherited attributes and properties:
 
     Attributes:
 
@@ -962,7 +962,7 @@ class Signer(Matter):
         """
         Assign signing cipher suite function to ._sign
 
-        Parameters:  See CryMat for inherted parameters
+        Parameters:  See Matter for inherted parameters
             raw is bytes crypto material seed or private key
             code is derivation code
             transferable is Boolean True means verifier code is transferable
@@ -1042,7 +1042,7 @@ class Signer(Matter):
 
 class Salter(Matter):
     """
-    Salter is CryMat subclass to maintain random salt for secrets (private keys)
+    Salter is Matter subclass to maintain random salt for secrets (private keys)
     Its .raw is random salt, .code as cipher suite for salt
 
     Attributes:
@@ -1148,10 +1148,10 @@ class Salter(Matter):
 
 class Diger(Matter):
     """
-    Diger is CryMat subclass with method to verify digest of serialization
+    Diger is Matter subclass with method to verify digest of serialization
     using  .raw as digest and .code for digest algorithm.
 
-    See CryMat for inherited attributes and properties:
+    See Matter for inherited attributes and properties:
 
     Inherited Properties:
         .pad  is int number of pad chars given raw
@@ -1181,7 +1181,7 @@ class Diger(Matter):
         """
         Assign digest verification function to ._verify
 
-        See CryMat for inherited parameters
+        See Matter for inherited parameters
 
         Inherited Parameters:
             raw is bytes of unqualified crypto material usable for crypto operations
@@ -1351,7 +1351,7 @@ class Diger(Matter):
 
 class Nexter(Matter):
     """
-    Nexter is CryMat subclass with support to derive itself from
+    Nexter is Matter subclass with support to derive itself from
     next sith and next keys given code.
 
     See Diger for inherited attributes and properties:
@@ -1511,12 +1511,12 @@ class Nexter(Matter):
 
 class Prefixer(Matter):
     """
-    Prefixer is CryMat subclass for autonomic identifier prefix using
+    Prefixer is Matter subclass for autonomic identifier prefix using
     derivation as determined by code from ked
 
     Attributes:
 
-    Inherited Properties:  (see CryMat)
+    Inherited Properties:  (see Matter)
         .pad  is int number of pad chars given raw
         .code is  str derivation code to indicate cypher suite
         .raw is bytes crypto material only without code
@@ -2315,11 +2315,11 @@ class Indexer:
 
 class Siger(Indexer):
     """
-    Siger is subclass of SigMat, indexed signature material,
+    Siger is subclass of Indexer, indexed signature material,
     Adds .verfer property which is instance of Verfer that provides
           associated signature verifier.
 
-    See SigMat for inherited attributes and properties:
+    See Indexer for inherited attributes and properties:
 
     Attributes:
 
@@ -2334,7 +2334,7 @@ class Siger(Indexer):
         """
         Assign verfer to ._verfer
 
-        Parameters:  See CryMat for inherted parameters
+        Parameters:  See Matter for inherted parameters
             verfer if Verfer instance if any
 
         """

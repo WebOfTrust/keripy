@@ -26,9 +26,9 @@ def test_partial_signed_escrow():
     salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
 
     # init event DB and keep DB
-    with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
+    with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
-        mgr = keeping.Manager(keeper=kpr, salt=salt)
+        mgr = keeping.Manager(keeper=ks, salt=salt)
 
         # Init Kevery with event DB
         kvy = eventing.Kevery(baser=db)
@@ -325,7 +325,7 @@ def test_partial_signed_escrow():
         fsdig = kvy.baser.getFse(dbing.dtKey(pre, adtsb))
         assert fsdig == srdr.digb
 
-    assert not os.path.exists(kpr.path)
+    assert not os.path.exists(ks.path)
     assert not os.path.exists(db.path)
 
     """End Test"""
@@ -341,13 +341,13 @@ def test_missing_delegator_escrow():
     delSalt = coring.Salter(raw=b'abcdef0123456789').qb64
 
     with dbing.openDB(name="bob") as bobDB, \
-          keeping.openKeep(name="bob") as bobKp, \
+          keeping.openKS(name="bob") as bobKS, \
           dbing.openDB(name="del") as delDB, \
-          keeping.openKeep(name="del") as delKp:
+          keeping.openKS(name="del") as delKS:
 
         # Init key pair managers
-        bobMgr = keeping.Manager(keeper=bobKp, salt=bobSalt)
-        delMgr = keeping.Manager(keeper=delKp, salt=delSalt)
+        bobMgr = keeping.Manager(keeper=bobKS, salt=bobSalt)
+        delMgr = keeping.Manager(keeper=delKS, salt=delSalt)
 
         # Init Keverys
         bobKvy = eventing.Kevery(baser=bobDB)
@@ -535,9 +535,9 @@ def test_missing_delegator_escrow():
         delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[delPre].serder.diger.qb64 == delSrdr.dig
 
-    assert not os.path.exists(delKp.path)
+    assert not os.path.exists(delKS.path)
     assert not os.path.exists(delDB.path)
-    assert not os.path.exists(bobKp.path)
+    assert not os.path.exists(bobKS.path)
     assert not os.path.exists(bobDB.path)
 
     """End Test"""
@@ -551,9 +551,9 @@ def test_out_of_order_escrow():
     salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
 
     # init event DB and keep DB
-    with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
+    with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
-        mgr = keeping.Manager(keeper=kpr, salt=salt)
+        mgr = keeping.Manager(keeper=ks, salt=salt)
 
         # Init Kevery with event DB
         kvy = eventing.Kevery(baser=db)
@@ -725,7 +725,7 @@ def test_out_of_order_escrow():
         assert len(escrows) == 0
 
 
-    assert not os.path.exists(kpr.path)
+    assert not os.path.exists(ks.path)
     assert not os.path.exists(db.path)
 
     """End Test"""
@@ -739,9 +739,9 @@ def test_unverified_receipt_escrow():
     salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init Salter
 
     # init event DB and keep DB
-    with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
+    with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
-        mgr = keeping.Manager(keeper=kpr, salt=salt)
+        mgr = keeping.Manager(keeper=ks, salt=salt)
 
         # Init Kevery with event DB
         kvy = eventing.Kevery(baser=db)
@@ -1000,7 +1000,7 @@ def test_unverified_receipt_escrow():
         assert rctPrefixer.qb64 == wit1pre
 
 
-    assert not os.path.exists(kpr.path)
+    assert not os.path.exists(ks.path)
     assert not os.path.exists(db.path)
 
     """End Test"""
@@ -1014,9 +1014,9 @@ def test_unverified_trans_receipt_escrow():
     salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init Salter
 
     # init event DB and keep DB
-    with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
+    with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
-        mgr = keeping.Manager(keeper=kpr, salt=salt)
+        mgr = keeping.Manager(keeper=ks, salt=salt)
 
         # Init Kevery with event DB
         kvy = eventing.Kevery(baser=db)
@@ -1351,7 +1351,7 @@ def test_unverified_trans_receipt_escrow():
         assert rctSeqner.sn == 1
         assert rctDiger.qb64 == rrotdig
 
-    assert not os.path.exists(kpr.path)
+    assert not os.path.exists(ks.path)
     assert not os.path.exists(db.path)
 
     """End Test"""

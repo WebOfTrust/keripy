@@ -144,11 +144,30 @@ def test_publot_pubsit():
     """End Test"""
 
 
+def test_key_funcs():
+    """
+    Test key utility functions
+    """
+    pre = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    preb = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    ri = 3
+
+    assert keeping.riKey(pre, ri) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                        b'.00000000000000000000000000000003')
+    assert keeping.riKey(preb, ri) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+                                        b'.00000000000000000000000000000003')
+
+    with pytest.raises(TypeError):
+        keeping.riKey(pre, sn='3')
+
+    """Done Test"""
+
+
 def test_openkeeper():
     """
     test contextmanager decorator for test Keeper databases
     """
-    with keeping.openKeep() as keeper:
+    with keeping.openKS() as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "test"
         assert isinstance(keeper.env, lmdb.Environment)
@@ -161,7 +180,7 @@ def test_openkeeper():
     assert not os.path.exists(keeper.path)
     assert not keeper.opened
 
-    with keeping.openKeep(name="blue") as keeper:
+    with keeping.openKS(name="blue") as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "blue"
         assert isinstance(keeper.env, lmdb.Environment)
@@ -174,7 +193,7 @@ def test_openkeeper():
     assert not os.path.exists(keeper.path)
     assert not keeper.opened
 
-    with keeping.openKeep(name="red") as red, keeping.openKeep(name="tan") as tan:
+    with keeping.openKS(name="red") as red, keeping.openKS(name="tan") as tan:
         assert isinstance(red, keeping.Keeper)
         assert red.name == "red"
         assert red.env.path() == red.path
@@ -276,7 +295,7 @@ def test_keeper():
     assert not keeper.opened
 
     # Test using context manager
-    with keeping.openKeep() as keeper:
+    with keeping.openKS() as keeper:
         assert isinstance(keeper, keeping.Keeper)
         assert keeper.name == "test"
         assert keeper.temp == True
@@ -418,6 +437,26 @@ def test_keeper():
         assert keeper.getSit(key) == sitb
         assert keeper.delSit(key) == True
         assert keeper.getSit(key) == None
+
+        #  test .pubs sub db methods
+        key0 = keeping.riKey(prea, 0)
+        pubs1 = [puba.decode("utf-8"), pubb.decode("utf-8")]
+        pubs2 = [pubc.decode("utf-8")]
+        spubs1 = json.dumps(pubs1).encode("utf-8")
+        assert spubs1 == (b'["DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4", '
+                          b'"DoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-QiVgbRbyAIZG"]')
+        spubs2 = json.dumps(pubs2).encode("utf-8")
+        assert spubs2 == b'["DAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4G"]'
+        assert keeper.getPubs(key0) == None
+        assert keeper.delPubs(key0) == False
+        assert keeper.putPubs(key0, val=spubs1) == True
+        assert keeper.getPubs(key0) == spubs1
+        assert keeper.putPubs(key0, val=spubs2) == False
+        assert keeper.getPubs(key0) == spubs1
+        assert keeper.setPubs(key0, val=spubs2) == True
+        assert keeper.getPubs(key0) == spubs2
+        assert keeper.delPubs(key0) == True
+        assert keeper.getPubs(key0) == None
 
 
     assert not os.path.exists(keeper.path)
@@ -608,7 +647,7 @@ def test_manager():
                     b'ApYcYd1cppVg7Inh2YCslWKhUwh59TrPpIoqWxN2A38NCbTljvmBPBjSGIFDBNOv'
                     b'VjHpdZlty3Hgk6ilF8pVpAQ')
 
-    with keeping.openKeep() as keeper:
+    with keeping.openKS() as keeper:
         manager = keeping.Manager(keeper=keeper, salt=salt)
         assert manager.keeper.opened
         assert manager._pidx == 0
@@ -647,12 +686,26 @@ def test_manager():
         keys = [verfer.qb64 for verfer in verfers]
         assert keys == ps.new.pubs
 
+        # test .pubs db
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
+        assert pl == ps.new.pubs
+
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
+        assert pl == ps.nxt.pubs
+
         digs = [diger.qb64 for diger in  digers]
         assert digs == ['E8UYvbKn7KYw9e4F2DR-iduGtdA1o16ePAYjpyCYSeYo']
 
         oldspre = spre
         spre = b'DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc'
         manager.move(old=oldspre, new=spre)
+
+        # test .pubs db after move
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
+        assert pl == ps.new.pubs
+
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
+        assert pl == ps.nxt.pubs
 
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs)
         for siger in psigers:
@@ -724,6 +777,13 @@ def test_manager():
 
         for pub in deadpubs:
             assert not manager.keeper.getPri(key=pub.encode("utf-8"))
+
+        # test .pubs db
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
+        assert pl == ps.new.pubs
+
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
+        assert pl == ps.nxt.pubs
 
         # salty algorithm rotate to null
 
@@ -879,6 +939,163 @@ def test_manager():
         assert not digers
 
         assert wit0pre != wit1pre
+
+        # test .ingest of sequences of keys
+        secrecies = [
+                        ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc'],
+                        ['A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q'],
+                        ['AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y'],
+                        ['Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8'],
+                        ['A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E'],
+                        ['AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc'],
+                        ['AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw'],
+                        ['ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
+                    ]
+
+        pidx, rsalt, rtier = manager.setup()   #  verify current state
+        assert pidx == 6
+        assert rsalt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert rtier == coring.Tiers.low
+        verferies, digers = manager.ingest(secrecies=secrecies)
+        publicies = []
+        for verfers in verferies:
+            publicies.append([verfer.qb64 for verfer in verfers])
+        assert publicies == [
+                                ['DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'],
+                                ['DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI'],
+                                ['DT1iAhBWCkvChxNWsby2J0pJyxBIxbAtbLA0Ljx-Grh8'],
+                                ['DKPE5eeJRzkRTMOoRGVd2m18o8fLqM2j9kaxLhV3x8AQ'],
+                                ['D1kcBE7h0ImWW6_Sp7MQxGYSshZZz6XM7OiUE5DXm0dU'],
+                                ['D4JDgo3WNSUpt-NG14Ni31_GCmrU0r38yo7kgDuyGkQM'],
+                                ['DVjWcaNX2gCkHOjk6rkmqPBCxkRCqwIJ-3OjdYmMwxf4'],
+                                ['DT1nEDepd6CSAMCE7NY_jlLdG6_mKUlKS_mW-2HJY1hg']
+                            ]
+
+        ipre = publicies[0][0]
+
+        # test .pris db
+        for i, pubs in enumerate(publicies):
+            pri0 = bytes(manager.keeper.getPri(key=pubs[0]))
+            assert pri0.decode("utf-8") == secrecies[i][0]
+            for pub in pubs:
+                pri = bytes(manager.keeper.getPri(key=pub))
+                assert pri
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 6
+
+        assert manager.getPidx() == 7
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=ipre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+        assert ps.new.ridx == 7
+        assert ps.new.pubs == publicies[ps.new.ridx]
+
+        # test .pubs db
+        for i, pubs in enumerate(publicies):
+            pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i))).decode("utf-8"))
+            assert pl == pubs
+
+        #  nxt pubs
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i+1))).decode("utf-8"))
+        assert pl
+
+        assert [diger.qb64 for diger in digers] == ['Ewt_7B0gfSE7DnMtmNEHiy8BGPVw5at2-e_JgJ1jAfEc']
+
+        for i in range(len(publicies)):
+            verfers, digers = manager.replay(ipre, i)
+            assert verfers[0].qb64 == publicies[i][0]
+            assert digers
+
+        # test .ingest multi-sig of sequences of keys
+        secrecies = [
+                        [
+                            'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                            'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                            'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM'
+                        ],
+                        [
+                            'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs'
+                        ],
+                        [
+                            'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                            'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                            'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc'
+                        ],
+                        [
+                            'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s'
+                        ]
+                    ]
+
+        pidx, rsalt, rtier = manager.setup()   #  verify current state
+        assert pidx == 7
+        assert rsalt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert rtier == coring.Tiers.low
+        verferies, digers = manager.ingest(secrecies=secrecies, ncount=3)
+        publicies = []
+        for verfers in verferies:
+            publicies.append([verfer.qb64 for verfer in verfers])
+        assert publicies == [
+                                [
+                                    'D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc',
+                                    'DbWeWTNGXPMQrVuJmScNQn81YF7T2fhh2kXwT8E_NbeI',
+                                    'Dmis7BM1brr-1r4DgdO5KMcCf8AnGcUUPhZYUxprI97s'
+                                ],
+                                [
+                                    'DfHMsSg0CJCou4erOqaJDr3OyDEikBp5QRp7HjcJGdgw'
+                                ],
+                                [
+                                    'DOaXCkU3Qd0oBSYxGfYtJxUbN6U7VjZiKthPHIHbzabs',
+                                    'DLOmEabR-cYJLMrAd0HvQC4lecbF-j2r7w3UQIY3mGMQ',
+                                    'DAIyL2yT9nU6kChGXWce8d6q07l0vBLPNImw_f9bazeQ'
+                                ],
+                                [
+                                    'D69EflciVP9zgsihNU14Dbm2bPXoNGxKHK_BBVFMQ-YU'
+                                ]
+                            ]
+
+        ipre = publicies[0][0]
+
+        # test .pris db
+        for i, pubs in enumerate(publicies):
+            pri0 = bytes(manager.keeper.getPri(key=pubs[0]))
+            assert pri0.decode("utf-8") == secrecies[i][0]
+            for pub in pubs:
+                pri = bytes(manager.keeper.getPri(key=pub))
+                assert pri
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 7
+
+        assert manager.getPidx() == 8
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=ipre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+        assert ps.new.ridx == 3
+        assert ps.new.kidx == 7
+        assert ps.new.pubs == publicies[ps.new.ridx]
+
+        assert len(ps.nxt.pubs) == 3
+
+        # test .pubs db
+        for i, pubs in enumerate(publicies):
+            pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i))).decode("utf-8"))
+            assert pl == pubs
+
+        #  nxt pubs
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i+1))).decode("utf-8"))
+        assert pl
+
+        assert [diger.qb64 for diger in digers] == ['E7Ch-T3dCZZ_i0u1ACi_Yv1lyyAMoQCT5ar81eUGoPYY',
+                                                    'EhwPuWbyrJRyU5HpJaoJrq04biTLWx3heNY3TvQrlbU8',
+                                                    'EJKLXis7QLnodqvtkbkTUKdciTuM-yzhEPUzS9jtxS6Y']
+
+        for i in range(len(publicies)):
+            verfers, digers = manager.replay(ipre, i)
+            assert verfers[0].qb64 == publicies[i][0]
+            assert digers
 
     assert not os.path.exists(manager.keeper.path)
     assert not manager.keeper.opened
