@@ -598,4 +598,4 @@ def test_run_demo():
 
 
 if __name__ == "__main__":
-    test_direct_mode_sam()
+    test_direct_mode_demo()
