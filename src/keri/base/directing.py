@@ -22,13 +22,14 @@ class Habitat():
        e.g. context or environment
 
      Attributes:
-        .ks is lmdb key store  Keeper instance
-        .db is lmdb data base Baser instance
-        .kevers is dict of Kevers keyed by qb64 prefix
+        .ks is lmdb key store keeping.Keeper instance
+        .mgr is keeping.Manager instance
+        .kevers is dict of eventing.Kever(s) keyed by qb64 prefix
+        .db is lmdb data base dbing.Baser instance
+        .kvy is eventing.Kevery instance
         .signers is dict  of signers for each secret indexed by verfer qb64
         .inception is Serder of inception event
         .pre is qb64 prefix of local controller
-        .secrets is list of secrets (replace later with keeper interface)
     """
     def __init__(self, name='test', ks=None, db=None, kevers=None, secrets=None, temp=False):
         """
@@ -46,10 +47,13 @@ class Habitat():
         """
         self.name = name
         self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=True)
-        self.db = db if db is not None else dbing.Baser(name=name, temp=True)
+        self.mgr = keeping.Manager(keeper=self.ks)
         self.kevers = kevers if kevers is not None else dict()
-        self.secrets = secrets
-        self.signers = [coring.Signer(qb64=secret) for secret in self.secrets]
+        self.db = db if db is not None else dbing.Baser(name=name, temp=True)
+        self.kvy = eventing.Kevery(kevers=self.kevers, baser=self.db, framed=False)
+
+
+        self.signers = [coring.Signer(qb64=secret) for secret in secrets]
         self.inception = eventing.incept(keys=[self.signers[0].verfer.qb64],
                         nxt=coring.Nexter(keys=[self.signers[1].verfer.qb64]).qb64,
                         code=coring.MtrDex.Blake3_256)
