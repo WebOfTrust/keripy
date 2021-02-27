@@ -284,6 +284,9 @@ class LMDBer:
             headDirPath is optional str head directory pathname of main database
                 If not provided use default .HeadDirpath
         """
+        if self.opened:
+            self.close()
+
         if temp is not None:
             self.temp = True if temp else False  # need .temp for clear on .close
 
@@ -2312,7 +2315,8 @@ class BaserDoer(doing.Doer):
 
     def enter(self):
         """"""
-        self.baser.reopen()
+        if not self.baser.opened:
+            self.baser.reopen()
 
 
     def exit(self):

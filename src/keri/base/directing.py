@@ -22,32 +22,39 @@ class Habitat():
        e.g. context or environment
 
      Attributes:
-        .secrets is list of secrets (replace later with keeper interface)
-        .keep is lmdb keep Keeper instance
+        .ks is lmdb key store  Keeper instance
+        .db is lmdb data base Baser instance
         .kevers is dict of Kevers keyed by qb64 prefix
-        .db is lmdb db Baser instance
         .signers is dict  of signers for each secret indexed by verfer qb64
         .inception is Serder of inception event
         .pre is qb64 prefix of local controller
+        .secrets is list of secrets (replace later with keeper interface)
     """
-    def __init__(self, secrets, keep, kevers, db):
+    def __init__(self, name='test', ks=None, db=None, kevers=None, secrets=None, temp=False):
         """
         Initialize instance.
 
         Parameters:
-            secrets is list of secrets (replace later with keeper interface)
+            name is str alias name for local controller of habitat
+            ks is keystore lmdb Keeper instance
+            db is database lmdb Baser instance
             kevers is dict of Kever instance keyed by qb64 prefix
-            db is lmdb db Baser instance
+            secrets is list of secrets (replace later with keeper interface)
+            temp is Boolean used for persistance of lmdb ks and db directories
+
+
         """
+        self.name = name
+        self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=True)
+        self.db = db if db is not None else dbing.Baser(name=name, temp=True)
+        self.kevers = kevers if kevers is not None else dict()
         self.secrets = secrets
-        self.keep = keep
-        self.kevers = kevers
-        self.db = db
         self.signers = [coring.Signer(qb64=secret) for secret in self.secrets]
         self.inception = eventing.incept(keys=[self.signers[0].verfer.qb64],
                         nxt=coring.Nexter(keys=[self.signers[1].verfer.qb64]).qb64,
                         code=coring.MtrDex.Blake3_256)
         self.pre = self.inception.ked["i"]
+
 
 
 class Director(doing.Doer):
@@ -987,16 +994,14 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
     """
     Setup and return doers list to run controller
     """
-    # setup components
-    keep = keeping.Keeper(temp=True,  reopen=False) # opened later by doer
-    db = dbing.Baser(name=name, temp=True, reopen=False)  # opened later by doer
-    dbDoer = dbing.BaserDoer(baser=db)
-
-    kevers = dict()
-    hab = Habitat(secrets=secrets, keep=keep, kevers=kevers, db=db)
-
+    # setup habitat
+    hab = Habitat(name=name, secrets=secrets)
     blogger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
-                 hab.pre, name, localPort, remotePort)
+                 hab.pre, hab.name, localPort, remotePort)
+
+    # setup doers
+    ksDoer = keeping.KeeperDoer(keeper=hab.ks)
+    dbDoer = dbing.BaserDoer(baser=hab.db)
 
     client = clienting.Client(host='127.0.0.1', port=remotePort)
     clientDoer = doing.ClientDoer(client=client)
@@ -1005,16 +1010,19 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
         director = BobDirector(hab=hab, client=client, tock=0.125)
     elif name == "sam":
         director = SamDirector(hab=hab, client=client, tock=0.125)
-    else:
+    elif name == 'eve':
         director = EveDirector(hab=hab, client=client, tock=0.125)
+    else:
+        raise ValueError("Invalid director name={}.".format(name))
+
     reactor = Reactor(hab=hab, client=client)
 
     server = serving.Server(host="", port=localPort)
     serverDoer = doing.ServerDoer(server=server)
     directant = Directant(hab=hab, server=server)
-    # Reactants created on demand
+    # Reactants created on demand by directant
 
-    return [dbDoer, clientDoer, director, reactor, serverDoer, directant]
+    return [ksDoer, dbDoer, clientDoer, director, reactor, serverDoer, directant]
 
 
 def runController(doers, limit=0.0):
