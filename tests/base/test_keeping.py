@@ -690,12 +690,22 @@ def test_manager():
         pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
         assert pl == ps.new.pubs
 
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
+        assert pl == ps.nxt.pubs
+
         digs = [diger.qb64 for diger in  digers]
         assert digs == ['E8UYvbKn7KYw9e4F2DR-iduGtdA1o16ePAYjpyCYSeYo']
 
         oldspre = spre
         spre = b'DCu5o5cxzv1lgMqxMVG3IcCNK4lpFfpMM-9rfkY3XVUc'
         manager.move(old=oldspre, new=spre)
+
+        # test .pubs db after move
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
+        assert pl == ps.new.pubs
+
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
+        assert pl == ps.nxt.pubs
 
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs)
         for siger in psigers:
@@ -771,6 +781,9 @@ def test_manager():
         # test .pubs db
         pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
         assert pl == ps.new.pubs
+
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
+        assert pl == ps.nxt.pubs
 
         # salty algorithm rotate to null
 
@@ -984,7 +997,16 @@ def test_manager():
             pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i))).decode("utf-8"))
             assert pl == pubs
 
+        #  nxt pubs
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i+1))).decode("utf-8"))
+        assert pl
+
         assert [diger.qb64 for diger in digers] == ['Ewt_7B0gfSE7DnMtmNEHiy8BGPVw5at2-e_JgJ1jAfEc']
+
+        for i in range(len(publicies)):
+            verfers, digers = manager.replay(ipre, i)
+            assert verfers[0].qb64 == publicies[i][0]
+            assert digers
 
     assert not os.path.exists(manager.keeper.path)
     assert not manager.keeper.opened

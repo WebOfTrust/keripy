@@ -948,6 +948,7 @@ class Manager:
 
     def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed,
                      ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
+                     dcode=coring.MtrDex.Blake3_256,
                      algo=Algos.salty, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
         """
@@ -973,6 +974,7 @@ class Manager:
             ncount is int count of next public keys when ncodes not provided
             ncode is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
+            dcode is str derivation code qb64 of digers. Default is MtrDex.Blake3_256
             algo is str key creation algorithm code
             salt is str qb64 salt for randomization when salty algorithm used
             stem is path modifier used with salt to derive private keys when using
@@ -1021,7 +1023,7 @@ class Manager:
         nsigners = creator.create(codes=ncodes, count=0,
                                   pidx=pidx, ridx=ridx+1, kidx=kidx+len(icodes),
                                   transferable=transferable, temp=temp)
-        digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in nsigners]
+        digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
         pp = PrePrm(pidx=pidx,
                     algo=algo,
@@ -1055,10 +1057,13 @@ class Manager:
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
 
         self.keeper.putPubs(key=riKey(pre, ri=ridx),
-                            val=json.dumps([verfer.qb64 for verfer in verfers]).encode("utf-8"))
+                            val=json.dumps(ps.new.pubs).encode("utf-8"))
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+
+        self.keeper.putPubs(key=riKey(pre, ri=ridx+1),
+                            val=json.dumps(ps.nxt.pubs).encode("utf-8"))
 
         return (verfers, digers)
 
@@ -1109,6 +1114,13 @@ class Manager:
         else:
             self.keeper.delSit(key=old)
 
+        # move .pubs entries if any
+        i = 0
+        while (pl := self.keeper.getPubs(key=riKey(old, i))):
+            if not self.keeper.putPubs(key=riKey(new, i), val=pl):
+                raise ValueError("Failed moving pubs at pre={} ri={} to new pre={}".format())
+            i += 1
+
         # assign old
         if not self.keeper.setPre(key=old, val=new):
             raise ValueError("Failed assiging new pre={} to old pre={}.".format(new, old))
@@ -1119,6 +1131,7 @@ class Manager:
 
 
     def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
+                     dcode=coring.MtrDex.Blake3_256,
                      transferable=True, temp=False, erase=True):
         """
         Returns duple (verfers, digers) for rotation event of keys for pre where
@@ -1137,6 +1150,7 @@ class Manager:
             count is int count of next public keys when icodes not provided
             code is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
+            dcode is str derivation code qb64 of digers. Default is MtrDex.Blake3_256
             transferable is Boolean, True means each public key uses transferable
                 derivation code. Default is transferable. Special case is non-transferable
                 Normally no use case for rotation to use transferable = False.
@@ -1179,9 +1193,6 @@ class Manager:
                                    transferable=verfer.transferable)
             verfers.append(signer.verfer)
 
-        self.keeper.putPubs(key=riKey(pre, ri=ps.new.ridx),
-                            val=json.dumps(ps.new.pubs).encode("utf-8"))
-
         creator = Creatory(algo=pp.algo).make(salt=pp.salt, stem=pp.stem, tier=pp.tier)
 
         if not codes:  # all same code, make list of len count of same code
@@ -1195,7 +1206,7 @@ class Manager:
         signers = creator.create(codes=codes, count=0,
                                  pidx=pidx, ridx=ridx, kidx=kidx,
                                  transferable=transferable, temp=temp)
-        digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in signers]
+        digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in signers]
 
         dt = helping.nowIso8601()
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
@@ -1208,6 +1219,9 @@ class Manager:
 
         for signer in signers:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+
+        self.keeper.putPubs(key=riKey(pre, ri=ps.nxt.ridx),
+                            val=json.dumps(ps.nxt.pubs).encode("utf-8"))
 
         if erase:
             for pub in old.pubs:  # remove old prikeys
@@ -1269,8 +1283,9 @@ class Manager:
 
 
     def ingest(self, secrecies, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
-               algo=Algos.salty, salt=None, stem=None, tier=None,
-               rooted=True, transferable=True, temp=False):
+                     dcode=coring.MtrDex.Blake3_256,
+                     algo=Algos.salty, salt=None, stem=None, tier=None,
+                     rooted=True, transferable=True, temp=False):
         """
         Ingest secrecies as a list of lists of secrets organized in event order
         to register the sets of secrets of associated externally generated keypair
@@ -1300,6 +1315,7 @@ class Manager:
             ncount is int count of next public keys when ncodes not provided
             ncode is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
+            dcode is str derivation code qb64 of digers. Default is MtrDex.Blake3_256
             algo is str key creation algorithm code
             salt is str qb64 salt for randomization when salty algorithm used
             stem is path modifier used with salt to derive private keys when using
@@ -1387,10 +1403,13 @@ class Manager:
                                   pidx=pidx, ridx=ridx, kidx=kidx,
                                   transferable=transferable, temp=temp)
 
-        digers = [coring.Diger(ser=signer.verfer.qb64b) for signer in nsigners]
+        digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+
+        self.keeper.putPubs(key=riKey(pre, ri=ridx),
+                            val=json.dumps([signer.verfer.qb64 for signer in nsigners]).encode("utf-8"))
 
         dt = helping.nowIso8601()
         old=PubLot(pubs=opubs, ridx=oridx, kidx=okidx, dt=odt)
@@ -1405,3 +1424,41 @@ class Manager:
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
         return (verferies, digers)
+
+
+    def replay(self, pre, ridx=0, code=coring.MtrDex.Blake3_256):
+        """
+        Returns duple (verfers, digers) associated with public key set from
+        the key sequence for identifier prefix pre at rotation index ridx stored
+        in db .pubs. Inception is at ridx == 0.
+        Enables replay of preexisting public key sequence.
+        In returned duple:
+            verfers is list of current public key verfers
+                public key is verfer.qb64
+            digers is list of next public key digers
+                digest to xor is diger.raw
+
+        If key sequence at ridx does already exist in .pubs database for pre then
+            raises ValueError.
+        If  preexisting pubs for pre exist but .ridx is two large for preexisting
+            pubs then raises IndexError.
+
+        Parameters:
+            pre is str fully qualified qb64 identifier prefix
+            ridx is integer rotation index
+            code is str derivation code for digers. Default is MtrDex.Blake3_256
+
+        """
+        newpubs = json.loads(bytes(self.keeper.getPubs(key=riKey(pre, ridx))).decode("utf-8"))
+        nxtpubs = json.loads(bytes(self.keeper.getPubs(key=riKey(pre, ridx+1))).decode("utf-8"))
+
+        if not (newpubs and nxtpubs):
+            if (pubs := json.loads(bytes(self.keeper.getPubs(key=riKey(pre, 0))).decode("utf-8"))):
+                raise IndexError("Invalid ridx={} for pubs of pre={}.".format(ridx, pre))
+            else:
+                raise ValueError("No pubs for pre={}.".format(pre))
+
+        verfers = [coring.Verfer(qb64=pub) for pub in newpubs]
+        digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtpubs]
+
+        return (verfers, digers)
