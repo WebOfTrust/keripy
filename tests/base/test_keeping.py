@@ -1008,6 +1008,95 @@ def test_manager():
             assert verfers[0].qb64 == publicies[i][0]
             assert digers
 
+        # test .ingest multi-sig of sequences of keys
+        secrecies = [
+                        [
+                            'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                            'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                            'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM'
+                        ],
+                        [
+                            'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs'
+                        ],
+                        [
+                            'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                            'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                            'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc'
+                        ],
+                        [
+                            'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s'
+                        ]
+                    ]
+
+        pidx, rsalt, rtier = manager.setup()   #  verify current state
+        assert pidx == 7
+        assert rsalt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert rtier == coring.Tiers.low
+        verferies, digers = manager.ingest(secrecies=secrecies, ncount=3)
+        publicies = []
+        for verfers in verferies:
+            publicies.append([verfer.qb64 for verfer in verfers])
+        assert publicies == [
+                                [
+                                    'D8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc',
+                                    'DbWeWTNGXPMQrVuJmScNQn81YF7T2fhh2kXwT8E_NbeI',
+                                    'Dmis7BM1brr-1r4DgdO5KMcCf8AnGcUUPhZYUxprI97s'
+                                ],
+                                [
+                                    'DfHMsSg0CJCou4erOqaJDr3OyDEikBp5QRp7HjcJGdgw'
+                                ],
+                                [
+                                    'DOaXCkU3Qd0oBSYxGfYtJxUbN6U7VjZiKthPHIHbzabs',
+                                    'DLOmEabR-cYJLMrAd0HvQC4lecbF-j2r7w3UQIY3mGMQ',
+                                    'DAIyL2yT9nU6kChGXWce8d6q07l0vBLPNImw_f9bazeQ'
+                                ],
+                                [
+                                    'D69EflciVP9zgsihNU14Dbm2bPXoNGxKHK_BBVFMQ-YU'
+                                ]
+                            ]
+
+        ipre = publicies[0][0]
+
+        # test .pris db
+        for i, pubs in enumerate(publicies):
+            pri0 = bytes(manager.keeper.getPri(key=pubs[0]))
+            assert pri0.decode("utf-8") == secrecies[i][0]
+            for pub in pubs:
+                pri = bytes(manager.keeper.getPri(key=pub))
+                assert pri
+
+        pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
+        pp = helping.datify(keeping.PrePrm, pp)
+        assert pp.pidx == 7
+
+        assert manager.getPidx() == 8
+
+        ps = json.loads(bytes(manager.keeper.getSit(key=ipre)).decode("utf-8"))
+        ps = helping.datify(keeping.PreSit, ps)
+        assert ps.new.ridx == 3
+        assert ps.new.kidx == 7
+        assert ps.new.pubs == publicies[ps.new.ridx]
+
+        assert len(ps.nxt.pubs) == 3
+
+        # test .pubs db
+        for i, pubs in enumerate(publicies):
+            pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i))).decode("utf-8"))
+            assert pl == pubs
+
+        #  nxt pubs
+        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i+1))).decode("utf-8"))
+        assert pl
+
+        assert [diger.qb64 for diger in digers] == ['E7Ch-T3dCZZ_i0u1ACi_Yv1lyyAMoQCT5ar81eUGoPYY',
+                                                    'EhwPuWbyrJRyU5HpJaoJrq04biTLWx3heNY3TvQrlbU8',
+                                                    'EJKLXis7QLnodqvtkbkTUKdciTuM-yzhEPUzS9jtxS6Y']
+
+        for i in range(len(publicies)):
+            verfers, digers = manager.replay(ipre, i)
+            assert verfers[0].qb64 == publicies[i][0]
+            assert digers
+
     assert not os.path.exists(manager.keeper.path)
     assert not manager.keeper.opened
     """End Test"""
