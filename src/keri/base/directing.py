@@ -63,6 +63,8 @@ class Habitat():
         self.kevers = kevers if kevers is not None else dict()
         self.db = db if db is not None else dbing.Baser(name=name, temp=self.temp)
         self.kvy = eventing.Kevery(kevers=self.kevers, baser=self.db, framed=False)
+        self.sith = sith
+        self.count = kcount
 
         if secrets:
             secrecies = []
@@ -94,10 +96,10 @@ class Habitat():
         self.mgr.move(old=opre, new=self.pre)
 
         sigers = self.mgr.sign(ser=self.inception.raw, verfers=verfers)
-        imsg = eventing.messagize(self.inception, sigers)
-        self.kvy.processOne(ims=imsg)
+        msg = eventing.messagize(self.inception, sigers)
+        self.kvy.processOne(ims=msg)
         if self.pre not in self.kevers:
-            raise kering.ValidationError("Improper Habitat init for pre={}.".format(pre))
+            raise kering.ValidationError("Improper Habitat inception for pre={}.".format(pre))
 
 
     def incept(self):
@@ -106,17 +108,57 @@ class Habitat():
         Returns: bytearray rotation message with attached signatures.
         """
 
-    def rotate(self):
+    def rotate(self, count=1):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
         """
+        try:
+            verfers, digers = self.mgr.replay(pre=self.pre, ridx=self.ridx+1)
+
+        except IndexError as ex:
+            verfers, digers = self.mgr.rotate(count=count,
+                                              stem=self.name,
+                                              temp=self.temp,
+                                              erase=False)
+
+        kever = self.kevers[self.pre]
+        serder = eventing.rotate(pre=kever.prefixer.qb64,
+                                 keys=[verfer.qb64 for verfer in verfers],
+                                 dig=kever.serder.diger.qb64,
+                                 nxt=coring.Nexter(sith=self.sith, digers=digers).qb64,
+                                 sn=kever.sn+1)
+        sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
+        msg = eventing.messagize(serder, sigers)
+
+        # update ownkey event verifier state
+        self.kvy.processOne(ims=bytearray(msg))  # make copy as kvr deletes
+        if kever.serder.dig != serder.dig:
+            raise kering.ValidationError("Improper Habitat rotation for pre={}.".format(pre))
+
+        self.ridx += 1  # successful rotate so increment for next time
+        return msg
+
 
     def interact(self):
         """
         Perform interaction operation. Register interaction in database.
         Returns: bytearray interaction message with attached signatures.
         """
+        kever = self.kevers[self.pre]
+        serder = eventing.interact(pre=kever.prefixer.qb64,
+                                   dig=kever.serder.diger.qb64,
+                                   sn=kever.sn+1)
+
+        sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
+        msg = eventing.messagize(serder, sigers)
+
+        # update ownkey event verifier state
+        self.kvy.processOne(ims=bytearray(msg))  # make copy as kvr deletes
+        if kever.serder.dig != serder.dig:
+            raise kering.ValidationError("Improper Habitat interaction for pre={}.".format(pre))
+
+        return msg
 
 
     def messagizeOwnEvent(self, sn):
