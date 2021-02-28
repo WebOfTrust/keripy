@@ -28,13 +28,13 @@ def test_delegation():
     delSalt = coring.Salter(raw=b'abcdef0123456789').qb64
 
     with dbing.openDB(name="bob") as bobDB, \
-          keeping.openKeep(name="bob") as bobKp, \
+          keeping.openKS(name="bob") as bobKS, \
           dbing.openDB(name="del") as delDB, \
-          keeping.openKeep(name="del") as delKp:
+          keeping.openKS(name="del") as delKS:
 
         # Init key pair managers
-        bobMgr = keeping.Manager(keeper=bobKp, salt=bobSalt)
-        delMgr = keeping.Manager(keeper=delKp, salt=delSalt)
+        bobMgr = keeping.Manager(keeper=bobKS, salt=bobSalt)
+        delMgr = keeping.Manager(keeper=delKS, salt=delSalt)
 
         # Init Keverys
         bobKvy = eventing.Kevery(baser=bobDB)
@@ -44,7 +44,7 @@ def test_delegation():
         verfers, digers = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
         bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                  nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         bobPre = bobSrdr.ked["i"]
         assert bobPre == 'EiBlVttjqvySMbA4ShN19rSrz3D0ioNW-Uj92Ri7XnFE'
@@ -54,7 +54,7 @@ def test_delegation():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -111,7 +111,8 @@ def test_delegation():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -136,7 +137,8 @@ def test_delegation():
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
         msg = bytearray(delSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -196,7 +198,8 @@ def test_delegation():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -220,7 +223,8 @@ def test_delegation():
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
 
         msg = bytearray(delSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -245,9 +249,9 @@ def test_delegation():
         delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[delPre].serder.diger.qb64 == delSrdr.dig
 
-    assert not os.path.exists(delKp.path)
+    assert not os.path.exists(delKS.path)
     assert not os.path.exists(delDB.path)
-    assert not os.path.exists(bobKp.path)
+    assert not os.path.exists(bobKS.path)
     assert not os.path.exists(bobDB.path)
 
     """End Test"""

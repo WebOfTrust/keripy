@@ -11,11 +11,12 @@ import logging
 from hio.base import doing
 from hio.core.tcp import clienting, serving
 
-from keri.base import directing
+from keri.base import directing, keeping
 from keri.db import dbing
 from keri.core import eventing, coring
 
 from keri.help import ogling  # logger support
+
 
 def test_directing_basic():
     """
@@ -42,7 +43,7 @@ def test_directing_basic():
     # bob inception transferable (nxt digest not empty)
     bobSerder = eventing.incept(keys=[bobSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[bobSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
     assert bob == 'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
@@ -64,13 +65,13 @@ def test_directing_basic():
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
-    with dbing.openDB(name="eve") as eveDB, \
-         dbing.openDB(name="bob") as bobDB:
+    with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
+         dbing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
@@ -78,7 +79,9 @@ def test_directing_basic():
         eveKevers = dict()
 
         # setup bob
-        bobHab = directing.Habitat(secrets=bobSecrets, kevers=bobKevers, db=bobDB)
+        bobHab = directing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
+                                   secrets=bobSecrets, temp=True)
+        assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
         assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
                 [signer.verfer.qb64 for signer in bobSigners])
@@ -110,7 +113,9 @@ def test_directing_basic():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(secrets=eveSecrets, kevers=eveKevers, db=eveDB)
+        eveHab = directing.Habitat(ks=eveKS, db=eveDB, kevers=eveKevers,
+                                   secrets=eveSecrets, temp=True)
+        assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
         assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
                     [signer.verfer.qb64 for signer in eveSigners])
@@ -178,6 +183,7 @@ def test_directing_basic():
     assert not os.path.exists(bobDB.path)
     """End Test"""
 
+
 def test_direct_mode():
     """
     Test direct mode demo
@@ -203,7 +209,7 @@ def test_direct_mode():
     # bob inception transferable (nxt digest not empty)
     bobSerder = eventing.incept(keys=[bobSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[bobSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
     assert bob == 'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
@@ -226,13 +232,13 @@ def test_direct_mode():
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
-    with dbing.openDB(name="eve") as eveDB, \
-         dbing.openDB(name="bob") as bobDB:
+    with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
+         dbing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
@@ -240,7 +246,9 @@ def test_direct_mode():
         eveKevers = dict()
 
         # setup bob
-        bobHab = directing.Habitat(secrets=bobSecrets, kevers=bobKevers, db=bobDB)
+        bobHab = directing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
+                                   secrets=bobSecrets, temp=True)
+        assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
         assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
                 [signer.verfer.qb64 for signer in bobSigners])
@@ -273,7 +281,10 @@ def test_direct_mode():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(secrets=eveSecrets, kevers=eveKevers, db=eveDB)
+        eveHab = directing.Habitat(ks=eveKS,  db=eveDB, kevers=eveKevers,
+                                   secrets=eveSecrets, temp=True)
+
+        assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
         assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
                     [signer.verfer.qb64 for signer in eveSigners])
@@ -332,7 +343,9 @@ def test_direct_mode():
     assert not os.path.exists(bobDB.path)
     """End Test"""
 
-def test_direct_mode_sam():
+
+
+def test_direct_mode_demo():
     """
     Test direct mode demo
 
@@ -357,7 +370,7 @@ def test_direct_mode_sam():
     # bob inception transferable (nxt digest not empty)
     bobSerder = eventing.incept(keys=[bobSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[bobSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
     assert bob == 'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
@@ -380,15 +393,15 @@ def test_direct_mode_sam():
     # eve inception transferable (nxt digest not empty)
     eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[eveSigners[1].verfer.qb64]).qb64,
-                                code=coring.CryOneDex.Blake3_256)
+                                code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
 
 
-    with dbing.openDB(name="eve") as eveDB, \
-         dbing.openDB(name="bob") as bobDB:
+    with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
+         dbing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
@@ -396,7 +409,10 @@ def test_direct_mode_sam():
         eveKevers = dict()
 
         # setup bob
-        bobHab = directing.Habitat(secrets=bobSecrets, kevers=bobKevers, db=bobDB)
+        bobHab = directing.Habitat(ks=bobKS,  db=bobDB, kevers=bobKevers,
+                                   secrets=bobSecrets, temp=True)
+
+        assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
         assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
                 [signer.verfer.qb64 for signer in bobSigners])
@@ -429,7 +445,9 @@ def test_direct_mode_sam():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(secrets=eveSecrets, kevers=eveKevers, db=eveDB)
+        eveHab = directing.Habitat(ks=eveKS,  db=eveDB, kevers=eveKevers,
+                                   secrets=eveSecrets, temp=True)
+        assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
         assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
                     [signer.verfer.qb64 for signer in eveSigners])
@@ -580,4 +598,4 @@ def test_run_demo():
 
 
 if __name__ == "__main__":
-    test_direct_mode_sam()
+    test_directing_basic()

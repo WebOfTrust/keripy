@@ -7,14 +7,53 @@ import pytest
 
 import datetime
 import pysodium
+import fractions
 
 from dataclasses import dataclass, asdict
 
-
+from keri.help.helping import isign, sceil
 from keri.help.helping import mdict
 from keri.help.helping import extractValues
 from keri.help.helping import nowIso8601, toIso8601, fromIso8601
 from keri.help.helping import datify
+
+def test_utilities():
+    """
+    Test utility functions
+    """
+    assert isign(1) == 1
+    assert isign(-1) == -1
+    assert isign(0) == 0
+    assert isign(2) == 1
+    assert isign(-1) == -1
+
+    assert isign(1.0) == 1
+    assert isign(-1.0) == -1
+    assert isign(0.0) == 0
+
+    assert isign(1.5) == 1
+    assert isign(-1.5) == -1
+    assert isign(0.5) == 1
+    assert isign(-0.5) == -1
+
+
+    assert sceil(0.5) == 1
+    assert sceil(-0.5) == -1
+    assert sceil(1) == 1
+    assert sceil(-1) == -1
+    assert sceil(0) == 0
+    assert sceil(0.0) == 0
+
+    assert sceil(1.1) == 2
+    assert sceil(-1.1) == -2
+    assert sceil(2.8) == 3
+    assert sceil(-2.8) == -3
+
+    assert sceil(fractions.Fraction(3, 2)) == 2
+    assert sceil(fractions.Fraction(-3, 2)) == -2
+    assert sceil(fractions.Fraction(0)) == 0
+
+
 
 def test_datify():
     """
@@ -180,4 +219,4 @@ def test_iso8601():
 
 
 if __name__ == "__main__":
-    test_iso8601()
+    test_utilities()

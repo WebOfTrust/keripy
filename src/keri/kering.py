@@ -29,6 +29,22 @@ class ShortageError(KeriError):
     """
 
 
+class EmptyMaterialError(KeriError):
+    """
+    Empty or Missing Crypto Material
+    Usage:
+        raise EmptyMaterialError("error message")
+    """
+
+
+class ClosedError(KeriError):
+    """
+    Error attempting to use closed (unopened) resource such as file, database etc that is
+
+    Usage:
+        raise ClosedError("error message")
+    """
+
 class ValidationError(KeriError):
     """
     Validation related errors
@@ -94,17 +110,33 @@ class VersionError(ValidationError):
     """
 
 
-class EmptyMaterialError(ValidationError):
-    """
-    Empty or Missing Crypto Material
-    Usage:
-        raise EmptyMaterialError("error message")
-    """
-
-
 class DerivationError(ValidationError):
     """
     Derivation related errors
     Usage:
         raise DerivationError("error message")
+    """
+
+
+class DerivationCodeError(ValidationError):
+    """
+    Derivation Code cryppto material conversion errors
+    Usage:
+        raise DerivationCodeError("error message")
+    """
+
+
+class UnexpectedCountCodeError(DerivationCodeError):
+    """
+    Encountered count code start char "-" unexpectantly
+    Usage:
+        raise DerivationCodeError("error message")
+    """
+
+
+class UnexpectedOpCodeError(DerivationCodeError):
+    """
+    Encountered opcode code start char "_" unexpectantly
+    Usage:
+        raise DerivationCodeError("error message")
     """

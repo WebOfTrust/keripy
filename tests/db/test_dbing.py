@@ -15,7 +15,7 @@ from keri.db.dbing import dgKey, snKey, dtKey, splitKey, splitKeySn, splitKeyDt
 from keri.db.dbing import LMDBer, Baser
 
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
-from keri.core.coring import CryCntDex, CryOneDex, CryTwoDex, CryFourDex
+from keri.core.coring import MtrDex, MtrDex, MtrDex
 from keri.core.coring import Serials, Vstrings, Versify
 
 from keri.core.eventing import incept, rotate, interact, Kever, Kevery
@@ -1949,7 +1949,7 @@ def test_usebaser():
         count = len(keys)
         nxtkeys = [signers[3].verfer.qb64, signers[4].verfer.qb64, signers[5].verfer.qb64]
         sith = "2"
-        code = CryOneDex.Blake3_256  # Blake3 digest of incepting data
+        code = MtrDex.Blake3_256  # Blake3 digest of incepting data
         serder = incept(keys=keys,
                         code=code,
                         sith=sith,

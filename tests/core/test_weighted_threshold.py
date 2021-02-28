@@ -25,9 +25,9 @@ def test_weighted():
     wesSalt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
 
     # init event DB and keep DB
-    with dbing.openDB(name="wes") as wesDB, keeping.openKeep(name="wes") as wesKp:
+    with dbing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
         # Init key pair manager
-        wesMgr = keeping.Manager(keeper=wesKp, salt=wesSalt)
+        wesMgr = keeping.Manager(keeper=wesKS, salt=wesSalt)
 
         # Init Kevery with event DB
         wesKvy = eventing.Kevery(baser=wesDB)
@@ -42,7 +42,7 @@ def test_weighted():
                                   sith=sith,
                                  nxt=coring.Nexter(sith=nxtsith,
                                                    digs=[diger.qb64 for diger in digers]).qb64,
-                                 code=coring.CryOneDex.Blake3_256)
+                                 code=coring.MtrDex.Blake3_256)
 
         wesPre = wesSrdr.ked["i"]
 
@@ -51,7 +51,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
+                                    count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -82,7 +83,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=wesK.verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
+                                    count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -116,7 +118,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
+                                    count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -156,7 +159,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
+                                    count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -197,7 +201,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = coring.SigCounter(count=len(sigers))
+        counter = coring.Counter(coring.CtrDex.ControllerIdxSigs,
+                                    count=len(sigers))
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -223,7 +228,7 @@ def test_weighted():
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
 
-    assert not os.path.exists(wesKp.path)
+    assert not os.path.exists(wesKS.path)
     assert not os.path.exists(wesDB.path)
 
     """End Test"""

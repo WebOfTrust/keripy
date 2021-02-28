@@ -9,6 +9,7 @@ import pysodium
 import blake3
 import json
 import hashlib
+import dataclasses
 
 import msgpack
 import cbor2 as cbor
@@ -20,22 +21,14 @@ from fractions import Fraction
 from keri.kering import Version, Versionage
 from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
                          ShortageError)
-from keri.core.coring import (CrySelDex, CryCntDex,
-                              CryCntSizes, CryCntRawSizes, CryCntIdxSizes,
-                              CryOneDex, CryOneSizes, CryOneRawSizes,
-                              CryTwoDex, CryTwoSizes, CryTwoRawSizes,
-                              CryFourDex, CryFourSizes, CryFourRawSizes,
-                              CrySizes, CryRawSizes, MINCRYSIZE)
-from keri.core.coring import (CryMat, CryCounter, Verfer, Cigar, Signer, Salter,
+from keri.help.helping import sceil
+
+from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
+from keri.core.coring import (Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
-from keri.core.coring import (SigSelDex, SigCntDex, SigCntSizes, SigCntRawSizes,
-                              SigTwoDex, SigTwoSizes, SigTwoRawSizes,
-                              SigFourDex, SigFourSizes, SigFourRawSizes,
-                              SigFiveDex, SigFiveSizes, SigFiveRawSizes,
-                              SigSizes, SigRawSizes, MINSIGSIZE)
-from keri.core.coring import IntToB64, B64ToInt
-from keri.core.coring import SigMat, SigCounter, Seqner, Siger
+from keri.core.coring import intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64, nabSextets
+from keri.core.coring import Seqner, Siger
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import Serder, Tholder
@@ -69,121 +62,229 @@ def test_ilks():
     """End Test """
 
 
-def test_cryderivationcodes():
+def test_b64_conversions():
     """
-    Test the support functionality for derivation codes
+    Test Base64 conversion utility routines
     """
-    assert CrySelDex.two == '0'
 
-    assert 'A' not in CrySelDex
+    cs = intToB64(0)
+    assert cs == "A"
+    i = b64ToInt(cs)
+    assert i == 0
 
-    for x in ['0']:
-        assert x in CrySelDex
+    cs = intToB64b(0)
+    assert cs == b"A"
+    i = b64ToInt(cs)
+    assert i == 0
 
-    assert CryOneDex.Ed25519_Seed == 'A'
-    assert CryOneDex.Ed25519N == 'B'
-    assert CryOneDex.X25519 == 'C'
-    assert CryOneDex.Ed25519 == 'D'
-    assert CryOneDex.Blake3_256 == 'E'
-    assert CryOneDex.Blake2b_256 == 'F'
-    assert CryOneDex.Blake2s_256 == 'G'
-    assert CryOneDex.SHA3_256 == 'H'
-    assert CryOneDex.SHA2_256 == 'I'
-    assert CryOneDex.ECDSA_secp256k1_Seed == 'J'
-    assert CryOneDex.Ed448_Seed == 'K'
-    assert CryOneDex.X448 == 'L'
+    cs = intToB64(27)
+    assert cs == "b"
+    i = b64ToInt(cs)
+    assert i == 27
 
-    assert '0' not in CryOneDex
+    cs = intToB64b(27)
+    assert cs == b"b"
+    i = b64ToInt(cs)
+    assert i == 27
 
-    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',  'L']:
-        assert x in CryOneDex
-        assert x in CryOneSizes
-        assert x in CryOneRawSizes
+    cs = intToB64(27, l=2)
+    assert cs == "Ab"
+    i = b64ToInt(cs)
+    assert i == 27
 
-    assert CryTwoDex.Salt_128 == '0A'
-    assert CryTwoDex.Ed25519 == '0B'
-    assert CryTwoDex.ECDSA_256k1 == '0C'
+    cs = intToB64b(27, l=2)
+    assert cs == b"Ab"
+    i = b64ToInt(cs)
+    assert i == 27
 
-    assert 'A' not in CryTwoDex
+    cs = intToB64(80)
+    assert cs == "BQ"
+    i = b64ToInt(cs)
+    assert i == 80
 
-    for x in ['0A', '0B']:
-        assert x in CryTwoDex
-        assert x in CryTwoSizes
-        assert x in CryTwoRawSizes
+    cs = intToB64b(80)
+    assert cs == b"BQ"
+    i = b64ToInt(cs)
+    assert i == 80
 
-    assert CryFourDex.ECDSA_256k1N == '1AAA'
-    assert CryFourDex.ECDSA_256k1 == '1AAB'
+    cs = intToB64(4095)
+    assert cs == '__'
+    i = b64ToInt(cs)
+    assert i == 4095
 
-    assert '0' not in CryFourDex
-    assert 'A' not in CryFourDex
-    assert '0A' not in CryFourDex
+    cs = intToB64b(4095)
+    assert cs == b'__'
+    i = b64ToInt(cs)
+    assert i == 4095
 
-    for x in ['1AAA', '1AAB']:
-        assert x in CryFourDex
-        assert x in CryFourSizes
-        assert x in CryFourRawSizes
+    cs = intToB64(4096)
+    assert cs == 'BAA'
+    i = b64ToInt(cs)
+    assert i == 4096
+
+    cs = intToB64b(4096)
+    assert cs == b'BAA'
+    i = b64ToInt(cs)
+    assert i == 4096
+
+    cs = intToB64(6011)
+    assert cs == "Bd7"
+    i = b64ToInt(cs)
+    assert i == 6011
+
+    cs = intToB64b(6011)
+    assert cs == b"Bd7"
+    i = b64ToInt(cs)
+    assert i == 6011
+
+    s = "-BAC"
+    b = b64ToB2(s[:])
+    assert len(b) == 3
+    assert b == b'\xf8\x10\x02'
+    t = b2ToB64(b, 4)
+    assert t == s[:]
+    i = int.from_bytes(b, 'big')
+    assert i == 0o76010002
+    i >>= 2 *  (len(s) % 4)
+    assert i == 0o76010002
+    p = nabSextets(b, 4)
+    assert p == b'\xf8\x10\x02'
+
+    b = b64ToB2(s[:3])
+    assert len(b) == 3
+    assert b == b'\xf8\x10\x00'
+    t = b2ToB64(b, 3)
+    assert t == s[:3]
+    i = int.from_bytes(b, 'big')
+    assert i == 0o76010000
+    i >>= 2 * (len(s[:3]) % 4)
+    assert i ==0o760100
+    p = nabSextets(b, 3)
+    assert p == b'\xf8\x10\x00'
+
+    b = b64ToB2(s[:2])
+    assert len(b) == 2
+    assert b == b'\xf8\x10'
+    t = b2ToB64(b, 2)
+    assert t == s[:2]
+    i = int.from_bytes(b, 'big')
+    assert i == 0o174020
+    i >>= 2 * (len(s[:2]) % 4)
+    assert i == 0o7601
+    p = nabSextets(b, 2)
+    assert p == b'\xf8\x10'
+
+    b = b64ToB2(s[:1])
+    assert len(b) == 1
+    assert b == b'\xf8'
+    t = b2ToB64(b, 1)
+    assert t == s[:1]
+    i = int.from_bytes(b, 'big')
+    assert i == 0o370
+    i >>= 2 * (len(s[:1]) % 4)
+    assert i == 0o76
+    p = nabSextets(b, 1)
+    assert p == b'\xf8'
+
+    """End Test"""
 
 
-    for x in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', '0A', '0B',
-              '1AAA', '1AAB']:
-        assert x in CrySizes
-        assert x in CryRawSizes
-
-    assert MINCRYSIZE == 4
-
-    """Done Test"""
-
-def test_sigderivationcodes():
+def test_matter():
     """
-    Test the support functionality for derivation codes
+    Test Matter class
     """
-    assert SigSelDex.four == '0'
+    assert dataclasses.asdict(MtrDex) == {
+                                            'Ed25519_Seed': 'A',
+                                            'Ed25519N': 'B',
+                                            'X25519': 'C',
+                                            'Ed25519': 'D',
+                                            'Blake3_256': 'E',
+                                            'Blake2b_256': 'F',
+                                            'Blake2s_256': 'G',
+                                            'SHA3_256': 'H',
+                                            'SHA2_256': 'I',
+                                            'ECDSA_256k1_Seed': 'J',
+                                            'Ed448_Seed': 'K',
+                                            'X448': 'L',
+                                            'Short': 'M',
+                                            'Salt_128': '0A',
+                                            'Ed25519_Sig': '0B',
+                                            'ECDSA_256k1_Sig': '0C',
+                                            'Blake3_512': '0D',
+                                            'Blake2b_512': '0E',
+                                            'SHA3_512': '0F',
+                                            'SHA2_512': '0G',
+                                            'Long': '0H',
+                                            'ECDSA_256k1N': '1AAA',
+                                            'ECDSA_256k1': '1AAB',
+                                            'Ed448N': '1AAC',
+                                            'Ed448': '1AAD',
+                                            'Ed448_Sig': '1AAE',
+                                            'Tag': '1AAF'
+                                         }
 
-    assert 'A' not in SigSelDex
+    assert Matter.Codex == MtrDex
 
-    for x in ['0', '1', '2']:
-        assert x in SigSelDex
+    # first character of code with hard size of code
+    assert Matter.Sizes == {
+        'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1, 'F': 1, 'G': 1, 'H': 1, 'I': 1,
+        'J': 1, 'K': 1, 'L': 1, 'M': 1, 'N': 1, 'O': 1, 'P': 1 ,'Q': 1, 'R': 1,
+        'S': 1, 'T': 1, 'U': 1, 'V': 1, 'W': 1, 'X': 1, 'Y': 1, 'Z': 1,
+        'a': 1, 'b': 1, 'c': 1, 'd': 1, 'e': 1, 'f': 1, 'g': 1, 'h': 1, 'i': 1,
+        'j': 1, 'k': 1, 'l': 1, 'm': 1, 'n': 1, 'o': 1, 'p': 1, 'q': 1, 'r': 1,
+        's': 1, 't': 1, 'u': 1, 'v': 1, 'w': 1, 'x': 1, 'y': 1, 'z': 1,
+        '0': 2, '1': 4, '2': 5, '3': 6, '4': 8, '5': 9, '6': 10
+    }
 
-    assert SigTwoDex.Ed25519 == 'A'
-    assert SigTwoDex.ECDSA_256k1 == 'B'
+    # Codes table with sizes of code (hard) and full primitive material
+    assert Matter.Codes == {
+                            'A': Sizage(hs=1, ss=0, fs=44),
+                            'B': Sizage(hs=1, ss=0, fs=44),
+                            'C': Sizage(hs=1, ss=0, fs=44),
+                            'D': Sizage(hs=1, ss=0, fs=44),
+                            'E': Sizage(hs=1, ss=0, fs=44),
+                            'F': Sizage(hs=1, ss=0, fs=44),
+                            'G': Sizage(hs=1, ss=0, fs=44),
+                            'H': Sizage(hs=1, ss=0, fs=44),
+                            'I': Sizage(hs=1, ss=0, fs=44),
+                            'J': Sizage(hs=1, ss=0, fs=44),
+                            'K': Sizage(hs=1, ss=0, fs=76),
+                            'L': Sizage(hs=1, ss=0, fs=76),
+                            'M': Sizage(hs=1, ss=0, fs=4),
+                            '0A': Sizage(hs=2, ss=0, fs=24),
+                            '0B': Sizage(hs=2, ss=0, fs=88),
+                            '0C': Sizage(hs=2, ss=0, fs=88),
+                            '0D': Sizage(hs=2, ss=0, fs=88),
+                            '0E': Sizage(hs=2, ss=0, fs=88),
+                            '0F': Sizage(hs=2, ss=0, fs=88),
+                            '0G': Sizage(hs=2, ss=0, fs=88),
+                            '0H': Sizage(hs=2, ss=0, fs=8),
+                            '1AAA': Sizage(hs=4, ss=0, fs=48),
+                            '1AAB': Sizage(hs=4, ss=0, fs=48),
+                            '1AAC': Sizage(hs=4, ss=0, fs=80),
+                            '1AAD': Sizage(hs=4, ss=0, fs=80),
+                            '1AAE': Sizage(hs=4, ss=0, fs=56),
+                            '1AAF': Sizage(hs=4, ss=0, fs=8)
+                        }
 
-    assert '0' not in SigTwoDex
+    assert Matter.Codes['A'].hs == 1  # hard size
+    assert Matter.Codes['A'].ss == 0  # soft size
+    assert Matter.Codes['A'].fs == 44  # full size
 
-    for x in ['A', 'B']:
-        assert x in SigTwoDex
-        assert x in SigTwoSizes
-        assert x in SigTwoRawSizes
+    # verify first hs Sizes matches hs in Codes for same first char
+    for ckey in Matter.Codes.keys():
+        assert Matter.Sizes[ckey[0]] == Matter.Codes[ckey].hs
 
-    assert SigFourDex.Ed448 == '0A'
+    #  verify all Codes have  ss == 0 and not fs % 4 and hs > 0 and fs > hs
+    for val in Matter.Codes.values():
+        assert  val.ss == 0 and not val.fs % 4 and  val.hs > 0 and  val.fs > val.hs
 
-    assert 'A' not in SigFourDex
+    # Bizes maps bytes of sextet of decoded first character of code with hard size of code
+    # verify equivalents of items for Sizes and Bizes
+    for skey, sval in Matter.Sizes.items():
+        ckey = b64ToB2(skey)
+        assert Matter.Bizes[ckey] == sval
 
-    for x in ['0A']:
-        assert x in SigFourDex
-        assert x in SigFourSizes
-        assert x in SigFourRawSizes
-
-    assert '0' not in SigFiveDex
-    assert 'A' not in SigFiveDex
-    assert '0A' not in SigFiveDex
-
-    for x in []:
-        assert x in SigFiveDex
-        assert x in SigFiveSizes
-        assert x in SigFiveRawSizes
-
-
-    for x in ['A', 'B', '0A']:
-        assert x in SigSizes
-        assert x in SigRawSizes
-
-    assert MINSIGSIZE == 4
-    """Done Test"""
-
-def test_crymat():
-    """
-    Test the support functionality for cryptographic material
-    """
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
     verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
     prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  #  str
@@ -192,83 +293,99 @@ def test_crymat():
               b'IS\xf3\x874\xbao\x90\x8c')  # pure base 2 binary qb2
 
     with pytest.raises(EmptyMaterialError):
-        crymat = CryMat()
+        matter = Matter()
 
     with pytest.raises(EmptyMaterialError):
-        crymat = CryMat(raw=verkey, code=None)
+        matter = Matter(raw=verkey, code=None)
 
     with pytest.raises(EmptyMaterialError):
-        crymat = CryMat(raw=verkey, code='')
+        matter = Matter(raw=verkey, code='')
 
-    crymat = CryMat(raw=verkey)
-    assert crymat.raw == verkey
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.qb64 == prefix
-    assert crymat.qb2 == prebin
-    assert crymat.transferable == False
+    matter = Matter(raw=verkey)
+    assert matter.raw == verkey
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
 
-    assert crymat.qb64 == encodeB64(crymat.qb2).decode("utf-8")
-    assert crymat.qb2 == decodeB64(crymat.qb64.encode("utf-8"))
+    assert matter.qb64 == encodeB64(matter.qb2).decode("utf-8")
+    assert matter.qb2 == decodeB64(matter.qb64.encode("utf-8"))
 
-    crymat._exfil(prefixb)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
+    matter._exfil(prefixb)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
 
-    crymat = CryMat(qb64b=prefixb)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
+    matter = Matter(qb64b=prefixb)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
 
-    crymat = CryMat(qb64=prefix)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
+    matter = Matter(qb64=prefix)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
 
-    crymat = CryMat(qb64=prefixb)  #  works for either
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
+    matter = Matter(qb64=prefixb)  #  works for either
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
 
+    # test truncates extra bytes from qb64 parameter
+    longprefix = prefix + "ABCD"  # extra bytes in size
+    matter = Matter(qb64=longprefix)
+    assert len(matter.qb64) == Matter.Codes[matter.code].fs
 
-    # test wrong size of qb64
-    longprefix = prefix + "ABCD"
-    okcrymat = CryMat(qb64=longprefix)
-    assert len(okcrymat.qb64) == CrySizes[okcrymat.code]
-
-    shortprefix = prefix[:-4]
+    # test raises ShortageError if not enough bytes in qb64 parameter
+    shortprefix = prefix[:-4]  # too few bytes in  size
     with pytest.raises(ShortageError):
-        okcrymat = CryMat(qb64=shortprefix)
+        matter = Matter(qb64=shortprefix)
 
-    crymat = CryMat(qb2=prebin)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
+    matter = Matter(qb2=prebin)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
 
-    crymat = CryMat(qb64=prefix.encode("utf-8"))  # test bytes not str
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
-    assert crymat.qb64 == prefix
-    assert crymat.qb64b == prefix.encode("utf-8")
+    # test truncates extra bytes from qb2 parameter
+    longprebin = prebin + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
+    matter = Matter(qb2=longprebin)
+    assert len(matter.qb64) == Matter.Codes[matter.code].fs
 
-    # test wrong size of raw
-    longverkey = verkey + bytes([10, 11, 12])
-    crymat = CryMat(raw=longverkey)
+    # test raises ShortageError if not enough bytes in qb2 parameter
+    shortprebin = prebin[:-4]  # too few bytes in  size
+    with pytest.raises(ShortageError):
+        matter = Matter(qb2=shortprebin)
 
-    shortverkey =  verkey[:-3]
-    with pytest.raises(ValidationError):
-        crymat = CryMat(raw=shortverkey)
+    matter = Matter(qb64=prefix.encode("utf-8"))  # test bytes not str
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64 == prefix
+    assert matter.qb64b == prefix.encode("utf-8")
+
+    # test truncates extra bytes from raw parameter
+    longverkey = verkey + bytes([10, 11, 12])  # extra bytes
+    matter = Matter(raw=longverkey)
+
+    # test raises ShortageError if not enough bytes in raw parameter
+    shortverkey =  verkey[:-3]  # not enough bytes
+    with pytest.raises(ShortageError):
+        matter = Matter(raw=shortverkey)
 
     # test prefix on full identifier
     full = prefix + ":mystuff/mypath/toresource?query=what#fragment"
-    crymat = CryMat(qb64=full)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
-    assert crymat.qb64 == prefix
-    assert crymat.qb2 == prebin
+    matter = Matter(qb64=full)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
 
     # test nongreedy prefixb on full identifier
     full = prefixb + b":mystuff/mypath/toresource?query=what#fragment"
-    crymat = CryMat(qb64b=full)
-    assert crymat.code == CryOneDex.Ed25519N
-    assert crymat.raw == verkey
-    assert crymat.qb64 == prefix
-    assert crymat.qb2 == prebin
+    matter = Matter(qb64b=full)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
 
     sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
            b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
@@ -285,189 +402,743 @@ def test_crymat():
             b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
             b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
 
-    crymat = CryMat(raw=sig, code=CryTwoDex.Ed25519)
-    assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519
-    assert crymat.qb64 == qsig64
-    assert crymat.qb64b == qsig64b
-    assert crymat.qb2 == qsigB2
-    assert crymat.transferable == True
+    matter = Matter(raw=sig, code=MtrDex.Ed25519_Sig)
+    assert matter.raw == sig
+    assert matter.code == MtrDex.Ed25519_Sig
+    assert matter.qb64 == qsig64
+    assert matter.qb64b == qsig64b
+    assert matter.qb2 == qsigB2
+    assert matter.transferable == True
+    assert matter.digestive == False
 
-    crymat = CryMat(qb64b=qsig64b)
-    assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519
+    matter = Matter(qb64b=qsig64b)
+    assert matter.raw == sig
+    assert matter.code == MtrDex.Ed25519_Sig
+    assert matter.qb64 == qsig64
+    assert matter.qb64b == qsig64b
+    assert matter.qb2 == qsigB2
+    assert matter.transferable == True
+    assert matter.digestive == False
 
-    crymat = CryMat(qb64=qsig64)
-    assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519
+    matter = Matter(qb64=qsig64)
+    assert matter.raw == sig
+    assert matter.code == MtrDex.Ed25519_Sig
+    assert matter.qb64 == qsig64
+    assert matter.qb64b == qsig64b
+    assert matter.qb2 == qsigB2
+    assert matter.transferable == True
+    assert matter.digestive == False
 
-    qsig64b  = qsig64.encode("utf-8")  #  test bytes input
-    crymat = CryMat(qb64=qsig64b)
-    assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519
+    matter = Matter(qb2=qsigB2)
+    assert matter.raw == sig
+    assert matter.code == MtrDex.Ed25519_Sig
+    assert matter.qb64 == qsig64
+    assert matter.qb64b == qsig64b
+    assert matter.qb2 == qsigB2
+    assert matter.transferable == True
+    assert matter.digestive == False
 
-    crymat = CryMat(qb2=qsigB2)
-    assert crymat.raw == sig
-    assert crymat.code == CryTwoDex.Ed25519
+
+
+
+    # test short
+    val = int("F77F", 16)
+    assert val == 63359
+    raw = val.to_bytes(2, 'big')
+    assert raw == b'\xf7\x7f'
+    txt = encodeB64(raw)
+    assert txt == b'938='
+    qb64b = MtrDex.Short.encode("utf-8") + txt[:-1]
+    assert qb64b == b'M938'
+    qb64 = qb64b.decode("utf-8")
+    qb2 = decodeB64(qb64b)
+    assert qb2 == b'3\xdd\xfc'
+
+    matter = Matter(raw=raw, code=MtrDex.Short)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Short
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64b=qb64b)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Short
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64=qb64)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Short
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb2=qb2)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Short
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test long
+    val = int("F7F33F7F", 16)
+    assert val == 4159913855
+    raw = val.to_bytes(4, 'big')
+    assert raw ==b'\xf7\xf3?\x7f'
+    txt = encodeB64(raw)
+    assert txt == b'9_M_fw=='
+    qb64b = MtrDex.Long.encode("utf-8") + txt[:-2]
+    assert qb64b == b'0H9_M_fw'
+    qb64 = qb64b.decode("utf-8")
+    qb2 = decodeB64(qb64b)
+    assert qb2 == b'\xd0\x7f\x7f3\xf7\xf0'
+
+    matter = Matter(raw=raw, code=MtrDex.Long)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Long
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64b=qb64b)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Long
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64=qb64)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Long
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb2=qb2)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Long
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test tag as number
+    val = int("F89CFF", 16)
+    assert val == 16293119
+    raw = val.to_bytes(3, 'big')
+    assert raw == b'\xf8\x9c\xff'
+    txt = encodeB64(raw)
+    assert txt == b'-Jz_'
+    qb64b = MtrDex.Tag.encode("utf-8") + txt
+    assert qb64b ==b'1AAF-Jz_'
+    qb64 = qb64b.decode("utf-8")
+    qb2 = decodeB64(qb64b)
+    assert qb2 == b'\xd4\x00\x05\xf8\x9c\xff'
+
+    matter = Matter(raw=raw, code=MtrDex.Tag)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64b=qb64b)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64=qb64)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb2=qb2)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # test tag as chars
+    txt = b'icp_'
+    raw = decodeB64(txt)
+    assert raw == b'\x89\xca\x7f'
+    val = int.from_bytes(raw, 'big')
+    assert val == 9030271
+    qb64b = MtrDex.Tag.encode("utf-8") + txt
+    assert qb64b ==b'1AAFicp_'
+    qb64 = qb64b.decode("utf-8")
+    qb2 = decodeB64(qb64b)
+    assert qb2 == b'\xd4\x00\x05\x89\xca\x7f'
+
+    matter = Matter(raw=raw, code=MtrDex.Tag)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64b=qb64b)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb64=qb64)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    matter = Matter(qb2=qb2)
+    assert matter.raw == raw
+    assert matter.code == MtrDex.Tag
+    assert matter.qb64 == qb64
+    assert matter.qb64b == qb64b
+    assert matter.qb2 == qb2
+    assert matter.transferable == True
+    assert matter.digestive == False
+
+    # Test ._bexfil
+    matter = Matter(qb64=prefix)  #
+    raw = matter.raw
+    code = matter.code
+    qb2 = matter.qb2
+    matter._bexfil(qb2)
+    assert matter.raw == raw
+    assert matter.code == code
+    assert matter.qb64 == prefix
+    assert matter.qb2 == qb2
+
+    # Test ._binfil
+    test = matter._binfil()
+    assert test == qb2
+
 
     """ Done Test """
 
-def test_crycounter():
-    """
-    Test CryCounter subclass of CryMat
-    """
-    # with pytest.raises(EmptyMaterialError):
-    #    counter = SigCounter()
 
-    qsc = CryCntDex.Base64 + IntToB64(1, l=2)
+
+
+def test_indexer():
+    """
+    Test Indexer class
+    """
+    assert dataclasses.asdict(IdrDex) == {
+                                           'Ed25519_Sig': 'A',
+                                           'ECDSA_256k1_Sig': 'B',
+                                           'Ed448_Sig': '0A',
+                                           'Label': '0B'
+                                         }
+
+
+    assert IdrDex.Ed25519_Sig ==  'A'  # Ed25519 signature.
+    assert IdrDex.ECDSA_256k1_Sig == 'B'  # ECDSA secp256k1 signature.
+
+    assert Indexer.Codex == IdrDex
+
+    # first character of code with hard size of code
+    assert Indexer.Sizes == {
+       'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1, 'F': 1, 'G': 1, 'H': 1, 'I': 1,
+       'J': 1, 'K': 1, 'L': 1, 'M': 1, 'N': 1, 'O': 1, 'P': 1, 'Q': 1, 'R': 1,
+       'S': 1, 'T': 1, 'U': 1, 'V': 1, 'W': 1, 'X': 1, 'Y': 1, 'Z': 1,
+       'a': 1, 'b': 1, 'c': 1, 'd': 1, 'e': 1, 'f': 1, 'g': 1, 'h': 1, 'i': 1,
+       'j': 1, 'k': 1, 'l': 1, 'm': 1, 'n': 1, 'o': 1, 'p': 1, 'q': 1, 'r': 1,
+       's': 1, 't': 1, 'u': 1, 'v': 1, 'w': 1, 'x': 1, 'y': 1, 'z': 1,
+       '0': 2, '1': 2, '2': 2, '3': 2, '4': 3, '5': 4
+    }
+
+    # Codes table with sizes of code (hard) and full primitive material
+    assert Indexer.Codes == {
+                                'A': Sizage(hs=1, ss=1, fs=88),
+                                'B': Sizage(hs=1, ss=1, fs=88),
+                                '0A': Sizage(hs=2, ss=2, fs=156),
+                                '0B': Sizage(hs=2, ss=2, fs=None)
+                            }
+
+    assert Indexer.Codes['A'].hs == 1  # hard size
+    assert Indexer.Codes['A'].ss == 1  # soft size
+    assert Indexer.Codes['A'].fs == 88  # full size
+
+    # verify first hs Sizes matches hs in Codes for same first char
+    for ckey in Indexer.Codes.keys():
+        assert Indexer.Sizes[ckey[0]] == Indexer.Codes[ckey].hs
+
+    # verify all Codes have hs > 0 and ss > 0 and fs >= hs + ss if fs is not None
+    for val in Indexer.Codes.values():
+        assert val.hs > 0 and val.ss > 0
+        if val.fs is not None:
+            assert val.fs >= val.hs + val.ss
+
+    # Bizes maps bytes of sextet of decoded first character of code with hard size of code
+    # verify equivalents of items for Sizes and Bizes
+    for skey, sval in Indexer.Sizes.items():
+        ckey = b64ToB2(skey)
+        assert Indexer.Bizes[ckey] == sval
+
+
+    with pytest.raises(EmptyMaterialError):
+        indexer = Indexer()
+
+    # Test signatures
+    sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
+           b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
+           b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
+
+    assert len(sig) == 64
+
+    sig64b = encodeB64(sig)
+    sig64 = sig64b.decode("utf-8")
+    assert len(sig64) == 88
+    assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
+
+    # replace pad "==" with code "AA"
+    qsc = IdrDex.Ed25519_Sig + intToB64(0, l=1)
+    assert qsc == 'AA'
+    qscb = qsc.encode("utf-8")
+    qsig64 = qsc + sig64[:-2]
+    assert qsig64 == 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    assert len(qsig64) == 88
+    qsig64b = qsig64.encode("utf-8")
+
+    qsig2b = decodeB64(qsig64b)
+    assert len(qsig2b) == 66
+    assert qsig2b == (b'\x00\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+                    b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
+                    b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
+
+
+    indexer = Indexer(raw=sig)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 0
+    assert indexer.qb64 == qsig64
+    assert indexer.qb2 == qsig2b
+
+    # test wrong size of raw
+    longsig = sig + bytes([10, 11, 12])
+    indexer = Indexer(raw=longsig)
+
+    shortsig = sig[:-3]
+    with pytest.raises(ShortageError):
+        indexer = Indexer(raw=shortsig)
+
+    indexer = Indexer(qb64b=qsig64b)  # test with bytes not str
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 0
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+    indexer = Indexer(qb64=qsig64)  # test with str not bytes
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 0
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+    # test truncates extra bytes from qb64 parameter
+    longqsig64 = qsig64 + "ABCD"
+    indexer = Indexer(qb64=longqsig64)
+    assert len(indexer.qb64) == Indexer.Codes[indexer.code].fs
+
+    # test raises ShortageError if not enough bytes in qb64 parameter
+    shortqsig64 = qsig64[:-4]  # too short
+    with pytest.raises(ShortageError):
+        indexer = Indexer(qb64=shortqsig64)
+
+    indexer = Indexer(qb2=qsig2b)  #  test with qb2
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 0
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+    # test truncates extra bytes from qb2 parameter
+    longqsig2b = qsig2b + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
+    indexer = Indexer(qb2=longqsig2b)
+    assert indexer.qb2 == qsig2b
+    assert len(indexer.qb64) == Indexer.Codes[indexer.code].fs
+
+    # test raises ShortageError if not enough bytes in qb2 parameter
+    shortqsig2b = qsig2b[:-4]  # too few bytes in  size
+    with pytest.raises(ShortageError):
+        indexer = Indexer(qb2=shortqsig2b)
+
+    # test with non-zero index=5
+    # replace pad "==" with code "AF"
+    qsc = IdrDex.Ed25519_Sig + intToB64(5, l=1)
+    assert qsc == 'AF'
+    qscb = qsc.encode("utf-8")
+    qsig64 = qsc + sig64[:-2]
+    assert qsig64 == 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    assert len(qsig64) == 88
+    qsig64b = qsig64.encode("utf-8")
+
+    qsig2b = (b'\x00Y\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
+            b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
+            b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
+
+    indexer = Indexer(raw=sig, code=IdrDex.Ed25519_Sig, index=5)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+
+    indexer = Indexer(qb2=qsig2b)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+    indexer = Indexer(qb64=qsig64)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+    #  Label Code (variable length)
+    label = b'Hello_World_Peep'
+    index = len(label) // 4
+    assert not len(label) % 4
+    assert index == 4
+    lraw = decodeB64(label)
+    assert len(lraw) == len(label) * 3 // 4
+    assert lraw == b'\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
+    ltext = encodeB64(lraw)
+    assert ltext == b'Hello_World_Peep' == label
+    qsc = IdrDex.Label + intToB64(index, l=2)
+    assert qsc == '0BAE'
+    qscb = qsc.encode("utf-8")
+    lq64b = qscb + label
+    assert lq64b == b"0BAEHello_World_Peep"
+    lq64 = lq64b.decode("utf-8")
+
+    indexer = Indexer(raw=lraw, code=IdrDex.Label, index=index)
+    assert indexer.raw == lraw
+    assert indexer.code == IdrDex.Label
+    assert indexer.index == index
+    assert indexer.qb64b == lq64b
+    assert indexer.qb64 == lq64
+    assert indexer.qb2 == b'\xd0\x10\x04\x1d\xe9e\xa3\xf5\xa8\xaeW\x7f=\xe7\xa9'
+
+    # index zero for empty label
+    indexer = Indexer(raw=lraw, code=IdrDex.Label, index=0)
+    assert indexer.raw == b''
+    assert indexer.code == IdrDex.Label
+    assert indexer.index == 0
+    assert indexer.qb64b == b'0BAA'
+    assert indexer.qb64 == '0BAA'
+    assert indexer.qb2 == b'\xd0\x10\x00'
+
+    # Test ._bexfil
+    indexer = Indexer(qb64=qsig64)  #
+    raw = indexer.raw
+    code = indexer.code
+    index = indexer.index
+    qb2 = indexer.qb2
+    indexer._bexfil(qb2)
+    assert indexer.raw == raw
+    assert indexer.code == code
+    assert indexer.index == index
+    assert indexer.qb64 == qsig64
+    assert indexer.qb2 == qb2
+
+    # Test ._binfil
+    test = indexer._binfil()
+    assert test == qb2
+
+    """ Done Test """
+
+
+def test_counter():
+    """
+    Test Counter class
+    """
+    assert dataclasses.asdict(CtrDex) == {
+                                            'ControllerIdxSigs': '-A',
+                                            'WitnessIdxSigs': '-B',
+                                            'NonTransReceiptCouples': '-C',
+                                            'TransReceiptQuadruples': '-D',
+                                            'MessageDataGroups': '-U',
+                                            'AttachedMaterialQuadlets': '-V',
+                                            'MessageDataMaterialQuadlets': '-W',
+                                            'CombinedMaterialQuadlets': '-X',
+                                            'MaterialGroups': '-Y',
+                                            'Material': '-Z',
+                                            'AnchorSealGroups': '-a',
+                                            'ConfigTraits': '-c',
+                                            'DigestSealQuadlets': '-d',
+                                            'EventSealQuadlets': '-e',
+                                            'Keys': '-k',
+                                            'LocationSealQuadlets': '-l',
+                                            'RootDigestSealQuadlets': '-r',
+                                            'Witnesses': '-w',
+                                            'BigMessageDataGroups': '-0U',
+                                            'BigAttachedMaterialQuadlets': '-0V',
+                                            'BigMessageDataMaterialQuadlets': '-0W',
+                                            'BigCombinedMaterialQuadlets': '-0X',
+                                            'BigMaterialGroups': '-0Y',
+                                            'BigMaterial': '-0Z'
+                                         }
+
+    assert CtrDex.ControllerIdxSigs ==  '-A'
+    assert CtrDex.WitnessIdxSigs == '-B'
+
+    assert Counter.Codex == CtrDex
+
+    # first character of code with hard size of code
+    assert Counter.Sizes == {
+       '-A': 2, '-B': 2, '-C': 2, '-D': 2, '-E': 2, '-F': 2, '-G': 2, '-H': 2, '-I': 2,
+       '-J': 2, '-K': 2, '-L': 2, '-M': 2, '-N': 2, '-O': 2, '-P': 2, '-Q': 2, '-R': 2,
+       '-S': 2, '-T': 2, '-U': 2, '-V': 2, '-W': 2, '-X': 2, '-Y': 2, '-Z': 2,
+       '-a': 2, '-b': 2, '-c': 2, '-d': 2, '-e': 2, '-f': 2, '-g': 2, '-h': 2, '-i': 2,
+       '-j': 2, '-k': 2, '-l': 2, '-m': 2, '-n': 2, '-o': 2, '-p': 2, '-q': 2, '-r': 2,
+       '-s': 2, '-t': 2, '-u': 2, '-v': 2, '-w': 2, '-x': 2, '-y': 2, '-z': 2,
+       '-0': 3
+    }
+
+    # Codes table with sizes of code (hard) and full primitive material
+    assert Counter.Codes == {
+                                '-A': Sizage(hs=2, ss=2, fs=4),
+                                '-B': Sizage(hs=2, ss=2, fs=4),
+                                '-C': Sizage(hs=2, ss=2, fs=4),
+                                '-D': Sizage(hs=2, ss=2, fs=4),
+                                '-U': Sizage(hs=2, ss=2, fs=4),
+                                '-V': Sizage(hs=2, ss=2, fs=4),
+                                '-W': Sizage(hs=2, ss=2, fs=4),
+                                '-X': Sizage(hs=2, ss=2, fs=4),
+                                '-Y': Sizage(hs=2, ss=2, fs=4),
+                                '-Z': Sizage(hs=2, ss=2, fs=4),
+                                '-a': Sizage(hs=2, ss=2, fs=4),
+                                '-c': Sizage(hs=2, ss=2, fs=4),
+                                '-d': Sizage(hs=2, ss=2, fs=4),
+                                '-e': Sizage(hs=2, ss=2, fs=4),
+                                '-k': Sizage(hs=2, ss=2, fs=4),
+                                '-l': Sizage(hs=2, ss=2, fs=4),
+                                '-r': Sizage(hs=2, ss=2, fs=4),
+                                '-w': Sizage(hs=2, ss=2, fs=4),
+                                '-0U': Sizage(hs=3, ss=5, fs=8),
+                                '-0V': Sizage(hs=3, ss=5, fs=8),
+                                '-0W': Sizage(hs=3, ss=5, fs=8),
+                                '-0X': Sizage(hs=3, ss=5, fs=8),
+                                '-0Y': Sizage(hs=3, ss=5, fs=8),
+                                '-0Z': Sizage(hs=3, ss=5, fs=8)
+                             }
+
+
+    assert Counter.Codes['-A'].hs == 2  # hard size
+    assert Counter.Codes['-A'].ss == 2  # soft size
+    assert Counter.Codes['-A'].fs == 4  # full size
+
+    # verify first hs Sizes matches hs in Codes for same first char
+    for ckey in Counter.Codes.keys():
+        assert Counter.Sizes[ckey[:2]] == Counter.Codes[ckey].hs
+
+    #  verify all Codes have hs > 0 and ss > 0 and fs = hs + ss and not fs % 4
+    for val in Counter.Codes.values():
+        assert val.hs > 0 and val.ss > 0 and val.hs + val.ss == val.fs and not val.fs % 4
+
+    # Bizes maps bytes of sextet of decoded first character of code with hard size of code
+    # verify equivalents of items for Sizes and Bizes
+    for skey, sval in Counter.Sizes.items():
+        ckey = b64ToB2(skey)
+        assert Counter.Bizes[ckey] == sval
+
+
+    with pytest.raises(EmptyMaterialError):
+        counter = Counter()
+
+    # create code manually
+    count = 1
+    qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
     assert qsc == '-AAB'
     qscb = qsc.encode("utf-8")
-    assert qscb == b'-AAB'
+    qscb2 = decodeB64(qscb)
 
-    counter = CryCounter()
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
+    counter = Counter(code=CtrDex.ControllerIdxSigs)  #  default count = 1
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
     assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = CryCounter(raw=b'')
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
     assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
+    assert counter.qb2 == qscb2
 
-    counter = CryCounter(qb64b=qscb)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
+    counter = Counter(qb64b=qscb)  # test with bytes not str
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
     assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
+    assert counter.qb2 == qscb2
 
-    counter = CryCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
+    counter = Counter(qb64=qsc)  # test with str not bytes
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
     assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
+    assert counter.qb2 == qscb2
 
-    counter = CryCounter(qb64=qscb)  #  also works with bytes
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
+    counter = Counter(qb2=qscb2)  #  test with qb2
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
     assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
+    assert counter.qb2 == qscb2
 
-    counter = CryCounter(raw=b'', count=1)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 1
-    assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x01'
+    # test truncates extra bytes from qb64 parameter
+    longqsc64 = qsc + "ABCD"
+    counter = Counter(qb64=longqsc64)
+    assert len(counter.qb64) == Counter.Codes[counter.code].fs
 
-    counter = CryCounter(raw=b'', count=0)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == 0
-    assert counter.qb64 == '-AAA'
-    assert counter.qb64b == b'-AAA'
-    assert counter.qb2 == b'\xf8\x00\x00'
+    # test raises ShortageError if not enough bytes in qb64 parameter
+    shortqsc64 = qsc[:-1]  # too short
+    with pytest.raises(ShortageError):
+        counter = Counter(qb64=shortqsc64)
 
+    # test truncates extra bytes from qb2 parameter
+    longqscb2 = qscb2 + bytearray([1, 2, 3, 4, 5])  # extra bytes in size
+    counter = Counter(qb2=longqscb2)
+    assert counter.qb2 == qscb2
+    assert len(counter.qb64) == Counter.Codes[counter.code].fs
 
-    cnt = 5
-    qsc = SigCntDex.Base64 + IntToB64(cnt, l=2)
+    # test raises ShortageError if not enough bytes in qb2 parameter
+    shortqscb2 = qscb2[:-4]  # too few bytes in  size
+    with pytest.raises(ShortageError):
+        counter = Counter(qb2=shortqscb2)
+
+    # test with non-zero count=5
+    count =  5
+    qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
     assert qsc == '-AAF'
     qscb = qsc.encode("utf-8")
-    assert qscb == b'-AAF'
+    qscb2 = decodeB64(qscb)
 
-    counter = CryCounter(count=cnt)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == cnt
-    assert counter.qb64 == qsc
+    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count)
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
     assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x05'
-
-    counter = CryCounter(qb64b=qscb)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == cnt
-    assert counter.count == cnt
     assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x05'
+    assert counter.qb2 == qscb2
 
-    counter = CryCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == cnt
-    assert counter.count == cnt
+    counter = Counter(qb64b=qscb)  # test with bytes not str
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
     assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x05'
+    assert counter.qb2 == qscb2
 
-    counter = CryCounter(qb64=qscb)  #  bytes also
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base64
-    assert counter.index == cnt
-    assert counter.count == cnt
+    counter = Counter(qb64=qsc)  # test with str not bytes
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
     assert counter.qb64 == qsc
-    assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x00\x05'
+    assert counter.qb2 == qscb2
 
-    cnt = 5
-    qsc = CryCntDex.Base2 + IntToB64(cnt, l=2)
-    assert qsc == '-BAF'
+    counter = Counter(qb2=qscb2)  #  test with qb2
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    # test with big codes index=1024
+    count = 1024
+    qsc = CtrDex.BigMessageDataGroups + intToB64(count, l=5)
+    assert qsc == '-0UAAAQA'
     qscb = qsc.encode("utf-8")
-    assert qscb == b'-BAF'
+    qscb2 = decodeB64(qscb)
 
-    counter = CryCounter(code=CryCntDex.Base2, count=cnt)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base2
-    assert counter.index == cnt
-    assert counter.qb64 == qsc
+    counter = Counter(code=CtrDex.BigMessageDataGroups, count=count)
+    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.count == count
     assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x10\x05'
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
 
-    counter = CryCounter(qb64b=qscb)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base2
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
+    counter = Counter(qb64b=qscb)  # test with bytes not str
+    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.count == count
     assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x10\x05'
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
 
-    counter = CryCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base2
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
+    counter = Counter(qb64=qsc)  # test with str not bytes
+    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.count == count
     assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x10\x05'
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
 
-    counter = CryCounter(qb64=qscb)  #  bytes also
-    assert counter.raw == b''
-    assert counter.code == CryCntDex.Base2
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
+    counter = Counter(qb2=qscb2)  #  test with qb2
+    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.count == count
     assert counter.qb64b == qscb
-    assert counter.qb2 == b'\xf8\x10\x05'
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    # Test ._bexfil
+    counter = Counter(qb64=qsc)  #
+    code = counter.code
+    count = counter.count
+    qb2 = counter.qb2
+    counter._bexfil(qb2)
+    assert counter.code == code
+    assert counter.count == count
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qb2
+
+    # Test ._binfil
+    test = counter._binfil()
+    assert test == qb2
+
     """ Done Test """
+
 
 
 def test_seqner():
@@ -476,7 +1147,7 @@ def test_seqner():
     """
     number = Seqner()  #  defaults to zero
     assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 0
     assert number.snh == '0'
     assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAAAA'
@@ -488,12 +1159,12 @@ def test_seqner():
     snqb64 = '0AAAAAAAAAAAAAAAAAAAAAAA'
     snqb2 = b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ShortageError):
         number = Seqner(raw=b'')
 
     number = Seqner(qb64b=snqb64b)
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 0
     assert number.snh == '0'
     assert number.qb64 == snqb64
@@ -502,7 +1173,7 @@ def test_seqner():
 
     number = Seqner(qb64=snqb64)
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 0
     assert number.snh == '0'
     assert number.qb64 == snqb64
@@ -511,7 +1182,7 @@ def test_seqner():
 
     number = Seqner(qb2=snqb2)
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 0
     assert number.snh == '0'
     assert number.qb64 == snqb64
@@ -520,7 +1191,7 @@ def test_seqner():
 
     number = Seqner(raw=snraw)
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 0
     assert number.snh == '0'
     assert number.qb64 == snqb64
@@ -530,7 +1201,7 @@ def test_seqner():
     # test priority lower for sn and snh
     number = Seqner(qb64b=snqb64b, sn=5, snh='a')
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 0
     assert number.snh == '0'
     assert number.qb64 == snqb64
@@ -539,7 +1210,7 @@ def test_seqner():
 
     number = Seqner(qb64=snqb64, sn=5, snh='a')
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 0
     assert number.snh == '0'
     assert number.qb64 == snqb64
@@ -548,7 +1219,7 @@ def test_seqner():
 
     number = Seqner(qb2=snqb2, sn=5, snh='a')
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 0
     assert number.snh == '0'
     assert number.qb64 == snqb64
@@ -557,7 +1228,7 @@ def test_seqner():
 
     number = Seqner(raw=snraw, sn=5, snh='a')
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 0
     assert number.snh == '0'
     assert number.qb64 == snqb64
@@ -566,7 +1237,7 @@ def test_seqner():
 
     number = Seqner(sn=5, snh='a')
     assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05'
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 5
     assert number.snh == '5'
     assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAABQ'
@@ -575,7 +1246,7 @@ def test_seqner():
 
     number = Seqner(snh='a')
     assert number.raw == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\n'
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 10
     assert number.snh == 'a'
     assert number.qb64 == '0AAAAAAAAAAAAAAAAAAAAACg'
@@ -590,7 +1261,7 @@ def test_seqner():
 
     number = Seqner(qb64b=snqb64b)
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 5
     assert number.snh == '5'
     assert number.qb64 == snqb64
@@ -599,7 +1270,7 @@ def test_seqner():
 
     number = Seqner(qb64=snqb64)
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 5
     assert number.snh == '5'
     assert number.qb64 == snqb64
@@ -608,7 +1279,7 @@ def test_seqner():
 
     number = Seqner(qb2=snqb2, sn=5)
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 5
     assert number.snh == '5'
     assert number.qb64 == snqb64
@@ -617,7 +1288,7 @@ def test_seqner():
 
     number = Seqner(raw=snraw, sn=5)
     assert number.raw == snraw
-    assert number.code == CryTwoDex.Salt_128
+    assert number.code == MtrDex.Salt_128
     assert number.sn == 5
     assert number.snh == '5'
     assert number.qb64 == snqb64
@@ -637,9 +1308,9 @@ def test_verfer():
     with pytest.raises(EmptyMaterialError):
         verfer = Verfer()
 
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
     assert verfer.raw == verkey
-    assert verfer.code == CryOneDex.Ed25519N
+    assert verfer.code == MtrDex.Ed25519N
 
     #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -649,9 +1320,9 @@ def test_verfer():
     result = verfer.verify(sig, ser)
     assert result == True
 
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
     assert verfer.raw == verkey
-    assert verfer.code == CryOneDex.Ed25519
+    assert verfer.code == MtrDex.Ed25519
 
     #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -662,7 +1333,7 @@ def test_verfer():
     assert result == True
 
     with pytest.raises(ValueError):
-        verfer = Verfer(raw=verkey, code=CryOneDex.Blake3_256)
+        verfer = Verfer(raw=verkey, code=MtrDex.Blake3_256)
     """ Done Test """
 
 def test_cigar():
@@ -675,7 +1346,7 @@ def test_cigar():
     qsig64 = '0BmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
     cigar = Cigar(qb64=qsig64)
-    assert cigar.code == CryTwoDex.Ed25519
+    assert cigar.code == MtrDex.Ed25519_Sig
     assert cigar.qb64 == qsig64
     assert cigar.verfer == None
 
@@ -695,23 +1366,23 @@ def test_signer():
     Test the support functionality for signer subclass of crymat
     """
     signer = Signer()  # defaults provide Ed25519 signer Ed25519 verfer
-    assert signer.code == CryOneDex.Ed25519_Seed
-    assert len(signer.raw) == CryOneRawSizes[signer.code]
-    assert signer.verfer.code == CryOneDex.Ed25519
-    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
+    assert signer.code == MtrDex.Ed25519_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.verfer.code == MtrDex.Ed25519
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
 
     #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     crymat = signer.sign(ser)
-    assert crymat.code == CryTwoDex.Ed25519
-    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    assert crymat.code == MtrDex.Ed25519_Sig
+    assert len(crymat.raw) == Matter._rawSize(crymat.code)
     result = signer.verfer.verify(crymat.raw, ser)
     assert result == True
 
     sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.code == IdrDex.Ed25519_Sig
+    assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
     assert sigmat.index == 0
     result = signer.verfer.verify(sigmat.raw, ser)
     assert result == True
@@ -721,23 +1392,23 @@ def test_signer():
     assert crymat.raw == sigmat.raw
 
     signer = Signer(transferable=False)  # Ed25519N verifier
-    assert signer.code == CryOneDex.Ed25519_Seed
-    assert len(signer.raw) == CryOneRawSizes[signer.code]
-    assert signer.verfer.code == CryOneDex.Ed25519N
-    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
+    assert signer.code == MtrDex.Ed25519_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
+    assert signer.verfer.code == MtrDex.Ed25519N
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
 
     #create something to sign and verify
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     crymat = signer.sign(ser)
-    assert crymat.code == CryTwoDex.Ed25519
-    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    assert crymat.code == MtrDex.Ed25519_Sig
+    assert len(crymat.raw) == Matter._rawSize(crymat.code)
     result = signer.verfer.verify(crymat.raw, ser)
     assert result == True
 
     sigmat = signer.sign(ser, index=0)
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.code == IdrDex.Ed25519_Sig
+    assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
     assert sigmat.index == 0
     result = signer.verfer.verify(sigmat.raw, ser)
     assert result == True
@@ -746,22 +1417,22 @@ def test_signer():
 
 
     seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    signer = Signer(raw=seed, code=CryOneDex.Ed25519_Seed)
-    assert signer.code == CryOneDex.Ed25519_Seed
-    assert len(signer.raw) == CryOneRawSizes[signer.code]
+    signer = Signer(raw=seed, code=MtrDex.Ed25519_Seed)
+    assert signer.code == MtrDex.Ed25519_Seed
+    assert len(signer.raw) == Matter._rawSize(signer.code)
     assert signer.raw == seed
-    assert signer.verfer.code == CryOneDex.Ed25519
-    assert len(signer.verfer.raw) == CryOneRawSizes[signer.verfer.code]
+    assert signer.verfer.code == MtrDex.Ed25519
+    assert len(signer.verfer.raw) == Matter._rawSize(signer.verfer.code)
 
     crymat = signer.sign(ser)
-    assert crymat.code == CryTwoDex.Ed25519
-    assert len(crymat.raw) == CryTwoRawSizes[crymat.code]
+    assert crymat.code == MtrDex.Ed25519_Sig
+    assert len(crymat.raw) == Matter._rawSize(crymat.code)
     result = signer.verfer.verify(crymat.raw, ser)
     assert result == True
 
     sigmat = signer.sign(ser, index=1)
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert len(sigmat.raw) == SigTwoRawSizes[sigmat.code]
+    assert sigmat.code == IdrDex.Ed25519_Sig
+    assert len(sigmat.raw) == Indexer._rawSize(sigmat.code)
     assert sigmat.index == 1
     result = signer.verfer.verify(sigmat.raw, ser)
     assert result == True
@@ -769,10 +1440,10 @@ def test_signer():
     assert crymat.raw == sigmat.raw
 
     with pytest.raises(ValueError):  #  use invalid code not SEED
-        signer = Signer(raw=seed, code=CryOneDex.Ed25519N)
+        signer = Signer(raw=seed, code=MtrDex.Ed25519N)
 
     with pytest.raises(ValueError):  #  use invalid code not SEED
-        signer = Signer(code=CryOneDex.Ed25519N)
+        signer = Signer(code=MtrDex.Ed25519N)
     """ Done Test """
 
 
@@ -781,8 +1452,8 @@ def test_salter():
     Test the support functionality for salter subclass of crymat
     """
     salter = Salter()  # defaults to CryTwoDex.Salt_128
-    assert salter.code == CryTwoDex.Salt_128
-    assert len(salter.raw) == CryRawSizes[salter.code] == 16
+    assert salter.code == MtrDex.Salt_128
+    assert len(salter.raw) == Matter._rawSize(salter.code) == 16
 
     raw = b'0123456789abcdef'
 
@@ -791,18 +1462,18 @@ def test_salter():
     assert salter.qb64 == '0AMDEyMzQ1Njc4OWFiY2RlZg'
 
     signer = salter.signer(path="01", temp=True)  # defaults to Ed25519
-    assert signer.code == CryOneDex.Ed25519_Seed
-    assert len(signer.raw) == CryRawSizes[signer.code]
-    assert signer.verfer.code == CryOneDex.Ed25519
-    assert len(signer.verfer.raw) == CryRawSizes[signer.verfer.code]
+    assert signer.code == MtrDex.Ed25519_Seed
+    assert len(signer.raw) ==  Matter._rawSize(signer.code)
+    assert signer.verfer.code == MtrDex.Ed25519
+    assert len(signer.verfer.raw) ==  Matter._rawSize(signer.verfer.code)
     assert signer.qb64 == 'Aw-yoFnFZ21ikGGtacpiK3AVrvuz3TZD6dfew9POqzRE'
     assert signer.verfer.qb64 == 'DVgXBkk4w3LcWScQIvy1RpBlEFTJD3EK_oXxyQb5QKsI'
 
     signer = salter.signer(path="01")  # defaults to Ed25519 temp = False level="low"
-    assert signer.code == CryOneDex.Ed25519_Seed
-    assert len(signer.raw) == CryRawSizes[signer.code]
-    assert signer.verfer.code == CryOneDex.Ed25519
-    assert len(signer.verfer.raw) == CryRawSizes[signer.verfer.code]
+    assert signer.code == MtrDex.Ed25519_Seed
+    assert len(signer.raw) ==  Matter._rawSize(signer.code)
+    assert signer.verfer.code == MtrDex.Ed25519
+    assert len(signer.verfer.raw) ==  Matter._rawSize(signer.verfer.code)
     assert signer.qb64 == 'ASSpCI1N7FYH19MumAmn-Vdbre0WVP5jT-aBDDDij50I'
     assert signer.verfer.qb64 == 'D8kbIf0fUz9JRJ_XxHNfw6p3KHETJkmkqbkSbQ-emxZ0'
 
@@ -825,7 +1496,7 @@ def test_generatesigners():
     signers = generateSigners(count=2, transferable=False)
     assert len(signers) == 2
     for signer in signers:
-        assert signer.verfer.code == CryOneDex.Ed25519N
+        assert signer.verfer.code == MtrDex.Ed25519N
 
     # root = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     root = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
@@ -833,8 +1504,8 @@ def test_generatesigners():
     signers = generateSigners(salt=root, count=4)  # default is transferable
     assert len(signers) == 4
     for signer in signers:
-        assert signer.code == CryOneDex.Ed25519_Seed
-        assert signer.verfer.code == CryOneDex.Ed25519
+        assert signer.code == MtrDex.Ed25519_Seed
+        assert signer.verfer.code == MtrDex.Ed25519
 
     sigkeys = [signer.qb64 for signer in signers]
     assert sigkeys == ['ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
@@ -860,25 +1531,25 @@ def test_diger():
 
     dig = blake3.blake3(ser).digest()
     with pytest.raises(ValueError):
-        diger = Diger(raw=dig, code=CryOneDex.Ed25519)
+        diger = Diger(raw=dig, code=MtrDex.Ed25519)
 
     with pytest.raises(ValueError):
-        diger = Diger(ser=ser, code=CryOneDex.Ed25519)
+        diger = Diger(ser=ser, code=MtrDex.Ed25519)
 
     diger = Diger(raw=dig)  # defaults provide Blake3_256 digester
-    assert diger.code == CryOneDex.Blake3_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert diger.code == MtrDex.Blake3_256
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
     assert not diger.verify(ser=ser+b'ABCDEF')
 
-    diger = Diger(raw=dig, code=CryOneDex.Blake3_256)
-    assert diger.code == CryOneDex.Blake3_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    diger = Diger(raw=dig, code=MtrDex.Blake3_256)
+    assert diger.code == MtrDex.Blake3_256
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     diger = Diger(ser=ser)  # default code is  Blake3_256
-    assert diger.code == CryOneDex.Blake3_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    assert diger.code == MtrDex.Blake3_256
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
     assert diger.qb64b == b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
 
@@ -887,66 +1558,66 @@ def test_diger():
     diger = Diger(qb64b=digb)
     assert diger.qb64b == digb
     assert diger.qb64 == dig
-    assert diger.code == CryOneDex.Blake3_256
+    assert diger.code == MtrDex.Blake3_256
 
     diger = Diger(qb64=dig)
     assert diger.qb64 == dig
     assert diger.qb64b == digb
-    assert diger.code == CryOneDex.Blake3_256
+    assert diger.code == MtrDex.Blake3_256
 
     pig = b'sLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E='
     raw = decodeB64(pig)
     assert pig == encodeB64(raw)
 
     dig = hashlib.blake2b(ser, digest_size=32).digest()
-    diger = Diger(raw=dig, code=CryOneDex.Blake2b_256)
-    assert diger.code == CryOneDex.Blake2b_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    diger = Diger(raw=dig, code=MtrDex.Blake2b_256)
+    assert diger.code == MtrDex.Blake2b_256
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
-    diger = Diger(ser=ser, code=CryOneDex.Blake2b_256)
-    assert diger.code == CryOneDex.Blake2b_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    diger = Diger(ser=ser, code=MtrDex.Blake2b_256)
+    assert diger.code == MtrDex.Blake2b_256
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     dig = hashlib.blake2s(ser, digest_size=32).digest()
-    diger = Diger(raw=dig, code=CryOneDex.Blake2s_256)
-    assert diger.code == CryOneDex.Blake2s_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    diger = Diger(raw=dig, code=MtrDex.Blake2s_256)
+    assert diger.code == MtrDex.Blake2s_256
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
-    diger = Diger(ser=ser, code=CryOneDex.Blake2s_256)
-    assert diger.code == CryOneDex.Blake2s_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    diger = Diger(ser=ser, code=MtrDex.Blake2s_256)
+    assert diger.code == MtrDex.Blake2s_256
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     dig = hashlib.sha3_256(ser).digest()
-    diger = Diger(raw=dig, code=CryOneDex.SHA3_256)
-    assert diger.code == CryOneDex.SHA3_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    diger = Diger(raw=dig, code=MtrDex.SHA3_256)
+    assert diger.code == MtrDex.SHA3_256
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
-    diger = Diger(ser=ser, code=CryOneDex.SHA3_256)
-    assert diger.code == CryOneDex.SHA3_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    diger = Diger(ser=ser, code=MtrDex.SHA3_256)
+    assert diger.code == MtrDex.SHA3_256
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     dig = hashlib.sha256(ser).digest()
-    diger = Diger(raw=dig, code=CryOneDex.SHA2_256)
-    assert diger.code == CryOneDex.SHA2_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    diger = Diger(raw=dig, code=MtrDex.SHA2_256)
+    assert diger.code == MtrDex.SHA2_256
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
-    diger = Diger(ser=ser, code=CryOneDex.SHA2_256)
-    assert diger.code == CryOneDex.SHA2_256
-    assert len(diger.raw) == CryOneRawSizes[diger.code]
+    diger = Diger(ser=ser, code=MtrDex.SHA2_256)
+    assert diger.code == MtrDex.SHA2_256
+    assert len(diger.raw) == Matter._rawSize(diger.code)
     assert diger.verify(ser=ser)
 
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
     diger0 = Diger(ser=ser) # default code
-    diger1 = Diger(ser=ser, code=CryOneDex.SHA3_256)
-    diger2 = Diger(ser=ser, code=CryOneDex.Blake2b_256)
+    diger1 = Diger(ser=ser, code=MtrDex.SHA3_256)
+    diger2 = Diger(ser=ser, code=MtrDex.Blake2b_256)
 
     assert diger0.compare(ser=ser, diger=diger1)
     assert diger0.compare(ser=ser, diger=diger2)
@@ -961,9 +1632,9 @@ def test_diger():
     assert not diger0.compare(ser=ser, diger=Diger(ser=ser1))  # codes match
     assert not diger0.compare(ser=ser, dig=Diger(ser=ser1).qb64)  # codes match
     assert not diger0.compare(ser=ser,  # codes not match
-                              diger=Diger(ser=ser1, code=CryOneDex.SHA3_256))
+                              diger=Diger(ser=ser1, code=MtrDex.SHA3_256))
     assert not diger0.compare(ser=ser,  # codes not match
-                              dig=Diger(ser=ser1, code=CryOneDex.SHA3_256).qb64b)
+                              dig=Diger(ser=ser1, code=MtrDex.SHA3_256).qb64b)
 
     """ Done Test """
 
@@ -984,7 +1655,7 @@ def test_nexter():
     sithdig = blake3.blake3(sith.encode("utf-8")).digest()
     assert sithdig == b"\x81>\x9br\x91A\xe7\xf3\x85\xaf\xa0\xa2\xd0\xdf>l7\x89\xe4'\xff\xe4\xae\xefVjV[\xc8\xf2\xfe="
 
-    sithdiger = Diger(raw=sithdig, code=CryOneDex.Blake3_256)
+    sithdiger = Diger(raw=sithdig, code=MtrDex.Blake3_256)
     assert sithdiger.qb64 == 'EgT6bcpFB5_OFr6Ci0N8-bDeJ5Cf_5K7vVmpWW8jy_j0'
 
     keys = ['BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE',
@@ -996,7 +1667,7 @@ def test_nexter():
                        b';\x80\x97\xa7\xc8,\xd3"`\xd5\xf1a$\xbb9\x84~\xa7z\xa2p\x84Q\x18\xee\xfa\xc9\x11\xd3\xde\xf3\xb2',
                        b'-e\x99\x13 i\x8e\xb7\xcc\xd5E4\x9f}J#"\x17\x96Z\xc2\xa0\xb1\x0e#\x95\x07\x0f\xdc{[\x12']
 
-    digers = [Diger(raw=keydig, code=CryOneDex.Blake3_256) for keydig in keydigs]
+    digers = [Diger(raw=keydig, code=MtrDex.Blake3_256) for keydig in keydigs]
     digs = [diger.qb64 for diger in digers]
 
     assert digs == ['EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
@@ -1008,34 +1679,34 @@ def test_nexter():
     for kint in kints:
         sint ^= kint  # xor together
 
-    raw = sint.to_bytes(CryRawSizes[CryOneDex.Blake3_256], 'big')
+    raw = sint.to_bytes( Matter._rawSize(MtrDex.Blake3_256), 'big')
     assert raw == (b'\x0f\xc6/\x0e\xb5\xef\x1a\xe6\x88U\x9e\xbd^\xc0U\x03\x96\r\xda\x93S}\x03\x85\xc2\x07\xa5\xa1Q\xdeX\xab')
 
     nexter = Nexter(raw=raw)  # defaults provide Blake3_256 digest
-    assert nexter.code == CryOneDex.Blake3_256
+    assert nexter.code == MtrDex.Blake3_256
     assert nexter.qb64 == 'ED8YvDrXvGuaIVZ69XsBVA5YN2pNTfQOFwgeloVHeWKs'
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(raw=raw)
     assert nexter.verify(raw=raw+b'ABCDEF') == False
 
     with pytest.raises(ValueError):  # bad code
-        nexter = Nexter(raw=raw, code=CryOneDex.Ed25519)
+        nexter = Nexter(raw=raw, code=MtrDex.Ed25519)
 
     nexter = Nexter(digs=digs)  # compute sith from digs using default sith
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.code == MtrDex.Blake3_256
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(digs=digs)
     assert nexter.verify(raw=raw)
 
     nexter = Nexter(sith=sith, digs=digs)  # compute sith from digs using default sith
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.code == MtrDex.Blake3_256
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(sith=sith, digs=digs)
     assert nexter.verify(raw=raw)
 
     nexter = Nexter(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.code == MtrDex.Blake3_256
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(sith=sith, keys=keys)
     assert nexter.verify(raw=raw)
     assert nexter.verify(raw=raw+b'ABCDEF') == False
@@ -1044,21 +1715,21 @@ def test_nexter():
         nexter = Nexter(sith=sith)
 
     nexter = Nexter(keys=keys)  # compute sith from keys default sith
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.code == MtrDex.Blake3_256
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(keys=keys)
     assert nexter.verify(raw=raw)
 
     nexter = Nexter(sith="2", keys=keys)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.code == MtrDex.Blake3_256
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(sith="2", keys=keys)
     assert nexter.verify(raw=raw)
 
     ked = dict(kt=sith, k=keys)  #  subsequent event
     nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
-    assert nexter.code == CryOneDex.Blake3_256
-    assert len(nexter.raw) == CryOneRawSizes[nexter.code]
+    assert nexter.code == MtrDex.Blake3_256
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(ked=ked)
     assert nexter.verify(raw=raw)
 
@@ -1080,7 +1751,7 @@ def test_prefixer():
 
     nxtkey = (b"\xa6_\x894J\xf25T\xc1\x83#\x06\x98L\xa6\xef\x1a\xb3h\xeaA:x'\xda\x04\x88\xb2"
               b'\xc4_\xf6\x00')
-    nxtfer = Verfer(raw=nxtkey, code=CryOneDex.Ed25519)
+    nxtfer = Verfer(raw=nxtkey, code=MtrDex.Ed25519)
     assert nxtfer.qb64 == 'Dpl-JNEryNVTBgyMGmEym7xqzaOpBOngn2gSIssRf9gA'
 
     with pytest.raises(EmptyMaterialError):
@@ -1093,13 +1764,13 @@ def test_prefixer():
         prefixer = Prefixer(raw=verkey, code='')
 
     with pytest.raises(ValueError):
-        prefixer = Prefixer(raw=verkey, code=CryOneDex.SHA2_256)
+        prefixer = Prefixer(raw=verkey, code=MtrDex.SHA2_256)
 
     # test creation given raw and code no derivation
-    prefixer = Prefixer(raw=verkey, code=CryOneDex.Ed25519N)  # default code is None
-    assert prefixer.code == CryOneDex.Ed25519N
-    assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
-    assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
+    prefixer = Prefixer(raw=verkey, code=MtrDex.Ed25519N)  # default code is None
+    assert prefixer.code == MtrDex.Ed25519N
+    assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
+    assert len(prefixer.qb64) == Matter.Codes[prefixer.code].fs
 
     ked = dict(k=[prefixer.qb64], n="", t="icp")
     assert prefixer.verify(ked=ked) == True
@@ -1109,24 +1780,24 @@ def test_prefixer():
     assert prefixer.verify(ked=ked) == False
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    prefixer = Prefixer(raw=verkey, code=CryOneDex.Ed25519)  # defaults provide Ed25519N prefixer
-    assert prefixer.code == CryOneDex.Ed25519
-    assert len(prefixer.raw) == CryOneRawSizes[prefixer.code]
-    assert len(prefixer.qb64) == CryOneSizes[prefixer.code]
+    prefixer = Prefixer(raw=verkey, code=MtrDex.Ed25519)  # defaults provide Ed25519N prefixer
+    assert prefixer.code == MtrDex.Ed25519
+    assert len(prefixer.raw) == Matter._rawSize(prefixer.code)
+    assert len(prefixer.qb64) == Matter.Codes[prefixer.code].fs
 
     ked = dict(k=[prefixer.qb64], t="icp")
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
-    prefixer = Prefixer(raw=verfer.raw, code=CryOneDex.Ed25519N)
-    assert prefixer.code == CryOneDex.Ed25519N
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
+    prefixer = Prefixer(raw=verfer.raw, code=MtrDex.Ed25519N)
+    assert prefixer.code == MtrDex.Ed25519N
     assert prefixer.verify(ked=ked) == False
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # Test basic derivation from ked
     ked = dict(k=[verfer.qb64], n="",  t="icp")
-    prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519)
+    prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519)
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
@@ -1135,52 +1806,52 @@ def test_prefixer():
     with pytest.raises(EmptyMaterialError):  # no code and no pre in ked
         prefixer = Prefixer(ked=ked)
 
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)  # verfer code not match pre code
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)  # verfer code not match pre code
     ked = dict(k=[verfer.qb64], n="",  t="icp", i=preN)
     with pytest.raises(DerivationError):
         prefixer = Prefixer(ked=ked)
 
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519)
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
     ked = dict(k=[verfer.qb64], n="",  t="icp", i=pre)
     with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519N)  # verfer code not match code
+        prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519N)  # verfer code not match code
 
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
     ked = dict(k=[verfer.qb64], n="",  t="icp", i=pre)
-    prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519N)  # verfer code match code but not pre code
+    prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519N)  # verfer code match code but not pre code
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
     ked = dict(k=[verfer.qb64], n="",  t="icp", i=preN)
-    prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519N)  # verfer code match code and pre code
+    prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519N)  # verfer code match code and pre code
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == True
 
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
     ked = dict(k=[verfer.qb64], n="",  t="icp", i=preN)
     prefixer = Prefixer(ked=ked)  # verfer code match pre code
     assert prefixer.qb64 == verfer.qb64
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == True
 
-    verfer = Verfer(raw=verkey, code=CryOneDex.Ed25519N)
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519N)
     ked = dict(k=[verfer.qb64], n="",  t="icp")
     with pytest.raises(EmptyMaterialError):
         prefixer = Prefixer(ked=ked)
 
     ked = dict(k=[verfer.qb64], n="ABCD",  t="icp")
     with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked, code=CryOneDex.Ed25519)
+        prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519)
 
     # Test digest derivation from inception ked
     vs = Versify(version=Version, kind=Serials.json, size=0)
     sn = 0
     ilk = Ilks.icp
     sith = "1"
-    keys = [Prefixer(raw=verkey, code=CryOneDex.Ed25519).qb64]
+    keys = [Prefixer(raw=verkey, code=MtrDex.Ed25519).qb64]
     nxt = ""
     toad = 0
     wits = []
@@ -1198,7 +1869,7 @@ def test_prefixer():
                c=cnfg,  # list of config ordered mappings may be empty
                )
 
-    prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
+    prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
     assert prefixer.qb64 == 'E_P7GKEdbet8OudlQvqILlGn7Fll5q6zfddiSXc-XY5Y'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
@@ -1217,7 +1888,7 @@ def test_prefixer():
                c=cnfg,  # list of config ordered mappings may be empty
                )
 
-    prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
+    prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
     assert prefixer.qb64 == 'E7iQvEO7xsRE8UfBB0DCWnksY8ju-9madY3jJ1Y-eYPE'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
@@ -1256,7 +1927,7 @@ def test_prefixer():
                c=cnfg,  # list of config ordered mappings may be empty
                )
 
-    prefixer1 = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
+    prefixer1 = Prefixer(ked=ked, code=MtrDex.Blake3_256)
     assert prefixer1.qb64 == 'En6Ks1QPlek3GMHFTDlr-ufdZzQyHay_E2k5wTNB_MHM'
     assert prefixer1.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
@@ -1275,7 +1946,7 @@ def test_prefixer():
                c=cnfg,  # list of config ordered mappings may be empty
                )
 
-    prefixer2 = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
+    prefixer2 = Prefixer(ked=ked, code=MtrDex.Blake3_256)
     assert prefixer2.qb64 == 'EITG4HqxAlyOrQBYW9utR7W_iJmq4NmOI9IrPicZfK5E'
     assert prefixer2.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
@@ -1300,7 +1971,7 @@ def test_prefixer():
                da=seal
                )
 
-    prefixer = Prefixer(ked=ked, code=CryOneDex.Blake3_256)
+    prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
     assert prefixer.qb64 == 'EZHlPj5b4zrbJgd72n2sg3v5GYlam_BiX7Sl58mPRP84'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
@@ -1337,295 +2008,18 @@ def test_prefixer():
                c=cnfg,  # list of config ordered mappings may be empty
                )
 
-    prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, seed=seed)
+    prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519_Sig, seed=seed)
     assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    prefixer = Prefixer(ked=ked, code=CryTwoDex.Ed25519, secret=secret)
+    prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519_Sig, secret=secret)
     assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
     """ Done Test """
 
-
-def test_sigmat():
-    """
-    Test the support functionality for attached signature cryptographic material
-    """
-    with pytest.raises(EmptyMaterialError):
-        sigmet = SigMat()
-
-    assert SigTwoDex.Ed25519 ==  'A'  # Ed25519 signature.
-    assert SigTwoDex.ECDSA_256k1 == 'B'  # ECDSA secp256k1 signature.
-
-    assert SigTwoSizes[SigTwoDex.Ed25519] == 88
-    assert SigTwoSizes[SigTwoDex.ECDSA_256k1] == 88
-
-    cs = IntToB64(0)
-    assert cs == "A"
-    i = B64ToInt(cs)
-    assert i == 0
-
-    cs = IntToB64(27)
-    assert cs == "b"
-    i = B64ToInt(cs)
-    assert i == 27
-
-    cs = IntToB64(27, l=2)
-    assert cs == "Ab"
-    i = B64ToInt(cs)
-    assert i == 27
-
-    cs = IntToB64(80)
-    assert cs == "BQ"
-    i = B64ToInt(cs)
-    assert i == 80
-
-    cs = IntToB64(4095)
-    assert cs == '__'
-    i = B64ToInt(cs)
-    assert i == 4095
-
-    cs = IntToB64(4096)
-    assert cs == 'BAA'
-    i = B64ToInt(cs)
-    assert i == 4096
-
-    cs = IntToB64(6011)
-    assert cs == "Bd7"
-    i = B64ToInt(cs)
-    assert i == 6011
-
-    # Test attached signature code (empty raw)
-    qsc = SigCntDex.Base64 + IntToB64(0, l=2)
-    assert qsc == '-AAA'
-
-    qscb = qsc.encode("utf-8")
-    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=0)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
-
-    sigmat = SigMat(qb64b=qscb)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
-
-    sigmat = SigMat(qb64=qsc)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
-
-    sigmat = SigMat(qb64=qscb)  #  also works for bytes
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x00'
-
-    idx = 5
-    qsc = SigCntDex.Base64 + IntToB64(idx, l=2)
-    assert qsc == '-AAF'
-    qscb = qsc.encode("utf-8")
-    sigmat = SigMat(raw=b'', code=SigCntDex.Base64, index=idx)
-    assert sigmat.raw == b''
-    assert sigmat.code == SigCntDex.Base64
-    assert sigmat.index == 5
-    assert sigmat.qb64 == qsc
-    assert sigmat.qb64b == qscb
-    assert sigmat.qb2 == b'\xf8\x00\x05'
-
-    # Test signatures
-    sig = (b"\x99\xd2<9$$0\x9fk\xfb\x18\xa0\x8c@r\x122.k\xb2\xc7\x1fp\x0e'm\x8f@"
-           b'\xaa\xa5\x8c\xc8n\x85\xc8!\xf6q\x91p\xa9\xec\xcf\x92\xaf)\xde\xca'
-           b'\xfc\x7f~\xd7o|\x17\x82\x1d\xd4<o"\x81&\t')
-
-    assert len(sig) == 64
-
-    sig64b = encodeB64(sig)
-    sig64 = sig64b.decode("utf-8")
-    assert len(sig64) == 88
-    assert sig64 == 'mdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ=='
-
-    qsig64 = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-    assert len(qsig64) == 88
-    qsig64b = qsig64.encode("utf-8")
-    qbin = decodeB64(qsig64b)
-    assert len(qbin) == 66
-    assert qbin == (b'\x00\t\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
-                    b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
-                    b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
-
-
-    sigmat = SigMat(raw=sig)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-    assert sigmat.qb64 == qsig64
-    assert sigmat.qb2 == qbin
-
-    # test wrong size of raw
-    longsig = sig + bytes([10, 11, 12])
-    sigmat = SigMat(raw=longsig)
-
-    shortsig = sig[:-3]
-    with pytest.raises(ValidationError):
-        sigmat = SigMat(raw=shortsig)
-
-    sigmat = SigMat(qb64b=qsig64b)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-
-    sigmat = SigMat(qb64=qsig64)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-
-    sigmat = SigMat(qb64=qsig64b)  # test with bytes not str
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-
-    # test wrong size of qb64
-    longqsig64 = qsig64 + "ABCD"
-    oksigmat = SigMat(qb64=longqsig64)
-    assert len(oksigmat.qb64) == SigSizes[oksigmat.code]
-
-    shortqsig64 = qsig64[:-4]  # too short
-    with pytest.raises(ShortageError):
-        oksigmat = SigMat(qb64=shortqsig64)
-
-    sigmat = SigMat(qb64=qsig64.encode("utf-8"))  # test bytes not str
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.raw == sig
-    assert sigmat.qb64 == qsig64
-    assert sigmat.qb64b == qsig64.encode("utf-8")
-
-    sigmat = SigMat(qb2=qbin)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 0
-
-    sigmat = SigMat(raw=sig, code=SigTwoDex.Ed25519, index=5)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 5
-    qsig64 = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-    assert sigmat.qb64 == qsig64
-    qbin = (b'\x00Y\x9d#\xc3\x92BC\t\xf6\xbf\xb1\x8a\x08\xc4\x07!#"\xe6\xbb,q\xf7'
-            b'\x00\xe2v\xd8\xf4\n\xaaX\xcc\x86\xe8\\\x82\x1fg\x19\x17\n\x9e\xcc'
-            b'\xf9*\xf2\x9d\xec\xaf\xc7\xf7\xedv\xf7\xc1x!\xddC\xc6\xf2(\x12`\x90')
-    assert sigmat.qb2 == qbin
-
-    sigmat = SigMat(qb64=qsig64)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 5
-
-    sigmat = SigMat(qb2=qbin)
-    assert sigmat.raw == sig
-    assert sigmat.code == SigTwoDex.Ed25519
-    assert sigmat.index == 5
-    """ Done Test """
-
-def test_sigcounter():
-    """
-    Test SigCounter subclass of Sigmat
-    """
-    # with pytest.raises(EmptyMaterialError):
-    #    counter = SigCounter()
-
-    qsc = SigCntDex.Base64 + IntToB64(1, l=2)
-    assert qsc == '-AAB'
-
-    counter = SigCounter()
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = SigCounter(raw=b'')
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = SigCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == 1
-    assert counter.count == 1
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = SigCounter(raw=b'', count=1)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == 1
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x01'
-
-    counter = SigCounter(raw=b'', count=0)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == 0
-    assert counter.qb64 == '-AAA'
-    assert counter.qb2 == b'\xf8\x00\x00'
-
-
-    cnt = 5
-    qsc = SigCntDex.Base64 + IntToB64(cnt, l=2)
-    assert qsc == '-AAF'
-    counter = SigCounter(count=cnt)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x05'
-
-    counter = SigCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base64
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x00\x05'
-
-    cnt = 5
-    qsc = SigCntDex.Base2 + IntToB64(cnt, l=2)
-    assert qsc == '-BAF'
-    counter = SigCounter(code=SigCntDex.Base2, count=cnt)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base2
-    assert counter.index == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x10\x05'
-
-    counter = SigCounter(qb64=qsc)
-    assert counter.raw == b''
-    assert counter.code == SigCntDex.Base2
-    assert counter.index == cnt
-    assert counter.count == cnt
-    assert counter.qb64 == qsc
-    assert counter.qb2 == b'\xf8\x10\x05'
-    """ Done Test """
 
 
 def test_siger():
@@ -1640,20 +2034,20 @@ def test_siger():
     assert qsig64b == b'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
     siger = Siger(qb64b=qsig64b)
-    assert siger.code == SigTwoDex.Ed25519
+    assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
 
 
     siger = Siger(qb64=qsig64)
-    assert siger.code == SigTwoDex.Ed25519
+    assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
 
     siger = Siger(qb64=qsig64b)  #  also bytes
-    assert siger.code == SigTwoDex.Ed25519
+    assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0
     assert siger.qb64 == qsig64
     assert siger.verfer == None
@@ -1988,10 +2382,10 @@ def test_serder():
 
     # test digest properties .diger and .dig
     assert evt1.diger.qb64 == evt1.dig
-    assert evt1.diger.code == CryOneDex.Blake3_256
+    assert evt1.diger.code == MtrDex.Blake3_256
     assert len(evt1.diger.raw) == 32
     assert len(evt1.dig) == 44
-    assert len(evt1.dig) == CryOneSizes[CryOneDex.Blake3_256]
+    assert len(evt1.dig) == Matter.Codes[MtrDex.Blake3_256].fs
     assert evt1.dig == 'E4z66CxKHEo-6YCbIbpd1SqeXKVkLdh3j8CwUq31XA4o'
     assert evt1.diger.verify(evt1.raw)
 
@@ -2002,7 +2396,7 @@ def test_serder():
     assert evt1.size == size1
     assert evt1.raw == e1ss[:size1]
     assert evt1.version == vers1
-    assert evt1.diger.code == CryOneDex.Blake3_256
+    assert evt1.diger.code == MtrDex.Blake3_256
     assert serder.sn == 1
     assert serder.pre == "ABCDEFG"
     assert serder.preb == b"ABCDEFG"
@@ -2089,11 +2483,11 @@ def test_serder():
     #  Test diger code
     ked = {'vs': 'KERI10JSON000042_', 'pre': 'ABCDEFG', 'sn': '0001', 'ilk': 'rot'}
     raw = b'{"vs":"KERI10JSON000042_","pre":"ABCDEFG","sn":"0001","ilk":"rot"}'
-    srdr = Serder(raw=raw, code=CryOneDex.SHA3_256)
+    srdr = Serder(raw=raw, code=MtrDex.SHA3_256)
     assert srdr.kind == 'JSON'
     assert srdr.raw == raw
     assert srdr.ked == ked
-    assert srdr.diger.code == CryOneDex.SHA3_256
+    assert srdr.diger.code == MtrDex.SHA3_256
 
     #  Test compare
     ked = {'vs': 'KERI10JSON000042_', 'pre': 'ABCDEFG', 'sn': '0001', 'ilk': 'rot'}
@@ -2102,11 +2496,11 @@ def test_serder():
     assert srdr.kind == 'JSON'
     assert srdr.raw == raw
     assert srdr.ked == ked
-    assert srdr.diger.code == CryOneDex.Blake3_256
+    assert srdr.diger.code == MtrDex.Blake3_256
 
     diger0 = Diger(ser=srdr.raw) # default code
-    diger1 = Diger(ser=srdr.raw, code=CryOneDex.SHA3_256)
-    diger2 = Diger(ser=srdr.raw, code=CryOneDex.Blake2b_256)
+    diger1 = Diger(ser=srdr.raw, code=MtrDex.SHA3_256)
+    diger2 = Diger(ser=srdr.raw, code=MtrDex.Blake2b_256)
 
     # test Serder.compare
     assert srdr.compare(diger=diger0)
@@ -2121,8 +2515,8 @@ def test_serder():
 
     assert not srdr.compare(diger=Diger(ser=ser1))  # codes match
     assert not srdr.compare(dig=Diger(ser=ser1).qb64)  # codes match
-    assert not srdr.compare(diger=Diger(ser=ser1, code=CryOneDex.SHA3_256)) # codes not match
-    assert not srdr.compare(dig=Diger(ser=ser1, code=CryOneDex.SHA2_256).qb64b)     # codes not match
+    assert not srdr.compare(diger=Diger(ser=ser1, code=MtrDex.SHA3_256)) # codes not match
+    assert not srdr.compare(dig=Diger(ser=ser1, code=MtrDex.SHA2_256).qb64b)     # codes not match
     """Done Test """
 
 
@@ -2234,4 +2628,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_diger()
+    test_matter()

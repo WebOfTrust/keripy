@@ -35,3 +35,38 @@ jobs:
     - name: Run KERI demo tests
       run: |
         pytest tests/demo/
+
+  interop-setup:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    outputs:
+      CACHE_KEY_INTEROP: ${{ steps.cache.outputs.CACHE_KEY_INTEROP }}
+      GITHUB_REPOSITORY_NAME: ${{ steps.cache.outputs.GITHUB_REPOSITORY_NAME }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Set outputs
+        id: cache
+        run: |
+          echo "::set-output name=CACHE_KEY_INTEROP::${{ hashFiles('.github/workflows/interop/Dockerfile') }}"
+          echo "::set-output name=GITHUB_REPOSITORY_NAME::$(echo ${GITHUB_REPOSITORY,,})"
+
+  build-interop-image:
+    needs: [interop-setup, test]
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+      CACHE_KEY_INTEROP: ${{ needs.interop-setup.outputs.CACHE_KEY_INTEROP }}
+      GITHUB_REPOSITORY_NAME: ${{ needs.interop-setup.outputs.GITHUB_REPOSITORY_NAME }}
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+    - name: Git checkout
+      uses: actions/checkout@v2
+    - name:
+      run: |
+          echo ${{ secrets.CR_PAT }} | docker login ghcr.io --username ${{ secrets.CR_USER }} --password-stdin
+          docker build -f .github/workflows/interop/Dockerfile --no-cache -t ${{ env.GITHUB_REPOSITORY_NAME }}/keripy-interop:${{ env.CACHE_KEY_INTEROP }} .
+          docker tag ${{ env.GITHUB_REPOSITORY_NAME }}/keripy-interop:${{ env.CACHE_KEY_INTEROP }} ghcr.io/${{ env.GITHUB_REPOSITORY_NAME }}/keripy-interop:latest
+          docker push ghcr.io/${{ env.GITHUB_REPOSITORY_NAME }}/keripy-interop:latest
+          mkdir -p ${GITHUB_WORKSPACE}/cache
+          touch ${GITHUB_WORKSPACE}/cache/${{ env.CACHE_KEY_INTEROP }}

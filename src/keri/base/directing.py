@@ -9,6 +9,7 @@ from hio.base import doing, tyming
 from hio.core.tcp import clienting, serving
 from ..db import dbing
 from ..core import coring, eventing
+from . import keeping
 
 
 from ..help import ogling
@@ -21,30 +22,82 @@ class Habitat():
        e.g. context or environment
 
      Attributes:
-        .secrets is list of secrets (replace later with keeper interface)
-        .kevers is dict of Kevers keyed by qb64 prefix
-        .db is s lmdb db Baser instance
+        .name is str alias of controller
+        .ks is lmdb key store keeping.Keeper instance
+        .mgr is keeping.Manager instance
+        .ridx is int rotation index (inception == 0)
+        .kevers is dict of eventing.Kever(s) keyed by qb64 prefix
+        .db is lmdb data base dbing.Baser instance
+        .kvy is eventing.Kevery instance
         .signers is dict  of signers for each secret indexed by verfer qb64
         .inception is Serder of inception event
         .pre is qb64 prefix of local controller
+        .temp is Boolean True for testing it modifies tier of salty key
+            generation algorithm and persistence of db and ks
     """
-    def __init__(self, secrets, kevers, db):
+
+    def __init__(self, name='test', ks=None, db=None, kevers=None, secrets=None,
+                 temp=False):
         """
         Initialize instance.
 
         Parameters:
-            secrets is list of secrets (replace later with keeper interface)
+            name is str alias name for local controller of habitat
+            ks is keystore lmdb Keeper instance
+            db is database lmdb Baser instance
             kevers is dict of Kever instance keyed by qb64 prefix
-            db is lmdb db Baser instance
+            secrets is list of secrets (replace later with keeper interface)
+            temp is Boolean used for persistance of lmdb ks and db directories
+                and mode for key generation
+
+
         """
-        self.secrets = secrets
-        self.kevers = kevers
-        self.db = db
-        self.signers = [coring.Signer(qb64=secret) for secret in self.secrets]
-        self.inception = eventing.incept(keys=[self.signers[0].verfer.qb64],
-                        nxt=coring.Nexter(keys=[self.signers[1].verfer.qb64]).qb64,
-                        code=coring.CryOneDex.Blake3_256)
+        self.temp = temp
+        self.name = name
+        self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
+        self.mgr = keeping.Manager(keeper=self.ks)
+        self.ridx = 0
+        self.kevers = kevers if kevers is not None else dict()
+        self.db = db if db is not None else dbing.Baser(name=name, temp=self.temp)
+        self.kvy = eventing.Kevery(kevers=self.kevers, baser=self.db, framed=False)
+
+        if secrets:
+            secrecies = []
+            for secret in secrets:
+                secrecies.append([secret])
+            verferies, digers = self.mgr.ingest(secrecies, temp=self.temp)
+            tpre = verferies[0][0].qb64  # temporary pre
+            verfers, digers = self.mgr.replay(pre=tpre, ridx=self.ridx)
+        else:
+            verfers, digers = self.mgr.incept(temp=self.temp)
+            tpre = verfers[0].qb64
+
+
+        self.signers = [coring.Signer(qb64=secret) for secret in secrets]
+        self.inception = eventing.incept(keys=[verfers[0].qb64],
+                        nxt=coring.Nexter(digs=[digers[0].qb64]).qb64,
+                        code=coring.MtrDex.Blake3_256)
+
         self.pre = self.inception.ked["i"]
+        self.mgr.move(old=tpre, new=self.pre)
+
+        ## Inception Event 0
+        #sn =  0
+        #esn = 0
+        #counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
+        ## sign serialization, returns Siger if index provided
+        #siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
+        ##  create serialized message
+        #msg = bytearray(self.hab.inception.raw)
+        #msg.extend(counter.qb64b)
+        #msg.extend(siger.qb64b)
+
+        ## check valid by creating own Kever using own Kevery
+        #self.kevery.processOne(ims=bytearray(msg))  # copy of msg
+        #kever = self.kevery.kevers[self.hab.pre]
+        #assert kever.prefixer.qb64 == self.hab.pre
+
+
 
 
 class Director(doing.Doer):
@@ -172,6 +225,7 @@ class Reactor(doing.Doer):
                                       baser=self.hab.db,
                                       framed=False)
 
+
     def do(self, tymist, tock=0.0, **opts):
         """
         Generator method to run this doer
@@ -198,15 +252,17 @@ class Reactor(doing.Doer):
 
         return True  # return value of yield from, or yield ex.value of StopIteration
 
+
     def service(self):
         """
         Service responses
         """
         if self.kevery:
             if self.kevery.ims:
-                print("{} received:\n{}\n\n".format(self.hab.pre, self.kevery.ims))
+                blogger.info("%s received:\n%s\n\n", self.hab.pre, self.kevery.ims)
             self.kevery.processAll()
             self.processCues()
+
 
     def processCues(self):
         """
@@ -215,35 +271,72 @@ class Reactor(doing.Doer):
         while self.kevery.cues:  # process any cues
             # process each cue
             cue = self.kevery.cues.popleft()
-            print("{} sent cue:\n{}\n\n".format(self.hab.pre, cue))
+            blogger.info("{} sent cue:\n{}\n\n", self.hab.pre, cue)
             self.processCue(cue=cue)
+
 
     def processCue(self, cue):
         """
         Process a cue in direct mode assumes chits
         """
-        cuePre = cue["pre"]
-        cueSerder = cue["serder"]
-        cueKed = cueSerder.ked
-        cueIlk = cueKed["t"]
+        cueKin = cue["kin"]  # type or kind of cue
+        if cueKin in ("receipt", ):
+            cuedSerder = cue["serder"]
+            cuedKed = cuedSerder.ked
 
-        if cueIlk == coring.Ilks.icp:
-            # check for chit from remote pre for own inception
-            dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
-            found = False
-            for quadruple in self.hab.db.getVrcsIter(dgkey):
-                if bytes(quadruple).decode("utf-8").startswith(cuePre):
-                    found = True
-                    break
+            if  cuedKed["t"] == coring.Ilks.icp:
+                # check for chit or recipt from remote pre for own inception
+                # need to add check for recipt based on type of cuedpre.
+                dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+                found = False
+                for quadruple in self.hab.db.getVrcsIter(dgkey):
+                    if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
+                        found = True
+                        break
 
-            if not found:  # no chit from remote so send own inception
-                self.sendOwnInception()
+                if not found:  # no chit from remote so send own inception
+                    self.sendOwnInception()
 
-        self.sendOwnChit(cuePre, cueSerder)
+            self.sendOwnChit(cuedSerder)
 
-    def sendOwnChit(self, cuePre, cueSerder):
+
+    def processCuesIter(self):
         """
-        Send chit of event indicated by cuePre and cueSerder
+        Iterate through cues in .cues
+        This is a stub  for future iterator/generator based processing
+
+        For each cue yield one or more msgs to send out
+        """
+        while self.kevery.cues:  # process any cues
+            # popleft each cue in .cues deque and process
+            cue = self.kevery.cues.popleft()
+            blogger.info("%s sent cue:\n%s\n\n", self.hab.pre, cue)
+            cueKin = cue["kin"]  # type or kind of cue
+
+            if cueKin in ("receipt", ):
+                cuedSerder = cue["serder"]
+                cuedKed = cuedSerder.ked
+
+                if cuedKed["t"] == coring.Ilks.icp:
+                    # check for chit or recipt from remote pre for own inception
+                    # need to add check for recipt based on type of cuedpre.
+                    dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+                    found = False
+                    for quadruple in self.hab.db.getVrcsIter(dgkey):
+                        if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
+                            found = True
+                            break
+
+                    if not found:  # no chit from remote so send own inception
+                        yield self.prepareOwnInception()
+
+                yield self.prepareOwnChit(cuedSerder)
+
+
+
+    def sendOwnChit(self, cuedSerder):
+        """
+        Send chit of event indicated by cuedSerder
         """
         # send own chit of event
         # create seal of own last est event
@@ -252,20 +345,20 @@ class Reactor(doing.Doer):
                                   s="{:x}".format(kever.lastEst.s),
                                   d=kever.lastEst.d)
 
-        cueKed = cueSerder.ked
+        cuedKed = cuedSerder.ked
         # create validator receipt
-        reserder = eventing.chit(pre=cuePre,
-                                 sn=int(cueKed["s"], 16),
-                                 dig=cueSerder.dig,
+        reserder = eventing.chit(pre=cuedKed["i"],
+                                 sn=int(cuedKed["s"], 16),
+                                 dig=cuedSerder.dig,
                                  seal=seal)
         # sign cueSerder event not receipt
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         # use signer that matcher current verfer  # not multisig
         verfer = kever.verfers[0]
         siger = None
         for signer in self.hab.signers:
             if signer.verfer.qb64 == verfer.qb64:
-                siger = signer.sign(ser=cueSerder.raw, index=0)  # return Siger if index
+                siger = signer.sign(ser=cuedSerder.raw, index=0)  # return Siger if index
                 break
         if siger:
             # process own chit so have copy in own log
@@ -276,8 +369,9 @@ class Reactor(doing.Doer):
 
             # send to remote
             self.client.tx(bytes(msg))  # make copy because tx uses deque
-            print("{} sent chit:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+            blogger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
             del msg[:]
+
 
     def sendOwnInception(self):
         """
@@ -285,7 +379,7 @@ class Reactor(doing.Doer):
         """
         # send own inception
         esn = 0
-        counter = coring.SigCounter()  # default is count = 1
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization, returns Siger if index provided
         siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
         # create serialized message
@@ -300,7 +394,7 @@ class Reactor(doing.Doer):
 
         # send to connected remote
         self.client.tx(bytes(msg))  # make copy for now fix later
-        print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+        blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
         del msg[:]  # clear msg
 
 
@@ -352,6 +446,7 @@ class Directant(doing.Doer):
         self.server = server  # use server for cx
         self.rants = dict()
 
+
     def do(self, tymist, tock=0.0, **opts):
         """
         Generator method to run this doer
@@ -379,6 +474,7 @@ class Directant(doing.Doer):
 
         return True  # return value of yield from, or yield ex.value of StopIteration
 
+
     def closeConnection(self, ca):
         """
         Close and remove connection given by ca
@@ -388,6 +484,7 @@ class Directant(doing.Doer):
         if ca in self.server.ixes:  # incomer still there
             self.server.ixes[ca].serviceTxes()  # send final bytes to socket
         self.server.removeIx(ca)
+
 
     def serviceConnects(self):
         """
@@ -404,6 +501,7 @@ class Directant(doing.Doer):
             if ix.timeout > 0.0 and ix.tymer.expired:
                 self.closeConnection(ca)
 
+
     def serviceRants(self):
         """
         Service pending reactants
@@ -411,7 +509,7 @@ class Directant(doing.Doer):
         for ca, reactant in self.rants.items():
             if reactant.kevery:
                 if reactant.kevery.ims:
-                    print("{} received:\n{}\n\n".format(self.hab.pre, reactant.kevery.ims))
+                    blogger.info("%s received:\n%s\n\n", self.hab.pre, reactant.kevery.ims)
 
                 reactant.kevery.processAll()
                 reactant.processCues()
@@ -476,35 +574,39 @@ class Reactant(tyming.Tymee):
         while self.kevery.cues:  # process any cues
             # process each cue
             cue = self.kevery.cues.popleft()
-            print("{} sent cue:\n{}\n\n".format(self.hab.pre, cue))
+            blogger.info("%s sent cue:\n%s\n\n", self.hab.pre, cue)
             self.processCue(cue=cue)
+
 
     def processCue(self, cue):
         """
         Process a cue in direct mode assumes chits
         """
-        cuePre = cue["pre"]
-        cueSerder = cue["serder"]
-        cueKed = cueSerder.ked
-        cueIlk = cueKed["t"]
+        cueKin = cue["kin"]  # type or kind of cue
 
-        if cueIlk == coring.Ilks.icp:
+        cuedSerder = cue["serder"]
+        cuedKed = cuedSerder.ked
+        cuedPre = cuedKed["i"]
+        cuedIlk = cuedKed["t"]
+
+        if cuedIlk == coring.Ilks.icp:
             # check for chit from remote pre for own inception
             dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
             found = False
             for quadruple in self.hab.db.getVrcsIter(dgkey):
-                if quadruple.startswith(bytes(cuePre)):
+                if quadruple.startswith(bytes(cuedPre)):
                     found = True
                     break
 
             if not found:  # no chit from remote so send own inception
                 self.sendOwnInception()
 
-        self.sendOwnChit(cuePre, cueSerder)
+        self.sendOwnChit(cuedSerder)
 
-    def sendOwnChit(self, cuePre, cueSerder):
+
+    def sendOwnChit(self, cuedSerder):
         """
-        Send chit of event indicated by cuePre and cueSerder
+        Send chit of event indicated by cuedSerder
         """
         # send own chit of event
         # create seal of own last est event
@@ -513,32 +615,33 @@ class Reactant(tyming.Tymee):
                                   s="{:x}".format(kever.lastEst.s),
                                   d=kever.lastEst.d)
 
-        cueKed = cueSerder.ked
+        cuedKed = cuedSerder.ked
         # create validator receipt
-        reserder = eventing.chit(pre=cuePre,
-                                 sn=int(cueKed["s"], 16),
-                                 dig=cueSerder.dig,
+        reserder = eventing.chit(pre=cuedKed["i"],
+                                 sn=int(cuedKed["s"], 16),
+                                 dig=cuedSerder.dig,
                                  seal=seal)
         # sign cueSerder event not receipt
-        counter = coring.SigCounter(count=1)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
         # use signer that matcher current verfer  # not multisig
         verfer = kever.verfers[0]
         siger = None
         for signer in self.hab.signers:
             if signer.verfer.qb64 == verfer.qb64:
-                siger = signer.sign(ser=cueSerder.raw, index=0)  # return Siger if index
+                siger = signer.sign(ser=cuedSerder.raw, index=0)  # return Siger if index
                 break
         if siger:
             # process own chit so have copy in own log
             msg = bytearray(reserder.raw)
             msg.extend(counter.qb64b)
             msg.extend(siger.qb64b)
-            self.kevery.processOne(ims=bytearray(msg), framed=True)  # make copy
+            self.kevery.processOne(ims=bytearray(msg), framed=True)  # process copy
 
             # send to remote
-            self.incomer.tx(bytes(msg))  # make copy because tx uses deque
-            print("{} sent chit:\n{}\n\n".format(self.hab.pre, bytes(msg)))
-            del msg[:]
+            self.incomer.tx(bytes(msg))  # tx copy because tx uses deque
+            blogger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
+            del msg[:]  # maybe superfluous here
+
 
     def sendOwnInception(self):
         """
@@ -546,7 +649,7 @@ class Reactant(tyming.Tymee):
         """
         # send own inception
         esn = 0
-        counter = coring.SigCounter()  # default is count = 1
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
         # sign serialization, returns Siger if index provided
         siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
         #  create serialized message
@@ -561,7 +664,7 @@ class Reactant(tyming.Tymee):
 
         # send to connected remote
         self.incomer.tx(bytes(msg))  # make copy for now fix later
-        print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+        blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
         del msg[:]  # clear msg
 
 
@@ -619,7 +722,7 @@ class BobDirector(Director):
             # Inception Event 0
             sn =  0
             esn = 0
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization, returns Siger if index provided
             siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
             #  create serialized message
@@ -650,7 +753,7 @@ class BobDirector(Director):
                         nxt=coring.Nexter(keys=[self.hab.signers[esn+1].verfer.qb64]).qb64,
                         sn=sn)
             # create sig counter
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization
             siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
 
@@ -676,7 +779,7 @@ class BobDirector(Director):
                                        sn=sn)
 
             # create sig counter
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization
             siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
 
@@ -752,15 +855,15 @@ class SamDirector(Director):
             tyme = (yield (self.tock))  # yields tock then waits for next send
 
             while (not self.client.connected):
-                # print("{} waiting for connection to remote.\n".format(self.hab.pre))
+                blogger.info("%s:\n waiting for connection to remote %s.\n\n", self.hab.pre, self.client.ha)
                 tyme = (yield (self.tock))
 
-            print("{}:\n connected to {}.\n\n".format(self.hab.pre, self.client.ha))
+            blogger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
             # Inception Event 0
             sn =  0
             esn = 0
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization, returns Siger if index provided
             siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
             #  create serialized message
@@ -775,7 +878,7 @@ class SamDirector(Director):
 
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
-            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+            blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             del msg[:]  # clear msg
 
             tyme = (yield (self.tock))
@@ -788,7 +891,7 @@ class SamDirector(Director):
                                        sn=sn)
 
             # create sig counter
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization
             siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
 
@@ -802,7 +905,7 @@ class SamDirector(Director):
 
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
-            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+            blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             del msg[:]  # clear msg
 
             tyme = (yield (self.tock))
@@ -819,7 +922,7 @@ class SamDirector(Director):
                                 nxt=coring.Nexter(keys=[self.hab.signers[esn+1].verfer.qb64]).qb64,
                                 sn=sn)
             # create sig counter
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization
             siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
 
@@ -833,7 +936,7 @@ class SamDirector(Director):
 
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
-            print("{} sent event:\n{}\n\n".format(self.hab.pre, bytes(msg)))
+            blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             del msg[:]  # clear msg
 
             tyme = (yield (self.tock))
@@ -896,7 +999,7 @@ class EveDirector(Director):
             tyme = (yield (tock))  # yields tock then waits for next send
 
             esn = 0
-            counter = coring.SigCounter()  # default is count = 1
+            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
             # sign serialization, returns Siger if index provided
             siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
             #  create serialized message
@@ -912,10 +1015,10 @@ class EveDirector(Director):
             tyme = (yield (tock))
 
             while (not self.client.connected):
-                # print("{} waiting for connection to remote.\n".format(self.hab.pre))
+                blogger.info("%s:\n waiting for connection to remote %s.\n\n", self.hab.pre, self.client.ha)
                 tyme = (yield (self.tock))
 
-            print("{}:\n connected to {}.\n\n".format(self.hab.pre, self.client.ha))
+            blogger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
             tyme = (yield (self.tock))
 
         except GeneratorExit:  # close context, forced exit due to .close
@@ -934,15 +1037,14 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
     """
     Setup and return doers list to run controller
     """
-    # setup components
-    db = dbing.Baser(name=name, temp=True, reopen=False)
-    dbDoer = dbing.BaserDoer(baser=db)
-
-    kevers = dict()
-    hab = Habitat(secrets=secrets, kevers=kevers, db=db)
-
+    # setup habitat
+    hab = Habitat(name=name, secrets=secrets, temp=True)
     blogger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
-                 hab.pre, name, localPort, remotePort)
+                 hab.pre, hab.name, localPort, remotePort)
+
+    # setup doers
+    ksDoer = keeping.KeeperDoer(keeper=hab.ks)
+    dbDoer = dbing.BaserDoer(baser=hab.db)
 
     client = clienting.Client(host='127.0.0.1', port=remotePort)
     clientDoer = doing.ClientDoer(client=client)
@@ -951,16 +1053,19 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
         director = BobDirector(hab=hab, client=client, tock=0.125)
     elif name == "sam":
         director = SamDirector(hab=hab, client=client, tock=0.125)
-    else:
+    elif name == 'eve':
         director = EveDirector(hab=hab, client=client, tock=0.125)
+    else:
+        raise ValueError("Invalid director name={}.".format(name))
+
     reactor = Reactor(hab=hab, client=client)
 
     server = serving.Server(host="", port=localPort)
     serverDoer = doing.ServerDoer(server=server)
     directant = Directant(hab=hab, server=server)
-    # Reactants created on demand
+    # Reactants created on demand by directant
 
-    return [dbDoer, clientDoer, director, reactor, serverDoer, directant]
+    return [ksDoer, dbDoer, clientDoer, director, reactor, serverDoer, directant]
 
 
 def runController(doers, limit=0.0):
