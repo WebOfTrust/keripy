@@ -52,7 +52,7 @@ jobs:
           echo "::set-output name=GITHUB_REPOSITORY_NAME::$(echo ${GITHUB_REPOSITORY,,})"
 
   build-interop-image:
-    needs: [interop-setup, test]
+    needs: [interop-setup]
     runs-on: ubuntu-latest
     env:
       DOCKER_BUILDKIT: 1
