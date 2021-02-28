@@ -45,6 +45,24 @@ class ClosedError(KeriError):
         raise ClosedError("error message")
     """
 
+class DatabaseError(KeriError):
+    """
+    Error accessing database
+
+    Usage:
+        raise DatabaseError("error message")
+    """
+
+
+class MissingEntryError(DatabaseError):
+    """
+    Error Missing entry or entry not found in database
+
+    Usage:
+        raise MissingEntryError("error message")
+    """
+
+
 class ValidationError(KeriError):
     """
     Validation related errors

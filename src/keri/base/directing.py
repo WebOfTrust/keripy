@@ -7,6 +7,7 @@ simple direct mode demo support classes
 """
 from hio.base import doing, tyming
 from hio.core.tcp import clienting, serving
+from .. import kering
 from ..db import dbing
 from ..core import coring, eventing
 from . import keeping
@@ -92,23 +93,55 @@ class Habitat():
         self.pre = self.inception.ked["i"]  # new pre
         self.mgr.move(old=opre, new=self.pre)
 
-        ## Inception Event 0
-        #sn =  0
-        #esn = 0
-        #counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
-        ## sign serialization, returns Siger if index provided
-        #siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
-        ##  create serialized message
-        #msg = bytearray(self.hab.inception.raw)
-        #msg.extend(counter.qb64b)
-        #msg.extend(siger.qb64b)
-
-        ## check valid by creating own Kever using own Kevery
-        #self.kevery.processOne(ims=bytearray(msg))  # copy of msg
-        #kever = self.kevery.kevers[self.hab.pre]
-        #assert kever.prefixer.qb64 == self.hab.pre
+        sigers = self.mgr.sign(ser=self.inception.raw, verfers=verfers)
+        imsg = eventing.messagize(self.inception, sigers)
+        self.kvy.processOne(ims=imsg)
+        if self.pre not in self.kevers:
+            raise kering.ValidationError("Improper Habitat init for pre={}.".format(pre))
 
 
+    def incept(self):
+        """
+        Perform inception operation. Register inception in database.
+        Returns: bytearray rotation message with attached signatures.
+        """
+
+    def rotate(self):
+        """
+        Perform rotation operation. Register rotation in database.
+        Returns: bytearrayrotation message with attached signatures.
+        """
+
+    def interact(self):
+        """
+        Perform interaction operation. Register interaction in database.
+        Returns: bytearray interaction message with attached signatures.
+        """
+
+
+    def messagizeOwnEvent(self, sn):
+        """
+        Retrieve inception and signatures from database.
+        Returns: bytearray message with attached signatures of own event at
+            sequence number sn.
+
+        Parameters:
+            sn is int sequence number of event
+        """
+        msg = bytearray()
+        dig = self.db.getKeLast(dbing.snKey(self.pre, sn))
+        if dig is None:
+            raise kering.MissingEntryError("Missing event for pre={} at sn={}."
+                                           "".format(pre, sn))
+        dig = bytes(dig)
+        key = dbing.dgKey(self.pre, dig)  # digest key
+        raw = self.db.getEvt(key)
+        msg.extend(self.db.getEvt(key))
+        msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                  count=self.db.cntSigs(key)).qb64b) # attach cnt
+        for sig in self.db.getSigsIter(key):
+            msg.extend(sig) # attach sig
+        return (msg)
 
 
 class Director(doing.Doer):
@@ -184,6 +217,25 @@ class Director(doing.Doer):
             pass
 
         return True  # return value of yield from, or yield ex.value of StopIteration
+
+
+    def sendOwnEvent(self, sn):
+        """
+        Utility to send own event at sequence number sn
+        """
+        msg = self.hab.messagizeOwnEvent(sn=sn)
+        # send to connected remote
+        self.client.tx(msg)
+        blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+
+
+    def sendOwnInception(self):
+        """
+        Utility to send own inception on client
+        """
+        self.sendOwnEvent(sn=0)
+
+
 
 
 class Reactor(doing.Doer):
@@ -384,29 +436,22 @@ class Reactor(doing.Doer):
             del msg[:]
 
 
+    def sendOwnEvent(self, sn):
+        """
+        Utility to send own event at sequence number sn
+        """
+        msg = self.hab.messagizeOwnEvent(sn=sn)
+        # send to connected remote
+        self.client.tx(msg)
+        blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+
+
     def sendOwnInception(self):
         """
         Utility to send own inception on client
         """
-        # send own inception
-        esn = 0
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization, returns Siger if index provided
-        siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
-        # create serialized message
-        msg = bytearray(self.hab.inception.raw)
-        msg.extend(counter.qb64b)
-        msg.extend(siger.qb64b)
+        self.sendOwnEvent(sn=0)
 
-        # check valid by creating own Kever using own Kevery
-        # self.kevery.processOne(ims=bytearray(msg))  # copy of msg
-        # kever = self.kevery.kevers[self.hab.pre]
-        # assert kever.prefixer.qb64 == self.hab.pre
-
-        # send to connected remote
-        self.client.tx(bytes(msg))  # make copy for now fix later
-        blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-        del msg[:]  # clear msg
 
 
 class Directant(doing.Doer):
@@ -654,29 +699,22 @@ class Reactant(tyming.Tymee):
             del msg[:]  # maybe superfluous here
 
 
+    def sendOwnEvent(self, sn):
+        """
+        Utility to send own event at sequence number sn
+        """
+        msg = self.hab.messagizeOwnEvent(sn=sn)
+        # send to connected remote
+        self.incomer.tx(msg)
+        blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+
+
     def sendOwnInception(self):
         """
         Utility to send own inception on client
         """
-        # send own inception
-        esn = 0
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization, returns Siger if index provided
-        siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
-        #  create serialized message
-        msg = bytearray(self.hab.inception.raw)
-        msg.extend(counter.qb64b)
-        msg.extend(siger.qb64b)
+        self.sendOwnEvent(sn=0)
 
-        # check valid by creating own Kever using own Kevery
-        # self.kevery.processOne(ims=bytearray(msg))  # copy of msg
-        # kever = self.kevery.kevers[self.hab.pre]
-        # assert kever.prefixer.qb64 == self.hab.pre
-
-        # send to connected remote
-        self.incomer.tx(bytes(msg))  # make copy for now fix later
-        blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-        del msg[:]  # clear msg
 
 
 class BobDirector(Director):
@@ -733,23 +771,8 @@ class BobDirector(Director):
             # Inception Event 0
             sn =  0
             esn = 0
-            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
-            # sign serialization, returns Siger if index provided
-            siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
-            #  create serialized message
-            msg = bytearray(self.hab.inception.raw)
-            msg.extend(counter.qb64b)
-            msg.extend(siger.qb64b)
 
-            # check valid by creating own Kever using own Kevery
-            self.kevery.processOne(ims=bytearray(msg))  # copy of msg
-            kever = self.kevery.kevers[self.hab.pre]
-            assert kever.prefixer.qb64 == self.hab.pre
-
-            # send to connected remote
-            self.client.tx(bytes(msg))  # make copy for now fix later
-            blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            del msg[:]  #  clear msg
+            self.sendOwnInception()  # assumes habitat already logged it
             tyme = (yield (self.tock))
 
             # Rotation Event 1
@@ -874,28 +897,14 @@ class SamDirector(Director):
             # Inception Event 0
             sn =  0
             esn = 0
-            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
-            # sign serialization, returns Siger if index provided
-            siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
-            #  create serialized message
-            msg = bytearray(self.hab.inception.raw)
-            msg.extend(counter.qb64b)
-            msg.extend(siger.qb64b)
 
-            # check valid by creating own Kever using own Kevery
-            self.kevery.processOne(ims=bytearray(msg))  # copy of msg
-            kever = self.kevery.kevers[self.hab.pre]
-            assert kever.prefixer.qb64 == self.hab.pre
-
-            # send to connected remote
-            self.client.tx(bytes(msg))  # make copy for now fix later
-            blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            del msg[:]  # clear msg
-
+            self.sendOwnInception()  # assumes habitat already logged it
             tyme = (yield (self.tock))
 
             # Next Event 1 Interaction
             sn += 1  # do not increment esn
+
+            kever = self.hab.kevers[self.hab.pre]
 
             serder = eventing.interact(pre=kever.prefixer.qb64,
                                        dig=kever.serder.diger.qb64,
@@ -924,8 +933,6 @@ class SamDirector(Director):
             # Rotation Event 2
             sn += 1
             esn += 1
-
-            kever = self.hab.kevers[self.hab.pre]  # have to do here after own inception
 
             serder = eventing.rotate(pre=kever.prefixer.qb64,
                                              keys=[self.hab.signers[esn].verfer.qb64],
@@ -1006,23 +1013,7 @@ class EveDirector(Director):
             self.tock = tock
             tyme = self.tyme
 
-            # recur context
-            tyme = (yield (tock))  # yields tock then waits for next send
-
-            esn = 0
-            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
-            # sign serialization, returns Siger if index provided
-            siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
-            #  create serialized message
-            msg = bytearray(self.hab.inception.raw)
-            msg.extend(counter.qb64b)
-            msg.extend(siger.qb64b)
-
-            # check valid by creating own Kever using own Kevery
-            self.kevery.processOne(ims=bytearray(msg))  # copy of msg
-            kever = self.kevery.kevers[self.hab.pre]
-            assert kever.prefixer.qb64 == self.hab.pre
-
+            # recur context after first yield
             tyme = (yield (tock))
 
             while (not self.client.connected):
