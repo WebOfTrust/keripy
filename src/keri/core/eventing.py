@@ -715,7 +715,7 @@ def messagize(serder, sigers):
 
     Returns: bytearray KERI event message
     """
-    msg = bytearray(serder.raw)
+    msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
     count = len(sigers)
     counter = Counter(code=CtrDex.ControllerIdxSigs, count=count)
     msg.extend(counter.qb64b)
