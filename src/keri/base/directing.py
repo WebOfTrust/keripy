@@ -22,16 +22,22 @@ class Habitat():
        e.g. context or environment
 
      Attributes:
+        .name is str alias of controller
         .ks is lmdb key store keeping.Keeper instance
         .mgr is keeping.Manager instance
+        .ridx is int rotation index (inception == 0)
         .kevers is dict of eventing.Kever(s) keyed by qb64 prefix
         .db is lmdb data base dbing.Baser instance
         .kvy is eventing.Kevery instance
         .signers is dict  of signers for each secret indexed by verfer qb64
         .inception is Serder of inception event
         .pre is qb64 prefix of local controller
+        .temp is Boolean True for testing it modifies tier of salty key
+            generation algorithm and persistence of db and ks
     """
-    def __init__(self, name='test', ks=None, db=None, kevers=None, secrets=None, temp=False):
+
+    def __init__(self, name='test', ks=None, db=None, kevers=None, secrets=None,
+                 temp=False):
         """
         Initialize instance.
 
@@ -42,22 +48,55 @@ class Habitat():
             kevers is dict of Kever instance keyed by qb64 prefix
             secrets is list of secrets (replace later with keeper interface)
             temp is Boolean used for persistance of lmdb ks and db directories
+                and mode for key generation
 
 
         """
+        self.temp = temp
         self.name = name
-        self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=True)
+        self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
         self.mgr = keeping.Manager(keeper=self.ks)
+        self.ridx = 0
         self.kevers = kevers if kevers is not None else dict()
-        self.db = db if db is not None else dbing.Baser(name=name, temp=True)
+        self.db = db if db is not None else dbing.Baser(name=name, temp=self.temp)
         self.kvy = eventing.Kevery(kevers=self.kevers, baser=self.db, framed=False)
+
+        if secrets:
+            secrecies = []
+            for secret in secrets:
+                secrecies.append([secret])
+            verferies, digers = self.mgr.ingest(secrecies, temp=self.temp)
+            tpre = verferies[0][0].qb64  # temporary pre
+            verfers, digers = self.mgr.replay(pre=tpre, ridx=self.ridx)
+        else:
+            verfers, digers = self.mgr.incept(temp=self.temp)
+            tpre = verfers[0].qb64
 
 
         self.signers = [coring.Signer(qb64=secret) for secret in secrets]
-        self.inception = eventing.incept(keys=[self.signers[0].verfer.qb64],
-                        nxt=coring.Nexter(keys=[self.signers[1].verfer.qb64]).qb64,
+        self.inception = eventing.incept(keys=[verfers[0].qb64],
+                        nxt=coring.Nexter(digs=[digers[0].qb64]).qb64,
                         code=coring.MtrDex.Blake3_256)
+
         self.pre = self.inception.ked["i"]
+        self.mgr.move(old=tpre, new=self.pre)
+
+        ## Inception Event 0
+        #sn =  0
+        #esn = 0
+        #counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
+        ## sign serialization, returns Siger if index provided
+        #siger = self.hab.signers[esn].sign(self.hab.inception.raw, index=0)
+        ##  create serialized message
+        #msg = bytearray(self.hab.inception.raw)
+        #msg.extend(counter.qb64b)
+        #msg.extend(siger.qb64b)
+
+        ## check valid by creating own Kever using own Kevery
+        #self.kevery.processOne(ims=bytearray(msg))  # copy of msg
+        #kever = self.kevery.kevers[self.hab.pre]
+        #assert kever.prefixer.qb64 == self.hab.pre
+
 
 
 
@@ -999,7 +1038,7 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
     Setup and return doers list to run controller
     """
     # setup habitat
-    hab = Habitat(name=name, secrets=secrets)
+    hab = Habitat(name=name, secrets=secrets, temp=True)
     blogger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
                  hab.pre, hab.name, localPort, remotePort)
 
