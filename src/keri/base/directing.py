@@ -37,7 +37,7 @@ class Habitat():
     """
 
     def __init__(self, name='test', ks=None, db=None, kevers=None, secrets=None,
-                 temp=False):
+                 salt=None, temp=False):
         """
         Initialize instance.
 
@@ -55,7 +55,9 @@ class Habitat():
         self.temp = temp
         self.name = name
         self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
-        self.mgr = keeping.Manager(keeper=self.ks)
+        if salt is None:
+            salt = coring.Salter(raw=b'0123456789abcdef').qb64
+        self.mgr = keeping.Manager(keeper=self.ks, salt=salt)
         self.ridx = 0
         self.kevers = kevers if kevers is not None else dict()
         self.db = db if db is not None else dbing.Baser(name=name, temp=self.temp)
