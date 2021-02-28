@@ -67,13 +67,13 @@ class Habitat():
             secrecies = []
             for secret in secrets:
                 secrecies.append([secret])
-            verferies, digers = self.mgr.ingest(secrecies, temp=self.temp)
-            tpre = verferies[0][0].qb64  # temporary pre
+            verferies, digers = self.mgr.ingest(secrecies, stem=self.name, temp=self.temp)
+            tpre = verferies[0][0].qb64  # temporary pre needed for .replay
             verfers, digers = self.mgr.replay(pre=tpre, ridx=self.ridx)
         else:
-            verfers, digers = self.mgr.incept(temp=self.temp)
-            tpre = verfers[0].qb64
+            verfers, digers = self.mgr.incept(stem=self.name, temp=self.temp)
 
+        tpre = verfers[0].qb64 # temporary pre needed to .move
 
         self.signers = [coring.Signer(qb64=secret) for secret in secrets]
         self.inception = eventing.incept(keys=[verfers[0].qb64],
