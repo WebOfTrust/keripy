@@ -79,8 +79,8 @@ def test_directing_basic():
         eveKevers = dict()
 
         # setup bob
-        bobHab = directing.Habitat(ks=bobKS, db=bobDB,
-                                   kevers=bobKevers, secrets=bobSecrets)
+        bobHab = directing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
+                                   secrets=bobSecrets, temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
         assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
@@ -113,8 +113,8 @@ def test_directing_basic():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(ks=eveKS, db=eveDB,
-                                   kevers=eveKevers,  secrets=eveSecrets)
+        eveHab = directing.Habitat(ks=eveKS, db=eveDB, kevers=eveKevers,
+                                   secrets=eveSecrets, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
         assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
@@ -246,8 +246,8 @@ def test_direct_mode():
         eveKevers = dict()
 
         # setup bob
-        bobHab = directing.Habitat(ks=bobKS, db=bobDB,
-                                   kevers=bobKevers, secrets=bobSecrets)
+        bobHab = directing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
+                                   secrets=bobSecrets, temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
         assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
@@ -281,8 +281,8 @@ def test_direct_mode():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(ks=eveKS,  db=eveDB,
-                                   kevers=eveKevers,secrets=eveSecrets)
+        eveHab = directing.Habitat(ks=eveKS,  db=eveDB, kevers=eveKevers,
+                                   secrets=eveSecrets, temp=True)
 
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
@@ -409,8 +409,8 @@ def test_direct_mode_demo():
         eveKevers = dict()
 
         # setup bob
-        bobHab = directing.Habitat(ks=bobKS,  db=bobDB,
-                                   kevers=bobKevers, secrets=bobSecrets)
+        bobHab = directing.Habitat(ks=bobKS,  db=bobDB, kevers=bobKevers,
+                                   secrets=bobSecrets, temp=True)
 
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
@@ -445,8 +445,8 @@ def test_direct_mode_demo():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(ks=eveKS,  db=eveDB,
-                                   kevers=eveKevers,secrets=eveSecrets)
+        eveHab = directing.Habitat(ks=eveKS,  db=eveDB, kevers=eveKevers,
+                                   secrets=eveSecrets, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
         assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
@@ -598,4 +598,4 @@ def test_run_demo():
 
 
 if __name__ == "__main__":
-    test_direct_mode_demo()
+    test_directing_basic()
