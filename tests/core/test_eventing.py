@@ -17,17 +17,18 @@ from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
 
 from keri.core.coring import MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
 from keri.core.coring import Seqner, Verfer, Signer, Diger, Nexter, Prefixer
-from keri.core.coring import Serder
-from keri.core.coring import Ilkage, Ilks
+from keri.core.coring import Salter, Serder
+from keri.core.coring import Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc, Serials, Versify
 from keri.core.eventing import decouple, detriple, dequadruple, dequintuple
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
-                                delcept, deltate)
+                                delcept, deltate, messagize)
 from keri.core.eventing import Kever, Kevery
 
 from keri.db.dbing import dgKey, snKey, openDB, Baser
+from keri.base.keeping import openKS, Manager
 
 from keri.help import ogling
 
@@ -437,6 +438,28 @@ def test_keyeventfuncs():
 
     """ Done Test """
 
+
+def test_messagize():
+    salter = Salter(raw=b'0123456789abcdef')
+    with openDB(name="edy") as db, openKS(name="edy") as ks:
+        # Init key pair manager
+        mgr = Manager(keeper=ks, salt=salter.qb64)
+        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="")
+
+        serder = incept(keys=[verfers[0].qb64], code=MtrDex.Blake3_256)
+
+        sigers = mgr.sign(ser=serder.raw, verfers=verfers)
+
+        msg = messagize(serder, sigers)
+
+
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsrvj'
+                              b'pcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1DhI-z'
+                             b'qkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-AABAAZqE8BI'
+                             b'Y0wYqi7swX_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGjGMHui-QH'
+                             b'vy11Eon5bUvXBQ')
+
+        """ Done Test """
 
 
 def test_kever():
