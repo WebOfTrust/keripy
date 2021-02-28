@@ -37,7 +37,7 @@ class Habitat():
     """
 
     def __init__(self, name='test', ks=None, db=None, kevers=None, secrets=None,
-                 salt=None, temp=False):
+                 sith=None, kcount=1, salt=None, tier=None, temp=False):
         """
         Initialize instance.
 
@@ -57,8 +57,8 @@ class Habitat():
         self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
         if salt is None:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
-        self.mgr = keeping.Manager(keeper=self.ks, salt=salt)
-        self.ridx = 0
+        self.mgr = keeping.Manager(keeper=self.ks, salt=salt, tier=tier)
+        self.ridx = 0  # rotation index of latest establishment event
         self.kevers = kevers if kevers is not None else dict()
         self.db = db if db is not None else dbing.Baser(name=name, temp=self.temp)
         self.kvy = eventing.Kevery(kevers=self.kevers, baser=self.db, framed=False)
@@ -67,21 +67,30 @@ class Habitat():
             secrecies = []
             for secret in secrets:
                 secrecies.append([secret])
-            verferies, digers = self.mgr.ingest(secrecies, stem=self.name, temp=self.temp)
-            tpre = verferies[0][0].qb64  # temporary pre needed for .replay
-            verfers, digers = self.mgr.replay(pre=tpre, ridx=self.ridx)
+            verferies, digers = self.mgr.ingest(secrecies,
+                                                ncount=kcount,
+                                                stem=self.name,
+                                                temp=self.temp)
+            opre = verferies[0][0].qb64  # old pre default needed for .replay
+            verfers, digers = self.mgr.replay(pre=opre, ridx=self.ridx)
         else:
-            verfers, digers = self.mgr.incept(stem=self.name, temp=self.temp)
+            verfers, digers = self.mgr.incept(icount=kcount,
+                                              ncount=kcount,
+                                              stem=self.name,
+                                              temp=self.temp)
 
-        tpre = verfers[0].qb64 # temporary pre needed to .move
+        opre = verfers[0].qb64 # old pre default move below to new pre from incept
 
+        # get rid of signers and then convert secrets to secrecies
         self.signers = [coring.Signer(qb64=secret) for secret in secrets]
         self.inception = eventing.incept(keys=[verfers[0].qb64],
-                        nxt=coring.Nexter(digs=[digers[0].qb64]).qb64,
-                        code=coring.MtrDex.Blake3_256)
+                                         sith=sith,
+                                         nxt=coring.Nexter(sith=sith,
+                                                           digs=[digers[0].qb64]).qb64,
+                                         code=coring.MtrDex.Blake3_256)
 
-        self.pre = self.inception.ked["i"]
-        self.mgr.move(old=tpre, new=self.pre)
+        self.pre = self.inception.ked["i"]  # new pre
+        self.mgr.move(old=opre, new=self.pre)
 
         ## Inception Event 0
         #sn =  0
