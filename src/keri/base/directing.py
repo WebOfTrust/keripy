@@ -108,19 +108,21 @@ class Habitat():
         Returns: bytearray rotation message with attached signatures.
         """
 
-    def rotate(self, count=1):
+    def rotate(self, count=1, erase=True):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
         """
         try:
-            verfers, digers = self.mgr.replay(pre=self.pre, ridx=self.ridx+1)
+            verfers, digers = self.mgr.replay(pre=self.pre,
+                                              ridx=self.ridx+1,
+                                              erase=erase)
 
         except IndexError as ex:
             verfers, digers = self.mgr.rotate(count=count,
                                               stem=self.name,
                                               temp=self.temp,
-                                              erase=False)
+                                              erase=erase)
 
         kever = self.kevers[self.pre]
         serder = eventing.rotate(pre=kever.prefixer.qb64,
