@@ -1328,18 +1328,15 @@ class Kever:
         """
         dgkey = dgKey(self.prefixer.qb64b, self.serder.diger.qb64b)
         dtsb = nowIso8601().encode("utf-8")
-        if first:
-            self.baser.setDts(dgkey, dtsb)  #  first seen so dts is first seen
-        else:
-            self.baser.putDts(dgkey, dtsb)  #  do not change dts if already
-
+        self.baser.putDts(dgkey, dtsb)  #  do not change dts if already
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
         if first:  # append event dig to first seen database in order
             dtsb = self.baser.appendFse(self.prefixer.qb64b, dtsb, self.serder.diger.qb64b)
+            self.baser.setDts(dgkey, dtsb)  #  first seen so dts is now first seen
             blogger.info("Kever process: First seen at %s\nKEL event = %s\n",
                          dtsb.decode("utf-8"), serder.ked)
+        self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
         blogger.info("Kever process: Added valid event to KEL event = %s\n", serder.ked)
 
 
