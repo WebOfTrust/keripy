@@ -818,7 +818,7 @@ class BobDirector(Director):
 
             blogger.info("**** %s:\nConnected to %s.\n\n", self.hab.pre, self.client.ha)
 
-            self.sendOwnInception()  # Inception Event 0
+            self.sendOwnInception()  # Inception Event
             tyme = (yield (self.tock))
 
             msg = self.hab.rotate()  # Rotation Event
@@ -826,7 +826,7 @@ class BobDirector(Director):
             blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.interact()  # interaction event
+            msg = self.hab.interact()  # Interaction event
             self.client.tx(msg)   # send to connected remote
             blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
