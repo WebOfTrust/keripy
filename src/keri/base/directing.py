@@ -145,7 +145,8 @@ class Habitat():
         # update ownkey event verifier state
         self.kvy.processOne(ims=bytearray(msg))  # make copy as kvr deletes
         if kever.serder.dig != serder.dig:
-            raise kering.ValidationError("Improper Habitat rotation for pre={}.".format(pre))
+            raise kering.ValidationError("Improper Habitat rotation for "
+                                         "pre={}.".format(self.pre))
 
         self.ridx += 1  # successful rotate so increment for next time
         return msg
@@ -167,7 +168,8 @@ class Habitat():
         # update ownkey event verifier state
         self.kvy.processOne(ims=bytearray(msg))  # make copy as kvr deletes
         if kever.serder.dig != serder.dig:
-            raise kering.ValidationError("Improper Habitat interaction for pre={}.".format(pre))
+            raise kering.ValidationError("Improper Habitat interaction for "
+                                         "pre={}.".format(self.pre))
 
         return msg
 
