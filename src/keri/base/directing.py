@@ -95,7 +95,8 @@ class Habitat():
         msg = eventing.messagize(self.inception, sigers)
         self.kvy.processOne(ims=msg)
         if self.pre not in self.kevers:
-            raise kering.ValidationError("Improper Habitat inception for pre={}.".format(pre))
+            raise kering.ValidationError("Improper Habitat inception for "
+                                         "pre={}.".format(self.pre))
 
 
     @property
