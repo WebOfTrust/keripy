@@ -38,7 +38,7 @@ class Habitat():
     """
 
     def __init__(self, name='test', ks=None, db=None, kevers=None, secrets=None,
-                 sith=None, kcount=1, salt=None, tier=None, temp=False):
+                 sith=None, count=1, salt=None, tier=None, temp=False, erase=True):
         """
         Initialize instance.
 
@@ -53,8 +53,10 @@ class Habitat():
 
 
         """
-        self.temp = temp
         self.name = name
+        self.temp = temp
+        self.erase = erase
+
         self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
         if salt is None:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
@@ -64,21 +66,21 @@ class Habitat():
         self.db = db if db is not None else dbing.Baser(name=name, temp=self.temp)
         self.kvy = eventing.Kevery(kevers=self.kevers, baser=self.db, framed=False)
         self.sith = sith
-        self.count = kcount
+        self.count = count
 
         if secrets:
             secrecies = []
             for secret in secrets:
                 secrecies.append([secret])
             verferies, digers = self.mgr.ingest(secrecies,
-                                                ncount=kcount,
+                                                ncount=count,
                                                 stem=self.name,
                                                 temp=self.temp)
             opre = verferies[0][0].qb64  # old pre default needed for .replay
             verfers, digers = self.mgr.replay(pre=opre, ridx=self.ridx)
         else:
-            verfers, digers = self.mgr.incept(icount=kcount,
-                                              ncount=kcount,
+            verfers, digers = self.mgr.incept(icount=count,
+                                              ncount=count,
                                               stem=self.name,
                                               temp=self.temp)
 
@@ -108,11 +110,14 @@ class Habitat():
         Returns: bytearray rotation message with attached signatures.
         """
 
-    def rotate(self, count=1, erase=True):
+    def rotate(self, count=None, erase=None):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
         """
+        count = count if count is not None else self.count
+        erase = erase if erase is not None else self.erase
+
         try:
             verfers, digers = self.mgr.replay(pre=self.pre,
                                               ridx=self.ridx+1,
