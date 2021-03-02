@@ -185,7 +185,7 @@ class Habitat():
         dig = self.db.getKeLast(dbing.snKey(self.pre, sn))
         if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
-                                           "".format(pre, sn))
+                                           "".format(self.pre, sn))
         dig = bytes(dig)
         key = dbing.dgKey(self.pre, dig)  # digest key
         raw = self.db.getEvt(key)
