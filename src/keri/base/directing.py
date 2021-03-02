@@ -133,7 +133,8 @@ class Habitat():
         serder = eventing.rotate(pre=kever.prefixer.qb64,
                                  keys=[verfer.qb64 for verfer in verfers],
                                  dig=kever.serder.diger.qb64,
-                                 nxt=coring.Nexter(sith=self.sith, digers=digers).qb64,
+                                 nxt=coring.Nexter(sith=self.sith,
+                                                   digs=[diger.qb64 for diger in digers]).qb64,
                                  sn=kever.sn+1)
         sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
         msg = eventing.messagize(serder, sigers)
@@ -830,28 +831,30 @@ class BobDirector(Director):
 
             kever = self.hab.kevers[self.hab.pre]  # have to do here after own inception
 
-            serder = eventing.rotate(pre=kever.prefixer.qb64,
-                        keys=[self.hab.signers[esn].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
-                        nxt=coring.Nexter(keys=[self.hab.signers[esn+1].verfer.qb64]).qb64,
-                        sn=sn)
-            # create sig counter
-            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
-            # sign serialization
-            siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
+            #serder = eventing.rotate(pre=kever.prefixer.qb64,
+                        #keys=[self.hab.signers[esn].verfer.qb64],
+                        #dig=kever.serder.diger.qb64,
+                        #nxt=coring.Nexter(keys=[self.hab.signers[esn+1].verfer.qb64]).qb64,
+                        #sn=sn)
+            ## create sig counter
+            #counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
+            ## sign serialization
+            #siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
 
-            #  create serialized message
-            msg = bytearray(serder.raw)
-            msg.extend(counter.qb64b)
-            msg.extend(siger.qb64b)
+            ##  create serialized message
+            #msg = bytearray(serder.raw)
+            #msg.extend(counter.qb64b)
+            #msg.extend(siger.qb64b)
 
-            # update ownkey event verifier state
-            self.kevery.processOne(ims=bytearray(msg))  # make copy
+            ## update ownkey event verifier state
+            #self.kevery.processOne(ims=bytearray(msg))  # make copy
+
+            msg = self.hab.rotate()
 
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
             blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            del msg[:]  #  clear msg
+            # del msg[:]  #  clear msg
             tyme = (yield (self.tock))
 
             # Next Event 2 Interaction
@@ -983,28 +986,29 @@ class SamDirector(Director):
             sn += 1
             esn += 1
 
-            serder = eventing.rotate(pre=kever.prefixer.qb64,
-                                             keys=[self.hab.signers[esn].verfer.qb64],
-                                dig=kever.serder.diger.qb64,
-                                nxt=coring.Nexter(keys=[self.hab.signers[esn+1].verfer.qb64]).qb64,
-                                sn=sn)
-            # create sig counter
-            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
-            # sign serialization
-            siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
+            #serder = eventing.rotate(pre=kever.prefixer.qb64,
+                                             #keys=[self.hab.signers[esn].verfer.qb64],
+                                #dig=kever.serder.diger.qb64,
+                                #nxt=coring.Nexter(keys=[self.hab.signers[esn+1].verfer.qb64]).qb64,
+                                #sn=sn)
+            ## create sig counter
+            #counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)  # default is count = 1
+            ## sign serialization
+            #siger = self.hab.signers[esn].sign(serder.raw, index=0)  # returns siger
 
-            #  create serialized message
-            msg = bytearray(serder.raw)
-            msg.extend(counter.qb64b)
-            msg.extend(siger.qb64b)
+            ##  create serialized message
+            #msg = bytearray(serder.raw)
+            #msg.extend(counter.qb64b)
+            #msg.extend(siger.qb64b)
 
-            # update ownkey event verifier state
-            self.kevery.processOne(ims=bytearray(msg))  # make copy
+            ## update ownkey event verifier state
+            #self.kevery.processOne(ims=bytearray(msg))  # make copy
 
+            msg = self.hab.rotate()
             # send to connected remote
             self.client.tx(bytes(msg))  # make copy for now fix later
             blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            del msg[:]  # clear msg
+            # del msg[:]  # clear msg
 
             tyme = (yield (self.tock))
 
