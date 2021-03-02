@@ -37,7 +37,7 @@ class Habitat():
             generation algorithm and persistence of db and ks
     """
 
-    def __init__(self, name='test', ks=None, db=None, kevers=None, secrets=None,
+    def __init__(self, name='test', ks=None, db=None, kevers=None, secrecies=None,
                  sith=None, count=1, salt=None, tier=None, temp=False, erase=True):
         """
         Initialize instance.
@@ -68,10 +68,7 @@ class Habitat():
         self.sith = sith
         self.count = count
 
-        if secrets:
-            secrecies = []
-            for secret in secrets:
-                secrecies.append([secret])
+        if secrecies:
             verferies, digers = self.mgr.ingest(secrecies,
                                                 ncount=count,
                                                 stem=self.name,
@@ -84,10 +81,7 @@ class Habitat():
                                               stem=self.name,
                                               temp=self.temp)
 
-        opre = verfers[0].qb64 # old pre default move below to new pre from incept
-
-        # get rid of signers and then convert secrets to secrecies
-        self.signers = [coring.Signer(qb64=secret) for secret in secrets]
+        opre = verfers[0].qb64  # old pre default move below to new pre from incept
         self.inception = eventing.incept(keys=[verfers[0].qb64],
                                          sith=sith,
                                          nxt=coring.Nexter(sith=sith,
@@ -104,11 +98,20 @@ class Habitat():
             raise kering.ValidationError("Improper Habitat inception for pre={}.".format(pre))
 
 
+    @property
+    def kever(self):
+        """
+        Returns kever for this .pre
+        """
+        return self.kevers[self.pre]
+
+
     def incept(self):
         """
         Perform inception operation. Register inception in database.
         Returns: bytearray rotation message with attached signatures.
         """
+
 
     def rotate(self, count=None, erase=None):
         """
@@ -129,7 +132,7 @@ class Habitat():
                                               temp=self.temp,
                                               erase=erase)
 
-        kever = self.kevers[self.pre]
+        kever = self.kever
         serder = eventing.rotate(pre=kever.prefixer.qb64,
                                  keys=[verfer.qb64 for verfer in verfers],
                                  dig=kever.serder.diger.qb64,
@@ -153,7 +156,7 @@ class Habitat():
         Perform interaction operation. Register interaction in database.
         Returns: bytearray interaction message with attached signatures.
         """
-        kever = self.kevers[self.pre]
+        kever = self.kever
         serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.diger.qb64,
                                    sn=kever.sn+1)
@@ -451,39 +454,25 @@ class Reactor(doing.Doer):
         """
         Send chit of event indicated by cuedSerder
         """
-        # send own chit of event
         # create seal of own last est event
-        kever = self.hab.kevers[self.hab.pre]
+        kever = self.hab.kever
         seal = eventing.SealEvent(i=self.hab.pre,
                                   s="{:x}".format(kever.lastEst.s),
                                   d=kever.lastEst.d)
-
         cuedKed = cuedSerder.ked
         # create validator receipt
         reserder = eventing.chit(pre=cuedKed["i"],
                                  sn=int(cuedKed["s"], 16),
                                  dig=cuedSerder.dig,
                                  seal=seal)
-        # sign cueSerder event not receipt
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
-        # use signer that matcher current verfer  # not multisig
-        verfer = kever.verfers[0]
-        siger = None
-        for signer in self.hab.signers:
-            if signer.verfer.qb64 == verfer.qb64:
-                siger = signer.sign(ser=cuedSerder.raw, index=0)  # return Siger if index
-                break
-        if siger:
-            # process own chit so have copy in own log
-            msg = bytearray(reserder.raw)
-            msg.extend(counter.qb64b)
-            msg.extend(siger.qb64b)
-            self.kevery.processOne(ims=bytearray(msg), framed=True)  # make copy
-
-            # send to remote
-            self.client.tx(bytes(msg))  # make copy because tx uses deque
-            blogger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
-            del msg[:]
+        #sign cued event
+        sigers = self.hab.mgr.sign(ser=cuedSerder.raw,
+                                   verfers=kever.verfers,
+                                   indexed=True)
+        msg = eventing.messagize(serder=reserder, sigers=sigers)
+        self.kevery.processOne(ims=bytearray(msg))  # process copy
+        self.client.tx(msg)  # send to remote
+        blogger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
 
 
     def sendOwnEvent(self, sn):
@@ -714,39 +703,25 @@ class Reactant(tyming.Tymee):
         """
         Send chit of event indicated by cuedSerder
         """
-        # send own chit of event
         # create seal of own last est event
-        kever = self.hab.kevers[self.hab.pre]
+        kever = self.hab.kever
         seal = eventing.SealEvent(i=self.hab.pre,
                                   s="{:x}".format(kever.lastEst.s),
                                   d=kever.lastEst.d)
-
         cuedKed = cuedSerder.ked
         # create validator receipt
         reserder = eventing.chit(pre=cuedKed["i"],
                                  sn=int(cuedKed["s"], 16),
                                  dig=cuedSerder.dig,
                                  seal=seal)
-        # sign cueSerder event not receipt
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs)
-        # use signer that matcher current verfer  # not multisig
-        verfer = kever.verfers[0]
-        siger = None
-        for signer in self.hab.signers:
-            if signer.verfer.qb64 == verfer.qb64:
-                siger = signer.sign(ser=cuedSerder.raw, index=0)  # return Siger if index
-                break
-        if siger:
-            # process own chit so have copy in own log
-            msg = bytearray(reserder.raw)
-            msg.extend(counter.qb64b)
-            msg.extend(siger.qb64b)
-            self.kevery.processOne(ims=bytearray(msg), framed=True)  # process copy
-
-            # send to remote
-            self.incomer.tx(bytes(msg))  # tx copy because tx uses deque
-            blogger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
-            del msg[:]  # maybe superfluous here
+        #sign cued event
+        sigers = self.hab.mgr.sign(ser=cuedSerder.raw,
+                                       verfers=kever.verfers,
+                                       indexed=True)
+        msg = eventing.messagize(serder=reserder, sigers=sigers)
+        self.kevery.processOne(ims=bytearray(msg))  # process copy
+        self.incomer.tx(msg)  # send to remote
+        blogger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
 
 
     def sendOwnEvent(self, sn):
@@ -987,8 +962,12 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
     """
     Setup and return doers list to run controller
     """
+    secrecies = []
+    for secret in secrets:  # convert secrets to secrecies
+        secrecies.append([secret])
+
     # setup habitat
-    hab = Habitat(name=name, secrets=secrets, temp=True)
+    hab = Habitat(name=name, secrecies=secrecies, temp=True)
     blogger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
                  hab.pre, hab.name, localPort, remotePort)
 

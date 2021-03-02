@@ -36,6 +36,10 @@ def test_directing_basic():
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
+    bobSecrecies = []
+    for secret in bobSecrets:  # convert secrets to secrecies
+        bobSecrecies.append([secret])
+
     #  create bob signers
     bobSigners = [coring.Signer(qb64=secret) for secret in bobSecrets]
     assert [signer.qb64 for signer in bobSigners] == bobSecrets
@@ -57,6 +61,10 @@ def test_directing_basic():
                   'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
                   'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
                   'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
+
+    eveSecrecies = []
+    for secret in eveSecrets:  # convert secrets to secrecies
+        eveSecrecies.append([secret])
 
     #  create eve signers
     eveSigners = [coring.Signer(qb64=secret) for secret in eveSecrets]
@@ -80,11 +88,9 @@ def test_directing_basic():
 
         # setup bob
         bobHab = directing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
-                                   secrets=bobSecrets, temp=True)
+                                   secrecies=bobSecrecies, temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
-        assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
-                [signer.verfer.qb64 for signer in bobSigners])
         assert bobHab.inception.dig == bobSerder.dig
         assert bobHab.pre == bob
 
@@ -114,11 +120,9 @@ def test_directing_basic():
 
         # setup eve
         eveHab = directing.Habitat(ks=eveKS, db=eveDB, kevers=eveKevers,
-                                   secrets=eveSecrets, temp=True)
+                                   secrecies=eveSecrecies, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
-        assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
-                    [signer.verfer.qb64 for signer in eveSigners])
         assert eveHab.inception.dig == eveSerder.dig
         assert eveHab.pre == eve
 
@@ -145,8 +149,6 @@ def test_directing_basic():
         assert eveDirectant.hab == eveHab
         assert eveDirectant.server == eveServer
         # Eve's Reactants created on demand
-
-
 
         limit = 0.25
         tock = 0.03125
@@ -202,6 +204,10 @@ def test_direct_mode():
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
+    bobSecrecies = []
+    for secret in bobSecrets:  # convert secrets to secrecies
+        bobSecrecies.append([secret])
+
     #  create bob signers
     bobSigners = [coring.Signer(qb64=secret) for secret in bobSecrets]
     assert [signer.qb64 for signer in bobSigners] == bobSecrets
@@ -225,6 +231,10 @@ def test_direct_mode():
                   'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
                   'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
 
+    eveSecrecies = []
+    for secret in eveSecrets:  # convert secrets to secrecies
+        eveSecrecies.append([secret])
+
     #  create eve signers
     eveSigners = [coring.Signer(qb64=secret) for secret in eveSecrets]
     assert [signer.qb64 for signer in eveSigners] == eveSecrets
@@ -247,11 +257,9 @@ def test_direct_mode():
 
         # setup bob
         bobHab = directing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
-                                   secrets=bobSecrets, temp=True)
+                                   secrecies=bobSecrecies, temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
-        assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
-                [signer.verfer.qb64 for signer in bobSigners])
         assert bobHab.inception.dig == bobSerder.dig
         assert bobHab.pre == bob
 
@@ -282,12 +290,10 @@ def test_direct_mode():
 
         # setup eve
         eveHab = directing.Habitat(ks=eveKS,  db=eveDB, kevers=eveKevers,
-                                   secrets=eveSecrets, temp=True)
+                                   secrecies=eveSecrecies, temp=True)
 
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
-        assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
-                    [signer.verfer.qb64 for signer in eveSigners])
         assert eveHab.inception.dig == eveSerder.dig
         assert eveHab.pre == eve
 
@@ -363,6 +369,10 @@ def test_direct_mode_demo():
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
+    bobSecrecies = []
+    for secret in bobSecrets:  # convert secrets to secrecies
+        bobSecrecies.append([secret])
+
     #  create bob signers
     bobSigners = [coring.Signer(qb64=secret) for secret in bobSecrets]
     assert [signer.qb64 for signer in bobSigners] == bobSecrets
@@ -385,6 +395,10 @@ def test_direct_mode_demo():
                   'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
                   'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
                   'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
+
+    eveSecrecies = []
+    for secret in eveSecrets:  # convert secrets to secrecies
+        eveSecrecies.append([secret])
 
     #  create eve signers
     eveSigners = [coring.Signer(qb64=secret) for secret in eveSecrets]
@@ -410,12 +424,10 @@ def test_direct_mode_demo():
 
         # setup bob
         bobHab = directing.Habitat(ks=bobKS,  db=bobDB, kevers=bobKevers,
-                                   secrets=bobSecrets, temp=True)
+                                   secrecies=bobSecrecies, temp=True)
 
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
-        assert ([signer.verfer.qb64 for signer in bobHab.signers] ==
-                [signer.verfer.qb64 for signer in bobSigners])
         assert bobHab.inception.dig == bobSerder.dig
         assert bobHab.pre == bob
 
@@ -446,11 +458,9 @@ def test_direct_mode_demo():
 
         # setup eve
         eveHab = directing.Habitat(ks=eveKS,  db=eveDB, kevers=eveKevers,
-                                   secrets=eveSecrets, temp=True)
+                                   secrecies=eveSecrecies, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
-        assert ([signer.verfer.qb64 for signer in eveHab.signers] ==
-                    [signer.verfer.qb64 for signer in eveSigners])
         assert eveHab.inception.dig == eveSerder.dig
         assert eveHab.pre == eve
 
@@ -536,7 +546,7 @@ def test_runcontroller_demo():
     directing.runController(doers=doers, limit=expire)
 
 
-def test_run_demo():
+def test_run_bob_eve_demo():
     """
     Test demo setupController and run with DoDoers and Doist
     """
@@ -591,6 +601,67 @@ def test_run_demo():
     tock = 0.03125
     expire =  1.0
     doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, bobDoer])
+    doist.do()
+
+    ogling.ogler.level = logging.CRITICAL
+    """End Test"""
+
+
+def test_run_sam_eve_demo():
+    """
+    Test demo setupController and run with DoDoers and Doist
+    """
+    ogling.ogler.level = logging.DEBUG
+
+    name = "sam"
+    remote = 5621
+    local = 5620
+
+
+    secrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
+
+    # sams is list of Doers
+    sams = directing.setupController(secrets=secrets,
+                                     name=name,
+                                     remotePort=remote,
+                                     localPort=local)
+
+    name = "eve"
+    remote = 5620
+    local = 5621
+
+
+    # set of secrets (seeds for private keys)
+    secrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
+                'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
+                'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
+                'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
+
+    eves = directing.setupController(secrets=secrets,
+                                     name=name,
+                                     remotePort=remote,
+                                     localPort=local)
+
+    samDoer = doing.DoDoer(doers=sams)
+    eveDoer = doing.DoDoer(doers=eves)
+
+    # run components
+    tock = 0.03125
+    expire =  1.0
+    doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, samDoer])
     doist.do()
 
     ogling.ogler.level = logging.CRITICAL
