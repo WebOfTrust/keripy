@@ -167,7 +167,7 @@ class Habitat():
         msg = eventing.messagize(serder, sigers)
 
         # update ownkey event verifier state
-        self.kvy.processOne(ims=bytearray(msg))  # make copy as kvr deletes
+        self.kvy.processOne(ims=bytearray(msg))  # make copy as kvy deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre))
@@ -246,8 +246,7 @@ class Director(doing.Doer):
         super(Director, self).__init__(**kwa)
         self.hab = hab
         self.client = client  # use client for tx only
-        self.kevery = eventing.Kevery(kevers=self.hab.kevers,
-                                      baser=self.hab.db)
+
 
     def do(self, tymist, tock=0.0, **opts):
         """
@@ -426,9 +425,9 @@ class Reactor(doing.Doer):
 
         For each cue yield one or more msgs to send out
         """
-        while self.kevery.cues:  # process any cues
+        while self.hab.kvy.cues:  # process any cues
             # popleft each cue in .cues deque and process
-            cue = self.kevery.cues.popleft()
+            cue = self.hab.kvy.cues.popleft()
             blogger.info("%s sent cue:\n%s\n\n", self.hab.pre, cue)
             cueKin = cue["kin"]  # type or kind of cue
 
@@ -447,9 +446,9 @@ class Reactor(doing.Doer):
                             break
 
                     if not found:  # no chit from remote so send own inception
-                        yield self.prepareOwnInception()
+                        yield self.sendOwnInception()
 
-                yield self.prepareOwnChit(cuedSerder)
+                yield self.sendOwnChit(cuedSerder)
 
 
 
@@ -658,6 +657,7 @@ class Reactant(tyming.Tymee):
         super(Reactant, self).__init__(**kwa)
         self.hab = hab
         self.incomer = incomer  # use incomer for both rx and tx
+        #  neeeds unique kevery with ims per incomer connnection
         self.kevery = eventing.Kevery(ims=self.incomer.rxbs,
                                       kevers=self.hab.kevers,
                                       baser=self.hab.db,

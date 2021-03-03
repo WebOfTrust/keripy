@@ -1574,8 +1574,8 @@ class Kevery:
         Process one event serder with attached indexd signatures sigers
 
         Parameters:
-
-
+            serder is Serder instance of event to process
+            sigers is list of Siger instances of signatures attached to event
         """
         # fetch ked ilk  pre, sn, dig to see how to process
         ked = serder.ked
