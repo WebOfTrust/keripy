@@ -55,11 +55,6 @@ from contextlib import contextmanager
 
 import lmdb
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
 from hio.base import doing
 
 from  ..kering import KeriError

@@ -1334,11 +1334,12 @@ class Kever:
         if first:  # append event dig to first seen database in order
             dtsb = self.baser.appendFse(self.prefixer.qb64b, dtsb, self.serder.diger.qb64b)
             self.baser.setDts(dgkey, dtsb)  #  first seen so dts is now first seen
-            logger.info("Kever process: %s First seen at %s\nKEL event = %s\n",
-                         self.prefixer.qb64, dtsb.decode("utf-8"), serder.ked)
+            logger.info("Kever process: %s First seen at %s\nKEL event=\n%s\n",
+                         self.prefixer.qb64, dtsb.decode("utf-8"),
+                         json.dumps(serder.ked, indent=1))
         self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
-        logger.info("Kever process: %s Added valid event to KEL event = %s\n",
-                        self.prefixer.qb64, serder.ked)
+        logger.info("Kever process: %s Added valid event to KEL event=\n%s\n",
+                        self.prefixer.qb64, json.dumps(serder.ked, indent=1))
 
 
     def escrowPSEvent(self, serder, sigers):
@@ -1879,7 +1880,8 @@ class Kevery:
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addOoe(snKey(serder.preb, serder.sn), serder.digb)
         # log escrowed
-        logger.info("Kevery process: escrowed out of order event = %s\n", serder.ked)
+        logger.info("Kevery process: escrowed out of order event=\n%s\n",
+                                      json.dumps(serder.ked, indent=1))
 
 
     def escrowLDEvent(self, serder, sigers):
@@ -1896,7 +1898,8 @@ class Kevery:
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addLde(snKey(serder.preb, serder.sn), serder.digb)
         # log duplicitous
-        logger.info("Kevery process: escrowed likely duplicitous event = %s\n", serder.ked)
+        logger.info("Kevery process: escrowed likely duplicitous event=\n%s\n",
+                                            json.dumps(serder.ked, indent=1))
 
 
     def escrowUREvent(self, serder, cigars, dig):
@@ -2108,7 +2111,7 @@ class Kevery:
                     # valid event escrow.
                     self.baser.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
                     logger.info("Kevery unescrow succeeded in valid event: "
-                             "event = %s\n", eserder.ked)
+                             "event=\n%s\n", json.dumps(eserder.ked, indent=1))
 
             if ekey == key:  # still same so no escrows found on last while iteration
                 break
@@ -2247,7 +2250,7 @@ class Kevery:
                     # valid event escrow.
                     self.baser.delOoe(snKey(pre, sn), edig)  # removes one escrow at key val
                     logger.info("Kevery unescrow succeeded in valid event: "
-                             "event = %s\n", eserder.ked)
+                             "event=\n%s\n", json.dumps(eserder.ked, indent=1))
 
             if ekey == key:  # still same so no escrows found on last while iteration
                 break
@@ -2392,7 +2395,8 @@ class Kevery:
                     # duplicitous so we process remaining escrows in spite of found
                     # valid event escrow.
                     self.baser.delUre(snKey(pre, sn), etriplet)  # removes one escrow at key val
-                    logger.info("Kevery unescrow succeeded for event = %s\n", serder.ked)
+                    logger.info("Kevery unescrow succeeded for event=\n%s\n",
+                                json.dumps(serder.ked, indent=1))
 
             if ekey == key:  # still same so no escrows found on last while iteration
                 break
@@ -2712,7 +2716,7 @@ class Kevery:
                     # valid event escrow.
                     self.baser.delLde(snKey(pre, sn), edig)  # removes one escrow at key val
                     logger.info("Kevery unescrow succeeded in valid event: "
-                             "event = %s\n", eserder.ked)
+                             "event=\n%s\n", json.dumps(eserder.ked, indent=1))
 
             if ekey == key:  # still same so no escrows found on last while iteration
                 break
