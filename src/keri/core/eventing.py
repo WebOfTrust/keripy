@@ -1334,10 +1334,11 @@ class Kever:
         if first:  # append event dig to first seen database in order
             dtsb = self.baser.appendFse(self.prefixer.qb64b, dtsb, self.serder.diger.qb64b)
             self.baser.setDts(dgkey, dtsb)  #  first seen so dts is now first seen
-            logger.info("Kever process: First seen at %s\nKEL event = %s\n",
-                         dtsb.decode("utf-8"), serder.ked)
+            logger.info("Kever process: %s First seen at %s\nKEL event = %s\n",
+                         self.prefixer.qb64, dtsb.decode("utf-8"), serder.ked)
         self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
-        logger.info("Kever process: Added valid event to KEL event = %s\n", serder.ked)
+        logger.info("Kever process: %s Added valid event to KEL event = %s\n",
+                        self.prefixer.qb64, serder.ked)
 
 
     def escrowPSEvent(self, serder, sigers):

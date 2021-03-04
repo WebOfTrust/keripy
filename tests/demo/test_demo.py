@@ -104,12 +104,15 @@ def test_directing_basic():
         assert id(bobDirector.hab.kvy.kevers) == id(bobKevers)
         assert bobDirector.hab.kvy.baser == bobDB
 
+
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
         assert id(bobReactor.hab.kvy.kevers) == id(bobKevers)
         assert bobReactor.hab.kvy.baser == bobDB
         assert id(bobReactor.kevery.ims) == id(bobReactor.client.rxbs)
+
+        assert id(bobReactor.client.rxbs) == id(bobDirector.client.rxbs)
 
         bobServer = serving.Server(host="", port=bobPort)
         bobServerDoer = doing.ServerDoer(server=bobServer)
@@ -151,7 +154,7 @@ def test_directing_basic():
         assert eveDirectant.server == eveServer
         # Eve's Reactants created on demand
 
-        limit = 0.25
+        limit = 0.125
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
@@ -681,4 +684,4 @@ def test_run_sam_eve_demo():
 
 if __name__ == "__main__":
     test_directing_basic()
-    test_direct_mode()
+    # test_direct_mode()

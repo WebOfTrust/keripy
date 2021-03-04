@@ -208,7 +208,6 @@ class Director(doing.Doer):
     Attributes:
         .hab is Habitat instance of local controller's context
         .client is TCP client instance. Assumes operated by another doer.
-        .kevery is Kevery instance
 
     Inherited Properties:
         .tyme is float relative cycle time, .tyme is artificial time
@@ -758,8 +757,6 @@ class BobDirector(Director):
     Inherited Attributes:
         .hab is Habitat instance of local controller's context
         .client is TCP client instance. Assumes operated by another doer.
-        .kevery is Kevery instance
-
 
     Attributes:
 
@@ -834,8 +831,6 @@ class SamDirector(Director):
     Inherited Attributes:
         .hab is Habitat instance of local controller's context
         .client is TCP client instance. Assumes operated by another doer.
-        .kevery is Kevery instance
-
 
     Attributes:
 
@@ -910,8 +905,6 @@ class EveDirector(Director):
     Inherited Attributes:
         .hab is Habitat instance of local controller's context
         .client is TCP client instance. Assumes operated by another doer.
-        .kevery is Kevery instance
-
 
     Attributes:
 
