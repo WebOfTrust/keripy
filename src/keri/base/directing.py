@@ -289,8 +289,6 @@ class Director(doing.Doer):
         self.sendOwnEvent(sn=0)
 
 
-
-
 class Reactor(doing.Doer):
     """
     Direct Mode KERI Reactor (Contextor, Doer) class with TCP Client and Kevery
@@ -556,8 +554,7 @@ class Directant(doing.Doer):
 
             while (True):  # recur context
                 tyme = (yield (tock))  # yields tock then waits for next send
-                self.serviceConnects()
-                self.serviceRants()
+                self.service()
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -616,6 +613,14 @@ class Directant(doing.Doer):
                     self.closeConnection(ca)
 
 
+    def service(self):
+        """
+        Service connects and rants
+        """
+        self.serviceConnects()
+        self.serviceRants()
+
+
 class Reactant(tyming.Tymee):
     """
     Direct Mode KERI Reactant (Contextor) class with TCP Remoter and Kevery
@@ -662,6 +667,7 @@ class Reactant(tyming.Tymee):
                                       baser=self.hab.db,
                                       framed=False)
         self.persistent = True if persistent else False
+
 
     def processCues(self):
         """
