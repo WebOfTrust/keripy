@@ -577,7 +577,7 @@ class Directant(doing.Doer):
         """
         if ca in self.rants:
             del self.rants[ca]
-        if ca in self.server.ixes:  # incomer still there
+        if ca in self.server.ixes:  # remoter still there
             self.server.ixes[ca].serviceTxes()  # send final bytes to socket
         self.server.removeIx(ca)
 
@@ -592,7 +592,7 @@ class Directant(doing.Doer):
                 continue
 
             if ca not in self.rants:  # create Reactant
-                self.rants[ca] = Reactant(hab=self.hab, incomer=ix)
+                self.rants[ca] = Reactant(hab=self.hab, remoter=ix)
 
             if ix.timeout > 0.0 and ix.tymer.expired:
                 self.closeConnection(ca)
@@ -618,14 +618,14 @@ class Directant(doing.Doer):
 
 class Reactant(tyming.Tymee):
     """
-    Direct Mode KERI Reactant (Contextor) class with TCP Incomer and Kevery
+    Direct Mode KERI Reactant (Contextor) class with TCP Remoter and Kevery
     Purpose is to react to received events from remote Director with receipts/events
 
     Inherited Attributes:
 
     Attributes:
         .hab is Habitat instance of local controller's context
-        .incomer is TCP Incomer instance.
+        .remoter is TCP Remoter instance for connection from remote TCP client.
         .kevery is Kevery instance
         .persistent is boolean, True means keep connection open. Otherwise close
 
@@ -642,7 +642,7 @@ class Reactant(tyming.Tymee):
        ._tymist is Tymist instance reference
     """
 
-    def __init__(self, hab, incomer,  persistent=True, **kwa):
+    def __init__(self, hab, remoter,  persistent=True, **kwa):
         """
         Initialize instance.
 
@@ -651,13 +651,13 @@ class Reactant(tyming.Tymee):
 
         Parameters:
             hab is Habitat instance of local controller's context
-            incomer is TCP Incomer instance
+            remoter is TCP Remoter instance
         """
         super(Reactant, self).__init__(**kwa)
         self.hab = hab
-        self.incomer = incomer  # use incomer for both rx and tx
-        #  neeeds unique kevery with ims per incomer connnection
-        self.kevery = eventing.Kevery(ims=self.incomer.rxbs,
+        self.remoter = remoter  # use remoter for both rx and tx
+        #  neeeds unique kevery with ims per remoter connnection
+        self.kevery = eventing.Kevery(ims=self.remoter.rxbs,
                                       kevers=self.hab.kevers,
                                       baser=self.hab.db,
                                       framed=False)
@@ -722,7 +722,7 @@ class Reactant(tyming.Tymee):
                                        indexed=True)
         msg = eventing.messagize(serder=reserder, sigers=sigers)
         self.kevery.processOne(ims=bytearray(msg))  # process copy
-        self.incomer.tx(msg)  # send to remote
+        self.remoter.tx(msg)  # send to remote
         logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
 
 
@@ -732,7 +732,7 @@ class Reactant(tyming.Tymee):
         """
         msg = self.hab.messagizeOwnEvent(sn=sn)
         # send to connected remote
-        self.incomer.tx(msg)
+        self.remoter.tx(msg)
         logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
 
 
