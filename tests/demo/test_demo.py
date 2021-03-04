@@ -15,15 +15,16 @@ from keri.base import directing, keeping
 from keri.db import dbing
 from keri.core import eventing, coring
 
-from keri.help import ogling  # logger support
+from keri import help  # logger support
 
 
 def test_directing_basic():
     """
-    Test direct mode demo
-
-
+    Test directing
     """
+    oglerLevel = help.ogler.level
+    help.ogler.level = logging.DEBUG
+
     # set of secrets  (seeds for private keys)
     bobSecrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
@@ -182,15 +183,17 @@ def test_directing_basic():
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
+    help.ogler.level = oglerLevel
     """End Test"""
 
 
 def test_direct_mode():
     """
     Test direct mode demo
-
-
     """
+    oglerLevel = help.ogler.level
+    help.ogler.level = logging.DEBUG
+
     # set of secrets  (seeds for private keys)
     bobSecrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
@@ -346,6 +349,7 @@ def test_direct_mode():
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
+    help.ogler.level = oglerLevel
     """End Test"""
 
 
@@ -353,9 +357,10 @@ def test_direct_mode():
 def test_direct_mode_demo():
     """
     Test direct mode demo
-
-
     """
+    oglerLevel = help.ogler.level
+    help.ogler.level = logging.DEBUG
+
     # set of secrets  (seeds for private keys)
     bobSecrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
@@ -513,6 +518,8 @@ def test_direct_mode_demo():
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
+
+    help.ogler.level = oglerLevel
     """End Test"""
 
 
@@ -520,6 +527,9 @@ def test_runcontroller_demo():
     """
     Test demo runController function
     """
+    oglerLevel = help.ogler.level
+    help.ogler.level = logging.DEBUG
+
     name = "bob"
     remote = 5621
     local = 5620
@@ -544,12 +554,18 @@ def test_runcontroller_demo():
 
     directing.runController(doers=doers, limit=expire)
 
+    help.ogler.level = oglerLevel
+    """End Test"""
+
 
 def test_run_bob_eve_demo():
     """
     Test demo setupController and run with DoDoers and Doist
     """
-    ogling.ogler.level = logging.DEBUG
+    oglerLevel = help.ogler.level
+    help.ogler.level = logging.DEBUG
+
+    logger = help.ogler.getLogger()
 
     name = "bob"
     remote = 5621
@@ -601,8 +617,8 @@ def test_run_bob_eve_demo():
     expire =  1.0
     doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, bobDoer])
     doist.do()
-
-    ogling.ogler.level = logging.CRITICAL
+    print("\nHello There\n")
+    help.ogler.level = oglerLevel
     """End Test"""
 
 
@@ -610,7 +626,8 @@ def test_run_sam_eve_demo():
     """
     Test demo setupController and run with DoDoers and Doist
     """
-    ogling.ogler.level = logging.DEBUG
+    oglerLevel = help.ogler.level
+    help.ogler.level = logging.DEBUG
 
     name = "sam"
     remote = 5621
@@ -663,9 +680,9 @@ def test_run_sam_eve_demo():
     doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, samDoer])
     doist.do()
 
-    ogling.ogler.level = logging.CRITICAL
+    help.ogler.level = oglerLevel
     """End Test"""
 
 
 if __name__ == "__main__":
-    test_directing_basic()
+    test_run_bob_eve_demo()

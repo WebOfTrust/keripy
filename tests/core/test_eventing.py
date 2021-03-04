@@ -30,9 +30,9 @@ from keri.core.eventing import Kever, Kevery
 from keri.db.dbing import dgKey, snKey, openDB, Baser
 from keri.base.keeping import openKS, Manager
 
-from keri.help import ogling
+from keri import help
 
-blogger, flogger = ogling.ogler.getLoggers()
+logger = help.ogler.getLogger()
 
 
 
@@ -1016,7 +1016,7 @@ def test_kevery():
     Test the support functionality for Kevery factory class
     Key Event Verifier Factory
     """
-    blogger.setLevel("ERROR")
+    logger.setLevel("ERROR")
 
     # Test sequence of events given set of secrets
     secrets = [

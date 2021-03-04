@@ -8,14 +8,14 @@ import time
 import datetime
 import pytest
 
-from keri import kering
-from keri.help import ogling, helping
+from keri import help
+from keri.help import helping
 from keri.db import dbing
 from keri.base import keeping
 from keri.core import coring
 from keri.core import eventing
 
-blogger, flogger = ogling.ogler.getLoggers()
+logger = help.ogler.getLogger()
 
 
 def test_partial_signed_escrow():

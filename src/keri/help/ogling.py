@@ -13,17 +13,21 @@ import shutil
 ogler = None  # module global ogler instance used by all for keri console logging
 
 
-def initOgler(level=logging.CRITICAL, **kwa):
+def initOgler(force=False, level=logging.CRITICAL, **kwa):
     """
     Initialize the ogler global instance once
     Critical is most severe to restrict logging by default
+
+    Parameters:
+        force is Boolean True is to force reinit even if global ogler is not None
+        level is default logging level
 
     This should be called in package .__init__ to insure that global ogler is
     defined by default. Users may then reset level and reopen log file if need be
     before calling ogler.getLoggers()
     """
     global ogler
-    if ogler is None:
+    if ogler is None or force:
         ogler = Ogler(level=level, **kwa)
 
     return ogler
@@ -75,7 +79,7 @@ class Ogler():
         self.name = name if name else 'main'
         self.level = level  # basic logger level
         self.temp = True if temp else False
-        self.headDirPath = headDirPath
+        self.headDirPath = headDirPath if headDirPath is not None else self.HeadDirPath
         self.path = None
         self.opened = False
 
@@ -93,14 +97,11 @@ class Ogler():
             self.reopen(headDirPath=self.headDirPath, clear=clear)
 
 
-
     def reopen(self, name=None, temp=None, headDirPath=None, clear=False):
         """
-        Use or Create if not preexistent, directory path for lmdb at .path
-        First closes .path if already opened. If cleat is True then also clears
+        Use or Create if not preexistent, directory path for file .path
+        First closes .path if already opened. If clear is True then also clears
         .path before reopening
-
-        Open lmdb and assign to .env
 
         Parameters:
             name is optional name
@@ -119,25 +120,29 @@ class Ogler():
         if self.opened:
             self.close(clear=clear)
 
-        if not name or name == self.name:
+        # check for changes in path parts if need to recreate
+        if name is not None and name == self.name:
             name = None  # don't need to recreate path because of name change
 
-        if temp is None or temp == self.temp:
-            temp = None
+        if temp is not None and temp == self.temp:
+            temp = None  # don't need to recreate path because of temp change
 
-        if not headDirPath or headDirPath == self.headDirPath:
-            headDirPath = None
+        if headDirPath is not None and headDirPath == self.headDirPath:
+            headDirPath = None  # don't need to recreate path because of headDirPath change
 
-        if not self.path or name is not None or temp is not None or headDirPath is not None:
-            # need to recreate self.path
-            if name is not None:
-                self.name = name
+        # always recreates if path is empty or if path part has changed
+        if (not self.path or
+            temp is not None or
+            headDirPath is not None or
+            name is not None):  # need to recreate self.path
+
 
             if temp is not None:
                 self.temp = True if temp else False
-
-            if headDirPath is None:
-                headDirPath = self.headDirPath
+            if headDirPath is not None:
+                self.headDirpath = headDirPath
+            if name is not None:  # used below for filename
+                self.name = name
 
             if self.temp:
                 headDirPath = tempfile.mkdtemp(prefix="keri_log_", suffix="_test", dir="/tmp")
@@ -207,6 +212,18 @@ class Ogler():
             self.path = None
 
 
+    def resetLevels(self, name=__name__, level=None):
+        """
+        Resets the level of preexisting loggers to level. If level is None then
+        use .level
+        """
+        level = level if level is not None else self.level
+        blogger = logging.getLogger(name)
+        blogger.setLevel(level)
+        flogger = logging.getLogger("%s.%s" % (name, 'fail'))
+        flogger.setLevel(max(level, logging.ERROR))
+
+
     def getBlogger(self, name=__name__, level=None):
         """
         Returns Basic Logger
@@ -216,7 +233,7 @@ class Ogler():
         blogger.propagate = False  # disable propagation of events
         level = level if level is not None else self.level
         blogger.setLevel(level)
-        for handler in blogger.handlers:  # remove so no duplicate handlers
+        for handler in list(blogger.handlers):  # remove so no duplicate handlers
             blogger.removeHandler(handler)
         blogger.addHandler(self.baseConsoleHandler)
         if self.opened:
@@ -229,6 +246,7 @@ class Ogler():
         Returns Failure Logger
         Since loggers are singletons by name we have to use unique name if
             we want to use different log format so we append .fail to base name
+        Only logs at level logging.Error or higher
         """
         # Since loggers are singletons by name we have to change name if we
         # want to use different log format
@@ -236,7 +254,7 @@ class Ogler():
         flogger.propagate = False  # disable propagation of events
         level = level if level is not None else self.level
         flogger.setLevel(max(level, logging.ERROR))
-        for handler in flogger.handlers:  # remove so no duplicate handlers
+        for handler in list(flogger.handlers):  # remove so no duplicate handlers
             flogger.removeHandler(handler)
         flogger.addHandler(self.failConsoleHandler)  # output to console
         if self.opened:
