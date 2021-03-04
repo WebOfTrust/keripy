@@ -378,6 +378,7 @@ class Reactor(doing.Doer):
                 logger.info("Client %s received:\n%s\n\n", self.hab.pre, self.hab.kvy.ims)
             self.hab.kvy.processAll()
             self.processCues()
+            self.hab.kvy.processEscrows()
 
 
     def processCues(self):
@@ -609,6 +610,7 @@ class Directant(doing.Doer):
 
                 reactant.kevery.processAll()
                 reactant.processCues()
+                reactant.kevery.processEscrows()
 
             if not reactant.persistent:  # not persistent so close and remove
                 ix = self.server.ixes[ca]
@@ -622,6 +624,7 @@ class Directant(doing.Doer):
         """
         self.serviceConnects()
         self.serviceRants()
+
 
 
 class Reactant(tyming.Tymee):
