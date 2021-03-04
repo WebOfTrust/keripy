@@ -5,6 +5,8 @@ keri.base.directing module
 
 simple direct mode demo support classes
 """
+import json
+
 from hio.base import doing, tyming
 from hio.core.tcp import clienting, serving
 from .. import kering
@@ -208,7 +210,6 @@ class Director(doing.Doer):
     Attributes:
         .hab is Habitat instance of local controller's context
         .client is TCP client instance. Assumes operated by another doer.
-        .kevery is Kevery instance
 
     Inherited Properties:
         .tyme is float relative cycle time, .tyme is artificial time
@@ -372,21 +373,21 @@ class Reactor(doing.Doer):
         """
         Service responses
         """
-        if self.kevery:
-            if self.kevery.ims:
-                logger.info("%s received:\n%s\n\n", self.hab.pre, self.kevery.ims)
-            self.kevery.processAll()
+        if self.hab.kvy:
+            if self.hab.kvy.ims:
+                logger.info("Client %s received:\n%s\n\n", self.hab.pre, self.hab.kvy.ims)
+            self.hab.kvy.processAll()
             self.processCues()
+            self.hab.kvy.processEscrows()
 
 
     def processCues(self):
         """
-        Process all cues in .kevery
+        Process all cues in .kvy
         """
-        while self.kevery.cues:  # process any cues
+        while self.hab.kvy.cues:  # process any cues
             # process each cue
-            cue = self.kevery.cues.popleft()
-            logger.info("%s sent cue:\n%s\n\n", self.hab.pre, cue)
+            cue = self.hab.kvy.cues.popleft()
             self.processCue(cue=cue)
 
 
@@ -398,21 +399,23 @@ class Reactor(doing.Doer):
         if cueKin in ("receipt", ):
             cuedSerder = cue["serder"]
             cuedKed = cuedSerder.ked
+            if cuedKed["i"] != self.hab.pre:  #  only if not cue for own event
+                logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
+                            json.dumps(cuedKed, indent=1))
+                if  cuedKed["t"] == coring.Ilks.icp:
+                    # check for chit or recipt from remote pre for own inception
+                    # need to add check for recipt based on type of cuedpre.
+                    dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+                    found = False
+                    for quadruple in self.hab.db.getVrcsIter(dgkey):
+                        if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
+                            found = True
+                            break
 
-            if  cuedKed["t"] == coring.Ilks.icp:
-                # check for chit or recipt from remote pre for own inception
-                # need to add check for recipt based on type of cuedpre.
-                dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
-                found = False
-                for quadruple in self.hab.db.getVrcsIter(dgkey):
-                    if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                        found = True
-                        break
+                    if not found:  # no chit from remote so send own inception
+                        self.sendOwnInception()
 
-                if not found:  # no chit from remote so send own inception
-                    self.sendOwnInception()
-
-            self.sendOwnChit(cuedSerder)
+                self.sendOwnChit(cuedSerder)
 
 
     def processCuesIter(self):
@@ -425,27 +428,28 @@ class Reactor(doing.Doer):
         while self.hab.kvy.cues:  # process any cues
             # popleft each cue in .cues deque and process
             cue = self.hab.kvy.cues.popleft()
-            logger.info("%s sent cue:\n%s\n\n", self.hab.pre, cue)
+            logger.info("%s got cue:\n%s\n\n", self.hab.pre, cue)
             cueKin = cue["kin"]  # type or kind of cue
-
             if cueKin in ("receipt", ):
                 cuedSerder = cue["serder"]
                 cuedKed = cuedSerder.ked
+                if cuedKed["i"] != self.hab.pre:  #  only if not cue for own event
+                    logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
+                                json.dumps(cuedKed, indent=1))
+                    if cuedKed["t"] == coring.Ilks.icp:
+                        # check for chit or recipt from remote pre for own inception
+                        # need to add check for recipt based on type of cuedpre.
+                        dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+                        found = False
+                        for quadruple in self.hab.db.getVrcsIter(dgkey):
+                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
+                                found = True
+                                break
 
-                if cuedKed["t"] == coring.Ilks.icp:
-                    # check for chit or recipt from remote pre for own inception
-                    # need to add check for recipt based on type of cuedpre.
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
-                    found = False
-                    for quadruple in self.hab.db.getVrcsIter(dgkey):
-                        if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                            found = True
-                            break
+                        if not found:  # no chit from remote so send own inception
+                            yield self.sendOwnInception()
 
-                    if not found:  # no chit from remote so send own inception
-                        yield self.sendOwnInception()
-
-                yield self.sendOwnChit(cuedSerder)
+                    yield self.sendOwnChit(cuedSerder)
 
 
 
@@ -469,7 +473,7 @@ class Reactor(doing.Doer):
                                    verfers=kever.verfers,
                                    indexed=True)
         msg = eventing.messagize(serder=reserder, sigers=sigers)
-        self.kevery.processOne(ims=bytearray(msg))  # process copy
+        self.hab.kvy.processOne(ims=bytearray(msg))  # process copy
         self.client.tx(msg)  # send to remote
         logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
 
@@ -575,7 +579,7 @@ class Directant(doing.Doer):
         if ca in self.rants:
             del self.rants[ca]
         if ca in self.server.ixes:  # remoter still there
-            self.server.ixes[ca].serviceTxes()  # send final bytes to socket
+            self.server.ixes[ca].serviceSends()  # send final bytes to socket
         self.server.removeIx(ca)
 
 
@@ -602,10 +606,11 @@ class Directant(doing.Doer):
         for ca, reactant in self.rants.items():
             if reactant.kevery:
                 if reactant.kevery.ims:
-                    logger.info("%s received:\n%s\n\n", self.hab.pre, reactant.kevery.ims)
+                    logger.info("Server %s received:\n%s\n\n", self.hab.pre, reactant.kevery.ims)
 
                 reactant.kevery.processAll()
                 reactant.processCues()
+                reactant.kevery.processEscrows()
 
             if not reactant.persistent:  # not persistent so close and remove
                 ix = self.server.ixes[ca]
@@ -619,6 +624,7 @@ class Directant(doing.Doer):
         """
         self.serviceConnects()
         self.serviceRants()
+
 
 
 class Reactant(tyming.Tymee):
@@ -677,7 +683,6 @@ class Reactant(tyming.Tymee):
         while self.kevery.cues:  # process any cues
             # process each cue
             cue = self.kevery.cues.popleft()
-            logger.info("%s sent cue:\n%s\n\n", self.hab.pre, cue)
             self.processCue(cue=cue)
 
 
@@ -686,25 +691,24 @@ class Reactant(tyming.Tymee):
         Process a cue in direct mode assumes chits
         """
         cueKin = cue["kin"]  # type or kind of cue
-
         cuedSerder = cue["serder"]
         cuedKed = cuedSerder.ked
-        cuedPre = cuedKed["i"]
-        cuedIlk = cuedKed["t"]
+        if cuedKed["i"] != self.hab.pre:  #  only if not cue for own event
+            logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
+                                            json.dumps(cuedKed, indent=1))
+            if cuedKed["t"] == coring.Ilks.icp:
+                # check for chit from remote pre for own inception
+                dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+                found = False
+                for quadruple in self.hab.db.getVrcsIter(dgkey):
+                    if quadruple.startswith(bytes(cuedKed["i"])):
+                        found = True
+                        break
 
-        if cuedIlk == coring.Ilks.icp:
-            # check for chit from remote pre for own inception
-            dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
-            found = False
-            for quadruple in self.hab.db.getVrcsIter(dgkey):
-                if quadruple.startswith(bytes(cuedPre)):
-                    found = True
-                    break
+                if not found:  # no chit from remote so send own inception
+                    self.sendOwnInception()
 
-            if not found:  # no chit from remote so send own inception
-                self.sendOwnInception()
-
-        self.sendOwnChit(cuedSerder)
+            self.sendOwnChit(cuedSerder)
 
 
     def sendOwnChit(self, cuedSerder):
@@ -758,8 +762,6 @@ class BobDirector(Director):
     Inherited Attributes:
         .hab is Habitat instance of local controller's context
         .client is TCP client instance. Assumes operated by another doer.
-        .kevery is Kevery instance
-
 
     Attributes:
 
@@ -834,8 +836,6 @@ class SamDirector(Director):
     Inherited Attributes:
         .hab is Habitat instance of local controller's context
         .client is TCP client instance. Assumes operated by another doer.
-        .kevery is Kevery instance
-
 
     Attributes:
 
@@ -872,7 +872,8 @@ class SamDirector(Director):
             tyme = (yield (self.tock))  # yields tock then waits
 
             while (not self.client.connected):
-                logger.info("%s:\n waiting for connection to remote %s.\n\n", self.hab.pre, self.client.ha)
+                logger.info("%s:\n waiting for connection to remote %s.\n\n",
+                            self.hab.pre, self.client.ha)
                 tyme = (yield (self.tock))
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
@@ -910,8 +911,6 @@ class EveDirector(Director):
     Inherited Attributes:
         .hab is Habitat instance of local controller's context
         .client is TCP client instance. Assumes operated by another doer.
-        .kevery is Kevery instance
-
 
     Attributes:
 
@@ -948,7 +947,8 @@ class EveDirector(Director):
             tyme = (yield (tock))
 
             while (not self.client.connected):
-                logger.info("%s:\n waiting for connection to remote %s.\n\n", self.hab.pre, self.client.ha)
+                logger.info("%s:\n waiting for connection to remote %s.\n\n",
+                            self.hab.pre, self.client.ha)
                 tyme = (yield (self.tock))
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)

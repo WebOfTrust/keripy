@@ -104,12 +104,15 @@ def test_directing_basic():
         assert id(bobDirector.hab.kvy.kevers) == id(bobKevers)
         assert bobDirector.hab.kvy.baser == bobDB
 
+
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
         assert id(bobReactor.hab.kvy.kevers) == id(bobKevers)
         assert bobReactor.hab.kvy.baser == bobDB
         assert id(bobReactor.kevery.ims) == id(bobReactor.client.rxbs)
+        assert id(bobReactor.hab.kvy.ims) == id(bobReactor.client.rxbs)
+        assert id(bobReactor.client.rxbs) == id(bobDirector.client.rxbs)
 
         bobServer = serving.Server(host="", port=bobPort)
         bobServerDoer = doing.ServerDoer(server=bobServer)
@@ -142,6 +145,8 @@ def test_directing_basic():
         assert id(eveReactor.hab.kvy.kevers) == id(eveKevers)
         assert eveReactor.hab.kvy.baser == eveDB
         assert id(eveReactor.kevery.ims) == id(eveReactor.client.rxbs)
+        assert id(eveReactor.hab.kvy.ims) == id(eveReactor.client.rxbs)
+        assert id(eveReactor.client.rxbs) == id(eveDirector.client.rxbs)
 
         eveServer = serving.Server(host="", port=evePort)
         eveServerDoer = doing.ServerDoer(server=eveServer)
@@ -151,14 +156,14 @@ def test_directing_basic():
         assert eveDirectant.server == eveServer
         # Eve's Reactants created on demand
 
-        limit = 0.25
+        limit = 0.125
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
-        bobMsgTx = b"Hi Eve I am  Bob"  # not event so ShortageError leaves it be
+        bobMsgTx = b"Hi Eve I am  Bob"
         bobDirector.client.tx(bobMsgTx)
 
-        eveMsgTx = b"Hi Bob its me Eve"  # not event so ShortageError leaves it be
+        eveMsgTx = b"Hi Bob its me Eve"
         eveDirector.client.tx(eveMsgTx)
 
         doers = [bobClientDoer, bobDirector, bobReactor, bobServerDoer, bobDirectant,
@@ -173,12 +178,12 @@ def test_directing_basic():
 
         assert not bobClient.txbs
         ca, ix = list(eveServer.ixes.items())[0]
-        eveMsgRx = bytes(ix.rxbs)
+        eveMsgRx = bytes(ix.rxbs)  # not event so ShortageError leaves it be
         assert eveMsgRx == bobMsgTx
 
         assert not eveClient.txbs
         ca, ix = list(bobServer.ixes.items())[0]
-        bobMsgRx = bytes(ix.rxbs)
+        bobMsgRx = bytes(ix.rxbs)  # not event so ShortageError leaves it be
         assert bobMsgRx == eveMsgTx
 
     assert not os.path.exists(eveDB.path)
