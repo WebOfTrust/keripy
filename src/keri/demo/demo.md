@@ -14,7 +14,8 @@ for transferable identifier prefixes.
 The terminal console will print out the messages that are exchanged.
 "Bob" initiates the exchange once it connects to "Eve"
 
-To exit each script just type in cntl-c in the respective terminal window or set a run time expiration when invoking each script.
+To exit each script just type in cntl-c in the respective terminal window or
+set a run time expiration when invoking each script.
 
 For help run the script with -h or --help
 such as.

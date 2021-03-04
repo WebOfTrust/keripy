@@ -12,10 +12,9 @@ from ..db import dbing
 from ..core import coring, eventing
 from . import keeping
 
+from .. import help
 
-from ..help import ogling
-
-blogger, flogger = ogling.ogler.getLoggers()
+logger = help.ogler.getLogger()
 
 class Habitat():
     """
@@ -167,7 +166,7 @@ class Habitat():
         msg = eventing.messagize(serder, sigers)
 
         # update ownkey event verifier state
-        self.kvy.processOne(ims=bytearray(msg))  # make copy as kvr deletes
+        self.kvy.processOne(ims=bytearray(msg))  # make copy as kvy deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre))
@@ -191,7 +190,6 @@ class Habitat():
                                            "".format(self.pre, sn))
         dig = bytes(dig)
         key = dbing.dgKey(self.pre, dig)  # digest key
-        raw = self.db.getEvt(key)
         msg.extend(self.db.getEvt(key))
         msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
                                   count=self.db.cntSigs(key)).qb64b) # attach cnt
@@ -246,8 +244,7 @@ class Director(doing.Doer):
         super(Director, self).__init__(**kwa)
         self.hab = hab
         self.client = client  # use client for tx only
-        self.kevery = eventing.Kevery(kevers=self.hab.kevers,
-                                      baser=self.hab.db)
+
 
     def do(self, tymist, tock=0.0, **opts):
         """
@@ -282,7 +279,7 @@ class Director(doing.Doer):
         msg = self.hab.messagizeOwnEvent(sn=sn)
         # send to connected remote
         self.client.tx(msg)
-        blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+        logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
 
 
     def sendOwnInception(self):
@@ -290,8 +287,6 @@ class Director(doing.Doer):
         Utility to send own inception on client
         """
         self.sendOwnEvent(sn=0)
-
-
 
 
 class Reactor(doing.Doer):
@@ -339,6 +334,7 @@ class Reactor(doing.Doer):
         super(Reactor, self).__init__(**kwa)
         self.hab = hab
         self.client = client  # use client for both rx and tx
+        self.hab.kvy.ims = self.client.rxbs
         self.kevery = eventing.Kevery(ims=self.client.rxbs,
                                       kevers=self.hab.kevers,
                                       baser=self.hab.db,
@@ -378,7 +374,7 @@ class Reactor(doing.Doer):
         """
         if self.kevery:
             if self.kevery.ims:
-                blogger.info("%s received:\n%s\n\n", self.hab.pre, self.kevery.ims)
+                logger.info("%s received:\n%s\n\n", self.hab.pre, self.kevery.ims)
             self.kevery.processAll()
             self.processCues()
 
@@ -390,7 +386,7 @@ class Reactor(doing.Doer):
         while self.kevery.cues:  # process any cues
             # process each cue
             cue = self.kevery.cues.popleft()
-            blogger.info("{} sent cue:\n{}\n\n", self.hab.pre, cue)
+            logger.info("%s sent cue:\n%s\n\n", self.hab.pre, cue)
             self.processCue(cue=cue)
 
 
@@ -426,10 +422,10 @@ class Reactor(doing.Doer):
 
         For each cue yield one or more msgs to send out
         """
-        while self.kevery.cues:  # process any cues
+        while self.hab.kvy.cues:  # process any cues
             # popleft each cue in .cues deque and process
-            cue = self.kevery.cues.popleft()
-            blogger.info("%s sent cue:\n%s\n\n", self.hab.pre, cue)
+            cue = self.hab.kvy.cues.popleft()
+            logger.info("%s sent cue:\n%s\n\n", self.hab.pre, cue)
             cueKin = cue["kin"]  # type or kind of cue
 
             if cueKin in ("receipt", ):
@@ -447,9 +443,9 @@ class Reactor(doing.Doer):
                             break
 
                     if not found:  # no chit from remote so send own inception
-                        yield self.prepareOwnInception()
+                        yield self.sendOwnInception()
 
-                yield self.prepareOwnChit(cuedSerder)
+                yield self.sendOwnChit(cuedSerder)
 
 
 
@@ -475,7 +471,7 @@ class Reactor(doing.Doer):
         msg = eventing.messagize(serder=reserder, sigers=sigers)
         self.kevery.processOne(ims=bytearray(msg))  # process copy
         self.client.tx(msg)  # send to remote
-        blogger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
+        logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
 
 
     def sendOwnEvent(self, sn):
@@ -485,7 +481,7 @@ class Reactor(doing.Doer):
         msg = self.hab.messagizeOwnEvent(sn=sn)
         # send to connected remote
         self.client.tx(msg)
-        blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+        logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
 
 
     def sendOwnInception(self):
@@ -558,8 +554,7 @@ class Directant(doing.Doer):
 
             while (True):  # recur context
                 tyme = (yield (tock))  # yields tock then waits for next send
-                self.serviceConnects()
-                self.serviceRants()
+                self.service()
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -579,7 +574,7 @@ class Directant(doing.Doer):
         """
         if ca in self.rants:
             del self.rants[ca]
-        if ca in self.server.ixes:  # incomer still there
+        if ca in self.server.ixes:  # remoter still there
             self.server.ixes[ca].serviceTxes()  # send final bytes to socket
         self.server.removeIx(ca)
 
@@ -594,7 +589,7 @@ class Directant(doing.Doer):
                 continue
 
             if ca not in self.rants:  # create Reactant
-                self.rants[ca] = Reactant(hab=self.hab, incomer=ix)
+                self.rants[ca] = Reactant(hab=self.hab, remoter=ix)
 
             if ix.timeout > 0.0 and ix.tymer.expired:
                 self.closeConnection(ca)
@@ -607,27 +602,35 @@ class Directant(doing.Doer):
         for ca, reactant in self.rants.items():
             if reactant.kevery:
                 if reactant.kevery.ims:
-                    blogger.info("%s received:\n%s\n\n", self.hab.pre, reactant.kevery.ims)
+                    logger.info("%s received:\n%s\n\n", self.hab.pre, reactant.kevery.ims)
 
                 reactant.kevery.processAll()
                 reactant.processCues()
 
             if not reactant.persistent:  # not persistent so close and remove
                 ix = self.server.ixes[ca]
-                if not ix.txes:  # wait for outgoing txes to be empty
+                if not ix.txbs:  # wait for outgoing txes to be empty
                     self.closeConnection(ca)
+
+
+    def service(self):
+        """
+        Service connects and rants
+        """
+        self.serviceConnects()
+        self.serviceRants()
 
 
 class Reactant(tyming.Tymee):
     """
-    Direct Mode KERI Reactant (Contextor) class with TCP Incomer and Kevery
+    Direct Mode KERI Reactant (Contextor) class with TCP Remoter and Kevery
     Purpose is to react to received events from remote Director with receipts/events
 
     Inherited Attributes:
 
     Attributes:
         .hab is Habitat instance of local controller's context
-        .incomer is TCP Incomer instance.
+        .remoter is TCP Remoter instance for connection from remote TCP client.
         .kevery is Kevery instance
         .persistent is boolean, True means keep connection open. Otherwise close
 
@@ -644,7 +647,7 @@ class Reactant(tyming.Tymee):
        ._tymist is Tymist instance reference
     """
 
-    def __init__(self, hab, incomer,  persistent=True, **kwa):
+    def __init__(self, hab, remoter,  persistent=True, **kwa):
         """
         Initialize instance.
 
@@ -653,16 +656,18 @@ class Reactant(tyming.Tymee):
 
         Parameters:
             hab is Habitat instance of local controller's context
-            incomer is TCP Incomer instance
+            remoter is TCP Remoter instance
         """
         super(Reactant, self).__init__(**kwa)
         self.hab = hab
-        self.incomer = incomer  # use incomer for both rx and tx
-        self.kevery = eventing.Kevery(ims=self.incomer.rxbs,
+        self.remoter = remoter  # use remoter for both rx and tx
+        #  neeeds unique kevery with ims per remoter connnection
+        self.kevery = eventing.Kevery(ims=self.remoter.rxbs,
                                       kevers=self.hab.kevers,
                                       baser=self.hab.db,
                                       framed=False)
         self.persistent = True if persistent else False
+
 
     def processCues(self):
         """
@@ -672,7 +677,7 @@ class Reactant(tyming.Tymee):
         while self.kevery.cues:  # process any cues
             # process each cue
             cue = self.kevery.cues.popleft()
-            blogger.info("%s sent cue:\n%s\n\n", self.hab.pre, cue)
+            logger.info("%s sent cue:\n%s\n\n", self.hab.pre, cue)
             self.processCue(cue=cue)
 
 
@@ -723,8 +728,8 @@ class Reactant(tyming.Tymee):
                                        indexed=True)
         msg = eventing.messagize(serder=reserder, sigers=sigers)
         self.kevery.processOne(ims=bytearray(msg))  # process copy
-        self.incomer.tx(msg)  # send to remote
-        blogger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
+        self.remoter.tx(msg)  # send to remote
+        logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
 
 
     def sendOwnEvent(self, sn):
@@ -733,8 +738,8 @@ class Reactant(tyming.Tymee):
         """
         msg = self.hab.messagizeOwnEvent(sn=sn)
         # send to connected remote
-        self.incomer.tx(msg)
-        blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+        self.remoter.tx(msg)
+        logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
 
 
     def sendOwnInception(self):
@@ -790,23 +795,23 @@ class BobDirector(Director):
             # recur context
             tyme = (yield (self.tock))  # yields tock then waits for next send
 
-            blogger.info("**** %s:\nWaiting for connection to remote  %s.\n\n", self.hab.pre, self.client.ha)
+            logger.info("**** %s:\nWaiting for connection to remote  %s.\n\n", self.hab.pre, self.client.ha)
             while (not self.client.connected):
                 tyme = (yield (self.tock))
 
-            blogger.info("**** %s:\nConnected to %s.\n\n", self.hab.pre, self.client.ha)
+            logger.info("**** %s:\nConnected to %s.\n\n", self.hab.pre, self.client.ha)
 
             self.sendOwnInception()  # Inception Event
             tyme = (yield (self.tock))
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)   # send to connected remote
-            blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            logger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
             msg = self.hab.interact()  # Interaction event
             self.client.tx(msg)   # send to connected remote
-            blogger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            logger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
         except GeneratorExit:  # close context, forced exit due to .close
@@ -867,22 +872,22 @@ class SamDirector(Director):
             tyme = (yield (self.tock))  # yields tock then waits
 
             while (not self.client.connected):
-                blogger.info("%s:\n waiting for connection to remote %s.\n\n", self.hab.pre, self.client.ha)
+                logger.info("%s:\n waiting for connection to remote %s.\n\n", self.hab.pre, self.client.ha)
                 tyme = (yield (self.tock))
 
-            blogger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
+            logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
             self.sendOwnInception()  # Inception Event
             tyme = (yield (self.tock))
 
             msg = self.hab.interact()  # Interaction Event
             self.client.tx(msg)  # send to connected remote
-            blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
-            blogger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
         except GeneratorExit:  # close context, forced exit due to .close
@@ -943,10 +948,10 @@ class EveDirector(Director):
             tyme = (yield (tock))
 
             while (not self.client.connected):
-                blogger.info("%s:\n waiting for connection to remote %s.\n\n", self.hab.pre, self.client.ha)
+                logger.info("%s:\n waiting for connection to remote %s.\n\n", self.hab.pre, self.client.ha)
                 tyme = (yield (self.tock))
 
-            blogger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
+            logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
             tyme = (yield (self.tock))
 
         except GeneratorExit:  # close context, forced exit due to .close
@@ -971,7 +976,7 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
 
     # setup habitat
     hab = Habitat(name=name, secrecies=secrecies, temp=True)
-    blogger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
+    logger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
                  hab.pre, hab.name, localPort, remotePort)
 
     # setup doers

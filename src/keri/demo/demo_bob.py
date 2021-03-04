@@ -11,7 +11,8 @@ import logging
 
 from keri import __version__
 from keri.base import directing
-from keri.help import ogling  # logger support
+from keri import help
+
 
 def runDemo(name="bob", remote=5621, local=5620, expire=0.0):
     """
@@ -72,12 +73,12 @@ def parseArgs(version=__version__):
 def main():
     args = parseArgs(version=__version__)
 
-    ogling.ogler.level = logging.INFO
-    ogling.ogler.reopen(name=args.name, temp=True, clear=True)
+    help.ogler.level = logging.INFO
+    help.ogler.reopen(name=args.name, temp=True, clear=True)
 
-    blogger, flogger = ogling.ogler.getLoggers()
+    logger = help.ogler.getLogger()
 
-    blogger.info("\n******* Starting Demo for %s listening on %s connecting to "
+    logger.info("\n******* Starting Demo for %s listening on %s connecting to "
                  "%s.******\n\n", args.name, args.local, args.remote)
 
     runDemo(name=args.name,
@@ -85,7 +86,7 @@ def main():
             local=args.local,
             expire=args.expire)
 
-    blogger.info("\n******* Ended Demo for %s listening on %s connecting to "
+    logger.info("\n******* Ended Demo for %s listening on %s connecting to "
                  "%s.******\n\n", args.name, args.local, args.remote)
 
 

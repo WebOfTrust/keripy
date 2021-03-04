@@ -8,6 +8,7 @@ import pytest
 import os
 import logging
 
+from hio.help import ogling
 from hio.base import doing
 from hio.core.tcp import clienting, serving
 
@@ -15,15 +16,16 @@ from keri.base import directing, keeping
 from keri.db import dbing
 from keri.core import eventing, coring
 
-from keri.help import ogling  # logger support
+from keri import help  # logger support
 
 
 def test_directing_basic():
     """
-    Test direct mode demo
-
-
+    Test directing
     """
+    help.ogler.level = logging.DEBUG
+    help.ogler.resetLevels()
+
     # set of secrets  (seeds for private keys)
     bobSecrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
@@ -100,15 +102,15 @@ def test_directing_basic():
         bobDirector = directing.Director(hab=bobHab, client=bobClient)
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
-        assert bobDirector.kevery.kevers == bobKevers
-        assert bobDirector.kevery.baser == bobDB
+        assert id(bobDirector.hab.kvy.kevers) == id(bobKevers)
+        assert bobDirector.hab.kvy.baser == bobDB
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
-        assert bobReactor.kevery.kevers == bobKevers
-        assert bobReactor.kevery.baser == bobDB
-        assert bobReactor.kevery.ims == bobReactor.client.rxbs
+        assert id(bobReactor.hab.kvy.kevers) == id(bobKevers)
+        assert bobReactor.hab.kvy.baser == bobDB
+        assert id(bobReactor.kevery.ims) == id(bobReactor.client.rxbs)
 
         bobServer = serving.Server(host="", port=bobPort)
         bobServerDoer = doing.ServerDoer(server=bobServer)
@@ -132,15 +134,15 @@ def test_directing_basic():
         eveDirector = directing.Director(hab=eveHab, client=eveClient)
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
-        assert eveDirector.kevery.kevers == eveKevers
-        assert eveDirector.kevery.baser == eveDB
+        assert id(eveDirector.hab.kvy.kevers) == id(eveKevers)
+        assert eveDirector.hab.kvy.baser == eveDB
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
-        assert eveReactor.kevery.kevers == eveKevers
-        assert eveReactor.kevery.baser == eveDB
-        assert eveReactor.kevery.ims == eveReactor.client.rxbs
+        assert id(eveReactor.hab.kvy.kevers) == id(eveKevers)
+        assert eveReactor.hab.kvy.baser == eveDB
+        assert id(eveReactor.kevery.ims) == id(eveReactor.client.rxbs)
 
         eveServer = serving.Server(host="", port=evePort)
         eveServerDoer = doing.ServerDoer(server=eveServer)
@@ -154,10 +156,10 @@ def test_directing_basic():
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
-        bobMsgTx = b"Hi Eve I am  Bob"
+        bobMsgTx = b"Hi Eve I am  Bob"  # not event so ShortageError leaves it be
         bobDirector.client.tx(bobMsgTx)
 
-        eveMsgTx = b"Hi Bob its me Eve"
+        eveMsgTx = b"Hi Bob its me Eve"  # not event so ShortageError leaves it be
         eveDirector.client.tx(eveMsgTx)
 
         doers = [bobClientDoer, bobDirector, bobReactor, bobServerDoer, bobDirectant,
@@ -170,28 +172,29 @@ def test_directing_basic():
         assert eveClient.opened == False
         assert eveServer.opened == False
 
-        assert not bobClient.txes
+        assert not bobClient.txbs
         ca, ix = list(eveServer.ixes.items())[0]
         eveMsgRx = bytes(ix.rxbs)
         assert eveMsgRx == bobMsgTx
 
-
-        assert not eveClient.txes
+        assert not eveClient.txbs
         ca, ix = list(bobServer.ixes.items())[0]
         bobMsgRx = bytes(ix.rxbs)
         assert bobMsgRx == eveMsgTx
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
+    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
     """End Test"""
 
 
 def test_direct_mode():
     """
     Test direct mode demo
-
-
     """
+    help.ogler.level = logging.DEBUG
+    help.ogler.resetLevels()
+
     # set of secrets  (seeds for private keys)
     bobSecrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
@@ -269,16 +272,16 @@ def test_direct_mode():
         bobDirector = directing.BobDirector(hab=bobHab, client=bobClient, tock=0.125)
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
-        assert bobDirector.kevery.kevers == bobKevers
-        assert bobDirector.kevery.baser == bobDB
+        assert bobDirector.hab.kvy.kevers == bobKevers
+        assert bobDirector.hab.kvy.baser == bobDB
         assert bobDirector.tock == 0.125
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
-        assert bobReactor.kevery.kevers == bobKevers
-        assert bobReactor.kevery.baser == bobDB
-        assert bobReactor.kevery.ims == bobReactor.client.rxbs
+        assert bobReactor.hab.kvy.kevers == bobKevers
+        assert bobReactor.hab.kvy.baser == bobDB
+        assert bobReactor.hab.kvy.ims == bobReactor.client.rxbs
 
         bobServer = serving.Server(host="", port=bobPort)
         bobServerDoer = doing.ServerDoer(server=bobServer)
@@ -303,15 +306,15 @@ def test_direct_mode():
         eveDirector = directing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
-        assert eveDirector.kevery.kevers == eveKevers
-        assert eveDirector.kevery.baser == eveDB
+        assert eveDirector.hab.kvy.kevers == eveKevers
+        assert eveDirector.hab.kvy.baser == eveDB
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
-        assert eveReactor.kevery.kevers == eveKevers
-        assert eveReactor.kevery.baser == eveDB
-        assert eveReactor.kevery.ims == eveReactor.client.rxbs
+        assert eveReactor.hab.kvy.kevers == eveKevers
+        assert eveReactor.hab.kvy.baser == eveDB
+        assert eveReactor.hab.kvy.ims == eveReactor.client.rxbs
 
         eveServer = serving.Server(host="", port=evePort)
         eveServerDoer = doing.ServerDoer(server=eveServer)
@@ -339,7 +342,7 @@ def test_direct_mode():
         assert bobHab.pre in bobHab.kevers
         assert eveHab.pre in eveHab.kevers
 
-        assert not bobClient.txes
+        assert not bobClient.txbs
 
         assert bobHab.pre in eveHab.kevers
 
@@ -347,6 +350,7 @@ def test_direct_mode():
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
+    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
     """End Test"""
 
 
@@ -354,9 +358,10 @@ def test_direct_mode():
 def test_direct_mode_demo():
     """
     Test direct mode demo
-
-
     """
+    help.ogler.level = logging.DEBUG
+    help.ogler.resetLevels()
+
     # set of secrets  (seeds for private keys)
     bobSecrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
@@ -434,19 +439,19 @@ def test_direct_mode_demo():
         bobClient = clienting.Client(host='127.0.0.1', port=evePort)
         bobClientDoer = doing.ClientDoer(client=bobClient)
 
-        bobDirector = directing.SamDirector(hab=bobHab, client=bobClient, tock=0.125)
+        bobDirector = directing.BobDirector(hab=bobHab, client=bobClient, tock=0.125)
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
-        assert bobDirector.kevery.kevers == bobKevers
-        assert bobDirector.kevery.baser == bobDB
+        assert bobDirector.hab.kvy.kevers == bobKevers
+        assert bobDirector.hab.kvy.baser == bobDB
         assert bobDirector.tock == 0.125
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
-        assert bobReactor.kevery.kevers == bobKevers
-        assert bobReactor.kevery.baser == bobDB
-        assert bobReactor.kevery.ims == bobReactor.client.rxbs
+        assert bobReactor.hab.kvy.kevers == bobKevers
+        assert bobReactor.hab.kvy.baser == bobDB
+        assert bobReactor.hab.kvy.ims == bobReactor.client.rxbs
 
         bobServer = serving.Server(host="", port=bobPort)
         bobServerDoer = doing.ServerDoer(server=bobServer)
@@ -470,15 +475,15 @@ def test_direct_mode_demo():
         eveDirector = directing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
-        assert eveDirector.kevery.kevers == eveKevers
-        assert eveDirector.kevery.baser == eveDB
+        assert eveDirector.hab.kvy.kevers == eveKevers
+        assert eveDirector.hab.kvy.baser == eveDB
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
-        assert eveReactor.kevery.kevers == eveKevers
-        assert eveReactor.kevery.baser == eveDB
-        assert eveReactor.kevery.ims == eveReactor.client.rxbs
+        assert eveReactor.hab.kvy.kevers == eveKevers
+        assert eveReactor.hab.kvy.baser == eveDB
+        assert eveReactor.hab.kvy.ims == eveReactor.client.rxbs
 
         eveServer = serving.Server(host="", port=evePort)
         eveServerDoer = doing.ServerDoer(server=eveServer)
@@ -505,7 +510,7 @@ def test_direct_mode_demo():
         assert bobHab.pre in bobHab.kevers
         assert eveHab.pre in eveHab.kevers
 
-        assert not bobClient.txes
+        assert not bobClient.txbs
 
         assert bobHab.pre in eveHab.kevers
 
@@ -514,6 +519,7 @@ def test_direct_mode_demo():
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
+    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
     """End Test"""
 
 
@@ -521,6 +527,9 @@ def test_runcontroller_demo():
     """
     Test demo runController function
     """
+    help.ogler.level = logging.DEBUG
+    help.ogler.resetLevels()
+
     name = "bob"
     remote = 5621
     local = 5620
@@ -545,12 +554,16 @@ def test_runcontroller_demo():
 
     directing.runController(doers=doers, limit=expire)
 
+    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
+    """End Test"""
+
 
 def test_run_bob_eve_demo():
     """
     Test demo setupController and run with DoDoers and Doist
     """
-    ogling.ogler.level = logging.DEBUG
+    help.ogler.level = logging.DEBUG
+    help.ogler.resetLevels()
 
     name = "bob"
     remote = 5621
@@ -603,7 +616,7 @@ def test_run_bob_eve_demo():
     doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, bobDoer])
     doist.do()
 
-    ogling.ogler.level = logging.CRITICAL
+    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
     """End Test"""
 
 
@@ -611,7 +624,8 @@ def test_run_sam_eve_demo():
     """
     Test demo setupController and run with DoDoers and Doist
     """
-    ogling.ogler.level = logging.DEBUG
+    help.ogler.level = logging.DEBUG
+    help.ogler.resetLevels()
 
     name = "sam"
     remote = 5621
@@ -664,9 +678,9 @@ def test_run_sam_eve_demo():
     doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, samDoer])
     doist.do()
 
-    ogling.ogler.level = logging.CRITICAL
+    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
     """End Test"""
 
 
 if __name__ == "__main__":
-    test_direct_mode_demo()
+    test_directing_basic()
