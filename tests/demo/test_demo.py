@@ -23,8 +23,7 @@ def test_directing_basic():
     """
     Test directing
     """
-    help.ogler.level = logging.DEBUG
-    help.ogler.resetLevels()
+    help.ogler.resetLevel(level=logging.DEBUG)
 
     # set of secrets  (seeds for private keys)
     bobSecrets = [
@@ -184,7 +183,8 @@ def test_directing_basic():
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
-    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
+
+    help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
 
 
@@ -192,8 +192,7 @@ def test_direct_mode():
     """
     Test direct mode demo
     """
-    help.ogler.level = logging.DEBUG
-    help.ogler.resetLevels()
+    help.ogler.resetLevel(level=logging.DEBUG)
 
     # set of secrets  (seeds for private keys)
     bobSecrets = [
@@ -350,7 +349,8 @@ def test_direct_mode():
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
-    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
+
+    help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
 
 
@@ -359,8 +359,7 @@ def test_direct_mode_demo():
     """
     Test direct mode demo
     """
-    help.ogler.level = logging.DEBUG
-    help.ogler.resetLevels()
+    help.ogler.resetLevel(level=logging.DEBUG)
 
     # set of secrets  (seeds for private keys)
     bobSecrets = [
@@ -519,7 +518,8 @@ def test_direct_mode_demo():
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
-    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
+
+    help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
 
 
@@ -527,8 +527,7 @@ def test_runcontroller_demo():
     """
     Test demo runController function
     """
-    help.ogler.level = logging.DEBUG
-    help.ogler.resetLevels()
+    help.ogler.resetLevel(level=logging.DEBUG)
 
     name = "bob"
     remote = 5621
@@ -554,7 +553,7 @@ def test_runcontroller_demo():
 
     directing.runController(doers=doers, limit=expire)
 
-    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
+    help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
 
 
@@ -562,8 +561,7 @@ def test_run_bob_eve_demo():
     """
     Test demo setupController and run with DoDoers and Doist
     """
-    help.ogler.level = logging.DEBUG
-    help.ogler.resetLevels()
+    help.ogler.resetLevel(level=logging.DEBUG)
 
     name = "bob"
     remote = 5621
@@ -616,7 +614,7 @@ def test_run_bob_eve_demo():
     doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, bobDoer])
     doist.do()
 
-    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
+    help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
 
 
@@ -624,8 +622,7 @@ def test_run_sam_eve_demo():
     """
     Test demo setupController and run with DoDoers and Doist
     """
-    help.ogler.level = logging.DEBUG
-    help.ogler.resetLevels()
+    help.ogler.resetLevel(level=logging.DEBUG)
 
     name = "sam"
     remote = 5621
@@ -678,9 +675,10 @@ def test_run_sam_eve_demo():
     doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, samDoer])
     doist.do()
 
-    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
+    help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
 
 
 if __name__ == "__main__":
     test_directing_basic()
+    test_direct_mode()
