@@ -172,12 +172,12 @@ def test_directing_basic():
         assert eveClient.opened == False
         assert eveServer.opened == False
 
-        assert not bobClient.txes
+        assert not bobClient.txbs
         ca, ix = list(eveServer.ixes.items())[0]
         eveMsgRx = bytes(ix.rxbs)
         assert eveMsgRx == bobMsgTx
 
-        assert not eveClient.txes
+        assert not eveClient.txbs
         ca, ix = list(bobServer.ixes.items())[0]
         bobMsgRx = bytes(ix.rxbs)
         assert bobMsgRx == eveMsgTx
@@ -342,7 +342,7 @@ def test_direct_mode():
         assert bobHab.pre in bobHab.kevers
         assert eveHab.pre in eveHab.kevers
 
-        assert not bobClient.txes
+        assert not bobClient.txbs
 
         assert bobHab.pre in eveHab.kevers
 
@@ -510,7 +510,7 @@ def test_direct_mode_demo():
         assert bobHab.pre in bobHab.kevers
         assert eveHab.pre in eveHab.kevers
 
-        assert not bobClient.txes
+        assert not bobClient.txbs
 
         assert bobHab.pre in eveHab.kevers
 

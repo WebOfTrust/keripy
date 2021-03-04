@@ -612,7 +612,7 @@ class Directant(doing.Doer):
 
             if not reactant.persistent:  # not persistent so close and remove
                 ix = self.server.ixes[ca]
-                if not ix.txes:  # wait for outgoing txes to be empty
+                if not ix.txbs:  # wait for outgoing txes to be empty
                     self.closeConnection(ca)
 
 
