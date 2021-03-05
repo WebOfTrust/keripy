@@ -29,7 +29,7 @@ def test_weighted():
         wesMgr = keeping.Manager(keeper=wesKS, salt=wesSalt)
 
         # Init Kevery with event DB
-        wesKvy = eventing.Kevery(baser=wesDB)
+        wesKvy = eventing.Kevery(db=wesDB)
 
         # create inception event for Wes with 3 keys each in incept and next sets
         # defaults are algo salty and rooted
@@ -68,7 +68,7 @@ def test_weighted():
                                 b'bXKTw3hwDPt46m5zGd38Y3qIEwQD3jCA')
 
         # apply msg to Wes's Kevery
-        wesKvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         wesK = wesKvy.kevers[wesPre]  # kever created so event was validated
         assert wesK.prefixer.qb64 == wesPre
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
@@ -97,7 +97,7 @@ def test_weighted():
                                 b'Y_NJWs6NTWEs5vsPOskNcGnr8nIpQ51N1qBQ')
 
         # apply msg to wes's Kevery
-        wesKvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
         # Create rotation event for Wes
@@ -136,7 +136,7 @@ def test_weighted():
                                 b'_3ZY2tAgbmLZika4kEL8REfr5VCA')
 
         # apply msg to Wes's Kevery
-        wesKvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
         # Create rotation event for Wes
@@ -178,7 +178,7 @@ def test_weighted():
 
 
         # apply msg to Wes's Kevery
-        wesKvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
         # Create rotation event for Wes
@@ -223,7 +223,7 @@ def test_weighted():
                                 b'8bpOShEoPUwxEH4H1Wxsn3xPlvL3_pe5Mun3sq2jIhl1EOjcDaKOHofZCA')
 
         # apply msg to Wes's Kevery
-        wesKvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
 
