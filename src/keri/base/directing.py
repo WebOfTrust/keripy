@@ -76,13 +76,15 @@ class Habitat():
         self.temp = temp
         self.erase = erase
 
-        self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
+        self.ks = ks if ks is not None else keeping.Keeper(name=name,
+                                                           temp=self.temp)
         if salt is None:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
         self.mgr = keeping.Manager(keeper=self.ks, salt=salt, tier=tier)
         self.ridx = 0  # rotation index of latest establishment event
         self.kevers = kevers if kevers is not None else dict()
-        self.db = db if db is not None else dbing.Baser(name=name, temp=self.temp)
+        self.db = db if db is not None else dbing.Baser(name=name,
+                                                        temp=self.temp)
         self.kvy = eventing.Kevery(kevers=self.kevers, baser=self.db, framed=False)
         self.sith = sith
         self.count = count
