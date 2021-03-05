@@ -15,6 +15,7 @@ from hio.core.tcp import clienting, serving
 from keri.base import directing, keeping
 from keri.db import dbing
 from keri.core import eventing, coring
+from keri.demo import demoing
 
 from keri import help  # logger support
 
@@ -92,7 +93,7 @@ def test_directing_basic():
                                    secrecies=bobSecrecies, temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
-        assert bobHab.inception.dig == bobSerder.dig
+        assert bobHab.iserder.dig == bobSerder.dig
         assert bobHab.pre == bob
 
         bobClient = clienting.Client(host='127.0.0.1', port=evePort)
@@ -127,7 +128,7 @@ def test_directing_basic():
                                    secrecies=eveSecrecies, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
-        assert eveHab.inception.dig == eveSerder.dig
+        assert eveHab.iserder.dig == eveSerder.dig
         assert eveHab.pre == eve
 
         eveClient = clienting.Client(host='127.0.0.1', port=bobPort)
@@ -193,7 +194,7 @@ def test_directing_basic():
     """End Test"""
 
 
-def test_direct_mode_bob_eve():
+def test_direct_mode_bob_eve_demo():
     """
     Test direct mode bob and eve
     """
@@ -267,13 +268,13 @@ def test_direct_mode_bob_eve():
                                    secrecies=bobSecrecies, temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
-        assert bobHab.inception.dig == bobSerder.dig
+        assert bobHab.iserder.dig == bobSerder.dig
         assert bobHab.pre == bob
 
         bobClient = clienting.Client(host='127.0.0.1', port=evePort)
         bobClientDoer = doing.ClientDoer(client=bobClient)
 
-        bobDirector = directing.SamDirector(hab=bobHab, client=bobClient, tock=0.125)
+        bobDirector = demoing.BobDirector(hab=bobHab, client=bobClient, tock=0.125)
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
         assert bobDirector.hab.kvy.kevers == bobKevers
@@ -301,13 +302,13 @@ def test_direct_mode_bob_eve():
 
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
-        assert eveHab.inception.dig == eveSerder.dig
+        assert eveHab.iserder.dig == eveSerder.dig
         assert eveHab.pre == eve
 
         eveClient = clienting.Client(host='127.0.0.1', port=bobPort)
         eveClientDoer = doing.ClientDoer(client=eveClient)
 
-        eveDirector = directing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
+        eveDirector = demoing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert eveDirector.hab.kvy.kevers == eveKevers
@@ -360,7 +361,7 @@ def test_direct_mode_bob_eve():
 
 
 
-def test_direct_mode_sam_eve():
+def test_direct_mode_sam_eve_demo():
     """
     Test direct mode sam and eve
     """
@@ -437,13 +438,13 @@ def test_direct_mode_sam_eve():
 
         assert samHab.ks == samKS
         assert samHab.db == samDB
-        assert samHab.inception.dig == samSerder.dig
+        assert samHab.iserder.dig == samSerder.dig
         assert samHab.pre == sam
 
         samClient = clienting.Client(host='127.0.0.1', port=evePort)
         samClientDoer = doing.ClientDoer(client=samClient)
 
-        samDirector = directing.SamDirector(hab=samHab, client=samClient, tock=0.125)
+        samDirector = demoing.SamDirector(hab=samHab, client=samClient, tock=0.125)
         assert samDirector.hab == samHab
         assert samDirector.client == samClient
         assert samDirector.hab.kvy.kevers == samKevers
@@ -470,13 +471,13 @@ def test_direct_mode_sam_eve():
                                    secrecies=eveSecrecies, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
-        assert eveHab.inception.dig == eveSerder.dig
+        assert eveHab.iserder.dig == eveSerder.dig
         assert eveHab.pre == eve
 
         eveClient = clienting.Client(host='127.0.0.1', port=samPort)
         eveClientDoer = doing.ClientDoer(client=eveClient)
 
-        eveDirector = directing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
+        eveDirector = demoing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert eveDirector.hab.kvy.kevers == eveKevers
@@ -551,7 +552,7 @@ def test_runcontroller_demo():
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
-    doers = directing.setupController(secrets=secrets,
+    doers = demoing.setupDemoController(secrets=secrets,
                                      name=name,
                                      remotePort=remote,
                                      localPort=local)
@@ -585,7 +586,7 @@ def test_run_bob_eve_demo():
                 ]
 
     # bobs is list of Doers
-    bobs = directing.setupController(secrets=secrets,
+    bobs = demoing.setupDemoController(secrets=secrets,
                                      name=name,
                                      remotePort=remote,
                                      localPort=local)
@@ -605,7 +606,7 @@ def test_run_bob_eve_demo():
                 'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
                 'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
 
-    eves = directing.setupController(secrets=secrets,
+    eves = demoing.setupDemoController(secrets=secrets,
                                      name=name,
                                      remotePort=remote,
                                      localPort=local)
@@ -646,7 +647,7 @@ def test_run_sam_eve_demo():
                 ]
 
     # sams is list of Doers
-    sams = directing.setupController(secrets=secrets,
+    sams = demoing.setupDemoController(secrets=secrets,
                                      name=name,
                                      remotePort=remote,
                                      localPort=local)
@@ -666,7 +667,7 @@ def test_run_sam_eve_demo():
                 'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
                 'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
 
-    eves = directing.setupController(secrets=secrets,
+    eves = demoing.setupDemoController(secrets=secrets,
                                      name=name,
                                      remotePort=remote,
                                      localPort=local)

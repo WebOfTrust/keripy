@@ -12,6 +12,7 @@ import logging
 
 from keri import __version__
 from keri.base import directing
+from keri.demo import demoing
 from keri import help  # logger support
 
 def runDemo(name="sam", remote=5621, local=5620, expire=0.0):
@@ -30,7 +31,7 @@ def runDemo(name="sam", remote=5621, local=5620, expire=0.0):
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
-    doers = directing.setupController(secrets=secrets,
+    doers = demoing.setupDemoController(secrets=secrets,
                                       name=name,
                                       remotePort=remote,
                                       localPort=local)
