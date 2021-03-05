@@ -18,6 +18,23 @@ from .. import help
 
 logger = help.ogler.getLogger()
 
+
+def runController(doers, limit=0.0):
+    """
+    Utility function to run the doers that comprise a controller for limit time.
+    0.0 means no limit, run forever until cntl-C or all doers exit.
+
+    Parameters:
+        doers is list of doist compatible generators. Either Doer generator
+            instances or doified or doized generator functions
+        limit is maximum run time in seconds. Useful for testing.
+    """
+    # run components
+    tock = 0.03125
+    doist = doing.Doist(limit=limit, tock=tock, real=True, doers=doers)
+    doist.do()
+
+
 class Habitat():
     """
     Habitat class provides direct mode controller's local shared habitat
@@ -25,17 +42,20 @@ class Habitat():
 
      Attributes:
         .name is str alias of controller
+        .temp is Boolean True for testing it modifies tier of salty key
+            generation algorithm and persistence of db and ks
+        .erase is Boolean, If True erase old private keys, Otherwise not.
         .ks is lmdb key store keeping.Keeper instance
         .mgr is keeping.Manager instance
         .ridx is int rotation index (inception == 0)
         .kevers is dict of eventing.Kever(s) keyed by qb64 prefix
         .db is lmdb data base dbing.Baser instance
         .kvy is eventing.Kevery instance
-        .signers is dict  of signers for each secret indexed by verfer qb64
+        .sith is default key signing threshold
+        .count is deafuult number of public keys in key list
         .inception is Serder of inception event
         .pre is qb64 prefix of local controller
-        .temp is Boolean True for testing it modifies tier of salty key
-            generation algorithm and persistence of db and ks
+
     """
 
     def __init__(self, name='test', ks=None, db=None, kevers=None, secrecies=None,
@@ -51,20 +71,20 @@ class Habitat():
             secrets is list of secrets (replace later with keeper interface)
             temp is Boolean used for persistance of lmdb ks and db directories
                 and mode for key generation
-
-
         """
         self.name = name
         self.temp = temp
         self.erase = erase
 
-        self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
+        self.ks = ks if ks is not None else keeping.Keeper(name=name,
+                                                           temp=self.temp)
         if salt is None:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
         self.mgr = keeping.Manager(keeper=self.ks, salt=salt, tier=tier)
         self.ridx = 0  # rotation index of latest establishment event
         self.kevers = kevers if kevers is not None else dict()
-        self.db = db if db is not None else dbing.Baser(name=name, temp=self.temp)
+        self.db = db if db is not None else dbing.Baser(name=name,
+                                                        temp=self.temp)
         self.kvy = eventing.Kevery(kevers=self.kevers, baser=self.db, framed=False)
         self.sith = sith
         self.count = count
@@ -83,17 +103,17 @@ class Habitat():
                                               temp=self.temp)
 
         opre = verfers[0].qb64  # old pre default move below to new pre from incept
-        self.inception = eventing.incept(keys=[verfers[0].qb64],
+        self.iserder = eventing.incept(keys=[verfers[0].qb64],
                                          sith=sith,
                                          nxt=coring.Nexter(sith=sith,
                                                            digs=[digers[0].qb64]).qb64,
                                          code=coring.MtrDex.Blake3_256)
 
-        self.pre = self.inception.ked["i"]  # new pre
+        self.pre = self.iserder.ked["i"]  # new pre
         self.mgr.move(old=opre, new=self.pre)
 
-        sigers = self.mgr.sign(ser=self.inception.raw, verfers=verfers)
-        msg = eventing.messagize(self.inception, sigers)
+        sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
+        msg = eventing.messagize(self.iserder, sigers)
         self.kvy.processOne(ims=msg)
         if self.pre not in self.kevers:
             raise kering.ValidationError("Improper Habitat inception for "
@@ -405,7 +425,7 @@ class Reactor(doing.Doer):
                 if  cuedKed["t"] == coring.Ilks.icp:
                     # check for chit or recipt from remote pre for own inception
                     # need to add check for recipt based on type of cuedpre.
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+                    dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
                     found = False
                     for quadruple in self.hab.db.getVrcsIter(dgkey):
                         if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
@@ -439,7 +459,7 @@ class Reactor(doing.Doer):
                     if cuedKed["t"] == coring.Ilks.icp:
                         # check for chit or recipt from remote pre for own inception
                         # need to add check for recipt based on type of cuedpre.
-                        dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+                        dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
                         found = False
                         for quadruple in self.hab.db.getVrcsIter(dgkey):
                             if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
@@ -698,7 +718,7 @@ class Reactant(tyming.Tymee):
                                             json.dumps(cuedKed, indent=1))
             if cuedKed["t"] == coring.Ilks.icp:
                 # check for chit from remote pre for own inception
-                dgkey = dbing.dgKey(self.hab.pre, self.hab.inception.dig)
+                dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
                 found = False
                 for quadruple in self.hab.db.getVrcsIter(dgkey):
                     if quadruple.startswith(bytes(cuedKed["i"])):
@@ -753,263 +773,3 @@ class Reactant(tyming.Tymee):
         self.sendOwnEvent(sn=0)
 
 
-
-class BobDirector(Director):
-    """
-    Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
-    Generator logic is to iterate through initiation of events for demo
-
-    Inherited Attributes:
-        .hab is Habitat instance of local controller's context
-        .client is TCP client instance. Assumes operated by another doer.
-
-    Attributes:
-
-    Inherited Properties:
-        .tyme is float relative cycle time, .tyme is artificial time
-        .tock is desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Properties:
-
-    Inherited Methods:
-        .__call__ makes instance callable return generator
-        .do is generator function returns generator
-
-    Methods:
-
-    Hidden:
-       ._tymist is Tymist instance reference
-       ._tock is hidden attribute for .tock property
-    """
-
-    def do(self, tymist, tock=0.0, **opts):
-        """
-        Generator method to run this doer
-        Calling this method returns generator
-        """
-        try:
-            # enter context
-            self.wind(tymist)  # change tymist and dependencies
-            self.tock = tock
-            tyme = self.tyme
-
-            # recur context
-            tyme = (yield (self.tock))  # yields tock then waits for next send
-
-            logger.info("**** %s:\nWaiting for connection to remote  %s.\n\n", self.hab.pre, self.client.ha)
-            while (not self.client.connected):
-                tyme = (yield (self.tock))
-
-            logger.info("**** %s:\nConnected to %s.\n\n", self.hab.pre, self.client.ha)
-
-            self.sendOwnInception()  # Inception Event
-            tyme = (yield (self.tock))
-
-            msg = self.hab.rotate()  # Rotation Event
-            self.client.tx(msg)   # send to connected remote
-            logger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
-
-            msg = self.hab.interact()  # Interaction event
-            self.client.tx(msg)   # send to connected remote
-            logger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
-
-        except GeneratorExit:  # close context, forced exit due to .close
-            pass
-
-        except Exception:  # abort context, forced exit due to uncaught exception
-            raise
-
-        finally:  # exit context,  unforced exit due to normal exit of try
-            pass
-
-        return True # return value of yield from, or yield ex.value of StopIteration
-
-
-class SamDirector(Director):
-    """
-    Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
-    Generator logic is to iterate through initiation of events for demo
-
-    Inherited Attributes:
-        .hab is Habitat instance of local controller's context
-        .client is TCP client instance. Assumes operated by another doer.
-
-    Attributes:
-
-    Inherited Properties:
-        .tyme is float relative cycle time, .tyme is artificial time
-        .tock is desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Properties:
-
-    Inherited Methods:
-        .__call__ makes instance callable return generator
-        .do is generator function returns generator
-
-    Methods:
-
-    Hidden:
-       ._tymist is Tymist instance reference
-       ._tock is hidden attribute for .tock property
-    """
-
-    def do(self, tymist, tock=0.0, **opts):
-        """
-        Generator method to run this doer
-        Calling this method returns generator
-        """
-        try:
-            # enter context
-            self.wind(tymist)  # change tymist and dependencies
-            self.tock = tock
-            tyme = self.tyme
-
-            # recur context
-            tyme = (yield (self.tock))  # yields tock then waits
-
-            while (not self.client.connected):
-                logger.info("%s:\n waiting for connection to remote %s.\n\n",
-                            self.hab.pre, self.client.ha)
-                tyme = (yield (self.tock))
-
-            logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
-
-            self.sendOwnInception()  # Inception Event
-            tyme = (yield (self.tock))
-
-            msg = self.hab.interact()  # Interaction Event
-            self.client.tx(msg)  # send to connected remote
-            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
-
-            msg = self.hab.rotate()  # Rotation Event
-            self.client.tx(msg)  # send to connected remote
-            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
-
-        except GeneratorExit:  # close context, forced exit due to .close
-            pass
-
-        except Exception:  # abort context, forced exit due to uncaught exception
-            raise
-
-        finally:  # exit context,  unforced exit due to normal exit of try
-            pass
-
-        return True  # return value of yield from, or yield ex.value of StopIteration
-
-
-class EveDirector(Director):
-    """
-    Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
-    Generator logic is to iterate through initiation of events for demo
-
-    Inherited Attributes:
-        .hab is Habitat instance of local controller's context
-        .client is TCP client instance. Assumes operated by another doer.
-
-    Attributes:
-
-    Inherited Properties:
-        .tyme is float relative cycle time, .tyme is artificial time
-        .tock is desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Properties:
-
-    Inherited Methods:
-        .__call__ makes instance callable return generator
-        .do is generator function returns generator
-
-    Methods:
-
-    Hidden:
-       ._tymist is Tymist instance reference
-       ._tock is hidden attribute for .tock property
-    """
-
-    def do(self, tymist, tock=0.0, **opts):
-        """
-        Generator method to run this doer
-        Calling this method returns generator
-        """
-        try:
-            # enter context
-            self.wind(tymist)  # change tymist and dependencies
-            self.tock = tock
-            tyme = self.tyme
-
-            # recur context after first yield
-            tyme = (yield (tock))
-
-            while (not self.client.connected):
-                logger.info("%s:\n waiting for connection to remote %s.\n\n",
-                            self.hab.pre, self.client.ha)
-                tyme = (yield (self.tock))
-
-            logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
-            tyme = (yield (self.tock))
-
-        except GeneratorExit:  # close context, forced exit due to .close
-            pass
-
-        except Exception:  # abort context, forced exit due to uncaught exception
-            raise
-
-        finally:  # exit context,  unforced exit due to normal exit of try
-            pass
-
-        return True  # return value of yield from, or yield ex.value of StopIteration
-
-
-def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
-    """
-    Setup and return doers list to run controller
-    """
-    secrecies = []
-    for secret in secrets:  # convert secrets to secrecies
-        secrecies.append([secret])
-
-    # setup habitat
-    hab = Habitat(name=name, secrecies=secrecies, temp=True)
-    logger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
-                 hab.pre, hab.name, localPort, remotePort)
-
-    # setup doers
-    ksDoer = keeping.KeeperDoer(keeper=hab.ks)
-    dbDoer = dbing.BaserDoer(baser=hab.db)
-
-    client = clienting.Client(host='127.0.0.1', port=remotePort)
-    clientDoer = doing.ClientDoer(client=client)
-
-    if name == 'bob':
-        director = BobDirector(hab=hab, client=client, tock=0.125)
-    elif name == "sam":
-        director = SamDirector(hab=hab, client=client, tock=0.125)
-    elif name == 'eve':
-        director = EveDirector(hab=hab, client=client, tock=0.125)
-    else:
-        raise ValueError("Invalid director name={}.".format(name))
-
-    reactor = Reactor(hab=hab, client=client)
-
-    server = serving.Server(host="", port=localPort)
-    serverDoer = doing.ServerDoer(server=server)
-    directant = Directant(hab=hab, server=server)
-    # Reactants created on demand by directant
-
-    return [ksDoer, dbDoer, clientDoer, director, reactor, serverDoer, directant]
-
-
-def runController(doers, limit=0.0):
-    """
-    run the doers for limit time. 0.0 means no limit.
-    """
-    # run components
-    tock = 0.03125
-    doist = doing.Doist(limit=limit, tock=tock, real=True, doers=doers)
-    doist.do()
