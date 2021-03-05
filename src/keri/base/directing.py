@@ -754,7 +754,7 @@ class Reactant(tyming.Tymee):
 
 
 
-class BobDirector(Director):
+class SamDirector(Director):
     """
     Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
     Generator logic is to iterate through initiation of events for demo
@@ -987,7 +987,7 @@ def setupController(secrets,  name="who", remotePort=5621, localPort=5620):
     clientDoer = doing.ClientDoer(client=client)
 
     if name == 'bob':
-        director = BobDirector(hab=hab, client=client, tock=0.125)
+        director = SamDirector(hab=hab, client=client, tock=0.125)
     elif name == "sam":
         director = SamDirector(hab=hab, client=client, tock=0.125)
     elif name == 'eve':
