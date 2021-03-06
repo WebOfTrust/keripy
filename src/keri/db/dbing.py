@@ -55,11 +55,6 @@ from contextlib import contextmanager
 
 import lmdb
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
 from hio.base import doing
 
 from  ..kering import KeriError
@@ -938,23 +933,24 @@ class Baser(LMDBer):
             DB is keyed by identifer prefix plus digest of serialized event
             Value is ISO 8601 datetime stamp bytes
 
-        .sigs is named sub DB of fully qualified event signatures
+        .sigs is named sub DB of fully qualified indexed event signatures
             dgKey
             DB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .rcts is named sub DB of event receipt couplets from nontransferable
-            signers. Each couple is concatenation of fully qualified
-            non-transferale prefix plus fully qualified event signature
-            by witness, watcher, or validator.
+            signers. Each couple is concatenation of fully qualified items.
+            These are: non-transferale prefix plus non-indexed event signature
+            by that prefix.
             dgKey
             SB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
         .ures is named sub DB of unverified event receipt escrowed triples from
             non-transferable signers. Each triple is concatenation of fully
-            qualified receipted event digest, non-transferable event identfier prefix,
-            plus receipt event signature by witness, watcher, or validator
+            qualified items. These are: receipted event digest,
+            non-transferable event identfier prefix,
+            plus nonindexed receipt event signature by that prefix.
             snKey
             SB is keyed by receipted event controller prefix plus sn
             of serialized event
@@ -962,9 +958,9 @@ class Baser(LMDBer):
 
         .vrcs is named sub DB of event validator receipt quadruples from transferable
             signers. Each quadruple is concatenation of  four fully qualified items
-            of validator. These are transferable prefix, plus latest establishment
+            of validator. These are: transferable prefix, plus latest establishment
             event sequence number plus latest establishment event digest,
-            plus event signature.
+            plus indexed event signature.
             When latest establishment event is multisig then there will
             be multiple quadruples one per signing key, each a dup at same db key.
             dgKey
@@ -973,9 +969,9 @@ class Baser(LMDBer):
 
         .vres is named sub DB of unverified event validator receipt escrowed
             quadruples from transferable signers. Each quadruple is concatenation of
-            four fully qualified items  of validator. These are transferable prefix,
+            four fully qualified items  of validator. These are: transferable prefix,
             plus latest establishment event sequence number plus latest
-            establishment event digest, plus event signature.
+            establishment event digest, plus indexed event signature.
             When latest establishment event is multisig then there will
             be multiple quadruples one per signing key, each a dup at same db key.
             dgKey

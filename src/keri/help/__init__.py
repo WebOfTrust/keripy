@@ -11,6 +11,7 @@ utility functions
 #  logggers via ogling.ogler.getLoggers(). May always change level and reopen log file
 #  if need be
 
-from . import ogling
+from hio.help import ogling
 
-ogling.initOgler()  # inits once on import so ogling.ogler always defined by default
+#  want help.ogler always defined by default
+ogler = ogling.initOgler(prefix='keri')  # inits once only on first import

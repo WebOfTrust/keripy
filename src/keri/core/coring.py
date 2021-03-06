@@ -2512,7 +2512,7 @@ class Counter:
 
         else:
             raise EmptyMaterialError("Improper initialization need either "
-                                     "(code and cound) or qb64b or "
+                                     "(code and count) or qb64b or "
                                      "qb64 or qb2.")
 
 

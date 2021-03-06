@@ -31,7 +31,7 @@ from setuptools import setup
 
 setup(
     name='keri',
-    version='0.2.2',  #  also change in src/keri/__init__.py
+    version='0.2.6',  #  also change in src/keri/__init__.py
     license='Apache Software License 2.0',
     description='Key Event Receipt Infrastructure',
     long_description="KERI Decentralized Key Management Infrastructure",
@@ -68,17 +68,17 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires='>=3.9.1',
+    python_requires='>=3.9.2',
     install_requires=[
-        'lmdb>=1.0.0',
-        'pysodium>=0.7.6',
+        'lmdb>=1.1.1',
+        'pysodium>=0.7.7',
         'blake3>=0.1.8',
         'msgpack>=1.0.2',
         'simplejson>=3.17.2',
         'cbor2>=5.2.0',
         'multidict>=5.1.0',
         'orderedset>=2.0.3',
-        'hio>=0.1.2',
+        'hio>=0.1.6',
 
     ],
     extras_require={

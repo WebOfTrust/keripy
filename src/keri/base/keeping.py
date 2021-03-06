@@ -1431,7 +1431,7 @@ class Manager:
         return (verferies, digers)
 
 
-    def replay(self, pre, ridx=0, code=coring.MtrDex.Blake3_256):
+    def replay(self, pre, ridx=0, code=coring.MtrDex.Blake3_256, erase=True):
         """
         Returns duple (verfers, digers) associated with public key set from
         the key sequence for identifier prefix pre at rotation index ridx stored
@@ -1454,6 +1454,11 @@ class Manager:
             code is str derivation code for digers. Default is MtrDex.Blake3_256
 
         """
+        if ridx - 1 >= 0:  # get old pubs if any
+            oldpubs = json.loads(bytes(self.keeper.getPubs(key=riKey(pre, ridx-1))).decode("utf-8"))
+        else:
+            oldpubs = None
+
         newpubs = json.loads(bytes(self.keeper.getPubs(key=riKey(pre, ridx))).decode("utf-8"))
         nxtpubs = json.loads(bytes(self.keeper.getPubs(key=riKey(pre, ridx+1))).decode("utf-8"))
 
@@ -1462,6 +1467,10 @@ class Manager:
                 raise IndexError("Invalid ridx={} for pubs of pre={}.".format(ridx, pre))
             else:
                 raise ValueError("No pubs for pre={}.".format(pre))
+
+        if erase and oldpubs:
+            for pub in oldpubs:  # remove old prikeys
+                self.keeper.delPri(key=pub.encode("utf-8"))
 
         verfers = [coring.Verfer(qb64=pub) for pub in newpubs]
         digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtpubs]
