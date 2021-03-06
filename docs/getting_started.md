@@ -29,7 +29,7 @@ import keri.core.coring as coring
 import keri.base.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
+with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # --------------------------------------------------------------------------
     # -----------------------Non Transferable Identifiers-----------------------
     # --------------------------------------------------------------------------
@@ -41,7 +41,7 @@ with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
     mgr = keeping.Manager(keeper=kpr, salt=salt)
     verfers, digers = mgr.incept(icount=1, ncount=0)
 
-    srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.CryOneDex.Ed25519)
+    srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Ed25519)
     print(srdr.raw.decode("utf-8"))
     print()
 
@@ -53,7 +53,7 @@ with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
     mgr = keeping.Manager(keeper=kpr, salt=salt)
     verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False)
 
-    srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.CryOneDex.Blake3_256)
+    srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Blake3_256)
     print(srdr.raw.decode("utf-8"))
     print()
     
@@ -67,7 +67,7 @@ with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
     mgr = keeping.Manager(keeper=kpr, salt=salt)
     verfers, digers = mgr.incept(icount=1, ncount=0)
 
-    srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.CryOneDex.Blake3_256)
+    srdr = eventing.incept(keys=[verfers[0].qb64], code=coring.MtrDex.Blake3_256)
     print(srdr.raw.decode("utf-8"))
     print()
 
@@ -85,7 +85,7 @@ with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
     keys = [verfers[0].qb64]
 
     nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.CryOneDex.Ed25519)
+    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)
     print(srdr.raw.decode("utf-8"))
     print()
 
@@ -99,7 +99,7 @@ with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
     keys = [verfers[0].qb64]
 
     nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.CryOneDex.Blake3_256)
+    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Blake3_256)
     print(srdr.raw.decode("utf-8"))
     print()
 
@@ -122,7 +122,7 @@ import keri.core.coring as coring
 import keri.base.keeping as keeping
 import keri.db.dbing as dbing
 
-with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
+with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # --------------------------------------------------------------------------
     # -----------------------Non Transferable Identifiers-----------------------
     # --------------------------------------------------------------------------
@@ -134,7 +134,7 @@ with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
     mgr = keeping.Manager(keeper=kpr, salt=salt)
     verfers, digers = mgr.incept(icount=3, ncount=0, transferable=False)
 
-    srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers], code=coring.CryOneDex.Blake3_256)
+    srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers], code=coring.MtrDex.Blake3_256)
     print(srdr.raw.decode("utf-8"))
     print()
 
@@ -152,7 +152,7 @@ with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
     keys = [verfer.qb64 for verfer in verfers]
 
     nxt = coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.CryOneDex.Blake3_256)
+    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Blake3_256)
     print(srdr.raw.decode("utf-8"))
     print()
 ```
@@ -169,7 +169,7 @@ import keri.base.keeping as keeping
 import keri.db.dbing as dbing
 
 
-with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
+with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # -----------------------Basic Transferable Identifier----------------------
     salt = coring.Salter().qb64
 
@@ -180,7 +180,7 @@ with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
     keys = [verfers[0].qb64]
 
     nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.CryOneDex.Ed25519)
+    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)
     
     # Create Signatures
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
@@ -196,7 +196,7 @@ import keri.base.keeping as keeping
 import keri.db.dbing as dbing
 
 
-with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
+with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # -----------------------Basic Transferable Identifier----------------------
     salt = coring.Salter().qb64
 
@@ -207,7 +207,7 @@ with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
     keys = [verfers[0].qb64]
 
     nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.CryOneDex.Ed25519)
+    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)
     
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
     
@@ -225,7 +225,7 @@ import keri.base.keeping as keeping
 import keri.db.dbing as dbing
 
 
-with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
+with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     # -----------------------Basic Transferable Identifier----------------------
     salt = coring.Salter().qb64
 
@@ -236,7 +236,7 @@ with dbing.openDB(name="edy") as db, keeping.openKeep(name="edy") as kpr:
     keys = [verfers[0].qb64]
 
     nxt = coring.Nexter(digs=[digers[0].qb64]).qb64
-    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.CryOneDex.Ed25519)
+    srdr = eventing.incept(keys=keys, nxt=nxt, code=coring.MtrDex.Ed25519)
     
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
     
