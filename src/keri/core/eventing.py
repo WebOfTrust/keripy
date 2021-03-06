@@ -1381,6 +1381,8 @@ class Kevery:
         .local is Boolean, True means only process msgs for own events if .pre
                            False means only process msgs for not own events if .pre
 
+    Properties:
+        .kever own Kever if self.pre else None
 
     Properties:
 
@@ -1407,6 +1409,15 @@ class Kevery:
         self.framed = True if framed else False  # extract until end-of-stream
         self.pre = pre
         self.local = True if local else False
+
+
+    @property
+    def kever(self):
+        """
+        Returns kever for its .pre
+        """
+        return self.kevers[self.pre] if self.pre else None
+
 
 
     def process(self, ims=None):

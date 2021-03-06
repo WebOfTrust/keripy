@@ -65,10 +65,11 @@ def test_ogler():
                             'keri: Test logger at info level\n'
                             'keri: Test logger at error level\n')
 
-
+    ogler.temp = False  # trick it to not clear on close
     ogler.close()  # but do not clear
     assert os.path.exists(ogler.path)
     assert ogler.opened == False
+    ogler.temp = True  # restore state
 
     # Test reopen but not clear so file still there
     ogler.reopen(temp=True)

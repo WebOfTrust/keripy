@@ -48,9 +48,7 @@ l
 import os
 import shutil
 import tempfile
-import stat
 import datetime
-
 from contextlib import contextmanager
 
 import lmdb
@@ -194,6 +192,8 @@ def openLMDB(cls=None, name="test", temp=True, **kwa):
 
     with openDatabaser(name="gen2, cls=Baser)
 
+    wl.close(clear=True if wl.temp else False)
+
     """
     if cls is None:
         cls = LMDBer
@@ -202,7 +202,7 @@ def openLMDB(cls=None, name="test", temp=True, **kwa):
         yield lmdber
 
     finally:
-        lmdber.close()
+        lmdber.close()  # clears if lmdber.temp
 
 
 class LMDBer:
