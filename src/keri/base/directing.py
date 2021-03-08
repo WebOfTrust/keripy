@@ -153,12 +153,12 @@ class Habitat():
                                               erase=erase)
 
         except IndexError as ex:
-            verfers, digers = self.mgr.rotate(count=count,
-                                              stem=self.name,
+            verfers, digers = self.mgr.rotate(pre=self.pre,
+                                              count=count,
                                               temp=self.temp,
                                               erase=erase)
 
-        kever = self.kever
+        kever = self.kever  # kever.pre == self.pre
         serder = eventing.rotate(pre=kever.prefixer.qb64,
                                  keys=[verfer.qb64 for verfer in verfers],
                                  dig=kever.serder.diger.qb64,
