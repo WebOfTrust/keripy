@@ -480,4 +480,4 @@ def test_run_sam_eve_demo():
 
 
 if __name__ == "__main__":
-    test_direct_mode_sam_eve_demo()
+    test_run_sam_eve_demo()
