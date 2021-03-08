@@ -115,16 +115,15 @@ def test_directing_basic():
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
         assert id(bobDirector.hab.kvy.kevers) == id(bobKevers)
-        assert bobDirector.hab.kvy.baser == bobDB
+        assert bobDirector.hab.kvy.db == bobDB
 
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
         assert id(bobReactor.hab.kvy.kevers) == id(bobKevers)
-        assert bobReactor.hab.kvy.baser == bobDB
+        assert bobReactor.hab.kvy.db == bobDB
         assert id(bobReactor.kevery.ims) == id(bobReactor.client.rxbs)
-        assert id(bobReactor.hab.kvy.ims) == id(bobReactor.client.rxbs)
         assert id(bobReactor.client.rxbs) == id(bobDirector.client.rxbs)
 
         bobServer = serving.Server(host="", port=bobPort)
@@ -150,15 +149,14 @@ def test_directing_basic():
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert id(eveDirector.hab.kvy.kevers) == id(eveKevers)
-        assert eveDirector.hab.kvy.baser == eveDB
+        assert eveDirector.hab.kvy.db == eveDB
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
         assert id(eveReactor.hab.kvy.kevers) == id(eveKevers)
-        assert eveReactor.hab.kvy.baser == eveDB
+        assert eveReactor.hab.kvy.db == eveDB
         assert id(eveReactor.kevery.ims) == id(eveReactor.client.rxbs)
-        assert id(eveReactor.hab.kvy.ims) == id(eveReactor.client.rxbs)
         assert id(eveReactor.client.rxbs) == id(eveDirector.client.rxbs)
 
         eveServer = serving.Server(host="", port=evePort)
@@ -243,4 +241,4 @@ def test_runcontroller_demo():
 
 
 if __name__ == "__main__":
-    test_habitat()
+    test_directing_basic()

@@ -37,8 +37,8 @@ def test_delegation():
         delMgr = keeping.Manager(keeper=delKS, salt=delSalt)
 
         # Init Keverys
-        bobKvy = eventing.Kevery(baser=bobDB)
-        delKvy = eventing.Kevery(baser=delDB)
+        bobKvy = eventing.Kevery(db=bobDB)
+        delKvy = eventing.Kevery(db=delDB)
 
         # Setup Bob by creating inception event
         verfers, digers = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
@@ -66,14 +66,14 @@ def test_delegation():
                                 b'YYK0BHu3I3Pj-G8DxlbzC3yx5MV8yucZILqAA5toZNODnHVHZtPIMkDknqldL4utBQ')
 
         # apply msg to bob's Kevery
-        bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         bobK = bobKvy.kevers[bobPre]
         assert bobK.prefixer.qb64 == bobPre
         assert bobK.serder.diger.qb64 == bobSrdr.dig
         assert bobK.serder.diger.qb64 == 'EvP2kWxEjTMI3auc6x64EpU-nMQZHiBeKeuavcGdRB24'
 
         # apply msg to del's Kevery
-        delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
+        delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bobPre in delKvy.kevers
 
         # Setup Del's inception event assuming that Bob's next event will be an ixn delegating event
@@ -125,12 +125,12 @@ def test_delegation():
                                 b'ObPWnoBpaEojFa5AnrUJEgMytORoWMqEhCw')
 
         # apply msg to bob's Kevery
-        bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobK.serder.diger.qb64 == bobSrdr.dig  # key state updated so event was validated
         assert bobK.serder.diger.qb64 == 'EtzXPztLsGC5DGyooSdHdBGIOHjhblBWtZ_AOhGS-hDE'
 
         # apply msg to del's Kevery
-        delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
+        delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[bobPre].serder.diger.qb64 == bobSrdr.dig
 
         # now create msg with Del's delegated inception event
@@ -152,7 +152,7 @@ def test_delegation():
                                 b'J7mBcTByugqQ1TNRMrIa0rctfjKsh-hkkkpwDj6M_OLLaFtLqBpmdNTUgBPANLzCQ')
 
         # apply Del's delegated inception event message to bob's Kevery
-        bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert delPre in bobKvy.kevers  # successfully validated
         delK = bobKvy.kevers[delPre]
         assert delK.delegated
@@ -160,7 +160,7 @@ def test_delegation():
         assert delK.serder.diger.qb64 == 'ESDuaqpoI8-HLD8-eLijUMZpXqYFkNArJFDvt3ABYr9I'
 
         # apply msg to del's Kevery
-        delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
+        delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[delPre].serder.diger.qb64 == delSrdr.dig
 
         # Setup Del rotation event assuming that Bob's next event will be an ixn delegating event
@@ -212,11 +212,11 @@ def test_delegation():
                                 b'rXod0g46iFOLqEWw12oaFVzVH85NYAh67Ag')
 
         # apply msg to bob's Kevery
-        bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobK.serder.diger.qb64 == bobSrdr.dig  # key state updated so event was validated
 
         # apply msg to del's Kevery
-        delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
+        delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[bobPre].serder.diger.qb64 == bobSrdr.dig
 
         # now create msg from Del's delegated rotation event
@@ -240,13 +240,13 @@ def test_delegation():
 
 
         # apply Del's delegated inception event message to bob's Kevery
-        bobKvy.processAll(ims=bytearray(msg))  # process local copy of msg
+        bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert delK.delegated
         assert delK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
         assert delK.serder.diger.qb64 == 'E-dZsWLp2IIPVDbGdGS-yvuw4HeV_w_w76FHsofmuiq0'
 
         # apply msg to del's Kevery
-        delKvy.processAll(ims=bytearray(msg))  # process remote copy of msg
+        delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[delPre].serder.diger.qb64 == delSrdr.dig
 
     assert not os.path.exists(delKS.path)

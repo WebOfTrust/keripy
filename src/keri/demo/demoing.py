@@ -62,23 +62,23 @@ class BobDirector(directing.Director):
             # recur context
             tyme = (yield (self.tock))  # yields tock then waits for next send
 
-            logger.info("**** %s:\nWaiting for connection to remote  %s.\n\n", self.hab.pre, self.client.ha)
+            logger.info("%s:\nWaiting for connection to remote  %s.\n\n", self.hab.pre, self.client.ha)
             while (not self.client.connected):
                 tyme = (yield (self.tock))
 
-            logger.info("**** %s:\nConnected to %s.\n\n", self.hab.pre, self.client.ha)
+            logger.info("%s:\nConnected to %s.\n\n", self.hab.pre, self.client.ha)
 
             self.sendOwnInception()  # Inception Event
             tyme = (yield (self.tock))
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)   # send to connected remote
-            logger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
             msg = self.hab.interact()  # Interaction event
             self.client.tx(msg)   # send to connected remote
-            logger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
         except GeneratorExit:  # close context, forced exit due to .close
