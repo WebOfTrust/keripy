@@ -184,6 +184,52 @@ class SamDirector(directing.Director):
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.interact()  # Interaction Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+
         except GeneratorExit:  # close context, forced exit due to .close
             pass
 
