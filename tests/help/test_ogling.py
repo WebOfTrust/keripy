@@ -77,8 +77,8 @@ def test_openogler():
         assert ogler.temp == False
         assert ogler.prefix == 'keri'
         assert ogler.headDirPath == ogler.HeadDirPath == "/usr/local/var"
-        assert ogler.dirPath == "/usr/local/var/keri/log"
-        assert ogler.path == '/usr/local/var/keri/log/mine.log'
+        assert ogler.dirPath.endswith("keri/log")
+        assert ogler.path.endswith('/mine.log')
         assert ogler.opened
 
         # logger console: All should log  because level DEBUG
