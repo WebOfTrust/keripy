@@ -400,7 +400,7 @@ class Reactor(doing.Doer):
         """
         if self.kevery:
             if self.kevery.ims:
-                logger.info("Client %s received:\n%s\n\n", self.hab.pre, self.kevery.ims)
+                logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.kevery.ims[:1024])
             self.kevery.process()
             self.processCues()
             self.kevery.processEscrows()
