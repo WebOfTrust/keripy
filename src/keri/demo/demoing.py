@@ -5,10 +5,14 @@ keri.base.directing module
 
 simple direct mode demo support classes
 """
+
+import os
 import json
 
-from hio.base import doing, tyming
+from hio.base import doing
+from hio.core import wiring
 from hio.core.tcp import clienting, serving
+
 from .. import kering
 from ..db import dbing
 from ..core import coring, eventing
@@ -248,7 +252,15 @@ def setupDemoController(secrets,  name="who", remotePort=5621, localPort=5620):
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)
     dbDoer = dbing.BaserDoer(baser=hab.db)
 
-    client = clienting.Client(host='127.0.0.1', port=remotePort)
+    # setup wirelog to create test vectors
+    path = os.path.dirname(__file__)
+    path = os.path.join(path, 'logs')
+
+    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='demo', reopen=True,
+                        headDirPath=path)
+    wireDoer = wiring.WireLogDoer(wl=wl)
+
+    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
     clientDoer = doing.ClientDoer(client=client)
 
     if name == 'bob':
@@ -262,10 +274,10 @@ def setupDemoController(secrets,  name="who", remotePort=5621, localPort=5620):
 
     reactor = directing.Reactor(hab=hab, client=client)
 
-    server = serving.Server(host="", port=localPort)
+    server = serving.Server(host="", port=localPort, wl=wl)
     serverDoer = doing.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server)
     # Reactants created on demand by directant
 
-    return [ksDoer, dbDoer, clientDoer, director, reactor, serverDoer, directant]
+    return [ksDoer, dbDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
 
