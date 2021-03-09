@@ -324,6 +324,7 @@ class MatterCodex:
     Ed448:                str = '1AAD'  # Ed448 public signing verification key. Basic derivation.
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
     Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
+    DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
 
 
     def __iter__(self):
@@ -443,6 +444,7 @@ class Matter:
                 '1AAD': Sizage(hs=4, ss=0, fs=80),
                 '1AAE': Sizage(hs=4, ss=0, fs=56),
                 '1AAF': Sizage(hs=4, ss=0, fs=8),
+                '1AAG': Sizage(hs=4, ss=0, fs=36),
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
@@ -2369,6 +2371,7 @@ class CounterCodex:
     WitnessIdxSigs:                 str =  '-B'  # Qualified Base64 Indexed Signature.
     NonTransReceiptCouples:         str =  '-C'  # Composed Base64 Couple, pre + sig.
     TransReceiptQuadruples:         str =  '-D'  # Composed Base64 Quadruple, pre + snu + dig + sig.
+    FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fn + dt.
     MessageDataGroups:              str =  '-U'  # Composed Message Data Group or Primitive
     AttachedMaterialQuadlets:       str =  '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     MessageDataMaterialQuadlets:    str =  '-W'  # Composed Grouped Message Data Quadlet (4 char each)
@@ -2441,6 +2444,7 @@ class Counter:
                 '-B': Sizage(hs=2, ss=2, fs=4),
                 '-C': Sizage(hs=2, ss=2, fs=4),
                 '-D': Sizage(hs=2, ss=2, fs=4),
+                '-E': Sizage(hs=2, ss=2, fs=4),
                 '-U': Sizage(hs=2, ss=2, fs=4),
                 '-V': Sizage(hs=2, ss=2, fs=4),
                 '-W': Sizage(hs=2, ss=2, fs=4),
