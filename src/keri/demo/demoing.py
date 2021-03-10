@@ -85,6 +85,30 @@ class BobDirector(directing.Director):
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
+            # create a bunch of out of order messages to test out of order escrow
+            msgs = []
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.interact())  # Interaction event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.interact()) # Interaction event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.interact())
+
+            msgs.reverse()  # reverse the order
+
+            for msg in msgs:
+                self.client.tx(msg)   # send to connected remote
+                logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+                tyme = (yield (self.tock))
+
+
+            tyme = (yield (self.tock))
+
         except GeneratorExit:  # close context, forced exit due to .close
             pass
 
@@ -159,6 +183,52 @@ class SamDirector(directing.Director):
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.interact()  # Interaction Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass

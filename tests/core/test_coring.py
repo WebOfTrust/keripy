@@ -28,7 +28,7 @@ from keri.core.coring import (Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64, nabSextets
-from keri.core.coring import Seqner, Siger
+from keri.core.coring import Seqner, Siger, Dater
 from keri.core.coring import Serialage, Serials, Mimes, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import Serder, Tholder
@@ -220,7 +220,8 @@ def test_matter():
                                             'Ed448N': '1AAC',
                                             'Ed448': '1AAD',
                                             'Ed448_Sig': '1AAE',
-                                            'Tag': '1AAF'
+                                            'Tag': '1AAF',
+                                            'DateTime': '1AAG'
                                          }
 
     assert Matter.Codex == MtrDex
@@ -264,7 +265,8 @@ def test_matter():
                             '1AAC': Sizage(hs=4, ss=0, fs=80),
                             '1AAD': Sizage(hs=4, ss=0, fs=80),
                             '1AAE': Sizage(hs=4, ss=0, fs=56),
-                            '1AAF': Sizage(hs=4, ss=0, fs=8)
+                            '1AAF': Sizage(hs=4, ss=0, fs=8),
+                            '1AAG': Sizage(hs=4, ss=0, fs=36)
                         }
 
     assert Matter.Codes['A'].hs == 1  # hard size
@@ -907,6 +909,7 @@ def test_counter():
                                             'WitnessIdxSigs': '-B',
                                             'NonTransReceiptCouples': '-C',
                                             'TransReceiptQuadruples': '-D',
+                                            'FirstSeenReplayCouples': '-E',
                                             'MessageDataGroups': '-U',
                                             'AttachedMaterialQuadlets': '-V',
                                             'MessageDataMaterialQuadlets': '-W',
@@ -951,6 +954,7 @@ def test_counter():
                                 '-B': Sizage(hs=2, ss=2, fs=4),
                                 '-C': Sizage(hs=2, ss=2, fs=4),
                                 '-D': Sizage(hs=2, ss=2, fs=4),
+                                '-E': Sizage(hs=2, ss=2, fs=4),
                                 '-U': Sizage(hs=2, ss=2, fs=4),
                                 '-V': Sizage(hs=2, ss=2, fs=4),
                                 '-W': Sizage(hs=2, ss=2, fs=4),
@@ -1296,6 +1300,86 @@ def test_seqner():
     assert number.qb2 == snqb2
 
     """ Done Test """
+
+
+def test_dater():
+    """
+    Test Dater date time subclass of Matter
+    """
+    dater = Dater()  # defaults to now
+    assert dater.code == MtrDex.DateTime
+    assert len(dater.raw) == 24
+    assert len(dater.qb64) == 36
+    assert len(dater.qb2) == 27
+    assert len(dater.dt) == 32
+
+    dt1 = '2020-08-22T17:50:09.988921+00:00'
+    dt1raw = b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
+    dt1qb64 = '1AAG2020-08-22T17c50c09d988921p00c00'
+    dt1qb64b = b'1AAG2020-08-22T17c50c09d988921p00c00'
+    dt1qb2 = b'\xd4\x00\x06\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
+
+    dater = Dater(dt=dt1)
+    assert dater.raw == b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
+    assert dater.code == MtrDex.DateTime
+    assert dater.dt == dt1
+    assert dater.raw == dt1raw
+    assert dater.qb64 == dt1qb64
+    assert dater.qb64b == dt1qb64b
+    assert dater.qb2 == dt1qb2
+
+    dt2 = '2020-08-22T17:50:09.988921-01:00'
+    dt2raw = b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdb_\xb4\xd5\xcd4'
+    dt2qb64 = '1AAG2020-08-22T17c50c09d988921-01c00'
+    dt2qb64b = b'1AAG2020-08-22T17c50c09d988921-01c00'
+    dt2qb2 = b'\xd4\x00\x06\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdb_\xb4\xd5\xcd4'
+
+    dater = Dater(dt=dt2)
+    assert dater.code == MtrDex.DateTime
+    assert dater.dt == dt2
+    assert dater.raw == dt2raw
+    assert dater.qb64 == dt2qb64
+    assert dater.qb64b == dt2qb64b
+    assert dater.qb2 == dt2qb2
+
+    dater = Dater(raw=dt1raw, code=MtrDex.DateTime)
+    assert dater.raw == b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
+    assert dater.code == MtrDex.DateTime
+    assert dater.dt == dt1
+    assert dater.raw == dt1raw
+    assert dater.qb64 == dt1qb64
+    assert dater.qb64b == dt1qb64b
+    assert dater.qb2 == dt1qb2
+
+    dater = Dater(qb64=dt1qb64)
+    assert dater.raw == b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
+    assert dater.code == MtrDex.DateTime
+    assert dater.dt == dt1
+    assert dater.raw == dt1raw
+    assert dater.qb64 == dt1qb64
+    assert dater.qb64b == dt1qb64b
+    assert dater.qb2 == dt1qb2
+
+    dater = Dater(qb64b=dt1qb64b)
+    assert dater.raw == b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
+    assert dater.code == MtrDex.DateTime
+    assert dater.dt == dt1
+    assert dater.raw == dt1raw
+    assert dater.qb64 == dt1qb64
+    assert dater.qb64b == dt1qb64b
+    assert dater.qb2 == dt1qb2
+
+    dater = Dater(qb2=dt1qb2)
+    assert dater.raw == b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
+    assert dater.code == MtrDex.DateTime
+    assert dater.dt == dt1
+    assert dater.raw == dt1raw
+    assert dater.qb64 == dt1qb64
+    assert dater.qb64b == dt1qb64b
+    assert dater.qb2 == dt1qb2
+
+    """ Done Test """
+
 
 
 def test_verfer():
@@ -2628,4 +2712,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_matter()
+    test_dater()

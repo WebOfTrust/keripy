@@ -1455,12 +1455,19 @@ class Manager:
 
         """
         if ridx - 1 >= 0:  # get old pubs if any
-            oldpubs = json.loads(bytes(self.keeper.getPubs(key=riKey(pre, ridx-1))).decode("utf-8"))
+            oldpubs = self.keeper.getPubs(key=riKey(pre, ridx-1))
+            if oldpubs is not None:
+                oldpubs = json.loads(bytes(oldpubs).decode("utf-8"))
         else:
             oldpubs = None
 
-        newpubs = json.loads(bytes(self.keeper.getPubs(key=riKey(pre, ridx))).decode("utf-8"))
-        nxtpubs = json.loads(bytes(self.keeper.getPubs(key=riKey(pre, ridx+1))).decode("utf-8"))
+        newpubs = self.keeper.getPubs(key=riKey(pre, ridx))
+        if newpubs is not None:
+            newpubs = json.loads(bytes(newpubs).decode("utf-8"))
+
+        nxtpubs = self.keeper.getPubs(key=riKey(pre, ridx+1))
+        if nxtpubs is not None:
+            nxtpubs = json.loads(bytes(nxtpubs).decode("utf-8"))
 
         if not (newpubs and nxtpubs):
             if (pubs := json.loads(bytes(self.keeper.getPubs(key=riKey(pre, 0))).decode("utf-8"))):
