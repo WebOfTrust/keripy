@@ -129,7 +129,7 @@ def test_partial_signed_escrow():
         assert pdtsb == adtsb
 
         # get first seen
-        fsdig = kvy.db.getFse(dbing.dtKey(pre, adtsb))
+        fsdig = kvy.db.getFe(dbing.fnKey(pre, 0))
         assert fsdig == srdr.digb
 
         # create interaction event for
@@ -236,7 +236,7 @@ def test_partial_signed_escrow():
         assert pdtsb == adtsb
 
         # get first seen
-        fsdig = kvy.db.getFse(dbing.dtKey(pre, adtsb))
+        fsdig = kvy.db.getFe(dbing.fnKey(pre, 1))
         assert fsdig == srdr.digb
 
         # Create rotation event
@@ -322,7 +322,7 @@ def test_partial_signed_escrow():
         assert (helping.fromIso8601(adtsb) - helping.fromIso8601(edtsb)) > datetime.timedelta()
 
         # get first seen
-        fsdig = kvy.db.getFse(dbing.dtKey(pre, adtsb))
+        fsdig = kvy.db.getFe(dbing.fnKey(pre, 3))
         assert fsdig == srdr.digb
 
     assert not os.path.exists(ks.path)
