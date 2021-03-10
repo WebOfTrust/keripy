@@ -28,7 +28,7 @@ from ..kering import (ValidationError, VersionError, EmptyMaterialError,
                       UnverifiedTransferableReceiptError)
 from ..kering import Versionage, Version
 from ..help.helping import nowIso8601, fromIso8601, toIso8601
-from ..db.dbing import dgKey, snKey, splitKey, splitKeySn, Baser
+from ..db.dbing import dgKey, snKey, splitKey, splitKeySN, Baser
 
 from .coring import Versify, Serials, Ilks
 from .coring import MtrDex, IdrDex, CtrDex, Counter
@@ -1332,10 +1332,10 @@ class Kever:
         self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
         if first:  # append event dig to first seen database in order
-            dtsb = self.baser.appendFse(self.prefixer.qb64b, dtsb, self.serder.diger.qb64b)
-            self.baser.setDts(dgkey, dtsb)  #  first seen so dts is now first seen
-            logger.info("Kever state: %s First seen at %s\nKEL event=\n%s\n",
-                         self.prefixer.qb64, dtsb.decode("utf-8"),
+            fn = self.baser.appendFe(self.prefixer.qb64b, self.serder.diger.qb64b)
+            self.baser.setDts(dgkey, dtsb)  # first seen so set dts to now
+            logger.info("Kever state: %s First seen order %s at %s\nKEL event=\n%s\n",
+                         self.prefixer.qb64, fn, dtsb.decode("utf-8"),
                          json.dumps(serder.ked, indent=1))
         self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
         logger.info("Kever state: %s Added valid event to KEL event=\n%s\n",
@@ -2061,7 +2061,7 @@ class Kevery:
         while True:  # break when done
             for ekey, edig in self.db.getPseItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
+                    pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
                     # check date if expired then remove escrow.
                     dtb = self.db.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
@@ -2200,7 +2200,7 @@ class Kevery:
         while True:  # break when done
             for ekey, edig in self.db.getOoeItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
+                    pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
                     # check date if expired then remove escrow.
                     dtb = self.db.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
@@ -2342,7 +2342,7 @@ class Kevery:
         while True:  # break when done
             for ekey, etriplet in self.db.getUreItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
+                    pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
                     ediger, sprefixer, cigar = detriple(etriplet)
 
                     # check date if expired then remove escrow.
@@ -2492,7 +2492,7 @@ class Kevery:
         while True:  # break when done
             for ekey, equinlet in self.db.getVreItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
+                    pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
                     ediger, sprefixer, sseqner, sdiger, siger = dequintuple(equinlet)
 
                     # check date if expired then remove escrow.
@@ -2666,7 +2666,7 @@ class Kevery:
         while True:  # break when done
             for ekey, edig in self.db.getLdeItemsNextIter(key=key):
                 try:
-                    pre, sn = splitKeySn(ekey)  # get pre and sn from escrow item
+                    pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
                     # check date if expired then remove escrow.
                     dtb = self.db.getDts(dgKey(pre, bytes(edig)))
                     if dtb is None:  # othewise is a datetime as bytes
