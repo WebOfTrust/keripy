@@ -21,8 +21,8 @@ import blake3
 
 from orderedset import OrderedSet as oset
 
-from ..kering import (ValidationError, VersionError, EmptyMaterialError,
-                      DerivationError, ShortageError, MissingSignatureError,
+from ..kering import (ExtractionError, ShortageError,
+                      ValidationError,  MissingSignatureError,
                       MissingDelegatingSealError, OutOfOrderError,
                       LikelyDuplicitousError,  UnverifiedReceiptError,
                       UnverifiedTransferableReceiptError)
@@ -1438,13 +1438,19 @@ class Kevery:
             except ShortageError as ex:  # need more bytes
                 break  # break out of while loop
 
-            except Exception as ex:  # log diagnostics errors etc
+            except ExtractionError as ex:  # some other extraction error
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg process error: %s\n", ex.args[0])
+                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
                 else:
-                    logger.error("Kevery msg process error: %s\n", ex.args[0])
-                del ims[:]  #  delete rest of stream
-                break
+                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
+                del ims[:]  # delete rest of stream to force cold restart
+
+            except Exception as ex:  # Some other error while validating
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg validation error: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery msg validation error: %s\n", ex.args[0])
+                # should we restart break here?
 
 
     def processOne(self, ims=None, framed=True):
@@ -1471,16 +1477,11 @@ class Kevery:
             serder = Serder(raw=ims)
 
         except ShortageError as ex:  # need more bytes
-            raise ex  # reraise
+            raise   # reraise
 
-        except Exception as ex:
-            raise ValidationError("Error while processing message stream"
-                                  " = {}".format(ex))
+        except ExtractionError as ex:  # Some other error while extracting
+            raise ExtractionError("Error extracting message.")
 
-        version = serder.version
-        if version != Version:  # This is where to dispatch version switch
-            raise VersionError("Unsupported version = {}, expected {} for evt "
-                                  "= {}.".format(version, Version, serder.ked))
 
         del ims[:serder.size]  # strip off event from front of ims
 

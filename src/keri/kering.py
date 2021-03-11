@@ -21,22 +21,6 @@ class KeriError(Exception):
     """
 
 
-class ShortageError(KeriError):
-    """
-    Not Enough bytes in buffer for complete message or material
-    Usage:
-        raise ShortageError("error message")
-    """
-
-
-class EmptyMaterialError(KeriError):
-    """
-    Empty or Missing Crypto Material
-    Usage:
-        raise EmptyMaterialError("error message")
-    """
-
-
 class ClosedError(KeriError):
     """
     Error attempting to use closed (unopened) resource such as file, database etc that is
@@ -63,6 +47,38 @@ class MissingEntryError(DatabaseError):
     """
 
 
+# Errors when initing cryptographic material
+class MaterialError(KeriError):
+    """
+    Base class for errors related to initing cryptographic material object instances
+    """
+
+
+class RawMaterialError(MaterialError):
+    """
+    Not Enough bytes in buffer bytearray for raw material
+    Usage:
+        raise ShortageError("error message")
+    """
+
+
+class EmptyMaterialError(MaterialError):
+    """
+    Empty or Missing Crypto Material
+    Usage:
+        raise EmptyMaterialError("error message")
+    """
+
+
+class UnknownCodeError(MaterialError):
+    """
+    Unknown or unrecognized code encountered during crypto material init
+    Usage:
+        raise UnknownCodeError("error message")
+    """
+
+
+# Errors validating  event messages and attachements
 class ValidationError(KeriError):
     """
     Validation related errors
@@ -118,16 +134,6 @@ class UnverifiedTransferableReceiptError(ValidationError):
         raise UnverifiedTransferableReceiptError("error message")
     """
 
-
-class VersionError(ValidationError):
-    """
-    Bad or Unsupported Version
-
-    Usage:
-        raise VersionError("error message")
-    """
-
-
 class DerivationError(ValidationError):
     """
     Derivation related errors
@@ -136,11 +142,53 @@ class DerivationError(ValidationError):
     """
 
 
-class DerivationCodeError(ValidationError):
+# Stream Parsing and Extraction Errors
+class ExtractionError(KeriError):
+    """
+    Base class for rrrors related to extracting messages and attachments
+    from message streams. Rasised in stream processing when extracted data
+    does not meet expectations.
+    """
+
+
+class ShortageError(ExtractionError):
+    """
+    Not Enough bytes in buffer for complete message or material
+    Usage:
+        raise ShortageError("error message")
+    """
+
+
+class VersionError(ExtractionError):
+    """
+    Bad or Unsupported Version
+
+    Usage:
+        raise VersionError("error message")
+    """
+
+
+class DeserializationError(ExtractionError):
+    """
+    Error deserializing message
+    Usage:
+        raise DeserializationError("error message")
+    """
+
+
+class DerivationCodeError(ExtractionError):
     """
     Derivation Code cryppto material conversion errors
     Usage:
         raise DerivationCodeError("error message")
+    """
+
+
+class UnexpectedCodeError(DerivationCodeError):
+    """
+    Unexpected or unknown or unsupported derivation code during extraction
+    Usage:
+        raise UnexpectedCodeError("error message")
     """
 
 

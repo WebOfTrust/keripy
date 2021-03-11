@@ -22,8 +22,9 @@ import blake3
 import hashlib
 
 
-from ..kering import (ValidationError, VersionError, EmptyMaterialError,
-                      DerivationError, ShortageError,  DerivationCodeError,
+from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
+                      ValidationError, VersionError, DerivationError,
+                      ShortageError, UnexpectedCodeError, DeserializationError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import Versionage, Version
 from ..help.helping import sceil, nowIso8601
@@ -477,15 +478,15 @@ class Matter:
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
 
             if code not in self.Codes:
-                raise DerivationCodeError("Unsupported code={}.".format(code))
+                raise UnknownCodeError("Unsupported code={}.".format(code))
 
             #hs, ss, fs = self.Codes[code]  # get sizes
             #rawsize = (fs - (hs + ss)) * 3 // 4
             rawsize = Matter._rawSize(code)
             raw = raw[:rawsize]  # copy only exact size from raw stream
             if len(raw) != rawsize:  # forbids shorter
-                raise ShortageError("Not enougth raw bytes for code={}"
-                                      "expected {} got {}.".format(code,
+                raise RawMaterialError("Not enougth raw bytes for code={}"
+                                             "expected {} got {}.".format(code,
                                                              rawsize,
                                                              len(raw)))
 
@@ -616,7 +617,7 @@ class Matter:
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                                "while extracing Matter.")
             else:
-                raise DerivationCodeError("Unsupported code start char={}.".format(first))
+                raise UnexpectedCodeError("Unsupported code start char={}.".format(first))
 
         cs = self.Sizes[first]  # get hard code size
         if len(qb64b) < cs:  # need more bytes
@@ -626,7 +627,7 @@ class Matter:
         if hasattr(code, "decode"):
             code = code.decode("utf-8")
         if code not in self.Codes:
-            raise DerivationCodeError("Unsupported code ={}.".format(code))
+            raise UnexpectedCodeError("Unsupported code ={}.".format(code))
 
         hs, ss, fs = self.Codes[code]
         bs = hs + ss  # both hs and ss
@@ -694,7 +695,7 @@ class Matter:
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                                "while extracing Matter.")
             else:
-                raise DerivationCodeError("Unsupported code start sextet={}.".format(first))
+                raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
 
         cs = self.Bizes[first]  # get code hard size equvalent sextets
         bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
@@ -704,7 +705,7 @@ class Matter:
         # bode = nabSextets(qb2, cs)  # b2 version of hard part of code
         code = b2ToB64(qb2, cs)  # extract and convert hard part of code
         if code not in self.Codes:
-            raise DerivationCodeError("Unsupported code ={}.".format(code))
+            raise UnexpectedCodeError("Unsupported code ={}.".format(code))
 
         hs, ss, fs = self.Codes[code]
         bs = hs + ss  # both hs and ss
@@ -2097,7 +2098,7 @@ class Indexer:
                 raise TypeError("Not a bytes or bytearray, raw={}.".format(raw))
 
             if code not in self.Codes:
-                raise DerivationCodeError("Unsupported code={}.".format(code))
+                raise UnexpectedCodeError("Unsupported code={}.".format(code))
 
             hs, ss, fs = self.Codes[code] # get sizes for code
             bs = hs + ss  # both hard + soft code size
@@ -2114,8 +2115,8 @@ class Indexer:
 
             raw = raw[:rawsize]  # copy only exact size from raw stream
             if len(raw) != rawsize:  # forbids shorter
-                raise ShortageError("Not enougth raw bytes for code={}"
-                                      "and index={} ,expected {} got {}."
+                raise RawMaterialError("Not enougth raw bytes for code={}"
+                                             "and index={} ,expected {} got {}."
                                       "".format(code, index, rawsize, len(raw)))
 
             self._code = code
@@ -2251,7 +2252,7 @@ class Indexer:
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                                "while extracing Indexer.")
             else:
-                raise DerivationCodeError("Unsupported code start char={}.".format(first))
+                raise UnexpectedCodeError("Unsupported code start char={}.".format(first))
 
         cs = self.Sizes[first]  # get hard code size
         if len(qb64b) < cs:  # need more bytes
@@ -2261,7 +2262,7 @@ class Indexer:
         if hasattr(hard, "decode"):
             hard = hard.decode("utf-8")
         if hard not in self.Codes:
-            raise DerivationCodeError("Unsupported code ={}.".format(hard))
+            raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
         hs, ss, fs = self.Codes[hard]
         bs = hs + ss  # both hard + soft code size
@@ -2359,7 +2360,7 @@ class Indexer:
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                                "while extracing Matter.")
             else:
-                raise DerivationCodeError("Unsupported code start sextet={}.".format(first))
+                raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
 
         cs = self.Bizes[first]  # get code hard size equvalent sextets
         bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
@@ -2369,7 +2370,7 @@ class Indexer:
         # bode = nabSextets(qb2, cs)  # b2 version of hard part of code
         hard = b2ToB64(qb2, cs)  # extract and convert hard part of code
         if hard not in self.Codes:
-            raise DerivationCodeError("Unsupported code ={}.".format(hard))
+            raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
         hs, ss, fs = self.Codes[hard]
         bs = hs + ss  # both hs and ss
@@ -2581,16 +2582,16 @@ class Counter:
         """
         if code is not None:  #  code provided
             if code not in self.Codes:
-                raise DerivationCodeError("Unsupported code={}.".format(code))
+                raise UnknownCodeError("Unsupported code={}.".format(code))
 
             hs, ss, fs = self.Codes[code] # get sizes for code
             bs = hs + ss  # both hard + soft code size
             if fs != bs or bs % 4:  # fs must be bs and multiple of 4 for count codes
-                raise ValidationError("Whole code size not full size or not "
+                raise ValueError("Whole code size not full size or not "
                                       "multiple of 4. bs={} fs={}.".format(bs, fs))
 
             if count < 0 or count > (64 ** ss - 1):
-                raise ValidationError("Invalid count={} for code={}.".format(count, code))
+                raise ValueError("Invalid count={} for code={}.".format(count, code))
 
             self._code = code
             self._count = count
@@ -2698,7 +2699,7 @@ class Counter:
                 raise UnexpectedOpCodeError("Unexpected op code start"
                                                "while extracing Counter.")
             else:
-                raise DerivationCodeError("Unsupported code start ={}.".format(first))
+                raise UnexpectedCodeError("Unsupported code start ={}.".format(first))
 
         cs = self.Sizes[first]  # get hard code size
         if len(qb64b) < cs:  # need more bytes
@@ -2708,7 +2709,7 @@ class Counter:
         if hasattr(hard, "decode"):
             hard = hard.decode("utf-8")
         if hard not in self.Codes:
-            raise DerivationCodeError("Unsupported code ={}.".format(hard))
+            raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
         hs, ss, fs = self.Codes[hard]
         bs = hs + ss  # both hard + soft code size
@@ -2769,7 +2770,7 @@ class Counter:
                 raise UnexpectedOpCodeError("Unexpected  op code start"
                                                "while extracing Matter.")
             else:
-                raise DerivationCodeError("Unsupported code start sextet={}.".format(first))
+                raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
 
         cs = self.Bizes[first]  # get code hard size equvalent sextets
         bcs = sceil(cs * 3 / 4)  # bcs is min bytes to hold cs sextets
@@ -2778,7 +2779,7 @@ class Counter:
 
         hard = b2ToB64(qb2, cs)  # extract and convert hard part of code
         if hard not in self.Codes:
-            raise DerivationCodeError("Unsupported code ={}.".format(hard))
+            raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
         hs, ss, fs = self.Codes[hard]
         bs = hs + ss  # both hs and ss
@@ -2849,9 +2850,9 @@ class Serder:
 
         """
         self._code = code  # need default code for .diger
-        if raw:  # deserialize raw using property
+        if raw:  # deserialize raw using property setter
             self.raw = raw  # raw property setter does the deserialization
-        elif ked: # serialize ked
+        elif ked: # serialize ked using property setter
             self._kind = kind
             self.ked = ked  # ked property setter does the serialization
         else:
@@ -2873,13 +2874,13 @@ class Serder:
 
         match = Rever.search(raw)  #  Rever's regex takes bytes
         if not match or match.start() > 12:
-            raise ValueError("Invalid version string in raw = {}".format(raw))
+            raise VersionError("Invalid version string in raw = {}".format(raw))
 
         major, minor, kind, size = match.group("major", "minor", "kind", "size")
         version = Versionage(major=int(major, 16), minor=int(minor, 16))
         kind = kind.decode("utf-8")
         if kind not in Serials:
-            raise ValueError("Invalid serialization kind = {}".format(kind))
+            raise DeserializationError("Invalid serialization kind = {}".format(kind))
         size = int(size, 16)
         return(kind, version, size)
 
@@ -2900,9 +2901,8 @@ class Serder:
         """
         kind, version, size = self._sniff(raw)
         if version != Version:
-            raise VersionError("Unsupported version = {}.{}".format(version.major,
-                                                                    version.minor))
-
+            raise VersionError("Unsupported version = {}.{}, expected {}."
+                               "".format(version.major, version.minor, Version))
         if len(raw) < size:
             raise ShortageError("Need more bytes.")
 
@@ -2910,19 +2910,22 @@ class Serder:
             try:
                 ked = json.loads(raw[:size].decode("utf-8"))
             except Exception as ex:
-                raise ex
+                raise DeserializationError("Error deserializing JSON: {}"
+                        "".format(raw[:size].decode("utf-8")))
 
         elif kind == Serials.mgpk:
             try:
                 ked = msgpack.loads(raw[:size])
             except Exception as ex:
-                raise ex
+                raise DeserializationError("Error deserializing MGPK: {}"
+                        "".format(raw[:size]))
 
         elif kind ==  Serials.cbor:
             try:
                 ked = cbor.loads(raw[:size])
             except Exception as ex:
-                raise ex
+                raise DeserializationError("Error deserializing CBOR: {}"
+                        "".format(raw[:size]))
 
         else:
             ked = None
@@ -2947,7 +2950,7 @@ class Serder:
 
         knd, version, size = Deversify(ked["v"])  # extract kind and version
         if version != Version:
-            raise VersionError("Unsupported version = {}.{}".format(version.major,
+            raise ValueError("Unsupported version = {}.{}".format(version.major,
                                                                     version.minor))
 
         if not kind:

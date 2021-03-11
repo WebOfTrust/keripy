@@ -19,8 +19,8 @@ from base64 import urlsafe_b64decode as decodeB64
 from fractions import Fraction
 
 from keri.kering import Version, Versionage
-from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
-                         ShortageError)
+from keri.kering import (EmptyMaterialError,  RawMaterialError, DerivationError,
+                         ValidationError, ShortageError)
 from keri.help.helping import sceil
 
 from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
@@ -366,7 +366,7 @@ def test_matter():
 
     # test raises ShortageError if not enough bytes in raw parameter
     shortverkey =  verkey[:-3]  # not enough bytes
-    with pytest.raises(ShortageError):
+    with pytest.raises(RawMaterialError):
         matter = Matter(raw=shortverkey)
 
     # test prefix on full identifier
@@ -759,7 +759,7 @@ def test_indexer():
     indexer = Indexer(raw=longsig)
 
     shortsig = sig[:-3]
-    with pytest.raises(ShortageError):
+    with pytest.raises(RawMaterialError):
         indexer = Indexer(raw=shortsig)
 
     indexer = Indexer(qb64b=qsig64b)  # test with bytes not str
@@ -1163,7 +1163,7 @@ def test_seqner():
     snqb64 = '0AAAAAAAAAAAAAAAAAAAAAAA'
     snqb2 = b'\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
-    with pytest.raises(ShortageError):
+    with pytest.raises(RawMaterialError):
         number = Seqner(raw=b'')
 
     number = Seqner(qb64b=snqb64b)
