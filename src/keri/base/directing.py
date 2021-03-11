@@ -105,7 +105,7 @@ class Habitat():
                                               temp=self.temp)
 
         opre = verfers[0].qb64  # old pre default move below to new pre from incept
-        self.iserder = eventing.incept(keys=[verfers[0].qb64],
+        self.iserder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                          sith=self.sith,
                                          nxt=coring.Nexter(sith=sith,
                                                            digs=[digers[0].qb64]).qb64,
