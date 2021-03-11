@@ -402,7 +402,9 @@ class Reactor(doing.Doer):
             if self.kevery.ims:
                 logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.kevery.ims[:1024])
             self.kevery.process()
-            self.processCues()
+            # self.processCues()
+            for i in self.processCuesIter():  # throttle one each time
+                break  # just process one
             self.kevery.processEscrows()
 
 
@@ -445,7 +447,7 @@ class Reactor(doing.Doer):
         Iterate through cues in .cues
         This is a stub  for future iterator/generator based processing
 
-        For each cue yield one or more msgs to send out
+        For each cue yield (None)
         """
         while self.kevery.cues:  # process cues
             cue = self.kevery.cues.popleft()
@@ -468,7 +470,6 @@ class Reactor(doing.Doer):
 
                     if not found:  # no receipt from remote so send own inception
                         self.sendOwnInception()
-                        yield
 
                 if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
                     self.sendOwnChit(cuedSerder)
@@ -633,7 +634,9 @@ class Directant(doing.Doer):
                     logger.info("Server %s received:\n%s\n\n", self.hab.pre, reactant.kevery.ims)
 
                 reactant.kevery.process()
-                reactant.processCues()
+                # reactant.processCues()
+                for i in reactant.processCuesIter():  # throttle one each time
+                    break  # just process one
                 reactant.kevery.processEscrows()
 
             if not reactant.persistent:  # not persistent so close and remove
@@ -763,7 +766,6 @@ class Reactant(tyming.Tymee):
 
                     if not found:  # no receipt from remote so send own inception
                         self.sendOwnInception()
-                        yield
 
                 if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
                     self.sendOwnChit(cuedSerder)
