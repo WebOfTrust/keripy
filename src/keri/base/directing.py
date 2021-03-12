@@ -239,11 +239,11 @@ class Habitat():
         return msg
 
 
-    def messagizeOwnEvent(self, sn):
+    def makeOwnEvent(self, sn):
         """
-        Retrieve inception and signatures from database.
-        Returns: bytearray message with attached signatures of own event at
-            sequence number sn.
+        Returns: messagized bytearray message with attached signatures of
+                 own event at sequence number sn from retrieving event at sn
+                 and associated signatures from database.
 
         Parameters:
             sn is int sequence number of event
@@ -340,7 +340,7 @@ class Director(doing.Doer):
         """
         Utility to send own event at sequence number sn
         """
-        msg = self.hab.messagizeOwnEvent(sn=sn)
+        msg = self.hab.makeOwnEvent(sn=sn)
         # send to connected remote
         self.client.tx(msg)
         logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
@@ -517,27 +517,36 @@ class Reactor(doing.Doer):
                 yield
 
 
-    def sendOwnChit(self, cuedSerder):
+    def makeOwnChit(self, serder):
         """
-        Send chit of event indicated by cuedSerder
+        Returns messagized own chit of serder from some other pre.
+        Builds msg and then processes it into own db to validate.
         """
         # create seal of own last est event
         kever = self.hab.kever
         seal = eventing.SealEvent(i=self.hab.pre,
                                   s="{:x}".format(kever.lastEst.s),
                                   d=kever.lastEst.d)
-        cuedKed = cuedSerder.ked
-        # create validator receipt
-        reserder = eventing.chit(pre=cuedKed["i"],
-                                 sn=int(cuedKed["s"], 16),
-                                 dig=cuedSerder.dig,
+        ked = serder.ked
+        # create validator receipt for serder event
+        reserder = eventing.chit(pre=ked["i"],
+                                 sn=int(ked["s"], 16),
+                                 dig=serder.dig,
                                  seal=seal)
-        #sign cued event
-        sigers = self.hab.mgr.sign(ser=cuedSerder.raw,
+        # sign serder event
+        sigers = self.hab.mgr.sign(ser=serder.raw,
                                    verfers=kever.verfers,
                                    indexed=True)
         msg = eventing.messagize(serder=reserder, sigers=sigers)
         self.kevery.processOne(ims=bytearray(msg))  # process copy into own db
+        return msg
+
+
+    def sendOwnChit(self, cuedSerder):
+        """
+        Send chit of event indicated by cuedSerder
+        """
+        msg = self.makeOwnChit(serder=cuedSerder)
         self.client.tx(msg)  # send to remote
         logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
 
@@ -546,7 +555,7 @@ class Reactor(doing.Doer):
         """
         Utility to send own event at sequence number sn
         """
-        msg = self.hab.messagizeOwnEvent(sn=sn)
+        msg = self.hab.makeOwnEvent(sn=sn)
         # send to connected remote
         self.client.tx(msg)
         logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
@@ -812,28 +821,36 @@ class Reactant(tyming.Tymee):
                     pass
                 yield
 
-
-    def sendOwnChit(self, cuedSerder):
+    def makeOwnChit(self, serder):
         """
-        Send chit of event indicated by cuedSerder
+        Returns messagized own chit of serder from some other pre.
+        Builds msg and then processes it into own db to validate.
         """
         # create seal of own last est event
         kever = self.hab.kever
         seal = eventing.SealEvent(i=self.hab.pre,
                                   s="{:x}".format(kever.lastEst.s),
                                   d=kever.lastEst.d)
-        cuedKed = cuedSerder.ked
-        # create validator receipt
-        reserder = eventing.chit(pre=cuedKed["i"],
-                                 sn=int(cuedKed["s"], 16),
-                                 dig=cuedSerder.dig,
+        ked = serder.ked
+        # create validator receipt for serder event
+        reserder = eventing.chit(pre=ked["i"],
+                                 sn=int(ked["s"], 16),
+                                 dig=serder.dig,
                                  seal=seal)
-        #sign cued event
-        sigers = self.hab.mgr.sign(ser=cuedSerder.raw,
-                                       verfers=kever.verfers,
-                                       indexed=True)
+        # sign serder event
+        sigers = self.hab.mgr.sign(ser=serder.raw,
+                                   verfers=kever.verfers,
+                                   indexed=True)
         msg = eventing.messagize(serder=reserder, sigers=sigers)
         self.kevery.processOne(ims=bytearray(msg))  # process copy into own db
+        return msg
+
+
+    def sendOwnChit(self, cuedSerder):
+        """
+        Send chit of event indicated by cuedSerder
+        """
+        msg = self.makeOwnChit(serder=cuedSerder)
         self.remoter.tx(msg)  # send to remote
         logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
 
@@ -842,7 +859,7 @@ class Reactant(tyming.Tymee):
         """
         Utility to send own event at sequence number sn
         """
-        msg = self.hab.messagizeOwnEvent(sn=sn)
+        msg = self.hab.makeOwnEvent(sn=sn)
         # send to connected remote
         self.remoter.tx(msg)
         logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
