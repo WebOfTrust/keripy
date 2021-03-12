@@ -319,8 +319,8 @@ def setupDemoController(secrets,  name="who", remotePort=5621, localPort=5620):
                  hab.pre, hab.name, localPort, remotePort)
 
     # setup doers
-    ksDoer = keeping.KeeperDoer(keeper=hab.ks)
-    dbDoer = dbing.BaserDoer(baser=hab.db)
+    ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
+    dbDoer = dbing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)

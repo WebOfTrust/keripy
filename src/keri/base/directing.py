@@ -5,10 +5,13 @@ keri.base.directing module
 
 simple direct mode demo support classes
 """
+import os
 import json
 
 from hio.base import doing, tyming
+from hio.core import wiring
 from hio.core.tcp import clienting, serving
+
 from .. import kering
 from ..db import dbing
 from ..core import coring, eventing
@@ -17,6 +20,42 @@ from . import keeping
 from .. import help
 
 logger = help.ogler.getLogger()
+
+
+def setupController(name="who", sith=None, count=1, temp=False,
+                    remotePort=5621, localPort=5620):
+    """
+    Setup and return doers list to run controller
+    """
+    # setup habitat
+    hab = Habitat(name=name, sith=sith, count=count, temp=temp)
+    logger.info("\nDirect Mode controller %s:\nNamed %s on TCP port %s to port %s.\n\n",
+                 hab.pre, hab.name, localPort, remotePort)
+
+    # setup doers
+    ksDoer = keeping.KeeperDoer(keeper=hab.ks)   # doer do reopens if not opened and closes
+    dbDoer = dbing.BaserDoer(baser=hab.db)   # doer do reopens if not opened and closes
+
+    # setup wirelog to create test vectors
+    path = os.path.dirname(__file__)
+    path = os.path.join(path, 'logs')
+
+    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='keri',
+                        reopen=True, headDirPath=path)
+    wireDoer = wiring.WireLogDoer(wl=wl)
+
+    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
+    clientDoer = doing.ClientDoer(client=client)
+    director = Director(hab=hab, client=client, tock=0.125)
+    reactor = Reactor(hab=hab, client=client)
+
+    server = serving.Server(host="", port=localPort, wl=wl)
+    serverDoer = doing.ServerDoer(server=server)
+    directant = Directant(hab=hab, server=server)
+    # Reactants created on demand by directant
+
+    return [ksDoer, dbDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
+
 
 
 def runController(doers, limit=0.0):
