@@ -859,7 +859,7 @@ class Dater(Matter):
         .nontrans is Boolean, True when non-transferable derivation code False otherwise
 
     Properties:
-        .dt is the ISO-8601 datetime
+        .dts is the ISO-8601 datetime string
 
     Hidden:
         ._pad is method to compute  .pad property
@@ -876,7 +876,7 @@ class Dater(Matter):
     FromB64 = str.maketrans("cdp", ":.+")
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=MtrDex.Salt_128, dt=None, **kwa):
+                 code=MtrDex.Salt_128, dts=None, **kwa):
         """
         Inhereited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
@@ -890,11 +890,11 @@ class Dater(Matter):
             dt the ISO-8601 datetime
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
-            if dt is None:  # defaults to now
-                dt = nowIso8601()
-            if len(dt) != 32:
+            if dts is None:  # defaults to now
+                dts = nowIso8601()
+            if len(dts) != 32:
                 raise ValueError("Invalid length of date time string")
-            qb64 = MtrDex.DateTime + dt.translate(self.ToB64)
+            qb64 = MtrDex.DateTime + dts.translate(self.ToB64)
 
         super(Dater, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                          code=code, **kwa)
@@ -903,7 +903,7 @@ class Dater(Matter):
                                   "".format(self.code))
 
     @property
-    def dt(self):
+    def dts(self):
         """
         Property sn:
         Returns .raw converted to int

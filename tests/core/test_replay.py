@@ -22,15 +22,16 @@ def test_replay():
 
     """
 
-    with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
-         dbing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
+    with dbing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
+         dbing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
+         dbing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS:
 
 
         sith = ["1/2", "1/2", "1/2"]
         # setup bob  habitat has default salt
-        bobHab = directing.Habitat(ks=bobKS, db=bobDB, sith=sith, count=3, temp=True)
-        assert bobHab.ks == bobKS
-        assert bobHab.db == bobDB
+        debHab = directing.Habitat(ks=debKS, db=debDB, sith=sith, count=3, temp=True)
+        assert debHab.ks == debKS
+        assert debHab.db == debDB
 
         #self.sendOwnInception()  # Inception Event
         #tyme = (yield (self.tock))
@@ -242,10 +243,12 @@ def test_replay():
         #assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
 
-    assert not os.path.exists(eveKS.path)
-    assert not os.path.exists(eveDB.path)
-    assert not os.path.exists(bobKS.path)
-    assert not os.path.exists(bobDB.path)
+    assert not os.path.exists(bevKS.path)
+    assert not os.path.exists(bevDB.path)
+    assert not os.path.exists(camKS.path)
+    assert not os.path.exists(camDB.path)
+    assert not os.path.exists(debKS.path)
+    assert not os.path.exists(debDB.path)
 
     """End Test"""
 

@@ -48,23 +48,17 @@ l
 import os
 import shutil
 import tempfile
-import datetime
 from contextlib import contextmanager
 
 import lmdb
 
 from hio.base import doing
 
-from  ..kering import KeriError
+from  .. import kering
 from  ..help import helping
+from  ..core import coring
 
 
-class DatabaseError(KeriError):
-    """
-    Database related errors
-    Usage:
-        raise DatabaseError("error message")
-    """
 
 ProemSize =  33
 MaxProem = int("f"*(ProemSize-1), 16)
@@ -1194,6 +1188,62 @@ class Baser(LMDBer):
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
 
+
+    def cloneIter(self, pre, fn=0):
+        """
+        Returns iterator of first seen event messages with attachments for the
+        identifier prefix pre starting at first seen order number, fn.
+        Essentially a replay in first seen order with attachments
+        """
+        msg = bytearray()  # message
+        atc = bytearray()  # attachments
+        for fn, dig in self.getFelItemPreIter(self, pre, fn=0):
+            dgkey = dgKey(pre, dig) # get message
+            if not (raw := self.getEvt(key=dgkey)):
+                raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+            msg.extend(raw)
+
+            # add first seen replay couple to attachments
+            atc.extend(coring.Counter(code=coring.CtrDex.FirstSeenReplayCouples,
+                                      count=1).qb64b)
+            atc.extend(coring.Seqner(sn=fn).qb64b)
+            if not (dts := self.getDts(key=dgkey)):
+                raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
+            atc.extend(coring.Dater(dts=dts).qb64b)
+
+            #add signatures to attachments
+            if not (sigs := self.getSigs(key=dgkey)):
+                raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
+            atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                      count=len(sigs)))
+            for sig in sigs:
+                atc.extend(sig)
+
+            # add trans receipts quadruples to attachments
+            if (quads := self.getVrcs(key=dgkey)):
+                atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
+                                      count=len(quads)))
+                for quad in quads:
+                    atc.extend(quad)
+
+            # add nontrans receipts couples to attachments
+            if (coups := self.getRcts(key=dgkey)):
+                atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
+                                                  count=len(quads)))
+                for coup in coups:
+                    atc.extend(coup)
+
+            # prepend pipelining counter to attachments
+            if len(atc) % 4:
+                raise ValueError("Invalid attachments size={}, nonintegral"
+                                 " quadlets.".format(len(atc)))
+            pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+                                      count=(len(atc) // 4)).qb64
+            msg.extend(pcnt)
+            msg.extend(atc)
+            yield msg
+
+
     def putEvt(self, key, val):
         """
         Use dgKey()
@@ -1429,6 +1479,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Write each entry from list of bytes receipt couplets vals to key
+        Couple is pre+cig (non indexed signature)
         Adds to existing receipts at key if any
         Returns True If no error
         Apparently always returns True (is this how .put works with dupsort=True)
@@ -1441,6 +1492,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Add receipt couple val bytes as dup to key in db
+        Couple is pre+cig (non indexed signature)
         Adds to existing values at key if any
         Returns True if written else False if dup val already exists
         Duplicates are inserted in lexocographic order not insertion order.
@@ -1452,6 +1504,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Return list of receipt couplets at key
+        Couple is pre+cig (non indexed signature)
         Returns empty list if no entry at key
         Duplicates are retrieved in lexocographic order not insertion order.
         """
@@ -1462,6 +1515,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Return iterator of receipt couplets at key
+        Couple is pre+cig (non indexed signature)
         Raises StopIteration Error when empty
         Duplicates are retrieved in lexocographic order not insertion order.
         """
@@ -1472,6 +1526,7 @@ class Baser(LMDBer):
         """
         Use dgKey()
         Return count of receipt couplets at key
+        Couple is pre+cig (non indexed signature)
         Returns zero if no entry at key
         """
         return self.cntVals(self.rcts, key)
@@ -1632,7 +1687,7 @@ class Baser(LMDBer):
     def getVrcs(self, key):
         """
         Use dgKey()
-        Return list of receipt quadruple at key
+        Return list of receipt quadruples at key
         quadruple is spre+ssnu+sdig+sig
         Returns empty list if no entry at key
         Duplicates are retrieved in lexocographic order not insertion order.
