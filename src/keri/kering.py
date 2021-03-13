@@ -88,6 +88,22 @@ class UnknownCodeError(MaterialError):
     """
 
 
+class InvalidCodeIndexError(MaterialError):
+    """
+    Invalid code index encountered during crypto material init
+    Usage:
+        raise UnknownCodeError("error message")
+    """
+
+
+class InvalidCodeSizeError(MaterialError):
+    """
+    Invalid code size encountered during crypto material init
+    Usage:
+        raise UnknownCodeError("error message")
+    """
+
+
 # Errors validating  event messages and attachements
 class ValidationError(KeriError):
     """
@@ -161,14 +177,6 @@ class ExtractionError(KeriError):
     """
 
 
-class ShortageError(ExtractionError):
-    """
-    Not Enough bytes in buffer for complete message or material
-    Usage:
-        raise ShortageError("error message")
-    """
-
-
 class VersionError(ExtractionError):
     """
     Bad or Unsupported Version
@@ -183,6 +191,23 @@ class DeserializationError(ExtractionError):
     Error deserializing message
     Usage:
         raise DeserializationError("error message")
+    """
+
+
+class ShortageError(ExtractionError):
+    """
+    Not Enough bytes in buffer for complete message or material
+    Usage:
+        raise ShortageError("error message")
+    """
+
+
+class ConversionError(ExtractionError):
+    """
+    Problem with Base64 to Binary conversion
+
+    Usage:
+        raise ConversionError("error message")
     """
 
 

@@ -23,6 +23,7 @@ import hashlib
 
 
 from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
+                      InvalidCodeIndexError, InvalidCodeSizeError,
                       ValidationError, VersionError, DerivationError,
                       ShortageError, UnexpectedCodeError, DeserializationError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
@@ -593,8 +594,8 @@ class Matter:
         ps = (3 - (len(raw) % 3)) % 3  # pad size
         # check valid pad size for code size
         if len(code) % 4 != ps:  # pad size is not remainder of len(code) % 4
-            raise ValueError("Invalid code = {} for converted raw pad size= {}."
-                                  .format(code, ps))
+            raise InvalidCodeSizeError("Invalid code = {} for converted raw "
+                                       "pad size= {}.".format(code, ps))
         # prepend derivation code and strip off trailing pad characters
         return (code.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
 
@@ -646,7 +647,7 @@ class Matter:
         base = qb64b[bs:] + ps * BASE64_PAD
         raw = decodeB64(base)
         if len(raw) != (len(qb64b) - bs) * 3 // 4:  # exact lengths
-            raise ValidationError("Improperly qualified material = {}".format(qb64b))
+            raise ConversionError("Improperly qualified material = {}".format(qb64b))
 
         self._code = code
         self._raw = raw
@@ -664,7 +665,7 @@ class Matter:
         hs, ss, fs = self.Codes[code]
         bs = hs + ss
         if len(code) != bs:
-            raise ValueError("Mismatch code size = {} with table = {}."
+            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
                                           .format(bs, len(code)))
         n = sceil(bs * 3 / 4)  # number of b2 bytes to hold b64 code
         bcode = b64ToInt(code).to_bytes(n,'big')  # right aligned b2 code
@@ -672,7 +673,7 @@ class Matter:
         full = bcode + raw
         bfs = len(full)
         if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
-            raise ValueError("Invalid code = {} for raw size= {}."
+            raise InvalidCodeSizeError("Invalid code = {} for raw size= {}."
                                           .format(code, len(raw)))
 
         i = int.from_bytes(full, 'big') << (2 * (bs % 4))  # left shift in pad bits
@@ -725,7 +726,7 @@ class Matter:
         raw = i.to_bytes(bfs, 'big')[bbs:]  # extract raw
 
         if len(raw) != (len(qb2) - bbs):  # exact lengths
-            raise ValidationError("Improperly qualified material = {}".format(qb2))
+            raise ConversionError("Improperly qualified material = {}".format(qb2))
 
         self._code = code
         self._raw = raw
@@ -2103,11 +2104,11 @@ class Indexer:
             hs, ss, fs = self.Codes[code] # get sizes for code
             bs = hs + ss  # both hard + soft code size
             if index < 0 or index > (64 ** ss - 1):
-                raise ValidationError("Invalid index={} for code={}.".format(index, code))
+                raise InvalidCodeIndexError("Invalid index={} for code={}.".format(index, code))
 
             if not fs:  # compute fs from index
                 if bs % 4:
-                    raise ValidationError("Whole code size not multiple of 4 for "
+                    raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
                                           "variable length material. bs={}.".format(bs))
                 fs = (index * 4) + bs
 
@@ -2215,12 +2216,13 @@ class Indexer:
         bs = hs + ss  # both hard + soft size
         if not fs:  # compute fs from index
             if bs % 4:
-                raise ValueError("Whole code size not multiple of 4 for "
+                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
                                       "variable length material. bs={}.".format(bs))
             fs = (index * 4) + bs
 
         if index < 0 or index > (64 ** ss - 1):
-            raise ValueError("Invalid index={} for code={}.".format(index, code))
+            raise InvalidCodeIndexError("Invalid index={} for code={}."
+                                        "".format(index, code))
 
         # both is hard code + converted index
         both =  "{}{}".format(code, intToB64(index, l=ss))
@@ -2228,7 +2230,7 @@ class Indexer:
         ps = (3 - (len(raw) % 3)) % 3  # pad size
         # check valid pad size for whole code size
         if len(both) % 4 != ps:  # pad size is not remainder of len(both) % 4
-            raise ValueError("Invalid code = {} for converted raw pad size = {}."
+            raise InvalidCodeSizeError("Invalid code = {} for converted raw pad size = {}."
                                   .format(both, ps))
         # prepending full derivation code with index and strip off trailing pad characters
         return (both.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
@@ -2296,7 +2298,7 @@ class Indexer:
         base = qb64b[bs:] + ps * BASE64_PAD
         raw = decodeB64(base)
         if len(raw) != (len(qb64b) - bs) * 3 // 4:  # exact lengths
-            raise ValidationError("Improperly qualified material = {}".format(qb64b))
+            raise ConversionError("Improperly qualified material = {}".format(qb64b))
 
         self._code = hard
         self._index = index
@@ -2317,18 +2319,18 @@ class Indexer:
         bs = hs + ss
         if not fs:  # compute fs from index
             if bs % 4:
-                raise ValueError("Whole code size not multiple of 4 for "
+                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
                                       "variable length material. bs={}.".format(bs))
             fs = (index * 4) + bs
 
         if index < 0 or index > (64 ** ss - 1):
-            raise ValueError("Invalid index={} for code={}.".format(index, code))
+            raise InvalidCodeIndexError("Invalid index={} for code={}.".format(index, code))
 
         # both is hard code + converted index
         both =  "{}{}".format(code, intToB64(index, l=ss))
 
         if len(both) != bs:
-            raise ValueError("Mismatch code size = {} with table = {}."
+            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
                                           .format(bs, len(both)))
 
         n = sceil(bs * 3 / 4)  # number of b2 bytes to hold b64 code + index
@@ -2337,7 +2339,7 @@ class Indexer:
         full = bcode + raw
         bfs = len(full)
         if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
-            raise ValueError("Invalid code = {} for raw size= {}."
+            raise InvalidCodeSizeError("Invalid code = {} for raw size= {}."
                                           .format(both, len(raw)))
 
         i = int.from_bytes(full, 'big') << (2 * (bs % 4))  # left shift in pad bits
@@ -2398,7 +2400,7 @@ class Indexer:
         raw = i.to_bytes(bfs, 'big')[bbs:]  # extract raw
 
         if len(raw) != (len(qb2) - bbs):  # exact lengths
-            raise ValidationError("Improperly qualified material = {}".format(qb2))
+            raise ConversionError("Improperly qualified material = {}".format(qb2))
 
         self._code = hard
         self._index = index
@@ -2587,11 +2589,11 @@ class Counter:
             hs, ss, fs = self.Codes[code] # get sizes for code
             bs = hs + ss  # both hard + soft code size
             if fs != bs or bs % 4:  # fs must be bs and multiple of 4 for count codes
-                raise ValueError("Whole code size not full size or not "
+                raise InvalidCodeSizeError("Whole code size not full size or not "
                                       "multiple of 4. bs={} fs={}.".format(bs, fs))
 
             if count < 0 or count > (64 ** ss - 1):
-                raise ValueError("Invalid count={} for code={}.".format(count, code))
+                raise InvalidCodeIndexError("Invalid count={} for code={}.".format(count, code))
 
             self._code = code
             self._count = count
@@ -2668,17 +2670,17 @@ class Counter:
         hs, ss, fs = self.Codes[code]
         bs = hs + ss  # both hard + soft size
         if fs != bs or bs % 4:  # fs must be bs and multiple of 4 for count codes
-            raise ValueError("Whole code size not full size or not "
+            raise InvalidCodeSizeError("Whole code size not full size or not "
                                   "multiple of 4. bs={} fs={}.".format(bs, fs))
         if count < 0 or count > (64 ** ss - 1):
-            raise ValueError("Invalid count={} for code={}.".format(count, code))
+            raise InvalidCodeIndexError("Invalid count={} for code={}.".format(count, code))
 
         # both is hard code + converted count
         both = "{}{}".format(code, intToB64(count, l=ss))
 
         # check valid pad size for whole code size
         if len(both) % 4:  # no pad
-            raise ValueError("Invalid size = {} of {} not a multiple of 4."
+            raise InvalidCodeSizeError("Invalid size = {} of {} not a multiple of 4."
                                   .format(len(both), both))
         # prepending full derivation code with index and strip off trailing pad characters
         return (both.encode("utf-8"))
@@ -2742,16 +2744,16 @@ class Counter:
         hs, ss, fs = self.Codes[code]
         bs = hs + ss
         if fs != bs or bs % 4:  # fs must be bs and multiple of 4 for count codes
-            raise ValueError("Whole code size not full size or not "
+            raise InvalidCodeSizeError("Whole code size not full size or not "
                                   "multiple of 4. bs={} fs={}.".format(bs, fs))
 
         if count < 0 or count > (64 ** ss - 1):
-            raise ValueError("Invalid count={} for code={}.".format(count, code))
+            raise InvalidCodeIndexError("Invalid count={} for code={}.".format(count, code))
 
         # both is hard code + converted count
         both =  "{}{}".format(code, intToB64(count, l=ss))
         if len(both) != bs:
-            raise ValueError("Mismatch code size = {} with table = {}."
+            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
                                           .format(bs, len(both)))
 
         return (b64ToB2(both))  # convert to b2 left shift if any

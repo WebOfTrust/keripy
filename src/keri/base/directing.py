@@ -268,6 +268,65 @@ class Habitat():
             msg.extend(sig) # attach sig
         return (msg)
 
+    def makeOwnInception(self):
+        """
+        Returns: messagized bytearray message with attached signatures of
+                 own inception event by retrieving event and signatures
+                 from database.
+        """
+        return self.makeOwnEvent(sn=0)
+
+
+    def makeOwnChit(self, serder):
+        """
+        Returns own chit, vrc, message of serder with count code and signatures
+        Builds msg and then processes it into own db to validate.
+        """
+        # create seal of own last est event
+        seal = eventing.SealEvent(i=self.pre,
+                                  s="{:x}".format(self.kever.lastEst.s),
+                                  d=self.kever.lastEst.d)
+        ked = serder.ked
+        # create validator receipt for serder event
+        reserder = eventing.chit(pre=ked["i"],
+                                 sn=int(ked["s"], 16),
+                                 dig=serder.dig,
+                                 seal=seal)
+        # sign serder event
+        sigers = self.mgr.sign(ser=serder.raw,
+                                   verfers=self.kever.verfers,
+                                   indexed=True)
+        msg = eventing.messagize(serder=reserder, sigers=sigers)
+        self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
+        return msg
+
+
+    def makeOwnReceipt(self, serder):
+        """
+        Returns own receipt, rct, message of serder with count code and receipt
+        couples (pre+cig)
+        Builds msg and then processes it into own db to validate
+        """
+        if self.kever.prefixer.code not in coring.NonTransDex:  # not non-transferable prefix
+            raise ValueError("Attempt to create non-transferable receipt with"
+                             " transferable pre={}.".format(self.pre))
+
+        ked = serder.ked
+        reserder = eventing.receipt(pre=ked["i"],
+                                    sn=int(ked["s"], 16),
+                                    dig=serder.dig)
+        # sign serder event
+        cigars = self.mgr.sign(ser=serder.raw,
+                               verfers=self.kever.verfers,
+                               indexed=False)
+
+        msg = bytearray()
+        msg.extend(reserder.raw)
+
+        msg.extend(recnt.qb64b)
+
+        msg.extend(valPrefixer.qb64b)
+        msg.extend(valCigar.qb64b)
 
 
     def processCues(self, cues):
@@ -277,7 +336,7 @@ class Habitat():
         Parameters:
            cues is deque of cues
         """
-
+        msgs = bytearray()  # outgoing messages
         while cues:  # process cues deque
             # process each cue
             cue = cues.popleft()
@@ -285,27 +344,30 @@ class Habitat():
             cuedSerder = cue["serder"]
             cuedKed = cuedSerder.ked
             cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
+            logger.info("%s got cue: kin=%s\n%s\n\n", self.pre, cueKin,
                                             json.dumps(cuedKed, indent=1))
-            if cueKin in ("receipt", ):
-                if cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
+            if cueKin in ("receipt", ):  # send receipt or chit
+                if cuedKed["t"] == coring.Ilks.icp:  # receipt for remote inception event
+                    # see if already have a vrcs chit or rct receipt from remote
+                    # for own inception
+                    dgkey = dbing.dgKey(self.pre, self.iserder.dig)
                     found = False
-                    if cuedPrefixer.transferable:  # find vrcs receipt of own icp
+                    if cuedPrefixer.transferable:  # find if already vrcs of own icp
                         for quadruple in self.hab.db.getVrcsIter(dgkey):
                             if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True
-                    else:  #  find rcts receipt of own icp
-                        pass
+                                found = True  # yes so don't send own inception
+                    else:  #  find if already rcts of own icp
+                        pass  #  need to add
 
-                    if not found:  # no receipt from remote so send own inception
-                        self.sendOwnInception()
+                    if not found:
+                        # no vrcs or rct of own icp from remote so send own inception
+                        msgs.extend(self.makeOwnInception())
 
-                if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
-                    self.sendOwnChit(cuedSerder)
-                else:  # send nontrans receipt
+                if self.kever.prefixer.transferable:  #  send own trans chit vrcs
+                    msgs.extend(self.makeOwnChit(cuedSerder))
+                else:  # send own nontrans receipt rct
                     pass
-
+        return msgs
 
     def processCuesIter(self, cues):
         """
@@ -598,36 +660,11 @@ class Reactor(doing.Doer):
                 yield
 
 
-    def makeOwnChit(self, serder):
-        """
-        Returns messagized own chit of serder from some other pre.
-        Builds msg and then processes it into own db to validate.
-        """
-        # create seal of own last est event
-        kever = self.hab.kever
-        seal = eventing.SealEvent(i=self.hab.pre,
-                                  s="{:x}".format(kever.lastEst.s),
-                                  d=kever.lastEst.d)
-        ked = serder.ked
-        # create validator receipt for serder event
-        reserder = eventing.chit(pre=ked["i"],
-                                 sn=int(ked["s"], 16),
-                                 dig=serder.dig,
-                                 seal=seal)
-        # sign serder event
-        sigers = self.hab.mgr.sign(ser=serder.raw,
-                                   verfers=kever.verfers,
-                                   indexed=True)
-        msg = eventing.messagize(serder=reserder, sigers=sigers)
-        self.hab.kvy.processOne(ims=bytearray(msg))  # process local copy into db
-        return msg
-
-
     def sendOwnChit(self, cuedSerder):
         """
         Send chit of event indicated by cuedSerder
         """
-        msg = self.makeOwnChit(serder=cuedSerder)
+        msg = self.hab.makeOwnChit(serder=cuedSerder)
         self.client.tx(msg)  # send to remote
         logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
 
@@ -903,36 +940,11 @@ class Reactant(tyming.Tymee):
                 yield
 
 
-    def makeOwnChit(self, serder):
-        """
-        Returns messagized own chit of serder from some other pre.
-        Builds msg and then processes it into own db to validate.
-        """
-        # create seal of own last est event
-        kever = self.hab.kever
-        seal = eventing.SealEvent(i=self.hab.pre,
-                                  s="{:x}".format(kever.lastEst.s),
-                                  d=kever.lastEst.d)
-        ked = serder.ked
-        # create validator receipt for serder event
-        reserder = eventing.chit(pre=ked["i"],
-                                 sn=int(ked["s"], 16),
-                                 dig=serder.dig,
-                                 seal=seal)
-        # sign serder event
-        sigers = self.hab.mgr.sign(ser=serder.raw,
-                                   verfers=kever.verfers,
-                                   indexed=True)
-        msg = eventing.messagize(serder=reserder, sigers=sigers)
-        self.hab.kvy.processOne(ims=bytearray(msg))  # process local copy into db
-        return msg
-
-
     def sendOwnChit(self, cuedSerder):
         """
         Send chit of event indicated by cuedSerder
         """
-        msg = self.makeOwnChit(serder=cuedSerder)
+        msg = self.hab.makeOwnChit(serder=cuedSerder)
         self.remoter.tx(msg)  # send to remote
         logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
 
