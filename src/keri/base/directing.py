@@ -5,10 +5,13 @@ keri.base.directing module
 
 simple direct mode demo support classes
 """
+import os
 import json
 
 from hio.base import doing, tyming
+from hio.core import wiring
 from hio.core.tcp import clienting, serving
+
 from .. import kering
 from ..db import dbing
 from ..core import coring, eventing
@@ -17,6 +20,42 @@ from . import keeping
 from .. import help
 
 logger = help.ogler.getLogger()
+
+
+def setupController(name="who", sith=None, count=1, temp=False,
+                    remotePort=5621, localPort=5620):
+    """
+    Setup and return doers list to run controller
+    """
+    # setup habitat
+    hab = Habitat(name=name, sith=sith, count=count, temp=temp)
+    logger.info("\nDirect Mode controller %s:\nNamed %s on TCP port %s to port %s.\n\n",
+                 hab.pre, hab.name, localPort, remotePort)
+
+    # setup doers
+    ksDoer = keeping.KeeperDoer(keeper=hab.ks)   # doer do reopens if not opened and closes
+    dbDoer = dbing.BaserDoer(baser=hab.db)   # doer do reopens if not opened and closes
+
+    # setup wirelog to create test vectors
+    path = os.path.dirname(__file__)
+    path = os.path.join(path, 'logs')
+
+    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='keri',
+                        reopen=True, headDirPath=path)
+    wireDoer = wiring.WireLogDoer(wl=wl)
+
+    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
+    clientDoer = doing.ClientDoer(client=client)
+    director = Director(hab=hab, client=client, tock=0.125)
+    reactor = Reactor(hab=hab, client=client)
+
+    server = serving.Server(host="", port=localPort, wl=wl)
+    serverDoer = doing.ServerDoer(server=server)
+    directant = Directant(hab=hab, server=server)
+    # Reactants created on demand by directant
+
+    return [ksDoer, dbDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
+
 
 
 def runController(doers, limit=0.0):
@@ -42,6 +81,8 @@ class Habitat():
 
     Attributes:
         .name is str alias of controller
+        .transferable is Boolean True means pre is transferable (default)
+                    False means pre is nontransferable
         .temp is Boolean True for testing it modifies tier of salty key
             generation algorithm and persistence of db and ks
         .erase is Boolean, If True erase old private keys, Otherwise not.
@@ -52,7 +93,8 @@ class Habitat():
         .db is lmdb data base dbing.Baser instance
         .kvy is eventing.Kevery instance for local processing of local msgs
         .sith is default key signing threshold
-        .count is deafuult number of public keys in key list
+        .count is number public keys in key list
+        .ncount is number of public keys in next key list
         .inception is Serder of inception event
         .pre is qb64 prefix of local controller
 
@@ -61,8 +103,10 @@ class Habitat():
 
     """
 
-    def __init__(self, name='test', ks=None, db=None, kevers=None, secrecies=None,
-                 sith=None, count=1, salt=None, tier=None, temp=False, erase=True):
+    def __init__(self, name='test', ks=None, db=None, kevers=None,
+                 code=coring.MtrDex.Blake3_256, secrecies=None,
+                 sith=None, count=1, ncount=None, salt=None, tier=None,
+                 transferable=True, temp=False, erase=True):
         """
         Initialize instance.
 
@@ -71,11 +115,21 @@ class Habitat():
             ks is keystore lmdb Keeper instance
             db is database lmdb Baser instance
             kevers is dict of Kever instance keyed by qb64 prefix
-            secrets is list of secrets (replace later with keeper interface)
+            code is prefix derivation code
+            secrecies is list of list of secrets to preload key pairs if any
+            sith is str (hex) of signing threshold int or list expression for
+                    for fractionally weighted signing threshold
+            count is key count for number of keys
+            salt is qb64 salt for creating key pairs
+            tier is security tier for generating keys from salt
+            transferable is Boolean True means pre is transferable (default)
+                    False means pre is nontransferable
             temp is Boolean used for persistance of lmdb ks and db directories
                 and mode for key generation
+            erase is Boolean True means erase private keys once stale
         """
         self.name = name
+        self.transferable = transferable
         self.temp = temp
         self.erase = erase
 
@@ -90,26 +144,37 @@ class Habitat():
                                                         temp=self.temp)
         self.sith = sith
         self.count = count
+        if not self.transferable:
+            self.ncount = 0
+            code = coring.MtrDex.Ed25519N
+        else:
+            self.ncount = ncount if ncount is not None else self.count
 
         if secrecies:
             verferies, digers = self.mgr.ingest(secrecies,
-                                                ncount=self.count,
+                                                ncount=self.ncount,
                                                 stem=self.name,
+                                                transferable=self.transferable,
                                                 temp=self.temp)
             opre = verferies[0][0].qb64  # old pre default needed for .replay
             verfers, digers = self.mgr.replay(pre=opre, ridx=self.ridx)
         else:
             verfers, digers = self.mgr.incept(icount=self.count,
-                                              ncount=self.count,
+                                              ncount=self.ncount,
                                               stem=self.name,
+                                              transferable=self.transferable,
                                               temp=self.temp)
 
         opre = verfers[0].qb64  # old pre default move below to new pre from incept
-        self.iserder = eventing.incept(keys=[verfers[0].qb64],
+        if digers:
+            nxt = coring.Nexter(sith=self.sith,
+                                digs=[diger.qb64 for diger in digers]).qb64
+        else:
+            nxt = ""
+        self.iserder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                          sith=self.sith,
-                                         nxt=coring.Nexter(sith=sith,
-                                                           digs=[digers[0].qb64]).qb64,
-                                         code=coring.MtrDex.Blake3_256)
+                                         nxt=nxt,
+                                         code=code)
 
         self.pre = self.iserder.ked["i"]  # new pre
         self.mgr.move(old=opre, new=self.pre)
@@ -121,8 +186,8 @@ class Habitat():
         msg = eventing.messagize(self.iserder, sigers)
         self.kvy.processOne(ims=msg)
         if self.pre not in self.kevers:
-            raise kering.ValidationError("Improper Habitat inception for "
-                                         "pre={}.".format(self.pre))
+            raise kering.ConfigurationError("Improper Habitat inception for "
+                                            "pre={}.".format(self.pre))
 
     @property
     def kever(self):
@@ -144,7 +209,7 @@ class Habitat():
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
         """
-        count = count if count is not None else self.count
+        count = count if count is not None else self.ncount
         erase = erase if erase is not None else self.erase
 
         try:
@@ -159,11 +224,15 @@ class Habitat():
                                               erase=erase)
 
         kever = self.kever  # kever.pre == self.pre
+        if digers:
+            nxt = coring.Nexter(sith=self.sith,
+                                    digs=[diger.qb64 for diger in digers]).qb64
+        else:
+            nxt = ""
         serder = eventing.rotate(pre=kever.prefixer.qb64,
                                  keys=[verfer.qb64 for verfer in verfers],
                                  dig=kever.serder.diger.qb64,
-                                 nxt=coring.Nexter(sith=self.sith,
-                                                   digs=[diger.qb64 for diger in digers]).qb64,
+                                 nxt=nxt,
                                  sn=kever.sn+1)
         sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
         msg = eventing.messagize(serder, sigers)
@@ -200,11 +269,11 @@ class Habitat():
         return msg
 
 
-    def messagizeOwnEvent(self, sn):
+    def makeOwnEvent(self, sn):
         """
-        Retrieve inception and signatures from database.
-        Returns: bytearray message with attached signatures of own event at
-            sequence number sn.
+        Returns: messagized bytearray message with attached signatures of
+                 own event at sequence number sn from retrieving event at sn
+                 and associated signatures from database.
 
         Parameters:
             sn is int sequence number of event
@@ -222,6 +291,113 @@ class Habitat():
         for sig in self.db.getSigsIter(key):
             msg.extend(sig) # attach sig
         return (msg)
+
+    def makeOwnInception(self):
+        """
+        Returns: messagized bytearray message with attached signatures of
+                 own inception event by retrieving event and signatures
+                 from database.
+        """
+        return self.makeOwnEvent(sn=0)
+
+
+    def makeOwnChit(self, serder):
+        """
+        Returns own chit, vrc, message of serder with count code and signatures
+        Builds msg and then processes it into own db to validate.
+        """
+        # create seal of own last est event
+        seal = eventing.SealEvent(i=self.pre,
+                                  s="{:x}".format(self.kever.lastEst.s),
+                                  d=self.kever.lastEst.d)
+        ked = serder.ked
+        # create validator receipt for serder event
+        reserder = eventing.chit(pre=ked["i"],
+                                 sn=int(ked["s"], 16),
+                                 dig=serder.dig,
+                                 seal=seal)
+        # sign serder event
+        sigers = self.mgr.sign(ser=serder.raw,
+                                   verfers=self.kever.verfers,
+                                   indexed=True)
+        msg = eventing.messagize(serder=reserder, sigers=sigers)
+        self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
+        return msg
+
+
+    def makeOwnReceipt(self, serder):
+        """
+        Returns own receipt, rct, message of serder with count code and receipt
+        couples (pre+cig)
+        Builds msg and then processes it into own db to validate
+        """
+        if self.kever.prefixer.transferable:  # not non-transferable prefix
+            raise ValueError("Attempt to create non-transferable receipt with"
+                             " transferable pre={}.".format(self.pre))
+        ked = serder.ked
+        reserder = eventing.receipt(pre=ked["i"],
+                                    sn=int(ked["s"], 16),
+                                    dig=serder.dig)
+        # sign serder event
+        cigars = self.mgr.sign(ser=serder.raw,
+                               verfers=self.kever.verfers,
+                               indexed=False)
+        msg = eventing.receiptize(reserder, cigars)
+        return msg
+
+
+    def processCues(self, cues):
+        """
+        Returns bytearray of messages as a result of processing all cues
+
+        Parameters:
+           cues is deque of cues
+        """
+        msgs = bytearray()  # outgoing messages
+        for msg in self.processCuesIter(cues):
+            msgs.extend(msg)
+        return msgs
+
+
+    def processCuesIter(self, cues):
+        """
+        Iterate through cues and yields one or more msgs for each cue.
+
+        Parameters:
+            cues is deque of cues
+
+        """
+        while cues:  # iteratively process each cue in cues
+            msgs = bytearray()
+            cue = cues.popleft()
+            cueKin = cue["kin"]  # type or kind of cue
+            cuedSerder = cue["serder"]  # Serder of received event for other pre
+            cuedKed = cuedSerder.ked
+            cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
+            logger.info("%s got cue: kin=%s\n%s\n\n", self.pre, cueKin,
+                                             json.dumps(cuedKed, indent=1))
+            if cueKin in ("receipt", ):  # received event from other cued pre
+                if  cuedKed["t"] == coring.Ilks.icp:
+                    dgkey = dbing.dgKey(self.pre, self.iserder.dig)
+                    found = False
+                    if cuedPrefixer.transferable:  # find if already vrcs of own icp
+                        for quadruple in self.db.getVrcsIter(dgkey):
+                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
+                                found = True  # yes so don't send own inception
+                    else:  # find if already rcts of own icp
+                        for couple in self.db.getRctsIter(dgkey):
+                            if bytes(couple).decode("utf-8").startswith(cuedKed["i"]):
+                                found = True  # yes so don't send own inception
+
+                    if not found:  # no receipt from remote so send own inception
+                        # no vrcs or rct of own icp from remote so send own inception
+                        msgs.extend(self.makeOwnInception())
+
+                if self.kever.prefixer.transferable:  #  send trans receipt chit
+                    msgs.extend(self.makeOwnChit(cuedSerder))
+                else:  # send nontrans receipt
+                    msgs.extend(self.makeOwnReceipt(cuedSerder))
+                yield msgs
 
 
 class Director(doing.Doer):
@@ -301,7 +477,7 @@ class Director(doing.Doer):
         """
         Utility to send own event at sequence number sn
         """
-        msg = self.hab.messagizeOwnEvent(sn=sn)
+        msg = self.hab.makeOwnEvent(sn=sn)
         # send to connected remote
         self.client.tx(msg)
         logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
@@ -402,111 +578,25 @@ class Reactor(doing.Doer):
             if self.kevery.ims:
                 logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.kevery.ims[:1024])
             self.kevery.process()
-            self.processCues()
+            for msg in self.hab.processCuesIter(self.kevery.cues):
+                self.sendMessage(msg, label="chit or receipt")
+                break  # throttle just do one cue at a time
             self.kevery.processEscrows()
 
 
-    def processCues(self):
+    def sendMessage(self, msg, label=""):
         """
-        Process all cues in .kvy
+        Sends message msg and loggers label if any
         """
-        while self.kevery.cues:  # process cues
-            # process each cue
-            cue = self.kevery.cues.popleft()
-            cueKin = cue["kin"]  # type or kind of cue
-            cuedSerder = cue["serder"]  # Serder of received event for other pre
-            cuedKed = cuedSerder.ked
-            cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
-                                             json.dumps(cuedKed, indent=1))
-            if cueKin in ("receipt", ):  # received event from other cued pre
-                if  cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
-                    found = False
-                    if cuedPrefixer.transferable:  # find vrcs receipt of own icp
-                        for quadruple in self.hab.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True
-                    else:  #  find rcts receipt of own icp
-                        pass
-
-                    if not found:  # no receipt from remote so send own inception
-                        self.sendOwnInception()
-
-                if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
-                    self.sendOwnChit(cuedSerder)
-                else:  # send nontrans receipt
-                    pass
-
-
-
-    def processCuesIter(self):
-        """
-        Iterate through cues in .cues
-        This is a stub  for future iterator/generator based processing
-
-        For each cue yield one or more msgs to send out
-        """
-        while self.kevery.cues:  # process cues
-            cue = self.kevery.cues.popleft()
-            cueKin = cue["kin"]  # type or kind of cue
-            cuedSerder = cue["serder"]  # Serder of received event for other pre
-            cuedKed = cuedSerder.ked
-            cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
-                                             json.dumps(cuedKed, indent=1))
-            if cueKin in ("receipt", ):  # received event from other cued pre
-                if  cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
-                    found = False
-                    if cuedPrefixer.transferable:  # find vrcs receipt of own icp
-                        for quadruple in self.hab.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True
-                    else:  #  find rcts receipt of own icp
-                        pass
-
-                    if not found:  # no receipt from remote so send own inception
-                        self.sendOwnInception()
-                        yield
-
-                if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
-                    self.sendOwnChit(cuedSerder)
-                else:  # send nontrans receipt
-                    pass
-                yield
-
-
-    def sendOwnChit(self, cuedSerder):
-        """
-        Send chit of event indicated by cuedSerder
-        """
-        # create seal of own last est event
-        kever = self.hab.kever
-        seal = eventing.SealEvent(i=self.hab.pre,
-                                  s="{:x}".format(kever.lastEst.s),
-                                  d=kever.lastEst.d)
-        cuedKed = cuedSerder.ked
-        # create validator receipt
-        reserder = eventing.chit(pre=cuedKed["i"],
-                                 sn=int(cuedKed["s"], 16),
-                                 dig=cuedSerder.dig,
-                                 seal=seal)
-        #sign cued event
-        sigers = self.hab.mgr.sign(ser=cuedSerder.raw,
-                                   verfers=kever.verfers,
-                                   indexed=True)
-        msg = eventing.messagize(serder=reserder, sigers=sigers)
-        self.kevery.processOne(ims=bytearray(msg))  # process copy into own db
         self.client.tx(msg)  # send to remote
-        logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
+        logger.info("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
 
 
     def sendOwnEvent(self, sn):
         """
         Utility to send own event at sequence number sn
         """
-        msg = self.hab.messagizeOwnEvent(sn=sn)
+        msg = self.hab.makeOwnEvent(sn=sn)
         # send to connected remote
         self.client.tx(msg)
         logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
@@ -633,7 +723,9 @@ class Directant(doing.Doer):
                     logger.info("Server %s received:\n%s\n\n", self.hab.pre, reactant.kevery.ims)
 
                 reactant.kevery.process()
-                reactant.processCues()
+                for msg in self.hab.processCuesIter(reactant.kevery.cues):
+                    reactant.sendMessage(msg, label="chit or receipt")
+                    break  # throttle just do one cue at a time
                 reactant.kevery.processEscrows()
 
             if not reactant.persistent:  # not persistent so close and remove
@@ -701,107 +793,19 @@ class Reactant(tyming.Tymee):
         self.persistent = True if persistent else False
 
 
-    def processCues(self):
+    def sendMessage(self, msg, label=""):
         """
-        Process any cues in .kevery
+        Sends message msg and loggers label if any
         """
-
-        while self.kevery.cues:  # process cues
-            # process each cue
-            cue = self.kevery.cues.popleft()
-            cueKin = cue["kin"]  # type or kind of cue
-            cuedSerder = cue["serder"]
-            cuedKed = cuedSerder.ked
-            cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
-                                            json.dumps(cuedKed, indent=1))
-            if cueKin in ("receipt", ):
-                if cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
-                    found = False
-                    if cuedPrefixer.transferable:  # find vrcs receipt of own icp
-                        for quadruple in self.hab.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True
-                    else:  #  find rcts receipt of own icp
-                        pass
-
-                    if not found:  # no receipt from remote so send own inception
-                        self.sendOwnInception()
-
-                if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
-                    self.sendOwnChit(cuedSerder)
-                else:  # send nontrans receipt
-                    pass
-
-
-    def processCuesIter(self):
-        """
-        Iterate through cues in .cues
-        This is a stub  for future iterator/generator based processing
-
-        For each cue yield one or more msgs to send out
-        """
-        while self.kevery.cues:  # process cues
-            cue = self.kevery.cues.popleft()
-            cueKin = cue["kin"]  # type or kind of cue
-            cuedSerder = cue["serder"]  # Serder of received event for other pre
-            cuedKed = cuedSerder.ked
-            cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
-                                             json.dumps(cuedKed, indent=1))
-            if cueKin in ("receipt", ):  # received event from other cued pre
-                if  cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
-                    found = False
-                    if cuedPrefixer.transferable:  # find vrcs receipt of own icp
-                        for quadruple in self.hab.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True
-                    else:  #  find rcts receipt of own icp
-                        pass
-
-                    if not found:  # no receipt from remote so send own inception
-                        self.sendOwnInception()
-                        yield
-
-                if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
-                    self.sendOwnChit(cuedSerder)
-                else:  # send nontrans receipt
-                    pass
-                yield
-
-
-    def sendOwnChit(self, cuedSerder):
-        """
-        Send chit of event indicated by cuedSerder
-        """
-        # create seal of own last est event
-        kever = self.hab.kever
-        seal = eventing.SealEvent(i=self.hab.pre,
-                                  s="{:x}".format(kever.lastEst.s),
-                                  d=kever.lastEst.d)
-        cuedKed = cuedSerder.ked
-        # create validator receipt
-        reserder = eventing.chit(pre=cuedKed["i"],
-                                 sn=int(cuedKed["s"], 16),
-                                 dig=cuedSerder.dig,
-                                 seal=seal)
-        #sign cued event
-        sigers = self.hab.mgr.sign(ser=cuedSerder.raw,
-                                       verfers=kever.verfers,
-                                       indexed=True)
-        msg = eventing.messagize(serder=reserder, sigers=sigers)
-        self.kevery.processOne(ims=bytearray(msg))  # process copy into own db
         self.remoter.tx(msg)  # send to remote
-        logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
+        logger.info("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
 
 
     def sendOwnEvent(self, sn):
         """
         Utility to send own event at sequence number sn
         """
-        msg = self.hab.messagizeOwnEvent(sn=sn)
+        msg = self.hab.makeOwnEvent(sn=sn)
         # send to connected remote
         self.remoter.tx(msg)
         logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))

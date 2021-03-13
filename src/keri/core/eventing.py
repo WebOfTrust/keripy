@@ -21,8 +21,8 @@ import blake3
 
 from orderedset import OrderedSet as oset
 
-from ..kering import (ValidationError, VersionError, EmptyMaterialError,
-                      DerivationError, ShortageError, MissingSignatureError,
+from ..kering import (ExtractionError, ShortageError,
+                      ValidationError,  MissingSignatureError,
                       MissingDelegatingSealError, OutOfOrderError,
                       LikelyDuplicitousError,  UnverifiedReceiptError,
                       UnverifiedTransferableReceiptError)
@@ -31,7 +31,7 @@ from ..help.helping import nowIso8601, fromIso8601, toIso8601
 from ..db.dbing import dgKey, snKey, splitKey, splitKeySN, Baser
 
 from .coring import Versify, Serials, Ilks
-from .coring import MtrDex, IdrDex, CtrDex, Counter
+from .coring import MtrDex, NonTransDex, IdrDex, CtrDex, Counter
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
 from .coring import Seqner, Siger, Cigar
 
@@ -708,7 +708,7 @@ def deltate(pre,
 
 def messagize(serder, sigers):
     """
-    Attaches signatures to a KERI event
+    Attaches indexed signatures from sigers to KERI message data from serder
     Parameters:
         serder: Serder instance containing the event
         sigers: Sigers[] array of indexed signatures
@@ -725,6 +725,27 @@ def messagize(serder, sigers):
     return msg
 
 
+def receiptize(serder, cigars):
+    """
+    Attaches receipt couplets from cigars to KERI message data from serder
+    Parameters:
+        serder: Serder instance containing the event
+        cigars: Cigars[] array of non-transferable non indexed signatures
+
+    Returns: bytearray KERI event message
+    """
+    msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
+    count = len(cigars)
+    counter = Counter(code=CtrDex.NonTransReceiptCouples, count=count)
+    msg.extend(counter.qb64b)
+    for cigar in cigars:
+        if cigar.verfer.code not in NonTransDex:
+            raise ValueError("Attempt to use tranferable prefix={} for "
+                             "receipt.".format(cigar.verfer.qb64))
+        msg.extend(cigar.verfer.qb64b)
+        msg.extend(cigar.qb64b)
+
+    return msg
 
 class Kever:
     """
@@ -905,7 +926,7 @@ class Kever:
 
         """
         if not self.transferable:  # not transferable so no events after inception allowed
-            raise ValidationError("Unexpected event = {} in nontransferable "
+            raise ValidationError("Unexpected event = {} is nontransferable "
                                   " state.".format(serder.ked))
         ked = serder.ked
         if serder.pre != self.prefixer.qb64:
@@ -1375,8 +1396,10 @@ class Kevery:
         .ims is bytearray incoming message stream
         .cues is deque of Cues i.e. notices of events or requests to respond to
         .kevers is dict of existing kevers indexed by pre (qb64) of each Kever
-        .baser is instance of LMDB Baser object
+        .db is instance of LMDB Baser object
         .framed is Boolean stream is packet framed If True Else not framed
+        .pipelined is Boolean, True means process ims as pipelined messages
+                when pipelined count codes  Otherwise ignore pipelined codes
         .pre is fully qualified base64 identifier prefix of own identifier if any
         .local is Boolean, True means only process msgs for own events if .pre
                            False means only process msgs for not own events if .pre
@@ -1394,9 +1417,24 @@ class Kevery:
     TimeoutLDE = 3600  # seconds to timeout likely duplicitous escrows
 
     def __init__(self, ims=None, cues=None, kevers=None, db=None, framed=True,
-                 pre=None, local=False):
+                 pipelined=False, pre=None, local=False):
         """
-        Set up event stream and logs
+        Initialize instance:
+
+        Parameters:
+            ims is incoming message stream bytearray
+            cues is deque if cues to create responses to messages
+            kevers is dict of Kever instances of key state in db
+            db is Baser instance
+            framed is Boolean, True means ims contains only one frame of msg plus
+                attachments instead of stream with multiple messages
+            pipelined is Boolean, True means process ims as pipelined messages
+                when pipelined count codes  Otherwise ignore pipelined codes
+            pre is local or own identifier prefix. Some restriction if present
+            local is Boolean, True means only process msgs for own events if .pre
+                        False means only process msgs for not own events if .pre
+
+
 
         """
         self.ims = ims if ims is not None else bytearray()
@@ -1407,8 +1445,9 @@ class Kevery:
             db = Baser()  # default name = "main"
         self.db = db
         self.framed = True if framed else False  # extract until end-of-stream
-        self.pre = pre
-        self.local = True if local else False
+        self.pipelined = True if pipelined else False  # process as pipelined
+        self.pre = pre  # local prefix for restrictions on local events
+        self.local = True if local else False  # local vs nonlocal restrictions
 
 
     @property
@@ -1438,13 +1477,19 @@ class Kevery:
             except ShortageError as ex:  # need more bytes
                 break  # break out of while loop
 
-            except Exception as ex:  # log diagnostics errors etc
+            except ExtractionError as ex:  # some other extraction error
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg process error: %s\n", ex.args[0])
+                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
                 else:
-                    logger.error("Kevery msg process error: %s\n", ex.args[0])
-                del ims[:]  #  delete rest of stream
-                break
+                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
+                del ims[:]  # delete rest of stream to force cold restart
+
+            except Exception as ex:  # Some other error while validating
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg validation error: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery msg validation error: %s\n", ex.args[0])
+                # should we restart break here?
 
 
     def processOne(self, ims=None, framed=True):
@@ -1471,16 +1516,11 @@ class Kevery:
             serder = Serder(raw=ims)
 
         except ShortageError as ex:  # need more bytes
-            raise ex  # reraise
+            raise   # reraise
 
-        except Exception as ex:
-            raise ValidationError("Error while processing message stream"
-                                  " = {}".format(ex))
+        except ExtractionError as ex:  # Some other error while extracting
+            raise ExtractionError("Error extracting message.")
 
-        version = serder.version
-        if version != Version:  # This is where to dispatch version switch
-            raise VersionError("Unsupported version = {}, expected {} for evt "
-                                  "= {}.".format(version, Version, serder.ked))
 
         del ims[:serder.size]  # strip off event from front of ims
 
@@ -1733,6 +1773,7 @@ class Kevery:
         snkey = snKey(pre=pre, sn=sn)
         ldig = self.db.getKeLast(key=snkey)   # retrieve dig of last event at sn.
 
+
         if ldig is not None:  #  verify digs match
             ldig = bytes(ldig).decode("utf-8")
             # retrieve event by dig assumes if ldig is not None that event exists at ldig
@@ -1749,8 +1790,18 @@ class Kevery:
             for cigar in cigars:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
-                if self.pre and self.pre == cigar.verfer.qb64:  # implies own transferable
-                    continue  # skip own receipt of own event
+                if self.pre and self.pre == cigar.verfer.qb64:  # own receipt when own transferable
+                    if self.pre == pre:  # own receipt attachment on own event
+                        logger.info("Kevery process: skipped own receipt attachment"
+                                    " on own event receipt=\n%s\n",
+                                               json.dumps(serder.ked, indent=1))
+                        continue  # skip own receipt attachment on own event
+                    if not self.local:  # own receipt on other event when not local
+                        logger.info("Kevery process: skipped own receipt attachment"
+                                    " on nonlocal event receipt=\n%s\n",
+                                               json.dumps(serder.ked, indent=1))
+                        continue  # skip own receipt attachment on non-local event
+
                 if cigar.verfer.verify(cigar.raw, lserder.raw):
                     # write receipt couple to database
                     couple = cigar.verfer.qb64b + cigar.qb64b
@@ -1791,9 +1842,13 @@ class Kevery:
         # Only accept receipt if for last seen version of receipted event at sn
         ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
         seal = SealEvent(**ked["a"])
-        if self.pre and self.pre == seal.i == pre:  # skip own chits of own events
-            raise ValidationError("Own pre={} receipt of own event {}."
+        if self.pre and self.pre == seal.i:  # own chit
+            if self.pre == pre:  # skip own chits of own events
+                raise ValidationError("Own pre={} chit of own event {}."
                                   "".format(self.pre, ked))
+            if not self.local:  # skip own chits of nonlocal events
+                raise ValidationError("Own pre={} seal in chit of nonlocal event "
+                                  "{}.".format(self.pre, ked))
 
         if ldig is not None and seal.i in self.kevers:  #  verify digs match last seen and receipt dig
             # both receipted event and receipter in database
@@ -2764,6 +2819,7 @@ class Kevery:
 
     def duplicity(self, serder, sigers):
         """
+        PlaceHolder Reminder
         Processes potential duplicitous events in PDELs
 
         Handles duplicity detection and logging if duplicitous
@@ -2772,4 +2828,3 @@ class Kevery:
 
         """
         pass
-
