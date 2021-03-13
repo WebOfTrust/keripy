@@ -10,8 +10,12 @@ import json
 import datetime
 import lmdb
 
+from hio.base import doing
+
+from keri.db import dbing
 from keri.db.dbing import clearDatabaserDir, openLMDB, openDB
-from keri.db.dbing import dgKey, snKey, dtKey, splitKey, splitKeySn, splitKeyDt
+from keri.db.dbing import (dgKey, onKey, fnKey, snKey, dtKey, splitKey,
+                           splitKeyON, splitKeyFN, splitKeySN, splitKeyDT)
 from keri.db.dbing import LMDBer, Baser
 
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
@@ -37,7 +41,7 @@ def test_key_funcs():
                                         b'.00000000000000000000000000000003')
 
     assert splitKey(snKey(pre, sn)) == (pre, b'%032x' % sn)
-    assert splitKeySn(snKey(pre, sn)) == (pre, sn)
+    assert splitKeySN(snKey(pre, sn)) == (pre, sn)
 
     assert dgKey(pre, dig) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                          b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
@@ -48,7 +52,7 @@ def test_key_funcs():
                                         b'|2021-02-13T19:16:50.750302+00:00')
 
     assert splitKey(dtKey(pre, dts), sep=b'|') == (pre, dts)
-    assert splitKeyDt(dtKey(pre, dts)) == (pre, fromIso8601(dts.decode("utf-8")))
+    assert splitKeyDT(dtKey(pre, dts)) == (pre, fromIso8601(dts.decode("utf-8")))
 
     #  Str
     pre = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
@@ -59,7 +63,7 @@ def test_key_funcs():
                                         b'.00000000000000000000000000000003')
 
     assert splitKey(snKey(pre, sn).decode("utf-8")) == (pre, '%032x' % sn)
-    assert splitKeySn(snKey(pre, sn).decode("utf-8")) == (pre, sn)
+    assert splitKeySN(snKey(pre, sn).decode("utf-8")) == (pre, sn)
 
     assert dgKey(pre, dig) == (b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                          b'.EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
@@ -70,7 +74,7 @@ def test_key_funcs():
                                 b'|2021-02-13T19:16:50.750302+00:00')
 
     assert splitKey(dtKey(pre, dts).decode("utf-8"), sep=b'|') == (pre, dts)
-    assert splitKeyDt(dtKey(pre, dts).decode("utf-8")) == (pre, fromIso8601(dts))
+    assert splitKeyDT(dtKey(pre, dts).decode("utf-8")) == (pre, fromIso8601(dts))
 
 
     with pytest.raises(TypeError):
@@ -91,14 +95,14 @@ def test_key_funcs():
 
     key = memoryview(snKey(pre, sn))
     assert splitKey(key) == (pre, b'%032x' % sn)
-    assert splitKeySn(key) == (pre, sn)
+    assert splitKeySN(key) == (pre, sn)
 
     key = memoryview(dgKey(pre, dig))
     assert splitKey(key) == (pre, dig)
 
     key = memoryview(dtKey(pre, dts))
     assert splitKey(key, sep=b'|') == (pre, dts)
-    assert splitKeyDt(key) == (pre, fromIso8601(dts.decode("utf-8")))
+    assert splitKeyDT(key) == (pre, fromIso8601(dts.decode("utf-8")))
 
     """Done Test"""
 
@@ -224,6 +228,133 @@ def test_lmdber():
         assert dber.getVal(db, key) == val
         assert dber.delVal(db, key) == True
         assert dber.getVal(db, key) == None
+
+        # test OrdVal OrdItem ordinal numbered event sub db
+        db = dber.env.open_db(key=b'seen.')
+
+        preA = b'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
+        preB = b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
+        preC = b'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
+
+        keyA0 = onKey(preA, 0)
+
+        keyB0 = onKey(preB, 0)
+        keyB1 = onKey(preB, 1)
+        keyB2 = onKey(preB, 2)
+        keyB3 = onKey(preB, 3)
+        keyB4 = onKey(preB, 4)
+
+        keyC0 = onKey(preC, 0)
+
+        digA = b'ER73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
+
+        digU = b'ER73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
+        digV = b'EA4vCeJswIBJlO3RqE-wsE72Vt3wAceJ_LzqKvbDtBSY'
+        digW = b'EyAyl33W9ja_wLX85UrzRnL4KNzlsIKIA7CrD04nVX1w'
+        digX = b'EEnwxEm5Bg5s5aTLsgQCNpubIYzwlvMwZIzdOM0Z3u7o'
+        digY = b'Enrq74_Q11S2vHx1gpK_46Ik5Q7Yy9K1zZ5BavqGDKnk'
+
+        digC = b'E-5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w'
+
+        assert dber.getVal(db, keyA0) == None
+        assert dber.delVal(db, keyA0) == False
+        assert dber.putVal(db, keyA0, val=digA) == True
+        assert dber.getVal(db, keyA0) == digA
+        assert dber.putVal(db, keyA0, val=digA) == False
+        assert dber.setVal(db, keyA0, val=digA) == True
+        assert dber.getVal(db, keyA0) == digA
+        assert dber.delVal(db, keyA0) == True
+        assert dber.getVal(db, keyA0) == None
+
+        #  test appendOrdValPre
+        # empty database
+        assert dber.getVal(db, keyB0) == None
+        on = dber.appendOrdValPre(db, preB, digU)
+        assert on == 0
+        assert dber.getVal(db, keyB0) == digU
+        assert dber.delVal(db, keyB0) == True
+        assert dber.getVal(db, keyB0) == None
+
+        # earlier pre in database only
+        assert dber.putVal(db, keyA0, val=digA) == True
+        on = dber.appendOrdValPre(db, preB, digU)
+        assert on == 0
+        assert dber.getVal(db, keyB0) == digU
+        assert dber.delVal(db, keyB0) == True
+        assert dber.getVal(db, keyB0) == None
+
+        # earlier and later pre in db but not same pre
+        assert dber.getVal(db, keyA0) == digA
+        assert dber.putVal(db, keyC0, val=digC) == True
+        on = dber.appendOrdValPre(db, preB, digU)
+        assert on == 0
+        assert dber.getVal(db, keyB0) == digU
+        assert dber.delVal(db, keyB0) == True
+        assert dber.getVal(db, keyB0) == None
+
+        # later pre only
+        assert dber.delVal(db, keyA0) == True
+        assert dber.getVal(db, keyA0) == None
+        assert dber.getVal(db, keyC0) == digC
+        on = dber.appendOrdValPre(db, preB, digU)
+        assert on == 0
+        assert dber.getVal(db, keyB0) == digU
+
+        # earlier pre and later pre and earlier entry for same pre
+        assert dber.putVal(db, keyA0, val=digA) == True
+        on = dber.appendOrdValPre(db, preB, digV)
+        assert on == 1
+        assert dber.getVal(db, keyB1) == digV
+
+        # earlier entry for same pre but only same pre
+        assert dber.delVal(db, keyA0) == True
+        assert dber.getVal(db, keyA0) == None
+        assert dber.delVal(db, keyC0) == True
+        assert dber.getVal(db, keyC0) == None
+        # another value for preB
+        on = dber.appendOrdValPre(db, preB, digW)
+        assert on == 2
+        assert dber.getVal(db, keyB2) == digW
+        # yet another value for preB
+        on = dber.appendOrdValPre(db, preB, digX)
+        assert on == 3
+        assert dber.getVal(db, keyB3) == digX
+        # yet another value for preB
+        on = dber.appendOrdValPre(db, preB, digY )
+        assert on == 4
+        assert dber.getVal(db, keyB4) == digY
+
+        # replay preB events in database
+        items = [item for item in dber.getAllOrdItemPreIter(db, preB)]
+        assert items == [(0, digU), (1, digV), (2, digW), (3, digX), (4, digY)]
+
+        # resume replay preB events at on = 3
+        items = [item for item in dber.getAllOrdItemPreIter(db, preB, on=3)]
+        assert items == [(3, digX), (4, digY)]
+
+        # resume replay preB events at on = 5
+        items = [item for item in dber.getAllOrdItemPreIter(db, preB, on=5)]
+        assert items == []
+
+        # replay all events in database with pre events before and after
+        assert dber.putVal(db, keyA0, val=digA) == True
+        assert dber.putVal(db, keyC0, val=digC) == True
+
+        items = [item  for item in dber.getAllOrdItemAllPreIter(db)]
+        assert items == [(preA, 0, digA), (preB, 0, digU), (preB, 1, digV),
+                         (preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
+                         (preC, 0, digC)]
+
+
+        # resume replay all starting at preB on=2
+        items = [item for item in dber.getAllOrdItemAllPreIter(db, key=keyB2)]
+        assert items == [(preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
+                             (preC, 0, digC)]
+
+        # resume replay all starting at preC on=1
+        items = [item for item in dber.getAllOrdItemAllPreIter(db, key=onKey(preC, 1))]
+        assert items == []
+
 
         # test Vals dup methods.  dup vals are lexocographic
         key = b'A'
@@ -637,184 +768,131 @@ def test_baser():
         assert db.delEvt(key) == True
         assert db.getEvt(key) == None
 
-        # test first seen event sub db
+        # test first seen event log .fels sub db
         preA = b'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
         preB = b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
         preC = b'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
 
-        dts0 = b'2021-02-13T21:31:23.543715+00:00'
-        dts1 = b'2021-02-13T21:31:37.309287+00:00'
-        dts2 = b'2021-02-13T21:31:58.200582+00:00'
-        dts3 = b'2021-02-13T21:33:29.151598+00:00'
-        dts4 = b'2021-02-13T21:33:52.098736+00:00'
+        keyA0 = onKey(preA, 0)
+
+        keyB0 = onKey(preB, 0)
+        keyB1 = onKey(preB, 1)
+        keyB2 = onKey(preB, 2)
+        keyB3 = onKey(preB, 3)
+        keyB4 = onKey(preB, 4)
+
+        keyC0 = onKey(preC, 0)
+
+        digA = b'ER73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
 
         digU = b'ER73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
         digV = b'EA4vCeJswIBJlO3RqE-wsE72Vt3wAceJ_LzqKvbDtBSY'
         digW = b'EyAyl33W9ja_wLX85UrzRnL4KNzlsIKIA7CrD04nVX1w'
         digX = b'EEnwxEm5Bg5s5aTLsgQCNpubIYzwlvMwZIzdOM0Z3u7o'
         digY = b'Enrq74_Q11S2vHx1gpK_46Ik5Q7Yy9K1zZ5BavqGDKnk'
-        digZ = b'E-5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w'
 
-        keyA4 = dtKey(preA, dts4)
-        assert db.getFse(keyA4) == None
-        assert db.delFse(keyA4) == False
-        assert db.putFse(keyA4, val=digX) == True
-        assert db.getFse(keyA4) == digX
-        assert db.putFse(keyA4, val=digX) == False
-        assert db.setFse(keyA4, val=digX) == True
-        assert db.getFse(keyA4) == digX
-        assert db.delFse(keyA4) == True
-        assert db.getFse(keyA4) == None
+        digC = b'E-5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w'
 
-        #  test appendFse
+        assert db.getFe(keyA0) == None
+        assert db.delFe(keyA0) == False
+        assert db.putFe(keyA0, val=digA) == True
+        assert db.getFe(keyA0) == digA
+        assert db.putFe(keyA0, val=digA) == False
+        assert db.setFe(keyA0, val=digA) == True
+        assert db.getFe(keyA0) == digA
+        assert db.delFe(keyA0) == True
+        assert db.getFe(keyA0) == None
+
+        #  test appendFe
         # empty database
-        keyB1 = dtKey(preB, dts1)
-        assert db.getFse(keyB1) == None
-        dts = db.appendFse(preB, dts1, digY )
-        assert dts == dts1
-        assert db.getFse(keyB1) == digY
-        assert db.delFse(keyB1) == True
-        assert db.getFse(keyB1) == None
+        assert db.getFe(keyB0) == None
+        on = db.appendFe(preB, digU)
+        assert on == 0
+        assert db.getFe(keyB0) == digU
+        assert db.delFe(keyB0) == True
+        assert db.getFe(keyB0) == None
 
         # earlier pre in database only
-        assert db.putFse(keyA4, val=digX) == True
-        dts = db.appendFse(preB, dts1, digY )
-        assert dts == dts1
-        assert db.getFse(keyB1) == digY
-        assert db.delFse(keyB1) == True
-        assert db.getFse(keyB1) == None
+        assert db.putFe(keyA0, val=digA) == True
+        on = db.appendFe(preB, digU)
+        assert on == 0
+        assert db.getFe(keyB0) == digU
+        assert db.delFe(keyB0) == True
+        assert db.getFe(keyB0) == None
 
         # earlier and later pre in db but not same pre
-        keyC0 = dtKey(preC, dts0)
-        assert db.putFse(keyC0, val=digZ) == True
-        dts = db.appendFse(preB, dts1, digY )
-        assert dts == dts1
-        assert db.getFse(keyB1) == digY
-        assert db.delFse(keyB1) == True
-        assert db.getFse(keyB1) == None
+        assert db.getFe(keyA0) == digA
+        assert db.putFe(keyC0, val=digC) == True
+        on = db.appendFe(preB, digU)
+        assert on == 0
+        assert db.getFe(keyB0) == digU
+        assert db.delFe(keyB0) == True
+        assert db.getFe(keyB0) == None
 
         # later pre only
-        assert db.delFse(keyA4) == True
-        assert db.getFse(keyA4) == None
-        dts = db.appendFse(preB, dts1, digY )
-        assert dts == dts1
-        assert db.getFse(keyB1) == digY
+        assert db.delFe(keyA0) == True
+        assert db.getFe(keyA0) == None
+        assert db.getFe(keyC0) == digC
+        on = db.appendFe(preB, digU)
+        assert on == 0
+        assert db.getFe(keyB0) == digU
 
-        # earlier but same pre only
-        assert db.delFse(keyC0) == True
-        assert db.getFse(keyC0) == None
-        assert db.delFse(keyB1) == True
-        assert db.getFse(keyB1) == None
-        dts = db.appendFse(preB, dts1, digY )
-        assert dts == dts1
-        assert db.getFse(keyB1) == digY
-        keyB2 = dtKey(preB, dts2)
-        dts = db.appendFse(preB, dts2, digZ )
-        assert dts == dts2
-        assert db.getFse(keyB2) == digZ
-        keyB3 = dtKey(preB, dts3)
-        dts = db.appendFse(preB, dts3, digX )
-        assert dts == dts3
-        assert db.getFse(keyB3) == digX
+        # earlier pre and later pre and earlier entry for same pre
+        assert db.putFe(keyA0, val=digA) == True
+        on = db.appendFe(preB, digV)
+        assert on == 1
+        assert db.getFe(keyB1) == digV
 
-        # same key as last so increment
-        dts3a = db.appendFse(preB, dts3, digU )
-        assert dts3a != dts3
-        assert (fromIso8601(dts3a) - fromIso8601(dts3)) == datetime.timedelta(microseconds=1)
-        keyB3a = dtKey(preB, dts3a)
-        assert db.getFse(keyB3a) == digU
-
-        # same key as earlier than last so find last and then increment
-        dts3b = db.appendFse(preB, dts1, digV )
-        assert dts3b != dts3a
-        assert (fromIso8601(dts3b) - fromIso8601(dts3a)) == datetime.timedelta(microseconds=1)
-        assert (fromIso8601(dts3b) - fromIso8601(dts3)) == datetime.timedelta(microseconds=2)
-        keyB3b = dtKey(preB, dts3b)
-        assert db.getFse(keyB3b) == digV
+        # earlier entry for same pre but only same pre
+        assert db.delFe(keyA0) == True
+        assert db.getFe(keyA0) == None
+        assert db.delFe(keyC0) == True
+        assert db.getFe(keyC0) == None
+        # another value for preB
+        on = db.appendFe(preB, digW)
+        assert on == 2
+        assert db.getFe(keyB2) == digW
+        # yet another value for preB
+        on = db.appendFe(preB, digX)
+        assert on == 3
+        assert db.getFe(keyB3) == digX
+        # yet another value for preB
+        on = db.appendFe(preB, digY )
+        assert on == 4
+        assert db.getFe(keyB4) == digY
 
         # replay preB events in database
-        digs = [bytes(dig) for dig in db.getFseValsIter(preB)]
-        assert digs == [digY, digZ, digX, digU, digV]
+        items = [item for item in db.getFelItemPreIter(preB)]
+        assert items == [(0, digU), (1, digV), (2, digW), (3, digX), (4, digY)]
 
-        items = [(bytes(dts), bytes(dig)) for dts, dig in db.getFseItemsIter(preB)]
-        assert items == [(dts1, digY), (dts2, digZ), (dts3, digX), (dts3a, digU), (dts3b, digV)]
+        # resume replay preB events at on = 3
+        items = [item for item in db.getFelItemPreIter(preB, fn=3)]
+        assert items == [(3, digX), (4, digY)]
 
-        # replay all events in database
-        assert db.putFse(keyA4, val=digX) == True
-        assert db.putFse(keyC0, val=digZ) == True
+        # resume replay preB events at on = 5
+        items = [item for item in db.getFelItemPreIter(preB, fn=5)]
+        assert items == []
 
-        digs = [bytes(dig) for dig in db.getFseValsAllPreIter()]
-        assert digs == [digX, digY, digZ, digX, digU, digV, digZ]
+        # replay all events in database with pre events before and after
+        assert db.putFe(keyA0, val=digA) == True
+        assert db.putFe(keyC0, val=digC) == True
 
-        items = [(bytes(dts), bytes(dig)) for dts, dig in db.getFseItemsAllPreIter()]
-        assert items == [(dts4, digX), (dts1, digY), (dts2, digZ), (dts3, digX),
-                         (dts3a, digU), (dts3b, digV), (dts0, digZ)]
+        items = [item  for item in db.getFelItemAllPreIter()]
+        assert items == [(preA, 0, digA), (preB, 0, digU), (preB, 1, digV),
+                         (preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
+                         (preC, 0, digC)]
 
 
-        # later not same pre
-        assert db.delFse(keyA4) == True
-        assert db.getFse(keyA4) == None
-        assert db.delFse(keyC0) == True
-        assert db.getFse(keyC0) == None
-        assert db.delFse(keyB1) == True
-        assert db.getFse(keyB1) == None
-        assert db.delFse(keyB2) == True
-        assert db.getFse(keyB2) == None
-        assert db.delFse(keyB3) == True
-        assert db.getFse(keyB3) == None
-        assert db.delFse(keyB3a) == True
-        assert db.getFse(keyB3a) == None
-        assert db.delFse(keyB3b) == True
-        assert db.getFse(keyB3b) == None
-        keyC0 = dtKey(preC, dts0)
-        assert db.putFse(keyC0, val=digZ) == True
+        # resume replay all starting at preB on=2
+        items = [item for item in db.getFelItemAllPreIter(key=keyB2)]
+        assert items == [(preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
+                             (preC, 0, digC)]
 
-        dts = db.appendFse(preB, dts1, digY )
-        assert dts == dts1
-        assert db.getFse(keyB1) == digY
-        keyB2 = dtKey(preB, dts2)
-        dts = db.appendFse(preB, dts2, digZ )
-        assert dts == dts2
-        assert db.getFse(keyB2) == digZ
-        keyB3 = dtKey(preB, dts3)
-        dts = db.appendFse(preB, dts3, digX )
-        assert dts == dts3
-        assert db.getFse(keyB3) == digX
-
-        # same key as last so increment
-        dts3a = db.appendFse(preB, dts3, digU )
-        assert dts3a != dts3
-        assert (fromIso8601(dts3a) - fromIso8601(dts3)) == datetime.timedelta(microseconds=1)
-        keyB3a = dtKey(preB, dts3a)
-        assert db.getFse(keyB3a) == digU
-
-        # same key as earlier than last so find last and then increment
-        dts3b = db.appendFse(preB, dts1, digV )
-        assert dts3b != dts3a
-        assert (fromIso8601(dts3b) - fromIso8601(dts3a)) == datetime.timedelta(microseconds=1)
-        assert (fromIso8601(dts3b) - fromIso8601(dts3)) == datetime.timedelta(microseconds=2)
-        keyB3b = dtKey(preB, dts3b)
-        assert db.getFse(keyB3b) == digV
-
-        # replay preB events in database
-        digs = [bytes(dig) for dig in db.getFseValsIter(preB)]
-        assert digs == [digY, digZ, digX, digU, digV]
-
-        items = [(bytes(dts), bytes(dig)) for dts, dig in db.getFseItemsIter(preB)]
-        assert items == [(dts1, digY), (dts2, digZ), (dts3, digX), (dts3a, digU), (dts3b, digV)]
-
-        # replay all events in database
-        assert db.putFse(keyA4, val=digX) == True
-
-        digs = [bytes(dig) for dig in db.getFseValsAllPreIter()]
-        assert digs == [digX, digY, digZ, digX, digU, digV, digZ]
-
-        items = [(bytes(dts), bytes(dig)) for dts, dig in db.getFseItemsAllPreIter()]
-        assert items == [(dts4, digX), (dts1, digY), (dts2, digZ), (dts3, digX),
-                             (dts3a, digU), (dts3b, digV), (dts0, digZ)]
+        # resume replay all starting at preC on=1
+        items = [item for item in db.getFelItemAllPreIter(key=onKey(preC, 1))]
+        assert items == []
 
         # Test .dtss datetime stamps
-
         key = dgKey(preb, digb)
         assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
                        b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
@@ -1990,6 +2068,71 @@ def test_usebaser():
     assert not os.path.exists(db.path)
 
     """ End Test """
+
+
+def test_baserdoer():
+    """
+    Test BaserDoer
+
+
+    """
+    db0 = dbing.Baser(name='test0', temp=True, reopen=False)
+    assert db0.opened == False
+    assert db0.path == None
+    assert db0.env == None
+
+    dbdoer0 = dbing.BaserDoer(baser=db0)
+    assert dbdoer0.baser == db0
+    assert dbdoer0.baser.opened == False
+
+    db1 = dbing.Baser(name='test1', temp=True, reopen=False)
+    assert db1.opened == False
+    assert db1.path == None
+    assert db1.env == None
+
+    dbDoer1 = dbing.BaserDoer(baser=db1)
+    assert dbDoer1.baser == db1
+    assert dbDoer1.baser.opened == False
+
+    limit = 0.25
+    tock = 0.03125
+    doist = doing.Doist(limit=limit, tock=tock)
+
+    doers = [dbdoer0, dbDoer1]
+
+    dogs = doist.ready(doers=doers)
+    assert len(dogs) == 2
+    assert [val[1] for val in dogs] == [0.0, 0.0]  #  retymes
+    for doer in doers:
+        assert doer._tymist == doist
+        assert doer.baser.opened
+        assert "_test/keri/db/test" in doer.baser.path
+
+    doist.once(dogs)
+    assert doist.tyme == 0.03125  # on next cycle
+    assert len(dogs) == 2
+    for doer in doers:
+        assert doer.baser.opened == True
+
+    for dog, retyme, index in dogs:
+        dog.close()
+
+    for doer in doers:
+        assert doer.baser.opened == False
+        assert doer.baser.env == None
+        assert not os.path.exists(doer.baser.path)
+
+    # start over
+    doist.tyme = 0.0
+    doist.do(doers=doers)
+    assert doist.tyme == limit
+    for doer in doers:
+        assert doer.baser.opened == False
+        assert doer.baser.env == None
+        assert not os.path.exists(doer.baser.path)
+
+    """End Test"""
+
 
 if __name__ == "__main__":
     test_baser()

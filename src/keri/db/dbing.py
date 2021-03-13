@@ -48,9 +48,7 @@ l
 import os
 import shutil
 import tempfile
-import stat
 import datetime
-
 from contextlib import contextmanager
 
 import lmdb
@@ -71,6 +69,8 @@ class DatabaseError(KeriError):
 ProemSize =  33
 MaxProem = int("f"*(ProemSize-1), 16)
 
+MaxON = int("f"*32, 16)  # largest possible ordinal number, sequence or first seen
+
 
 def dgKey(pre, dig):
     """
@@ -85,15 +85,18 @@ def dgKey(pre, dig):
     return (b'%s.%s' %  (pre, dig))
 
 
-def snKey(pre, sn):
+def onKey(pre, sn):
     """
     Returns bytes DB key from concatenation with '.' of qualified Base64 prefix
-    bytes pre and int sn (sequence number) of event
+    bytes pre and int ordinal number of event, such as sequence number or first
+    seen order number.
     """
     if hasattr(pre, "encode"):
         pre = pre.encode("utf-8")  # convert str to bytes
     return (b'%s.%032x' % (pre, sn))
 
+snKey = onKey  # alias so intent is clear, sn vs fn
+fnKey = onKey  # alias so intent is clear, sn vs fn
 
 def dtKey(pre, dts):
     """
@@ -113,9 +116,9 @@ def dtKey(pre, dts):
 
 def splitKey(key, sep=b'.'):
     """
-    Returns duple of pre and either dig or sn str or dts datetime str by
+    Returns duple of pre and either dig or on, sn, fn str or dts datetime str by
     splitting key at bytes sep
-    Accepts either bytes or str key
+    Accepts either bytes or str key and returns same type
     Raises ValueError if key does not split into exactly two elements
 
     Parameters:
@@ -132,24 +135,27 @@ def splitKey(key, sep=b'.'):
             sep = sep.encode("utf-8")
     splits = key.split(sep)
     if len(splits) != 2:
-        raise  ValueError("Unsplitable key = {}".format(key))
+        raise  ValueError("Unsplittable key = {}".format(key))
     return tuple(splits)
 
 
-def splitKeySn(key):
+def splitKeyON(key):
     """
-    Returns list of pre and int sn from key
+    Returns list of pre and int on from key
     Accepts either bytes or str key
-
+    ordinal number  appears in key in hex format
     """
     if isinstance(key, memoryview):
         key = bytes(key)
-    pre, sn = splitKey(key)
-    sn = int(sn, 16)
-    return (pre, sn)
+    pre, on = splitKey(key)
+    on = int(on, 16)
+    return (pre, on)
+
+splitKeySN = splitKeyON  # alias so intent is clear, sn vs fn
+splitKeyFN = splitKeyON  # alias so intent is clear, sn vs fn
 
 
-def splitKeyDt(key):
+def splitKeyDT(key):
     """
     Returns list of pre and dts converted to datetime from key
     dts is TZ aware Iso8601 '2021-02-13T19:16:50.750302+00:00'
@@ -194,6 +200,8 @@ def openLMDB(cls=None, name="test", temp=True, **kwa):
 
     with openDatabaser(name="gen2, cls=Baser)
 
+    wl.close(clear=True if wl.temp else False)
+
     """
     if cls is None:
         cls = LMDBer
@@ -202,7 +210,7 @@ def openLMDB(cls=None, name="test", temp=True, **kwa):
         yield lmdber
 
     finally:
-        lmdber.close()
+        lmdber.close()  # clears if lmdber.temp
 
 
 class LMDBer:
@@ -370,6 +378,7 @@ class LMDBer:
             shutil.rmtree(self.path)
 
 
+    # For subdbs with no duplicate values allowed at each key. (dupsort==False)
     def putVal(self, db, key, val):
         """
         Write serialized bytes val to location key in db
@@ -428,6 +437,113 @@ class LMDBer:
             return (txn.delete(key))
 
 
+    # For subdbs with no duplicate values allowed at each key. (dupsort==False)
+    # and use keys with ordinal as monotonically increasing number part
+    # such as sn or fn
+    def appendOrdValPre(self, db, pre, val):
+        """
+        Appends val in order after last previous key with same pre in db.
+        Returns ordinal number, on, of appended entry. Appended on is 1 greater
+        than previous latest on.
+        Uses snKey(pre, on) for entries.
+
+        Append val to end of db entries with same pre but with on incremented by
+        1 relative to last preexisting entry at pre.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            pre is bytes identifier prefix for event
+            val is event digest
+        """
+        # set key with fn at max and then walk backwards to find last entry at pre
+        # if any otherwise zeroth entry at pre
+        key = snKey(pre, MaxON)
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            on = 0  # unless other cases match then zeroth entry at pre
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  # max is past end of database
+                #  so either empty database or last is earlier pre or
+                #  last is last entry  at same pre
+                if cursor.last():  # not empty db. last entry earlier than max
+                    ckey = cursor.key()
+                    cpre, cn = splitKeyON(ckey)
+                    if cpre == pre:  # last is last entry for same pre
+                        on = cn + 1  # increment
+            else:  # not past end so not empty either later pre or max entry at pre
+                ckey = cursor.key()
+                cpre, cn = splitKeyON(ckey)
+                if cpre == pre:  # last entry for pre is already at max
+                    raise ValueError("Number part of key {}  exceeds maximum"
+                                     " size.".format(ckey))
+                else:  # later pre so backup one entry
+                    # either no entry before last or earlier pre with entry
+                    if cursor.prev():  # prev entry, maybe same or earlier pre
+                        ckey = cursor.key()
+                        cpre, cn = splitKeyON(ckey)
+                        if cpre == pre:  # last entry at pre
+                            on = cn + 1  # increment
+
+            key = onKey(pre, on)
+
+            if not cursor.put(key, val, overwrite=False):
+                raise  ValueError("Failed appending {} at {}.".format(val, key))
+            return on
+
+
+    def getAllOrdItemPreIter(self, db, pre, on=0):
+        """
+        Returns iterator of duple item, (on, dig), at each key over all ordinal
+        numbered keys with same prefix, pre, in db. Values are sorted by
+        snKey(pre, on) where on is ordinal number int.
+        Returned items are duples of (on, dig) where on is ordinal number int
+        and dig is event digest for lookup in .evts sub db.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            pre is bytes of itdentifier prefix
+            on is int ordinal number to resume replay
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = onKey(pre, on)  # start replay at this enty 0 is earliest
+            if not cursor.set_range(key):  #  moves to val at key >= key
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # get key, val at cursor
+                cpre, cn = splitKeyON(key)
+                if cpre != pre:  # prev is now the last event for pre
+                    break  # done
+                yield (cn, bytes(val))  # (on, dig) of event
+
+
+    def getAllOrdItemAllPreIter(self, db, key=b''):
+        """
+        Returns iterator of triple item, (pre, on, dig), at each key over all
+        ordinal numbered keys for all prefixes in db. Values are sorted by
+        snKey(pre, on) where on is ordinal number int.
+        Each returned item is triple (pre, on, dig) where pre is identifier prefix,
+        on is ordinal number int and dig is event digest for lookup in .evts sub db.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is key location in db to resume replay,
+                   If empty then start at first key in database
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # return key, val at cursor
+                cpre, cn = splitKeyON(key)
+                yield (cpre, cn, bytes(val))  # (pre, on, dig) of event
+
+
+    # For subdbs that support duplicates at each key (dupsort==True)
     def putVals(self, db, key, vals):
         """
         Write each entry from list of bytes vals to key in db
@@ -440,7 +556,7 @@ class LMDBer:
         key.
 
         Parameters:
-            db is opened named sub db with dupsort=False
+            db is opened named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
             vals is list of bytes of values to be written
         """
@@ -466,7 +582,7 @@ class LMDBer:
         with O(1) whereas list inclusion scales with O(n).
 
         Parameters:
-            db is opened named sub db with dupsort=False
+            db is opened named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
             val is bytes of value to be written
         """
@@ -496,6 +612,7 @@ class LMDBer:
             if cursor.set_key(key):  # moves to first_dup
                 vals = [val for val in cursor.iternext_dup()]
             return vals
+
 
     def getValsIter(self, db, key):
         """
@@ -547,6 +664,8 @@ class LMDBer:
             return (txn.delete(key, val))
 
 
+    # For subdbs that support insertion order preserving duplicates at each key.
+    # dupsort==True and prepends and strips io val proem
     def putIoVals(self, db, key, vals):
         """
         Write each entry from list of bytes vals to key in db in insertion order
@@ -917,13 +1036,14 @@ class Baser(LMDBer):
             DB is keyed by identifer prefix plus digest of serialized event
             Only one value per DB key is allowed
 
-        .fses isnamed sub DB of digests that indexes events in first 'seen'
-            accepted order for replay and cloning of event log. Only one value
-            per DB key is allowed. Provides append only ordering of accepted
-            first seen events.
-            dtKey
-            DB is keyed by identifier prefix plus monotonically increasing datatime
-            stamp bytes in extended ISO 8601 format
+        .fels is named sub DB of first seen event log table (FEL) of digests
+            that indexes events in first 'seen' accepted order for replay and
+            cloning of event log. Only one value per DB key is allowed.
+            Provides append only ordering of accepted first seen events.
+            Uses first seen order number or fn.
+            fnKey
+            DB is keyed by identifier prefix plus monotonically increasing first
+            seen order number fn.
             Value is digest of serialized event used to lookup event in .evts sub DB
 
         .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
@@ -1060,7 +1180,7 @@ class Baser(LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.evts = self.env.open_db(key=b'evts.')
-        self.fses = self.env.open_db(key=b'fses.')
+        self.fels = self.env.open_db(key=b'fels.')
         self.dtss = self.env.open_db(key=b'dtss.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
@@ -1113,159 +1233,88 @@ class Baser(LMDBer):
         return self.delVal(self.evts, key)
 
 
-    def putFse(self, key, val):
+    def putFe(self, key, val):
         """
-        Use dtKey()
+        Use fnKey()
         Write event digest bytes val to key
         Does not overwrite existing val if any
         Returns True If val successfully written Else False
         Return False if key already exists
         """
-        return self.putVal(self.fses, key, val)
+        return self.putVal(self.fels, key, val)
 
 
-    def setFse(self, key, val):
+    def setFe(self, key, val):
         """
-        Use dtKey()
+        Use fnKey()
         Write event digest bytes val to key
         Overwrites existing val if any
         Returns True If val successfully written Else False
         """
-        return self.setVal(self.fses, key, val)
+        return self.setVal(self.fels, key, val)
 
 
-    def getFse(self, key):
+    def getFe(self, key):
         """
-        Use dtKey()
+        Use fnKey()
         Return event digest at key
         Returns None if no entry at key
         """
-        return self.getVal(self.fses, key)
+        return self.getVal(self.fels, key)
 
 
-    def delFse(self, key):
+    def delFe(self, key):
         """
-        Use dtKey()
+        Use snKey()
         Deletes value at key.
         Returns True If key exists in database Else False
         """
-        return self.delVal(self.fses, key)
+        return self.delVal(self.fels, key)
 
 
-    def appendFse(self, pre, dts, val):
+    def appendFe(self, pre, val):
         """
-        Uses dtKey(pre, dts) for entries.
+        Return first seen order number, fn, of appended entry.
+        Computes fn as next fn after last entry.
+        Uses fnKey(pre, fn) for entries.
 
-        Append val to end of db entries with same pre at key = dtKey(pre,dts)
-        unless already entry at that key then increment dts by 1 microsecond.
-
-        If datetime in key is less than or equal to datetime of last entry
-        Then increment datetime of final entry by one microsecond.
-        Returns dts used to write
-
-        Uses dts to find last entry at pre by setting range and then comparing
-        if entry >= pre has same pre or not. If same pre then increment
-        dts by one microsend and set. If not then just set.
+        Append val to end of db entries with same pre but with fn incremented by
+        1 relative to last preexisting entry at pre.
 
         Parameters:
             pre is bytes identifier prefix for event
-            dts is iso8601 TZ aware datetime bytes
             val is event digest
         """
-        key = dtKey(pre, dts)
-
-        with self.env.begin(db=self.fses, write=True, buffers=True) as txn:
-            cursor = txn.cursor()
-            if not cursor.set_range(key):  # no later values than key
-                txn.put(key, val, overwrite=False)
-                return dts
-
-            ckey = cursor.key()
-            cpre, cdts = splitKey(ckey, sep=b'|')
-            if cpre != pre:  #  range ok dts is after last event for pre
-                txn.put(key, val, overwrite=False)
-                return dts
-
-            # must already be key in db with same pre that is later than or equal
-            for ckey in cursor.iternext(values=False):  # return key at cursor
-                cpre, cdts = splitKey(ckey, sep=b'|')
-                if cpre != pre:  # prev is now the last event for pre
-                   break
-
-            # iterator either goes off end of database whereupon cursor.key() is empty
-            # or hits different pre in either case need to recover
-            if not cursor.key():  # went off end of database
-                cursor.last()  # cursor state bad so recover by setting to last
-            else:  # encountered next pre so backup
-                cursor.prev()  # back up
-            # cursor.key() is now same pre but cdts >= dts so increment
-            cpre, cdts = splitKey(cursor.key(), sep=b'|')
-
-            # increment by 1 microsecond to ensure monotonic
-            dts = helping.toIso8601(helping.fromIso8601(cdts) +
-                                    datetime.timedelta(microseconds=1)).encode("utf-8")
-            key = dtKey(pre, dts)
-            txn.put(key, val, overwrite=False)
-            return dts
+        return self.appendOrdValPre(db=self.fels, pre=pre, val=val)
 
 
-    def getFseValsIter(self, pre):
+    def getFelItemPreIter(self, pre, fn=0):
         """
-        Returns iterator of all vals in first seen order for all events
-        with same prefix.
-        Values are event digests for lookup in .evts sub db
-        .fses subdb uses dtKey(pre, dts) for entris
+        Returns iterator of all (fn, dig) duples in first seen order for all events
+        with same prefix, pre, in database. Items are sorted by fnKey(pre, fn)
+        where fn is first seen order number int.
+        Returns a First Seen Event Log FEL.
+        Returned items are duples of (fn, dig): Where fn is first seen order
+        number int and dig is event digest for lookup in .evts sub db.
 
         Raises StopIteration Error when empty.
 
         Parameters:
             pre is bytes of itdentifier prefix
+            fn is int fn to resume replay. Earliset is fn=0
         """
-        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            key = dtKey(pre, "")  # before any entry at pre
-            if not cursor.set_range(key):  #  moves to val at key >= key
-                return  # no values end of db
-
-            for key, val in cursor.iternext():  # get key, val at cursor
-                cpre, dts = splitKey(key, sep=b'|')
-                if cpre != pre:  # prev is now the last event for pre
-                    break  # done
-                yield val  # dig of event
+        return self.getAllOrdItemPreIter(db=self.fels, pre=pre, on=fn)
 
 
-    def getFseItemsIter(self, pre):
+    def getFelItemAllPreIter(self, key=b''):
         """
-        Returns iterator of all (dts, dig) items in first seen order for all events
-        with same prefix.
-        .fses subdb uses dtKey(pre, dts) for entris
-        Values are tuples of (dts, dig): Where dts is date time stamp first seen
-        and dig is event digest for lookup in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            pre is bytes of itdentifier prefix
-        """
-        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            key = dtKey(pre, "")  # before any entry at pre
-            if not cursor.set_range(key):  #  moves to val at key >= key
-                return  # no values end of db
-
-            for key, val in cursor.iternext():  # get key, val at cursor
-                cpre, dts = splitKey(key, sep=b'|')
-                if cpre != pre:  # prev is now the last event for pre
-                    break  # done
-                yield (dts, val)  # (dts, dig) of event
-
-
-    def getFseValsAllPreIter(self, key=b''):
-        """
-        Returns iterator of all vals in first seen order for all events
-        for all prefixes in database.
-        Values are event digests for lookup in .evts sub db
-        .fses subdb uses dtKey(pre, dts) for entries
+        Returns iterator of all (pre, fn, dig) tripes in first seen order for
+        all events for all prefixes in database. Items are sorted by
+        fnKey(pre, fn) where fn is first seen order number int.
+        Returns all First Seen Event Logs FELs.
+        Returned items are tripes of (pre, fn, dig): Where pre is identifier prefix,
+        fn is first seen order number int and dig is event digest for lookup
+        in .evts sub db.
 
         Raises StopIteration Error when empty.
 
@@ -1273,37 +1322,7 @@ class Baser(LMDBer):
             key is key location in db to resume replay, If empty then start at
                 first key in database
         """
-        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            if not cursor.set_range(key):  # moves to val at key >= key, first if empty
-                return  # no values empty db raises stop iteration
-            for key, val in cursor.iternext():  # get key, val at cursor
-                yield val  #  dig of event
-
-
-    def getFseItemsAllPreIter(self, key=b''):
-        """
-        Returns iterator of all (dts, dig) items in first seen order for all events
-        for all prefixes in database. Items are sorted by key which is given
-        by dtKey(pre,dts).
-        .fses subdb uses dtKey(pre, dts) for entries
-        Values are tuples of (dts, dig): Where dts is date time stamp first seen
-        and dig is event digest for lookup in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            key is key location in db to resume replay, If empty then start at
-                first key in database
-        """
-        with self.env.begin(db=self.fses, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
-                return  # no values end of db
-
-            for key, val in cursor.iternext():  # return key, val at cursor
-                cpre, dts = splitKey(key, sep=b'|')
-                yield (dts, val)  # (dts, dig) of event
+        return self.getAllOrdItemAllPreIter(db=self.fels, key=key)
 
 
     def putDts(self, key, val):

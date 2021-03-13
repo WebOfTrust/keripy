@@ -5,10 +5,14 @@ keri.base.directing module
 
 simple direct mode demo support classes
 """
+
+import os
 import json
 
-from hio.base import doing, tyming
+from hio.base import doing
+from hio.core import wiring
 from hio.core.tcp import clienting, serving
+
 from .. import kering
 from ..db import dbing
 from ..core import coring, eventing
@@ -62,23 +66,47 @@ class BobDirector(directing.Director):
             # recur context
             tyme = (yield (self.tock))  # yields tock then waits for next send
 
-            logger.info("**** %s:\nWaiting for connection to remote  %s.\n\n", self.hab.pre, self.client.ha)
+            logger.info("%s:\nWaiting for connection to remote  %s.\n\n", self.hab.pre, self.client.ha)
             while (not self.client.connected):
                 tyme = (yield (self.tock))
 
-            logger.info("**** %s:\nConnected to %s.\n\n", self.hab.pre, self.client.ha)
+            logger.info("%s:\nConnected to %s.\n\n", self.hab.pre, self.client.ha)
 
             self.sendOwnInception()  # Inception Event
             tyme = (yield (self.tock))
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)   # send to connected remote
-            logger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
             msg = self.hab.interact()  # Interaction event
             self.client.tx(msg)   # send to connected remote
-            logger.info("**** %s:\nSent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            # create a bunch of out of order messages to test out of order escrow
+            msgs = []
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.interact())  # Interaction event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.interact()) # Interaction event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.rotate())  # Rotation event
+            msgs.append(self.hab.interact())
+
+            msgs.reverse()  # reverse the order
+
+            for msg in msgs:
+                self.client.tx(msg)   # send to connected remote
+                logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+                tyme = (yield (self.tock))
+
+
             tyme = (yield (self.tock))
 
         except GeneratorExit:  # close context, forced exit due to .close
@@ -155,6 +183,52 @@ class SamDirector(directing.Director):
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.interact()  # Interaction Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            msg = self.hab.rotate()  # Rotation Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -248,7 +322,15 @@ def setupDemoController(secrets,  name="who", remotePort=5621, localPort=5620):
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)
     dbDoer = dbing.BaserDoer(baser=hab.db)
 
-    client = clienting.Client(host='127.0.0.1', port=remotePort)
+    # setup wirelog to create test vectors
+    path = os.path.dirname(__file__)
+    path = os.path.join(path, 'logs')
+
+    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='demo', reopen=True,
+                        headDirPath=path)
+    wireDoer = wiring.WireLogDoer(wl=wl)
+
+    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
     clientDoer = doing.ClientDoer(client=client)
 
     if name == 'bob':
@@ -262,10 +344,10 @@ def setupDemoController(secrets,  name="who", remotePort=5621, localPort=5620):
 
     reactor = directing.Reactor(hab=hab, client=client)
 
-    server = serving.Server(host="", port=localPort)
+    server = serving.Server(host="", port=localPort, wl=wl)
     serverDoer = doing.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server)
     # Reactants created on demand by directant
 
-    return [ksDoer, dbDoer, clientDoer, director, reactor, serverDoer, directant]
+    return [ksDoer, dbDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
 
