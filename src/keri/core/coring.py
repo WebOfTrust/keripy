@@ -24,6 +24,7 @@ import hashlib
 
 from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
                       InvalidCodeIndexError, InvalidCodeSizeError,
+                      ConversionError,
                       ValidationError, VersionError, DerivationError,
                       ShortageError, UnexpectedCodeError, DeserializationError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
