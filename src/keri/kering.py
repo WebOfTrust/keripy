@@ -29,9 +29,19 @@ class ClosedError(KeriError):
         raise ClosedError("error message")
     """
 
+
 class DatabaseError(KeriError):
     """
     Error accessing database
+
+    Usage:
+        raise DatabaseError("error message")
+    """
+
+
+class ConfigurationError(KeriError):
+    """
+    Error configuring or initing KERI component (Controller etc)
 
     Usage:
         raise DatabaseError("error message")

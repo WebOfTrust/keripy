@@ -20,18 +20,29 @@ def test_replay():
     """
     Test conjoint replay
 
+    Deb creates series of events.
+    Deb replays Deb's events to Cam and collects Cam's receipts
+    Deb replays Deb's events with Cam's recepts to Bev and collects Bev's receipts
+    Deb replays Deb's events with both Cam's and  Bev's receipts to Cam
+    Compare replay of Deb's events with receipts by both Deb and Cam to confirm identical
     """
 
     with dbing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
          dbing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
          dbing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS:
 
-
-        sith = ["1/2", "1/2", "1/2"]
-        # setup bob  habitat has default salt
+        # setup Deb's habitat using default salt multisig already incepts
+        sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
         debHab = directing.Habitat(ks=debKS, db=debDB, sith=sith, count=3, temp=True)
         assert debHab.ks == debKS
         assert debHab.db == debDB
+
+        # setup Cam's habitat using default salt multisig already incepts
+        sith = '2'  # hex str of threshold int
+        camHab = directing.Habitat(ks=camKS, db=camDB, sith=sith, count=3, temp=True)
+        assert camHab.ks == camKS
+        assert camHab.db == camDB
+
 
         #self.sendOwnInception()  # Inception Event
         #tyme = (yield (self.tock))
