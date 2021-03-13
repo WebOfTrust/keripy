@@ -508,11 +508,12 @@ class Keeper(dbing.LMDBer):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.sits, key)
 
+
     # .pubs methods
     def putPubs(self, key, val):
         """
         Uses riKey(pre, ri)
-        Write serialized dict of PreSit as val to key
+        Write serialized list of public keys as val to key
         key is fully qualified prefix
         Does not overwrite existing val if any
         Returns True If val successfully written Else False
@@ -528,7 +529,7 @@ class Keeper(dbing.LMDBer):
     def setPubs(self, key, val):
         """
         Uses riKey(pre, ri)
-        Write serialized parameter dict as val to key
+        Write serialized serialized list of public keys as val to key
         key is fully qualified prefix
         Overwrites existing val if any
         Returns True If val successfully written Else False
@@ -543,7 +544,7 @@ class Keeper(dbing.LMDBer):
     def getPubs(self, key):
         """
         Uses riKey(pre, ri)
-        Return serialized parameter dict at key
+        Return serialized list of public keys at key
         key is fully qualified prefix
         Returns None if no entry at key
         """
@@ -1085,6 +1086,9 @@ class Manager:
            old is str for old prefix of pubsit dict in keeper db
            new is str for new prefix to move pubsit dict to in keeper db
         """
+        if old == new:
+            return
+
         rawoldpre = self.keeper.getPre(key=old)
         if rawoldpre is None:
             raise ValueError("Nonexistent old pre={}, nothing to assign.".format(old))

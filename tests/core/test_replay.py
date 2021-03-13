@@ -33,15 +33,27 @@ def test_replay():
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
-        debHab = directing.Habitat(ks=debKS, db=debDB, sith=sith, count=3, temp=True)
+        debHab = directing.Habitat(ks=debKS, db=debDB, sith=sith, count=3,
+                                   temp=True)
         assert debHab.ks == debKS
         assert debHab.db == debDB
+        assert debHab.kever.prefixer.transferable
 
         # setup Cam's habitat using default salt multisig already incepts
         sith = '2'  # hex str of threshold int
-        camHab = directing.Habitat(ks=camKS, db=camDB, sith=sith, count=3, temp=True)
+        camHab = directing.Habitat(ks=camKS, db=camDB, sith=sith, count=3,
+                                   temp=True)
         assert camHab.ks == camKS
         assert camHab.db == camDB
+        assert camHab.kever.prefixer.transferable
+
+        # setup Bev's habitat using default salt nonstransferable already incepts
+        sith = '1'  # hex str of threshold int
+        bevHab = directing.Habitat(ks=bevKS, db=bevDB, sith=sith, count=1,
+                                   transferable=False, temp=True)
+        assert bevHab.ks == bevKS
+        assert bevHab.db == bevDB
+        assert not bevHab.kever.prefixer.transferable
 
 
         #self.sendOwnInception()  # Inception Event

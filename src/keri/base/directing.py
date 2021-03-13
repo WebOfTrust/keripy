@@ -81,6 +81,8 @@ class Habitat():
 
     Attributes:
         .name is str alias of controller
+        .transferable is Boolean True means pre is transferable (default)
+                    False means pre is nontransferable
         .temp is Boolean True for testing it modifies tier of salty key
             generation algorithm and persistence of db and ks
         .erase is Boolean, If True erase old private keys, Otherwise not.
@@ -91,7 +93,8 @@ class Habitat():
         .db is lmdb data base dbing.Baser instance
         .kvy is eventing.Kevery instance for local processing of local msgs
         .sith is default key signing threshold
-        .count is deafuult number of public keys in key list
+        .count is number public keys in key list
+        .ncount is number of public keys in next key list
         .inception is Serder of inception event
         .pre is qb64 prefix of local controller
 
@@ -100,8 +103,10 @@ class Habitat():
 
     """
 
-    def __init__(self, name='test', ks=None, db=None, kevers=None, secrecies=None,
-                 sith=None, count=1, salt=None, tier=None, temp=False, erase=True):
+    def __init__(self, name='test', ks=None, db=None, kevers=None,
+                 code=coring.MtrDex.Blake3_256, secrecies=None,
+                 sith=None, count=1, ncount=None, salt=None, tier=None,
+                 transferable=True, temp=False, erase=True):
         """
         Initialize instance.
 
@@ -110,17 +115,21 @@ class Habitat():
             ks is keystore lmdb Keeper instance
             db is database lmdb Baser instance
             kevers is dict of Kever instance keyed by qb64 prefix
+            code is prefix derivation code
             secrecies is list of list of secrets to preload key pairs if any
             sith is str (hex) of signing threshold int or list expression for
                     for fractionally weighted signing threshold
             count is key count for number of keys
             salt is qb64 salt for creating key pairs
             tier is security tier for generating keys from salt
+            transferable is Boolean True means pre is transferable (default)
+                    False means pre is nontransferable
             temp is Boolean used for persistance of lmdb ks and db directories
                 and mode for key generation
             erase is Boolean True means erase private keys once stale
         """
         self.name = name
+        self.transferable = transferable
         self.temp = temp
         self.erase = erase
 
@@ -135,26 +144,37 @@ class Habitat():
                                                         temp=self.temp)
         self.sith = sith
         self.count = count
+        if not self.transferable:
+            self.ncount = 0
+            code = coring.MtrDex.Ed25519N
+        else:
+            self.ncount = ncount if ncount is not None else self.count
 
         if secrecies:
             verferies, digers = self.mgr.ingest(secrecies,
-                                                ncount=self.count,
+                                                ncount=self.ncount,
                                                 stem=self.name,
+                                                transferable=self.transferable,
                                                 temp=self.temp)
             opre = verferies[0][0].qb64  # old pre default needed for .replay
             verfers, digers = self.mgr.replay(pre=opre, ridx=self.ridx)
         else:
             verfers, digers = self.mgr.incept(icount=self.count,
-                                              ncount=self.count,
+                                              ncount=self.ncount,
                                               stem=self.name,
+                                              transferable=self.transferable,
                                               temp=self.temp)
 
         opre = verfers[0].qb64  # old pre default move below to new pre from incept
+        if digers:
+            nxt = coring.Nexter(sith=self.sith,
+                                digs=[diger.qb64 for diger in digers]).qb64
+        else:
+            nxt = ""
         self.iserder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                          sith=self.sith,
-                                         nxt=coring.Nexter(sith=sith,
-                                                           digs=[digers[0].qb64]).qb64,
-                                         code=coring.MtrDex.Blake3_256)
+                                         nxt=nxt,
+                                         code=code)
 
         self.pre = self.iserder.ked["i"]  # new pre
         self.mgr.move(old=opre, new=self.pre)
@@ -189,7 +209,7 @@ class Habitat():
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
         """
-        count = count if count is not None else self.count
+        count = count if count is not None else self.ncount
         erase = erase if erase is not None else self.erase
 
         try:
@@ -204,11 +224,15 @@ class Habitat():
                                               erase=erase)
 
         kever = self.kever  # kever.pre == self.pre
+        if digers:
+            nxt = coring.Nexter(sith=self.sith,
+                                    digs=[diger.qb64 for diger in digers]).qb64
+        else:
+            nxt = ""
         serder = eventing.rotate(pre=kever.prefixer.qb64,
                                  keys=[verfer.qb64 for verfer in verfers],
                                  dig=kever.serder.diger.qb64,
-                                 nxt=coring.Nexter(sith=self.sith,
-                                                   digs=[diger.qb64 for diger in digers]).qb64,
+                                 nxt=nxt,
                                  sn=kever.sn+1)
         sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
         msg = eventing.messagize(serder, sigers)

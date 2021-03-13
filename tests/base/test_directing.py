@@ -241,4 +241,4 @@ def test_runcontroller_demo():
 
 
 if __name__ == "__main__":
-    test_directing_basic()
+    test_habitat()

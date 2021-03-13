@@ -926,7 +926,7 @@ class Kever:
 
         """
         if not self.transferable:  # not transferable so no events after inception allowed
-            raise ValidationError("Unexpected event = {} in nontransferable "
+            raise ValidationError("Unexpected event = {} is nontransferable "
                                   " state.".format(serder.ked))
         ked = serder.ked
         if serder.pre != self.prefixer.qb64:
