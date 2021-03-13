@@ -17,14 +17,14 @@ from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
 
 from keri.core.coring import MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
 from keri.core.coring import Seqner, Verfer, Signer, Diger, Nexter, Prefixer
-from keri.core.coring import Salter, Serder
+from keri.core.coring import Salter, Serder, Siger, Cigar
 from keri.core.coring import Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc, Serials, Versify
 from keri.core.eventing import decouple, detriple, dequadruple, dequintuple
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
-                                delcept, deltate, messagize)
+                                delcept, deltate, messagize, receiptize)
 from keri.core.eventing import Kever, Kevery
 
 from keri.db.dbing import dgKey, snKey, openDB, Baser
@@ -444,20 +444,47 @@ def test_messagize():
     with openDB(name="edy") as db, openKS(name="edy") as ks:
         # Init key pair manager
         mgr = Manager(keeper=ks, salt=salter.qb64)
-        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="")
-
+        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=True, stem="")
         serder = incept(keys=[verfers[0].qb64], code=MtrDex.Blake3_256)
-
         sigers = mgr.sign(ser=serder.raw, verfers=verfers)
-
+        assert isinstance(sigers[0], Siger)
         msg = messagize(serder, sigers)
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ErvwtXHFQwAP0N8BVnV4v13Xb6D0IVCMQA'
+                               b'zP3DFdztcE","s":"0","t":"icp","kt":"1","k":["DxnLqpuCcrO8ITn3i1D'
+                               b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-AABAA'
+                               b'PY_XpU3GnFV81dc9STs3UkD1SleC5EzkuIGd1RffI9-scollRbegAMveKc9Dr5YM'
+                               b'm_mCQ7p1pjrnu87NgPc-Cg')
+        """ Done Test """
 
 
-        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsrvj'
-                              b'pcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1DhI-z'
-                             b'qkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-AABAAZqE8BI'
-                             b'Y0wYqi7swX_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGjGMHui-QH'
-                             b'vy11Eon5bUvXBQ')
+def test_receiptize():
+    salter = Salter(raw=b'0123456789abcdef')
+    with openDB(name="edy") as db, openKS(name="edy") as ks:
+        # Init key pair manager
+        mgr = Manager(keeper=ks, salt=salter.qb64)
+        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="")
+        serder = incept(keys=[verfers[0].qb64], code=MtrDex.Blake3_256)
+        cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)
+        assert isinstance(cigars[0], Cigar)
+        msg = receiptize(serder, cigars)
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsr'
+                                b'vjpcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1D'
+                                b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-CABBx'
+                                b'nLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ0BZqE8BIY0wYqi7swX_5Ch'
+                                b'vHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGjGMHui-QHvy11Eon5bUvXBQ')
+
+        ked = serder.ked
+        reserder = receipt(pre=ked["i"],
+                           sn=int(ked["s"], 16),
+                           dig=serder.dig)
+        cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)  # sign event not receipt
+        msg = receiptize(reserder, cigars)
+        assert msg == bytearray(b'{"v":"KERI10JSON000091_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsr'
+                                b'vjpcc9SzWQ","s":"0","t":"rct","d":"EugpBKqnZiNI_2WR4aEjzKrU2Vdr-'
+                                b'okSy_XOW954CGME"}-CABBxnLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jc'
+                                b'Q0BZqE8BIY0wYqi7swX_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-l'
+                                b'eGjGMHui-QHvy11Eon5bUvXBQ')
+
 
         """ Done Test """
 
@@ -3222,4 +3249,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_dequadruple()
+    test_receiptize()

@@ -307,10 +307,9 @@ class Habitat():
         couples (pre+cig)
         Builds msg and then processes it into own db to validate
         """
-        if self.kever.prefixer.code not in coring.NonTransDex:  # not non-transferable prefix
+        if self.kever.prefixer.transferable:  # not non-transferable prefix
             raise ValueError("Attempt to create non-transferable receipt with"
                              " transferable pre={}.".format(self.pre))
-
         ked = serder.ked
         reserder = eventing.receipt(pre=ked["i"],
                                     sn=int(ked["s"], 16),
@@ -319,14 +318,8 @@ class Habitat():
         cigars = self.mgr.sign(ser=serder.raw,
                                verfers=self.kever.verfers,
                                indexed=False)
-
-        msg = bytearray()
-        msg.extend(reserder.raw)
-
-        msg.extend(recnt.qb64b)
-
-        msg.extend(valPrefixer.qb64b)
-        msg.extend(valCigar.qb64b)
+        msg = eventing.receiptize(reserder, cigars)
+        return msg
 
 
     def processCues(self, cues):
@@ -337,73 +330,50 @@ class Habitat():
            cues is deque of cues
         """
         msgs = bytearray()  # outgoing messages
-        while cues:  # process cues deque
-            # process each cue
-            cue = cues.popleft()
-            cueKin = cue["kin"]  # type or kind of cue
-            cuedSerder = cue["serder"]
-            cuedKed = cuedSerder.ked
-            cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.pre, cueKin,
-                                            json.dumps(cuedKed, indent=1))
-            if cueKin in ("receipt", ):  # send receipt or chit
-                if cuedKed["t"] == coring.Ilks.icp:  # receipt for remote inception event
-                    # see if already have a vrcs chit or rct receipt from remote
-                    # for own inception
-                    dgkey = dbing.dgKey(self.pre, self.iserder.dig)
-                    found = False
-                    if cuedPrefixer.transferable:  # find if already vrcs of own icp
-                        for quadruple in self.hab.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True  # yes so don't send own inception
-                    else:  #  find if already rcts of own icp
-                        pass  #  need to add
-
-                    if not found:
-                        # no vrcs or rct of own icp from remote so send own inception
-                        msgs.extend(self.makeOwnInception())
-
-                if self.kever.prefixer.transferable:  #  send own trans chit vrcs
-                    msgs.extend(self.makeOwnChit(cuedSerder))
-                else:  # send own nontrans receipt rct
-                    pass
+        for msg in self.processCuesIter(cues):
+            msgs.extend(msg)
         return msgs
+
 
     def processCuesIter(self, cues):
         """
-        Iterate through cues and yeilds one or more megs for for each cue.
+        Iterate through cues and yields one or more msgs for each cue.
 
         Parameters:
             cues is deque of cues
 
         """
         while cues:  # iteratively process each cue in cues
+            msgs = bytearray()
             cue = cues.popleft()
             cueKin = cue["kin"]  # type or kind of cue
             cuedSerder = cue["serder"]  # Serder of received event for other pre
             cuedKed = cuedSerder.ked
             cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
+            logger.info("%s got cue: kin=%s\n%s\n\n", self.pre, cueKin,
                                              json.dumps(cuedKed, indent=1))
             if cueKin in ("receipt", ):  # received event from other cued pre
                 if  cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
+                    dgkey = dbing.dgKey(self.pre, self.iserder.dig)
                     found = False
-                    if cuedPrefixer.transferable:  # find vrcs receipt of own icp
-                        for quadruple in self.hab.db.getVrcsIter(dgkey):
+                    if cuedPrefixer.transferable:  # find if already vrcs of own icp
+                        for quadruple in self.db.getVrcsIter(dgkey):
                             if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True
-                    else:  #  find rcts receipt of own icp
-                        pass
+                                found = True  # yes so don't send own inception
+                    else:  # find if already rcts of own icp
+                        for couple in self.db.getRctsIter(dgkey):
+                            if bytes(couple).decode("utf-8").startswith(cuedKed["i"]):
+                                found = True  # yes so don't send own inception
 
                     if not found:  # no receipt from remote so send own inception
-                        self.sendOwnInception()
+                        # no vrcs or rct of own icp from remote so send own inception
+                        msgs.extend(self.makeOwnInception())
 
-                if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
-                    self.sendOwnChit(cuedSerder)
+                if self.kever.prefixer.transferable:  #  send trans receipt chit
+                    msgs.extend(self.makeOwnChit(cuedSerder))
                 else:  # send nontrans receipt
-                    pass
-                yield
+                    msgs.extend(self.makeOwnReceipt(cuedSerder))
+                yield msgs
 
 
 class Director(doing.Doer):
@@ -584,89 +554,18 @@ class Reactor(doing.Doer):
             if self.kevery.ims:
                 logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.kevery.ims[:1024])
             self.kevery.process()
-            # self.processCues()
-            for i in self.processCuesIter():  # throttle one each time
-                break  # just process one
+            for msg in self.hab.processCuesIter(self.kevery.cues):
+                self.sendMessage(msg, label="chit or receipt")
+                break  # throttle just do one cue at a time
             self.kevery.processEscrows()
 
 
-    def processCues(self):
+    def sendMessage(self, msg, label=""):
         """
-        Process all cues in .kvy
+        Sends message msg and loggers label if any
         """
-        while self.kevery.cues:  # process cues
-            # process each cue
-            cue = self.kevery.cues.popleft()
-            cueKin = cue["kin"]  # type or kind of cue
-            cuedSerder = cue["serder"]  # Serder of received event for other pre
-            cuedKed = cuedSerder.ked
-            cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
-                                             json.dumps(cuedKed, indent=1))
-            if cueKin in ("receipt", ):  # received event from other cued pre
-                if  cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
-                    found = False
-                    if cuedPrefixer.transferable:  # find vrcs receipt of own icp
-                        for quadruple in self.hab.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True
-                    else:  #  find rcts receipt of own icp
-                        pass
-
-                    if not found:  # no receipt from remote so send own inception
-                        self.sendOwnInception()
-
-                if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
-                    self.sendOwnChit(cuedSerder)
-                else:  # send nontrans receipt
-                    pass
-
-
-
-    def processCuesIter(self):
-        """
-        Iterate through cues in .cues
-        This is a stub  for future iterator/generator based processing
-
-        For each cue yield (None)
-        """
-        while self.kevery.cues:  # process cues
-            cue = self.kevery.cues.popleft()
-            cueKin = cue["kin"]  # type or kind of cue
-            cuedSerder = cue["serder"]  # Serder of received event for other pre
-            cuedKed = cuedSerder.ked
-            cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
-                                             json.dumps(cuedKed, indent=1))
-            if cueKin in ("receipt", ):  # received event from other cued pre
-                if  cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
-                    found = False
-                    if cuedPrefixer.transferable:  # find vrcs receipt of own icp
-                        for quadruple in self.hab.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True
-                    else:  #  find rcts receipt of own icp
-                        pass
-
-                    if not found:  # no receipt from remote so send own inception
-                        self.sendOwnInception()
-
-                if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
-                    self.sendOwnChit(cuedSerder)
-                else:  # send nontrans receipt
-                    pass
-                yield
-
-
-    def sendOwnChit(self, cuedSerder):
-        """
-        Send chit of event indicated by cuedSerder
-        """
-        msg = self.hab.makeOwnChit(serder=cuedSerder)
         self.client.tx(msg)  # send to remote
-        logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
+        logger.info("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
 
 
     def sendOwnEvent(self, sn):
@@ -800,9 +699,9 @@ class Directant(doing.Doer):
                     logger.info("Server %s received:\n%s\n\n", self.hab.pre, reactant.kevery.ims)
 
                 reactant.kevery.process()
-                # reactant.processCues()
-                for i in reactant.processCuesIter():  # throttle one each time
-                    break  # just process one
+                for msg in self.hab.processCuesIter(reactant.kevery.cues):
+                    reactant.sendMessage(msg, label="chit or receipt")
+                    break  # throttle just do one cue at a time
                 reactant.kevery.processEscrows()
 
             if not reactant.persistent:  # not persistent so close and remove
@@ -870,83 +769,12 @@ class Reactant(tyming.Tymee):
         self.persistent = True if persistent else False
 
 
-    def processCues(self):
+    def sendMessage(self, msg, label=""):
         """
-        Process any cues in .kevery
+        Sends message msg and loggers label if any
         """
-
-        while self.kevery.cues:  # process cues
-            # process each cue
-            cue = self.kevery.cues.popleft()
-            cueKin = cue["kin"]  # type or kind of cue
-            cuedSerder = cue["serder"]
-            cuedKed = cuedSerder.ked
-            cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
-                                            json.dumps(cuedKed, indent=1))
-            if cueKin in ("receipt", ):
-                if cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
-                    found = False
-                    if cuedPrefixer.transferable:  # find vrcs receipt of own icp
-                        for quadruple in self.hab.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True
-                    else:  #  find rcts receipt of own icp
-                        pass
-
-                    if not found:  # no receipt from remote so send own inception
-                        self.sendOwnInception()
-
-                if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
-                    self.sendOwnChit(cuedSerder)
-                else:  # send nontrans receipt
-                    pass
-
-
-    def processCuesIter(self):
-        """
-        Iterate through cues in .cues
-        This is a stub  for future iterator/generator based processing
-
-        For each cue yield one or more msgs to send out
-        """
-        while self.kevery.cues:  # process cues
-            cue = self.kevery.cues.popleft()
-            cueKin = cue["kin"]  # type or kind of cue
-            cuedSerder = cue["serder"]  # Serder of received event for other pre
-            cuedKed = cuedSerder.ked
-            cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.hab.pre, cueKin,
-                                             json.dumps(cuedKed, indent=1))
-            if cueKin in ("receipt", ):  # received event from other cued pre
-                if  cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.hab.pre, self.hab.iserder.dig)
-                    found = False
-                    if cuedPrefixer.transferable:  # find vrcs receipt of own icp
-                        for quadruple in self.hab.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True
-                    else:  #  find rcts receipt of own icp
-                        pass
-
-                    if not found:  # no receipt from remote so send own inception
-                        self.sendOwnInception()
-
-                if self.hab.kever.prefixer.transferable:  #  send trans receipt chit
-                    self.sendOwnChit(cuedSerder)
-                else:  # send nontrans receipt
-                    pass
-                yield
-
-
-    def sendOwnChit(self, cuedSerder):
-        """
-        Send chit of event indicated by cuedSerder
-        """
-        msg = self.hab.makeOwnChit(serder=cuedSerder)
         self.remoter.tx(msg)  # send to remote
-        logger.info("%s sent chit:\n%s\n\n", self.hab.pre, bytes(msg))
+        logger.info("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
 
 
     def sendOwnEvent(self, sn):

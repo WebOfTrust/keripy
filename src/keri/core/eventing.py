@@ -31,7 +31,7 @@ from ..help.helping import nowIso8601, fromIso8601, toIso8601
 from ..db.dbing import dgKey, snKey, splitKey, splitKeySN, Baser
 
 from .coring import Versify, Serials, Ilks
-from .coring import MtrDex, IdrDex, CtrDex, Counter
+from .coring import MtrDex, NonTransDex, IdrDex, CtrDex, Counter
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
 from .coring import Seqner, Siger, Cigar
 
@@ -708,7 +708,7 @@ def deltate(pre,
 
 def messagize(serder, sigers):
     """
-    Attaches signatures to a KERI event
+    Attaches indexed signatures from sigers to KERI message data from serder
     Parameters:
         serder: Serder instance containing the event
         sigers: Sigers[] array of indexed signatures
@@ -725,6 +725,27 @@ def messagize(serder, sigers):
     return msg
 
 
+def receiptize(serder, cigars):
+    """
+    Attaches receipt couplets from cigars to KERI message data from serder
+    Parameters:
+        serder: Serder instance containing the event
+        cigars: Cigars[] array of non-transferable non indexed signatures
+
+    Returns: bytearray KERI event message
+    """
+    msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
+    count = len(cigars)
+    counter = Counter(code=CtrDex.NonTransReceiptCouples, count=count)
+    msg.extend(counter.qb64b)
+    for cigar in cigars:
+        if cigar.verfer.code not in NonTransDex:
+            raise ValueError("Attempt to use tranferable prefix={} for "
+                             "receipt.".format(cigar.verfer.qb64))
+        msg.extend(cigar.verfer.qb64b)
+        msg.extend(cigar.qb64b)
+
+    return msg
 
 class Kever:
     """
