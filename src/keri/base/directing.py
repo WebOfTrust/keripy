@@ -171,6 +171,7 @@ class Habitat():
                                 digs=[diger.qb64 for diger in digers]).qb64
         else:
             nxt = ""
+
         self.iserder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                          sith=self.sith,
                                          nxt=nxt,
@@ -200,15 +201,17 @@ class Habitat():
     def incept(self):
         """
         Perform inception operation. Register inception in database.
-        Returns: bytearray rotation message with attached signatures.
+        Returns: bytearray inception message with attached signatures.
         """
 
 
-    def rotate(self, count=None, erase=None):
+    def rotate(self, sith=None, count=None, erase=None):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
         """
+        if sith is not None:
+            self.sith = sith
         count = count if count is not None else self.ncount
         erase = erase if erase is not None else self.erase
 
@@ -229,9 +232,11 @@ class Habitat():
                                     digs=[diger.qb64 for diger in digers]).qb64
         else:
             nxt = ""
+
         serder = eventing.rotate(pre=kever.prefixer.qb64,
                                  keys=[verfer.qb64 for verfer in verfers],
                                  dig=kever.serder.diger.qb64,
+                                 sith=self.sith,
                                  nxt=nxt,
                                  sn=kever.sn+1)
         sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
@@ -269,6 +274,71 @@ class Habitat():
         return msg
 
 
+    def chit(self, serder):
+        """
+        Returns own chit, vrc, message of serder with count code and signatures
+        Builds msg and then processes it into own db to validate.
+        """
+        # create seal of own last est event
+        seal = eventing.SealEvent(i=self.pre,
+                                  s="{:x}".format(self.kever.lastEst.s),
+                                  d=self.kever.lastEst.d)
+        ked = serder.ked
+        # create validator receipt for serder event
+        reserder = eventing.chit(pre=ked["i"],
+                                 sn=int(ked["s"], 16),
+                                 dig=serder.dig,
+                                 seal=seal)
+        # sign serder event
+        sigers = self.mgr.sign(ser=serder.raw,
+                                   verfers=self.kever.verfers,
+                                   indexed=True)
+        msg = eventing.messagize(serder=reserder, sigers=sigers)
+        self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
+        return msg
+
+
+    def receipt(self, serder):
+        """
+        Returns own receipt, rct, message of serder with count code and receipt
+        couples (pre+cig)
+        Builds msg and then processes it into own db to validate
+        """
+        if self.kever.prefixer.transferable:  # not non-transferable prefix
+            raise ValueError("Attempt to create non-transferable receipt with"
+                             " transferable pre={}.".format(self.pre))
+        ked = serder.ked
+        reserder = eventing.receipt(pre=ked["i"],
+                                    sn=int(ked["s"], 16),
+                                    dig=serder.dig)
+        # sign serder event
+        cigars = self.mgr.sign(ser=serder.raw,
+                               verfers=self.kever.verfers,
+                               indexed=False)
+        msg = eventing.receiptize(reserder, cigars)
+        self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
+        return msg
+
+
+    def replay(self, pre=None, fn=0):
+        """
+        Returns replay of FEL first seen event log for pre starting from fn
+        Default pre is own .pre
+
+        Parameters:
+            pre is qb64 str or bytes of identifier prefix.
+                default is own .pre
+            fn is int first seen ordering number
+
+        """
+        if not pre:
+            pre = self.pre
+        msgs = bytearray()
+        for msg in self.db.cloneIter(pre=pre, fn=fn):
+            msgs.extend(msg)
+        return msgs
+
+
     def makeOwnEvent(self, sn):
         """
         Returns: messagized bytearray message with attached signatures of
@@ -299,51 +369,6 @@ class Habitat():
                  from database.
         """
         return self.makeOwnEvent(sn=0)
-
-
-    def makeOwnChit(self, serder):
-        """
-        Returns own chit, vrc, message of serder with count code and signatures
-        Builds msg and then processes it into own db to validate.
-        """
-        # create seal of own last est event
-        seal = eventing.SealEvent(i=self.pre,
-                                  s="{:x}".format(self.kever.lastEst.s),
-                                  d=self.kever.lastEst.d)
-        ked = serder.ked
-        # create validator receipt for serder event
-        reserder = eventing.chit(pre=ked["i"],
-                                 sn=int(ked["s"], 16),
-                                 dig=serder.dig,
-                                 seal=seal)
-        # sign serder event
-        sigers = self.mgr.sign(ser=serder.raw,
-                                   verfers=self.kever.verfers,
-                                   indexed=True)
-        msg = eventing.messagize(serder=reserder, sigers=sigers)
-        self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
-        return msg
-
-
-    def makeOwnReceipt(self, serder):
-        """
-        Returns own receipt, rct, message of serder with count code and receipt
-        couples (pre+cig)
-        Builds msg and then processes it into own db to validate
-        """
-        if self.kever.prefixer.transferable:  # not non-transferable prefix
-            raise ValueError("Attempt to create non-transferable receipt with"
-                             " transferable pre={}.".format(self.pre))
-        ked = serder.ked
-        reserder = eventing.receipt(pre=ked["i"],
-                                    sn=int(ked["s"], 16),
-                                    dig=serder.dig)
-        # sign serder event
-        cigars = self.mgr.sign(ser=serder.raw,
-                               verfers=self.kever.verfers,
-                               indexed=False)
-        msg = eventing.receiptize(reserder, cigars)
-        return msg
 
 
     def processCues(self, cues):
@@ -394,9 +419,9 @@ class Habitat():
                         msgs.extend(self.makeOwnInception())
 
                 if self.kever.prefixer.transferable:  #  send trans receipt chit
-                    msgs.extend(self.makeOwnChit(cuedSerder))
+                    msgs.extend(self.chit(cuedSerder))
                 else:  # send nontrans receipt
-                    msgs.extend(self.makeOwnReceipt(cuedSerder))
+                    msgs.extend(self.receipt(cuedSerder))
                 yield msgs
 
 
