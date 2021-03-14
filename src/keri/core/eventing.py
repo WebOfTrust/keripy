@@ -94,48 +94,74 @@ SealLocation = namedtuple("SealLocation", 'i s t p')
 # Cues are dataclasses may be converted tofrom dicts easily
 
 
-def decouple(couple):
+# bytearray of memoryview makes a copy so does not delete underlying data
+# behind memory view but del on bytearray itself does delete bytearray
+
+def decouple(data, deletive=False):
     """
-    Returns tuple (duple) of (prefixer, cigar) from concatenated bytes
-    of couple made up of qb64 or qb64b versions of pre+sig
+    Returns tuple of (prefixer, cigar) from concatenated bytes or
+    bytearray of data couple made up of qb64 or qb64b versions of pre+sig
     couple is used for receipts signed by nontransferable prefix keys
 
     Parameters:
-        couple is bytes concatenation of pre+sig from receipt
+        data is couple of bytes concatenation of pre+sig from receipt
+        deletive is Boolean True means delete from data each part as parsed
+            Only useful if data is bytearray from front of stream
     """
-    if isinstance(couple, memoryview):
-        couple = bytes(couple)
-    if hasattr(couple, "encode"):
-        couple = couple.encode("utf-8")  # convert to bytes
+    if isinstance(data, bytearray):
+        if not deletive:
+            data = bytearray(data)  # make copy so does not delete underlying data
+    elif isinstance(data, memoryview):
+        data = bytearray(data)
+    elif hasattr(data, "encode"):
+        data = bytearray(data.encode("utf-8"))  # convert to bytearray
+    elif isinstance(data, bytes):
+        data = bytearray(data)
+    else:
+        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
+                         "or bytearray.")
 
-    prefixer = Prefixer(qb64b=couple)
-    couple = couple[len(prefixer.qb64b):]  # strip off pre
-    cigar = Cigar(qb64b=couple)
+    prefixer = Prefixer(qb64b=data)
+    del data[:len(prefixer.qb64b)]  # strip off part
+    cigar = Cigar(qb64b=data)
+    del data[:len(cigar.qb64b)]  # strip off part
     return (prefixer, cigar)
 
 
-def detriple(triple):
+def detriple(data, deletive=False):
     """
-    Returns tuple (triple) of (diger, prefixer, cigar) from concatenated bytes
-    of triple made up of qb64 or qb64b versions of dig+pre+sig
-    Triplet is used for escrows of unverified receipts signed by nontransferable prefix keys
+    Returns tuple of (diger, prefixer, cigar) from concatenated bytes
+    of data triple made up of qb64 or qb64b versions of dig+pre+sig
+    triple is used for escrows of unverified receipts signed by nontransferable prefix keys
 
     Parameters:
-        triple is bytes concatenation of dig+pre+sig from receipt
+        data is triple of bytes concatenation of dig+pre+sig from receipt
+        deletive is Boolean True means delete from data each part as parsed
+            Only useful if data is bytearray from front of stream
     """
-    if isinstance(triple, memoryview):
-        triple = bytes(triple)
-    if hasattr(triple, "encode"):
-        triple = triple.encode("utf-8")  # convert to bytes
-    diger = Diger(qb64b=triple)
-    triple = triple[len(diger.qb64b):]  # strip off dig
-    prefixer = Prefixer(qb64b=triple)
-    triple = triple[len(prefixer.qb64b):]  # strip off pre
-    cigar = Cigar(qb64b=triple)
+    if isinstance(data, bytearray):
+        if not deletive:
+            data = bytearray(data)  # make copy so does not delete underlying data
+    elif isinstance(data, memoryview):
+        data = bytearray(data)
+    elif hasattr(data, "encode"):
+        data = bytearray(data.encode("utf-8"))  # convert to bytearray
+    elif isinstance(data, bytes):
+        data = bytearray(data)
+    else:
+        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
+                         "or bytearray.")
+
+    diger = Diger(qb64b=data)
+    del data[:len(diger.qb64b)]  # strip off part
+    prefixer = Prefixer(qb64b=data)
+    del data[:len(prefixer.qb64b)]  # strip off part
+    cigar = Cigar(qb64b=data)
+    del data[:len(cigar.qb64b)]  # strip off part
     return (diger, prefixer, cigar)
 
 
-def dequadruple(quadruple):
+def dequadruple(data, deletive=False):
     """
     Returns tuple (quadruple) of (prefixer, seqner, diger, siger) from concatenated bytes
     of quadruple made up of qb64 or qb64b versions of spre+ssnu+sdig+sig
@@ -143,23 +169,34 @@ def dequadruple(quadruple):
 
     Parameters:
         quadruple is bytes concatenation of pre+snu+dig+sig from receipt
+        deletive is Boolean True means delete from data each part as parsed
+            Only useful if data is bytearray from front of stream
     """
-    if isinstance(quadruple, memoryview):
-        quadruple = bytes(quadruple)
-    if hasattr(quadruple, "encode"):
-        quadruple = quadruple.encode("utf-8")  # convert to bytes
+    if isinstance(data, bytearray):
+        if not deletive:
+            data = bytearray(data)  # make copy so does not delete underlying data
+    elif isinstance(data, memoryview):
+        data = bytearray(data)
+    elif hasattr(data, "encode"):
+        data = bytearray(data.encode("utf-8"))  # convert to bytearray
+    elif isinstance(data, bytes):
+        data = bytearray(data)
+    else:
+        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
+                         "or bytearray.")
 
-    prefixer = Prefixer(qb64b=quadruple)
-    quadruple = quadruple[len(prefixer.qb64b):]  # strip off pre
-    seqner = Seqner(qb64b=quadruple)
-    quadruple = quadruple[len(seqner.qb64b):]  # strip off snu
-    diger = Diger(qb64b=quadruple)
-    quadruple = quadruple[len(diger.qb64b):]  # strip off dig
-    siger = Siger(qb64b=quadruple)
+    prefixer = Prefixer(qb64b=data)
+    del data[:len(prefixer.qb64b)]  # strip off part
+    seqner = Seqner(qb64b=data)
+    del data[:len(seqner.qb64b)]  # strip off part
+    diger = Diger(qb64b=data)
+    del data[:len(diger.qb64b)]  # strip off part
+    siger = Siger(qb64b=data)
+    del data[:len(siger.qb64b)]  # strip off part
     return (prefixer, seqner, diger, siger)
 
 
-def dequintuple(quintuple):
+def dequintuple(data, deletive=False):
     """
     Returns tuple of (ediger, seal prefixer, seal seqner, seal diger, siger)
     from concatenated bytes of quintuple made up of qb64 or qb64b versions of
@@ -169,21 +206,32 @@ def dequintuple(quintuple):
 
     Parameters:
         quintuple is bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
+        deletive is Boolean True means delete from data each part as parsed
+            Only useful if data is bytearray from front of stream
     """
-    if isinstance(quintuple, memoryview):
-        quintuple = bytes(quintuple)
-    if hasattr(quintuple, "encode"):
-        quintuple = quintuple.encode("utf-8")  # convert to bytes
+    if isinstance(data, bytearray):
+        if not deletive:
+            data = bytearray(data)  # make copy so does not delete underlying data
+    elif isinstance(data, memoryview):
+        data = bytearray(data)
+    elif hasattr(data, "encode"):
+        data = bytearray(data.encode("utf-8"))  # convert to bytearray
+    elif isinstance(data, bytes):
+        data = bytearray(data)
+    else:
+        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
+                         "or bytearray.")
 
-    ediger = Diger(qb64b=quintuple)  #  diger of receipted event
-    quintuple = quintuple[len(ediger.qb64b):]  # strip off dig
-    sprefixer = Prefixer(qb64b=quintuple)  # prefixer of recipter
-    quintuple = quintuple[len(sprefixer.qb64b):]  # strip off pre
-    sseqner = Seqner(qb64b=quintuple)  # seqnumber of receipting event
-    quintuple = quintuple[len(sseqner.qb64b):]  # strip off snu
-    sdiger = Diger(qb64b=quintuple)  # diger of receipting event
-    quintuple = quintuple[len(sdiger.qb64b):]  # strip off dig
-    siger = Siger(qb64b=quintuple)  #  indexed siger of event
+    ediger = Diger(qb64b=data)  #  diger of receipted event
+    del data[:len(ediger.qb64b)]  # strip off part
+    sprefixer = Prefixer(qb64b=data)  # prefixer of recipter
+    del data[:len(sprefixer.qb64b)]  # strip off part
+    sseqner = Seqner(qb64b=data)  # seqnumber of receipting event
+    del data[:len(sseqner.qb64b)]  # strip off part
+    sdiger = Diger(qb64b=data)  # diger of receipting event
+    del data[:len(sdiger.qb64b)]  # strip off part
+    siger = Siger(qb64b=data)  #  indexed siger of event
+    del data[:len(siger.qb64b)]  # strip off part
     return (ediger, sprefixer, sseqner, sdiger, siger)
 
 
@@ -1773,7 +1821,6 @@ class Kevery:
         snkey = snKey(pre=pre, sn=sn)
         ldig = self.db.getKeLast(key=snkey)   # retrieve dig of last event at sn.
 
-
         if ldig is not None:  #  verify digs match
             ldig = bytes(ldig).decode("utf-8")
             # retrieve event by dig assumes if ldig is not None that event exists at ldig
@@ -1790,7 +1837,7 @@ class Kevery:
             for cigar in cigars:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
-                if self.pre and self.pre == cigar.verfer.qb64:  # own receipt when own transferable
+                if self.pre and self.pre == cigar.verfer.qb64:  # own receipt when own nontrans
                     if self.pre == pre:  # own receipt attachment on own event
                         logger.info("Kevery process: skipped own receipt attachment"
                                     " on own event receipt=\n%s\n",

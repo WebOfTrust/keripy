@@ -1195,9 +1195,12 @@ class Baser(LMDBer):
         identifier prefix pre starting at first seen order number, fn.
         Essentially a replay in first seen order with attachments
         """
-        msg = bytearray()  # message
-        atc = bytearray()  # attachments
-        for fn, dig in self.getFelItemPreIter(self, pre, fn=0):
+        if hasattr(pre, 'encode'):
+            pre = pre.encode("utf-8")
+
+        for fn, dig in self.getFelItemPreIter(pre, fn=fn):
+            msg = bytearray()  # message
+            atc = bytearray()  # attachments
             dgkey = dgKey(pre, dig) # get message
             if not (raw := self.getEvt(key=dgkey)):
                 raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
@@ -1209,27 +1212,27 @@ class Baser(LMDBer):
             atc.extend(coring.Seqner(sn=fn).qb64b)
             if not (dts := self.getDts(key=dgkey)):
                 raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
-            atc.extend(coring.Dater(dts=dts).qb64b)
+            atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
 
             #add signatures to attachments
             if not (sigs := self.getSigs(key=dgkey)):
                 raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
             atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                      count=len(sigs)))
+                                      count=len(sigs)).qb64b)
             for sig in sigs:
                 atc.extend(sig)
 
             # add trans receipts quadruples to attachments
             if (quads := self.getVrcs(key=dgkey)):
                 atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
-                                      count=len(quads)))
+                                      count=len(quads)).qb64b)
                 for quad in quads:
                     atc.extend(quad)
 
             # add nontrans receipts couples to attachments
             if (coups := self.getRcts(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
-                                                  count=len(quads)))
+                atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
+                                                  count=len(coups)).qb64b)
                 for coup in coups:
                     atc.extend(coup)
 
@@ -1238,7 +1241,7 @@ class Baser(LMDBer):
                 raise ValueError("Invalid attachments size={}, nonintegral"
                                  " quadlets.".format(len(atc)))
             pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
-                                      count=(len(atc) // 4)).qb64
+                                      count=(len(atc) // 4)).qb64b
             msg.extend(pcnt)
             msg.extend(atc)
             yield msg

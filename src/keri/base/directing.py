@@ -316,7 +316,27 @@ class Habitat():
                                verfers=self.kever.verfers,
                                indexed=False)
         msg = eventing.receiptize(reserder, cigars)
+        self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
         return msg
+
+
+    def replay(self, pre=None, fn=0):
+        """
+        Returns replay of FEL first seen event log for pre starting from fn
+        Default pre is own .pre
+
+        Parameters:
+            pre is qb64 str or bytes of identifier prefix.
+                default is own .pre
+            fn is int first seen ordering number
+
+        """
+        if not pre:
+            pre = self.pre
+        msgs = bytearray()
+        for msg in self.db.cloneIter(pre=pre, fn=fn):
+            msgs.extend(msg)
+        return msgs
 
 
     def makeOwnEvent(self, sn):

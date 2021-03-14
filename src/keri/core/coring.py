@@ -735,9 +735,10 @@ class Matter:
 
 class Seqner(Matter):
     """
-    Seqner is subclass of Matter, cryptographic material, for sequence numbers
-    Seqner provides fully qualified format for sequence numbers when
-    used as attached cryptographic material items.
+    Seqner is subclass of Matter, cryptographic material, for ordinal numbers
+    such as sequence numbers or first seen ordering numbers.
+    Seqner provides fully qualified format for ordinals (sequence numbers etc)
+    when provided as attached cryptographic material elements.
 
     Useful when parsing attached receipt groupings with sn from stream or database
 
@@ -889,13 +890,15 @@ class Dater(Matter):
             index is int of count of attached receipts for CryCntDex codes
 
         Parameters:
-            dt the ISO-8601 datetime
+            dt the ISO-8601 datetime as str or bytes
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if dts is None:  # defaults to now
                 dts = nowIso8601()
             if len(dts) != 32:
                 raise ValueError("Invalid length of date time string")
+            if hasattr(dts, "decode"):
+                dts = dts.decode("utf-8")
             qb64 = MtrDex.DateTime + dts.translate(self.ToB64)
 
         super(Dater, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,

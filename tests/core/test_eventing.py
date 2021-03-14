@@ -42,25 +42,66 @@ def test_decouple():
     """
     pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
     sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+    preb = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sigb = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
+    # str
     couple = pre + sig
     prefixer, cigar = decouple(couple)
     assert prefixer.qb64 == pre
     assert cigar.qb64 == sig
+    assert len(couple) == 132
 
     # bytes
-    pre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    sig = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
-
-    couple = pre + sig
+    couple = preb + sigb
     prefixer, cigar = decouple(couple)
-    assert prefixer.qb64b == pre
-    assert cigar.qb64b == sig
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(couple) == 132
 
+    # memoryview
     couple = memoryview(couple)
     prefixer, cigar = decouple(couple)
-    assert prefixer.qb64b == pre
-    assert cigar.qb64b == sig
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(couple) == 132
+
+    # bytearray
+    couple = bytearray(couple)
+    prefixer, cigar = decouple(couple)
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(couple) == 132
+
+    # test deletive
+    # str
+    couple = pre + sig
+    assert len(couple) == 132
+    prefixer, cigar = decouple(couple, deletive=True)
+    assert prefixer.qb64 == pre
+    assert cigar.qb64 == sig
+    assert len(couple) == 132  # copy so no delete
+
+    # bytes
+    couple = preb + sigb
+    prefixer, cigar = decouple(couple, deletive=True)
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(couple) == 132  # copy so no delete
+
+    # memoryview
+    couple = memoryview(couple)
+    prefixer, cigar = decouple(couple, deletive=True)
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(couple) == 132  # copy so no delete
+
+    # bytearray
+    couple = bytearray(couple)
+    prefixer, cigar = decouple(couple, deletive=True)
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(couple) == 0  # not copy when bytearray so delete
 
     """end test"""
 
@@ -73,29 +114,74 @@ def test_detriple():
     pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
     sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
+    digb = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    preb = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    sigb = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+
+    # str
     triple = dig + pre + sig
     diger, prefixer, cigar = detriple(triple)
     assert diger.qb64 == dig
     assert prefixer.qb64 == pre
     assert cigar.qb64 == sig
+    assert len(triple) == 176
 
     # bytes
-    dig = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    pre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    sig = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
-
-    triple = dig + pre + sig
+    triple = digb + preb + sigb
     diger, prefixer, cigar = detriple(triple)
-    assert diger.qb64b == dig
-    assert prefixer.qb64b == pre
-    assert cigar.qb64b == sig
+    assert diger.qb64b == digb
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(triple) == 176
 
-
+    # memoryview
     triple = memoryview(triple)
     diger, prefixer, cigar = detriple(triple)
-    assert diger.qb64b == dig
-    assert prefixer.qb64b == pre
-    assert cigar.qb64b == sig
+    assert diger.qb64b == digb
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(triple) == 176
+
+    # bytearray
+    triple = bytearray(triple)
+    diger, prefixer, cigar = detriple(triple)
+    assert diger.qb64b == digb
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(triple) == 176
+
+    # test deletive
+    # str
+    triple = dig + pre + sig
+    diger, prefixer, cigar = detriple(triple, deletive=True)
+    assert diger.qb64 == dig
+    assert prefixer.qb64 == pre
+    assert cigar.qb64 == sig
+    assert len(triple) == 176
+
+    # bytes
+    triple = digb + preb + sigb
+    diger, prefixer, cigar = detriple(triple, deletive=True)
+    assert diger.qb64b == digb
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(triple) == 176
+
+    # memoryview
+    triple = memoryview(triple)
+    diger, prefixer, cigar = detriple(triple, deletive=True)
+    assert diger.qb64b == digb
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(triple) == 176
+
+    # bytearray
+    triple = bytearray(triple)
+    diger, prefixer, cigar = detriple(triple, deletive=True)
+    assert diger.qb64b == digb
+    assert prefixer.qb64b == preb
+    assert cigar.qb64b == sigb
+    assert len(triple) == 0
 
     """end test"""
 
@@ -108,34 +194,83 @@ def test_dequadruple():
     sdig = 'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
     sig = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
+    spreb = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    ssnub = b'0AAAAAAAAAAAAAAAAAAAAABQ'
+    sdigb = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    sigb = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    #str
     quadruple = spre + ssnu + sdig + sig
     sprefixer, sseqner, sdiger, siger = dequadruple(quadruple)
     assert sprefixer.qb64 == spre
     assert sseqner.qb64 == ssnu
     assert sdiger.qb64 == sdig
     assert siger.qb64 == sig
+    assert len(quadruple) == 200
 
     # bytes
-    spre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    ssnu = b'0AAAAAAAAAAAAAAAAAAAAABQ'
-    sdig = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
-    sig = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-
-    quadruple = spre + ssnu + sdig + sig
+    quadruple = spreb + ssnub + sdigb + sigb
     sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple)
-    assert sprefixer.qb64b == spre
-    assert sseqner.qb64b == ssnu
-    assert sdiger.qb64b == sdig
-    assert siger.qb64b == sig
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quadruple) == 200
 
-
+    # memoryview
     quadruple = memoryview(quadruple)
-    quadruple = spre + ssnu + sdig + sig
     sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple)
-    assert sprefixer.qb64b == spre
-    assert sseqner.qb64b == ssnu
-    assert sdiger.qb64b == sdig
-    assert siger.qb64b == sig
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quadruple) == 200
+
+    # bytearray
+    quadruple = bytearray(quadruple)
+    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple)
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quadruple) == 200
+
+    # test deletive
+    #str
+    quadruple = spre + ssnu + sdig + sig
+    sprefixer, sseqner, sdiger, siger = dequadruple(quadruple, deletive=True)
+    assert sprefixer.qb64 == spre
+    assert sseqner.qb64 == ssnu
+    assert sdiger.qb64 == sdig
+    assert siger.qb64 == sig
+    assert len(quadruple) == 200
+
+    # bytes
+    quadruple = spreb + ssnub + sdigb + sigb
+    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple, deletive=True)
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quadruple) == 200
+
+    # memoryview
+    quadruple = memoryview(quadruple)
+    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple, deletive=True)
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quadruple) == 200
+
+    # bytearray
+    quadruple = bytearray(quadruple)
+    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple, deletive=True)
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quadruple) == 0
 
     """end test"""
 
@@ -150,6 +285,13 @@ def test_dequintuple():
     sdig = 'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
     sig = 'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
+    edigb = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    spreb = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
+    ssnub = b'0AAAAAAAAAAAAAAAAAAAAABQ'
+    sdigb = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+    sigb = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    #str
     sealet = spre + ssnu + sdig
     quintuple = edig + sealet + sig
     ediger, sprefixer, sseqner, sdiger, siger = dequintuple(quintuple)
@@ -158,31 +300,79 @@ def test_dequintuple():
     assert sseqner.qb64 == ssnu
     assert sdiger.qb64 == sdig
     assert siger.qb64 == sig
+    assert len(quintuple) == 244
 
     # bytes
-    edig = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    spre = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    ssnu = b'0AAAAAAAAAAAAAAAAAAAAABQ'
-    sdig = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
-    sig = b'AFmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-
-    quintuple = edig + spre + ssnu + sdig + sig
+    quintuple = edigb + spreb + ssnub + sdigb + sigb
     ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple)
-    assert ediger.qb64b == edig
-    assert sprefixer.qb64b == spre
-    assert sseqner.qb64b == ssnu
-    assert sdiger.qb64b == sdig
-    assert siger.qb64b == sig
+    assert ediger.qb64b == edigb
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quintuple) == 244
 
-
+    # memoryview
     quintuple = memoryview(quintuple)
-    quintuple = edig + spre + ssnu + sdig + sig
     ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple)
-    assert ediger.qb64b == edig
-    assert sprefixer.qb64b == spre
-    assert sseqner.qb64b == ssnu
-    assert sdiger.qb64b == sdig
-    assert siger.qb64b == sig
+    assert ediger.qb64b == edigb
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quintuple) == 244
+
+    # bytearray
+    quintuple = bytearray(quintuple)
+    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple)
+    assert ediger.qb64b == edigb
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quintuple) == 244
+
+    # test deletive
+    #str
+    sealet = spre + ssnu + sdig
+    quintuple = edig + sealet + sig
+    ediger, sprefixer, sseqner, sdiger, siger = dequintuple(quintuple, deletive=True)
+    assert ediger.qb64 == edig
+    assert sprefixer.qb64 == spre
+    assert sseqner.qb64 == ssnu
+    assert sdiger.qb64 == sdig
+    assert siger.qb64 == sig
+    assert len(quintuple) == 244
+
+    # bytes
+    quintuple = edigb + spreb + ssnub + sdigb + sigb
+    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple, deletive=True)
+    assert ediger.qb64b == edigb
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quintuple) == 244
+
+    # memoryview
+    quintuple = memoryview(quintuple)
+    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple, deletive=True)
+    assert ediger.qb64b == edigb
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quintuple) == 244
+
+    # bytearray
+    quintuple = bytearray(quintuple)
+    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple, deletive=True)
+    assert ediger.qb64b == edigb
+    assert sprefixer.qb64b == spreb
+    assert sseqner.qb64b == ssnub
+    assert sdiger.qb64b == sdigb
+    assert siger.qb64b == sigb
+    assert len(quintuple) == 0
 
     """end test"""
 
@@ -3249,4 +3439,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_receiptize()
+    test_dequintuple()
