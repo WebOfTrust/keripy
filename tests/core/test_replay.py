@@ -55,6 +55,70 @@ def test_replay():
         assert bevHab.db == bevDB
         assert not bevHab.kever.prefixer.transferable
 
+        # Create series of event for Deb
+        debMsgs = bytearray()
+        debMsgs.extend(debHab.makeOwnInception())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.rotate())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.interact())
+
+        assert debMsgs == bytearray(b'{"v":"KERI10JSON000154_","i":"E4ReNhXtuh4DAKe4_qcX__uF70MnOvW5Wa'
+                                    b'pj3LcQ8CT4","s":"0","t":"icp","kt":["1/2","1/2","1/2"],"k":["DaY'
+                                    b'h8uaASuDjMUd8_BoNyQs3GwupzmJL8_RBsuNtZHQg","Duzj-Z2lR2DqB0cI0421'
+                                    b'oSMUVWOrN5axojx8g9fSx3PM","DRXPAmNVVqafWvQiN5qQmWUDvVupF2w8xFNGg'
+                                    b'1Gays9Y"],"n":"EO5f_IQjtBoeN_-OyzfVJx1_WqBFUL-Ely4x-xmUtOW8","wt'
+                                    b'":"0","w":[],"c":[]}-AADAA6Z50BRlXby_uSdkqbybLXds-5OMwQil4miux1s'
+                                    b'RxJkiD3kRS4HuCpv5m-wwsPHWwn_Ku5xB2P--NJ1pl7KXjAQABDjMdRtemkn9oyk'
+                                    b'LFo9MBwZsS85hGd1yaMMdFb_P1FY8_PZcHBVTc2iF5Bd6T2rGorwS-ChRa24bxUr'
+                                    b'kemWD1DAACpxUYq2zrFAlMdWuxdaYTqvh12pgk4Ba-vllsaZP5ct5HcOtJw47B6c'
+                                    b'VLcEePwEHk6jHlSoDGgH2YiyOwPbgSBQ{"v":"KERI10JSON000098_","i":"E4'
+                                    b'ReNhXtuh4DAKe4_qcX__uF70MnOvW5Wapj3LcQ8CT4","s":"1","t":"ixn","p'
+                                    b'":"Egd_fi2QDtfjjdB5p9tT6QCHuBsSWUwQP6AbarcjLgw0","a":[]}-AADAAPL'
+                                    b'MNHELcDDuPT1gyI9_TEBM6FRji2xmc0iBfNBwoKJttbJfeQhH41y-ayubtyhyMzH'
+                                    b'aqrq-WXaNQkpnzTTOPBAABUawpt1Nd7GR9rTwPD4ucT-M7Vy1xuxGlgRf9pgkOcX'
+                                    b'BBbhomjjEpz3aid9PP2vWeJ_rvw7W5rgrTJ38Q2v8bDwACoHNjlZ-IZ1K9opgeu3'
+                                    b'3TNIFBd3rNW_gKO_bFa-t2GYwOzlWoDlzF7kSRQnVKlXMeVrLBe3uwO6PjYjeZdU'
+                                    b'SlDg{"v":"KERI10JSON000190_","i":"E4ReNhXtuh4DAKe4_qcX__uF70MnOv'
+                                    b'W5Wapj3LcQ8CT4","s":"2","t":"rot","p":"E8MU3qwR6gzbMUqEXh0CgG4k3'
+                                    b'k4WKkk9hM0iaVeCmG7E","kt":["1/2","1/2","1/2"],"k":["DIsi8qYso1KM'
+                                    b'mpLOGYty3NC2BAojZmUCfzR5_5oQRiso","DkdClpaWCAoCPBYgUmqP9gwAtsGq8'
+                                    b'1yyPhGQKQ6-W_F0","DKDyq4QQYKnx9ircxeCvEcraI4HUSr_ytWPelDHAM98w"]'
+                                    b',"n":"E1oOvJmwenmC4uHjX7qB40LGVbeZY5rYQeZ6IK5zmdmM","wt":"0","wr'
+                                    b'":[],"wa":[],"a":[]}-AADAAr5HeTAGJ_WfIMO82lbEnpAMkuqZ0iJO0yYhjwv'
+                                    b'LElPYltF_jSOApKPWxepare2O7XMMOvtgxjXj9pvvqpW8WDgABKHoueBd4JgakpV'
+                                    b'ydJYADwh5wMSNyHNMKXwhYMGrgApl_EvsTmEt8uS94PmrfCtRjLRbZdzLRZVkX7Y'
+                                    b'x4jlNNCgACjKJlODGhL_a0S3-oDRJhOUG0sul4SCJd21Qp-KSFSfGavACAwQdEYQ'
+                                    b'L43jko9lFDuhwKDt1BD8kAoy3T-tdoAw{"v":"KERI10JSON000098_","i":"E4'
+                                    b'ReNhXtuh4DAKe4_qcX__uF70MnOvW5Wapj3LcQ8CT4","s":"3","t":"ixn","p'
+                                    b'":"EO2hh7xg29y3i7uywQ_n0g7vk0W1oGiErUY9QpGjSUhc","a":[]}-AADAA5I'
+                                    b'ox67c4HL78UrYqpSNH-UkHZRpR7X0fPQ0GEYJG8OGqCHBvPJica_yohOQP8GNOFQ'
+                                    b'9UsmBa0TDji6EAaXivBwAB6BgG2CQ-Ukw8CchtCHf9L5kVsmg1Tu2OuLkcy9Sb9u'
+                                    b'Vm23yLx-8I4pc6KHmZke8KCvpXjcdV65gOOE-VUIMOBwACXtTZoFqJHFhoMZABun'
+                                    b'XETksrK1nNiP9xzXx13gl4uqoVZkqfwqUTL3C7q0RcxYwaz5sYSNQA8zblA8YxVy'
+                                    b'FuCQ{"v":"KERI10JSON000098_","i":"E4ReNhXtuh4DAKe4_qcX__uF70MnOv'
+                                    b'W5Wapj3LcQ8CT4","s":"4","t":"ixn","p":"EQI0EXdK6WvQae17PBWDUkMOd'
+                                    b'OiTPpx48oMSYTUYsCl0","a":[]}-AADAAbnPY1i0cpo6q0cmvQr2bZOcipzl7LY'
+                                    b'Y2h-3ixndlzB3f-4VFLzSnIUtB_qwp1H2NI_DNGqXWGACywJoxkFccAQABHDicUl'
+                                    b'iz3Bl6y1T7-sQteMKxoDYZ4A8hVx3p3EjztyO8UnA6PkaV2b7AFwAfk4UbBWKMGj'
+                                    b'TtpZ88S7P9EsXLBAACNFFh6nDIWNG1ZbEsqqlCG2aKLgnpHmR6cJr1dq1F4pylAF'
+                                    b'1e3-on2aasDMYk3c2fj-AWErRqbsf8ejnJE3YvDg{"v":"KERI10JSON000098_"'
+                                    b',"i":"E4ReNhXtuh4DAKe4_qcX__uF70MnOvW5Wapj3LcQ8CT4","s":"5","t":'
+                                    b'"ixn","p":"EvrAC5XVQyu01ZuKfq1wiR0kXF2j8TjrCg4QyA0LVjKk","a":[]}'
+                                    b'-AADAA1OJn3UHjLcI333fduqTj6nAJY27VtkQqW_lHalnJKtgmb0tk1tV5xUCVzp'
+                                    b'al14xWDuyCdImhFzTk0sRgW4MYDQABOR8ay9qQYR3ieant4ujM_FX0Nm_mUHcVVo'
+                                    b'4pCqDy8jLaM3EBNmkOKUIfxgZC-8k6OpYcy33gC-qgUpc6C2_PDwACSoZSibaYci'
+                                    b'n32vY4ANzflFpJh_EF7mcGbTWSFrNLnwFrrOfhXL3i1Pf39Sk079ApSI87Nt-CvH'
+                                    b'pRRdows3TABQ{"v":"KERI10JSON000098_","i":"E4ReNhXtuh4DAKe4_qcX__'
+                                    b'uF70MnOvW5Wapj3LcQ8CT4","s":"6","t":"ixn","p":"EwmQtlcszNoEIDfqD'
+                                    b'-Zih3N6o5B3humRKvBBln2juTEM","a":[]}-AADAAvYMCRmJgjFM7EG7rWng7Q3'
+                                    b'WRfwcd908UdKL-7ZfGw4igpF9DcA-yxwliba59D4pkmhIcrW_Ax76iuaD6yD03Bw'
+                                    b'AB9Wp-awBUfw2jnDRjvEU3xpFlLDHwiFLRKpom8Wnx7qDD4aEv6ERZh-H8yP3eL4'
+                                    b'sNEFjP5HcRrb5MpFwOp0VyAwACdedbq9E2Exs1NobGwSNQpNxKlgDPiNDE8nOeOq'
+                                    b'gXt1rAj8SAh8gX2pOgEFj3g3UB69dNGw2M-bEZ557-p9G-Aw')
+
 
         #self.sendOwnInception()  # Inception Event
         #tyme = (yield (self.tock))
