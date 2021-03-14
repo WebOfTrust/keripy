@@ -1507,7 +1507,7 @@ class Kevery:
 
 
 
-    def process(self, ims=None):
+    def process(self, ims=None, framed=None):
         """
         Process all messages from incoming message stream, ims, when provided
         Otherwise process all messages from .ims
@@ -1518,9 +1518,11 @@ class Kevery:
         else:
             ims = self.ims
 
+        framed = framed if framed is not None else self.framed
+
         while ims:
             try:
-                self.processOne(ims=ims, framed=self.framed)
+                self.processOne(ims=ims, framed=framed)
 
             except ShortageError as ex:  # need more bytes
                 break  # break out of while loop
