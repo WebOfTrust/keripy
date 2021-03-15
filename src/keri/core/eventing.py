@@ -69,7 +69,54 @@ class TraitCodex:
 
 TraitDex = TraitCodex()  # Make instance
 
+@dataclass(frozen=True)
+class ColdCodex:
+    """
+    ColdCodex is codex of cold stream start tritets of first byte
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
+    First three bits:
+        0o0 = 000 free
+        0o1 = 001 cntcode B64
+        0o2 = 010 opcode B64
+        0o3 = 011 json
+        0o4 = 100 mgpk
+        0o5 = 101 cbor
+        0o6 = 110 mgpk
+        007 = 111 cntcode or opcode B2
+
+    status is one of ('evt', 'txt', 'bny' )
+    'evt' if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2)
+    'txt' if tritet in (ColdDex.CtB64, ColdDex.OpB64)
+    'bny' if tritet in (ColdDex.CtOpB2,)
+
+    otherwise raise ColdStartError
+
+    x = bytearray([0x2d, 0x5f])
+    x == bytearray(b'-_')
+    x[0] >> 5 == 0o1
+    True
+    """
+    Free:      int = 0o0  # not taken
+    CtB64:     int = 0o1  # CountCode Base64
+    OpB64:     int = 0o2  # OpCode Base64
+    JSON:      int = 0o3  # JSON Map Event Start
+    MGPK1:     int = 0o4  # MGPK Fixed Map Event Start
+    CBOR:      int = 0o5  # CBOR Map Event Start
+    MGPK2:     int = 0o6  # MGPK Big 16 or 32 Map Event Start
+    CtOpB2:    int = 0o7  # CountCode or OpCode Base2
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+ColdDex = ColdCodex()  # Make instance
+
+Coldage = namedtuple("Coldage", 'evt txt bny')  # cold start status
+Colds = Coldage(evt='evt', txt='txt', bny='bny')
+
+
+TraitDex = TraitCodex()  # Make instance
 
 # Location of last establishment key event: sn is int, dig is qb64 digest
 LastEstLoc = namedtuple("LastEstLoc", 's d')
@@ -1505,6 +1552,27 @@ class Kevery:
         """
         return self.kevers[self.pre] if self.pre else None
 
+    def cold(self, ims):
+        """
+        Returns status string of cold start of stream ims bytearray by looking
+        at first triplet of first byte to determin if message or counter code
+        and if counter code whether Base64 or Base2 representation
+
+        First three bits:
+        0o0 = 000 free
+        0o1 = 001 cntcode B64
+        0o2 = 010 opcode B64
+        0o3 = 011 json
+        0o4 = 100 mgpk
+        0o5 = 101 cbor
+        0o6 = 110 mgpk
+        007 = 111 cntcode or opcode B2
+
+        counter B64 in (0o1, 0o2)
+        counter B2 in (0o7)
+        event in (0o3, 0o4, 0o5, 0o6)
+        unexpected in (0o0)
+        """
 
 
     def process(self, ims=None, framed=None):

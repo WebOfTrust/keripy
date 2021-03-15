@@ -176,6 +176,13 @@ class ExtractionError(KeriError):
     does not meet expectations.
     """
 
+class ColdStartError(ExtractionError):
+    """
+    Bad tritet in first byte of cold start of incoming message stream
+
+    Usage:
+        raise ColdStartError("error message")
+    """
 
 class VersionError(ExtractionError):
     """
