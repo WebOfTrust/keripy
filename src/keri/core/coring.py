@@ -2466,9 +2466,9 @@ class CounterCodex:
 
     ControllerIdxSigs:              str =  '-A'  # Qualified Base64 Indexed Signature.
     WitnessIdxSigs:                 str =  '-B'  # Qualified Base64 Indexed Signature.
-    NonTransReceiptCouples:         str =  '-C'  # Composed Base64 Couple, pre + sig.
+    NonTransReceiptCouples:         str =  '-C'  # Composed Base64 Couple, pre + cig.
     TransReceiptQuadruples:         str =  '-D'  # Composed Base64 Quadruple, pre + snu + dig + sig.
-    FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fn + dt.
+    FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fnu + dts.
     MessageDataGroups:              str =  '-U'  # Composed Message Data Group or Primitive
     AttachedMaterialQuadlets:       str =  '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     MessageDataMaterialQuadlets:    str =  '-W'  # Composed Grouped Message Data Quadlet (4 char each)

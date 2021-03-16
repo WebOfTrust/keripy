@@ -171,10 +171,19 @@ class DerivationError(ValidationError):
 # Stream Parsing and Extraction Errors
 class ExtractionError(KeriError):
     """
-    Base class for rrrors related to extracting messages and attachments
+    Base class for errors related to extracting messages and attachments
     from message streams. Rasised in stream processing when extracted data
     does not meet expectations.
     """
+
+
+class ShortageError(ExtractionError):
+    """
+    Not Enough bytes in buffer for complete message or material
+    Usage:
+        raise ShortageError("error message")
+    """
+
 
 class ColdStartError(ExtractionError):
     """
@@ -183,6 +192,17 @@ class ColdStartError(ExtractionError):
     Usage:
         raise ColdStartError("error message")
     """
+
+
+class SizedGroupError(ExtractionError):
+    """
+    Error while extracted within sized group. Assumes sized group already
+    deleted from stream before raise
+
+    Usage:
+        raise SizedGroupError("error message")
+    """
+
 
 class VersionError(ExtractionError):
     """
@@ -198,14 +218,6 @@ class DeserializationError(ExtractionError):
     Error deserializing message
     Usage:
         raise DeserializationError("error message")
-    """
-
-
-class ShortageError(ExtractionError):
-    """
-    Not Enough bytes in buffer for complete message or material
-    Usage:
-        raise ShortageError("error message")
     """
 
 
@@ -248,3 +260,4 @@ class UnexpectedOpCodeError(DerivationCodeError):
     Usage:
         raise DerivationCodeError("error message")
     """
+
