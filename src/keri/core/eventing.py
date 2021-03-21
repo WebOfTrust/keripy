@@ -21,8 +21,8 @@ import blake3
 
 from orderedset import OrderedSet as oset
 
-from ..kering import (ValidationError, VersionError, EmptyMaterialError,
-                      DerivationError, ShortageError, MissingSignatureError,
+from ..kering import (ExtractionError, ShortageError,
+                      ValidationError,  MissingSignatureError,
                       MissingDelegatingSealError, OutOfOrderError,
                       LikelyDuplicitousError,  UnverifiedReceiptError,
                       UnverifiedTransferableReceiptError)
@@ -31,7 +31,7 @@ from ..help.helping import nowIso8601, fromIso8601, toIso8601
 from ..db.dbing import dgKey, snKey, splitKey, splitKeySN, Baser
 
 from .coring import Versify, Serials, Ilks
-from .coring import MtrDex, IdrDex, CtrDex, Counter
+from .coring import MtrDex, NonTransDex, IdrDex, CtrDex, Counter
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
 from .coring import Seqner, Siger, Cigar
 
@@ -94,48 +94,74 @@ SealLocation = namedtuple("SealLocation", 'i s t p')
 # Cues are dataclasses may be converted tofrom dicts easily
 
 
-def decouple(couple):
+# bytearray of memoryview makes a copy so does not delete underlying data
+# behind memory view but del on bytearray itself does delete bytearray
+
+def decouple(data, deletive=False):
     """
-    Returns tuple (duple) of (prefixer, cigar) from concatenated bytes
-    of couple made up of qb64 or qb64b versions of pre+sig
+    Returns tuple of (prefixer, cigar) from concatenated bytes or
+    bytearray of data couple made up of qb64 or qb64b versions of pre+sig
     couple is used for receipts signed by nontransferable prefix keys
 
     Parameters:
-        couple is bytes concatenation of pre+sig from receipt
+        data is couple of bytes concatenation of pre+sig from receipt
+        deletive is Boolean True means delete from data each part as parsed
+            Only useful if data is bytearray from front of stream
     """
-    if isinstance(couple, memoryview):
-        couple = bytes(couple)
-    if hasattr(couple, "encode"):
-        couple = couple.encode("utf-8")  # convert to bytes
+    if isinstance(data, bytearray):
+        if not deletive:
+            data = bytearray(data)  # make copy so does not delete underlying data
+    elif isinstance(data, memoryview):
+        data = bytearray(data)
+    elif hasattr(data, "encode"):
+        data = bytearray(data.encode("utf-8"))  # convert to bytearray
+    elif isinstance(data, bytes):
+        data = bytearray(data)
+    else:
+        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
+                         "or bytearray.")
 
-    prefixer = Prefixer(qb64b=couple)
-    couple = couple[len(prefixer.qb64b):]  # strip off pre
-    cigar = Cigar(qb64b=couple)
+    prefixer = Prefixer(qb64b=data)
+    del data[:len(prefixer.qb64b)]  # strip off part
+    cigar = Cigar(qb64b=data)
+    del data[:len(cigar.qb64b)]  # strip off part
     return (prefixer, cigar)
 
 
-def detriple(triple):
+def detriple(data, deletive=False):
     """
-    Returns tuple (triple) of (diger, prefixer, cigar) from concatenated bytes
-    of triple made up of qb64 or qb64b versions of dig+pre+sig
-    Triplet is used for escrows of unverified receipts signed by nontransferable prefix keys
+    Returns tuple of (diger, prefixer, cigar) from concatenated bytes
+    of data triple made up of qb64 or qb64b versions of dig+pre+sig
+    triple is used for escrows of unverified receipts signed by nontransferable prefix keys
 
     Parameters:
-        triple is bytes concatenation of dig+pre+sig from receipt
+        data is triple of bytes concatenation of dig+pre+sig from receipt
+        deletive is Boolean True means delete from data each part as parsed
+            Only useful if data is bytearray from front of stream
     """
-    if isinstance(triple, memoryview):
-        triple = bytes(triple)
-    if hasattr(triple, "encode"):
-        triple = triple.encode("utf-8")  # convert to bytes
-    diger = Diger(qb64b=triple)
-    triple = triple[len(diger.qb64b):]  # strip off dig
-    prefixer = Prefixer(qb64b=triple)
-    triple = triple[len(prefixer.qb64b):]  # strip off pre
-    cigar = Cigar(qb64b=triple)
+    if isinstance(data, bytearray):
+        if not deletive:
+            data = bytearray(data)  # make copy so does not delete underlying data
+    elif isinstance(data, memoryview):
+        data = bytearray(data)
+    elif hasattr(data, "encode"):
+        data = bytearray(data.encode("utf-8"))  # convert to bytearray
+    elif isinstance(data, bytes):
+        data = bytearray(data)
+    else:
+        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
+                         "or bytearray.")
+
+    diger = Diger(qb64b=data)
+    del data[:len(diger.qb64b)]  # strip off part
+    prefixer = Prefixer(qb64b=data)
+    del data[:len(prefixer.qb64b)]  # strip off part
+    cigar = Cigar(qb64b=data)
+    del data[:len(cigar.qb64b)]  # strip off part
     return (diger, prefixer, cigar)
 
 
-def dequadruple(quadruple):
+def dequadruple(data, deletive=False):
     """
     Returns tuple (quadruple) of (prefixer, seqner, diger, siger) from concatenated bytes
     of quadruple made up of qb64 or qb64b versions of spre+ssnu+sdig+sig
@@ -143,23 +169,34 @@ def dequadruple(quadruple):
 
     Parameters:
         quadruple is bytes concatenation of pre+snu+dig+sig from receipt
+        deletive is Boolean True means delete from data each part as parsed
+            Only useful if data is bytearray from front of stream
     """
-    if isinstance(quadruple, memoryview):
-        quadruple = bytes(quadruple)
-    if hasattr(quadruple, "encode"):
-        quadruple = quadruple.encode("utf-8")  # convert to bytes
+    if isinstance(data, bytearray):
+        if not deletive:
+            data = bytearray(data)  # make copy so does not delete underlying data
+    elif isinstance(data, memoryview):
+        data = bytearray(data)
+    elif hasattr(data, "encode"):
+        data = bytearray(data.encode("utf-8"))  # convert to bytearray
+    elif isinstance(data, bytes):
+        data = bytearray(data)
+    else:
+        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
+                         "or bytearray.")
 
-    prefixer = Prefixer(qb64b=quadruple)
-    quadruple = quadruple[len(prefixer.qb64b):]  # strip off pre
-    seqner = Seqner(qb64b=quadruple)
-    quadruple = quadruple[len(seqner.qb64b):]  # strip off snu
-    diger = Diger(qb64b=quadruple)
-    quadruple = quadruple[len(diger.qb64b):]  # strip off dig
-    siger = Siger(qb64b=quadruple)
+    prefixer = Prefixer(qb64b=data)
+    del data[:len(prefixer.qb64b)]  # strip off part
+    seqner = Seqner(qb64b=data)
+    del data[:len(seqner.qb64b)]  # strip off part
+    diger = Diger(qb64b=data)
+    del data[:len(diger.qb64b)]  # strip off part
+    siger = Siger(qb64b=data)
+    del data[:len(siger.qb64b)]  # strip off part
     return (prefixer, seqner, diger, siger)
 
 
-def dequintuple(quintuple):
+def dequintuple(data, deletive=False):
     """
     Returns tuple of (ediger, seal prefixer, seal seqner, seal diger, siger)
     from concatenated bytes of quintuple made up of qb64 or qb64b versions of
@@ -169,21 +206,32 @@ def dequintuple(quintuple):
 
     Parameters:
         quintuple is bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
+        deletive is Boolean True means delete from data each part as parsed
+            Only useful if data is bytearray from front of stream
     """
-    if isinstance(quintuple, memoryview):
-        quintuple = bytes(quintuple)
-    if hasattr(quintuple, "encode"):
-        quintuple = quintuple.encode("utf-8")  # convert to bytes
+    if isinstance(data, bytearray):
+        if not deletive:
+            data = bytearray(data)  # make copy so does not delete underlying data
+    elif isinstance(data, memoryview):
+        data = bytearray(data)
+    elif hasattr(data, "encode"):
+        data = bytearray(data.encode("utf-8"))  # convert to bytearray
+    elif isinstance(data, bytes):
+        data = bytearray(data)
+    else:
+        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
+                         "or bytearray.")
 
-    ediger = Diger(qb64b=quintuple)  #  diger of receipted event
-    quintuple = quintuple[len(ediger.qb64b):]  # strip off dig
-    sprefixer = Prefixer(qb64b=quintuple)  # prefixer of recipter
-    quintuple = quintuple[len(sprefixer.qb64b):]  # strip off pre
-    sseqner = Seqner(qb64b=quintuple)  # seqnumber of receipting event
-    quintuple = quintuple[len(sseqner.qb64b):]  # strip off snu
-    sdiger = Diger(qb64b=quintuple)  # diger of receipting event
-    quintuple = quintuple[len(sdiger.qb64b):]  # strip off dig
-    siger = Siger(qb64b=quintuple)  #  indexed siger of event
+    ediger = Diger(qb64b=data)  #  diger of receipted event
+    del data[:len(ediger.qb64b)]  # strip off part
+    sprefixer = Prefixer(qb64b=data)  # prefixer of recipter
+    del data[:len(sprefixer.qb64b)]  # strip off part
+    sseqner = Seqner(qb64b=data)  # seqnumber of receipting event
+    del data[:len(sseqner.qb64b)]  # strip off part
+    sdiger = Diger(qb64b=data)  # diger of receipting event
+    del data[:len(sdiger.qb64b)]  # strip off part
+    siger = Siger(qb64b=data)  #  indexed siger of event
+    del data[:len(siger.qb64b)]  # strip off part
     return (ediger, sprefixer, sseqner, sdiger, siger)
 
 
@@ -708,7 +756,7 @@ def deltate(pre,
 
 def messagize(serder, sigers):
     """
-    Attaches signatures to a KERI event
+    Attaches indexed signatures from sigers to KERI message data from serder
     Parameters:
         serder: Serder instance containing the event
         sigers: Sigers[] array of indexed signatures
@@ -725,6 +773,27 @@ def messagize(serder, sigers):
     return msg
 
 
+def receiptize(serder, cigars):
+    """
+    Attaches receipt couplets from cigars to KERI message data from serder
+    Parameters:
+        serder: Serder instance containing the event
+        cigars: Cigars[] array of non-transferable non indexed signatures
+
+    Returns: bytearray KERI event message
+    """
+    msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
+    count = len(cigars)
+    counter = Counter(code=CtrDex.NonTransReceiptCouples, count=count)
+    msg.extend(counter.qb64b)
+    for cigar in cigars:
+        if cigar.verfer.code not in NonTransDex:
+            raise ValueError("Attempt to use tranferable prefix={} for "
+                             "receipt.".format(cigar.verfer.qb64))
+        msg.extend(cigar.verfer.qb64b)
+        msg.extend(cigar.qb64b)
+
+    return msg
 
 class Kever:
     """
@@ -905,7 +974,7 @@ class Kever:
 
         """
         if not self.transferable:  # not transferable so no events after inception allowed
-            raise ValidationError("Unexpected event = {} in nontransferable "
+            raise ValidationError("Unexpected event = {} is nontransferable "
                                   " state.".format(serder.ked))
         ked = serder.ked
         if serder.pre != self.prefixer.qb64:
@@ -1375,8 +1444,10 @@ class Kevery:
         .ims is bytearray incoming message stream
         .cues is deque of Cues i.e. notices of events or requests to respond to
         .kevers is dict of existing kevers indexed by pre (qb64) of each Kever
-        .baser is instance of LMDB Baser object
+        .db is instance of LMDB Baser object
         .framed is Boolean stream is packet framed If True Else not framed
+        .pipelined is Boolean, True means process ims as pipelined messages
+                when pipelined count codes  Otherwise ignore pipelined codes
         .pre is fully qualified base64 identifier prefix of own identifier if any
         .local is Boolean, True means only process msgs for own events if .pre
                            False means only process msgs for not own events if .pre
@@ -1394,9 +1465,24 @@ class Kevery:
     TimeoutLDE = 3600  # seconds to timeout likely duplicitous escrows
 
     def __init__(self, ims=None, cues=None, kevers=None, db=None, framed=True,
-                 pre=None, local=False):
+                 pipelined=False, pre=None, local=False):
         """
-        Set up event stream and logs
+        Initialize instance:
+
+        Parameters:
+            ims is incoming message stream bytearray
+            cues is deque if cues to create responses to messages
+            kevers is dict of Kever instances of key state in db
+            db is Baser instance
+            framed is Boolean, True means ims contains only one frame of msg plus
+                attachments instead of stream with multiple messages
+            pipelined is Boolean, True means process ims as pipelined messages
+                when pipelined count codes  Otherwise ignore pipelined codes
+            pre is local or own identifier prefix. Some restriction if present
+            local is Boolean, True means only process msgs for own events if .pre
+                        False means only process msgs for not own events if .pre
+
+
 
         """
         self.ims = ims if ims is not None else bytearray()
@@ -1407,8 +1493,9 @@ class Kevery:
             db = Baser()  # default name = "main"
         self.db = db
         self.framed = True if framed else False  # extract until end-of-stream
-        self.pre = pre
-        self.local = True if local else False
+        self.pipelined = True if pipelined else False  # process as pipelined
+        self.pre = pre  # local prefix for restrictions on local events
+        self.local = True if local else False  # local vs nonlocal restrictions
 
 
     @property
@@ -1420,7 +1507,7 @@ class Kevery:
 
 
 
-    def process(self, ims=None):
+    def process(self, ims=None, framed=None):
         """
         Process all messages from incoming message stream, ims, when provided
         Otherwise process all messages from .ims
@@ -1431,20 +1518,28 @@ class Kevery:
         else:
             ims = self.ims
 
+        framed = framed if framed is not None else self.framed
+
         while ims:
             try:
-                self.processOne(ims=ims, framed=self.framed)
+                self.processOne(ims=ims, framed=framed)
 
             except ShortageError as ex:  # need more bytes
                 break  # break out of while loop
 
-            except Exception as ex:  # log diagnostics errors etc
+            except ExtractionError as ex:  # some other extraction error
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg process error: %s\n", ex.args[0])
+                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
                 else:
-                    logger.error("Kevery msg process error: %s\n", ex.args[0])
-                del ims[:]  #  delete rest of stream
-                break
+                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
+                del ims[:]  # delete rest of stream to force cold restart
+
+            except Exception as ex:  # Some other error while validating
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg validation error: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery msg validation error: %s\n", ex.args[0])
+                # should we restart break here?
 
 
     def processOne(self, ims=None, framed=True):
@@ -1471,16 +1566,11 @@ class Kevery:
             serder = Serder(raw=ims)
 
         except ShortageError as ex:  # need more bytes
-            raise ex  # reraise
+            raise   # reraise
 
-        except Exception as ex:
-            raise ValidationError("Error while processing message stream"
-                                  " = {}".format(ex))
+        except ExtractionError as ex:  # Some other error while extracting
+            raise ExtractionError("Error extracting message.")
 
-        version = serder.version
-        if version != Version:  # This is where to dispatch version switch
-            raise VersionError("Unsupported version = {}, expected {} for evt "
-                                  "= {}.".format(version, Version, serder.ked))
 
         del ims[:serder.size]  # strip off event from front of ims
 
@@ -1749,8 +1839,18 @@ class Kevery:
             for cigar in cigars:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
-                if self.pre and self.pre == cigar.verfer.qb64:  # implies own transferable
-                    continue  # skip own receipt of own event
+                if self.pre and self.pre == cigar.verfer.qb64:  # own receipt when own nontrans
+                    if self.pre == pre:  # own receipt attachment on own event
+                        logger.info("Kevery process: skipped own receipt attachment"
+                                    " on own event receipt=\n%s\n",
+                                               json.dumps(serder.ked, indent=1))
+                        continue  # skip own receipt attachment on own event
+                    if not self.local:  # own receipt on other event when not local
+                        logger.info("Kevery process: skipped own receipt attachment"
+                                    " on nonlocal event receipt=\n%s\n",
+                                               json.dumps(serder.ked, indent=1))
+                        continue  # skip own receipt attachment on non-local event
+
                 if cigar.verfer.verify(cigar.raw, lserder.raw):
                     # write receipt couple to database
                     couple = cigar.verfer.qb64b + cigar.qb64b
@@ -1791,9 +1891,13 @@ class Kevery:
         # Only accept receipt if for last seen version of receipted event at sn
         ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
         seal = SealEvent(**ked["a"])
-        if self.pre and self.pre == seal.i == pre:  # skip own chits of own events
-            raise ValidationError("Own pre={} receipt of own event {}."
+        if self.pre and self.pre == seal.i:  # own chit
+            if self.pre == pre:  # skip own chits of own events
+                raise ValidationError("Own pre={} chit of own event {}."
                                   "".format(self.pre, ked))
+            if not self.local:  # skip own chits of nonlocal events
+                raise ValidationError("Own pre={} seal in chit of nonlocal event "
+                                  "{}.".format(self.pre, ked))
 
         if ldig is not None and seal.i in self.kevers:  #  verify digs match last seen and receipt dig
             # both receipted event and receipter in database
@@ -2764,6 +2868,7 @@ class Kevery:
 
     def duplicity(self, serder, sigers):
         """
+        PlaceHolder Reminder
         Processes potential duplicitous events in PDELs
 
         Handles duplicity detection and logging if duplicitous
@@ -2772,4 +2877,3 @@ class Kevery:
 
         """
         pass
-

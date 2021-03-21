@@ -410,7 +410,7 @@ def test_run_bob_eve_demo():
 
     # run components
     tock = 0.03125
-    expire =  1.0
+    expire =  2.5
     doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, bobDoer])
     doist.do()
 
@@ -471,7 +471,7 @@ def test_run_sam_eve_demo():
 
     # run components
     tock = 0.03125
-    expire =  1.0
+    expire =  2.0
     doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, samDoer])
     doist.do()
 
@@ -480,4 +480,4 @@ def test_run_sam_eve_demo():
 
 
 if __name__ == "__main__":
-    test_run_sam_eve_demo()
+    test_direct_mode_bob_eve_demo()
