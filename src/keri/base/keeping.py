@@ -1255,6 +1255,9 @@ class Manager:
         """
         signers = []
 
+        if pubs is None and verfers is None:
+            raise ValueError("pubs or verfers required")
+
         if pubs:
             for pub in pubs:
                 verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
