@@ -915,7 +915,7 @@ def test_counter():
                                             'MessageDataMaterialQuadlets': '-W',
                                             'CombinedMaterialQuadlets': '-X',
                                             'MaterialGroups': '-Y',
-                                            'Material': '-Z',
+                                            'MaterialQuadlets': '-Z',
                                             'AnchorSealGroups': '-a',
                                             'ConfigTraits': '-c',
                                             'DigestSealQuadlets': '-d',
@@ -929,7 +929,7 @@ def test_counter():
                                             'BigMessageDataMaterialQuadlets': '-0W',
                                             'BigCombinedMaterialQuadlets': '-0X',
                                             'BigMaterialGroups': '-0Y',
-                                            'BigMaterial': '-0Z'
+                                            'BigMaterialQuadlets': '-0Z'
                                          }
 
     assert CtrDex.ControllerIdxSigs ==  '-A'

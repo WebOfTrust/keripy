@@ -1774,16 +1774,36 @@ class Kevery:
 
 
 
-    def new_process(self, ims=None, framed=None, piplined=None, cloned=None):
+    def process_new(self, ims=None, framed=None, piplined=None, cloned=None):
         """
-        Returns iterator to process messages in incoming message stream, ims,
-        when provided. Otherwise process messages from .ims
+        Process messages in incoming message stream, ims, when provided.
+        Otherwise process messages from .ims
+
+        Parameters:
+            ims is bytearray of incoming message stream. May contain one or more
+                sets each of a serialized message with attached cryptographic
+                material such as signatures or receipts.
+
+            framed is Boolean, True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+
+            pipelined is Boolean, True means process ims as pipelined messages
+                given stream has pipelined count codes. False means ignore
+                pipelined codes and process inline.
+
+            cloned is Boolen, True means cloned message stream so use attached
+                datetimes from clone source not own. False means ignore attached
+                datetimes.
+
+        New Logic:
+            Attachments must all have counters so know if txt or bny format for
+            attachments. So even when framed==True must still have counter.
         """
         if ims is not None:  # needs bytearray not bytes since deletes as processes
             if not isinstance(ims, bytearray):
                 ims = bytearray(ims)  # so make bytearray copy
         else:
-            ims = self.ims
+            ims = self.ims  # use instance attribute by defautl
 
         framed = framed if framed is not None else self.framed
         pipelined = pipelined if pipelined is not None else self.pipelined
@@ -1808,7 +1828,7 @@ class Kevery:
                 else:
                     logger.error("Kevery msg extraction error: %s\n", ex.args[0])
 
-            except ExtractionError as ex:  # some other extraction error
+            except (ColdStartError, ExtractionError) as ex:  # some other extraction error
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
                 else:
@@ -1824,7 +1844,7 @@ class Kevery:
                 break
 
 
-    def new_processOne(self, ims=None, framed=True, piplined=False, cloned=False):
+    def processOne_new(self, ims=None, framed=True, piplined=False, cloned=False):
         """
         Extract one msg with attached crypto material (signature etc) from
         incoming message stream, ims, and dispatch processing of message with
@@ -1835,48 +1855,61 @@ class Kevery:
                 May contain one or more sets each of a serialized message with
                 attached cryptographic material such as signatures or receipts.
 
-            framed is Boolean, If True and no sig counter then extract signatures
-                until end-of-stream. This is useful for framed packets with
-                one event and one set of attached signatures per invocation.
+            framed is Boolean, True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+
+            pipelined is Boolean, True means process ims as pipelined messages
+                given stream has pipelined count codes. False means ignore
+                pipelined codes and process inline.
+
+            cloned is Boolen, True means cloned message stream so use attached
+                datetimes from clone source not own. False means ignore attached
+                datetimes.
+
+        Logic:
+            Currently only support couters on attachments not on combined or
+            on message
+            Attachments must all have counters so know if txt or bny format for
+            attachments. So even when framed==True must still have counter.
+            Do While loop
+               sniff to set up first extraction
+                  raise exception and flush full tream if stream start is counter
+                  must be message
+               extract message
+               sniff for counter
+               if group counter extract and discard but keep track of count
+               so if error while processing attachments then only need to flush
+               attachment count not full stream.
+
 
         """
 
         if ims is None:
             ims = self.ims
 
-        cmbSize = None  # extracted combined size  message plus attachments n chars
-        msgSize = None  # extracted message size in chars
-        atcSize = None  # extracted attachment size in chars
-
         cold = self._sniff(ims)  # check for spurious counters at front of stream
         if cold in (Colds.txt, Colds.bny):  # unexpected so error out to flush stream
-            # add piplines here when CESR
+            # add pipelines here once CESR message format supported.
             raise ColdStartError("Expecting message counter tritet={}"
                                  "".format(code))
 
-        so = 0  # stream offset count into stream so can restart if not done
         # extract and deserialize message from ims
         try:
             serder = Serder(raw=ims)
         except ShortageError as ex:  # need more bytes
             raise   # reraise
-        except ExtractionError as ex:  # Some other error while extracting
-            if cmbSize:  # can remove combined size from stream so valid cold start
-                del ims[:cmbSize]
-                raise  SizedGroupError("Error extracting event.")
-            else:
-                raise ExtractionError("Error extracting message.")
 
         del ims[:serder.size]  # strip off event from front of ims
-        if msgSize and serder.size != msgSize:
-            raise ExtractionError("Mismatch Message and Counter Code Size.")
 
         ilk = serder.ked["t"]  # dispatch abased on ilk
 
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
-            # extract attachments must start with counter
+            so = 0  # stream offset count into stream so can restart if not done
+            atcSize = None  # counted attachment size in chars
+
+            # extract attachments must start with counter so know if txt or bny.
             cold = self._sniff(ims)  # counters at front of attachments
-            if cold not in (Colds.txt, Colds.bny):
+            if cold not in (Colds.txt, Colds.bny):  # flush stream
                 raise ColdStartError("Expected counter tritet got {}.".format(cold))
 
             if cold == Colds.txt:
@@ -1890,7 +1923,7 @@ class Kevery:
             if ctr.code == CtrDex.AttachedMaterialQuadlets:
                 atcSize = ctr.count * 4
                 del ims[:len(ctr.qb2)]
-                if piplined:
+                if pipelined:
                     pass  #  pass to pipeline processor
                 else:  # extract next counter assume
                     try:

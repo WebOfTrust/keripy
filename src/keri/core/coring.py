@@ -2474,7 +2474,7 @@ class CounterCodex:
     MessageDataMaterialQuadlets:    str =  '-W'  # Composed Grouped Message Data Quadlet (4 char each)
     CombinedMaterialQuadlets:       str =  '-X'  # Combined Message Data + Attachments Quadlet (4 char each)
     MaterialGroups:                 str =  '-Y'  # Composed Generic Material Group or Primitive
-    Material:                       str =  '-Z'  # Composed Generic Material Quadlet (4 char each)
+    MaterialQuadlets:               str =  '-Z'  # Composed Generic Material Quadlet (4 char each)
     AnchorSealGroups:               str =  '-a'  # Composed Anchor Seal Material Group
     ConfigTraits:                   str =  '-c'  # Composed Config Trait Material Group
     DigestSealQuadlets:             str =  '-d'  # Composed Digest Seal Quadlet (4 char each)
@@ -2488,7 +2488,7 @@ class CounterCodex:
     BigMessageDataMaterialQuadlets: str =  '-0W'  # Composed Grouped Message Data Quadlet (4 char each)
     BigCombinedMaterialQuadlets:    str =  '-0X'  # Combined Message Data + Attachments Quadlet (4 char each)
     BigMaterialGroups:              str =  '-0Y'  # Composed Generic Material Group or Primitive
-    BigMaterial:                    str =  '-0Z'  # Composed Generic Material Quadlet (4 char each)
+    BigMaterialQuadlets:            str =  '-0Z'  # Composed Generic Material Quadlet (4 char each)
 
 
     def __iter__(self):
