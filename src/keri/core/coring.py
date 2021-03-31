@@ -2568,7 +2568,7 @@ class Counter:
     Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
 
 
-    def __init__(self, code=None, count=1, qb64b=None, qb64=None, qb2=None):
+    def __init__(self, code=None, count=1, qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified
         Parameters:
@@ -2577,6 +2577,8 @@ class Counter:
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
+            strip is Boolean True means strip counter contents from input stream
+                bytearray after parsing qb64b or qb2. False means do not strip
 
 
         Needs either (code and count) or qb64b or qb64 or qb2
@@ -2604,12 +2606,16 @@ class Counter:
 
         elif qb64b is not None:
             self._exfil(qb64b)
+            if strip:  # assumes bytearray
+                del qb64b[:self.Codes[self.code].fs]
 
         elif qb64 is not None:
             self._exfil(qb64)
 
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
             self._bexfil(qb2)
+            if strip:  # assumes bytearray
+                del qb2[:self.Codes[self.code].fs*3//4]
 
         else:
             raise EmptyMaterialError("Improper initialization need either "

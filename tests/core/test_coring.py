@@ -1141,6 +1141,92 @@ def test_counter():
     test = counter._binfil()
     assert test == qb2
 
+    # Test with strip
+    # create code manually
+    count = 1
+    qsc = CtrDex.ControllerIdxSigs + intToB64(count, l=2)
+    assert qsc == '-AAB'
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    # strip ignored if qb64
+    counter = Counter(qb64=qsc, strip=True)  # test with str not bytes
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    ims = bytearray(qscb)  # test with qb64b
+    counter = Counter(qb64b=ims, strip=True)  # strip
+    assert not ims  # deleted
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    ims = bytearray(qscb2) #  test with qb2
+    counter = Counter(qb2=ims, strip=True)
+    assert not ims  # deleted
+    assert counter.code == CtrDex.ControllerIdxSigs
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+
+    # test with longer ims for qb64b
+    extra = b"ABCD"
+    ims = bytearray( qscb + b"ABCD")
+    counter = Counter(qb64b=ims, strip=True)
+    assert counter.qb64b == qscb
+    assert len(counter.qb64b) == Counter.Codes[counter.code].fs
+    assert ims == extra
+
+    # test with longer ims for qb2
+    extra =bytearray([1, 2, 3, 4, 5])
+    ims = bytearray(qscb2) + extra
+    counter = Counter(qb2=ims, strip=True)
+    assert counter.qb2 == qscb2
+    assert len(counter.qb2) == Counter.Codes[counter.code].fs * 3 // 4
+    assert ims == extra
+
+    # raises error if not bytearray
+
+    ims = bytes(qscb)  # test with qb64b
+    with pytest.raises(TypeError):
+        counter = Counter(qb64b=ims, strip=True)  # strip
+
+    ims = bytes(qscb2) #  test with qb2
+    with pytest.raises(TypeError):
+        counter = Counter(qb2=ims, strip=True)
+
+
+    # test with big codes index=1024
+    count = 1024
+    qsc = CtrDex.BigMessageDataGroups + intToB64(count, l=5)
+    assert qsc == '-0UAAAQA'
+    qscb = qsc.encode("utf-8")
+    qscb2 = decodeB64(qscb)
+
+    ims = bytearray(qscb)
+    counter = Counter(qb64b=ims, strip=True)  # test with bytes not str
+    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+    assert not ims
+
+    ims = bytearray(qscb2)
+    counter = Counter(qb2=ims, strip=True)  #  test with qb2
+    assert counter.code == CtrDex.BigMessageDataGroups
+    assert counter.count == count
+    assert counter.qb64b == qscb
+    assert counter.qb64 == qsc
+    assert counter.qb2 == qscb2
+    assert not ims
+
     """ Done Test """
 
 
@@ -2731,4 +2817,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_dater()
+    test_counter()

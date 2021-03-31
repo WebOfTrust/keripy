@@ -1822,13 +1822,14 @@ class Kevery:
             except ShortageError as ex:  # need more bytes
                 break  # break out of while loop
 
-            except SizedGroupError as ex:  # group already deleted so cold restart
+            except SizedGroupError as ex:  # error inside sized group
+                # processOne already flushed group so do not flush stream
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
                 else:
                     logger.error("Kevery msg extraction error: %s\n", ex.args[0])
 
-            except (ColdStartError, ExtractionError) as ex:  # some other extraction error
+            except (ColdStartError, ExtractionError) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
                 else:
@@ -1837,18 +1838,26 @@ class Kevery:
                 break
 
             except Exception as ex:  # Some other error while processing
+                # This should wrap process event inside process one so if message
+                # extracted successfully we don't flush rest of stream just resume
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg validation error: %s\n", ex.args[0])
+                    logger.exception("Kevery msg error: %s\n", ex.args[0])
                 else:
-                    logger.error("Kevery msg validation error: %s\n", ex.args[0])
+                    logger.error("Kevery msg error: %s\n", ex.args[0])
+                del ims[:]  # delete rest of stream to force cold restart
                 break
 
 
-    def processOne_new(self, ims=None, framed=True, piplined=False, cloned=False):
+    def processOneIter_new(self, ims=None, framed=True, piplined=False, cloned=False):
         """
-        Extract one msg with attached crypto material (signature etc) from
-        incoming message stream, ims, and dispatch processing of message with
-        attachments. Uses .ims when ims is not provided.
+        Returns iterator that extracts one msg with attached crypto material
+        (signature etc) from incoming message stream, ims, and dispatches
+        processing of message with attachments.
+
+        Uses .ims when ims is not provided.
+
+        Iterator yields when not enough bytes in ims to finish one msg plus
+        attachments. Returns (which raises StopIteration) when finished.
 
         Parameters:
             ims is bytearray of serialized incoming message stream.
@@ -1888,92 +1897,95 @@ class Kevery:
             ims = self.ims
 
         cold = self._sniff(ims)  # check for spurious counters at front of stream
-        if cold in (Colds.txt, Colds.bny):  # unexpected so error out to flush stream
+        if cold in (Colds.txt, Colds.bny):  # error out to flush stream
             # add pipelines here once CESR message format supported.
             raise ColdStartError("Expecting message counter tritet={}"
                                  "".format(code))
 
-        # extract and deserialize message from ims
-        try:
-            serder = Serder(raw=ims)
-        except ShortageError as ex:  # need more bytes
-            raise   # reraise
-
-        del ims[:serder.size]  # strip off event from front of ims
+        while True:# extract and deserialize message from ims
+            try:
+                serder = Serder(raw=ims)
+            except ShortageError as ex:  # need more bytes
+                yield
+            else:  # extracted successfully
+                del ims[:serder.size]  # strip off event from front of ims
+                break
 
         ilk = serder.ked["t"]  # dispatch abased on ilk
 
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
-            so = 0  # stream offset count into stream so can restart if not done
-            atcSize = None  # counted attachment size in chars
+            while True:  # extract an deserialize attachments
 
-            # extract attachments must start with counter so know if txt or bny.
-            cold = self._sniff(ims)  # counters at front of attachments
-            if cold not in (Colds.txt, Colds.bny):  # flush stream
-                raise ColdStartError("Expected counter tritet got {}.".format(cold))
+                so = 0  # stream offset count into stream so can restart if not done
+                atcSize = None  # counted attachment size in chars
 
-            if cold == Colds.txt:
-                ctr = Counter(qb64b=ims)  # extract counter
-                del ims[:len(ctr.qb64b)]
-            else:  # cold == Colds.bny:  # cold == Colds.bny
-                ctr = Counter(qb2=ims)  # extract counter
-                del ims[:len(ctr.qb2)]
+                # extract attachments must start with counter so know if txt or bny.
+                cold = self._sniff(ims)  # counters at front of attachments
+                if cold not in (Colds.txt, Colds.bny):  # error out to flush stream
+                    raise ColdStartError("Expected counter tritet got {}.".format(cold))
 
-            # extract attachment pipeline counter if any
-            if ctr.code == CtrDex.AttachedMaterialQuadlets:
-                atcSize = ctr.count * 4
-                del ims[:len(ctr.qb2)]
-                if pipelined:
-                    pass  #  pass to pipeline processor
-                else:  # extract next counter assume
-                    try:
-                        if cold == Colds.txt:
-                            ctr = Counter(qb64b=ims)  # extract counter
-                            del ims[:len(ctr.qb64b)]
-                        else:  # cold == Colds.bny:  # cold == Colds.bny
-                            ctr = Counter(qb2=ims)  # extract counter
-                            del ims[:len(ctr.qb2)]
-                    except ShortageError:
-                        raise
+                if cold == Colds.txt:
+                    ctr = Counter(qb64b=ims)  # extract counter
+                    del ims[:len(ctr.qb64b)]
+                else:  # cold == Colds.bny:  # cold == Colds.bny
+                    ctr = Counter(qb2=ims)  # extract counter
+                    del ims[:len(ctr.qb2)]
 
-            # extract hetero attachments
-            try:
-                counter = Counter(qb64b=ims)  # qb64b
-            except ShortageError as ex:
-                nsigs = 0  # no signature count
+                # extract attachment pipeline counter if any
+                if ctr.code == CtrDex.AttachedMaterialQuadlets:
+                    atcSize = ctr.count * 4
+                    del ims[:len(ctr.qb2)]
+                    if pipelined:
+                        pass  #  pass to pipeline processor
+                    else:  # extract next counter assume
+                        try:
+                            if cold == Colds.txt:
+                                ctr = Counter(qb64b=ims)  # extract counter
+                                del ims[:len(ctr.qb64b)]
+                            else:  # cold == Colds.bny:  # cold == Colds.bny
+                                ctr = Counter(qb2=ims)  # extract counter
+                                del ims[:len(ctr.qb2)]
+                        except ShortageError:
+                            raise
 
-            del ims[:len(counter.qb64)]  # strip off counter
+                # extract hetero attachments
+                try:
+                    counter = Counter(qb64b=ims)  # qb64b
+                except ShortageError as ex:
+                    nsigs = 0  # no signature count
 
-            # extract sig counter if any for attached sigs
-            try:
-                counter = Counter(qb64b=ims)  # qb64b
-                nsigs = counter.count
                 del ims[:len(counter.qb64)]  # strip off counter
-            except ValidationError as ex:
-                nsigs = 0  # no signature count
 
-            # extract attached sigs as Sigers
-            sigers = []  # list of Siger instances for attached indexed signatures
-            if nsigs:
-                for i in range(nsigs): # extract each attached signature
-                    # check here for type of attached signatures qb64 or qb2
-                    siger = Siger(qb64b=ims)  # qb64
-                    sigers.append(siger)
-                    del ims[:len(siger.qb64)]  # strip off signature
+                # extract sig counter if any for attached sigs
+                try:
+                    counter = Counter(qb64b=ims)  # qb64b
+                    nsigs = counter.count
+                    del ims[:len(counter.qb64)]  # strip off counter
+                except ValidationError as ex:
+                    nsigs = 0  # no signature count
 
-            else:  # no info on attached sigs
-                if framed:  # parse for signatures until end-of-stream
-                    while ims:
+                # extract attached sigs as Sigers
+                sigers = []  # list of Siger instances for attached indexed signatures
+                if nsigs:
+                    for i in range(nsigs): # extract each attached signature
                         # check here for type of attached signatures qb64 or qb2
                         siger = Siger(qb64b=ims)  # qb64
                         sigers.append(siger)
                         del ims[:len(siger.qb64)]  # strip off signature
 
-            if not sigers:
-                raise ValidationError("Missing attached signature(s) for evt "
-                                      "= {}.".format(serder.ked))
+                else:  # no info on attached sigs
+                    if framed:  # parse for signatures until end-of-stream
+                        while ims:
+                            # check here for type of attached signatures qb64 or qb2
+                            siger = Siger(qb64b=ims)  # qb64
+                            sigers.append(siger)
+                            del ims[:len(siger.qb64)]  # strip off signature
 
-            self.processEvent(serder, sigers)
+                if not sigers:
+                    raise ValidationError("Missing attached signature(s) for evt "
+                                          "= {}.".format(serder.ked))
+
+                self.processEvent(serder, sigers)
 
         elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
             # extract cry counter if any for attached receipt couplets
