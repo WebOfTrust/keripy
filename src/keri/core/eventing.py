@@ -1628,7 +1628,7 @@ class Kevery:
 
         while ims:
             try:
-                self.processOne(ims=ims, framed=framed)
+                self.processOneOld(ims=ims, framed=framed)
 
             except ShortageError as ex:  # need more bytes
                 break  # break out of while loop
@@ -1648,7 +1648,7 @@ class Kevery:
                 # should we restart break here?
 
 
-    def processOne(self, ims=None, framed=True):
+    def processOneOld(self, ims=None, framed=True):
         """
         Extract one msg with attached crypto material (signature etc) from
         incoming message stream, ims, and dispatch processing of message with
@@ -1892,7 +1892,7 @@ class Kevery:
                     logger.error("Kevery msg non-extraction error: %s\n", ex.args[0])
 
 
-    def processOneNew(self, ims=None, framed=True, pipelined=False, cloned=False):
+    def processOne(self, ims=None, framed=True, pipelined=False, cloned=False):
         """
         Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
@@ -1977,6 +1977,8 @@ class Kevery:
         if ims is None:
             ims = self.ims
 
+        while not ims:
+            yield
         cold = self._sniff(ims)  # check for spurious counters at front of stream
         if cold in (Colds.txt, Colds.bny):  # not message error out to flush stream
             # replace with pipelining here once CESR message format supported.
@@ -1995,105 +1997,121 @@ class Kevery:
         sigers = []  # list of Siger instances for attached indexed signatures
         cigars = []  # List of cigars to hold nontrans rct couplets
         grouped = False  # all attachments in one big pipeline counted group
-        while True:  # extract and deserialize attachments
-            try:  # catch errors here to flush only counted part of stream
-                # extract attachments must start with counter so know if txt or bny.
-                cold = self._sniff(ims)  # expect counter at front of attachments
-                if cold == Colds.msg:  # new message no attachments done processing
-                    break  # done with current message since new one
+        # extract and deserialize attachments
+        try:  # catch errors here to flush only counted part of stream
+            # extract attachments must start with counter so know if txt or bny.
+            while not ims:
+                yield
+            cold = self._sniff(ims)  # expect counter at front of attachments
+            if cold == Colds.msg:  # new message no attachments done processing
+                return  # no attachments so drop message
 
-                while True:  # extract first attachment counter
+            while True:  # extract first attachment counter
+                try:
+                    ctr = self._extract(ims=ims, klas=Counter, cold=cold)
+                    break
+                except ShortageError as  ex:
+                    yield
+
+            if ctr.code == CtrDex.AttachedMaterialQuadlets:  # pipeline ctr?
+                grouped = True
+                # compute group size based on stream state txt or bny
+                atgs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+                while len(ims) < atgs:  # wait until full group in stream
+                    yield
+
+                eims = ims[:atgs]  # copy out substream pipeline group
+                del ims[:atgs]  # strip off from ims
+                ims = eims  # now just process substream as framed
+
+                if pipelined:
+                    pass  #  pass extracted ims to pipeline processor
+                    return
+
+                while True:  # extract next counter non-pipelined
                     try:
                         ctr = self._extract(ims=ims, klas=Counter, cold=cold)
                         break
                     except ShortageError as  ex:
                         yield
 
-                if ctr.code == CtrDex.AttachedMaterialQuadlets:  # pipeline ctr?
-                    grouped = True
-                    # compute group size based on stream state txt or bny
-                    atgs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
-                    while len(ims) < atgs:  # wait until full group in stream
+            # process attachment counters (non pipelined )
+            while True:  # do while already extracted first counter is ctr
+                if ctr.code == CtrDex.ControllerIdxSigs:
+                    for i in range(ctr.count): # extract each attached signature
+                        while True:
+                            try:
+                                siger = self._extract(ims=ims, klas=Siger, cold=cold)
+                                break
+                            except ShortageError as ex:
+                                yield
+                        sigers.append(siger)
+
+
+                elif ctr.code == CtrDex.WitnessIdxSigs:
+                    pass
+
+                elif ctr.code == CtrDex.NonTransReceiptCouples:
+                    # extract attached rct couplets into list of sigvers
+                    # verfer property of cigar is the identifier prefix
+                    # cigar itself has the attached signature
+
+                    for i in range(ctr.count): # extract each attached couple
+                        while True:
+                            try:
+                                verfer = self._extract(ims=ims, klas=Verfer, cold=cold)
+                                break
+                            except ShortageError as ex:
+                                yield
+                        while True:
+                            try:
+                                cigar = self._extract(ims=ims, klas=Cigar, cold=cold)
+                                break
+                            except ShortageError as ex:
+                                yield
+                        cigar.verfer = verfer
+                        cigars.append(cigar)
+
+                elif ctr.code == CtrDex.TransReceiptQuadruples:
+                    pass
+
+                elif ctr.code == CtrDex.FirstSeenReplayCouples:
+                    pass
+
+                else:
+                    raise UnexpectedCodeError("Unsupported count code={}."
+                                              "".format(ctr.code))
+
+                if grouped:  # process to end of stream (group)
+                    if not ims:  # end of group frame
+                        break
+                elif framed:
+                    if not ims:  # end of frame
+                        break
+                    # not all in one pipeline group so each attachment group
+                    # may switch stream state
+                    cold = self._sniff(ims)
+                else:  # process until next message
+                    # not all in one pipeline group so each attachment group
+                    # may switch stream state
+                    while not ims:
+                        yield
+                    cold = self._sniff(ims)  # ctr or msg
+                    if cold == Colds.msg:  # new message
+                        break  # finished attachments since new message
+
+                while True:  # extract next counter
+                    try:
+                        ctr = self._extract(ims=ims, klas=Counter, cold=cold)
+                        break
+                    except ShortageError as ex:
                         yield
 
-                    eims = ims[:atgs]  # copy out substream pipeline group
-                    del ims[:atgs]  # strip off from ims
-                    ims = eims  # now just process substream as framed
-
-                    if pipelined:
-                        pass  #  pass extracted ims to pipeline processor
-                        break  # break out of while loop
-
-                    while True:  # extract next counter non-pipelined
-                        try:
-                            ctr = self._extract(ims=ims, klas=Counter, cold=cold)
-                            break
-                        except ShortageError as  ex:
-                            yield
-
-                # process attachment counters (non pipelined )
-                while True:  # do while already extracted first counter is ctr
-                    if ctr.code == CtrDex.ControllerIdxSigs:
-                        for i in range(ctr.count): # extract each attached signature
-                            siger = self._extract(ims=ims, klas=Siger, cold=cold)
-                            sigers.append(siger)
-
-                    elif ctr.code == CtrDex.WitnessIdxSigs:
-                        pass
-
-                    elif ctr.code == CtrDex.NonTransReceiptCouples:
-                        # extract attached rct couplets into list of sigvers
-                        # verfer property of cigar is the identifier prefix
-                        # cigar itself has the attached signature
-
-                        for i in range(ctr.count): # extract each attached couple
-                            verfer = self._extract(ims=ims, klas=Verfer, cold=cold)
-                            cigar = self._extract(ims=ims, klas=Cigar, cold=cold)
-                            cigar.verfer = verfer
-                            cigars.append(cigar)
-
-                    elif ctr.code == CtrDex.TransReceiptQuadruples:
-                        pass
-
-                    elif ctr.code == CtrDex.FirstSeenReplayCouples:
-                        pass
-
-                    else:
-                        raise UnexpectedCodeError("Unsupported count code={}."
-                                                  "".format(ctr.code))
-
-                    if grouped:  # process to end of stream (group)
-                        if not ims:  # end of group frame
-                            break
-                    elif framed:
-                        if not ims:  # end of frame
-                            break
-                        # not all in one pipeline group so each attachment group
-                        # may switch stream state
-                        cold = self._sniff(ims)
-                    else:  # process until next message
-                        # not all in one pipeline group so each attachment group
-                        # may switch stream state
-                        while not ims:
-                            yield
-                        cold = self._sniff(ims)  # ctr or msg
-                        if cold == Colds.msg:  # new message
-                            break  # finished attachments since new message
-
-                    while True:  # extract next counter
-                        try:
-                            ctr = self._extract(ims=ims, klas=Counter, cold=cold)
-                            break
-                        except ShortageError as ex:
-                            yield
-
-
-            except ExtractionError as ex:
-                if grouped:  # extracted pipeline group preflushed
-                    raise SizedGroupError("Error processing pipelined size"
-                                    "attachment group of size={}.".format(atgs))
-                raise  # no group can't flush group so to clean need to flush stream
-
+        except ExtractionError as ex:
+            if grouped:  # extracted pipeline group preflushed
+                raise SizedGroupError("Error processing pipelined size"
+                                "attachment group of size={}.".format(atgs))
+            raise  # no group can't flush group so to clean need to flush stream
 
 
         ilk = serder.ked["t"]  # dispatch abased on ilk

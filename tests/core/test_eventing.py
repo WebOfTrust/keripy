@@ -2006,7 +2006,7 @@ def test_receipt():
                                dig=fake)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
-        recnt = Counter(code=CtrDex.ControllerIdxSigs, count=1)
+        recnt = Counter(code=CtrDex.NonTransReceiptCouples, count=1)
         # attach to receipt msg stream
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
@@ -3439,4 +3439,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_dequintuple()
+    test_receipt()
