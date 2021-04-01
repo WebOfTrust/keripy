@@ -440,9 +440,6 @@ def test_matter():
     assert matter.transferable == True
     assert matter.digestive == False
 
-
-
-
     # test short
     val = int("F77F", 16)
     assert val == 63359
@@ -653,10 +650,71 @@ def test_matter():
     test = matter._binfil()
     assert test == qb2
 
+    # Test strip
+    verkey = b'iN\x89Gi\xe6\xc3&~\x8bG|%\x90(L\xd6G\xddB\xef`\x07\xd2T\xfc\xe1\xcd.\x9b\xe4#'
+    prefix = 'BaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM'  #  str
+    prefixb = prefix.encode("utf-8")  # bytes
+    prebin = (b'\x05\xa5:%\x1d\xa7\x9b\x0c\x99\xfa-\x1d\xf0\x96@\xa13Y\x1fu\x0b\xbd\x80\x1f'
+              b'IS\xf3\x874\xbao\x90\x8c')  # pure base 2 binary qb2
 
+    # strip ignored if qb64
+    matter = Matter(qb64=prefix, strip=True)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64b == prefixb
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
+
+    ims = bytearray(prefixb)  # strip from ims qb64b
+    matter = Matter(qb64b=ims, strip=True)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64b == prefixb
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
+    assert not ims  # stripped
+
+    ims = bytearray(prebin)
+    matter = Matter(qb2=ims, strip=True)  #  strip from ims qb2
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64b == prefixb
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
+    assert not ims  # stripped
+
+    # test strip with extra q64b
+    extra = bytearray(b"ABCD")
+    ims = bytearray(prefixb) + extra
+    matter = Matter(qb64b=ims, strip=True)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64b == prefixb
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
+    assert ims == extra   # stripped not include extra
+
+    # test strip with extra qb2
+    extra = bytearray([1, 2, 3, 4, 5])  # extra bytes in size
+    ims = bytearray(prebin) + extra
+    matter = Matter(qb2=ims, strip=True)
+    assert matter.code == MtrDex.Ed25519N
+    assert matter.raw == verkey
+    assert matter.qb64b == prefixb
+    assert matter.qb64 == prefix
+    assert matter.qb2 == prebin
+    assert matter.transferable == False
+    assert matter.digestive == False
+    assert ims == extra   # stripped not include extra
     """ Done Test """
-
-
 
 
 def test_indexer():
@@ -829,7 +887,6 @@ def test_indexer():
     assert indexer.qb64b == qsig64b
     assert indexer.qb2 == qsig2b
 
-
     indexer = Indexer(qb2=qsig2b)
     assert indexer.raw == sig
     assert indexer.code == IdrDex.Ed25519_Sig
@@ -897,6 +954,59 @@ def test_indexer():
     test = indexer._binfil()
     assert test == qb2
 
+    # test strip ims
+    # strip ignored if qb64
+    indexer = Indexer(qb64=qsig64)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+
+    ims = bytearray(qsig64b)
+    indexer = Indexer(qb64b=ims, strip=True)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+    assert not ims
+
+    ims = bytearray(qsig2b)
+    indexer = Indexer(qb2=ims, strip=True)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+    assert not ims
+
+    # test extra bytes in ims qb64b
+    extra = bytearray(b"ABCD")
+    ims = bytearray(qsig64b) + extra
+    indexer = Indexer(qb64b=ims, strip=True)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+    assert ims == extra
+
+    # test extra bytes in ims qb2
+    extra = bytearray([1, 2, 3, 4, 5])
+    ims = bytearray(qsig2b) + extra
+    indexer = Indexer(qb2=ims, strip=True)
+    assert indexer.raw == sig
+    assert indexer.code == IdrDex.Ed25519_Sig
+    assert indexer.index == 5
+    assert indexer.qb64 == qsig64
+    assert indexer.qb64b == qsig64b
+    assert indexer.qb2 == qsig2b
+    assert ims == extra
     """ Done Test """
 
 
@@ -2817,4 +2927,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_counter()
+    test_indexer()
