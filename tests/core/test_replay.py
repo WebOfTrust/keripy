@@ -18,9 +18,9 @@ from keri.core import coring, eventing
 logger = help.ogler.getLogger()
 
 
-def test_replay():
+def test_disjoint_replay():
     """
-    Test conjoint replay
+    Test disjoint replay
 
     Deb creates series of events.
     Deb replays Deb's events to Cam and collects Cam's receipts
@@ -442,4 +442,4 @@ def test_replay():
 
 
 if __name__ == "__main__":
-    test_replay()
+    test_disjoint_replay()
