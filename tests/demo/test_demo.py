@@ -91,7 +91,7 @@ def test_direct_mode_bob_eve_demo():
         eveKevers = dict()
 
         # setup bob
-        bobHab = directing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
+        bobHab = directing.Habitat(name='Bob', ks=bobKS, db=bobDB, kevers=bobKevers,
                                    secrecies=bobSecrecies, temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
@@ -124,7 +124,7 @@ def test_direct_mode_bob_eve_demo():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(ks=eveKS,  db=eveDB, kevers=eveKevers,
+        eveHab = directing.Habitat(name='Eve', ks=eveKS,  db=eveDB, kevers=eveKevers,
                                    secrecies=eveSecrecies, temp=True)
 
         assert eveHab.ks == eveKS
@@ -291,7 +291,7 @@ def test_direct_mode_sam_eve_demo():
         samDirectant = directing.Directant(hab=samHab, server=samServer)
         assert samDirectant.hab == samHab
         assert samDirectant.server == samServer
-        # Bob's Reactants created on demand
+        # Sam's Reactants created on demand
 
         # setup eve
         eveHab = directing.Habitat(name='Eve', ks=eveKS,  db=eveDB, kevers=eveKevers,

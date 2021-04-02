@@ -1663,7 +1663,7 @@ class Kevery:
             Attachments must all have counters so know if txt or bny format for
             attachments. So even when framed==True must still have counters.
         """
-        processor = self.processAllGen(ims=ims,
+        processor = self.allProcessor(ims=ims,
                                        framed=framed,
                                        pipeline=pipeline,
                                        cloned=cloned)
@@ -1675,7 +1675,7 @@ class Kevery:
                 break
 
 
-    def processAllGen(self, ims=None, framed=None, pipeline=None, cloned=None):
+    def allProcessor(self, ims=None, framed=None, pipeline=None, cloned=None):
         """
         Returns generator to process all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
@@ -1713,7 +1713,7 @@ class Kevery:
 
         while ims:
             try:
-                done = yield from self.processOneGen(ims=ims,
+                done = yield from self.msgProcessor(ims=ims,
                                                framed=framed,
                                                pipeline=pipeline,
                                                cloned=cloned)
@@ -1744,7 +1744,7 @@ class Kevery:
         return True
 
 
-    def processGen(self, ims=None, framed=None, pipeline=None, cloned=None):
+    def processor(self, ims=None, framed=None, pipeline=None, cloned=None):
         """
         Returns generator to continually process messages from incoming message
         stream, ims. Yields waits whenever ims empty.
@@ -1781,7 +1781,7 @@ class Kevery:
 
         while True:  # continuous stream processing
             try:
-                done = yield from self.processOneGen(ims=ims,
+                done = yield from self.msgProcessor(ims=ims,
                                                framed=framed,
                                                pipeline=pipeline,
                                                cloned=cloned)
@@ -1812,7 +1812,7 @@ class Kevery:
         return True
 
 
-    def processOnceGen(self, ims=None, framed=None, pipeline=None, cloned=None):
+    def onceProcessor(self, ims=None, framed=None, pipeline=None, cloned=None):
         """
         Returns generator to process one message from incoming message stream, ims.
         If ims not provided process messages from .ims
@@ -1849,7 +1849,7 @@ class Kevery:
         done = False
         while not done:
             try:
-                done = yield from self.processOneGen(ims=ims,
+                done = yield from self.msgProcessor(ims=ims,
                                                framed=framed,
                                                pipeline=pipeline,
                                                cloned=cloned)
@@ -1907,7 +1907,7 @@ class Kevery:
             Attachments must all have counters so know if txt or bny format for
             attachments. So even when framed==True must still have counters.
         """
-        processor = self.processOneGen(ims=ims,
+        processor = self.msgProcessor(ims=ims,
                                         framed=framed,
                                         pipeline=pipeline,
                                         cloned=cloned)
@@ -1918,7 +1918,7 @@ class Kevery:
                 break
 
 
-    def processOneGen(self, ims=None, framed=True, pipeline=False, cloned=False):
+    def msgProcessor(self, ims=None, framed=True, pipeline=False, cloned=False):
         """
         Returns generator that extracts one msg with attached crypto material
         (signature etc) from incoming message stream, ims, and dispatches

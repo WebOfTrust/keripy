@@ -515,10 +515,14 @@ class Director(doing.Doer):
         self.sendOwnEvent(sn=0)
 
 
-class Processor(doing.DoDoer):
+class Reactor(doing.DoDoer):
     """
-    Processor Subclass of DoDoer implements Doist like functionality to allow
-    nested scheduling of Doers.
+    Reactor Subclass of DoDoer with doers list from do generator methods:
+        .msgDo, .cueDo, and  .escrowDo.
+    Enables continuous scheduling of do generators (dogs)
+
+    Implements Doist like functionality to allow
+    nested scheduling of dogs (do generators).
     Each DoDoer runs a list of doers like a Doist but using the tyme from its
        injected tymist as injected by its parent DoDoer or Doist.
 
@@ -532,6 +536,9 @@ class Processor(doing.DoDoer):
         .doers is list of Doers or Doer like generator functions
 
     Attributes:
+        .hab is Habitat instance of local controller's context
+        .client is TCP Client instance.
+        .kevery is Kevery instance
 
 
     Inherited Properties:
@@ -539,6 +546,8 @@ class Processor(doing.DoDoer):
         .tymist is Tymist instance
         .tock is float, desired time in seconds between runs or until next run,
                  non negative, zero means run asap
+
+    Properties:
 
     Inherited Methods:
         .wind  injects ._tymist dependency
@@ -553,10 +562,6 @@ class Processor(doing.DoDoer):
         .abort is abort context method
 
     Overidden Methods:
-        .do
-        .enter
-        .recur
-        .exit
 
     Hidden:
        ._tymist is Tymist instance reference
@@ -571,9 +576,12 @@ class Processor(doing.DoDoer):
 
         Inherited Parameters:
             tymist is  Tymist instance
+            tock is float seconds initial value of .tock
+            doers is list of do generators dogs
 
         Parameters:
-           tock is float seconds initial value of .tock
+            hab is Habitat instance of local controller's context
+            client is TCP Client instance
 
         """
         self.hab = hab
@@ -585,139 +593,86 @@ class Processor(doing.DoDoer):
                                       pre=self.hab.pre,
                                       local=False)
         doers = doers if doers is not None else []
+        doers.extend([self.msgDo, self.cueDo, self.escrowDo])
+        super(Reactor, self).__init__(doers=doers, **kwa)
 
-        super(Processor, self).__init__(doers=doers, **kwa)
 
-
-    def processMsgsIter(self, tymist, tock=0.0, **opts):
+    @doing.doize()
+    def msgDo(self, tymist=None, tock=0.0, **opts):
         """
+        Returns Doist compatibile generator method (doer dog) to process
+            incoming message stream of .kevery
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymist is injected Tymist instance with tymist.tyme
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+
+        Usage:
+            add to doers list
         """
         if self.kevery.ims:
             logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.kevery.ims[:1024])
-        yield from self.kevery.processGen()  # process messages continuously
+        done = yield from self.kevery.processor()  # process messages continuously
+        return done  # should nover get here except forced close
 
 
-    def processCuesIter(self):
+    @doing.doize()
+    def cueDo(self, tymist=None, tock=0.0, **opts):
         """
-        """
-        while True:
-            for msg in self.hab.processCuesIter(self.kevery.cues):
-                self.sendMessage(msg, label="chit or receipt")
-                yield # throttle just do one cue at a time
-            yield
+         Returns Doist compatibile generator method (doer dog) to process
+            .kevery.cues deque
 
-
-    def processEscrowsIter(self):
-        """
-        """
-        while True:
-            self.kevery.processEscrows()
-            yield
-
-
-    def sendMessage(self, msg, label=""):
-        """
-        Sends message msg and loggers label if any
-        """
-        self.client.tx(msg)  # send to remote
-        logger.info("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
-
-
-
-
-class Reactor(doing.Doer):
-    """
-    Direct Mode KERI Reactor (Contextor, Doer) class with TCP Client and Kevery
-    Generator logic is to react to events/receipts from remote Reactant with receipts
-
-    Inherited Attributes:
-
-    Attributes:
-        .hab is Habitat instance of local controller's context
-        .client is TCP Client instance.
-        .kevery is Kevery instance
-
-    Inherited Properties:
-        .tyme is float relative cycle time, .tyme is artificial time
-        .tock is desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
-
-    Properties:
-
-    Inherited Methods:
-        .__call__ makes instance callable return generator
-        .do is generator function returns generator
-
-    Methods:
-
-    Hidden:
-       ._tymist is Tymist instance reference
-       ._tock is hidden attribute for .tock property
-    """
-
-    def __init__(self, hab, client,  **kwa):
-        """
-        Initialize instance.
-
-        Inherited Parameters:
-            tymist is  Tymist instance
-            tock is float seconds initial value of .tock
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
 
         Parameters:
-            hab is Habitat instance of local controller's context
-            client is TCP Client instance
+            tymist is injected Tymist instance with tymist.tyme
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        Usage:
+            add to doers list
         """
-        super(Reactor, self).__init__(**kwa)
-        self.hab = hab
-        self.client = client  # use client for both rx and tx
-        self.kevery = eventing.Kevery(ims=self.client.rxbs,
-                                      kevers=self.hab.kevers,
-                                      db=self.hab.db,
-                                      framed=True,
-                                      pre=self.hab.pre,
-                                      local=False)
-
-
-    def do(self, tymist, tock=0.0, **opts):
-        """
-        Generator method to run this doer
-        Calling this method returns generator
-        """
-        try:
-            # enter context
-            self.wind(tymist)  # change tymist and dependencies
-            self.tock = tock
-            tyme = self.tyme
-
-            while (True):  # recur context
-                tyme = (yield (tock))  # yields tock then waits for next send
-                self.service()
-
-        except GeneratorExit:  # close context, forced exit due to .close
-            pass
-
-        except Exception:  # abort context, forced exit due to uncaught exception
-            raise
-
-        finally:  # exit context,  unforced exit due to normal exit of try
-            pass
-
-        return True  # return value of yield from, or yield ex.value of StopIteration
-
-
-    def service(self):
-        """
-        Service responses
-        """
-        if self.kevery:
-            if self.kevery.ims:
-                logger.info("Client %s: %s received:\n%s\n...\n", self.hab.name,
-                            self.hab.pre, self.kevery.ims[:1024])
-            self.kevery.process()  # process all messages until ims empty
+        while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
                 self.sendMessage(msg, label="chit or receipt")
-                break  # throttle just do one cue at a time
+                yield  # throttle just do one cue at a time
+            yield
+        return False  # should never get here except forced close
+
+
+    @doing.doize()
+    def escrowDo(self, tymist=None, tock=0.0, **opts):
+        """
+         Returns Doist compatibile generator method (doer dog) to process
+            .kevery escrows.
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymist is injected Tymist instance with tymist.tyme
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        Usage:
+            add to doers list
+        """
+        while True:
             self.kevery.processEscrows()
+            yield
+        return False  # should never get here except forced close
 
 
     def sendMessage(self, msg, label=""):
@@ -727,22 +682,6 @@ class Reactor(doing.Doer):
         self.client.tx(msg)  # send to remote
         logger.info("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
 
-
-    def sendOwnEvent(self, sn):
-        """
-        Utility to send own event at sequence number sn
-        """
-        msg = self.hab.makeOwnEvent(sn=sn)
-        # send to connected remote
-        self.client.tx(msg)
-        logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-
-
-    def sendOwnInception(self):
-        """
-        Utility to send own inception on client
-        """
-        self.sendOwnEvent(sn=0)
 
 
 
