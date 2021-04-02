@@ -1495,8 +1495,8 @@ class Kevery:
         .kevers is dict of existing kevers indexed by pre (qb64) of each Kever
         .db is instance of LMDB Baser object
         .framed is Boolean stream is packet framed If True Else not framed
-        .pipelined is Boolean, True means process ims as pipelined messages
-                when pipelined count codes  Otherwise ignore pipelined codes
+        .pipeline is Boolean, True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
         .pre is fully qualified base64 identifier prefix of own identifier if any
         .local is Boolean, True means only process msgs for own events if .pre
                            False means only process msgs for not own events if .pre
@@ -1514,7 +1514,7 @@ class Kevery:
     TimeoutLDE = 3600  # seconds to timeout likely duplicitous escrows
 
     def __init__(self, ims=None, cues=None, kevers=None, db=None, framed=True,
-                 pipelined=False, cloned=False, pre=None, local=False):
+                 pipeline=False, cloned=False, pre=None, local=False):
         """
         Initialize instance:
 
@@ -1525,8 +1525,8 @@ class Kevery:
             db is Baser instance
             framed is Boolean, True means ims contains only one frame of msg plus
                 attachments instead of stream with multiple messages
-            pipelined is Boolean, True means process ims as pipelined messages
-                when pipelined count codes  Otherwise ignore pipelined codes
+            pipeline is Boolean, True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
             cloned is Boolen, True means cloned message stream so use attached
                 datetimes from clone source not own
             pre is local or own identifier prefix. Some restriction if present
@@ -1544,7 +1544,7 @@ class Kevery:
             db = Baser()  # default name = "main"
         self.db = db
         self.framed = True if framed else False  # extract until end-of-stream
-        self.pipelined = True if pipelined else False  # process as pipelined
+        self.pipeline = True if pipeline else False  # process as pipelined
         self.cloned = True if cloned else False  # process as cloned
         self.pre = pre  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions
@@ -1613,183 +1613,7 @@ class Kevery:
             raise ColdStartError("Invalid stream state cold={}.".format(cold))
 
 
-    def processOld(self, ims=None, framed=None):
-        """
-        Process all messages from incoming message stream, ims, when provided
-        Otherwise process all messages from .ims
-        """
-        if ims is not None:  # needs bytearray not bytes since deletes as processes
-            if not isinstance(ims, bytearray):
-                ims = bytearray(ims)  # so make bytearray copy
-        else:
-            ims = self.ims
-
-        framed = framed if framed is not None else self.framed
-
-        while ims:
-            try:
-                self.processOneOld(ims=ims, framed=framed)
-
-            except ShortageError as ex:  # need more bytes
-                break  # break out of while loop
-
-            except ExtractionError as ex:  # some other extraction error
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
-                else:
-                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
-                del ims[:]  # delete rest of stream to force cold restart
-
-            except Exception as ex:  # Some other error while validating
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg validation error: %s\n", ex.args[0])
-                else:
-                    logger.error("Kevery msg validation error: %s\n", ex.args[0])
-                # should we restart break here?
-
-
-    def processOneOld(self, ims=None, framed=True):
-        """
-        Extract one msg with attached crypto material (signature etc) from
-        incoming message stream, ims, and dispatch processing of message with
-        attachments. Uses .ims when ims is not provided.
-
-        Parameters:
-            ims is bytearray of serialized incoming message stream.
-                May contain one or more sets each of a serialized message with
-                attached cryptographic material such as signatures or receipts.
-
-            framed is Boolean, If True and no sig counter then extract signatures
-                until end-of-stream. This is useful for framed packets with
-                one event and one set of attached signatures per invocation.
-
-        """
-        if ims is None:
-            ims = self.ims
-
-        # deserialize packet from ims
-        try:
-            serder = Serder(raw=ims)
-
-        except ShortageError as ex:  # need more bytes
-            raise   # reraise
-
-        except ExtractionError as ex:  # Some other error while extracting
-            raise ExtractionError("Error extracting message.")
-
-
-        del ims[:serder.size]  # strip off event from front of ims
-
-        ilk = serder.ked["t"]  # dispatch abased on ilk
-
-        if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
-            # extract sig counter if any for attached sigs
-            try:
-                counter = Counter(qb64b=ims)  # qb64b
-                nsigs = counter.count
-                del ims[:len(counter.qb64)]  # strip off counter
-            except ValidationError as ex:
-                nsigs = 0  # no signature count
-
-            # extract attached sigs as Sigers
-            sigers = []  # list of Siger instances for attached indexed signatures
-            if nsigs:
-                for i in range(nsigs): # extract each attached signature
-                    # check here for type of attached signatures qb64 or qb2
-                    siger = Siger(qb64b=ims)  # qb64
-                    sigers.append(siger)
-                    del ims[:len(siger.qb64)]  # strip off signature
-
-            else:  # no info on attached sigs
-                if framed:  # parse for signatures until end-of-stream
-                    while ims:
-                        # check here for type of attached signatures qb64 or qb2
-                        siger = Siger(qb64b=ims)  # qb64
-                        sigers.append(siger)
-                        del ims[:len(siger.qb64)]  # strip off signature
-
-            if not sigers:
-                raise ValidationError("Missing attached signature(s) for evt "
-                                      "= {}.".format(serder.ked))
-
-            self.processEvent(serder, sigers)
-
-        elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
-            # extract cry counter if any for attached receipt couplets
-            try:
-                counter = Counter(qb64b=ims)  # qb64
-                ncpts = counter.count
-                del ims[:len(counter.qb64)]  # strip off counter
-            except ValidationError as ex:
-                ncpts = 0  # no couplets count
-
-            # extract attached rct couplets into list of sigvers
-            # verfer property of cigar is the identifier prefix
-            # cigar itself has the attached signature
-            cigars = []  # List of cigars to hold couplets
-            if ncpts:
-                for i in range(ncpts): # extract each attached couple
-                    # check here for type of attached couplets qb64 or qb2
-                    verfer = Verfer(qb64b=ims)  # qb64
-                    del ims[:len(verfer.qb64)]  # strip off identifier prefix
-                    cigar = Cigar(qb64b=ims, verfer=verfer)  # qb64
-                    cigars.append(cigar)
-                    del ims[:len(cigar.qb64)]  # strip off signature
-
-            else:  # no info on attached receipt couplets
-                if framed:  # parse for receipts until end-of-stream
-                    while ims:
-                        # check here for type of attached receipts qb64 or qb2
-                        verfer = Verfer(qb64b=ims)  # qb64
-                    del ims[:len(verfer.qb64)]  # strip off identifier prefix
-                    cigar = Cigar(qb64b=ims, verfer=verfer)  # qb64
-                    cigars.append(cigar)
-                    del ims[:len(cigar.qb64)]  # strip off signature
-
-            if not cigars:
-                raise ValidationError("Missing attached receipt couple(s)"
-                                      " for evt = {}.".formate(serder.ked))
-
-            self.processReceipt(serder, cigars)
-
-        elif ilk in [Ilks.vrc]:  # validator event receipt msg (transferable)
-            # extract sig counter if any for attached sigs
-            try:
-                counter = Counter(qb64b=ims)  # qb64
-                nsigs = counter.count
-                del ims[:len(counter.qb64)]  # strip off counter
-            except ValidationError as ex:
-                nsigs = 0  # no signature count
-
-            # extract attached sigs as Sigers
-            sigers = []  # list of Siger instances for attached indexed signatures
-            if nsigs:
-                for i in range(nsigs): # extract each attached signature
-                    # check here for type of attached signatures qb64 or qb2
-                    siger = Siger(qb64b=ims)  # qb64
-                    sigers.append(siger)
-                    del ims[:len(siger.qb64)]  # strip off signature
-
-            else:  # no info on attached sigs
-                if framed:  # parse for signatures until end-of-stream
-                    while ims:
-                        # check here for type of attached signatures qb64 or qb2
-                        siger = Siger(qb64b=ims)  # qb64
-                        sigers.append(siger)
-                        del ims[:len(siger.qb64)]  # strip off signature
-
-            if not sigers:
-                raise ValidationError("Missing attached signature(s) to receipt"
-                                      " for evt = {}.".format(serder.ked))
-
-            self.processChit(serder, sigers)
-
-        else:
-            raise ValidationError("Unexpected message ilk = {} for evt ="
-                                  " {}.".format(ilk, serder.ked))
-
-
-    def process(self, ims=None, framed=None, pipelined=None, cloned=None):
+    def process(self, ims=None, framed=None, pipeline=None, cloned=None):
         """
         Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
@@ -1804,9 +1628,8 @@ class Kevery:
             framed is Boolean, True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
 
-            pipelined is Boolean, True means process ims as pipelined messages
-                given stream has pipelined count codes. False means ignore
-                pipelined codes and process inline.
+            pipeline is Boolean, True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
 
             cloned is Boolen, True means cloned message stream so use attached
                 datetimes from clone source not own. False means ignore attached
@@ -1817,9 +1640,9 @@ class Kevery:
             attachments. So even when framed==True must still have counters.
         """
         processor = self.processAllGen(ims=ims,
-                                    framed=framed,
-                                    pipelined=pipelined,
-                                    cloned=cloned)
+                                       framed=framed,
+                                       pipeline=pipeline,
+                                       cloned=cloned)
 
         while True:
             try:
@@ -1828,7 +1651,7 @@ class Kevery:
                 break
 
 
-    def processAllGen(self, ims=None, framed=None, pipelined=None, cloned=None):
+    def processAllGen(self, ims=None, framed=None, pipeline=None, cloned=None):
         """
         Returns generator to process all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
@@ -1843,9 +1666,8 @@ class Kevery:
             framed is Boolean, True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
 
-            pipelined is Boolean, True means process ims as pipelined messages
-                given stream has pipelined count codes. False means ignore
-                pipelined codes and process inline.
+            pipeline is Boolean, True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
 
             cloned is Boolen, True means cloned message stream so use attached
                 datetimes from clone source not own. False means ignore attached
@@ -1862,14 +1684,14 @@ class Kevery:
             ims = self.ims  # use instance attribute by default
 
         framed = framed if framed is not None else self.framed
-        pipelined = pipelined if pipelined is not None else self.pipelined
+        pipeline = pipeline if pipeline is not None else self.pipeline
         cloned = cloned if cloned is not None else self.cloned
 
         while ims:
             try:
                 done = yield from self.processOneGen(ims=ims,
                                                framed=framed,
-                                               pipelined=pipelined,
+                                               pipeline=pipeline,
                                                cloned=cloned)
 
             except SizedGroupError as ex:  # error inside sized group
@@ -1898,7 +1720,7 @@ class Kevery:
         return True
 
 
-    def processGen(self, ims=None, framed=None, pipelined=None, cloned=None):
+    def processGen(self, ims=None, framed=None, pipeline=None, cloned=None):
         """
         Returns generator to continually process messages from incoming message
         stream, ims. Yields waits whenever ims empty.
@@ -1912,9 +1734,8 @@ class Kevery:
             framed is Boolean, True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
 
-            pipelined is Boolean, True means process ims as pipelined messages
-                given stream has pipelined count codes. False means ignore
-                pipelined codes and process inline.
+            pipeline is Boolean, True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
 
             cloned is Boolen, True means cloned message stream so use attached
                 datetimes from clone source not own. False means ignore attached
@@ -1931,14 +1752,14 @@ class Kevery:
             ims = self.ims  # use instance attribute by default
 
         framed = framed if framed is not None else self.framed
-        pipelined = pipelined if pipelined is not None else self.pipelined
+        pipeline = pipeline if pipeline is not None else self.pipeline
         cloned = cloned if cloned is not None else self.cloned
 
         while True:  # continuous stream processing
             try:
                 done = yield from self.processOneGen(ims=ims,
                                                framed=framed,
-                                               pipelined=pipelined,
+                                               pipeline=pipeline,
                                                cloned=cloned)
 
             except SizedGroupError as ex:  # error inside sized group
@@ -1967,7 +1788,7 @@ class Kevery:
         return True
 
 
-    def processOnceGen(self, ims=None, framed=None, pipelined=None, cloned=None):
+    def processOnceGen(self, ims=None, framed=None, pipeline=None, cloned=None):
         """
         Returns generator to process one message from incoming message stream, ims.
         If ims not provided process messages from .ims
@@ -1980,9 +1801,8 @@ class Kevery:
             framed is Boolean, True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
 
-            pipelined is Boolean, True means process ims as pipelined messages
-                given stream has pipelined count codes. False means ignore
-                pipelined codes and process inline.
+            pipeline is Boolean, True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
 
             cloned is Boolen, True means cloned message stream so use attached
                 datetimes from clone source not own. False means ignore attached
@@ -1999,7 +1819,7 @@ class Kevery:
             ims = self.ims  # use instance attribute by default
 
         framed = framed if framed is not None else self.framed
-        pipelined = pipelined if pipelined is not None else self.pipelined
+        pipeline = pipeline if pipeline is not None else self.pipeline
         cloned = cloned if cloned is not None else self.cloned
 
         done = False
@@ -2007,7 +1827,7 @@ class Kevery:
             try:
                 done = yield from self.processOneGen(ims=ims,
                                                framed=framed,
-                                               pipelined=pipelined,
+                                               pipeline=pipeline,
                                                cloned=cloned)
 
             except SizedGroupError as ex:  # error inside sized group
@@ -2037,7 +1857,7 @@ class Kevery:
         return done
 
 
-    def processOne(self, ims=None, framed=True, pipelined=False, cloned=False):
+    def processOne(self, ims=None, framed=True, pipeline=False, cloned=False):
         """
         Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
@@ -2052,9 +1872,8 @@ class Kevery:
             framed is Boolean, True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
 
-            pipelined is Boolean, True means process ims as pipelined messages
-                given stream has pipelined count codes. False means ignore
-                pipelined codes and process inline.
+            pipeline is Boolean, True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
 
             cloned is Boolen, True means cloned message stream so use attached
                 datetimes from clone source not own. False means ignore attached
@@ -2066,7 +1885,7 @@ class Kevery:
         """
         processor = self.processOneGen(ims=ims,
                                         framed=framed,
-                                        pipelined=pipelined,
+                                        pipeline=pipeline,
                                         cloned=cloned)
         while True:
             try:
@@ -2075,7 +1894,7 @@ class Kevery:
                 break
 
 
-    def processOneGen(self, ims=None, framed=True, pipelined=False, cloned=False):
+    def processOneGen(self, ims=None, framed=True, pipeline=False, cloned=False):
         """
         Returns generator that extracts one msg with attached crypto material
         (signature etc) from incoming message stream, ims, and dispatches
@@ -2094,9 +1913,8 @@ class Kevery:
             framed is Boolean, True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
 
-            pipelined is Boolean, True means process ims as pipelined messages
-                given stream has pipelined count codes. False means ignore
-                pipelined codes and process inline.
+            pipeline is Boolean, True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
 
             cloned is Boolen, True means cloned message stream so use attached
                 datetimes from clone source not own. False means ignore attached
@@ -2141,8 +1959,7 @@ class Kevery:
 
         sigers = []  # list of Siger instances for attached indexed signatures
         cigars = []  # List of cigars to hold nontrans rct couplets
-        grouped = False  # all attachments in one big pipeline counted group
-        done = False  # finished with attachments
+        pipelined = False  # all attachments in one big pipeline counted group
         # extract and deserialize attachments
         try:  # catch errors here to flush only counted part of stream
             # extract attachments must start with counter so know if txt or bny.
@@ -2158,28 +1975,28 @@ class Kevery:
                         yield
 
                 if ctr.code == CtrDex.AttachedMaterialQuadlets:  # pipeline ctr?
-                    grouped = True
-                    # compute group size based on stream state txt or bny
-                    atgs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
-                    while len(ims) < atgs:  # wait until full group in stream
+                    pipelined = True
+                    # compute pipelined attached group size based on txt or bny
+                    pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+                    while len(ims) < pags:  # wait until rx full pipelned group
                         yield
 
-                    eims = ims[:atgs]  # copy out substream pipeline group
-                    del ims[:atgs]  # strip off from ims
-                    ims = eims  # now just process substream as framed
+                    pims = ims[:pags]  # copy out substream pipeline group
+                    del ims[:pags]  # strip off from ims
+                    ims = pims  # now just process substream as one counted frame
 
-                    if pipelined:
+                    if pipeline:
                         pass  #  pass extracted ims to pipeline processor
                         return
 
-                    while True:  # extract next counter non-pipelined
+                    while True:  # extract next counter, must be non-pipelined
                         try:
                             ctr = self._extract(ims=ims, klas=Counter, cold=cold)
                             break
                         except ShortageError as  ex:
                             yield
 
-                # process attachment counters (non pipelined )
+                # iteratively process attachment counters (all non pipelined)
                 while True:  # do while already extracted first counter is ctr
                     if ctr.code == CtrDex.ControllerIdxSigs:
                         for i in range(ctr.count): # extract each attached signature
@@ -2226,20 +2043,20 @@ class Kevery:
                         raise UnexpectedCodeError("Unsupported count code={}."
                                                   "".format(ctr.code))
 
-                    if grouped:  # process to end of stream (group)
-                        if not ims:  # end of group frame
+                    if pipelined:  # process to end of stream (group)
+                        if not ims:  # end of pipelined group frame
                             break
                     elif framed:
-                        # not all in one pipeline group so each attachment group
-                        # may switch stream state
+                        # because not all in one pipeline group, each attachment
+                        # group may switch stream state txt or bny
                         if not ims:  # end of frame
                             break
                         cold = self._sniff(ims)
                         if cold == Colds.msg:  # new message so attachments done
                             break  # finished attachments since new message
                     else:  # process until next message
-                        # not all in one pipeline group so each attachment group
-                        # may switch stream state
+                        # because not all in one pipeline group, each attachment
+                        # group may switch stream state txt or bny
                         while not ims:
                             yield  # no frame so must wait for next message
                         cold = self._sniff(ims)  # ctr or msg
@@ -2254,10 +2071,10 @@ class Kevery:
                             yield
 
         except ExtractionError as ex:
-            if grouped:  # extracted pipeline group preflushed
+            if pipelined:  # extracted pipelined group is preflushed
                 raise SizedGroupError("Error processing pipelined size"
-                                "attachment group of size={}.".format(atgs))
-            raise  # no group can't flush group so to clean need to flush stream
+                                "attachment group of size={}.".format(pags))
+            raise  # no pipeline group so can't preflush, must flush stream
 
 
         ilk = serder.ked["t"]  # dispatch abased on ilk
