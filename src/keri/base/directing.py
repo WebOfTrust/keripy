@@ -180,7 +180,7 @@ class Habitat():
         self.pre = self.iserder.ked["i"]  # new pre
         self.mgr.move(old=opre, new=self.pre)
 
-        self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, framed=False,
+        self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, framed=True,
                                    pre=self.pre, local=True)
 
         sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
@@ -505,7 +505,7 @@ class Director(doing.Doer):
         msg = self.hab.makeOwnEvent(sn=sn)
         # send to connected remote
         self.client.tx(msg)
-        logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+        logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(msg))
 
 
     def sendOwnInception(self):
@@ -513,6 +513,116 @@ class Director(doing.Doer):
         Utility to send own inception on client
         """
         self.sendOwnEvent(sn=0)
+
+
+class Processor(doing.DoDoer):
+    """
+    Processor Subclass of DoDoer implements Doist like functionality to allow
+    nested scheduling of Doers.
+    Each DoDoer runs a list of doers like a Doist but using the tyme from its
+       injected tymist as injected by its parent DoDoer or Doist.
+
+    Scheduling hierarchy: Doist->DoDoer...->DoDoer->Doers
+
+    Inherited Attributes:
+        .done is Boolean completion state:
+            True means completed
+            Otherwise incomplete. Incompletion maybe due to close or abort.
+        .opts is dict of injected options for its generator .do
+        .doers is list of Doers or Doer like generator functions
+
+    Attributes:
+
+
+    Inherited Properties:
+        .tyme is float ._tymist.tyme, relative cycle or artificial time
+        .tymist is Tymist instance
+        .tock is float, desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Inherited Methods:
+        .wind  injects ._tymist dependency
+        .__call__ makes instance callable
+            Appears as generator function that returns generator
+        .do is generator method that returns generator
+        .enter is enter context action method
+        .recur is recur context action method or generator method
+        .clean is clean context action method
+        .exit is exit context method
+        .close is close context method
+        .abort is abort context method
+
+    Overidden Methods:
+        .do
+        .enter
+        .recur
+        .exit
+
+    Hidden:
+       ._tymist is Tymist instance reference
+       ._tock is hidden attribute for .tock property
+
+    """
+
+
+    def __init__(self, hab, client, doers=None, **kwa):
+        """
+        Initialize instance.
+
+        Inherited Parameters:
+            tymist is  Tymist instance
+
+        Parameters:
+           tock is float seconds initial value of .tock
+
+        """
+        self.hab = hab
+        self.client = client  # use client for both rx and tx
+        self.kevery = eventing.Kevery(ims=self.client.rxbs,
+                                      kevers=self.hab.kevers,
+                                      db=self.hab.db,
+                                      framed=True,
+                                      pre=self.hab.pre,
+                                      local=False)
+        doers = doers if doers is not None else []
+
+        super(Processor, self).__init__(doers=doers, **kwa)
+
+
+    def processMsgsIter(self, tymist, tock=0.0, **opts):
+        """
+        """
+        if self.kevery.ims:
+            logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.kevery.ims[:1024])
+        yield from self.kevery.processGen()  # process messages continuously
+
+
+    def processCuesIter(self):
+        """
+        """
+        while True:
+            for msg in self.hab.processCuesIter(self.kevery.cues):
+                self.sendMessage(msg, label="chit or receipt")
+                yield # throttle just do one cue at a time
+            yield
+
+
+    def processEscrowsIter(self):
+        """
+        """
+        while True:
+            self.kevery.processEscrows()
+            yield
+
+
+    def sendMessage(self, msg, label=""):
+        """
+        Sends message msg and loggers label if any
+        """
+        self.client.tx(msg)  # send to remote
+        logger.info("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
+
+
 
 
 class Reactor(doing.Doer):
@@ -563,7 +673,7 @@ class Reactor(doing.Doer):
         self.kevery = eventing.Kevery(ims=self.client.rxbs,
                                       kevers=self.hab.kevers,
                                       db=self.hab.db,
-                                      framed=False,
+                                      framed=True,
                                       pre=self.hab.pre,
                                       local=False)
 
@@ -601,8 +711,9 @@ class Reactor(doing.Doer):
         """
         if self.kevery:
             if self.kevery.ims:
-                logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.kevery.ims[:1024])
-            self.kevery.process()
+                logger.info("Client %s: %s received:\n%s\n...\n", self.hab.name,
+                            self.hab.pre, self.kevery.ims[:1024])
+            self.kevery.process()  # process all messages until ims empty
             for msg in self.hab.processCuesIter(self.kevery.cues):
                 self.sendMessage(msg, label="chit or receipt")
                 break  # throttle just do one cue at a time
@@ -745,7 +856,8 @@ class Directant(doing.Doer):
         for ca, reactant in self.rants.items():
             if reactant.kevery:
                 if reactant.kevery.ims:
-                    logger.info("Server %s received:\n%s\n\n", self.hab.pre, reactant.kevery.ims)
+                    logger.info("Server %s: %s received:\n%s\n...\n",
+                                self.hab.name, self.hab.pre, reactant.kevery.ims[:1024])
 
                 reactant.kevery.process()
                 for msg in self.hab.processCuesIter(reactant.kevery.cues):
@@ -812,7 +924,7 @@ class Reactant(tyming.Tymee):
         self.kevery = eventing.Kevery(ims=self.remoter.rxbs,
                                       kevers=self.hab.kevers,
                                       db=self.hab.db,
-                                      framed=False,
+                                      framed=True,
                                       pre=self.hab.pre,
                                       local=False)
         self.persistent = True if persistent else False
@@ -823,7 +935,8 @@ class Reactant(tyming.Tymee):
         Sends message msg and loggers label if any
         """
         self.remoter.tx(msg)  # send to remote
-        logger.info("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
+        logger.info("Server %s: %s sent %s:\n%s\n\n", self.hab.name,
+                    self.hab.pre, label, bytes(msg))
 
 
     def sendOwnEvent(self, sn):

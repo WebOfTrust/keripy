@@ -1452,11 +1452,11 @@ class Kever:
         if first:  # append event dig to first seen database in order
             fn = self.baser.appendFe(self.prefixer.qb64b, self.serder.diger.qb64b)
             self.baser.setDts(dgkey, dtsb)  # first seen so set dts to now
-            logger.info("Kever state: %s First seen order %s at %s\nKEL event=\n%s\n",
+            logger.info("Kever state: %s First seen ordinal %s at %s\nEvent=\n%s\n",
                          self.prefixer.qb64, fn, dtsb.decode("utf-8"),
                          json.dumps(serder.ked, indent=1))
         self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
-        logger.info("Kever state: %s Added valid event to KEL event=\n%s\n",
+        logger.info("Kever state: %s Added to KEL valid event=\n%s\n",
                         self.prefixer.qb64, json.dumps(serder.ked, indent=1))
 
 
@@ -1613,7 +1613,7 @@ class Kevery:
             raise ColdStartError("Invalid stream state cold={}.".format(cold))
 
 
-    def process(self, ims=None, framed=None):
+    def processOld(self, ims=None, framed=None):
         """
         Process all messages from incoming message stream, ims, when provided
         Otherwise process all messages from .ims
@@ -1789,12 +1789,12 @@ class Kevery:
                                   " {}.".format(ilk, serder.ked))
 
 
-    def processAll(self, ims=None, framed=None, pipelined=None, cloned=None):
+    def process(self, ims=None, framed=None, pipelined=None, cloned=None):
         """
         Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
-        Returns when ims is empty
-        Convenience executor for .processIter when ims is not live, i.e. fixed
+        Returns when ims is empty.
+        Convenience executor for .processAllGen when ims is not live, i.e. fixed
 
         Parameters:
             ims is bytearray of incoming message stream. May contain one or more
@@ -1816,21 +1816,24 @@ class Kevery:
             Attachments must all have counters so know if txt or bny format for
             attachments. So even when framed==True must still have counters.
         """
-        processor = self.processIter(ims=ims,
+        processor = self.processAllGen(ims=ims,
                                     framed=framed,
                                     pipelined=pipelined,
                                     cloned=cloned)
-        while ims:
+
+        while True:
             try:
                 next(processor)
             except StopIteration:
                 break
 
 
-    def processIter(self, ims=None, framed=None, pipelined=None, cloned=None):
+    def processAllGen(self, ims=None, framed=None, pipelined=None, cloned=None):
         """
-        Returns iterator to process messages from incoming message stream, ims,
-        when provided. Otherwise process messages from .ims
+        Returns generator to process all messages from incoming message stream,
+        ims until ims is exhausted (empty) then returns.
+        If ims not provided then process messages from .ims
+        Must be framed.
 
         Parameters:
             ims is bytearray of incoming message stream. May contain one or more
@@ -1862,9 +1865,9 @@ class Kevery:
         pipelined = pipelined if pipelined is not None else self.pipelined
         cloned = cloned if cloned is not None else self.cloned
 
-        while True:
+        while ims:
             try:
-                yield from self.processOneIter(ims=ims,
+                done = yield from self.processOneGen(ims=ims,
                                                framed=framed,
                                                pipelined=pipelined,
                                                cloned=cloned)
@@ -1890,14 +1893,156 @@ class Kevery:
                     logger.exception("Kevery msg non-extraction error: %s\n", ex.args[0])
                 else:
                     logger.error("Kevery msg non-extraction error: %s\n", ex.args[0])
+            yield
+
+        return True
+
+
+    def processGen(self, ims=None, framed=None, pipelined=None, cloned=None):
+        """
+        Returns generator to continually process messages from incoming message
+        stream, ims. Yields waits whenever ims empty.
+        If ims not provided then process messages from .ims
+
+        Parameters:
+            ims is bytearray of incoming message stream. May contain one or more
+                sets each of a serialized message with attached cryptographic
+                material such as signatures or receipts.
+
+            framed is Boolean, True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+
+            pipelined is Boolean, True means process ims as pipelined messages
+                given stream has pipelined count codes. False means ignore
+                pipelined codes and process inline.
+
+            cloned is Boolen, True means cloned message stream so use attached
+                datetimes from clone source not own. False means ignore attached
+                datetimes.
+
+        New Logic:
+            Attachments must all have counters so know if txt or bny format for
+            attachments. So even when framed==True must still have counters.
+        """
+        if ims is not None:  # needs bytearray not bytes since deletes as processes
+            if not isinstance(ims, bytearray):
+                ims = bytearray(ims)  # so make bytearray copy
+        else:
+            ims = self.ims  # use instance attribute by default
+
+        framed = framed if framed is not None else self.framed
+        pipelined = pipelined if pipelined is not None else self.pipelined
+        cloned = cloned if cloned is not None else self.cloned
+
+        while True:  # continuous stream processing
+            try:
+                done = yield from self.processOneGen(ims=ims,
+                                               framed=framed,
+                                               pipelined=pipelined,
+                                               cloned=cloned)
+
+            except SizedGroupError as ex:  # error inside sized group
+                # processOneIter already flushed group so do not flush stream
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
+
+            except (ColdStartError, ExtractionError) as ex:  # some extraction error
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
+                del ims[:]  # delete rest of stream to force cold restart
+
+            except (ValidationError, Exception) as ex:  # non Extraction Error
+                # Non extraction errors happen after successfully extracted from stream
+                # so we don't flush rest of stream just resume
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg non-extraction error: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery msg non-extraction error: %s\n", ex.args[0])
+            yield
+
+        return True
+
+
+    def processOnceGen(self, ims=None, framed=None, pipelined=None, cloned=None):
+        """
+        Returns generator to process one message from incoming message stream, ims.
+        If ims not provided process messages from .ims
+
+        Parameters:
+            ims is bytearray of incoming message stream. May contain one or more
+                sets each of a serialized message with attached cryptographic
+                material such as signatures or receipts.
+
+            framed is Boolean, True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+
+            pipelined is Boolean, True means process ims as pipelined messages
+                given stream has pipelined count codes. False means ignore
+                pipelined codes and process inline.
+
+            cloned is Boolen, True means cloned message stream so use attached
+                datetimes from clone source not own. False means ignore attached
+                datetimes.
+
+        New Logic:
+            Attachments must all have counters so know if txt or bny format for
+            attachments. So even when framed==True must still have counters.
+        """
+        if ims is not None:  # needs bytearray not bytes since deletes as processes
+            if not isinstance(ims, bytearray):
+                ims = bytearray(ims)  # so make bytearray copy
+        else:
+            ims = self.ims  # use instance attribute by default
+
+        framed = framed if framed is not None else self.framed
+        pipelined = pipelined if pipelined is not None else self.pipelined
+        cloned = cloned if cloned is not None else self.cloned
+
+        done = False
+        while not done:
+            try:
+                done = yield from self.processOneGen(ims=ims,
+                                               framed=framed,
+                                               pipelined=pipelined,
+                                               cloned=cloned)
+
+            except SizedGroupError as ex:  # error inside sized group
+                # processOneIter already flushed group so do not flush stream
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
+
+            except (ColdStartError, ExtractionError) as ex:  # some extraction error
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
+                del ims[:]  # delete rest of stream to force cold restart
+
+            except (ValidationError, Exception) as ex:  # non Extraction Error
+                # Non extraction errors happen after successfully extracted from stream
+                # so we don't flush rest of stream just resume
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery msg non-extraction error: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery msg non-extraction error: %s\n", ex.args[0])
+            finally:
+                done = True
+
+        return done
 
 
     def processOne(self, ims=None, framed=True, pipelined=False, cloned=False):
         """
         Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
-        Returns when ims is empty
-        Convenience executor for .processOneIter when ims is not live, i.e. fixed
+        Returns once one message is processed.
+        Convenience executor for .processOneGen when ims is not live, i.e. fixed
 
         Parameters:
             ims is bytearray of serialized incoming message stream.
@@ -1919,20 +2064,20 @@ class Kevery:
             Attachments must all have counters so know if txt or bny format for
             attachments. So even when framed==True must still have counters.
         """
-        processor = self.processOneIter(ims=ims,
+        processor = self.processOneGen(ims=ims,
                                         framed=framed,
                                         pipelined=pipelined,
                                         cloned=cloned)
-        while ims:
+        while True:
             try:
                 next(processor)
             except StopIteration:
                 break
 
 
-    def processOneIter(self, ims=None, framed=True, pipelined=False, cloned=False):
+    def processOneGen(self, ims=None, framed=True, pipelined=False, cloned=False):
         """
-        Returns iterator that extracts one msg with attached crypto material
+        Returns generator that extracts one msg with attached crypto material
         (signature etc) from incoming message stream, ims, and dispatches
         processing of message with attachments.
 
@@ -1983,7 +2128,7 @@ class Kevery:
         if cold in (Colds.txt, Colds.bny):  # not message error out to flush stream
             # replace with pipelining here once CESR message format supported.
             raise ColdStartError("Expecting message counter tritet={}"
-                                 "".format(code))
+                                 "".format(cold))
         # Otherwise its a message cold start
         while True:# extract and deserialize message from ims
             try:
@@ -1997,115 +2142,116 @@ class Kevery:
         sigers = []  # list of Siger instances for attached indexed signatures
         cigars = []  # List of cigars to hold nontrans rct couplets
         grouped = False  # all attachments in one big pipeline counted group
+        done = False  # finished with attachments
         # extract and deserialize attachments
         try:  # catch errors here to flush only counted part of stream
             # extract attachments must start with counter so know if txt or bny.
             while not ims:
                 yield
             cold = self._sniff(ims)  # expect counter at front of attachments
-            if cold == Colds.msg:  # new message no attachments done processing
-                return  # no attachments so drop message
-
-            while True:  # extract first attachment counter
-                try:
-                    ctr = self._extract(ims=ims, klas=Counter, cold=cold)
-                    break
-                except ShortageError as  ex:
-                    yield
-
-            if ctr.code == CtrDex.AttachedMaterialQuadlets:  # pipeline ctr?
-                grouped = True
-                # compute group size based on stream state txt or bny
-                atgs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
-                while len(ims) < atgs:  # wait until full group in stream
-                    yield
-
-                eims = ims[:atgs]  # copy out substream pipeline group
-                del ims[:atgs]  # strip off from ims
-                ims = eims  # now just process substream as framed
-
-                if pipelined:
-                    pass  #  pass extracted ims to pipeline processor
-                    return
-
-                while True:  # extract next counter non-pipelined
+            if cold != Colds.msg:  # not new message so process attachments
+                while True:  # not msg so extract first attachment counter
                     try:
                         ctr = self._extract(ims=ims, klas=Counter, cold=cold)
                         break
                     except ShortageError as  ex:
                         yield
 
-            # process attachment counters (non pipelined )
-            while True:  # do while already extracted first counter is ctr
-                if ctr.code == CtrDex.ControllerIdxSigs:
-                    for i in range(ctr.count): # extract each attached signature
-                        while True:
-                            try:
-                                siger = self._extract(ims=ims, klas=Siger, cold=cold)
-                                break
-                            except ShortageError as ex:
-                                yield
-                        sigers.append(siger)
-
-
-                elif ctr.code == CtrDex.WitnessIdxSigs:
-                    pass
-
-                elif ctr.code == CtrDex.NonTransReceiptCouples:
-                    # extract attached rct couplets into list of sigvers
-                    # verfer property of cigar is the identifier prefix
-                    # cigar itself has the attached signature
-
-                    for i in range(ctr.count): # extract each attached couple
-                        while True:
-                            try:
-                                verfer = self._extract(ims=ims, klas=Verfer, cold=cold)
-                                break
-                            except ShortageError as ex:
-                                yield
-                        while True:
-                            try:
-                                cigar = self._extract(ims=ims, klas=Cigar, cold=cold)
-                                break
-                            except ShortageError as ex:
-                                yield
-                        cigar.verfer = verfer
-                        cigars.append(cigar)
-
-                elif ctr.code == CtrDex.TransReceiptQuadruples:
-                    pass
-
-                elif ctr.code == CtrDex.FirstSeenReplayCouples:
-                    pass
-
-                else:
-                    raise UnexpectedCodeError("Unsupported count code={}."
-                                              "".format(ctr.code))
-
-                if grouped:  # process to end of stream (group)
-                    if not ims:  # end of group frame
-                        break
-                elif framed:
-                    if not ims:  # end of frame
-                        break
-                    # not all in one pipeline group so each attachment group
-                    # may switch stream state
-                    cold = self._sniff(ims)
-                else:  # process until next message
-                    # not all in one pipeline group so each attachment group
-                    # may switch stream state
-                    while not ims:
+                if ctr.code == CtrDex.AttachedMaterialQuadlets:  # pipeline ctr?
+                    grouped = True
+                    # compute group size based on stream state txt or bny
+                    atgs = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
+                    while len(ims) < atgs:  # wait until full group in stream
                         yield
-                    cold = self._sniff(ims)  # ctr or msg
-                    if cold == Colds.msg:  # new message
-                        break  # finished attachments since new message
 
-                while True:  # extract next counter
-                    try:
-                        ctr = self._extract(ims=ims, klas=Counter, cold=cold)
-                        break
-                    except ShortageError as ex:
-                        yield
+                    eims = ims[:atgs]  # copy out substream pipeline group
+                    del ims[:atgs]  # strip off from ims
+                    ims = eims  # now just process substream as framed
+
+                    if pipelined:
+                        pass  #  pass extracted ims to pipeline processor
+                        return
+
+                    while True:  # extract next counter non-pipelined
+                        try:
+                            ctr = self._extract(ims=ims, klas=Counter, cold=cold)
+                            break
+                        except ShortageError as  ex:
+                            yield
+
+                # process attachment counters (non pipelined )
+                while True:  # do while already extracted first counter is ctr
+                    if ctr.code == CtrDex.ControllerIdxSigs:
+                        for i in range(ctr.count): # extract each attached signature
+                            while True:
+                                try:
+                                    siger = self._extract(ims=ims, klas=Siger, cold=cold)
+                                    break
+                                except ShortageError as ex:
+                                    yield
+                            sigers.append(siger)
+
+
+                    elif ctr.code == CtrDex.WitnessIdxSigs:
+                        pass
+
+                    elif ctr.code == CtrDex.NonTransReceiptCouples:
+                        # extract attached rct couplets into list of sigvers
+                        # verfer property of cigar is the identifier prefix
+                        # cigar itself has the attached signature
+
+                        for i in range(ctr.count): # extract each attached couple
+                            while True:
+                                try:
+                                    verfer = self._extract(ims=ims, klas=Verfer, cold=cold)
+                                    break
+                                except ShortageError as ex:
+                                    yield
+                            while True:
+                                try:
+                                    cigar = self._extract(ims=ims, klas=Cigar, cold=cold)
+                                    break
+                                except ShortageError as ex:
+                                    yield
+                            cigar.verfer = verfer
+                            cigars.append(cigar)
+
+                    elif ctr.code == CtrDex.TransReceiptQuadruples:
+                        pass
+
+                    elif ctr.code == CtrDex.FirstSeenReplayCouples:
+                        pass
+
+                    else:
+                        raise UnexpectedCodeError("Unsupported count code={}."
+                                                  "".format(ctr.code))
+
+                    if grouped:  # process to end of stream (group)
+                        if not ims:  # end of group frame
+                            break
+                    elif framed:
+                        # not all in one pipeline group so each attachment group
+                        # may switch stream state
+                        if not ims:  # end of frame
+                            break
+                        cold = self._sniff(ims)
+                        if cold == Colds.msg:  # new message so attachments done
+                            break  # finished attachments since new message
+                    else:  # process until next message
+                        # not all in one pipeline group so each attachment group
+                        # may switch stream state
+                        while not ims:
+                            yield  # no frame so must wait for next message
+                        cold = self._sniff(ims)  # ctr or msg
+                        if cold == Colds.msg:  # new message
+                            break  # finished attachments since new message
+
+                    while True:  # not msg so extract next counter
+                        try:
+                            ctr = self._extract(ims=ims, klas=Counter, cold=cold)
+                            break
+                        except ShortageError as ex:
+                            yield
 
         except ExtractionError as ex:
             if grouped:  # extracted pipeline group preflushed
@@ -2144,6 +2290,8 @@ class Kevery:
         else:
             raise ValidationError("Unexpected message ilk = {} for evt ="
                                   " {}.".format(ilk, serder.ked))
+
+        return True  # done state
 
 
 
