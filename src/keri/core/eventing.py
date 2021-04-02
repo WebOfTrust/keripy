@@ -1601,8 +1601,8 @@ class Kevery:
     @staticmethod
     def _extract(ims, klas, cold=Colds.txt):
         """
-        Extract and return instance of klas from input message stream ims given
-        stream state cold is txt or bny. Inits klas from string using qb64b or
+        Extract and return instance of klas from input message stream, ims, given
+        stream state, cold, is txt or bny. Inits klas from ims using qb64b or
         qb2 parameter based on cold.
         """
         if cold == Colds.txt:
@@ -1611,6 +1611,30 @@ class Kevery:
             return klas(qb2=ims, strip=True)
         else:
             raise ColdStartError("Invalid stream state cold={}.".format(cold))
+
+
+    @staticmethod
+    def _extractor(ims, klas, cold=Colds.txt):
+        """
+        Returns generator to extract and return instance of klas from input
+        message stream, ims, given stream state, cold, is txt or bny.
+        Inits klas from ims using qb64b or qb2 parameter based on cold.
+        Yields if not enough bytes in ims to fill out klas instance.
+
+        Usage:
+
+        instance = self._extractGen
+        """
+        while True:
+            try:
+                if cold == Colds.txt:
+                    return klas(qb64b=ims, strip=True)
+                elif cold == Colds.bny:
+                    return klas(qb2=ims, strip=True)
+                else:
+                    raise ColdStartError("Invalid stream state cold={}.".format(cold))
+            except ShortageError as ex:
+                yield
 
 
     def process(self, ims=None, framed=None, pipeline=None, cloned=None):
@@ -1967,13 +1991,7 @@ class Kevery:
                 yield
             cold = self._sniff(ims)  # expect counter at front of attachments
             if cold != Colds.msg:  # not new message so process attachments
-                while True:  # not msg so extract first attachment counter
-                    try:
-                        ctr = self._extract(ims=ims, klas=Counter, cold=cold)
-                        break
-                    except ShortageError as  ex:
-                        yield
-
+                ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
                 if ctr.code == CtrDex.AttachedMaterialQuadlets:  # pipeline ctr?
                     pipelined = True
                     # compute pipelined attached group size based on txt or bny
@@ -1989,23 +2007,13 @@ class Kevery:
                         pass  #  pass extracted ims to pipeline processor
                         return
 
-                    while True:  # extract next counter, must be non-pipelined
-                        try:
-                            ctr = self._extract(ims=ims, klas=Counter, cold=cold)
-                            break
-                        except ShortageError as  ex:
-                            yield
+                    ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
 
                 # iteratively process attachment counters (all non pipelined)
                 while True:  # do while already extracted first counter is ctr
                     if ctr.code == CtrDex.ControllerIdxSigs:
                         for i in range(ctr.count): # extract each attached signature
-                            while True:
-                                try:
-                                    siger = self._extract(ims=ims, klas=Siger, cold=cold)
-                                    break
-                                except ShortageError as ex:
-                                    yield
+                            siger = yield from self._extractor(ims=ims, klas=Siger, cold=cold)
                             sigers.append(siger)
 
 
@@ -2018,18 +2026,8 @@ class Kevery:
                         # cigar itself has the attached signature
 
                         for i in range(ctr.count): # extract each attached couple
-                            while True:
-                                try:
-                                    verfer = self._extract(ims=ims, klas=Verfer, cold=cold)
-                                    break
-                                except ShortageError as ex:
-                                    yield
-                            while True:
-                                try:
-                                    cigar = self._extract(ims=ims, klas=Cigar, cold=cold)
-                                    break
-                                except ShortageError as ex:
-                                    yield
+                            verfer = yield from self._extractor(ims=ims, klas=Verfer, cold=cold)
+                            cigar = yield from self._extractor(ims=ims, klas=Cigar, cold=cold)
                             cigar.verfer = verfer
                             cigars.append(cigar)
 
@@ -2064,11 +2062,7 @@ class Kevery:
                             break  # finished attachments since new message
 
                     while True:  # not msg so extract next counter
-                        try:
-                            ctr = self._extract(ims=ims, klas=Counter, cold=cold)
-                            break
-                        except ShortageError as ex:
-                            yield
+                        ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
 
         except ExtractionError as ex:
             if pipelined:  # extracted pipelined group is preflushed
