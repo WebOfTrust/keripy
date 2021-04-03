@@ -91,7 +91,7 @@ def test_direct_mode_bob_eve_demo():
         eveKevers = dict()
 
         # setup bob
-        bobHab = directing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
+        bobHab = directing.Habitat(name='Bob', ks=bobKS, db=bobDB, kevers=bobKevers,
                                    secrecies=bobSecrecies, temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
@@ -124,7 +124,7 @@ def test_direct_mode_bob_eve_demo():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(ks=eveKS,  db=eveDB, kevers=eveKevers,
+        eveHab = directing.Habitat(name='Eve', ks=eveKS,  db=eveDB, kevers=eveKevers,
                                    secrecies=eveSecrecies, temp=True)
 
         assert eveHab.ks == eveKS
@@ -210,11 +210,11 @@ def test_direct_mode_sam_eve_demo():
     for secret in samSecrets:  # convert secrets to secrecies
         samSecrecies.append([secret])
 
-    #  create bob signers
+    # create Sam signers
     samSigners = [coring.Signer(qb64=secret) for secret in samSecrets]
     assert [signer.qb64 for signer in samSigners] == samSecrets
 
-    # bob inception transferable (nxt digest not empty)
+    # Sam inception transferable (nxt digest not empty)
     samSerder = eventing.incept(keys=[samSigners[0].verfer.qb64],
                                 nxt=coring.Nexter(keys=[samSigners[1].verfer.qb64]).qb64,
                                 code=coring.MtrDex.Blake3_256)
@@ -237,7 +237,7 @@ def test_direct_mode_sam_eve_demo():
     for secret in eveSecrets:  # convert secrets to secrecies
         eveSecrecies.append([secret])
 
-    #  create eve signers
+    # create Eve signers
     eveSigners = [coring.Signer(qb64=secret) for secret in eveSecrets]
     assert [signer.qb64 for signer in eveSigners] == eveSecrets
 
@@ -259,8 +259,8 @@ def test_direct_mode_sam_eve_demo():
         samKevers = dict()
         eveKevers = dict()
 
-        # setup bob
-        samHab = directing.Habitat(ks=samKS,  db=samDB, kevers=samKevers,
+        # setup Sam
+        samHab = directing.Habitat(name='Sam', ks=samKS,  db=samDB, kevers=samKevers,
                                    secrecies=samSecrecies, temp=True)
 
         assert samHab.ks == samKS
@@ -291,10 +291,10 @@ def test_direct_mode_sam_eve_demo():
         samDirectant = directing.Directant(hab=samHab, server=samServer)
         assert samDirectant.hab == samHab
         assert samDirectant.server == samServer
-        # Bob's Reactants created on demand
+        # Sam's Reactants created on demand
 
         # setup eve
-        eveHab = directing.Habitat(ks=eveKS,  db=eveDB, kevers=eveKevers,
+        eveHab = directing.Habitat(name='Eve', ks=eveKS,  db=eveDB, kevers=eveKevers,
                                    secrecies=eveSecrecies, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
@@ -480,4 +480,4 @@ def test_run_sam_eve_demo():
 
 
 if __name__ == "__main__":
-    test_direct_mode_bob_eve_demo()
+    test_direct_mode_sam_eve_demo()

@@ -18,9 +18,9 @@ from keri.core import coring, eventing
 logger = help.ogler.getLogger()
 
 
-def test_replay():
+def test_disjoint_replay():
     """
-    Test conjoint replay
+    Test disjoint replay
 
     Deb creates series of events.
     Deb replays Deb's events to Cam and collects Cam's receipts
@@ -128,7 +128,7 @@ def test_replay():
         # create non-local kevery for Cam to process msgs from Deb
         camKevery = eventing.Kevery(kevers=camHab.kevers,
                                     db=camHab.db,
-                                    framed=False,
+                                    framed=True,
                                     pre=camHab.pre,
                                     local=False)
         camKevery.process(ims=bytearray(debMsgs))  # give copy to process
@@ -211,7 +211,7 @@ def test_replay():
         # create non-local kevery for Deb to process msgs from Cam
         debKevery = eventing.Kevery(kevers=debHab.kevers,
                                     db=debHab.db,
-                                    framed=False,
+                                    framed=True,
                                     pre=debHab.pre,
                                     local=False)
         debKevery.process(ims=bytearray(camMsgs))  # give copy to process
@@ -238,7 +238,7 @@ def test_replay():
         # create non-local kevery for Bev to process msgs from Deb
         bevKevery = eventing.Kevery(kevers=bevHab.kevers,
                                     db=bevHab.db,
-                                    framed=False,
+                                    framed=True,
                                     pre=bevHab.pre,
                                     local=False)
         bevKevery.process(ims=bytearray(debMsgs))  # give copy to process
@@ -442,4 +442,4 @@ def test_replay():
 
 
 if __name__ == "__main__":
-    test_replay()
+    test_disjoint_replay()

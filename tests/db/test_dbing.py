@@ -2081,9 +2081,9 @@ def test_baserdoer():
     assert db0.path == None
     assert db0.env == None
 
-    dbdoer0 = dbing.BaserDoer(baser=db0)
-    assert dbdoer0.baser == db0
-    assert dbdoer0.baser.opened == False
+    dbDoer0 = dbing.BaserDoer(baser=db0)
+    assert dbDoer0.baser == db0
+    assert dbDoer0.baser.opened == False
 
     db1 = dbing.Baser(name='test1', temp=True, reopen=False)
     assert db1.opened == False
@@ -2098,23 +2098,24 @@ def test_baserdoer():
     tock = 0.03125
     doist = doing.Doist(limit=limit, tock=tock)
 
-    doers = [dbdoer0, dbDoer1]
+    doers = [dbDoer0, dbDoer1]
 
-    dogs = doist.ready(doers=doers)
-    assert len(dogs) == 2
-    assert [val[1] for val in dogs] == [0.0, 0.0]  #  retymes
+    doist.doers = doers
+    deeds = doist.ready()
+    assert len(deeds) == 2
+    assert [val[1] for val in deeds] == [0.0, 0.0]  #  retymes
     for doer in doers:
         assert doer._tymist == doist
         assert doer.baser.opened
         assert "_test/keri/db/test" in doer.baser.path
 
-    doist.once(dogs)
+    doist.once(deeds)
     assert doist.tyme == 0.03125  # on next cycle
-    assert len(dogs) == 2
+    assert len(deeds) == 2
     for doer in doers:
         assert doer.baser.opened == True
 
-    for dog, retyme, index in dogs:
+    for dog, retyme, index in deeds:
         dog.close()
 
     for doer in doers:

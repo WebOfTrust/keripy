@@ -189,13 +189,15 @@ def test_directing_basic():
 
         assert not bobClient.txbs
         ca, ix = list(eveServer.ixes.items())[0]
-        eveMsgRx = bytes(ix.rxbs)  # not event so ShortageError leaves it be
-        assert eveMsgRx == bobMsgTx
+        eveMsgRx = bytes(ix.rxbs)  # ColdStart Error fluhes buffer
+        assert eveMsgRx == b''
+        # assert eveMsgRx == bobMsgTx
 
         assert not eveClient.txbs
         ca, ix = list(bobServer.ixes.items())[0]
-        bobMsgRx = bytes(ix.rxbs)  # not event so ShortageError leaves it be
-        assert bobMsgRx == eveMsgTx
+        bobMsgRx = bytes(ix.rxbs)  # ColdStart Error fluhes buffer
+        assert bobMsgRx == b''
+        # assert bobMsgRx == eveMsgTx
 
     assert not os.path.exists(eveDB.path)
     assert not os.path.exists(bobDB.path)
@@ -241,4 +243,4 @@ def test_runcontroller_demo():
 
 
 if __name__ == "__main__":
-    test_habitat()
+    test_directing_basic()

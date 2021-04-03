@@ -793,7 +793,7 @@ def test_unverified_receipt_escrow():
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
 
-        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=2)
+        recnt = coring.Counter(code=coring.CtrDex.NonTransReceiptCouples, count=2)
 
         msg = bytearray()
         msg.extend(reserder.raw)
@@ -839,7 +839,7 @@ def test_unverified_receipt_escrow():
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
 
-        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=2)
+        recnt = coring.Counter(code=coring.CtrDex.NonTransReceiptCouples, count=2)
 
         msg = bytearray()
         msg.extend(reserder.raw)
@@ -900,7 +900,7 @@ def test_unverified_receipt_escrow():
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
 
-        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=2)
+        recnt = coring.Counter(code=coring.CtrDex.NonTransReceiptCouples, count=2)
 
         msg = bytearray()
         msg.extend(reserder.raw)

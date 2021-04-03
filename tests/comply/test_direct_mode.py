@@ -449,3 +449,7 @@ def test_direct_mode_with_manager():
 
     assert not os.path.exists(valKevery.db.path)
     assert not os.path.exists(coeKever.baser.path)
+
+
+if __name__ == "__main__":
+    test_direct_mode_with_manager()

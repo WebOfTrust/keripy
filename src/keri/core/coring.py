@@ -454,7 +454,8 @@ class Matter:
     Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
 
 
-    def __init__(self, raw=None, code=MtrDex.Ed25519N, qb64b=None, qb64=None, qb2=None):
+    def __init__(self, raw=None, code=MtrDex.Ed25519N, qb64b=None, qb64=None,
+                 qb2=None, strip=False):
         """
         Validate as fully qualified
         Parameters:
@@ -463,6 +464,9 @@ class Matter:
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
+            strip is Boolean True means strip counter contents from input stream
+                bytearray after parsing qb64b or qb2. False means do not strip
+
 
 
         Needs either (raw and code) or qb64b or qb64 or qb2
@@ -497,12 +501,16 @@ class Matter:
 
         elif qb64b is not None:
             self._exfil(qb64b)
+            if strip:  # assumes bytearray
+                del qb64b[:self.Codes[self.code].fs]
 
         elif qb64 is not None:
             self._exfil(qb64)
 
         elif qb2 is not None:
             self._bexfil(qb2)
+            if strip:  # assumes bytearray
+                del qb2[:self.Codes[self.code].fs*3//4]
 
         else:
             raise EmptyMaterialError("Improper initialization need either "
@@ -2075,7 +2083,7 @@ class Indexer:
     Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
 
     def __init__(self, raw=None, code=IdrDex.Ed25519_Sig, index=0,
-                 qb64b=None, qb64=None, qb2=None):
+                 qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified
         Parameters:
@@ -2085,7 +2093,8 @@ class Indexer:
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
-
+            strip is Boolean True means strip counter contents from input stream
+                bytearray after parsing qb64b or qb2. False means do not strip
 
         Needs either (raw and code and index) or qb64b or qb64 or qb2
         Otherwise raises EmptyMaterialError
@@ -2130,12 +2139,16 @@ class Indexer:
 
         elif qb64b is not None:
             self._exfil(qb64b)
+            if strip:  # assumes bytearray
+                del qb64b[:len(self.qb64b)]  # may be variable length fs
 
         elif qb64 is not None:
             self._exfil(qb64)
 
         elif qb2 is not None:
             self._bexfil(qb2)
+            if strip:  # assumes bytearray
+                del qb2[:len(self.qb2)]  # may be variable length fs
 
         else:
             raise EmptyMaterialError("Improper initialization need either "
@@ -2466,15 +2479,15 @@ class CounterCodex:
 
     ControllerIdxSigs:              str =  '-A'  # Qualified Base64 Indexed Signature.
     WitnessIdxSigs:                 str =  '-B'  # Qualified Base64 Indexed Signature.
-    NonTransReceiptCouples:         str =  '-C'  # Composed Base64 Couple, pre + sig.
+    NonTransReceiptCouples:         str =  '-C'  # Composed Base64 Couple, pre + cig.
     TransReceiptQuadruples:         str =  '-D'  # Composed Base64 Quadruple, pre + snu + dig + sig.
-    FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fn + dt.
+    FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fnu + dts.
     MessageDataGroups:              str =  '-U'  # Composed Message Data Group or Primitive
     AttachedMaterialQuadlets:       str =  '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     MessageDataMaterialQuadlets:    str =  '-W'  # Composed Grouped Message Data Quadlet (4 char each)
     CombinedMaterialQuadlets:       str =  '-X'  # Combined Message Data + Attachments Quadlet (4 char each)
     MaterialGroups:                 str =  '-Y'  # Composed Generic Material Group or Primitive
-    Material:                       str =  '-Z'  # Composed Generic Material Quadlet (4 char each)
+    MaterialQuadlets:               str =  '-Z'  # Composed Generic Material Quadlet (4 char each)
     AnchorSealGroups:               str =  '-a'  # Composed Anchor Seal Material Group
     ConfigTraits:                   str =  '-c'  # Composed Config Trait Material Group
     DigestSealQuadlets:             str =  '-d'  # Composed Digest Seal Quadlet (4 char each)
@@ -2488,7 +2501,7 @@ class CounterCodex:
     BigMessageDataMaterialQuadlets: str =  '-0W'  # Composed Grouped Message Data Quadlet (4 char each)
     BigCombinedMaterialQuadlets:    str =  '-0X'  # Combined Message Data + Attachments Quadlet (4 char each)
     BigMaterialGroups:              str =  '-0Y'  # Composed Generic Material Group or Primitive
-    BigMaterial:                    str =  '-0Z'  # Composed Generic Material Quadlet (4 char each)
+    BigMaterialQuadlets:            str =  '-0Z'  # Composed Generic Material Quadlet (4 char each)
 
 
     def __iter__(self):
@@ -2568,7 +2581,8 @@ class Counter:
     Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
 
 
-    def __init__(self, code=None, count=1, qb64b=None, qb64=None, qb2=None):
+    def __init__(self, code=None, count=1, qb64b=None, qb64=None,
+                 qb2=None, strip=False):
         """
         Validate as fully qualified
         Parameters:
@@ -2577,6 +2591,8 @@ class Counter:
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
             qb2 is bytes of fully qualified crypto material
+            strip is Boolean True means strip counter contents from input stream
+                bytearray after parsing qb64b or qb2. False means do not strip
 
 
         Needs either (code and count) or qb64b or qb64 or qb2
@@ -2604,12 +2620,16 @@ class Counter:
 
         elif qb64b is not None:
             self._exfil(qb64b)
+            if strip:  # assumes bytearray
+                del qb64b[:self.Codes[self.code].fs]
 
         elif qb64 is not None:
             self._exfil(qb64)
 
         elif qb2 is not None:  # rewrite to use direct binary exfiltration
             self._bexfil(qb2)
+            if strip:  # assumes bytearray
+                del qb2[:self.Codes[self.code].fs*3//4]
 
         else:
             raise EmptyMaterialError("Improper initialization need either "

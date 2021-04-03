@@ -1381,7 +1381,7 @@ def test_kevery():
         kes.extend(siger.qb64b)
 
         # Event 7 Rotation to null NonTransferable Abandon
-       # nxt digest is empty
+        # nxt digest is empty
         serder = rotate(pre=kever.prefixer.qb64,
                     keys=[signers[4].verfer.qb64],
                     dig=kever.serder.diger.qb64,
@@ -1408,7 +1408,7 @@ def test_kevery():
         # sign serialization
         siger = signers[4].sign(serder.raw, index=0)
         # update key event verifier state
-        with pytest.raises(ValidationError):  # nontransferable so reject update
+        with pytest.raises(ValidationError):  # nulled so reject any more events
             kever.update(serder=serder, sigers=[siger])
         #extend key event stream
         kes.extend(serder.raw)
@@ -1442,9 +1442,9 @@ def test_kevery():
 
         kevery = Kevery(db=vallgr)
 
-        # test for incomplete event in stream
-        kevery.process(ims=kes[:20])
-        assert pre not in kevery.kevers  # shortage so gives up
+        # test for incomplete event in stream  (new process just hangs waiting for more bytes)
+        # kevery.process(ims=kes[:20])
+        # assert pre not in kevery.kevers  # shortage so gives up
 
         kevery.process(ims=kes)
 
@@ -1959,8 +1959,8 @@ def test_receipt():
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
         assert valCigar.qb64 == '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
-        recnt = Counter(code=CtrDex.ControllerIdxSigs, count=1)
-        assert recnt.qb64 == '-AAB'
+        recnt = Counter(code=CtrDex.NonTransReceiptCouples, count=1)
+        assert recnt.qb64 == '-CAB'
 
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
@@ -1968,7 +1968,7 @@ def test_receipt():
         res.extend(valCigar.qb64b)
         assert res == bytearray(b'{"v":"KERI10JSON000091_","i":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOo'
                                 b'eKtWTOunRA","s":"0","t":"rct","d":"EB5PLgogAWw5iniBXk0MKnFU9udCH'
-                                b'a9ez_HJxCuvL_xM"}-AABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiM'
+                                b'a9ez_HJxCuvL_xM"}-CABB8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiM'
                                 b'c0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8'
                                 b'Fu_5asnM7m67KlGC9EYaw0KDQ')
 
@@ -1986,7 +1986,7 @@ def test_receipt():
                            dig=fake)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
-        recnt = Counter(code=CtrDex.ControllerIdxSigs, count=1)
+        recnt = Counter(code=CtrDex.NonTransReceiptCouples, count=1)
         # attach to receipt msg stream
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
@@ -2006,7 +2006,7 @@ def test_receipt():
                                dig=fake)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
-        recnt = Counter(code=CtrDex.ControllerIdxSigs, count=1)
+        recnt = Counter(code=CtrDex.NonTransReceiptCouples, count=1)
         # attach to receipt msg stream
         res.extend(reserder.raw)
         res.extend(recnt.qb64b)
@@ -3439,4 +3439,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_dequintuple()
+    test_kevery()
