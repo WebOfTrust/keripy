@@ -519,10 +519,9 @@ class Reactor(doing.DoDoer):
     """
     Reactor Subclass of DoDoer with doers list from do generator methods:
         .msgDo, .cueDo, and  .escrowDo.
-    Enables continuous scheduling of do generators (dogs)
+    Enables continuous scheduling of doers (do generator instances or functions)
 
-    Implements Doist like functionality to allow
-    nested scheduling of dogs (do generators).
+    Implements Doist like functionality to allow nested scheduling of doers.
     Each DoDoer runs a list of doers like a Doist but using the tyme from its
        injected tymist as injected by its parent DoDoer or Doist.
 
@@ -577,7 +576,7 @@ class Reactor(doing.DoDoer):
         Inherited Parameters:
             tymist is  Tymist instance
             tock is float seconds initial value of .tock
-            doers is list of do generators dogs
+            doers is list of doers (do generator instancs or functions)
 
         Parameters:
             hab is Habitat instance of local controller's context
