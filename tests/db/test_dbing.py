@@ -2100,7 +2100,8 @@ def test_baserdoer():
 
     doers = [dbDoer0, dbDoer1]
 
-    deeds = doist.ready(doers=doers)
+    doist.doers = doers
+    deeds = doist.ready()
     assert len(deeds) == 2
     assert [val[1] for val in deeds] == [0.0, 0.0]  #  retymes
     for doer in doers:
