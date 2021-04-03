@@ -493,21 +493,21 @@ def test_keeperdoer():
 
     doers = [kpDoer0, kpDoer1]
 
-    dogs = doist.ready(doers=doers)
-    assert len(dogs) == 2
-    assert [val[1] for val in dogs] == [0.0, 0.0]  #  retymes
+    deeds = doist.ready(doers=doers)
+    assert len(deeds) == 2
+    assert [val[1] for val in deeds] == [0.0, 0.0]  #  retymes
     for doer in doers:
         assert doer._tymist == doist
         assert doer.keeper.opened
         assert "_test/keri/keep/test" in doer.keeper.path
 
-    doist.once(dogs)
+    doist.once(deeds)
     assert doist.tyme == 0.03125  # on next cycle
-    assert len(dogs) == 2
+    assert len(deeds) == 2
     for doer in doers:
         assert doer.keeper.opened == True
 
-    for dog, retyme, index in dogs:
+    for dog, retyme, index in deeds:
         dog.close()
 
     for doer in doers:
