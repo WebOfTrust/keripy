@@ -95,6 +95,10 @@ def test_directing_basic():
     with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
          dbing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
 
+        limit = 0.125
+        tock = 0.03125
+        doist = doing.Doist(limit=limit, tock=tock)
+
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
         bobKevers = dict()
@@ -108,15 +112,14 @@ def test_directing_basic():
         assert bobHab.iserder.dig == bobSerder.dig
         assert bobHab.pre == bob
 
-        bobClient = clienting.Client(host='127.0.0.1', port=evePort)
-        bobClientDoer = doing.ClientDoer(client=bobClient)
+        bobClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
+        bobClientDoer = doing.ClientDoer(tymth=doist.tymen(), client=bobClient)
 
         bobDirector = directing.Director(hab=bobHab, client=bobClient)
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
         assert id(bobDirector.hab.kvy.kevers) == id(bobKevers)
         assert bobDirector.hab.kvy.db == bobDB
-
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
@@ -142,8 +145,8 @@ def test_directing_basic():
         assert eveHab.iserder.dig == eveSerder.dig
         assert eveHab.pre == eve
 
-        eveClient = clienting.Client(host='127.0.0.1', port=bobPort)
-        eveClientDoer = doing.ClientDoer(client=eveClient)
+        eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=bobPort)
+        eveClientDoer = doing.ClientDoer(tymth=doist.tymen(), client=eveClient)
 
         eveDirector = directing.Director(hab=eveHab, client=eveClient)
         assert eveDirector.hab == eveHab
@@ -166,10 +169,6 @@ def test_directing_basic():
         assert eveDirectant.hab == eveHab
         assert eveDirectant.server == eveServer
         # Eve's Reactants created on demand
-
-        limit = 0.125
-        tock = 0.03125
-        doist = doing.Doist(limit=limit, tock=tock)
 
         bobMsgTx = b"Hi Eve I am  Bob"
         bobDirector.client.tx(bobMsgTx)
@@ -217,7 +216,8 @@ def test_runcontroller_demo():
     remote = 5621
     local = 5620
     expire =  1.0
-
+    tock = 0.03125
+    doist = doing.Doist(limit=expire, tock=tock, real=True)
 
     secrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
@@ -231,11 +231,11 @@ def test_runcontroller_demo():
                 ]
 
     doers = demoing.setupDemoController(secrets=secrets,
-                                     name=name,
-                                     remotePort=remote,
-                                     localPort=local)
+                                        name=name,
+                                        remotePort=remote,
+                                        localPort=local)
 
-    directing.runController(doers=doers, limit=expire)
+    doist.do(doers=doers)
 
     help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""

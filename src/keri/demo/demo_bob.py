@@ -19,6 +19,8 @@ def runDemo(name="bob", remote=5621, local=5620, expire=0.0):
     """
     Setup and run one demo controller for Bob
     """
+    tock = 0.03125
+    doist = doing.Doist(limit=expire, tock=tock, real=True)
 
     secrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
@@ -32,11 +34,11 @@ def runDemo(name="bob", remote=5621, local=5620, expire=0.0):
                 ]
 
     doers = demoing.setupDemoController(secrets=secrets,
-                                      name=name,
-                                      remotePort=remote,
-                                      localPort=local)
+                                        name=name,
+                                        remotePort=remote,
+                                        localPort=local)
 
-    directing.runController(doers=doers, limit=expire)
+    doist.do(doers=doers)
 
 
 

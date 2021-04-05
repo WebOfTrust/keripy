@@ -2105,7 +2105,6 @@ def test_baserdoer():
     assert len(deeds) == 2
     assert [val[1] for val in deeds] == [0.0, 0.0]  #  retymes
     for doer in doers:
-        assert doer._tymist == doist
         assert doer.baser.opened
         assert "_test/keri/db/test" in doer.baser.path
 
