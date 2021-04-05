@@ -497,7 +497,6 @@ def test_keeperdoer():
     assert len(deeds) == 2
     assert [val[1] for val in deeds] == [0.0, 0.0]  #  retymes
     for doer in doers:
-        assert doer._tymist == doist
         assert doer.keeper.opened
         assert "_test/keri/keep/test" in doer.keeper.path
 

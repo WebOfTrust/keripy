@@ -2351,14 +2351,18 @@ class BaserDoer(doing.Doer):
         .baser is Baser or LMDBer subclass
 
     Inherited Properties:
-        .tyme is float ._tymist.tyme, relative cycle or artificial time
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
         .tock is float, desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
     Properties:
 
     Methods:
-        .wind  injects ._tymist dependency
+        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
         .__call__ makes instance callable
             Appears as generator function that returns generator
         .do is generator method that returns generator
@@ -2369,7 +2373,8 @@ class BaserDoer(doing.Doer):
         .abort is abort context method
 
     Hidden:
-       ._tymist is Tymist instance reference
+       ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
        ._tock is hidden attribute for .tock property
     """
 

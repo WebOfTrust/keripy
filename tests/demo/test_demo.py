@@ -85,6 +85,10 @@ def test_direct_mode_bob_eve_demo():
     with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
          dbing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
 
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(limit=limit, tock=tock)
+
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
         bobKevers = dict()
@@ -98,7 +102,7 @@ def test_direct_mode_bob_eve_demo():
         assert bobHab.iserder.dig == bobSerder.dig
         assert bobHab.pre == bob
 
-        bobClient = clienting.Client(host='127.0.0.1', port=evePort)
+        bobClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
         bobClientDoer = doing.ClientDoer(client=bobClient)
 
         bobDirector = demoing.BobDirector(hab=bobHab, client=bobClient, tock=0.125)
@@ -132,7 +136,7 @@ def test_direct_mode_bob_eve_demo():
         assert eveHab.iserder.dig == eveSerder.dig
         assert eveHab.pre == eve
 
-        eveClient = clienting.Client(host='127.0.0.1', port=bobPort)
+        eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=bobPort)
         eveClientDoer = doing.ClientDoer(client=eveClient)
 
         eveDirector = demoing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
@@ -155,11 +159,6 @@ def test_direct_mode_bob_eve_demo():
         assert eveDirectant.hab == eveHab
         assert eveDirectant.server == eveServer
         # Eve's Reactants created on demand
-
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(limit=limit, tock=tock)
-
 
         doers = [bobClientDoer, bobDirector, bobReactor, bobServerDoer, bobDirectant,
                  eveClientDoer, eveDirector, eveReactor, eveServerDoer, eveDirectant]
@@ -254,6 +253,10 @@ def test_direct_mode_sam_eve_demo():
     with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
          dbing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS:
 
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(limit=limit, tock=tock)
+
         samPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
         samKevers = dict()
@@ -268,7 +271,7 @@ def test_direct_mode_sam_eve_demo():
         assert samHab.iserder.dig == samSerder.dig
         assert samHab.pre == sam
 
-        samClient = clienting.Client(host='127.0.0.1', port=evePort)
+        samClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
         samClientDoer = doing.ClientDoer(client=samClient)
 
         samDirector = demoing.SamDirector(hab=samHab, client=samClient, tock=0.125)
@@ -301,7 +304,7 @@ def test_direct_mode_sam_eve_demo():
         assert eveHab.iserder.dig == eveSerder.dig
         assert eveHab.pre == eve
 
-        eveClient = clienting.Client(host='127.0.0.1', port=samPort)
+        eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=samPort)
         eveClientDoer = doing.ClientDoer(client=eveClient)
 
         eveDirector = demoing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
@@ -324,10 +327,6 @@ def test_direct_mode_sam_eve_demo():
         assert eveDirectant.hab == eveHab
         assert eveDirectant.server == eveServer
         # Eve's Reactants created on demand
-
-        limit = 1.0
-        tock = 0.03125
-        doist = doing.Doist(limit=limit, tock=tock)
 
         doers = [samClientDoer, samDirector, samReactor, samServerDoer, samDirectant,
                  eveClientDoer, eveDirector, eveReactor, eveServerDoer, eveDirectant]
@@ -363,6 +362,10 @@ def test_run_bob_eve_demo():
     """
     help.ogler.resetLevel(level=logging.DEBUG)
 
+    tock = 0.03125
+    expire =  2.5
+    doist = doing.Doist(limit=expire, tock=tock, real=True)
+
     name = "bob"
     remote = 5621
     local = 5620
@@ -381,9 +384,9 @@ def test_run_bob_eve_demo():
 
     # bobs is list of Doers
     bobs = demoing.setupDemoController(secrets=secrets,
-                                     name=name,
-                                     remotePort=remote,
-                                     localPort=local)
+                                       name=name,
+                                       remotePort=remote,
+                                       localPort=local)
 
     name = "eve"
     remote = 5620
@@ -401,18 +404,16 @@ def test_run_bob_eve_demo():
                 'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
 
     eves = demoing.setupDemoController(secrets=secrets,
-                                     name=name,
-                                     remotePort=remote,
-                                     localPort=local)
+                                       name=name,
+                                       remotePort=remote,
+                                       localPort=local)
 
     bobDoer = doing.DoDoer(doers=bobs)
     eveDoer = doing.DoDoer(doers=eves)
 
     # run components
-    tock = 0.03125
-    expire =  2.5
-    doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, bobDoer])
-    doist.do()
+    # doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, bobDoer])
+    doist.do(doers=[eveDoer, bobDoer])
 
     help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
@@ -423,6 +424,10 @@ def test_run_sam_eve_demo():
     Test demo setupController and run with DoDoers and Doist
     """
     help.ogler.resetLevel(level=logging.DEBUG)
+
+    tock = 0.03125
+    expire =  2.0
+    doist = doing.Doist(limit=expire, tock=tock, real=True)
 
     name = "sam"
     remote = 5621
@@ -442,9 +447,9 @@ def test_run_sam_eve_demo():
 
     # sams is list of Doers
     sams = demoing.setupDemoController(secrets=secrets,
-                                     name=name,
-                                     remotePort=remote,
-                                     localPort=local)
+                                       name=name,
+                                       remotePort=remote,
+                                       localPort=local)
 
     name = "eve"
     remote = 5620
@@ -462,18 +467,16 @@ def test_run_sam_eve_demo():
                 'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
 
     eves = demoing.setupDemoController(secrets=secrets,
-                                     name=name,
-                                     remotePort=remote,
-                                     localPort=local)
+                                       name=name,
+                                       remotePort=remote,
+                                       localPort=local)
 
     samDoer = doing.DoDoer(doers=sams)
     eveDoer = doing.DoDoer(doers=eves)
 
     # run components
-    tock = 0.03125
-    expire =  2.0
-    doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, samDoer])
-    doist.do()
+    # doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, samDoer])
+    doist.do(doers=[eveDoer, samDoer])
 
     help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""

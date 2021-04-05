@@ -30,12 +30,11 @@ def runDemo(name="eve", remote=5620, local=5621, expire=0.0):
                 'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
 
     doers = demoing.setupDemoController(secrets=secrets,
-                                      name=name,
-                                      remotePort=remote,
-                                      localPort=local)
+                                        name=name,
+                                        remotePort=remote,
+                                        localPort=local)
 
-    directing.runController(doers=doers, limit=expire)
-
+    directing.runController(doers=doers, expire=expire)
 
 
 

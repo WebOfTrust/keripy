@@ -32,11 +32,11 @@ def runDemo(name="sam", remote=5621, local=5620, expire=0.0):
                 ]
 
     doers = demoing.setupDemoController(secrets=secrets,
-                                      name=name,
-                                      remotePort=remote,
-                                      localPort=local)
+                                        name=name,
+                                        remotePort=remote,
+                                        localPort=local)
 
-    directing.runController(doers=doers, limit=expire)
+    directing.runController(doers=doers, expire=expire)
 
 
 

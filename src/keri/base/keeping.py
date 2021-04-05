@@ -580,14 +580,18 @@ class KeeperDoer(doing.Doer):
         .keeper is Keeper or LMDBer subclass
 
     Inherited Properties:
-        .tyme is float ._tymist.tyme, relative cycle or artificial time
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
         .tock is float, desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
     Properties:
 
     Methods:
-        .wind  injects ._tymist dependency
+        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
         .__call__ makes instance callable
             Appears as generator function that returns generator
         .do is generator method that returns generator
@@ -598,15 +602,13 @@ class KeeperDoer(doing.Doer):
         .abort is abort context method
 
     Hidden:
-       ._tymist is Tymist instance reference
-       ._tock is hidden attribute for .tock property
+        ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
+        ._tock is hidden attribute for .tock property
     """
 
     def __init__(self, keeper, **kwa):
         """
-        Inherited Parameters:
-           tymist is Tymist instance
-           tock is float seconds initial value of .tock
 
         Parameters:
            keeper is Keeper instance

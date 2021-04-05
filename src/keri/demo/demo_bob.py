@@ -19,7 +19,6 @@ def runDemo(name="bob", remote=5621, local=5620, expire=0.0):
     """
     Setup and run one demo controller for Bob
     """
-
     secrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
                 'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
@@ -32,11 +31,11 @@ def runDemo(name="bob", remote=5621, local=5620, expire=0.0):
                 ]
 
     doers = demoing.setupDemoController(secrets=secrets,
-                                      name=name,
-                                      remotePort=remote,
-                                      localPort=local)
+                                        name=name,
+                                        remotePort=remote,
+                                        localPort=local)
 
-    directing.runController(doers=doers, limit=expire)
+    directing.runController(doers=doers, expire=expire)
 
 
 

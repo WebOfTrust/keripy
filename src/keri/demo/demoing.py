@@ -35,7 +35,11 @@ class BobDirector(directing.Director):
     Attributes:
 
     Inherited Properties:
-        .tyme is float relative cycle time, .tyme is artificial time
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
         .tock is desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
@@ -48,20 +52,21 @@ class BobDirector(directing.Director):
     Methods:
 
     Hidden:
-       ._tymist is Tymist instance reference
+       ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
        ._tock is hidden attribute for .tock property
     """
 
-    def do(self, tymist, tock=0.0, **opts):
+    def do(self, tymth=None, tock=0.0, **opts):
         """
         Generator method to run this doer
         Calling this method returns generator
         """
         try:
             # enter context
-            self.wind(tymist)  # change tymist and dependencies
+            self.wind(tymth)  # change tymist dependencies
             self.tock = tock
-            tyme = self.tyme
+            # tyme = self.tyme
 
             # recur context
             tyme = (yield (self.tock))  # yields tock then waits for next send
@@ -133,7 +138,11 @@ class SamDirector(directing.Director):
     Attributes:
 
     Inherited Properties:
-        .tyme is float relative cycle time, .tyme is artificial time
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
         .tock is desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
@@ -146,20 +155,21 @@ class SamDirector(directing.Director):
     Methods:
 
     Hidden:
-       ._tymist is Tymist instance reference
+       ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
        ._tock is hidden attribute for .tock property
     """
 
-    def do(self, tymist, tock=0.0, **opts):
+    def do(self, tymth=None, tock=0.0, **opts):
         """
         Generator method to run this doer
         Calling this method returns generator
         """
         try:
             # enter context
-            self.wind(tymist)  # change tymist and dependencies
+            self.wind(tymth)  # change tymist and dependencies
             self.tock = tock
-            tyme = self.tyme
+            # tyme = self.tyme
 
             # recur context
             tyme = (yield (self.tock))  # yields tock then waits
@@ -254,7 +264,11 @@ class EveDirector(directing.Director):
     Attributes:
 
     Inherited Properties:
-        .tyme is float relative cycle time, .tyme is artificial time
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
         .tock is desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
@@ -267,20 +281,21 @@ class EveDirector(directing.Director):
     Methods:
 
     Hidden:
-       ._tymist is Tymist instance reference
+       ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
        ._tock is hidden attribute for .tock property
     """
 
-    def do(self, tymist, tock=0.0, **opts):
+    def do(self, tymth=None, tock=0.0, **opts):
         """
         Generator method to run this doer
         Calling this method returns generator
         """
         try:
             # enter context
-            self.wind(tymist)  # change tymist and dependencies
+            self.wind(tymth)  # change tymist and dependencies
             self.tock = tock
-            tyme = self.tyme
+            # tyme = self.tyme
 
             # recur context after first yield
             tyme = (yield (tock))
@@ -305,7 +320,7 @@ class EveDirector(directing.Director):
         return True  # return value of yield from, or yield ex.value of StopIteration
 
 
-def setupDemoController(secrets,  name="who", remotePort=5621, localPort=5620):
+def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620):
     """
     Setup and return doers list to run controller
     """
