@@ -18,8 +18,6 @@ def runDemo(name="eve", remote=5620, local=5621, expire=0.0):
     """
     Setup and run one demo controller for Eve
     """
-    tock = 0.03125
-    doist = doing.Doist(limit=expire, tock=tock, real=True)
 
     # set of secrets (seeds for private keys)
     secrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
@@ -36,7 +34,7 @@ def runDemo(name="eve", remote=5620, local=5621, expire=0.0):
                                         remotePort=remote,
                                         localPort=local)
 
-    doist.do(doers=doers)
+    directing.runController(doers=doers, expire=expire)
 
 
 

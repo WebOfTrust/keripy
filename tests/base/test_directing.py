@@ -216,8 +216,6 @@ def test_runcontroller_demo():
     remote = 5621
     local = 5620
     expire =  1.0
-    tock = 0.03125
-    doist = doing.Doist(limit=expire, tock=tock, real=True)
 
     secrets = [
                 'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
@@ -235,7 +233,7 @@ def test_runcontroller_demo():
                                         remotePort=remote,
                                         localPort=local)
 
-    doist.do(doers=doers)
+    directing.runController(doers=doers, expire=expire)
 
     help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
@@ -243,4 +241,4 @@ def test_runcontroller_demo():
 
 
 if __name__ == "__main__":
-    test_directing_basic()
+    test_runcontroller_demo()
