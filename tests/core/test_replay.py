@@ -31,7 +31,8 @@ def test_replay():
 
     with dbing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
          dbing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-         dbing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS:
+         dbing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS, \
+         dbing.openDB(name="art") as artDB, keeping.openKS(name="art") as artKS:
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
@@ -58,6 +59,15 @@ def test_replay():
         assert bevHab.ks == bevKS
         assert bevHab.db == bevDB
         assert not bevHab.kever.prefixer.transferable
+
+        # setup Art's habitat using default salt nonstransferable already incepts
+        # Art's receipts will be rcts with a receipt couple attached
+        sith = '1'  # hex str of threshold int
+        artHab = directing.Habitat(ks=artKS, db=artDB, sith=sith, count=1,
+                                   transferable=False, temp=True)
+        assert artHab.ks == artKS
+        assert artHab.db == artDB
+        assert not artHab.kever.prefixer.transferable
 
         # first setup disjoint replay then conjoint replay
         # Create series of event for Deb
@@ -435,6 +445,8 @@ def test_replay():
 
         assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 9032
 
+    assert not os.path.exists(artKS.path)
+    assert not os.path.exists(artDB.path)
     assert not os.path.exists(bevKS.path)
     assert not os.path.exists(bevDB.path)
     assert not os.path.exists(camKS.path)
