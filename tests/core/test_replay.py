@@ -331,54 +331,55 @@ def test_disjoint_replay():
         del msg[:len(counter.qb64b)]
         assert len(msg) == 1072 == 268 *  4
 
-        counter = coring.Counter(qb64b=msg)  # first seen replay couple counter
-        assert counter.code == coring.CtrDex.FirstSeenReplayCouples
-        assert counter.count == 1
-        del msg[:len(counter.qb64b)]
-        assert len(msg) == 1068
-
-        seqner = coring.Seqner(qb64b=msg)
-        assert seqner.sn == fn == 0
-        del msg[:len(seqner.qb64b)]
-        assert len(msg) == 1044  # 24 less
-
-        dater = coring.Dater(qb64b=msg)
-        assert (helping.fromIso8601(helping.nowIso8601()) -
-                helping.fromIso8601(dater.dts)) > datetime.timedelta()
-        del msg[:len(dater.qb64b)]
-        assert len(msg) == 1008  # 36 less
-
         counter = coring.Counter(qb64b=msg)  # indexed signatures counter
         assert counter.code == coring.CtrDex.ControllerIdxSigs
         assert counter.count == 3  #  multisig deb
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 1004
+        assert len(msg) == 1068
 
         for i in range(counter.count):  # parse signatures
             siger = coring.Siger(qb64b=msg)
             del msg[:len(siger.qb64b)]
-        assert len(msg) == 1004 - 3 * len(siger.qb64b) == 740
+        assert len(msg) == 1068 - 3 * len(siger.qb64b) == 804
 
         counter = coring.Counter(qb64b=msg)  # trans receipt (vrc) counter
         assert counter.code == coring.CtrDex.TransReceiptQuadruples
         assert counter.count == 3  #  multisig cam
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 736
+        assert len(msg) == 800
 
         for i in range(counter.count):  # parse receipt quadruples
             prefixer, seqner, diger, siger = eventing.dequadruple(msg, deletive=True)
-        assert len(msg) == 736 - 3 * (len(prefixer.qb64b) + len(seqner.qb64b) +
-                                len(diger.qb64b) + len(siger.qb64b)) == 136
+        assert len(msg) == 800 - 3 * (len(prefixer.qb64b) + len(seqner.qb64b) +
+                                len(diger.qb64b) + len(siger.qb64b)) == 200
 
         counter = coring.Counter(qb64b=msg)  # nontrans receipt (rct) counter
         assert counter.code == coring.CtrDex.NonTransReceiptCouples
         assert counter.count == 1  #  single sig bev
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 132
+        assert len(msg) == 196
 
         for i in range(counter.count):  # parse receipt couples
             prefixer, cigar = eventing.decouple(msg, deletive=True)
-        assert len(msg) == 132 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 0
+        assert len(msg) == 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
+
+        counter = coring.Counter(qb64b=msg)  # first seen replay couple counter
+        assert counter.code == coring.CtrDex.FirstSeenReplayCouples
+        assert counter.count == 1
+        del msg[:len(counter.qb64b)]
+        assert len(msg) == 60
+
+        seqner = coring.Seqner(qb64b=msg)
+        assert seqner.sn == fn == 0
+        del msg[:len(seqner.qb64b)]
+        assert len(msg) == 36  # 24 less
+
+        dater = coring.Dater(qb64b=msg)
+        assert (helping.fromIso8601(helping.nowIso8601()) -
+                helping.fromIso8601(dater.dts)) > datetime.timedelta()
+        del msg[:len(dater.qb64b)]
+        assert len(msg) == 0  # 36 less
+
 
         fn += 1
         cloner = debHab.db.cloneIter(pre=debHab.pre, fn=fn)  # create iterator not at 0

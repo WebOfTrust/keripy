@@ -1206,13 +1206,6 @@ class Baser(LMDBer):
                 raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
             msg.extend(raw)
 
-            # add first seen replay couple to attachments
-            atc.extend(coring.Counter(code=coring.CtrDex.FirstSeenReplayCouples,
-                                      count=1).qb64b)
-            atc.extend(coring.Seqner(sn=fn).qb64b)
-            if not (dts := self.getDts(key=dgkey)):
-                raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
-            atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
 
             #add signatures to attachments
             if not (sigs := self.getSigs(key=dgkey)):
@@ -1235,6 +1228,14 @@ class Baser(LMDBer):
                                                   count=len(coups)).qb64b)
                 for coup in coups:
                     atc.extend(coup)
+
+            # add first seen replay couple to attachments
+            atc.extend(coring.Counter(code=coring.CtrDex.FirstSeenReplayCouples,
+                                      count=1).qb64b)
+            atc.extend(coring.Seqner(sn=fn).qb64b)
+            if not (dts := self.getDts(key=dgkey)):
+                raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
+            atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
 
             # prepend pipelining counter to attachments
             if len(atc) % 4:
