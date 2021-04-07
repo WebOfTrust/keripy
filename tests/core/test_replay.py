@@ -18,9 +18,9 @@ from keri.core import coring, eventing
 logger = help.ogler.getLogger()
 
 
-def test_disjoint_replay():
+def test_replay():
     """
-    Test disjoint replay
+    Test disjoint and conjoint replay
 
     Deb creates series of events.
     Deb replays Deb's events to Cam and collects Cam's receipts
@@ -59,6 +59,7 @@ def test_disjoint_replay():
         assert bevHab.db == bevDB
         assert not bevHab.kever.prefixer.transferable
 
+        # first setup disjoint replay then conjoint replay
         # Create series of event for Deb
         debMsgs = bytearray()
         debMsgs.extend(debHab.makeOwnInception())
@@ -136,7 +137,7 @@ def test_disjoint_replay():
         assert camKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(camKevery.cues) == 7
 
-        # get receipts (vrcs) from Cam of Deb's events by processing Cam's cues
+        # get disjoints receipts (vrcs) from Cam of Deb's events by processing Cam's cues
         camMsgs = camHab.processCues(camKevery.cues)
         assert camMsgs == bytearray(b'{"v":"KERI10JSON000144_","i":"E_T2_p83_gRSuAYvGhqV3S0JzYEF2dIa-O'
                                     b'CPLbIhBO7Y","s":"0","t":"icp","kt":"2","k":["DaYh8uaASuDjMUd8_Bo'
@@ -219,7 +220,7 @@ def test_disjoint_replay():
         assert debKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
         assert len(debKevery.cues) == 1
 
-        # get receipts (vrcs) from Deb of Cam's events by processing Deb's cues
+        # get disjoints receipts (vrcs) from Deb of Cam's events by processing Deb's cues
         debCamVrcs = debHab.processCues(debKevery.cues)
         assert debCamVrcs == bytearray(b'{"v":"KERI10JSON000105_","i":"E_T2_p83_gRSuAYvGhqV3S0JzYEF2dIa-O'
                                     b'CPLbIhBO7Y","s":"0","t":"vrc","d":"EFSbLZkTmOMfRCyEYLgz53ARZougm'
@@ -231,7 +232,7 @@ def test_disjoint_replay():
                                     b'HbSgD7m9bWGB2ZCN8jxAfrbCMRGWersAEXqtdtkYT0Xxg33W61o5IffZjWxsHY_i'
                                     b'JQOPDVF3tA4DniWBg')
 
-        # Play debCamVrcs to Cam
+        # Play disjoints debCamVrcs to Cam
         camKevery.processOne(ims=bytearray(debCamVrcs))  # give copy to process
 
         # Play debMsgs to Bev
@@ -246,7 +247,7 @@ def test_disjoint_replay():
         assert bevKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(bevKevery.cues) == 7
 
-        # get receipts (rcts) from Bev of Deb's events by processing Bevs's cues
+        # get disjoints receipts (rcts) from Bev of Deb's events by processing Bevs's cues
         bevMsgs = bevHab.processCues(bevKevery.cues)
         assert bevMsgs == bytearray(b'{"v":"KERI10JSON0000ba_","i":"BaYh8uaASuDjMUd8_BoNyQs3GwupzmJL8_'
                                     b'RBsuNtZHQg","s":"0","t":"icp","kt":"1","k":["BaYh8uaASuDjMUd8_Bo'
@@ -291,7 +292,7 @@ def test_disjoint_replay():
         assert debKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
         assert len(debKevery.cues) == 1
 
-        # get receipts (vrcs) from Deb of Bev's events by processing Deb's cues
+        # get disjoints receipts (vrcs) from Deb of Bev's events by processing Deb's cues
         debBevVrcs = debHab.processCues(debKevery.cues)
         assert debBevVrcs == bytearray(b'{"v":"KERI10JSON000105_","i":"BaYh8uaASuDjMUd8_BoNyQs3GwupzmJL8_'
                                         b'RBsuNtZHQg","s":"0","t":"vrc","d":"EtTEz3ofbRmq4qeoKSc5uYWUhxeZa'
@@ -304,8 +305,10 @@ def test_disjoint_replay():
                                         b'K5TQKbTKbQ9F9TcAg')
 
 
-        # Play debBevVrcs to Bev
+        # Play disjoints debBevVrcs to Bev
         bevKevery.processOne(ims=bytearray(debBevVrcs))  # give copy to process
+
+        # now setup conjoint replay
 
         # Replay Deb's First Seen Events with receipts (vrcs and rcts) from both Cam and Bev
         # datetime is different in each run in the fse attachment in clone replay
@@ -443,4 +446,4 @@ def test_disjoint_replay():
 
 
 if __name__ == "__main__":
-    test_disjoint_replay()
+    test_replay()
