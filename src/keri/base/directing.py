@@ -698,7 +698,7 @@ class Reactor(doing.DoDoer):
         logger.info("%s sent %s:\n%s\n\n", self.hab.pre, label, bytes(msg))
 
 
-class Directant(doing.Doer):
+class OldDirectant(doing.Doer):
     """
     Direct Mode KERI Directant (Contextor, Doer) class with TCP Server
     Logic is to respond to initiated events by remote Director by running
@@ -848,7 +848,7 @@ class Directant(doing.Doer):
 
 
 
-class Reactant(tyming.Tymee):
+class OldReactant(tyming.Tymee):
     """
     Direct Mode KERI Reactant (Contextor) class with TCP Remoter and Kevery
     Purpose is to react to received events from remote Director with receipts/events
@@ -910,7 +910,7 @@ class Reactant(tyming.Tymee):
 
 
 
-class NewDirectant(doing.DoDoer):
+class Directant(doing.DoDoer):
     """
     Directant class with TCP Server.
     Responds to initiated connections from a remote Director by creating and
@@ -1053,7 +1053,7 @@ class NewDirectant(doing.DoDoer):
             del self.rants[ca]
 
 
-class NewReactant(doing.DoDoer):
+class Reactant(doing.DoDoer):
     """
     Reactant Subclass of DoDoer with doers list from do generator methods:
         .msgDo, .cueDo, and .escrowDo.
@@ -1136,9 +1136,9 @@ class NewReactant(doing.DoDoer):
                                       local=False)
         doers = doers if doers is not None else []
         doers.extend([self.msgDo, self.cueDo, self.escrowDo])
-        super(Reactor, self).__init__(doers=doers, **kwa)
+        super(Reactant, self).__init__(doers=doers, **kwa)
         if self.tymth:
-            self.client.wind(self.tymth)
+            self.remoter.wind(self.tymth)
 
 
     def wind(self, tymth):
@@ -1146,7 +1146,7 @@ class NewReactant(doing.DoDoer):
         Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
         Updates winds .tymer .tymth
         """
-        super(Reactor, self).wind(tymth)
+        super(Reactant, self).wind(tymth)
         self.remoter.wind(tymth)
 
 
