@@ -578,7 +578,7 @@ class Reactor(doing.DoDoer):
         Inherited Parameters:
             tymist is  Tymist instance
             tock is float seconds initial value of .tock
-            doers is list of doers (do generator instancs or functions)
+            doers is list of doers (do generator instances, functions or methods)
 
         Parameters:
             hab is Habitat instance of local controller's context
@@ -875,7 +875,7 @@ class Reactant(tyming.Tymee):
 
     """
 
-    def __init__(self, hab, remoter,  persistent=True, **kwa):
+    def __init__(self, hab, remoter, persistent=True, **kwa):
         """
         Initialize instance.
 
@@ -885,6 +885,7 @@ class Reactant(tyming.Tymee):
         Parameters:
             hab is Habitat instance of local controller's context
             remoter is TCP Remoter instance
+            persistent is Boolean True means keep open connection
         """
         super(Reactant, self).__init__(**kwa)
         self.hab = hab
@@ -908,25 +909,343 @@ class Reactant(tyming.Tymee):
                     self.hab.pre, label, bytes(msg))
 
 
-    def sendOwnEvent(self, sn):
+
+class NewDirectant(doing.DoDoer):
+    """
+    Directant class with TCP Server.
+    Responds to initiated connections from a remote Director by creating and
+    running a Reactant per connection. Each Reactant has TCP remoter.
+
+    Directant Subclass of DoDoer with doers list from do generator methods:
+        .serviceDo
+
+    Enables continuous scheduling of doers (do generator instances or functions)
+
+    Implements Doist like functionality to allow nested scheduling of doers.
+    Each DoDoer runs a list of doers like a Doist but using the tyme from its
+       injected tymist as injected by its parent DoDoer or Doist.
+
+    Scheduling hierarchy: Doist->DoDoer...->DoDoer->Doers
+
+    Inherited Attributes:
+        .done is Boolean completion state:
+            True means completed
+            Otherwise incomplete. Incompletion maybe due to close or abort.
+        .opts is dict of injected options for its generator .do
+        .doers is list of Doers or Doer like generator functions
+
+    Attributes:
+        .hab is Habitat instance of local controller's context
+        .server is TCP client instance. Assumes operated by another doer.
+        .rants is dict of Reactants indexed by connection address
+
+    Inherited Properties:
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
+        .tock is desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Inherited Methods:
+        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+        .__call__ makes instance callable
+            Appears as generator function that returns generator
+        .do is generator method that returns generator
+        .enter is enter context action method
+        .recur is recur context action method or generator method
+        .clean is clean context action method
+        .exit is exit context method
+        .close is close context method
+        .abort is abort context method
+
+    Methods:
+
+    Hidden:
+       ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
+       ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, hab, server, doers=None, **kwa):
         """
-        Utility to send own event at sequence number sn
+        Initialize instance.
+
+        Inherited Parameters:
+            tymist is  Tymist instance
+            tock is float seconds initial value of .tock
+
+        Parameters:
+            hab is Habitat instance of local controller's context
+            server is TCP Server instance
         """
-        msg = self.hab.makeOwnEvent(sn=sn)
-        # send to connected remote
-        self.remoter.tx(msg)
-        logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+        self.hab = hab
+        self.server = server  # use server for cx
+        self.rants = dict()
+        doers = doers if doers is not None else []
+        doers.extend([self.serviceDo])
+        super(Directant, self).__init__(doers=doers, **kwa)
+        if self.tymth:
+            self.server.wind(self.tymth)
 
 
-    def sendOwnInception(self):
+    def wind(self, tymth):
         """
-        Utility to send own inception on client
+        Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
+        Updates winds .tymer .tymth
         """
-        self.sendOwnEvent(sn=0)
+        super(Directant, self).wind(tymth)
+        self.server.wind(tymth)
+
+
+    @doing.doize()
+    def serviceDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns Doist compatibile generator method (doer dog) to service
+            connections on .server. Creates remoter and rant (Reactant) for each
+            open connection and adds rant to running doers.
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+
+        Usage:
+            add to doers list
+        """
+        while True:
+            for ca, ix in list(self.server.ixes.items()):
+                if ix.cutoff:
+                    self.closeConnection(ca)
+                    continue
+
+                if ca not in self.rants:  # create Reactant and extend doers with it
+                    rant = Reactant(tymth=self.tymth, hab=self.hab, remoter=ix)
+                    self.rants[ca] = rant
+                    # add Reactant (rant) doer to running doers
+                    self.extend(doers=[rant])  # open and run rant as doer
+
+                if ix.timeout > 0.0 and ix.tymer.expired:
+                    self.closeConnection(ca)  # also removes rant
+
+            yield
+        return False  # should never get here
+
+    def closeConnection(self, ca):
+        """
+        Close and remove connection given by ca and remove associated rant at ca.
+        """
+        if ca in self.server.ixes:  # remoter still there
+            self.server.ixes[ca].serviceSends()  # send final bytes to socket
+        self.server.removeIx(ca)
+        if ca in self.rants:  # remove rant (Reactant) if any
+            self.remove([self.rants[ca]])  # close and remove rant from doers list
+            del self.rants[ca]
+
+
+class NewReactant(doing.DoDoer):
+    """
+    Reactant Subclass of DoDoer with doers list from do generator methods:
+        .msgDo, .cueDo, and .escrowDo.
+    Enables continuous scheduling of doers (do generator instances or functions)
+
+    Implements Doist like functionality to allow nested scheduling of doers.
+    Each DoDoer runs a list of doers like a Doist but using the tyme from its
+       injected tymist as injected by its parent DoDoer or Doist.
+
+    Scheduling hierarchy: Doist->DoDoer...->DoDoer->Doers
+
+    Attributes:
+        .hab is Habitat instance of local controller's context
+        .kevery is Kevery instance
+        .remoter is TCP Remoter instance for connection from remote TCP client.
+
+    Inherited Attributes:
+        .done is Boolean completion state:
+            True means completed
+            Otherwise incomplete. Incompletion maybe due to close or abort.
+        .opts is dict of injected options for its generator .do
+        .doers is list of Doers or Doer like generator functions
+
+
+    Inherited Properties:
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
+        .tock is float, desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Inherited Methods:
+        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+        .__call__ makes instance callable
+            Appears as generator function that returns generator
+        .do is generator method that returns generator
+        .enter is enter context action method
+        .recur is recur context action method or generator method
+        .clean is clean context action method
+        .exit is exit context method
+        .close is close context method
+        .abort is abort context method
+
+    Overidden Methods:
+
+    Hidden:
+       ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
+       ._tock is hidden attribute for .tock property
+
+    """
+
+    def __init__(self, hab, remoter, doers=None, **kwa):
+        """
+        Initialize instance.
+
+        Inherited Parameters:
+            tymist is  Tymist instance
+            tock is float seconds initial value of .tock
+            doers is list of doers (do generator instancs or functions)
+
+        Parameters:
+            hab is Habitat instance of local controller's context
+            remoter is TCP Remoter instance
+            doers is list of doers (do generator instances, functions or methods)
+
+        """
+        self.hab = hab
+        self.remoter = remoter  # use remoter for both rx and tx
+        #  neeeds unique kevery with ims per remoter connnection
+        self.kevery = eventing.Kevery(ims=self.remoter.rxbs,
+                                      kevers=self.hab.kevers,
+                                      db=self.hab.db,
+                                      framed=True,
+                                      pre=self.hab.pre,
+                                      local=False)
+        doers = doers if doers is not None else []
+        doers.extend([self.msgDo, self.cueDo, self.escrowDo])
+        super(Reactor, self).__init__(doers=doers, **kwa)
+        if self.tymth:
+            self.client.wind(self.tymth)
+
+
+    def wind(self, tymth):
+        """
+        Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
+        Updates winds .tymer .tymth
+        """
+        super(Reactor, self).wind(tymth)
+        self.remoter.wind(tymth)
+
+
+    @doing.doize()
+    def msgDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns Doist compatibile generator method (doer dog) to process
+            incoming message stream of .kevery
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+
+        Usage:
+            add to doers list
+        """
+        if self.kevery.ims:
+            logger.info("Server %s: %s received:\n%s\n...\n", self.hab.name,
+                        self.hab.pre, self.kevery.ims[:1024])
+        done = yield from self.kevery.processor()  # process messages continuously
+        return done  # should nover get here except forced close
+
+
+    @doing.doize()
+    def cueDo(self, tymth=None, tock=0.0, **opts):
+        """
+         Returns Doist compatibile generator method (doer dog) to process
+            .kevery.cues deque
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        Usage:
+            add to doers list
+        """
+        while True:
+            for msg in self.hab.processCuesIter(self.kevery.cues):
+                self.sendMessage(msg, label="chit or receipt")
+                yield  # throttle just do one cue at a time
+            yield
+        return False  # should never get here except forced close
+
+
+    @doing.doize()
+    def escrowDo(self, tymth=None, tock=0.0, **opts):
+        """
+         Returns Doist compatibile generator method (doer dog) to process
+            .kevery escrows.
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        Usage:
+            add to doers list
+        """
+        while True:
+            self.kevery.processEscrows()
+            yield
+        return False  # should never get here except forced close
+
+
+
+    def sendMessage(self, msg, label=""):
+        """
+        Sends message msg and loggers label if any
+        """
+        self.remoter.tx(msg)  # send to remote
+        logger.info("Server %s: %s sent %s:\n%s\n\n", self.hab.name,
+                    self.hab.pre, label, bytes(msg))
+
 
 
 def runController(doers, expire=0.0):
     """
+    Utiitity Function to create doist to run doers
     """
     tock = 0.03125
     doist = doing.Doist(limit=expire, tock=tock, real=True)
