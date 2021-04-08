@@ -362,7 +362,7 @@ def test_replay():
         assert len(msg) == 800
 
         for i in range(counter.count):  # parse receipt quadruples
-            prefixer, seqner, diger, siger = eventing.dequadruple(msg, deletive=True)
+            prefixer, seqner, diger, siger = eventing.deTransReceiptQuadruple(msg, strip=True)
         assert len(msg) == 800 - 3 * (len(prefixer.qb64b) + len(seqner.qb64b) +
                                 len(diger.qb64b) + len(siger.qb64b)) == 200
 
@@ -373,7 +373,7 @@ def test_replay():
         assert len(msg) == 196
 
         for i in range(counter.count):  # parse receipt couples
-            prefixer, cigar = eventing.decouple(msg, deletive=True)
+            prefixer, cigar = eventing.deReceiptCouple(msg, strip=True)
         assert len(msg) == 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
 
         counter = coring.Counter(qb64b=msg)  # first seen replay couple counter

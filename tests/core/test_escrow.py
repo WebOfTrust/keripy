@@ -810,11 +810,11 @@ def test_unverified_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         escrows = kvy.db.getUres(dbing.snKey(pre, 0))  # so escrowed receipts
         assert len(escrows) == 2
-        diger, prefixer, cigar = eventing.detriple(escrows[0])
+        diger, prefixer, cigar = eventing.deReceiptTriple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit0pre
         assert cigar.qb64 == wit0Cigar.qb64
-        diger, prefixer, cigar = eventing.detriple(escrows[1])
+        diger, prefixer, cigar = eventing.deReceiptTriple(escrows[1])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit1pre
         assert cigar.qb64 == wit1Cigar.qb64
@@ -856,11 +856,11 @@ def test_unverified_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         escrows = kvy.db.getUres(dbing.snKey(pre, 1))  # so escrowed receipts
         assert len(escrows) == 2
-        diger, prefixer, cigar = eventing.detriple(escrows[0])
+        diger, prefixer, cigar = eventing.deReceiptTriple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit0pre
         assert cigar.qb64 == wit0Cigar.qb64
-        diger, prefixer, cigar = eventing.detriple(escrows[1])
+        diger, prefixer, cigar = eventing.deReceiptTriple(escrows[1])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit1pre
         assert cigar.qb64 == wit1Cigar.qb64
@@ -917,11 +917,11 @@ def test_unverified_receipt_escrow():
         assert pre not in kvy.kevers  # no events yet for pre
         escrows = kvy.db.getUres(dbing.snKey(pre, 2))  # so escrowed receipts
         assert len(escrows) == 2
-        diger, prefixer, cigar = eventing.detriple(escrows[0])
+        diger, prefixer, cigar = eventing.deReceiptTriple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit0pre
         assert cigar.qb64 == wit0Cigar.qb64
-        diger, prefixer, cigar = eventing.detriple(escrows[1])
+        diger, prefixer, cigar = eventing.deReceiptTriple(escrows[1])
         assert diger.qb64 == srdr.dig
         assert prefixer.qb64 == wit1pre
         assert cigar.qb64 == wit1Cigar.qb64
@@ -982,21 +982,21 @@ def test_unverified_receipt_escrow():
         # verify receipts
         receipts = kvy.db.getRcts(dbing.dgKey(pre, icpdig))
         assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.decouple(receipts[0])
+        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[0])
         assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.decouple(receipts[1])
+        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
         assert rctPrefixer.qb64 == wit1pre
         receipts = kvy.db.getRcts(dbing.dgKey(pre, ixndig))
         assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.decouple(receipts[0])
+        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[0])
         assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.decouple(receipts[1])
+        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
         assert rctPrefixer.qb64 == wit1pre
         receipts = kvy.db.getRcts(dbing.dgKey(pre, rotdig))
         assert len(receipts) == 2
-        rctPrefixer, rctCigar = eventing.decouple(receipts[0])
+        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[0])
         assert rctPrefixer.qb64 == wit0pre
-        rctPrefixer, rctCigar = eventing.decouple(receipts[1])
+        rctPrefixer, rctCigar = eventing.deReceiptCouple(receipts[1])
         assert rctPrefixer.qb64 == wit1pre
 
 
@@ -1103,7 +1103,7 @@ def test_unverified_trans_receipt_escrow():
 
         escrows = kvy.db.getVres(dbing.snKey(pre, 0))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.dequintuple(escrows[0])
+        diger, sprefixer, sseqner, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert sprefixer.qb64 == rpre
         assert sseqner.sn == 0
@@ -1178,7 +1178,7 @@ def test_unverified_trans_receipt_escrow():
 
         escrows = kvy.db.getVres(dbing.snKey(pre, 1))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.dequintuple(escrows[0])
+        diger, sprefixer, sseqner, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert sprefixer.qb64 == rpre
         assert sseqner.sn == 1
@@ -1242,7 +1242,7 @@ def test_unverified_trans_receipt_escrow():
 
         escrows = kvy.db.getVres(dbing.snKey(pre, 2))  # so escrowed receipts
         assert len(escrows) == 3
-        diger, sprefixer, sseqner, sdiger, siger = eventing.dequintuple(escrows[0])
+        diger, sprefixer, sseqner, sdiger, siger = eventing.deTransReceiptQuintuple(escrows[0])
         assert diger.qb64 == srdr.dig
         assert sprefixer.qb64 == rpre
         assert sseqner.sn == 1
@@ -1332,21 +1332,21 @@ def test_unverified_trans_receipt_escrow():
         # verify receipts
         receipts = kvy.db.getVrcs(dbing.dgKey(pre, icpdig))
         assert len(receipts) == 3
-        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadruple(receipts[0])
+        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.deTransReceiptQuadruple(receipts[0])
         assert rctPrefixer.qb64 == rpre
         assert rctSeqner.sn == 0
         assert rctDiger.qb64 == ricpdig
 
         receipts = kvy.db.getVrcs(dbing.dgKey(pre, ixndig))
         assert len(receipts) == 3
-        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadruple(receipts[0])
+        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.deTransReceiptQuadruple(receipts[0])
         assert rctPrefixer.qb64 == rpre
         assert rctSeqner.sn == 1
         assert rctDiger.qb64 == rrotdig
 
         receipts = kvy.db.getVrcs(dbing.dgKey(pre, rotdig))
         assert len(receipts) == 3
-        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.dequadruple(receipts[0])
+        rctPrefixer, rctSeqner, rctDiger, rctSiger = eventing.deTransReceiptQuadruple(receipts[0])
         assert rctPrefixer.qb64 == rpre
         assert rctSeqner.sn == 1
         assert rctDiger.qb64 == rrotdig

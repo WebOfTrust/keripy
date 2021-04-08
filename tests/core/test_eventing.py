@@ -21,7 +21,7 @@ from keri.core.coring import Salter, Serder, Siger, Cigar
 from keri.core.coring import Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc, Serials, Versify
-from keri.core.eventing import decouple, detriple, dequadruple, dequintuple
+from keri.core.eventing import deReceiptCouple, deReceiptTriple, deTransReceiptQuadruple, deTransReceiptQuintuple
 from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
                                 delcept, deltate, messagize, receiptize)
@@ -36,9 +36,9 @@ logger = help.ogler.getLogger()
 
 
 
-def test_decouple():
+def test_dereceiptcouple():
     """
-    test decouple function
+    test deReceiptCouple function
     """
     pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
     sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
@@ -47,61 +47,62 @@ def test_decouple():
 
     # str
     couple = pre + sig
-    prefixer, cigar = decouple(couple)
+    assert len(couple) == 132
+    prefixer, cigar = deReceiptCouple(couple)
     assert prefixer.qb64 == pre
     assert cigar.qb64 == sig
-    assert len(couple) == 132
+    assert len(couple) == 132  # not strip delete
 
     # bytes
     couple = preb + sigb
-    prefixer, cigar = decouple(couple)
+    assert len(couple) == 132
+    prefixer, cigar = deReceiptCouple(couple)
     assert prefixer.qb64b == preb
     assert cigar.qb64b == sigb
-    assert len(couple) == 132
+    assert len(couple) == 132  # not strip delete
 
     # memoryview
     couple = memoryview(couple)
-    prefixer, cigar = decouple(couple)
+    assert len(couple) == 132
+    prefixer, cigar = deReceiptCouple(couple)
     assert prefixer.qb64b == preb
     assert cigar.qb64b == sigb
-    assert len(couple) == 132
+    assert len(couple) == 132  # not strip delete
 
     # bytearray
     couple = bytearray(couple)
-    prefixer, cigar = decouple(couple)
+    assert len(couple) == 132
+    prefixer, cigar = deReceiptCouple(couple)
     assert prefixer.qb64b == preb
     assert cigar.qb64b == sigb
-    assert len(couple) == 132
+    assert len(couple) == 132  # not strip delete
 
-    # test deletive
+    # test strip delete
     # str
     couple = pre + sig
     assert len(couple) == 132
-    prefixer, cigar = decouple(couple, deletive=True)
-    assert prefixer.qb64 == pre
-    assert cigar.qb64 == sig
-    assert len(couple) == 132  # copy so no delete
+    with pytest.raises(TypeError):  # immutable str so no delete
+        prefixer, cigar = deReceiptCouple(couple, strip=True)
+    assert len(couple) == 132  # immutable so no delete
 
     # bytes
     couple = preb + sigb
-    prefixer, cigar = decouple(couple, deletive=True)
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
-    assert len(couple) == 132  # copy so no delete
+    with pytest.raises(TypeError):  # immutable bytes so no delete
+        prefixer, cigar = deReceiptCouple(couple, strip=True)
+    assert len(couple) == 132  # immutable so no delete
 
     # memoryview
     couple = memoryview(couple)
-    prefixer, cigar = decouple(couple, deletive=True)
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
-    assert len(couple) == 132  # copy so no delete
+    with pytest.raises(TypeError):  # memoryview converted to bytes so no delete
+        prefixer, cigar = deReceiptCouple(couple, strip=True)
+    assert len(couple) == 132  # immutable so no delete
 
     # bytearray
     couple = bytearray(couple)
-    prefixer, cigar = decouple(couple, deletive=True)
+    prefixer, cigar = deReceiptCouple(couple, strip=True)
     assert prefixer.qb64b == preb
     assert cigar.qb64b == sigb
-    assert len(couple) == 0  # not copy when bytearray so delete
+    assert len(couple) == 0  # bytearray mutable so strip delete succeeds
 
     """end test"""
 
@@ -120,7 +121,7 @@ def test_detriple():
 
     # str
     triple = dig + pre + sig
-    diger, prefixer, cigar = detriple(triple)
+    diger, prefixer, cigar = deReceiptTriple(triple)
     assert diger.qb64 == dig
     assert prefixer.qb64 == pre
     assert cigar.qb64 == sig
@@ -128,7 +129,7 @@ def test_detriple():
 
     # bytes
     triple = digb + preb + sigb
-    diger, prefixer, cigar = detriple(triple)
+    diger, prefixer, cigar = deReceiptTriple(triple)
     assert diger.qb64b == digb
     assert prefixer.qb64b == preb
     assert cigar.qb64b == sigb
@@ -136,7 +137,7 @@ def test_detriple():
 
     # memoryview
     triple = memoryview(triple)
-    diger, prefixer, cigar = detriple(triple)
+    diger, prefixer, cigar = deReceiptTriple(triple)
     assert diger.qb64b == digb
     assert prefixer.qb64b == preb
     assert cigar.qb64b == sigb
@@ -144,44 +145,42 @@ def test_detriple():
 
     # bytearray
     triple = bytearray(triple)
-    diger, prefixer, cigar = detriple(triple)
+    diger, prefixer, cigar = deReceiptTriple(triple)
     assert diger.qb64b == digb
     assert prefixer.qb64b == preb
     assert cigar.qb64b == sigb
     assert len(triple) == 176
 
-    # test deletive
-    # str
+    # test strip delete
+    # str converts to bytes
     triple = dig + pre + sig
-    diger, prefixer, cigar = detriple(triple, deletive=True)
-    assert diger.qb64 == dig
-    assert prefixer.qb64 == pre
-    assert cigar.qb64 == sig
     assert len(triple) == 176
+    with pytest.raises(TypeError):
+        diger, prefixer, cigar = deReceiptTriple(triple, strip=True)
+    assert len(triple) == 176  # immutable so no strip delete
 
     # bytes
     triple = digb + preb + sigb
-    diger, prefixer, cigar = detriple(triple, deletive=True)
-    assert diger.qb64b == digb
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
     assert len(triple) == 176
+    with pytest.raises(TypeError):
+        diger, prefixer, cigar = deReceiptTriple(triple, strip=True)
+    assert len(triple) == 176   # immutable so no strip delete
 
-    # memoryview
+    # memoryview converts to bytes
     triple = memoryview(triple)
-    diger, prefixer, cigar = detriple(triple, deletive=True)
-    assert diger.qb64b == digb
-    assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
     assert len(triple) == 176
+    with pytest.raises(TypeError):
+        diger, prefixer, cigar = deReceiptTriple(triple, strip=True)
+    assert len(triple) == 176   # immutable so no strip delete
 
     # bytearray
     triple = bytearray(triple)
-    diger, prefixer, cigar = detriple(triple, deletive=True)
+    assert len(triple) == 176
+    diger, prefixer, cigar = deReceiptTriple(triple, strip=True)
     assert diger.qb64b == digb
     assert prefixer.qb64b == preb
     assert cigar.qb64b == sigb
-    assert len(triple) == 0
+    assert len(triple) == 0   # mutable so strip delete
 
     """end test"""
 
@@ -201,7 +200,7 @@ def test_dequadruple():
 
     #str
     quadruple = spre + ssnu + sdig + sig
-    sprefixer, sseqner, sdiger, siger = dequadruple(quadruple)
+    sprefixer, sseqner, sdiger, siger = deTransReceiptQuadruple(quadruple)
     assert sprefixer.qb64 == spre
     assert sseqner.qb64 == ssnu
     assert sdiger.qb64 == sdig
@@ -210,7 +209,7 @@ def test_dequadruple():
 
     # bytes
     quadruple = spreb + ssnub + sdigb + sigb
-    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple)
+    sprefixer, sseqner, sdiger, sigar = deTransReceiptQuadruple(quadruple)
     assert sprefixer.qb64b == spreb
     assert sseqner.qb64b == ssnub
     assert sdiger.qb64b == sdigb
@@ -219,7 +218,7 @@ def test_dequadruple():
 
     # memoryview
     quadruple = memoryview(quadruple)
-    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple)
+    sprefixer, sseqner, sdiger, sigar = deTransReceiptQuadruple(quadruple)
     assert sprefixer.qb64b == spreb
     assert sseqner.qb64b == ssnub
     assert sdiger.qb64b == sdigb
@@ -228,49 +227,44 @@ def test_dequadruple():
 
     # bytearray
     quadruple = bytearray(quadruple)
-    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple)
+    sprefixer, sseqner, sdiger, sigar = deTransReceiptQuadruple(quadruple)
     assert sprefixer.qb64b == spreb
     assert sseqner.qb64b == ssnub
     assert sdiger.qb64b == sdigb
     assert siger.qb64b == sigb
     assert len(quadruple) == 200
 
-    # test deletive
-    #str
+    # test strip delete
+    # str converts to bytes
     quadruple = spre + ssnu + sdig + sig
-    sprefixer, sseqner, sdiger, siger = dequadruple(quadruple, deletive=True)
-    assert sprefixer.qb64 == spre
-    assert sseqner.qb64 == ssnu
-    assert sdiger.qb64 == sdig
-    assert siger.qb64 == sig
     assert len(quadruple) == 200
+    with pytest.raises(TypeError):  # immutable so no strip delete
+        sprefixer, sseqner, sdiger, siger = deTransReceiptQuadruple(quadruple, strip=True)
+    assert len(quadruple) == 200  # immutable so no strip delete
 
     # bytes
     quadruple = spreb + ssnub + sdigb + sigb
-    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple, deletive=True)
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
     assert len(quadruple) == 200
+    with pytest.raises(TypeError):  # immutable so no strip delete
+        sprefixer, sseqner, sdiger, siger = deTransReceiptQuadruple(quadruple, strip=True)
+    assert len(quadruple) == 200  # immutable so no strip delete
 
-    # memoryview
+    # memoryview converts to bytes
     quadruple = memoryview(quadruple)
-    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple, deletive=True)
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
     assert len(quadruple) == 200
+    with pytest.raises(TypeError):  # immutable so no strip delete
+        sprefixer, sseqner, sdiger, siger = deTransReceiptQuadruple(quadruple, strip=True)
+    assert len(quadruple) == 200  # immutable so no strip delete
 
     # bytearray
     quadruple = bytearray(quadruple)
-    sprefixer, sseqner, sdiger, sigar = dequadruple(quadruple, deletive=True)
+    assert len(quadruple) == 200
+    sprefixer, sseqner, sdiger, sigar = deTransReceiptQuadruple(quadruple, strip=True)
     assert sprefixer.qb64b == spreb
     assert sseqner.qb64b == ssnub
     assert sdiger.qb64b == sdigb
     assert siger.qb64b == sigb
-    assert len(quadruple) == 0
+    assert len(quadruple) == 0  # mutable so strip delete
 
     """end test"""
 
@@ -294,7 +288,7 @@ def test_dequintuple():
     #str
     sealet = spre + ssnu + sdig
     quintuple = edig + sealet + sig
-    ediger, sprefixer, sseqner, sdiger, siger = dequintuple(quintuple)
+    ediger, sprefixer, sseqner, sdiger, siger = deTransReceiptQuintuple(quintuple)
     assert ediger.qb64 == edig
     assert sprefixer.qb64 == spre
     assert sseqner.qb64 == ssnu
@@ -304,7 +298,7 @@ def test_dequintuple():
 
     # bytes
     quintuple = edigb + spreb + ssnub + sdigb + sigb
-    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple)
+    ediger, sprefixer, sseqner, sdiger, sigar = deTransReceiptQuintuple(quintuple)
     assert ediger.qb64b == edigb
     assert sprefixer.qb64b == spreb
     assert sseqner.qb64b == ssnub
@@ -314,7 +308,7 @@ def test_dequintuple():
 
     # memoryview
     quintuple = memoryview(quintuple)
-    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple)
+    ediger, sprefixer, sseqner, sdiger, sigar = deTransReceiptQuintuple(quintuple)
     assert ediger.qb64b == edigb
     assert sprefixer.qb64b == spreb
     assert sseqner.qb64b == ssnub
@@ -324,7 +318,7 @@ def test_dequintuple():
 
     # bytearray
     quintuple = bytearray(quintuple)
-    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple)
+    ediger, sprefixer, sseqner, sdiger, sigar = deTransReceiptQuintuple(quintuple)
     assert ediger.qb64b == edigb
     assert sprefixer.qb64b == spreb
     assert sseqner.qb64b == ssnub
@@ -333,46 +327,38 @@ def test_dequintuple():
     assert len(quintuple) == 244
 
     # test deletive
-    #str
+    # str converts to bytes
     sealet = spre + ssnu + sdig
     quintuple = edig + sealet + sig
-    ediger, sprefixer, sseqner, sdiger, siger = dequintuple(quintuple, deletive=True)
-    assert ediger.qb64 == edig
-    assert sprefixer.qb64 == spre
-    assert sseqner.qb64 == ssnu
-    assert sdiger.qb64 == sdig
-    assert siger.qb64 == sig
     assert len(quintuple) == 244
+    with pytest.raises(TypeError):
+        ediger, sprefixer, sseqner, sdiger, siger = deTransReceiptQuintuple(quintuple, strip=True)
+    assert len(quintuple) == 244  # immutable so no strip delete
 
     # bytes
     quintuple = edigb + spreb + ssnub + sdigb + sigb
-    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple, deletive=True)
-    assert ediger.qb64b == edigb
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
     assert len(quintuple) == 244
+    with pytest.raises(TypeError):
+        ediger, sprefixer, sseqner, sdiger, siger = deTransReceiptQuintuple(quintuple, strip=True)
+    assert len(quintuple) == 244  # immutable so no strip delete
 
-    # memoryview
+    # memoryview converts to bytes
     quintuple = memoryview(quintuple)
-    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple, deletive=True)
-    assert ediger.qb64b == edigb
-    assert sprefixer.qb64b == spreb
-    assert sseqner.qb64b == ssnub
-    assert sdiger.qb64b == sdigb
-    assert siger.qb64b == sigb
     assert len(quintuple) == 244
+    with pytest.raises(TypeError):
+        ediger, sprefixer, sseqner, sdiger, siger = deTransReceiptQuintuple(quintuple, strip=True)
+    assert len(quintuple) == 244 # immutable so no strip delete
 
     # bytearray
     quintuple = bytearray(quintuple)
-    ediger, sprefixer, sseqner, sdiger, sigar = dequintuple(quintuple, deletive=True)
+    assert len(quintuple) == 244
+    ediger, sprefixer, sseqner, sdiger, sigar = deTransReceiptQuintuple(quintuple, strip=True)
     assert ediger.qb64b == edigb
     assert sprefixer.qb64b == spreb
     assert sseqner.qb64b == ssnub
     assert sdiger.qb64b == sdigb
     assert siger.qb64b == sigb
-    assert len(quintuple) == 0
+    assert len(quintuple) == 0  # mutable so strip delete
 
     """end test"""
 
@@ -3439,4 +3425,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_kevery()
+    test_dereceiptcouple()
