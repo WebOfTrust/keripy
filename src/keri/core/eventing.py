@@ -1959,6 +1959,10 @@ class Kevery:
 
         sigers = []  # list of Siger instances for attached indexed signatures
         cigars = []  # List of cigars to hold nontrans rct couplets
+        # List of tuples from extracted transferable receipt (vrc) quadruples
+        trqs = []  # each converted quadruple is (prefixer, seqner, diger, siger)
+        # List of tuples from extracted first seen replay couples
+        frcs = []  #  # each converted coule is (seqner, dater)
         pipelined = False  # all attachments in one big pipeline counted group
         # extract and deserialize attachments
         try:  # catch errors here to flush only counted part of stream
@@ -2008,10 +2012,28 @@ class Kevery:
                             cigars.append(cigar)
 
                     elif ctr.code == CtrDex.TransReceiptQuadruples:
-                        pass
+                        # extract attaced trans receipt vrc quadruple
+                        # spre+ssnu+sdig+sig
+                        # spre is pre of signer of vrc
+                        # ssnu is sn of signer's est evt when signed
+                        # sdig is dig of signer's est event when signed
+                        # sig is indexed signature of signer on this event msg
+                        for i in range(ctr.count): # extract each attached quadruple
+                            prefixer = yield from  self._extractor(ims, klas=Prefixer, cold=cold)
+                            seqner = yield from  self._extractor(ims, klas=Seqner, cold=cold)
+                            diger = yield from  self._extractor(ims, klas=Diger, cold=cold)
+                            siger = yield from self._extractor(ims=ims, klas=Siger, cold=cold)
+                            trqs.append((prefixer, seqner, diger, siger))
 
                     elif ctr.code == CtrDex.FirstSeenReplayCouples:
-                        pass
+                        # extract attached first seen replay couples
+                        # snu+dtm
+                        # snu is fn (first seen ordinal) of event
+                        # dtm is dt of event
+                        for i in range(ctr.count): # extract each attached quadruple
+                            seqner = yield from  self._extractor(ims, klas=Seqner, cold=cold)
+                            dater = yield from  self._extractor(ims, klas=Dater, cold=cold)
+                            frcs.append((seqner, dater))
 
                     else:
                         raise UnexpectedCodeError("Unsupported count code={}."
@@ -2356,6 +2378,7 @@ class Kevery:
             raise UnverifiedTransferableReceiptError("Unverified receipt: "
                                   "missing associated event for transferable "
                                   "validator receipt={}.".format(ked))
+
 
     def validateSN(self, ked):
         """
