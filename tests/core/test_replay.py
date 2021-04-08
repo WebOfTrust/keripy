@@ -445,6 +445,18 @@ def test_replay():
 
         assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 9032
 
+        # create non-local kevery for Art to process conjoint replay msgs from Deb
+        #artKevery = eventing.Kevery(kevers=artHab.kevers,
+                                        #db=artHab.db,
+                                        #framed=True,
+                                        #pre=artHab.pre,
+                                        #local=False)
+        #artKevery.process(ims=bytearray(debFelMsgs))  # give copy to process
+        #assert debHab.pre in artKevery.kevers
+        #assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
+        #assert len(artKevery.cues) == 7
+
+
     assert not os.path.exists(artKS.path)
     assert not os.path.exists(artDB.path)
     assert not os.path.exists(bevKS.path)
