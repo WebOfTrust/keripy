@@ -18,9 +18,9 @@ from keri.core import coring, eventing
 logger = help.ogler.getLogger()
 
 
-def test_disjoint_replay():
+def test_replay():
     """
-    Test disjoint replay
+    Test disjoint and conjoint replay
 
     Deb creates series of events.
     Deb replays Deb's events to Cam and collects Cam's receipts
@@ -31,7 +31,8 @@ def test_disjoint_replay():
 
     with dbing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
          dbing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-         dbing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS:
+         dbing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS, \
+         dbing.openDB(name="art") as artDB, keeping.openKS(name="art") as artKS:
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
@@ -59,6 +60,16 @@ def test_disjoint_replay():
         assert bevHab.db == bevDB
         assert not bevHab.kever.prefixer.transferable
 
+        # setup Art's habitat using default salt nonstransferable already incepts
+        # Art's receipts will be rcts with a receipt couple attached
+        sith = '1'  # hex str of threshold int
+        artHab = directing.Habitat(ks=artKS, db=artDB, sith=sith, count=1,
+                                   transferable=False, temp=True)
+        assert artHab.ks == artKS
+        assert artHab.db == artDB
+        assert not artHab.kever.prefixer.transferable
+
+        # first setup disjoint replay then conjoint replay
         # Create series of event for Deb
         debMsgs = bytearray()
         debMsgs.extend(debHab.makeOwnInception())
@@ -136,7 +147,7 @@ def test_disjoint_replay():
         assert camKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(camKevery.cues) == 7
 
-        # get receipts (vrcs) from Cam of Deb's events by processing Cam's cues
+        # get disjoints receipts (vrcs) from Cam of Deb's events by processing Cam's cues
         camMsgs = camHab.processCues(camKevery.cues)
         assert camMsgs == bytearray(b'{"v":"KERI10JSON000144_","i":"E_T2_p83_gRSuAYvGhqV3S0JzYEF2dIa-O'
                                     b'CPLbIhBO7Y","s":"0","t":"icp","kt":"2","k":["DaYh8uaASuDjMUd8_Bo'
@@ -219,7 +230,7 @@ def test_disjoint_replay():
         assert debKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
         assert len(debKevery.cues) == 1
 
-        # get receipts (vrcs) from Deb of Cam's events by processing Deb's cues
+        # get disjoints receipts (vrcs) from Deb of Cam's events by processing Deb's cues
         debCamVrcs = debHab.processCues(debKevery.cues)
         assert debCamVrcs == bytearray(b'{"v":"KERI10JSON000105_","i":"E_T2_p83_gRSuAYvGhqV3S0JzYEF2dIa-O'
                                     b'CPLbIhBO7Y","s":"0","t":"vrc","d":"EFSbLZkTmOMfRCyEYLgz53ARZougm'
@@ -231,7 +242,7 @@ def test_disjoint_replay():
                                     b'HbSgD7m9bWGB2ZCN8jxAfrbCMRGWersAEXqtdtkYT0Xxg33W61o5IffZjWxsHY_i'
                                     b'JQOPDVF3tA4DniWBg')
 
-        # Play debCamVrcs to Cam
+        # Play disjoints debCamVrcs to Cam
         camKevery.processOne(ims=bytearray(debCamVrcs))  # give copy to process
 
         # Play debMsgs to Bev
@@ -246,7 +257,7 @@ def test_disjoint_replay():
         assert bevKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(bevKevery.cues) == 7
 
-        # get receipts (rcts) from Bev of Deb's events by processing Bevs's cues
+        # get disjoints receipts (rcts) from Bev of Deb's events by processing Bevs's cues
         bevMsgs = bevHab.processCues(bevKevery.cues)
         assert bevMsgs == bytearray(b'{"v":"KERI10JSON0000ba_","i":"BaYh8uaASuDjMUd8_BoNyQs3GwupzmJL8_'
                                     b'RBsuNtZHQg","s":"0","t":"icp","kt":"1","k":["BaYh8uaASuDjMUd8_Bo'
@@ -291,7 +302,7 @@ def test_disjoint_replay():
         assert debKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
         assert len(debKevery.cues) == 1
 
-        # get receipts (vrcs) from Deb of Bev's events by processing Deb's cues
+        # get disjoints receipts (vrcs) from Deb of Bev's events by processing Deb's cues
         debBevVrcs = debHab.processCues(debKevery.cues)
         assert debBevVrcs == bytearray(b'{"v":"KERI10JSON000105_","i":"BaYh8uaASuDjMUd8_BoNyQs3GwupzmJL8_'
                                         b'RBsuNtZHQg","s":"0","t":"vrc","d":"EtTEz3ofbRmq4qeoKSc5uYWUhxeZa'
@@ -304,8 +315,10 @@ def test_disjoint_replay():
                                         b'K5TQKbTKbQ9F9TcAg')
 
 
-        # Play debBevVrcs to Bev
+        # Play disjoints debBevVrcs to Bev
         bevKevery.processOne(ims=bytearray(debBevVrcs))  # give copy to process
+
+        # now setup conjoint replay
 
         # Replay Deb's First Seen Events with receipts (vrcs and rcts) from both Cam and Bev
         # datetime is different in each run in the fse attachment in clone replay
@@ -331,54 +344,55 @@ def test_disjoint_replay():
         del msg[:len(counter.qb64b)]
         assert len(msg) == 1072 == 268 *  4
 
-        counter = coring.Counter(qb64b=msg)  # first seen replay couple counter
-        assert counter.code == coring.CtrDex.FirstSeenReplayCouples
-        assert counter.count == 1
-        del msg[:len(counter.qb64b)]
-        assert len(msg) == 1068
-
-        seqner = coring.Seqner(qb64b=msg)
-        assert seqner.sn == fn == 0
-        del msg[:len(seqner.qb64b)]
-        assert len(msg) == 1044  # 24 less
-
-        dater = coring.Dater(qb64b=msg)
-        assert (helping.fromIso8601(helping.nowIso8601()) -
-                helping.fromIso8601(dater.dts)) > datetime.timedelta()
-        del msg[:len(dater.qb64b)]
-        assert len(msg) == 1008  # 36 less
-
         counter = coring.Counter(qb64b=msg)  # indexed signatures counter
         assert counter.code == coring.CtrDex.ControllerIdxSigs
         assert counter.count == 3  #  multisig deb
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 1004
+        assert len(msg) == 1068
 
         for i in range(counter.count):  # parse signatures
             siger = coring.Siger(qb64b=msg)
             del msg[:len(siger.qb64b)]
-        assert len(msg) == 1004 - 3 * len(siger.qb64b) == 740
+        assert len(msg) == 1068 - 3 * len(siger.qb64b) == 804
 
         counter = coring.Counter(qb64b=msg)  # trans receipt (vrc) counter
         assert counter.code == coring.CtrDex.TransReceiptQuadruples
         assert counter.count == 3  #  multisig cam
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 736
+        assert len(msg) == 800
 
         for i in range(counter.count):  # parse receipt quadruples
             prefixer, seqner, diger, siger = eventing.dequadruple(msg, deletive=True)
-        assert len(msg) == 736 - 3 * (len(prefixer.qb64b) + len(seqner.qb64b) +
-                                len(diger.qb64b) + len(siger.qb64b)) == 136
+        assert len(msg) == 800 - 3 * (len(prefixer.qb64b) + len(seqner.qb64b) +
+                                len(diger.qb64b) + len(siger.qb64b)) == 200
 
         counter = coring.Counter(qb64b=msg)  # nontrans receipt (rct) counter
         assert counter.code == coring.CtrDex.NonTransReceiptCouples
         assert counter.count == 1  #  single sig bev
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 132
+        assert len(msg) == 196
 
         for i in range(counter.count):  # parse receipt couples
             prefixer, cigar = eventing.decouple(msg, deletive=True)
-        assert len(msg) == 132 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 0
+        assert len(msg) == 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
+
+        counter = coring.Counter(qb64b=msg)  # first seen replay couple counter
+        assert counter.code == coring.CtrDex.FirstSeenReplayCouples
+        assert counter.count == 1
+        del msg[:len(counter.qb64b)]
+        assert len(msg) == 60
+
+        seqner = coring.Seqner(qb64b=msg)
+        assert seqner.sn == fn == 0
+        del msg[:len(seqner.qb64b)]
+        assert len(msg) == 36  # 24 less
+
+        dater = coring.Dater(qb64b=msg)
+        assert (helping.fromIso8601(helping.nowIso8601()) -
+                helping.fromIso8601(dater.dts)) > datetime.timedelta()
+        del msg[:len(dater.qb64b)]
+        assert len(msg) == 0  # 36 less
+
 
         fn += 1
         cloner = debHab.db.cloneIter(pre=debHab.pre, fn=fn)  # create iterator not at 0
@@ -431,6 +445,20 @@ def test_disjoint_replay():
 
         assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 9032
 
+        # create non-local kevery for Art to process conjoint replay msgs from Deb
+        #artKevery = eventing.Kevery(kevers=artHab.kevers,
+                                        #db=artHab.db,
+                                        #framed=True,
+                                        #pre=artHab.pre,
+                                        #local=False)
+        #artKevery.process(ims=bytearray(debFelMsgs))  # give copy to process
+        #assert debHab.pre in artKevery.kevers
+        #assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
+        #assert len(artKevery.cues) == 7
+
+
+    assert not os.path.exists(artKS.path)
+    assert not os.path.exists(artDB.path)
     assert not os.path.exists(bevKS.path)
     assert not os.path.exists(bevDB.path)
     assert not os.path.exists(camKS.path)
@@ -442,4 +470,4 @@ def test_disjoint_replay():
 
 
 if __name__ == "__main__":
-    test_disjoint_replay()
+    test_replay()
