@@ -51,7 +51,7 @@ setup(
         'Operating System :: Unix',
         'Operating System :: POSIX',
         'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
         # uncomment if you test on these interpreters:
         #'Programming Language :: Python :: Implementation :: PyPy',
@@ -68,7 +68,7 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires='>=3.9.2',
+    python_requires='>=3.9.4',
     install_requires=[
         'lmdb>=1.1.1',
         'pysodium>=0.7.7',
