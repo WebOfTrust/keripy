@@ -2284,7 +2284,7 @@ class Kevery:
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
 
-    def processReceiptCouples(self, serder, cigars):
+    def processReceiptCouples(self, serder, cigars, fn=msgProcessor):
         """
         Process replay event serder with attached cigars on for each attached
         receipt coupl.
@@ -2294,6 +2294,7 @@ class Kevery:
                 are attached from replay
             cigars is list of Cigar instances that contain receipt couple
                 signature in .raw and public key in .verfer
+            fn is first seen ordinal int, if provided lookup event by fn not sn
 
         """
         # fetch  pre dig to process
@@ -2303,8 +2304,11 @@ class Kevery:
 
         # Only accept receipt if event is latest event at sn. Means its been
         # first seen and is the most recent first seen with that sn
-        snkey = snKey(pre=pre, sn=sn)
-        ldig = self.db.getKeLast(key=snkey)  # retrieve dig of last event at sn.
+        if fn:
+            pass
+        else:
+            snkey = snKey(pre=pre, sn=sn)
+            ldig = self.db.getKeLast(key=snkey)  # retrieve dig of last event at sn.
 
         if ldig is not None:  #  last event at sn exists in database
             ldig = bytes(ldig).decode("utf-8")  # verify digs match
@@ -2437,6 +2441,105 @@ class Kevery:
             raise UnverifiedTransferableReceiptError("Unverified receipt: "
                                   "missing associated event for transferable "
                                   "validator receipt={}.".format(ked))
+
+
+    def processTransReceiptQuadruples(self, serder, trqs, fn=None):
+        """
+        Process one transferable validator receipt (chit) serder with attached sigers
+
+        Parameters:
+            serder is chit serder (transferable validator receipt message)
+            trqs is list of tuples (quadruples) of form
+                (prefixer, seqner, diger, siger)
+            fn is first seen ordinal int, if provided lookup event by fn not sn
+
+        Seal labels
+            i pre  # qb64 prefix of receipter
+            s sn   # hex of sequence number of est event for receipter keys
+            d dig  # qb64 digest of est event for receipter keys
+
+        """
+        # fetch  pre, dig,seal to process
+        ked = serder.ked
+        pre = serder.pre
+        sn = self.validateSN(ked)
+        seal = SealEvent(**ked["a"])
+
+        if fn:
+            pass
+        else:
+            # Only accept receipt if for last seen version of receipted event at sn
+            ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
+
+        if self.pre and self.pre == seal.i:  # own trans receipt quadruple (chit)
+            if self.pre == pre:  # skip own trans receipts of own events
+                raise ValidationError("Own pre={} replay attached transferable "
+                                      "receipt quadruple of own event {}."
+                                  "".format(self.pre, ked))
+            if not self.local:  # skip own trans receipt quadruples of nonlocal events
+                raise ValidationError("Own pre={} seal in replay attached "
+                                      "transferable receipt quadruples of nonlocal"
+                                      " event {}.".format(self.pre, ked))
+
+        if ldig is not None and seal.i in self.kevers:  #  verify digs match last seen and receipt dig
+            # both receipted event and receipter in database
+            # so retreive
+            ldig = bytes(ldig).decode("utf-8")
+
+            # retrieve event by dig assumes if ldig is not None that event exists at ldig
+            dgkey = dgKey(pre=pre, dig=ldig)
+            lraw = bytes(self.db.getEvt(key=dgkey))  # retrieve receipted event at dig
+            # assumes db ensures that raw must not be none because ldig was in KE
+            lserder = Serder(raw=lraw)  # deserialize event raw
+
+            if not lserder.compare(dig=ked["d"]):  # stale receipt at sn discard
+                raise ValidationError("Stale receipt at sn = {} for rct = {}."
+                                      "".format(ked["s"], ked))
+
+            # retrieve dig of last event at sn of receipter.
+            sdig = self.db.getKeLast(key=snKey(pre=seal.i, sn=int(seal.s, 16)))
+            if sdig is None:
+                # receipter's est event not yet in receipter's KEL
+                # receipter's seal event not in receipter's KEL
+                self.escrowVREvent(serder, sigers, seal, dig=ked["d"])
+                raise UnverifiedTransferableReceiptError("Unverified receipt: "
+                                    "missing establishment event of transferable "
+                                    "validator, receipt={}.".format(ked))
+
+            # retrieve last event itself of receipter
+            sraw = self.db.getEvt(key=dgKey(pre=seal.i, dig=bytes(sdig)))
+            # assumes db ensures that sraw must not be none because sdig was in KE
+            sserder = Serder(raw=bytes(sraw))
+            if not sserder.compare(dig=seal.d):  # seal dig not match event
+                raise ValidationError("Bad chit seal at sn = {} for rct = {}."
+                                      "".format(seal.s, ked))
+
+            verfers = sserder.verfers
+            if not verfers:
+                raise ValidationError("Invalid seal est. event dig = {} for "
+                                      "receipt from pre ={} no keys."
+                                      "".format(seal.d, seal.i))
+
+            # convert sn in seal to fully qualified SeqNumber 24 bytes, raw 16 bytes
+            sealet = seal.i.encode("utf-8") + Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8")
+
+            for siger in sigers:  # verify sigs
+                if siger.index >= len(verfers):
+                    raise ValidationError("Index = {} to large for keys."
+                                          "".format(siger.index))
+
+                siger.verfer = verfers[siger.index]  # assign verfer
+                if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
+                    # good sig so write receipt quadruple to database
+                    quadruple = sealet + siger.qb64b
+                    self.db.addVrc(key=dgkey, val=quadruple)  # dups kept
+
+        else:  # escrow  either receiptor or receipted event not yet in database
+            self.escrowVREvent(serder, sigers, seal, dig=ked["d"])
+            raise UnverifiedTransferableReceiptError("Unverified receipt: "
+                                  "missing associated event for transferable "
+                                  "validator receipt={}.".format(ked))
+
 
 
     def validateSN(self, ked):
