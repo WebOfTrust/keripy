@@ -1363,10 +1363,10 @@ class Diger(Matter):
 
         If both match then as optimization returns True and does not verify either
           as digest of ser
-        If both have same code but do not match then as optimization returns False
+        Else If both have same code but do not match then as optimization returns False
            and does not verify if either is digest of ser
-        But if both do not match then recalcs both digests to verify they
-        they are both digests of ser with or without matching codes.
+        Else recalcs both digests using each one's code to verify they
+            they are both digests of ser regardless of matching codes.
         """
         if dig is not None:
             if hasattr(dig, "encode"):
@@ -3033,10 +3033,10 @@ class Serder:
 
         If both match then as optimization returns True and does not verify either
           as digest of ser
-        If both have same code but do not match then as optimization returns False
+        Else If both have same code but do not match then as optimization returns False
            and does not verify if either is digest of ser
-        But if both do not match then recalcs both digests to verify they
-        they are both digests of ser with or without matching codes.
+        Else recalcs both digests using each one's code to verify they
+            they are both digests of ser regardless of matching codes.
         """
         return (self.diger.compare(ser=self.raw, dig=dig, diger=diger))
 

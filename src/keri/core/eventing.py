@@ -35,7 +35,7 @@ from ..db.dbing import dgKey, snKey, splitKey, splitKeySN, Baser
 from .coring import Versify, Serials, Ilks
 from .coring import MtrDex, NonTransDex, IdrDex, CtrDex, Counter
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
-from .coring import Seqner, Siger, Cigar
+from .coring import Seqner, Siger, Cigar, Dater
 
 from .. import help
 
@@ -146,7 +146,7 @@ SealLocation = namedtuple("SealLocation", 'i s t p')
 # bytearray of memoryview makes a copy so does not delete underlying data
 # behind memory view but del on bytearray itself does delete bytearray
 
-def decouple(data, deletive=False):
+def deReceiptCouple(data, strip=False):
     """
     Returns tuple of (prefixer, cigar) from concatenated bytes or
     bytearray of data couple made up of qb64 or qb64b versions of pre+sig
@@ -154,30 +154,23 @@ def decouple(data, deletive=False):
 
     Parameters:
         data is couple of bytes concatenation of pre+sig from receipt
-        deletive is Boolean True means delete from data each part as parsed
+        strip is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
+            Raises error if not bytearray
     """
-    if isinstance(data, bytearray):
-        if not deletive:
-            data = bytearray(data)  # make copy so does not delete underlying data
-    elif isinstance(data, memoryview):
-        data = bytearray(data)
-    elif hasattr(data, "encode"):
-        data = bytearray(data.encode("utf-8"))  # convert to bytearray
-    elif isinstance(data, bytes):
-        data = bytearray(data)
-    else:
-        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
-                         "or bytearray.")
+    if isinstance(data, memoryview):
+        data = bytes(data)
+    if hasattr(data, "encode"):
+        data = data.encode("utf-8")  # convert to bytes
 
-    prefixer = Prefixer(qb64b=data)
-    del data[:len(prefixer.qb64b)]  # strip off part
-    cigar = Cigar(qb64b=data)
-    del data[:len(cigar.qb64b)]  # strip off part
+    prefixer = Prefixer(qb64b=data, strip=strip)
+    if not strip:
+        data = data[len(prefixer.qb64b):]
+    cigar = Cigar(qb64b=data, strip=strip)
     return (prefixer, cigar)
 
 
-def detriple(data, deletive=False):
+def deReceiptTriple(data, strip=False):
     """
     Returns tuple of (diger, prefixer, cigar) from concatenated bytes
     of data triple made up of qb64 or qb64b versions of dig+pre+sig
@@ -188,29 +181,22 @@ def detriple(data, deletive=False):
         deletive is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
     """
-    if isinstance(data, bytearray):
-        if not deletive:
-            data = bytearray(data)  # make copy so does not delete underlying data
-    elif isinstance(data, memoryview):
-        data = bytearray(data)
-    elif hasattr(data, "encode"):
-        data = bytearray(data.encode("utf-8"))  # convert to bytearray
-    elif isinstance(data, bytes):
-        data = bytearray(data)
-    else:
-        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
-                         "or bytearray.")
+    if isinstance(data, memoryview):
+        data = bytes(data)
+    if hasattr(data, "encode"):
+        data = data.encode("utf-8")  # convert to bytes
 
-    diger = Diger(qb64b=data)
-    del data[:len(diger.qb64b)]  # strip off part
-    prefixer = Prefixer(qb64b=data)
-    del data[:len(prefixer.qb64b)]  # strip off part
-    cigar = Cigar(qb64b=data)
-    del data[:len(cigar.qb64b)]  # strip off part
+    diger = Diger(qb64b=data, strip=strip)
+    if not strip:
+        data = data[len(diger.qb64b):]
+    prefixer = Prefixer(qb64b=data, strip=strip)
+    if not strip:
+        data = data[len(prefixer.qb64b):]
+    cigar = Cigar(qb64b=data, strip=strip)
     return (diger, prefixer, cigar)
 
 
-def dequadruple(data, deletive=False):
+def deTransReceiptQuadruple(data, strip=False):
     """
     Returns tuple (quadruple) of (prefixer, seqner, diger, siger) from concatenated bytes
     of quadruple made up of qb64 or qb64b versions of spre+ssnu+sdig+sig
@@ -221,31 +207,25 @@ def dequadruple(data, deletive=False):
         deletive is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
     """
-    if isinstance(data, bytearray):
-        if not deletive:
-            data = bytearray(data)  # make copy so does not delete underlying data
-    elif isinstance(data, memoryview):
-        data = bytearray(data)
-    elif hasattr(data, "encode"):
-        data = bytearray(data.encode("utf-8"))  # convert to bytearray
-    elif isinstance(data, bytes):
-        data = bytearray(data)
-    else:
-        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
-                         "or bytearray.")
+    if isinstance(data, memoryview):
+        data = bytes(data)
+    if hasattr(data, "encode"):
+        data = data.encode("utf-8")  # convert to bytes
 
-    prefixer = Prefixer(qb64b=data)
-    del data[:len(prefixer.qb64b)]  # strip off part
-    seqner = Seqner(qb64b=data)
-    del data[:len(seqner.qb64b)]  # strip off part
-    diger = Diger(qb64b=data)
-    del data[:len(diger.qb64b)]  # strip off part
-    siger = Siger(qb64b=data)
-    del data[:len(siger.qb64b)]  # strip off part
+    prefixer = Prefixer(qb64b=data, strip=strip)
+    if not strip:
+        data = data[len(prefixer.qb64b):]
+    seqner = Seqner(qb64b=data, strip=strip)
+    if not strip:
+        data = data[len(seqner.qb64b):]
+    diger = Diger(qb64b=data, strip=strip)
+    if not strip:
+        data = data[len(diger.qb64b):]
+    siger = Siger(qb64b=data, strip=strip)
     return (prefixer, seqner, diger, siger)
 
 
-def dequintuple(data, deletive=False):
+def deTransReceiptQuintuple(data, strip=False):
     """
     Returns tuple of (ediger, seal prefixer, seal seqner, seal diger, siger)
     from concatenated bytes of quintuple made up of qb64 or qb64b versions of
@@ -258,29 +238,25 @@ def dequintuple(data, deletive=False):
         deletive is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
     """
-    if isinstance(data, bytearray):
-        if not deletive:
-            data = bytearray(data)  # make copy so does not delete underlying data
-    elif isinstance(data, memoryview):
-        data = bytearray(data)
-    elif hasattr(data, "encode"):
-        data = bytearray(data.encode("utf-8"))  # convert to bytearray
-    elif isinstance(data, bytes):
-        data = bytearray(data)
-    else:
-        raise ValueError("Unrecognized data type, not str, bytes, memoryview, "
-                         "or bytearray.")
+    if isinstance(data, memoryview):
+        data = bytes(data)
+    if hasattr(data, "encode"):
+        data = data.encode("utf-8")  # convert to bytes
 
-    ediger = Diger(qb64b=data)  #  diger of receipted event
-    del data[:len(ediger.qb64b)]  # strip off part
-    sprefixer = Prefixer(qb64b=data)  # prefixer of recipter
-    del data[:len(sprefixer.qb64b)]  # strip off part
-    sseqner = Seqner(qb64b=data)  # seqnumber of receipting event
-    del data[:len(sseqner.qb64b)]  # strip off part
-    sdiger = Diger(qb64b=data)  # diger of receipting event
-    del data[:len(sdiger.qb64b)]  # strip off part
-    siger = Siger(qb64b=data)  #  indexed siger of event
-    del data[:len(siger.qb64b)]  # strip off part
+
+    ediger = Diger(qb64b=data, strip=strip)  #  diger of receipted event
+    if not strip:
+        data = data[len(ediger.qb64b):]
+    sprefixer = Prefixer(qb64b=data, strip=strip)  # prefixer of recipter
+    if not strip:
+        data = data[len(sprefixer.qb64b):]
+    sseqner = Seqner(qb64b=data, strip=strip)  # seqnumber of receipting event
+    if not strip:
+        data = data[len(sseqner.qb64b):]
+    sdiger = Diger(qb64b=data, strip=strip)  # diger of receipting event
+    if not strip:
+        data = data[len(sdiger.qb64b):]
+    siger = Siger(qb64b=data, strip=strip)  #  indexed siger of event
     return (ediger, sprefixer, sseqner, sdiger, siger)
 
 
@@ -843,6 +819,7 @@ def receiptize(serder, cigars):
         msg.extend(cigar.qb64b)
 
     return msg
+
 
 class Kever:
     """
@@ -1446,9 +1423,9 @@ class Kever:
         """
         dgkey = dgKey(self.prefixer.qb64b, self.serder.diger.qb64b)
         dtsb = nowIso8601().encode("utf-8")
-        self.baser.putDts(dgkey, dtsb)  #  do not change dts if already
-        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.baser.putEvt(dgkey, serder.raw)
+        self.baser.putDts(dgkey, dtsb)  #  idempotent do not change dts if already
+        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])  # idempotent
+        self.baser.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
         if first:  # append event dig to first seen database in order
             fn = self.baser.appendFe(self.prefixer.qb64b, self.serder.diger.qb64b)
             self.baser.setDts(dgkey, dtsb)  # first seen so set dts to now
@@ -1983,6 +1960,10 @@ class Kevery:
 
         sigers = []  # list of Siger instances for attached indexed signatures
         cigars = []  # List of cigars to hold nontrans rct couplets
+        # List of tuples from extracted transferable receipt (vrc) quadruples
+        trqs = []  # each converted quadruple is (prefixer, seqner, diger, siger)
+        # List of tuples from extracted first seen replay couples
+        frcs = []  #  # each converted coule is (seqner, dater)
         pipelined = False  # all attachments in one big pipeline counted group
         # extract and deserialize attachments
         try:  # catch errors here to flush only counted part of stream
@@ -2032,10 +2013,28 @@ class Kevery:
                             cigars.append(cigar)
 
                     elif ctr.code == CtrDex.TransReceiptQuadruples:
-                        pass
+                        # extract attaced trans receipt vrc quadruple
+                        # spre+ssnu+sdig+sig
+                        # spre is pre of signer of vrc
+                        # ssnu is sn of signer's est evt when signed
+                        # sdig is dig of signer's est event when signed
+                        # sig is indexed signature of signer on this event msg
+                        for i in range(ctr.count): # extract each attached quadruple
+                            prefixer = yield from  self._extractor(ims, klas=Prefixer, cold=cold)
+                            seqner = yield from  self._extractor(ims, klas=Seqner, cold=cold)
+                            diger = yield from  self._extractor(ims, klas=Diger, cold=cold)
+                            siger = yield from self._extractor(ims=ims, klas=Siger, cold=cold)
+                            trqs.append((prefixer, seqner, diger, siger))
 
                     elif ctr.code == CtrDex.FirstSeenReplayCouples:
-                        pass
+                        # extract attached first seen replay couples
+                        # snu+dtm
+                        # snu is fn (first seen ordinal) of event
+                        # dtm is dt of event
+                        for i in range(ctr.count): # extract each attached quadruple
+                            seqner = yield from  self._extractor(ims, klas=Seqner, cold=cold)
+                            dater = yield from  self._extractor(ims, klas=Dater, cold=cold)
+                            frcs.append((seqner, dater))
 
                     else:
                         raise UnexpectedCodeError("Unsupported count code={}."
@@ -2061,8 +2060,7 @@ class Kevery:
                         if cold == Colds.msg:  # new message
                             break  # finished attachments since new message
 
-                    while True:  # not msg so extract next counter
-                        ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+                    ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
 
         except ExtractionError as ex:
             if pipelined:  # extracted pipelined group is preflushed
@@ -2081,6 +2079,8 @@ class Kevery:
                                       "= {}.".format(serder.ked))
 
             self.processEvent(serder, sigers)
+            if cigars:
+                self.processReceiptCouples(serder, cigars)
 
         elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
 
@@ -2284,6 +2284,63 @@ class Kevery:
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
 
+    def processReceiptCouples(self, serder, cigars):
+        """
+        Process replay event serder with attached cigars on for each attached
+        receipt coupl.
+
+        Parameters:
+            serder is Serder instance of serialized event message to which receipts
+                are attached from replay
+            cigars is list of Cigar instances that contain receipt couple
+                signature in .raw and public key in .verfer
+
+        """
+        # fetch  pre dig to process
+        ked = serder.ked
+        pre = serder.pre
+        sn = self.validateSN(ked)
+
+        # Only accept receipt if event is latest event at sn. Means its been
+        # first seen and is the most recent first seen with that sn
+        snkey = snKey(pre=pre, sn=sn)
+        ldig = self.db.getKeLast(key=snkey)  # retrieve dig of last event at sn.
+
+        if ldig is not None:  #  last event at sn exists in database
+            ldig = bytes(ldig).decode("utf-8")  # verify digs match
+            # retrieve event by dig assumes if ldig is not None that event exists at ldig
+
+            if not serder.compare(dig=ldig):  # mismatch events problem with replay
+                raise ValidationError("Mismatch replay event at sn = {} with db."
+                                      "".format(ked["s"]))
+
+            # process each couple to verify sig and write to db
+            for cigar in cigars:
+                if cigar.verfer.transferable:  # skip transferable verfers
+                    continue  # skip invalid couplets
+                if self.pre and self.pre == cigar.verfer.qb64:  # own receipt when own nontrans
+                    if self.pre == pre:  # own receipt attachment on own event
+                        logger.info("Kevery process: skipped own receipt attachment"
+                                    " on own event receipt=\n%s\n",
+                                               json.dumps(serder.ked, indent=1))
+                        continue  # skip own receipt attachment on own event
+                    if not self.local:  # own receipt on other event when not local
+                        logger.info("Kevery process: skipped own receipt attachment"
+                                    " on nonlocal event receipt=\n%s\n",
+                                               json.dumps(serder.ked, indent=1))
+                        continue  # skip own receipt attachment on non-local event
+
+                if cigar.verfer.verify(cigar.raw, serder.raw):
+                    # write receipt couple to database
+                    couple = cigar.verfer.qb64b + cigar.qb64b
+                    self.db.addRct(key=dgKey(pre=pre, dig=ldig), val=couple)
+
+        else:  # no events to be receipted yet at that sn so escrow
+            # take advantage of fact that receipt and event have same pre, sn fields
+            self.escrowUREvent(serder, cigars, dig=serder.dig)  # digest in receipt
+            raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
+
+
     def processChit(self, serder, sigers):
         """
         Process one transferable validator receipt (chit) serder with attached sigers
@@ -2380,6 +2437,7 @@ class Kevery:
             raise UnverifiedTransferableReceiptError("Unverified receipt: "
                                   "missing associated event for transferable "
                                   "validator receipt={}.".format(ked))
+
 
     def validateSN(self, ked):
         """
@@ -2870,7 +2928,7 @@ class Kevery:
             for ekey, etriplet in self.db.getUreItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
-                    ediger, sprefixer, cigar = detriple(etriplet)
+                    ediger, sprefixer, cigar = deReceiptTriple(etriplet)
 
                     # check date if expired then remove escrow.
                     dtb = self.db.getDts(dgKey(pre, bytes(ediger.qb64b)))
@@ -3020,7 +3078,7 @@ class Kevery:
             for ekey, equinlet in self.db.getVreItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
-                    ediger, sprefixer, sseqner, sdiger, siger = dequintuple(equinlet)
+                    ediger, sprefixer, sseqner, sdiger, siger = deTransReceiptQuintuple(equinlet)
 
                     # check date if expired then remove escrow.
                     dtb = self.db.getDts(dgKey(pre, bytes(ediger.qb64b)))
