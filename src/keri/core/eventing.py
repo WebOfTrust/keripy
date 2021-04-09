@@ -35,7 +35,7 @@ from ..db.dbing import dgKey, snKey, splitKey, splitKeySN, Baser
 from .coring import Versify, Serials, Ilks
 from .coring import MtrDex, NonTransDex, IdrDex, CtrDex, Counter
 from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
-from .coring import Seqner, Siger, Cigar
+from .coring import Seqner, Siger, Cigar, Dater
 
 from .. import help
 
@@ -820,6 +820,7 @@ def receiptize(serder, cigars):
 
     return msg
 
+
 class Kever:
     """
     Kever is KERI key event verifier class
@@ -1422,9 +1423,9 @@ class Kever:
         """
         dgkey = dgKey(self.prefixer.qb64b, self.serder.diger.qb64b)
         dtsb = nowIso8601().encode("utf-8")
-        self.baser.putDts(dgkey, dtsb)  #  do not change dts if already
-        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.baser.putEvt(dgkey, serder.raw)
+        self.baser.putDts(dgkey, dtsb)  #  idempotent do not change dts if already
+        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])  # idempotent
+        self.baser.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
         if first:  # append event dig to first seen database in order
             fn = self.baser.appendFe(self.prefixer.qb64b, self.serder.diger.qb64b)
             self.baser.setDts(dgkey, dtsb)  # first seen so set dts to now
@@ -2059,8 +2060,7 @@ class Kevery:
                         if cold == Colds.msg:  # new message
                             break  # finished attachments since new message
 
-                    while True:  # not msg so extract next counter
-                        ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+                    ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
 
         except ExtractionError as ex:
             if pipelined:  # extracted pipelined group is preflushed
@@ -2079,6 +2079,8 @@ class Kevery:
                                       "= {}.".format(serder.ked))
 
             self.processEvent(serder, sigers)
+            if cigars:
+                self.processReceiptCouples(serder, cigars)
 
         elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
 
@@ -2279,6 +2281,63 @@ class Kevery:
 
         else:  # no events to be receipted yet at that sn so escrow
             self.escrowUREvent(serder, cigars, dig=ked["d"])  # digest in receipt
+            raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
+
+
+    def processReceiptCouples(self, serder, cigars):
+        """
+        Process replay event serder with attached cigars on for each attached
+        receipt coupl.
+
+        Parameters:
+            serder is Serder instance of serialized event message to which receipts
+                are attached from replay
+            cigars is list of Cigar instances that contain receipt couple
+                signature in .raw and public key in .verfer
+
+        """
+        # fetch  pre dig to process
+        ked = serder.ked
+        pre = serder.pre
+        sn = self.validateSN(ked)
+
+        # Only accept receipt if event is latest event at sn. Means its been
+        # first seen and is the most recent first seen with that sn
+        snkey = snKey(pre=pre, sn=sn)
+        ldig = self.db.getKeLast(key=snkey)  # retrieve dig of last event at sn.
+
+        if ldig is not None:  #  last event at sn exists in database
+            ldig = bytes(ldig).decode("utf-8")  # verify digs match
+            # retrieve event by dig assumes if ldig is not None that event exists at ldig
+
+            if not serder.compare(dig=ldig):  # mismatch events problem with replay
+                raise ValidationError("Mismatch replay event at sn = {} with db."
+                                      "".format(ked["s"]))
+
+            # process each couple to verify sig and write to db
+            for cigar in cigars:
+                if cigar.verfer.transferable:  # skip transferable verfers
+                    continue  # skip invalid couplets
+                if self.pre and self.pre == cigar.verfer.qb64:  # own receipt when own nontrans
+                    if self.pre == pre:  # own receipt attachment on own event
+                        logger.info("Kevery process: skipped own receipt attachment"
+                                    " on own event receipt=\n%s\n",
+                                               json.dumps(serder.ked, indent=1))
+                        continue  # skip own receipt attachment on own event
+                    if not self.local:  # own receipt on other event when not local
+                        logger.info("Kevery process: skipped own receipt attachment"
+                                    " on nonlocal event receipt=\n%s\n",
+                                               json.dumps(serder.ked, indent=1))
+                        continue  # skip own receipt attachment on non-local event
+
+                if cigar.verfer.verify(cigar.raw, serder.raw):
+                    # write receipt couple to database
+                    couple = cigar.verfer.qb64b + cigar.qb64b
+                    self.db.addRct(key=dgKey(pre=pre, dig=ldig), val=couple)
+
+        else:  # no events to be receipted yet at that sn so escrow
+            # take advantage of fact that receipt and event have same pre, sn fields
+            self.escrowUREvent(serder, cigars, dig=serder.dig)  # digest in receipt
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
 

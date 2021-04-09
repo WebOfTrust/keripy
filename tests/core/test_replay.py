@@ -60,11 +60,13 @@ def test_replay():
         assert bevHab.db == bevDB
         assert not bevHab.kever.prefixer.transferable
 
-        # setup Art's habitat using default salt nonstransferable already incepts
+        # setup Art's habitat using custom salt nonstransferable so not match Bev
+        # already incepts
         # Art's receipts will be rcts with a receipt couple attached
+        salt = coring.Salter(raw=b'abcdef0123456789').qb64
         sith = '1'  # hex str of threshold int
         artHab = directing.Habitat(ks=artKS, db=artDB, sith=sith, count=1,
-                                   transferable=False, temp=True)
+                                   salt=salt, transferable=False, temp=True)
         assert artHab.ks == artKS
         assert artHab.db == artDB
         assert not artHab.kever.prefixer.transferable
@@ -446,15 +448,15 @@ def test_replay():
         assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 9032
 
         # create non-local kevery for Art to process conjoint replay msgs from Deb
-        #artKevery = eventing.Kevery(kevers=artHab.kevers,
-                                        #db=artHab.db,
-                                        #framed=True,
-                                        #pre=artHab.pre,
-                                        #local=False)
-        #artKevery.process(ims=bytearray(debFelMsgs))  # give copy to process
-        #assert debHab.pre in artKevery.kevers
-        #assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
-        #assert len(artKevery.cues) == 7
+        artKevery = eventing.Kevery(kevers=artHab.kevers,
+                                        db=artHab.db,
+                                        framed=True,
+                                        pre=artHab.pre,
+                                        local=False)
+        artKevery.process(ims=bytearray(debFelMsgs))  # give copy to process
+        assert debHab.pre in artKevery.kevers
+        assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
+        assert len(artKevery.cues) == 7
 
 
     assert not os.path.exists(artKS.path)
