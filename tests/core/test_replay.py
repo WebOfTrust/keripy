@@ -453,10 +453,18 @@ def test_replay():
                                         framed=True,
                                         pre=artHab.pre,
                                         local=False)
+        # process Cam's inception so Art will proces Cam's vrcs without escrowing
+        camIcpMsg = camHab.makeOwnInception()
+        artKevery.process(ims=bytearray(camIcpMsg))
+        assert camHab.pre in artKevery.kevers
+        assert len(artKevery.cues) == 1
+
         artKevery.process(ims=bytearray(debFelMsgs))  # give copy to process
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
-        assert len(artKevery.cues) == 7
+        assert len(artKevery.cues) == 8
+        artDebFelMsgs = artHab.replay(pre=debHab.pre)
+        assert len(artDebFelMsgs) == 9032
 
 
     assert not os.path.exists(artKS.path)
