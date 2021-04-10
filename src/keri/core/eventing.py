@@ -30,7 +30,7 @@ from ..kering import (ExtractionError, ShortageError, ColdStartError,
                       UnverifiedTransferableReceiptError)
 from ..kering import Versionage, Version
 from ..help.helping import nowIso8601, fromIso8601, toIso8601
-from ..db.dbing import dgKey, snKey, splitKey, splitKeySN, Baser
+from ..db.dbing import dgKey, snKey, fnKey, splitKey, splitKeySN, Baser
 
 from .coring import Versify, Serials, Ilks
 from .coring import MtrDex, NonTransDex, IdrDex, CtrDex, Counter
@@ -2079,10 +2079,12 @@ class Kevery:
                                       "= {}.".format(serder.ked))
 
             self.processEvent(serder, sigers)
+            fn = frcs[-1][0].sn if frcs else None  # use last one if more than one
+
             if cigars:
-                self.processReceiptCouples(serder, cigars)  # XXX add fn
+                self.processReceiptCouples(serder, cigars, fn=fn)
             if trqs:
-                self.processTransReceiptQuadruples(serder, trqs)  # XXX add fn
+                self.processTransReceiptQuadruples(serder, trqs, fn=fn)
 
         elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
 
@@ -2307,44 +2309,42 @@ class Kevery:
         # Only accept receipt if event is latest event at sn. Means its been
         # first seen and is the most recent first seen with that sn
         if fn:
-            pass
+            ldig = self.db.getFe(key=fnKey(pre=pre, sn=fn))
         else:
-            snkey = snKey(pre=pre, sn=sn)
-            ldig = self.db.getKeLast(key=snkey)  # retrieve dig of last event at sn.
+            ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
 
-        if ldig is not None:  #  last event at sn exists in database
-            ldig = bytes(ldig).decode("utf-8")  # verify digs match
-            # retrieve event by dig assumes if ldig is not None that event exists at ldig
-
-            if not serder.compare(dig=ldig):  # mismatch events problem with replay
-                raise ValidationError("Mismatch replay event at sn = {} with db."
-                                      "".format(ked["s"]))
-
-            # process each couple to verify sig and write to db
-            for cigar in cigars:
-                if cigar.verfer.transferable:  # skip transferable verfers
-                    continue  # skip invalid couplets
-                if self.pre and self.pre == cigar.verfer.qb64:  # own receipt when own nontrans
-                    if self.pre == pre:  # own receipt attachment on own event
-                        logger.info("Kevery process: skipped own receipt attachment"
-                                    " on own event receipt=\n%s\n",
-                                               json.dumps(serder.ked, indent=1))
-                        continue  # skip own receipt attachment on own event
-                    if not self.local:  # own receipt on other event when not local
-                        logger.info("Kevery process: skipped own receipt attachment"
-                                    " on nonlocal event receipt=\n%s\n",
-                                               json.dumps(serder.ked, indent=1))
-                        continue  # skip own receipt attachment on non-local event
-
-                if cigar.verfer.verify(cigar.raw, serder.raw):
-                    # write receipt couple to database
-                    couple = cigar.verfer.qb64b + cigar.qb64b
-                    self.db.addRct(key=dgKey(pre=pre, dig=ldig), val=couple)
-
-        else:  # no events to be receipted yet at that sn so escrow
-            # take advantage of fact that receipt and event have same pre, sn fields
+        if ldig is None:  # escrow because event does not yet exist in database
+            # # take advantage of fact that receipt and event have same pre, sn fields
             self.escrowUREvent(serder, cigars, dig=serder.dig)  # digest in receipt
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
+
+        ldig = bytes(ldig).decode("utf-8")  # verify digs match
+        # retrieve event by dig assumes if ldig is not None that event exists at ldig
+
+        if not serder.compare(dig=ldig):  # mismatch events problem with replay
+            raise ValidationError("Mismatch replay event at sn = {} with db."
+                                  "".format(ked["s"]))
+
+        # process each couple to verify sig and write to db
+        for cigar in cigars:
+            if cigar.verfer.transferable:  # skip transferable verfers
+                continue  # skip invalid couplets
+            if self.pre and self.pre == cigar.verfer.qb64:  # own receipt when own nontrans
+                if self.pre == pre:  # own receipt attachment on own event
+                    logger.info("Kevery process: skipped own receipt attachment"
+                                " on own event receipt=\n%s\n",
+                                           json.dumps(serder.ked, indent=1))
+                    continue  # skip own receipt attachment on own event
+                if not self.local:  # own receipt on other event when not local
+                    logger.info("Kevery process: skipped own receipt attachment"
+                                " on nonlocal event receipt=\n%s\n",
+                                           json.dumps(serder.ked, indent=1))
+                    continue  # skip own receipt attachment on non-local event
+
+            if cigar.verfer.verify(cigar.raw, serder.raw):
+                # write receipt couple to database
+                couple = cigar.verfer.qb64b + cigar.qb64b
+                self.db.addRct(key=dgKey(pre=pre, dig=ldig), val=couple)
 
 
     def processChit(self, serder, sigers):
@@ -2467,7 +2467,7 @@ class Kevery:
         sn = self.validateSN(ked)
 
         if fn:  # retrieve last event by fn ordinal
-            pass
+            ldig = self.db.getFe(key=fnKey(pre=pre, sn=fn))
         else:
             # Only accept receipt if for last seen version of receipted event at sn
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
