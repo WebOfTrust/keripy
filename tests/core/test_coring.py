@@ -1520,6 +1520,7 @@ def test_dater():
     assert dater.raw == b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
     assert dater.code == MtrDex.DateTime
     assert dater.dts == dts1
+    assert dater.dtsb == dts1b
     assert dater.raw == dt1raw
     assert dater.qb64 == dt1qb64
     assert dater.qb64b == dt1qb64b
@@ -1529,6 +1530,7 @@ def test_dater():
     assert dater.raw == b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
     assert dater.code == MtrDex.DateTime
     assert dater.dts == dts1
+    assert dater.dtsb == dts1b
     assert dater.raw == dt1raw
     assert dater.qb64 == dt1qb64
     assert dater.qb64b == dt1qb64b
@@ -1544,6 +1546,7 @@ def test_dater():
     dater = Dater(dts=dts2)
     assert dater.code == MtrDex.DateTime
     assert dater.dts == dts2
+    assert dater.dtsb == dts2b
     assert dater.raw == dt2raw
     assert dater.qb64 == dt2qb64
     assert dater.qb64b == dt2qb64b
@@ -1552,6 +1555,7 @@ def test_dater():
     dater = Dater(dts=dts2b)
     assert dater.code == MtrDex.DateTime
     assert dater.dts == dts2
+    assert dater.dtsb == dts2b
     assert dater.raw == dt2raw
     assert dater.qb64 == dt2qb64
     assert dater.qb64b == dt2qb64b
@@ -1561,6 +1565,7 @@ def test_dater():
     assert dater.raw == b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
     assert dater.code == MtrDex.DateTime
     assert dater.dts == dts1
+    assert dater.dtsb == dts1b
     assert dater.raw == dt1raw
     assert dater.qb64 == dt1qb64
     assert dater.qb64b == dt1qb64b
@@ -1570,6 +1575,7 @@ def test_dater():
     assert dater.raw == b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
     assert dater.code == MtrDex.DateTime
     assert dater.dts == dts1
+    assert dater.dtsb == dts1b
     assert dater.raw == dt1raw
     assert dater.qb64 == dt1qb64
     assert dater.qb64b == dt1qb64b
@@ -1579,6 +1585,7 @@ def test_dater():
     assert dater.raw == b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
     assert dater.code == MtrDex.DateTime
     assert dater.dts == dts1
+    assert dater.dtsb == dts1b
     assert dater.raw == dt1raw
     assert dater.qb64 == dt1qb64
     assert dater.qb64b == dt1qb64b
@@ -1588,6 +1595,7 @@ def test_dater():
     assert dater.raw == b'\xdbM\xb4\xfbO>\xdbd\xf5\xed\xcetsO]\xf7\xcf=\xdbZt\xd1\xcd4'
     assert dater.code == MtrDex.DateTime
     assert dater.dts == dts1
+    assert dater.dtsb == dts1b
     assert dater.raw == dt1raw
     assert dater.qb64 == dt1qb64
     assert dater.qb64b == dt1qb64b
@@ -2927,4 +2935,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_indexer()
+    test_dater()

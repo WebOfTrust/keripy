@@ -395,6 +395,13 @@ def test_replay():
         del msg[:len(dater.qb64b)]
         assert len(msg) == 0  # 36 less
 
+        cloner.close()  # must close or get lmdb error upon with exit
+        """Exception ignored in: <generator object LMDBer.getAllOrdItemPreIter at 0x106fe1c10>
+        Traceback (most recent call last):
+        File "/Users/Load/Data/Code/public/keripy/src/keri/db/dbing.py", line 512, in getAllOrdItemPreIter
+        yield (cn, bytes(val))  # (on, dig) of event
+        lmdb.Error: Attempt to operate on closed/deleted/dropped object.
+        """
 
         fn += 1
         cloner = debHab.db.cloneIter(pre=debHab.pre, fn=fn)  # create iterator not at 0
@@ -426,6 +433,7 @@ def test_replay():
             fn += 1
 
         assert len(debFelMsgs) == 9032
+        cloner.close()  # must close or get lmdb error upon with exit
 
         msgs = debHab.replay()
         assert msgs == debFelMsgs
@@ -459,7 +467,7 @@ def test_replay():
         assert camHab.pre in artKevery.kevers
         assert len(artKevery.cues) == 1
 
-        artKevery.process(ims=bytearray(debFelMsgs))  # give copy to process
+        artKevery.process(ims=bytearray(debFelMsgs), cloned=True)  # give copy to process
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 8
