@@ -71,6 +71,27 @@ class TraitCodex:
 
 TraitDex = TraitCodex()  # Make instance
 
+# Location of last establishment key event: sn is int, dig is qb64 digest
+LastEstLoc = namedtuple("LastEstLoc", 's d')
+
+#  for the following Seal namedtuples use the ._asdict() method to convert to dict
+#  when using in events
+
+# Digest Seal: dig is qb64 digest of data
+SealDigest = namedtuple("SealDigest", 'd')
+
+# Root Seal: root is qb64 digest that is merkle tree root of data tree
+SealRoot = namedtuple("SealRoot", 'rd')
+
+# Event Seal: pre is qb64 of identifier prefix of KEL, sn is hex string,
+# dig is qb64 digest of event
+SealEvent = namedtuple("SealEvent", 'i s d')
+
+# Event Location Seal: pre is qb64 of identifier prefix of KEL,
+# sn is hex string, ilk is str, dig is qb64 of prior event digest
+SealLocation = namedtuple("SealLocation", 'i s t p')
+
+
 @dataclass(frozen=True)
 class ColdCodex:
     """
@@ -117,35 +138,13 @@ ColdDex = ColdCodex()  # Make instance
 Coldage = namedtuple("Coldage", 'msg txt bny')  # stream cold start status
 Colds = Coldage(msg='msg', txt='txt', bny='bny')
 
-
-TraitDex = TraitCodex()  # Make instance
-
-# Location of last establishment key event: sn is int, dig is qb64 digest
-LastEstLoc = namedtuple("LastEstLoc", 's d')
-
-#  for the following Seal namedtuples use the ._asdict() method to convert to dict
-#  when using in events
-
-# Digest Seal: dig is qb64 digest of data
-SealDigest = namedtuple("SealDigest", 'd')
-
-# Root Seal: root is qb64 digest that is merkle tree root of data tree
-SealRoot = namedtuple("SealRoot", 'rd')
-
-# Event Seal: pre is qb64 of identifier prefix of KEL, sn is hex string,
-# dig is qb64 digest of event
-SealEvent = namedtuple("SealEvent", 'i s d')
-
-# Event Location Seal: pre is qb64 of identifier prefix of KEL,
-# sn is hex string, ilk is str, dig is qb64 of prior event digest
-SealLocation = namedtuple("SealLocation", 'i s t p')
-
-# Cues are dataclasses may be converted tofrom dicts easily
+# Future make Cues dataclasses  instead of dicts. Dataclasses so may be converted
+# to/from dicts easily  example: dict(kin="receipt", serder=serder)
 
 
+# Utility functions for extracting groups of primitives
 # bytearray of memoryview makes a copy so does not delete underlying data
 # behind memory view but del on bytearray itself does delete bytearray
-
 def deReceiptCouple(data, strip=False):
     """
     Returns tuple of (prefixer, cigar) from concatenated bytes or
@@ -857,7 +856,8 @@ class Kever:
     """
     EstOnly = False
 
-    def __init__(self, serder, sigers, baser=None, estOnly=None):
+    def __init__(self, serder, sigers, baser=None, estOnly=None,
+                 seqner=None, dater=None):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -867,6 +867,13 @@ class Kever:
             sigers is list of SigMat instances of signatures of event
             baser is Baser instance of lmdb database
             estOnly is boolean trait to indicate establish only event
+            seqner is optional Seqner instance of cloned first seen ordinal
+                If cloned mode then seqner maybe provided (not None)
+                When seqner provided then compare fn of dater and database and
+                first seen if not match then log and add cue notify problem
+            dater is optional Dater instance of cloned replay datetime
+                If cloned mode then dater maybe provided (not None)
+                When dater provided then use dater for first seen datetime
         """
 
         if baser is None:
@@ -908,7 +915,9 @@ class Kever:
             self.delegator = None
 
         #  .validateSigs above ensures threshold met otherwise raises exception
-        self.logEvent(serder, sigers, first=True)  # First seen accepted
+        #  .validateSeals above ensures delegated otherwise raises exception
+        # all validated so may add to logs ( KEL FEL ) as first seen
+        self.logEvent(serder, sigers, first=True, seqner=seqner, dater=dater)
 
 
     @property
@@ -993,10 +1002,21 @@ class Kever:
             self.estOnly = True
 
 
-    def update(self, serder,  sigers):
+    def update(self, serder,  sigers, seqner=None, dater=None):
         """
-        Not original inception event. So verify event serder and
-        indexed signatures in sigers and update state
+        Not an inception event. Verify event serder and indexed signatures
+        in sigers and update state
+
+        Parameters:
+            serder is Serder instance of  event
+            sigers is list of SigMat instances of signatures of event
+            seqner is optional Seqner instance of cloned first seen ordinal
+                If cloned mode then seqner maybe provided (not None)
+                When seqner provided then compare fn of dater and database and
+                first seen if not match then log and add cue notify problem
+            dater is optional Dater instance of cloned replay datetime
+                If cloned mode then dater maybe provided (not None)
+                When dater provided then use dater for first seen datetime
 
         """
         if not self.transferable:  # not transferable so no events after inception allowed
@@ -1056,8 +1076,10 @@ class Kever:
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(s=self.sn, d=self.serder.diger.qb64)
 
-            #  .validateSigs above ensures threshold met otherwise raises exception
-            self.logEvent(serder, sigers, first=True)  # First seen accepted
+            # .validateSigs above ensures threshold met otherwise raises exception
+            # .validateSeal above ensures valid delegate otherwise raises exception
+            # All validated above so First seen accepted
+            self.logEvent(serder, sigers, first=True, seqner=seqner, dater=dater)
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -1409,7 +1431,7 @@ class Kever:
         return seal
 
 
-    def logEvent(self, serder, sigers, first=False):
+    def logEvent(self, serder, sigers, first=False, seqner=None, dater=None):
         """
         Update associated logs for verified event.
         Update is idempotent. Logs will not write dup at key if already exists.
@@ -1420,6 +1442,13 @@ class Kever:
             first is Boolean True means first seen accepted log of event.
                     Otherwise means idempotent log of event to accept additional
                     signatures beyond the threshold provided for first seen
+            seqner is optional Seqner instance of cloned first seen ordinal
+                If cloned mode then seqner maybe provided (not None)
+                When seqner provided then compare fn of dater and database and
+                first seen if not match then log and add cue notify problem
+            dater is optional Dater instance of cloned replay datetime
+                If cloned mode then dater maybe provided (not None)
+                When dater provided then use dater for first seen datetime
         """
         dgkey = dgKey(self.prefixer.qb64b, self.serder.diger.qb64b)
         dtsb = nowIso8601().encode("utf-8")
@@ -1428,6 +1457,15 @@ class Kever:
         self.baser.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
         if first:  # append event dig to first seen database in order
             fn = self.baser.appendFe(self.prefixer.qb64b, self.serder.diger.qb64b)
+            if seqner and fn != seqner.sn:  # cloned replay but replay fn not match
+                #self.cues.append(dict(kin="noticeBadCloneFN", serder=serder, fn=fn,
+                                      #seqner=seqner, dater=dater))
+                logger.info("Kever Mismatch Cloned Replay FN: %s First seen "
+                            "ordinal fn %s and clone fn %s \nEvent=\n%s\n",
+                             self.prefixer.qb64, fn, seqner.sn,
+                             json.dumps(serder.ked, indent=1))
+            if dater:  # cloned replay use original's dts from dater
+                dtsb = dater.dtsb
             self.baser.setDts(dgkey, dtsb)  # first seen so set dts to now
             logger.info("Kever state: %s First seen ordinal %s at %s\nEvent=\n%s\n",
                          self.prefixer.qb64, fn, dtsb.decode("utf-8"),
@@ -2072,19 +2110,21 @@ class Kevery:
         ilk = serder.ked["t"]  # dispatch abased on ilk
 
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
-
+            # use last one if more than one
+            seqner, dater = frcs[-1] if frcs else (None, None)
 
             if not sigers:
                 raise ValidationError("Missing attached signature(s) for evt "
                                       "= {}.".format(serder.ked))
 
-            self.processEvent(serder, sigers)
-            fn = frcs[-1][0].sn if frcs else None  # use last one if more than one
+            self.processEvent(serder, sigers,
+                              seqner=seqner if cloned else None,
+                              dater=dater if cloned else None)
 
             if cigars:
-                self.processReceiptCouples(serder, cigars, fn=fn)
+                self.processReceiptCouples(serder, cigars, seqner=seqner)
             if trqs:
-                self.processTransReceiptQuadruples(serder, trqs, fn=fn)
+                self.processTransReceiptQuadruples(serder, trqs, seqner=seqner)
 
         elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
 
@@ -2110,13 +2150,20 @@ class Kevery:
 
 
 
-    def processEvent(self, serder, sigers):
+    def processEvent(self, serder, sigers, seqner=None, dater=None):
         """
         Process one event serder with attached indexd signatures sigers
 
         Parameters:
             serder is Serder instance of event to process
             sigers is list of Siger instances of signatures attached to event
+            seqner is optional Seqner instance of cloned first seen ordinal
+                If cloned mode then seqner maybe provided (not None)
+                When seqner provided then compare fn of dater and database and
+                first seen if not match then log and add cue notify problem
+            dater is optional Dater instance of cloned replay datetime
+                If cloned mode then dater maybe provided (not None)
+                When dater provided then use dater for first seen datetime
         """
         # fetch ked ilk  pre, sn, dig to see how to process
         ked = serder.ked
@@ -2150,7 +2197,9 @@ class Kevery:
                 # create kever from serder
                 kever = Kever(serder=serder,
                               sigers=sigers,
-                              baser=self.db)
+                              baser=self.db,
+                              seqner=seqner,
+                              dater=dater)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
                 if not self.pre or self.pre != pre:  # not own event when owned
@@ -2198,7 +2247,8 @@ class Kevery:
                     # verify signatures etc and update state if valid
                     # raise exception if problem.
                     # Otherwise adds to KELs
-                    kever.update(serder=serder, sigers=sigers)
+                    kever.update(serder=serder, sigers=sigers,
+                                 seqner=seqner, dater=dater)
 
                     if not self.pre or self.pre != pre:  # not own event when owned
                         # create cue for receipt   direct mode for now
@@ -2288,7 +2338,7 @@ class Kevery:
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
 
-    def processReceiptCouples(self, serder, cigars, fn=None):
+    def processReceiptCouples(self, serder, cigars, seqner=None):
         """
         Process replay event serder with attached cigars on for each attached
         receipt coupl.
@@ -2298,7 +2348,8 @@ class Kevery:
                 are attached from replay
             cigars is list of Cigar instances that contain receipt couple
                 signature in .raw and public key in .verfer
-            fn is first seen ordinal int, if provided lookup event by fn not sn
+            seqner is Siqner instance of first seen ordinal,
+                if provided lookup event by fn = seqner.sn
 
         """
         # fetch  pre dig to process
@@ -2308,8 +2359,8 @@ class Kevery:
 
         # Only accept receipt if event is latest event at sn. Means its been
         # first seen and is the most recent first seen with that sn
-        if fn:
-            ldig = self.db.getFe(key=fnKey(pre=pre, sn=fn))
+        if seqner:
+            ldig = self.db.getFe(key=fnKey(pre=pre, sn=seqner.sn))
         else:
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
 
@@ -2445,7 +2496,7 @@ class Kevery:
                                   "validator receipt={}.".format(ked))
 
 
-    def processTransReceiptQuadruples(self, serder, trqs, fn=None):
+    def processTransReceiptQuadruples(self, serder, trqs, seqner=None):
         """
         Process one transferable validator receipt (chit) serder with attached sigers
 
@@ -2453,7 +2504,8 @@ class Kevery:
             serder is chit serder (transferable validator receipt message)
             trqs is list of tuples (quadruples) of form
                 (prefixer, seqner, diger, siger)
-            fn is first seen ordinal int, if provided lookup event by fn not sn
+            seqner is Seqner instance of first seen ordinal,
+               if provided lookup event by fn = seqner.sn
 
         Seal labels
             i pre  # qb64 prefix of receipter
@@ -2466,8 +2518,8 @@ class Kevery:
         pre = serder.pre
         sn = self.validateSN(ked)
 
-        if fn:  # retrieve last event by fn ordinal
-            ldig = self.db.getFe(key=fnKey(pre=pre, sn=fn))
+        if seqner:  # retrieve last event by fn ordinal
+            ldig = self.db.getFe(key=fnKey(pre=pre, sn=seqner.sn))
         else:
             # Only accept receipt if for last seen version of receipted event at sn
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.

@@ -437,7 +437,7 @@ class LMDBer:
     def appendOrdValPre(self, db, pre, val):
         """
         Appends val in order after last previous key with same pre in db.
-        Returns ordinal number, on, of appended entry. Appended on is 1 greater
+        Returns ordinal number in, on, of appended entry. Appended on is 1 greater
         than previous latest on.
         Uses snKey(pre, on) for entries.
 
@@ -1328,7 +1328,7 @@ class Baser(LMDBer):
 
     def appendFe(self, pre, val):
         """
-        Return first seen order number, fn, of appended entry.
+        Return first seen order number int, fn, of appended entry.
         Computes fn as next fn after last entry.
         Uses fnKey(pre, fn) for entries.
 

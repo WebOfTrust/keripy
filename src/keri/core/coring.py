@@ -919,9 +919,17 @@ class Dater(Matter):
     def dts(self):
         """
         Property sn:
-        Returns .raw converted to int
+        Returns .qb64 translated to ISO 8601 DateTime str
         """
         return self.qb64[self.Codes[self.code].hs:].translate(self.FromB64)
+
+    @property
+    def dtsb(self):
+        """
+        Property sn:
+        Returns .qb64 translated to ISO 8601 DateTime bytes
+        """
+        return self.qb64[self.Codes[self.code].hs:].translate(self.FromB64).encode("utf-8")
 
 
 class Verfer(Matter):
