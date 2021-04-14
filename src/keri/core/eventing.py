@@ -1192,7 +1192,8 @@ class Kever:
                 False means allow all events
 
     Attributes:
-        .baser is reference for Baser instance that managers the LMDB database
+        .baser is reference to Baser instance that managers the LMDB database
+        .cues is reference to Kevery.cues deque when provided
         .version is version of current event state
         .prefixer is prefixer instance for current event state
         .sn is sequence number int
@@ -1218,7 +1219,7 @@ class Kever:
     EstOnly = False
 
     def __init__(self, serder, sigers, baser=None, estOnly=None,
-                 seqner=None, dater=None):
+                 seqner=None, dater=None, cues=None):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -1235,11 +1236,15 @@ class Kever:
             dater is optional Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
+            cues is reference to Kevery.cues deque when provided i.e. notices of
+                events or requests to respond to
         """
 
         if baser is None:
             baser = Baser()  # default name = "main"
         self.baser = baser
+
+        self.cues = cues
 
         # may update state as we go because if invalid we fail to finish init
         self.version = serder.version  # version dispatch ?
@@ -1308,7 +1313,7 @@ class Kever:
         self.verfers = serder.verfers  # converts keys to verifiers
         self.tholder = Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
         if len(self.verfers) < self.tholder.size:
-            raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
+            raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
                              "".format(ked["kt"],
                                        [verfer.qb64 for verfer in self.verfers],
                                        ked))
@@ -1333,18 +1338,18 @@ class Kever:
         self.adds = []  # always empty at inception since no prev event
         wits = ked["w"]
         if len(oset(wits)) != len(wits):
-            raise ValueError("Invalid wits = {}, has duplicates for evt = {}."
+            raise ValidationError("Invalid wits = {}, has duplicates for evt = {}."
                              "".format(wits, ked))
         self.wits = wits
 
         toad = int(ked["wt"], 16)
         if wits:
             if toad < 1 or toad > len(wits):  # out of bounds toad
-                raise ValueError("Invalid toad = {} for wits = {} for evt = {}."
+                raise ValidationError("Invalid toad = {} for wits = {} for evt = {}."
                                  "".format(toad, wits, ked))
         else:
             if toad != 0:  # invalid toad
-                raise ValueError("Invalid toad = {} for wits = {} for evt = {}."
+                raise ValidationError("Invalid toad = {} for wits = {} for evt = {}."
                                  "".format(toad, wits, ked))
         self.toad = toad
 
@@ -1561,7 +1566,7 @@ class Kever:
 
         tholder = Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
         if len(serder.verfers) < tholder.size:
-            raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
+            raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
                              "".format(ked["kt"],
                                        [verfer.qb64 for verfer in serder.verfers],
                                        ked))
@@ -1581,31 +1586,31 @@ class Kever:
         cuts = ked["wr"]
         cutset = oset(cuts)
         if len(cutset) != len(cuts):
-            raise ValueError("Invalid cuts = {}, has duplicates for evt = "
+            raise ValidationError("Invalid cuts = {}, has duplicates for evt = "
                              "{}.".format(cuts, ked))
 
         if (witset & cutset) != cutset:  #  some cuts not in wits
-            raise ValueError("Invalid cuts = {}, not all members in wits"
+            raise ValidationError("Invalid cuts = {}, not all members in wits"
                              " for evt = {}.".format(cuts, ked))
 
         adds = ked["wa"]
         addset = oset(adds)
         if len(addset) != len(adds):
-            raise ValueError("Invalid adds = {}, has duplicates for evt = "
+            raise ValidationError("Invalid adds = {}, has duplicates for evt = "
                              "{}.".format(adds, ked))
 
         if cutset & addset:  # non empty intersection
-            raise ValueError("Intersecting cuts = {} and  adds = {} for "
+            raise ValidationError("Intersecting cuts = {} and  adds = {} for "
                              "evt = {}.".format(cuts, adds, ked))
 
         if witset & addset:  # non empty intersection
-            raise ValueError("Intersecting wits = {} and  adds = {} for "
+            raise ValidationError("Intersecting wits = {} and  adds = {} for "
                              "evt = {}.".format(self.wits, adds, ked))
 
         wits = list((witset - cutset) | addset)
 
         if len(wits) != (len(self.wits) - len(cuts) + len(adds)):  # redundant?
-            raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
+            raise ValidationError("Invalid member combination among wits = {}, cuts ={}, "
                              "and adds = {} for evt = {}.".format(self.wits,
                                                                   cuts,
                                                                   adds,
@@ -1614,11 +1619,11 @@ class Kever:
         toad = int(ked["wt"], 16)
         if wits:
             if toad < 1 or toad > len(wits):  # out of bounds toad
-                raise ValueError("Invalid toad = {} for wits = {} for evt "
+                raise ValidationError("Invalid toad = {} for wits = {} for evt "
                                  "= {}.".format(toad, wits, ked))
         else:
             if toad != 0:  # invalid toad
-                raise ValueError("Invalid toad = {} for wits = {} for evt "
+                raise ValidationError("Invalid toad = {} for wits = {} for evt "
                                  "= {}.".format(toad, wits, ked))
 
         return (tholder, toad, wits, cuts, adds)
@@ -1693,7 +1698,7 @@ class Kever:
 
         """
         if len(verfers) < self.tholder.size:
-            raise ValueError("Invalid sith = {} for keys = {} for evt = {}."
+            raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
                              "".format(tholder.sith,
                                        [verfer.qb64 for verfer in verfers],
                                        serder.ked))
@@ -1823,8 +1828,9 @@ class Kever:
         if first:  # append event dig to first seen database in order
             fn = self.baser.appendFe(self.prefixer.qb64b, self.serder.diger.qb64b)
             if seqner and fn != seqner.sn:  # cloned replay but replay fn not match
-                #self.cues.append(dict(kin="noticeBadCloneFN", serder=serder, fn=fn,
-                                      #seqner=seqner, dater=dater))
+                if self.cues is not None:
+                    self.cues.append(dict(kin="noticeBadCloneFN", serder=serder,
+                                fn=fn, seqner=seqner, dater=dater))
                 logger.info("Kever Mismatch Cloned Replay FN: %s First seen "
                             "ordinal fn %s and clone fn %s \nEvent=\n%s\n",
                              self.prefixer.qb64, fn, seqner.sn,

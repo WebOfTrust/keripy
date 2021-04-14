@@ -1619,7 +1619,7 @@ def test_kever():
     Key Event Verifier
     """
 
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError):  # Missing required positional arguments
         kever = Kever()
 
     with openDB() as db:  # Transferable case
@@ -4373,4 +4373,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_keyeventfuncs()
+    test_kever()
