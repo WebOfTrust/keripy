@@ -92,10 +92,10 @@ def Deversify(vs):
 
     raise ValueError("Invalid version string = {}".format(vs))
 
-Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct vrc')  # Event ilk (type of event)
+Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct vrc ksn')  # Event ilk (type of event)
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              vrc='vrc')
+              vrc='vrc', ksn='ksn')
 
 
 # Base64 utilities
@@ -1187,7 +1187,7 @@ class Salter(Matter):
     """
     Tier = Tiers.low
 
-    def __init__(self,raw=None, code=MtrDex.Salt_128, tier=None, **kwa):
+    def __init__(self, raw=None, code=MtrDex.Salt_128, tier=None, **kwa):
         """
         Initialize salter's raw and code
 
@@ -1221,7 +1221,7 @@ class Salter(Matter):
                transferable=True, temp=False):
         """
         Returns Signer instance whose .raw secret is derived from path and
-        salter's .raw and streched to size given by code. The signers public key
+        salter's .raw and stretched to size given by code. The signers public key
         for its .verfer is derived from code and transferable.
 
         Parameters:
@@ -3183,6 +3183,11 @@ class Serder:
         """
         return self.pre.encode("utf-8")
 
+    def pretty(self):
+        """
+        Returns str JSON of .ked with pretty formatting
+        """
+        return json.dumps(self.ked, indent=1)
 
 
 class Tholder:

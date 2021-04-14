@@ -22,9 +22,10 @@ from keri.core.coring import Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc, Serials, Versify
 from keri.core.eventing import deReceiptCouple, deReceiptTriple, deTransReceiptQuadruple, deTransReceiptQuintuple
-from keri.core.eventing import SealDigest, SealRoot, SealEvent, SealLocation
+from keri.core.eventing import (SealDigest, SealRoot, SealEvent, SealLocation,
+                                StateEvent, StateEstEvent)
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
-                                delcept, deltate, messagize, receiptize)
+                                delcept, deltate, state, messagize, receiptize)
 from keri.core.eventing import Kever, Kevery
 
 from keri.db.dbing import dgKey, snKey, openDB, Baser
@@ -610,6 +611,326 @@ def test_keyeventfuncs():
                            b'HxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd","s":"4","t":"ixn","p":"EMuNWHss_H'
                            b'_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z"}}')
     assert serderR.dig == 'EfBbEpSIXiLJuLcTg-MYX2OnrVmIULiut6VcBqDYkkt4'
+
+
+    # State KSN
+    """
+    state(pre,
+          keys,
+          evt,
+          eevt,
+          sith=None, # default based on keys
+          nxt="",
+          toad=None, # default based on wits
+          wits=None, # default to []
+          cnfg=None, # default to []
+          dpre=None,
+          seal=None,
+          version=Version,
+          kind=Serials.json,
+          ):
+
+
+    Key State Dict
+    {
+        "v": "KERI10JSON00011c_",
+        "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+        "t": "ksn",
+        "kt": "1",
+        "k": ["DaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],
+        "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
+        "wt": "1",
+        "w": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
+        "c": ["eo"],
+        "e":
+          {
+            "s": "2",
+            "t": "rot",
+            "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
+          },
+        "ee":
+          {
+            "s": "1",
+            "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
+            "wr": ["Dd8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CMZ-i0"],
+            "wa": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"]
+          },
+        "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv",
+        "a":
+          {
+            "i": "EJZAoTNZH3ULvYAfSVPzhzS6b5aU6JR2nmwyZ-i0d8CM",
+            "s": "1",
+            "d": "EULvaU6JR2nmwyAoTNZH3YAfSVPzhzZ-i0d8JZS6b5CM"
+          }
+    }
+
+    "di": "" when not delegated
+    "a": {}  when endorser has non trans prefix
+
+    """
+    # use same salter for all but different path
+    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    salt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+    salter = Salter(raw=salt)
+
+    # State NonTrans NonDelegated (key state notification)
+    # create transferable key pair for controller of KEL
+    signerC = salter.signer(path="C", temp=True)
+    assert signerC.code == MtrDex.Ed25519_Seed
+    assert signerC.verfer.code == MtrDex.Ed25519  # transferable
+    preC = signerC.verfer.qb64  # use public key verfer.qb64 as nontrans pre
+    assert preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+    sith = '1'
+    keys = [signerC.verfer.qb64]
+    nexter = Nexter(keys=keys, sith=sith)  # compute nxt digest (dummy reuse keys)
+    nxt = nexter.qb64
+    assert nxt == 'E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ'
+
+    # create key pairs for witnesses of KEL
+    signerW0 = salter.signer(path="W0", transferable=False, temp=True)
+    assert signerW0.verfer.code == MtrDex.Ed25519N  # non-transferable
+    preW0 = signerW0.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preW0 == 'BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0'
+
+    signerW1 = salter.signer(path="W1", transferable=False, temp=True)
+    assert signerW1.verfer.code == MtrDex.Ed25519N  # non-transferable
+    preW1 = signerW1.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preW1 == 'BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU'
+
+    signerW2 = salter.signer(path="W2", transferable=False, temp=True)
+    assert signerW2.verfer.code == MtrDex.Ed25519N  # non-transferable
+    preW2 = signerW2.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preW2 == 'B7vHpy1IDsWWUnHf2GU5ud62LMYWO5lPWOrSB6ejQ1Eo'
+
+    signerW3 = salter.signer(path="W3", transferable=False, temp=True)
+    assert signerW3.verfer.code == MtrDex.Ed25519N  # non-transferable
+    preW3 = signerW3.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preW3 == 'BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y'
+
+    wits = [preW1, preW2, preW3]
+    toad = 2
+
+    #create namedtuple of latest est event
+    eevt = StateEstEvent(s='3',
+                         d='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                         wr=[preW0],
+                         wa=[preW3])
+
+    # create namedtuple for latest event
+    evt = StateEvent(s='4',
+                     t=Ilks.ixn,
+                     d='EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30')
+
+    # create nontrans key pair for endorder of KSN
+    signerE = salter.signer(path="E", transferable=False, temp=True)
+    assert signerE.verfer.code == MtrDex.Ed25519N  # non-transferable
+    preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preE == 'ByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+
+    serderK = state(pre=preC,
+                    keys=keys,
+                    evt=evt,
+                    eevt=eevt,
+                    sith=sith,
+                    nxt=nxt,
+                    toad=toad,
+                    wits=wits,
+                    )
+
+    assert serderK.raw == (b'{"v":"KERI10JSON000272_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0",'
+                           b'"t":"ksn","kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0"],"n":'
+                           b'"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ","wt":"2","w":["BaEI1ytEFHqaUF'
+                           b'26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2GU5ud62LMYWO5lPWOrSB6ejQ1E'
+                           b'o","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"],"c":[],"e":{"s":"4","t":"'
+                           b'ixn","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30"},"ee":{"s":"3","d":"'
+                           b'EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","wr":["BNTkstUfFBJv0R1IoNNjKpW'
+                           b'K6zEZPxjgMc7KS2Q6_lG0"],"wa":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"'
+                           b']},"di":"","a":{}}')
+    assert serderK.dig == 'EOdYvHWHUzMGeSTX_OAgX_63gpuXgFP3nLLqCM7y8sBU'
+    assert serderK.pre == preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+    with pytest.raises(KeyError):
+        assert serderK.sn == 4
+
+    # create endorsed ksn
+    cigarE = signerE.sign(ser=serderK.raw)
+    assert signerE.verfer.verify(sig=cigarE.raw, ser=serderK.raw)
+    msg = receiptize(serderK, [cigarE])
+    assert msg == bytearray(b'{"v":"KERI10JSON000272_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+                            b'WVK9ZBNZk0","t":"ksn","kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSC'
+                            b'tqyerPqWVK9ZBNZk0"],"n":"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOps'
+                            b'W5AqQ","wt":"2","w":["BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QP'
+                            b'wU","B7vHpy1IDsWWUnHf2GU5ud62LMYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5E'
+                            b'To9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"],"c":[],"e":{"s":"4","t":"ixn"'
+                            b',"d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30"},"ee":{"s":"'
+                            b'3","d":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","wr":["BNT'
+                            b'kstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0"],"wa":["BruKyL_b4D5ET'
+                            b'o9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]},"di":"","a":{}}-CABByvCLRr5lu'
+                            b'Wmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0BPxedw6cuXA_wChYvyBjTEgF9hSWy'
+                            b'ZQfwi7Z3BqiLvrDZzZQT_48UnMjjtlxtU62UfvU9lKmt2g_D1HfdiRwRDQ')
+
+    # State Trans NonDelegated (key state notification)
+    # create transferable key pair for controller of KEL
+    signerC = salter.signer(path="C", temp=True)
+    assert signerC.code == MtrDex.Ed25519_Seed
+    assert signerC.verfer.code == MtrDex.Ed25519  # transferable
+    preC = signerC.verfer.qb64  # use public key verfer.qb64 as nontrans pre
+    assert preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+    sith = '1'
+    keys = [signerC.verfer.qb64]
+    nexter = Nexter(keys=keys, sith=sith)  # compute nxt digest (dummy reuse keys)
+    nxt = nexter.qb64
+    assert nxt == 'E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ'
+
+    # create key pairs for witnesses of KEL
+    signerW0 = salter.signer(path="W0", transferable=False, temp=True)
+    assert signerW0.verfer.code == MtrDex.Ed25519N  # non-transferable
+    preW0 = signerW0.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preW0 == 'BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0'
+
+    signerW1 = salter.signer(path="W1", transferable=False, temp=True)
+    assert signerW1.verfer.code == MtrDex.Ed25519N  # non-transferable
+    preW1 = signerW1.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preW1 == 'BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU'
+
+    signerW2 = salter.signer(path="W2", transferable=False, temp=True)
+    assert signerW2.verfer.code == MtrDex.Ed25519N  # non-transferable
+    preW2 = signerW2.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preW2 == 'B7vHpy1IDsWWUnHf2GU5ud62LMYWO5lPWOrSB6ejQ1Eo'
+
+    signerW3 = salter.signer(path="W3", transferable=False, temp=True)
+    assert signerW3.verfer.code == MtrDex.Ed25519N  # non-transferable
+    preW3 = signerW3.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preW3 == 'BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y'
+
+    wits = [preW1, preW2, preW3]
+    toad = 2
+
+    #create namedtuple of latest est event
+    eevt = StateEstEvent(s=3,
+                         d='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                         wr=[preW0],
+                         wa=[preW3])
+
+    # create namedtuple for latest event
+    evt = StateEvent(s=4,
+                     t=Ilks.ixn,
+                     d='EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30')
+
+    # create trans key pair for endorder of KSN
+    signerE = salter.signer(path="E", temp=True)
+    assert signerE.verfer.code == MtrDex.Ed25519  # transferable
+    preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preE == 'ByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+
+    # create SealEvent for endorsers est evt whose keys use to sign
+    seal = SealEvent(i=preE,
+                     s='0',
+                     d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+
+    serderK = state(pre=preC,
+                    keys=keys,
+                    evt=evt,
+                    eevt=eevt,
+                    sith=sith,
+                    nxt=nxt,
+                    toad=toad,
+                    wits=wits,
+                    seal=seal,
+                    )
+
+    assert serderK.raw == (b'{"v":"KERI10JSON000272_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0",'
+                           b'"t":"ksn","kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0"],"n":'
+                           b'"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ","wt":"2","w":["BaEI1ytEFHqaUF'
+                           b'26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2GU5ud62LMYWO5lPWOrSB6ejQ1E'
+                           b'o","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"],"c":[],"e":{"s":"4","t":"'
+                           b'ixn","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30"},"ee":{"s":"3","d":"'
+                           b'EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","wr":["BNTkstUfFBJv0R1IoNNjKpW'
+                           b'K6zEZPxjgMc7KS2Q6_lG0"],"wa":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"'
+                           b']},"di":"","a":{}}')
+    assert serderK.dig == 'EOdYvHWHUzMGeSTX_OAgX_63gpuXgFP3nLLqCM7y8sBU'
+    assert serderK.pre == preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+    with pytest.raises(KeyError):
+        assert serderK.sn == 4
+
+
+
+    # create endorsed ksn
+    cigarE = signerE.sign(ser=serderK.raw)
+    assert signerE.verfer.verify(sig=cigarE.raw, ser=serderK.raw)
+    msg = receiptize(serderK, [cigarE])
+    assert msg == bytearray(b'{"v":"KERI10JSON000272_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+                            b'WVK9ZBNZk0","t":"ksn","kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSC'
+                            b'tqyerPqWVK9ZBNZk0"],"n":"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOps'
+                            b'W5AqQ","wt":"2","w":["BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QP'
+                            b'wU","B7vHpy1IDsWWUnHf2GU5ud62LMYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5E'
+                            b'To9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"],"c":[],"e":{"s":"4","t":"ixn"'
+                            b',"d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30"},"ee":{"s":"'
+                            b'3","d":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","wr":["BNT'
+                            b'kstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0"],"wa":["BruKyL_b4D5ET'
+                            b'o9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]},"di":"","a":{}}-CABByvCLRr5lu'
+                            b'Wmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0BPxedw6cuXA_wChYvyBjTEgF9hSWy'
+                            b'ZQfwi7Z3BqiLvrDZzZQT_48UnMjjtlxtU62UfvU9lKmt2g_D1HfdiRwRDQ')
+
+    # State NonTrans Delegated (key state notification)
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seedD = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+            b'\x98Y\xdd\xe8')
+    signerD = Signer(raw=seedD)  #  next signing keypair transferable is default
+    assert signerD.code == MtrDex.Ed25519_Seed
+    assert signerD.verfer.code == MtrDex.Ed25519
+    keysD = [signerD.verfer.qb64]
+    # compute nxt digest
+    nexterD = Nexter(keys=keysD)  # default sith is 1
+    nxtD = nexterD.qb64  # transferable so nxt is not empty
+
+    seal = SealLocation(i='ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd',
+                        s="{:x}".format(3),
+                        t=Ilks.ixn,
+                        p='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+
+    serderD = delcept(keys=keysD, seal=seal, nxt=nxtD)
+    pre = serderD.ked["i"]
+    assert serderD.ked["i"] == 'EfapXTFyvnBKzdmilHH4nstrxJImEdi6m_1hOHwyZYT8'
+    assert serderD.ked["s"] == '0'
+    assert serderD.ked["t"] == Ilks.dip
+    assert serderD.ked["n"] == nxtD
+    assert serderD.raw == (b'{"v":"KERI10JSON000165_","i":"EfapXTFyvnBKzdmilHH4nstrxJImEdi6m_1hOHwyZYT8",'
+                           b'"s":"0","t":"dip","kt":"1","k":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRiaf9FdA_-_49'
+                           b'A"],"n":"EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4","wt":"0","w":[],"c":['
+                           b'],"da":{"i":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd","s":"3","t":"ixn"'
+                           b',"p":"EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z"}}')
+    assert serderD.dig == 'EEHl2j5lYCSisgNtdNDAb1c5qkqmyLux01UARjaYikVA'
+
+    # State Trans Delegated (key state notification)
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seedD = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+            b'\x98Y\xdd\xe8')
+    signerD = Signer(raw=seedD)  #  next signing keypair transferable is default
+    assert signerD.code == MtrDex.Ed25519_Seed
+    assert signerD.verfer.code == MtrDex.Ed25519
+    keysD = [signerD.verfer.qb64]
+    # compute nxt digest
+    nexterD = Nexter(keys=keysD)  # default sith is 1
+    nxtD = nexterD.qb64  # transferable so nxt is not empty
+
+    seal = SealLocation(i='ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd',
+                        s="{:x}".format(3),
+                        t=Ilks.ixn,
+                        p='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+
+    serderD = delcept(keys=keysD, seal=seal, nxt=nxtD)
+    pre = serderD.ked["i"]
+    assert serderD.ked["i"] == 'EfapXTFyvnBKzdmilHH4nstrxJImEdi6m_1hOHwyZYT8'
+    assert serderD.ked["s"] == '0'
+    assert serderD.ked["t"] == Ilks.dip
+    assert serderD.ked["n"] == nxtD
+    assert serderD.raw == (b'{"v":"KERI10JSON000165_","i":"EfapXTFyvnBKzdmilHH4nstrxJImEdi6m_1hOHwyZYT8",'
+                           b'"s":"0","t":"dip","kt":"1","k":["DHgZa-u7veNZkqk2AxCnxrINGKfQ0bRiaf9FdA_-_49'
+                           b'A"],"n":"EcBCalw7Oe2ohLDra2ovwlv72PrlQZdQdaoSZ1Vvk5P4","wt":"0","w":[],"c":['
+                           b'],"da":{"i":"ENdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd","s":"3","t":"ixn"'
+                           b',"p":"EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z"}}')
+    assert serderD.dig == 'EEHl2j5lYCSisgNtdNDAb1c5qkqmyLux01UARjaYikVA'
+
 
 
     """ Done Test """
@@ -3425,4 +3746,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_dereceiptcouple()
+    test_keyeventfuncs()
