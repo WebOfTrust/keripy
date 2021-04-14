@@ -83,13 +83,31 @@ SealDigest = namedtuple("SealDigest", 'd')
 # Root Seal: root is qb64 digest that is merkle tree root of data tree
 SealRoot = namedtuple("SealRoot", 'rd')
 
-# Event Seal: pre is qb64 of identifier prefix of KEL, sn is hex string,
-# dig is qb64 digest of event
+# Event Seal: triple (i,s , d)
+# i = pre is qb64 of identifier prefix of KEL for event,
+# s = sn of event as lowercase hex string  no leading zeros,
+# d = dig is qb64 digest of event
 SealEvent = namedtuple("SealEvent", 'i s d')
 
-# Event Location Seal: pre is qb64 of identifier prefix of KEL,
-# sn is hex string, ilk is str, dig is qb64 of prior event digest
+# Event Location Seal:
+# i = pre is qb64 of identifier prefix of KEL,
+# s = sn of event as lowercase hex string  no leading zeros,
+# t = message type ilk is str,
+# p = prior digest dig is qb64 of prior event digest
 SealLocation = namedtuple("SealLocation", 'i s t p')
+
+# State Latest (current) Event:
+# s = sn of latest event as lowercase hex string  no leading zeros,
+# t = message type of latest event (ilk)
+# d = digest of latest event
+StateEvent = namedtuple("StateEvent", 's t d')
+
+# State Latest Establishment Event:
+# s = sn of latest est event as lowercase hex string  no leading zeros,
+# d = digest of latest establishment event
+# wr = witness remove list (cuts) from latest est event
+# wa = witness add list (adds) from latest est event
+StateEstEvent = namedtuple("StateEstEvent", 's d wr wa')
 
 
 @dataclass(frozen=True)
@@ -140,6 +158,25 @@ Colds = Coldage(msg='msg', txt='txt', bny='bny')
 
 # Future make Cues dataclasses  instead of dicts. Dataclasses so may be converted
 # to/from dicts easily  example: dict(kin="receipt", serder=serder)
+
+
+def validateSN(sn):
+    """
+    Returns int of sn, raises ValueError if invalid sn
+
+    Parameters:
+       sn is hex char sequence number of event or seal in an event
+    """
+    if len(sn) > 32:
+        raise ValueError("Invalid sn = {} too large."
+                              "".format(sn))
+    try:
+        sn = int(sn, 16)
+    except Exception as ex:
+        raise ValueError("Invalid sn = {}.".format(sn))
+    if sn <  0:
+        raise ValueError("Negative sn = {}.".format(sn))
+    return sn
 
 
 # Utility functions for extracting groups of primitives
@@ -280,7 +317,7 @@ def incept(keys,
         nxt  is qb64 next digest xor
         toad is int of witness threshold
         wits is list of qb64 witness prefixes
-        cnfg is list of dicts of configuration traits
+        cnfg is list of strings TraitDex of configuration traits
         version is Version instance
         kind is serialization kind
         code is derivation code for prefix
@@ -490,6 +527,7 @@ def interact(pre,
 
     return Serder(ked=ked)  # return serialized ked
 
+
 def receipt(pre,
             sn,
             dig,
@@ -522,6 +560,7 @@ def receipt(pre,
                )
 
     return Serder(ked=ked)  # return serialized ked
+
 
 def chit(pre,
          sn,
@@ -582,7 +621,7 @@ def delcept(keys,
      Parameters:
         keys is list of qb64 keys
         seal is namedTuple of type SealLocation of delegating event
-            pre is qb64 of receipter's prefix
+            pre is qb64 of delegators's prefix
             sn is sequence number of delegating event
             ilk is ilk of delegating event
             dig is qb64 digest of prior event to delegating event
@@ -681,7 +720,7 @@ def deltate(pre,
         keys is list of qb64 signing keys
         dig is digest of previous event qb64
         seal is namedTuple of type SealLocation of delegating event
-            pre is qb64 of receipter's prefix
+            pre is qb64 of delegators's prefix
             sn is sequence number of delegating event
             ilk is ilk of delegating event
             dig is qb64 digest of prior event to delegating event
@@ -778,6 +817,326 @@ def deltate(pre,
     return Serder(ked=ked)  # return serialized ked
 
 
+
+def state(pre,
+          sn,
+          dig,
+          eilk,
+          keys,
+          eevt,
+          sith=None, # default based on keys
+          nxt="",
+          toad=None, # default based on wits
+          wits=None, # default to []
+          cnfg=None, # default to []
+          dpre=None,
+          seal=None,
+          version=Version,
+          kind=Serials.json,
+          ):
+
+    """
+    Returns serder of key state notification message.
+    Utility function to automate creation of rotation events.
+
+    Parameters:
+        pre is identifier prefix qb64
+        sn is int sequence number of latest event
+        dig is digest of latest event
+        eilk is message type (ilk) oflatest event
+        keys is list of qb64 signing keys
+        eevt is namedtuple of fields from latest establishment event s,d,wr,wa
+            s = sn
+            d = digest
+            wr = witness remove list (cuts)
+            wa = witness add list (adds)
+        sith is string or list format for signing threshold
+        nxt  is qb64 next digest xor if any
+        toad is int of witness threshold
+        wits is list of witness prefixes qb64
+        cnfg is list of strings TraitDex of configuration traits
+        dpre is qb64 of delegator's identifier prefix if any
+        seal is namedTuple of type SealEvent of endorser's est evt when nontrans
+            seal is triple of (i, s, d)
+            i = pre, qb64 of endorser's identifiers prefix of event in endorser's KEL
+            s = sn, sequence number of est evt in endorser's KEL for its public keys
+                used to sign key state notification
+            d = dig, qb64 digest est evt in endorser's KEL for its public keys
+                used to sign key state notification
+        version is Version instance
+        kind is serialization kind
+
+    Key State Dict
+    {
+        "v": "KERI10JSON00011c_",
+        "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+        "s": "2":,
+        "t": "ksn",
+        "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
+        "te": "rot",
+        "kt": "1",
+        "k": ["DaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],
+        "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
+        "wt": "1",
+        "w": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
+        "c": ["eo"],
+        "ee":
+          {
+            "s": "1",
+            "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
+            "wr": ["Dd8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CMZ-i0"],
+            "wa": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"]
+          },
+        "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv",
+        "a":
+          {
+            "i": "EJZAoTNZH3ULvYAfSVPzhzS6b5aU6JR2nmwyZ-i0d8CM",
+            "s": "1",
+            "d": "EULvaU6JR2nmwyAoTNZH3YAfSVPzhzZ-i0d8JZS6b5CM"
+          }
+    }
+
+    "di": "" when not delegated
+    "a": {}  when endorser has non trans prefix
+
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.ksn
+
+    if sn < 0:
+        raise ValueError("Negative sn = {} in key state.".format(sn))
+
+    if eilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
+        raise ValueError("Invalid te = {} in key state.".format(eilk))
+
+    if sith is None:
+        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
+
+    tholder = Tholder(sith=sith)
+    if tholder.size > len(keys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+
+    wits = wits if wits is not None else []
+    witset = oset(wits)
+    if len(witset) != len(wits):
+        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+
+    if toad is None:
+        if not witset:
+            toad = 0
+        else:
+            toad = max(1, ceil(len(witset) / 2))
+
+    if witset:
+        if toad < 1 or toad > len(witset):  # out of bounds toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(witset)))
+    else:
+        if toad != 0:  # invalid toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(witset)))
+
+    cnfg = cnfg if cnfg is not None else []
+
+    if not eevt or not isinstance(eevt, StateEstEvent):
+        raise ValueError("Missing or invalid latest est event = {} for key "
+                         "state.".format(eevt))
+    validateSN(eevt.s)
+
+    if len(oset(eevt.wr)) != len(eevt.wr):  # duplicates in cuts
+        raise ValueError("Invalid cuts = {} in latest est event, has duplicates"
+                         ".".format(eevt.wr))
+
+    if len(oset(eevt.wa)) != len(eevt.wa):  # duplicates in adds
+        raise ValueError("Invalid adds = {} in latest est event, has duplicates"
+                         ".".format(eevt.wa))
+
+    if seal and not isinstance(seal, SealEvent):
+        raise ValueError("Invalid endorser event seal = {} for key "
+                         "state.".format(seal))
+    if seal:
+        validateSN(seal.s)
+
+
+    ksd = dict(v=vs,  # version string
+               i=pre,  # qb64 prefix
+               s="{:x}".format(sn), # lowercase hex string no leading zeros
+               t=ilk,
+               d=dig,
+               te=eilk,
+               kt=sith, # hex string no leading zeros lowercase
+               k=keys,  # list of qb64
+               n=nxt,  # hash qual Base64
+               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               w=wits,  # list of qb64 may be empty
+               c=cnfg,  # list of config ordered mappings may be empty
+               ee=eevt._asdict(),  # latest est event dict
+               di=dpre if dpre is not None else "",
+               a=seal._asdict() if seal is not None else {},  # list of seals
+               )
+
+    return Serder(ked=ksd)  # return serialized ksd
+
+
+def stateOld(pre,
+          keys,
+          evt,
+          eevt,
+          sith=None, # default based on keys
+          nxt="",
+          toad=None, # default based on wits
+          wits=None, # default to []
+          cnfg=None, # default to []
+          dpre=None,
+          seal=None,
+          version=Version,
+          kind=Serials.json,
+          ):
+
+    """
+    Returns serder of key state notification message.
+    Utility function to automate creation of rotation events.
+
+    Parameters:
+        pre is identifier prefix qb64
+        keys is list of qb64 signing keys
+        evt is namedtuple of fields from latest (current) event s,t,d
+            s = sn = sequence number of latest event
+            t = ilk = message type of latest event
+            d = dig = digest of latest event
+        eevt is namedtuple of fields from latest establishment event s,d,wr,wa
+            s = sn
+            d = digest
+            wr = witness remove list (cuts)
+            wa = witness add list (adds)
+        sith is string or list format for signing threshold
+        nxt  is qb64 next digest xor if any
+        toad is int of witness threshold
+        wits is list of witness prefixes qb64
+        cnfg is list of strings TraitDex of configuration traits
+        dpre is qb64 of delegator's identifier prefix if any
+        seal is namedTuple of type SealEvent of endorser's est evt when nontrans
+            seal is triple of (i, s, d)
+            i = pre, qb64 of endorser's identifiers prefix of event in endorser's KEL
+            s = sn, sequence number of est evt in endorser's KEL for its public keys
+                used to sign key state notification
+            d = dig, qb64 digest est evt in endorser's KEL for its public keys
+                used to sign key state notification
+        version is Version instance
+        kind is serialization kind
+
+    Key State Dict
+    {
+        "v": "KERI10JSON00011c_",
+        "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+        "t": "ksn",
+        "kt": "1",
+        "k": ["DaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],
+        "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
+        "wt": "1",
+        "w": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
+        "c": ["eo"],
+        "e":
+          {
+            "s": "2",
+            "t": "rot",
+            "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
+          },
+        "ee":
+          {
+            "s": "1",
+            "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
+            "wr": ["Dd8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CMZ-i0"],
+            "wa": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"]
+          },
+        "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv",
+        "a":
+          {
+            "i": "EJZAoTNZH3ULvYAfSVPzhzS6b5aU6JR2nmwyZ-i0d8CM",
+            "s": "1",
+            "d": "EULvaU6JR2nmwyAoTNZH3YAfSVPzhzZ-i0d8JZS6b5CM"
+          }
+    }
+
+    "di": "" when not delegated
+    "a": {}  when endorser has non trans prefix
+
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.ksn
+
+    if sith is None:
+        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
+
+    tholder = Tholder(sith=sith)
+    if tholder.size > len(keys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+
+    wits = wits if wits is not None else []
+    witset = oset(wits)
+    if len(witset) != len(wits):
+        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+
+    if toad is None:
+        if not witset:
+            toad = 0
+        else:
+            toad = max(1, ceil(len(witset) / 2))
+
+    if witset:
+        if toad < 1 or toad > len(witset):  # out of bounds toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(witset)))
+    else:
+        if toad != 0:  # invalid toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(witset)))
+
+    cnfg = cnfg if cnfg is not None else []
+
+    if not evt or not isinstance(evt, StateEvent):
+        raise ValueError("Missing or invalid latest event = {} for key state."
+                         "".format(evt))
+    validateSN(evt.s)
+
+    if not eevt or not isinstance(eevt, StateEstEvent):
+        raise ValueError("Missing or invalid latest est event = {} for key "
+                         "state.".format(eevt))
+    validateSN(eevt.s)
+
+    if len(oset(eevt.wr)) != len(eevt.wr):  # duplicates in cuts
+        raise ValueError("Invalid cuts = {} in latest est event, has duplicates"
+                         ".".format(eevt.wr))
+
+    if len(oset(eevt.wa)) != len(eevt.wa):  # duplicates in adds
+        raise ValueError("Invalid adds = {} in latest est event, has duplicates"
+                         ".".format(eevt.wa))
+
+    if seal and not isinstance(seal, SealEvent):
+        raise ValueError("Invalid endorser event seal = {} for key "
+                         "state.".format(seal))
+    if seal:
+        validateSN(seal.s)
+
+
+    ksd = dict(v=vs,  # version string
+               i=pre,  # qb64 prefix
+               t=ilk,
+               kt=sith, # hex string no leading zeros lowercase
+               k=keys,  # list of qb64
+               n=nxt,  # hash qual Base64
+               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               w=wits,  # list of qb64 may be empty
+               c=cnfg,  # list of config ordered mappings may be empty
+               e=evt._asdict(),   # latest event dict
+               ee=eevt._asdict(),  # latest est event dict
+               di=dpre if dpre is not None else "",
+               a=seal._asdict() if seal is not None else {},  # list of seals
+               )
+
+    return Serder(ked=ksd)  # return serialized ksd
+
+
 def messagize(serder, sigers):
     """
     Attaches indexed signatures from sigers to KERI message data from serder
@@ -799,7 +1158,7 @@ def messagize(serder, sigers):
 
 def receiptize(serder, cigars):
     """
-    Attaches receipt couplets from cigars to KERI message data from serder
+    Attaches nontrans receipt couples from cigars to KERI message data from serder
     Parameters:
         serder: Serder instance containing the event
         cigars: Cigars[] array of non-transferable non indexed signatures
@@ -844,6 +1203,8 @@ class Kever:
         .nexter is qualified qb64 of next sith and next signing keys
         .toad is int threshold of accountable duplicity
         .wits is list of qualified qb64 aids for witnesses
+        .cuts is list of qualified qb64 aids for witnesses cut from prev wits list
+        .adds is list of qualified qb64 aids for witnesses added to prev wits list
         .estOnly is boolean trait True means only allow establishment events
         .lastEst is LastEstLoc namedtuple of int .sn and qb64 .dig of last est event
         .delegated is Boolean, True means delegated identifier, False not delegated
@@ -968,6 +1329,8 @@ class Kever:
                                   "".format(self.prefixer.qb64, ked))
         self.nexter = Nexter(qb64=nxt) if nxt else None
 
+        self.cuts = []  # always empty at inception since no prev event
+        self.adds = []  # always empty at inception since no prev event
         wits = ked["w"]
         if len(oset(wits)) != len(wits):
             raise ValueError("Invalid wits = {}, has duplicates for evt = {}."
@@ -1044,7 +1407,7 @@ class Kever:
                     raise ValidationError("Missing element = {} from {} event for "
                                           "evt = {}.".format(k, ilk, ked))
 
-            tholder, toad, wits = self.rotate(serder, sn)
+            tholder, toad, wits, cuts, adds = self.rotate(serder, sn)
 
             # validates and escrows as needed raises ValidationError if not successful
             self.validateSigs(serder=serder,
@@ -1072,6 +1435,8 @@ class Kever:
 
             self.toad = toad
             self.wits = wits
+            self.cuts = cuts
+            self.adds = adds
 
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(s=self.sn, d=self.serder.diger.qb64)
@@ -1125,7 +1490,7 @@ class Kever:
         """
         Generic Rotate Operation Processing
         Same logic for both rot and drt (plain and delegated rotation)
-        Returns triple (tholder, toad, wits)
+        Returns triple (tholder, toad, wits, cuts, adds)
 
         Parameters:
             serder is event Serder instance
@@ -1208,9 +1573,10 @@ class Kever:
                                   " sith = {}, keys = {} for evt = {}."
                                   "".format(self.nexter.qb64, tholder.thold, keys, ked))
 
-        # compute wits from cuts and adds use set
-        # verify set math uses ordered set to ensure that witness list is strictly
-        #  ordered so that indexed signatures work
+        # compute wits from existing .wits with new cuts and adds from event
+        # use ordered set math ops to verify and ensure strict ordering of wits
+        # cuts and add to ensure that indexed signatures on indexed witness
+        # receipts work
         witset = oset(self.wits)
         cuts = ked["wr"]
         cutset = oset(cuts)
@@ -1221,7 +1587,6 @@ class Kever:
         if (witset & cutset) != cutset:  #  some cuts not in wits
             raise ValueError("Invalid cuts = {}, not all members in wits"
                              " for evt = {}.".format(cuts, ked))
-
 
         adds = ked["wa"]
         addset = oset(adds)
@@ -1256,7 +1621,7 @@ class Kever:
                 raise ValueError("Invalid toad = {} for wits = {} for evt "
                                  "= {}.".format(toad, wits, ked))
 
-        return (tholder, toad, wits)
+        return (tholder, toad, wits, cuts, adds)
 
     def validateSN(self, ked, inceptive=False):
         """

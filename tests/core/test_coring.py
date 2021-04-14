@@ -40,7 +40,7 @@ def test_ilks():
     Test Ilkage namedtuple instance Ilks
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
-                          rct='rct', vrc='vrc')
+                          rct='rct', vrc='vrc', ksn='ksn')
 
     assert isinstance(Ilks, Ilkage)
 
@@ -58,6 +58,8 @@ def test_ilks():
     assert Ilks.rct == 'rct'
     assert 'vrc' in Ilks
     assert Ilks.vrc == 'vrc'
+    assert 'ksn' in Ilks
+    assert Ilks.ksn == 'ksn'
 
     """End Test """
 
@@ -2578,6 +2580,8 @@ def test_serder():
     vs = Versify(kind=Serials.json, size=len(e1s))  # use real length
     assert vs == 'KERI10JSON00003c_'
     e1["v"] = vs  # has real length
+    pretty = serder.pretty()
+    assert pretty == '{\n "v": "KERI10JSON00003c_",\n "i": "ABCDEFG",\n "s": "0001",\n "t": "rot"\n}'
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     with pytest.raises(ShortageError):  # test too short
@@ -2935,4 +2939,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_dater()
+    test_serder()
