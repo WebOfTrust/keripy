@@ -930,7 +930,7 @@ def state(pre,
     if witset:
         if toad < 1 or toad > len(witset):  # out of bounds toad
             raise ValueError("Invalid toad = {} for resultant wits = {}"
-                             "".format(toad, list(newitset)))
+                             "".format(toad, list(witset)))
     else:
         if toad != 0:  # invalid toad
             raise ValueError("Invalid toad = {} for resultant wits = {}"
@@ -1086,7 +1086,7 @@ def stateOld(pre,
     if witset:
         if toad < 1 or toad > len(witset):  # out of bounds toad
             raise ValueError("Invalid toad = {} for resultant wits = {}"
-                             "".format(toad, list(newitset)))
+                             "".format(toad, list(witset)))
     else:
         if toad != 0:  # invalid toad
             raise ValueError("Invalid toad = {} for resultant wits = {}"
