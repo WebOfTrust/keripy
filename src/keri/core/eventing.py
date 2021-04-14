@@ -817,7 +817,168 @@ def deltate(pre,
     return Serder(ked=ked)  # return serialized ked
 
 
+
 def state(pre,
+          sn,
+          dig,
+          eilk,
+          keys,
+          eevt,
+          sith=None, # default based on keys
+          nxt="",
+          toad=None, # default based on wits
+          wits=None, # default to []
+          cnfg=None, # default to []
+          dpre=None,
+          seal=None,
+          version=Version,
+          kind=Serials.json,
+          ):
+
+    """
+    Returns serder of key state notification message.
+    Utility function to automate creation of rotation events.
+
+    Parameters:
+        pre is identifier prefix qb64
+        sn is int sequence number of latest event
+        dig is digest of latest event
+        eilk is message type (ilk) oflatest event
+        keys is list of qb64 signing keys
+        eevt is namedtuple of fields from latest establishment event s,d,wr,wa
+            s = sn
+            d = digest
+            wr = witness remove list (cuts)
+            wa = witness add list (adds)
+        sith is string or list format for signing threshold
+        nxt  is qb64 next digest xor if any
+        toad is int of witness threshold
+        wits is list of witness prefixes qb64
+        cnfg is list of strings TraitDex of configuration traits
+        dpre is qb64 of delegator's identifier prefix if any
+        seal is namedTuple of type SealEvent of endorser's est evt when nontrans
+            seal is triple of (i, s, d)
+            i = pre, qb64 of endorser's identifiers prefix of event in endorser's KEL
+            s = sn, sequence number of est evt in endorser's KEL for its public keys
+                used to sign key state notification
+            d = dig, qb64 digest est evt in endorser's KEL for its public keys
+                used to sign key state notification
+        version is Version instance
+        kind is serialization kind
+
+    Key State Dict
+    {
+        "v": "KERI10JSON00011c_",
+        "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+        "s": "2":,
+        "t": "ksn",
+        "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
+        "te": "rot",
+        "kt": "1",
+        "k": ["DaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],
+        "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
+        "wt": "1",
+        "w": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
+        "c": ["eo"],
+        "ee":
+          {
+            "s": "1",
+            "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
+            "wr": ["Dd8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CMZ-i0"],
+            "wa": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"]
+          },
+        "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv",
+        "a":
+          {
+            "i": "EJZAoTNZH3ULvYAfSVPzhzS6b5aU6JR2nmwyZ-i0d8CM",
+            "s": "1",
+            "d": "EULvaU6JR2nmwyAoTNZH3YAfSVPzhzZ-i0d8JZS6b5CM"
+          }
+    }
+
+    "di": "" when not delegated
+    "a": {}  when endorser has non trans prefix
+
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.ksn
+
+    if sn < 0:
+        raise ValueError("Negative sn = {} in key state.".format(sn))
+
+    if eilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
+        raise ValueError("Invalid te = {} in key state.".format(eilk))
+
+    if sith is None:
+        sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
+
+    tholder = Tholder(sith=sith)
+    if tholder.size > len(keys):
+        raise ValueError("Invalid sith = {} for keys = {}".format(sith, keys))
+
+    wits = wits if wits is not None else []
+    witset = oset(wits)
+    if len(witset) != len(wits):
+        raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
+
+    if toad is None:
+        if not witset:
+            toad = 0
+        else:
+            toad = max(1, ceil(len(witset) / 2))
+
+    if witset:
+        if toad < 1 or toad > len(witset):  # out of bounds toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(newitset)))
+    else:
+        if toad != 0:  # invalid toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(witset)))
+
+    cnfg = cnfg if cnfg is not None else []
+
+    if not eevt or not isinstance(eevt, StateEstEvent):
+        raise ValueError("Missing or invalid latest est event = {} for key "
+                         "state.".format(eevt))
+    validateSN(eevt.s)
+
+    if len(oset(eevt.wr)) != len(eevt.wr):  # duplicates in cuts
+        raise ValueError("Invalid cuts = {} in latest est event, has duplicates"
+                         ".".format(eevt.wr))
+
+    if len(oset(eevt.wa)) != len(eevt.wa):  # duplicates in adds
+        raise ValueError("Invalid adds = {} in latest est event, has duplicates"
+                         ".".format(eevt.wa))
+
+    if seal and not isinstance(seal, SealEvent):
+        raise ValueError("Invalid endorser event seal = {} for key "
+                         "state.".format(seal))
+    if seal:
+        validateSN(seal.s)
+
+
+    ksd = dict(v=vs,  # version string
+               i=pre,  # qb64 prefix
+               s="{:x}".format(sn), # lowercase hex string no leading zeros
+               t=ilk,
+               d=dig,
+               te=eilk,
+               kt=sith, # hex string no leading zeros lowercase
+               k=keys,  # list of qb64
+               n=nxt,  # hash qual Base64
+               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               w=wits,  # list of qb64 may be empty
+               c=cnfg,  # list of config ordered mappings may be empty
+               ee=eevt._asdict(),  # latest est event dict
+               di=dpre if dpre is not None else "",
+               a=seal._asdict() if seal is not None else {},  # list of seals
+               )
+
+    return Serder(ked=ksd)  # return serialized ksd
+
+
+def stateOld(pre,
           keys,
           evt,
           eevt,
@@ -997,7 +1158,7 @@ def messagize(serder, sigers):
 
 def receiptize(serder, cigars):
     """
-    Attaches receipt couplets from cigars to KERI message data from serder
+    Attaches nontrans receipt couples from cigars to KERI message data from serder
     Parameters:
         serder: Serder instance containing the event
         cigars: Cigars[] array of non-transferable non indexed signatures

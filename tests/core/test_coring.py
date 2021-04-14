@@ -40,7 +40,7 @@ def test_ilks():
     Test Ilkage namedtuple instance Ilks
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
-                          rct='rct', vrc='vrc')
+                          rct='rct', vrc='vrc', ksn='ksn')
 
     assert isinstance(Ilks, Ilkage)
 
