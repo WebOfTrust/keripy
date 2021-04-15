@@ -1624,22 +1624,27 @@ def test_kever():
 
     with openDB() as db:  # Transferable case
         # Setup inception key event dict
+        salt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+        salter = Salter(raw=salt)
         # create current key
         sith = 1  #  one signer
-        skp0 = Signer()  #  original signing keypair transferable default
+        #  original signing keypair transferable default
+        skp0 = salter.signer(path="A", temp=True)
         assert skp0.code == MtrDex.Ed25519_Seed
         assert skp0.verfer.code == MtrDex.Ed25519
         keys = [skp0.verfer.qb64]
 
         # create next key
         nxtsith = "1" #  one signer
-        skp1 = Signer()  #  next signing keypair transferable is default
+        #  next signing keypair transferable is default
+        skp1 = salter.signer(path="N", temp=True)
         assert skp1.code == MtrDex.Ed25519_Seed
         assert skp1.verfer.code == MtrDex.Ed25519
         nxtkeys = [skp1.verfer.qb64]
         # compute nxt digest
         nexter = Nexter(sith=nxtsith, keys=nxtkeys)
-        nxt = nexter.qb64  # transferable so nxt is not empty
+        nxt = nexter.qb64
+        assert nxt == "E_d8cX6vuQwmD5P62_b663OeaVCLbiBFsirRHJsHn9co"  # transferable so nxt is not empty
 
         sn = 0  #  inception event so 0
         toad = 0  # no witnesses
@@ -1657,11 +1662,10 @@ def test_kever():
                     c=[],  # list of config ordered mappings may be empty
                    )
 
-
         # Derive AID from ked
         aid0 = Prefixer(ked=ked0, code=MtrDex.Ed25519)
         assert aid0.code == MtrDex.Ed25519
-        assert aid0.qb64 == skp0.verfer.qb64
+        assert aid0.qb64 == skp0.verfer.qb64 == 'DBQOqSaf6GqVAoPxb4UARrklS8kLYj3JqsR6b4AASDd4'
 
         # update ked with pre
         ked0["i"] = aid0.qb64
@@ -1676,6 +1680,24 @@ def test_kever():
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
         kever = Kever(serder=tser0, sigers=[tsig0], baser=db)  # no error
+        assert kever.baser == db
+        assert kever.cues == None
+        assert kever.prefixer.qb64 == aid0.qb64
+        assert kever.sn == 0
+        assert [verfer.qb64 for verfer in kever.verfers] == [skp0.verfer.qb64]
+        assert kever.nexter.qb64 == nexter.qb64
+
+        serderK = kever.state()
+        assert serderK.pre == kever.prefixer.qb64
+        assert serderK.sn == kever.sn
+        assert ([verfer.qb64 for verfer in serderK.verfers] ==
+                [verfer.qb64 for verfer in kever.verfers])
+        assert serderK.raw == (b'{"v":"KERI10JSON000185_","i":"DBQOqSaf6GqVAoPxb4UARrklS8kLYj3JqsR6b4AASDd4",'
+                               b'"s":"0","t":"ksn","d":"EiJRSTJQFjunT82GMPq3XLt4iMjEl00jVCaL97g0kkMQ","te":"i'
+                               b'cp","kt":"1","k":["DBQOqSaf6GqVAoPxb4UARrklS8kLYj3JqsR6b4AASDd4"],"n":"E_d8c'
+                               b'X6vuQwmD5P62_b663OeaVCLbiBFsirRHJsHn9co","wt":"0","w":[],"c":[],"ee":{"s":"0'
+                               b'","d":"EiJRSTJQFjunT82GMPq3XLt4iMjEl00jVCaL97g0kkMQ","wr":[],"wa":[]},"di":"'
+                               b'","a":{}}')
 
     with openDB() as db:  # Non-Transferable case
         # Setup inception key event dict

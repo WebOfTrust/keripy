@@ -1190,9 +1190,13 @@ class Kever:
         .EstOnly is Boolean
                 True means allow only establishment events
                 False means allow all events
+        .DoNotDelegate is Boolean
+                True means do not allow delegation other identifiers
+                False means allow delegation of delegated identifiers
 
     Attributes:
         .baser is reference to Baser instance that managers the LMDB database
+        .kevers is reference to Kevery.kevers when provided
         .cues is reference to Kevery.cues deque when provided
         .version is version of current event state
         .prefixer is prefixer instance for current event state
@@ -1207,6 +1211,7 @@ class Kever:
         .cuts is list of qualified qb64 aids for witnesses cut from prev wits list
         .adds is list of qualified qb64 aids for witnesses added to prev wits list
         .estOnly is boolean trait True means only allow establishment events
+        .doNotDelegate is boolean trait True means do not allow delegation
         .lastEst is LastEstLoc namedtuple of int .sn and qb64 .dig of last est event
         .delegated is Boolean, True means delegated identifier, False not delegated
         .delgator is str qb64 of delegator's prefix
@@ -1217,9 +1222,10 @@ class Kever:
 
     """
     EstOnly = False
+    DoNotDelegate = False
 
     def __init__(self, serder, sigers, baser=None, estOnly=None,
-                 seqner=None, dater=None, cues=None):
+                 seqner=None, dater=None, kevers=None, cues=None):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -1236,6 +1242,8 @@ class Kever:
             dater is optional Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
+            kevers is reference Kevery.kevers dict when provided needed for
+                validation of delegation seal .doNotDelegate of delegator
             cues is reference to Kevery.cues deque when provided i.e. notices of
                 events or requests to respond to
         """
@@ -1243,7 +1251,7 @@ class Kever:
         if baser is None:
             baser = Baser()  # default name = "main"
         self.baser = baser
-
+        self.kevers = kevers
         self.cues = cues
 
         # may update state as we go because if invalid we fail to finish init
@@ -1357,7 +1365,7 @@ class Kever:
         self.lastEst = LastEstLoc(s=self.sn, d=self.serder.diger.qb64)  # last establishment event location
 
 
-    def config(self, serder, estOnly=None):
+    def config(self, serder, estOnly=None, doNotDelegate=None):
         """
         Process cnfg field for configuration traits
         """
@@ -1365,9 +1373,15 @@ class Kever:
         self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
                             else False)  # ensure default estOnly is boolean
 
+        self.doNotDelegate = (True if (doNotDelegate if doNotDelegate is not None
+                                       else self.DoNotDelegate)
+                              else False)  # ensure default doNotDelegate is boolean
+
         cnfg = serder.ked["c"]  # process cnfg for traits
         if TraitDex.EstOnly in cnfg:
             self.estOnly = True
+        if TraitDex.DoNotDelegate in cnfg:
+            self.doNotDelegate = True
 
 
     def update(self, serder,  sigers, seqner=None, dater=None):
@@ -1683,7 +1697,6 @@ class Kever:
         return indices
 
 
-
     def validateSigs(self, serder, sigers, verfers, tholder):
         """
         Validate signatures by validating sith indexs and verifying signatures
@@ -1758,6 +1771,16 @@ class Kever:
                                   "".format(serder.ked["da"], serder.ked))
 
         dserder = Serder(raw=bytes(raw))  # delegating event
+
+        if self.kevers is None or seal.i not in self.kevers:
+            raise ValidationError("Missing Kever at seal = {} for evt = {}."
+                                  "".format(serder.ked["da"], serder.ked))
+
+        dkever = self.kevers[seal.i]
+        if dkever.doNotDelegate:
+            raise ValidationError("Delegating event at seal = {} for evt = {},"
+                           " does not allow delegation.".format(serder.ked["da"],
+                                                                serder.ked))
 
         # get prior event
         pdig = self.baser.getKeLast(key=snKey(pre=seal.i, sn=int(dserder.ked["s"], 16) - 1 ))
@@ -1864,6 +1887,44 @@ class Kever:
                      "event = %s\n", serder.ked)
 
 
+    def state(self, seal=None, kind=Serials.json):
+        """
+        Returns Serder instance of current key state notification message
+
+        Parameters:
+            seal is SealEvent namedtuple of est event for endorser of this
+                key state notification when endorser has transferable identifier.
+                If None then endorser has nontransferable identifier.
+        """
+        eevt = StateEstEvent(s="{:x}".format(self.lastEst.s),
+                             d=self.lastEst.d,
+                             wr=self.cuts,
+                             wa=self.adds)
+
+        cnfg = []
+        if self.estOnly:
+            cnfg.append(TraitDex.EstOnly)
+        if self.doNotDelegate:
+            cnfg.append(TraitDex.DoNotDelegate)
+
+        return (state(pre=self.prefixer.qb64,
+                        sn=self.sn,
+                        dig=self.serder.dig,
+                        eilk=self.ilk,
+                        keys=[verfer.qb64 for verfer in self.verfers],
+                        eevt=eevt,
+                        sith=self.tholder.sith,
+                        nxt=self.nexter.qb64,
+                        toad=self.toad,
+                        wits=self.wits,
+                        cnfg = cnfg,
+                        dpre=self.delegator,
+                        seal=seal,
+                        kind=kind
+                        )
+               )
+
+
 class Kevery:
     """
     Kevery (Key Event Message Processing Facility) processes an incoming
@@ -1918,9 +1979,6 @@ class Kevery:
             pre is local or own identifier prefix. Some restriction if present
             local is Boolean, True means only process msgs for own events if .pre
                         False means only process msgs for not own events if .pre
-
-
-
         """
         self.ims = ims if ims is not None else bytearray()
         self.cues = cues if cues is not None else deque()
@@ -2570,7 +2628,9 @@ class Kevery:
                               sigers=sigers,
                               baser=self.db,
                               seqner=seqner,
-                              dater=dater)
+                              dater=dater,
+                              kevers=self.kevers,
+                              cues=self.cues)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
                 if not self.pre or self.pre != pre:  # not own event when owned
