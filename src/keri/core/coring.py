@@ -3208,7 +3208,7 @@ class Tholder:
 
     Hidden:
         ._sith is original signing threshold
-        ._thold is parsed signing threshold
+        ._thold is parsed signing threshold maybe int or list of clauses
         ._limen is extracted string for the next commitment to threshold
         ._weighted is Boolean, True if fractional weighted threshold False if numeric
         ._size is int minimum size of of keys list
