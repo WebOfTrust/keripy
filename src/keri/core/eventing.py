@@ -3016,11 +3016,12 @@ class Kevery:
                                           "no keys."
                                           "".format(sdiger.qb64, sprefixer.qb64))
 
-                if siger.index >= len(sverfers):
-                    raise ValidationError("Index = {} to large for keys."
-                                              "".format(siger.index))
+
 
                 for siger in sigers:
+                    if siger.index >= len(sverfers):
+                        raise ValidationError("Index = {} to large for keys."
+                                                  "".format(siger.index))
                     siger.verfer = sverfers[siger.index]  # assign verfer
                     if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
                         logger.info("Kevery unescrow error: Bad trans receipt sig."
