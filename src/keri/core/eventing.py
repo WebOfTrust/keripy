@@ -2253,6 +2253,8 @@ class Kevery:
         cigars = []  # List of cigars to hold nontrans rct couplets
         # List of tuples from extracted transferable receipt (vrc) quadruples
         trqs = []  # each converted quadruple is (prefixer, seqner, diger, siger)
+        # List of tuples from extracted transferable indexed sig groups
+        tsgs = []  # each converted group is tuple of (i,s,d) triple plus list of sigs
         # List of tuples from extracted first seen replay couples
         frcs = []  #  # each converted couple is (seqner, dater)
         pipelined = False  # all attachments in one big pipeline counted group
@@ -2288,7 +2290,6 @@ class Kevery:
                             siger = yield from self._extractor(ims=ims, klas=Siger, cold=cold)
                             sigers.append(siger)
 
-
                     elif ctr.code == CtrDex.WitnessIdxSigs:
                         pass
 
@@ -2316,6 +2317,29 @@ class Kevery:
                             diger = yield from  self._extractor(ims, klas=Diger, cold=cold)
                             siger = yield from self._extractor(ims=ims, klas=Siger, cold=cold)
                             trqs.append((prefixer, seqner, diger, siger))
+
+                    elif ctr.code == CtrDex.TransIndexedSigGroups:
+                        # extract attaced trans indexed sig groups each made of
+                        # triple pre+snu+dig plus indexed sig group
+                        # pre is pre of signer (endorser) of msg
+                        # snu is sn of signer's est evt when signed
+                        # dig is dig of signer's est event when signed
+                        # followed by counter for ControllerIdxSigs with attached
+                        # indexed sigs from trans signer (endorser).
+                        for i in range(ctr.count): # extract each attached groups
+                            prefixer = yield from  self._extractor(ims, klas=Prefixer, cold=cold)
+                            seqner = yield from  self._extractor(ims, klas=Seqner, cold=cold)
+                            diger = yield from  self._extractor(ims, klas=Diger, cold=cold)
+                            ictr = ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+                            if ctr.code != CtrDex.ControllerIdxSigs:
+                                raise UnexpectedCodeError("Wrong count code={}."
+                                           "Expected code={}.".format(ictr.code,
+                                                     CtrDex.ControllerIdxSigs))
+                            isigers = []
+                            for i in range(ictr.count): # extract each attached signature
+                                isiger = yield from self._extractor(ims=ims, klas=Siger, cold=cold)
+                                isigers.append(isiger)
+                            tsgs.append((prefixer, seqner, diger, isigers))
 
                     elif ctr.code == CtrDex.FirstSeenReplayCouples:
                         # extract attached first seen replay couples
@@ -2370,7 +2394,8 @@ class Kevery:
                 raise ValidationError("Missing attached signature(s) for evt "
                                       "= {}.".format(serder.ked))
 
-            self.processEvent(serder, sigers,
+            self.processEvent(serder,
+                              sigers,
                               seqner=seqner if cloned else None,
                               dater=dater if cloned else None)
 
@@ -2394,6 +2419,20 @@ class Kevery:
                                       " for evt = {}.".format(serder.ked))
 
             self.processChit(serder, sigers)
+
+        elif ilk in [Ilks.ksn]:  # key state notification msg
+
+            if not (cigars or tsgs):
+                raise ValidationError("Missing attached endorser signature(s) "
+                       "to key state notification msg = {}.".format(serder.ked))
+
+            if cigars:  # process separately so do not clash on errors
+                # may want two different functions One for processKeyStateNoticeNonTrans
+                # and one for processKeyStateNoticeTrans
+                self.processKeyStateNotice(serder, cigars=cigars)  # nontrans
+
+            if tsgs:  # process separately so do not clash on errors
+                self.processKeyStateNotice(serder, tsgs=tsgs)  #  trans
 
         else:
             raise ValidationError("Unexpected message ilk = {} for evt ="
@@ -2854,6 +2893,158 @@ class Kevery:
                                       "missing associated event for transferable "
                                       "validator receipt quadruple for event={}."
                                       "".format(ked))
+
+
+    def processKeyStateNotice(self, serder, cigars=None, tsgs=None):
+        """
+        Process one key state notification with attached nontrans receipt couples
+        in cigars and/or attached trans indexed sig groups in tsgs
+
+        Parameters:
+            serder is chit serder (transferable validator receipt message)
+            cigars is list of Cigar instances that contain receipt couple
+                signature in .raw and public key in .verfer
+            tsgs is list of tuples (quadruples) of form
+                (prefixer, seqner, diger, [sigers]) where
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
+                [sigers] is list of indexed sigs from trans endorser's keys from est evt
+
+        """
+        # fetch from serder to process
+        ked = serder.ked
+        pre = serder.pre
+        sn = self.validateSN(ked)
+
+        # key state acceptance mode needs to be defined.
+        # unverified key state from trusted endorsers we accept if endorsed
+        # verified key state from any endorser, endorser sig provides duplicity
+        # detection of malicious endorsers. We only accept key state if it
+        # verifies agains its KEL and escrow key state if KEL incomplete.
+        # need to change logic below
+
+        #  may want to separate into two different functions
+
+        # Only accept key state if for last seen version of event at sn
+        ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
+
+
+        if ldig is None:  # escrow because event does not yet exist in database
+            # # take advantage of fact that receipt and event have same pre, sn fields
+            pass
+
+            #self.escrowUREvent(serder, cigars, dig=serder.dig)  # digest in receipt
+            #raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
+
+        ldig = bytes(ldig).decode("utf-8")  # verify digs match
+        # retrieve event by dig assumes if ldig is not None that event exists at ldig
+
+        if not serder.compare(dig=ldig):  # mismatch events problem with replay
+            raise ValidationError("Mismatch keystate at sn = {} with db."
+                                  "".format(ked["s"]))
+
+        # process each couple to verify sig and write to db
+        for cigar in cigars:
+            if cigar.verfer.transferable:  # skip transferable verfers
+                continue  # skip invalid couplets
+            if self.pre and self.pre == cigar.verfer.qb64:  # own receipt when own nontrans
+                if self.pre == pre:  # own receipt attachment on own event
+                    logger.info("Kevery process: skipped own receipt attachment"
+                                " on own event receipt=\n%s\n",
+                                           json.dumps(serder.ked, indent=1))
+                    continue  # skip own receipt attachment on own event
+                if not self.local:  # own receipt on other event when not local
+                    logger.info("Kevery process: skipped own receipt attachment"
+                                " on nonlocal event receipt=\n%s\n",
+                                           json.dumps(serder.ked, indent=1))
+                    continue  # skip own receipt attachment on non-local event
+
+            if cigar.verfer.verify(cigar.raw, serder.raw):
+                # write receipt couple to database
+                couple = cigar.verfer.qb64b + cigar.qb64b
+                self.db.addRct(key=dgKey(pre=pre, dig=ldig), val=couple)
+
+
+
+        for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
+            if self.pre and self.pre == sprefixer.qb64:  # own endorsed ksn
+                if self.pre == pre:  # skip own endorsed ksn
+                    raise ValidationError("Own endorsement pre={} of own key"
+                                " state notifiction {}.".format(self.pre, ked))
+                if not self.local:  # skip own nonlocal ksn
+                    raise ValidationError("Own endorsement pre={}  "
+                                          "of nonlocal key state notification "
+                                          "{}.".format(self.pre, ked))
+
+            if ldig is not None and sprefixer.qb64 in self.kevers:
+                # both key state event and endorser in database so retreive
+                if isinstance(ldig, memoryview):
+                    ldig = bytes(ldig).decode("utf-8")
+
+                if not serder.compare(dig=ldig):  # mismatch events problem with replay
+                    raise ValidationError("Mismatch replay event at sn = {} with db."
+                                          "".format(ked["s"]))
+
+                # retrieve dig of last event at sn of endorser.
+                sdig = self.db.getKeLast(key=snKey(pre=sprefixer.qb64b,
+                                                      sn=sseqner.sn))
+                if sdig is None:
+                    # endorser's est event not yet in endorser's KEL
+                    #  do we escrow key state notifications ?
+                    pass
+                    #self.escrowVRQuadruple(serder, sprefixer, sseqner, sdiger, siger)
+                    #raise UnverifiedTransferableReceiptError("Unverified receipt: "
+                                        #"missing establishment event of transferable "
+                                        #"validator receipt quadruple for event={}."
+                                        #"".format(ked))
+
+                # retrieve last event itself of endorser
+                sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
+                # assumes db ensures that sraw must not be none because sdig was in KE
+                sserder = Serder(raw=bytes(sraw))
+                if not sserder.compare(diger=sdiger):  # endorser's dig not match event
+                    raise ValidationError("Bad trans indexed sig group at sn = {}"
+                                          " for ksn = {}."
+                                          "".format(sseqner.sn, sserder.ked))
+
+                #verify sigs and if so write keystate to database
+                sverfers = sserder.verfers
+                if not sverfers:
+                    raise ValidationError("Invalid key state endorser's est. event"
+                                          " dig = {} for ksn from pre ={}, "
+                                          "no keys."
+                                          "".format(sdiger.qb64, sprefixer.qb64))
+
+
+
+                for siger in sigers:
+                    if siger.index >= len(sverfers):
+                        raise ValidationError("Index = {} to large for keys."
+                                                  "".format(siger.index))
+                    siger.verfer = sverfers[siger.index]  # assign verfer
+                    if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
+                        logger.info("Kevery unescrow error: Bad trans receipt sig."
+                                 "pre=%s sn=%x receipter=%s\n", pre, sn, sprefixer.qb64)
+
+                        raise ValidationError("Bad escrowed trans receipt sig at "
+                                              "pre={} sn={:x} receipter={}."
+                                              "".format(pre, sn, sprefixer.qb64))
+
+                    # good sig so write ksn to database
+
+                    # Set up quadruple
+                    #quadruple = sprefixer.qb64b + sseqner.qb64b + sdiger.qb64b + siger.qb64b
+                    #self.db.addVrc(key=dgKey(pre, serder.dig), val=quadruple)
+
+
+            else:  # escrow  either endorser or key stated event not yet in database
+                pass
+                #self.escrowVRQuadruple(serder, sprefixer, sseqner, sdiger, siger)
+                #raise UnverifiedTransferableReceiptError("Unverified receipt: "
+                                      #"missing associated event for transferable "
+                                      #"validator receipt quadruple for event={}."
+                                      #"".format(ked))
 
 
     def validateSN(self, ked):

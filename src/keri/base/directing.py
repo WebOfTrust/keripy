@@ -303,6 +303,36 @@ class Habitat():
         return msg
 
 
+    def endorse(self, serder):
+        """
+        Returns msg with own endorsement of msg from serder with attached signature
+        groups based on own pre transferable or non-transferable.
+        Useful for endorsing key state message when provided via serder from
+        Kever.state()
+        Future add support for processing into db once have support for storing
+           key state in db.
+        """
+        if self.kever.prefixer.transferable:
+            # create SealEvent for endorsers est evt whose keys use to sign
+            seal = eventing.SealEvent(i=self.kever.prefixer.qb64,
+                             s=self.kever.lastEst.sn,
+                             d=self.kever.lastEst.dig)
+            # sign serder event
+            sigers = self.mgr.sign(ser=serder.raw,
+                                   verfers=self.kever.verfers,
+                                   indexed=True)
+            msg = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+
+        else:
+            # sign serder event
+            cigars = self.mgr.sign(ser=serder.raw,
+                                   verfers=self.kever.verfers,
+                                   indexed=False)
+            msg = eventing.receiptize(serder=serder, cigars=cigars)
+
+        return msg
+
+
     def replay(self, pre=None, fn=0):
         """
         Returns replay of FEL first seen event log for pre starting from fn
@@ -344,6 +374,7 @@ class Habitat():
         for sig in self.db.getSigsIter(key):
             msg.extend(sig) # attach sig
         return (msg)
+
 
     def makeOwnInception(self):
         """
