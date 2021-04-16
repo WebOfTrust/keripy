@@ -1882,10 +1882,12 @@ class Kevery:
 
 
     @staticmethod
-    def _extractor(ims, klas, cold=Colds.txt):
+    def _extractor(ims, klas, cold=Colds.txt, abort=False):
         """
         Returns generator to extract and return instance of klas from input
         message stream, ims, given stream state, cold, is txt or bny.
+        If wait is True then yield when not enough bytes in stream otherwise
+        raise ShortageError
         Inits klas from ims using qb64b or qb2 parameter based on cold.
         Yields if not enough bytes in ims to fill out klas instance.
 
@@ -1902,6 +1904,8 @@ class Kevery:
                 else:
                     raise ColdStartError("Invalid stream state cold={}.".format(cold))
             except ShortageError as ex:
+                if abort:  # pipelined pre-collects full frame before extracting
+                    raise  # bad pipelined frame so abort by raising error
                 yield
 
 
@@ -2281,13 +2285,19 @@ class Kevery:
                         pass  #  pass extracted ims to pipeline processor
                         return
 
-                    ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+                    ctr = yield from self._extractor(ims=ims,
+                                                     klas=Counter,
+                                                     cold=cold,
+                                                     abort=pipelined)
 
                 # iteratively process attachment counters (all non pipelined)
                 while True:  # do while already extracted first counter is ctr
                     if ctr.code == CtrDex.ControllerIdxSigs:
                         for i in range(ctr.count): # extract each attached signature
-                            siger = yield from self._extractor(ims=ims, klas=Siger, cold=cold)
+                            siger = yield from self._extractor(ims=ims,
+                                                               klas=Siger,
+                                                               cold=cold,
+                                                               abort=pipelined)
                             sigers.append(siger)
 
                     elif ctr.code == CtrDex.WitnessIdxSigs:
@@ -2299,8 +2309,14 @@ class Kevery:
                         # cigar itself has the attached signature
 
                         for i in range(ctr.count): # extract each attached couple
-                            verfer = yield from self._extractor(ims=ims, klas=Verfer, cold=cold)
-                            cigar = yield from self._extractor(ims=ims, klas=Cigar, cold=cold)
+                            verfer = yield from self._extractor(ims=ims,
+                                                                klas=Verfer,
+                                                                cold=cold,
+                                                                abort=pipelined)
+                            cigar = yield from self._extractor(ims=ims,
+                                                               klas=Cigar,
+                                                               cold=cold,
+                                                               abort=pipelined)
                             cigar.verfer = verfer
                             cigars.append(cigar)
 
@@ -2312,10 +2328,22 @@ class Kevery:
                         # sdig is dig of signer's est event when signed
                         # sig is indexed signature of signer on this event msg
                         for i in range(ctr.count): # extract each attached quadruple
-                            prefixer = yield from  self._extractor(ims, klas=Prefixer, cold=cold)
-                            seqner = yield from  self._extractor(ims, klas=Seqner, cold=cold)
-                            diger = yield from  self._extractor(ims, klas=Diger, cold=cold)
-                            siger = yield from self._extractor(ims=ims, klas=Siger, cold=cold)
+                            prefixer = yield from  self._extractor(ims,
+                                                                   klas=Prefixer,
+                                                                   cold=cold,
+                                                                   abort=pipelined)
+                            seqner = yield from  self._extractor(ims,
+                                                                 klas=Seqner,
+                                                                 cold=cold,
+                                                                 abort=pipelined)
+                            diger = yield from  self._extractor(ims,
+                                                                klas=Diger,
+                                                                cold=cold,
+                                                                abort=pipelined)
+                            siger = yield from self._extractor(ims=ims,
+                                                               klas=Siger,
+                                                               cold=cold,
+                                                               abort=pipelined)
                             trqs.append((prefixer, seqner, diger, siger))
 
                     elif ctr.code == CtrDex.TransIndexedSigGroups:
@@ -2327,17 +2355,32 @@ class Kevery:
                         # followed by counter for ControllerIdxSigs with attached
                         # indexed sigs from trans signer (endorser).
                         for i in range(ctr.count): # extract each attached groups
-                            prefixer = yield from  self._extractor(ims, klas=Prefixer, cold=cold)
-                            seqner = yield from  self._extractor(ims, klas=Seqner, cold=cold)
-                            diger = yield from  self._extractor(ims, klas=Diger, cold=cold)
-                            ictr = ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
+                            prefixer = yield from  self._extractor(ims,
+                                                                   klas=Prefixer,
+                                                                   cold=cold,
+                                                                   abort=pipelined)
+                            seqner = yield from  self._extractor(ims,
+                                                                 klas=Seqner,
+                                                                 cold=cold,
+                                                                 abort=pipelined)
+                            diger = yield from  self._extractor(ims,
+                                                                klas=Diger,
+                                                                cold=cold,
+                                                                abort=pipelined)
+                            ictr = ctr = yield from self._extractor(ims=ims,
+                                                                    klas=Counter,
+                                                                    cold=cold,
+                                                                    abort=pipelined)
                             if ctr.code != CtrDex.ControllerIdxSigs:
                                 raise UnexpectedCodeError("Wrong count code={}."
                                            "Expected code={}.".format(ictr.code,
                                                      CtrDex.ControllerIdxSigs))
                             isigers = []
                             for i in range(ictr.count): # extract each attached signature
-                                isiger = yield from self._extractor(ims=ims, klas=Siger, cold=cold)
+                                isiger = yield from self._extractor(ims=ims,
+                                                                    klas=Siger,
+                                                                    cold=cold,
+                                                                    abort=pipelined)
                                 isigers.append(isiger)
                             tsgs.append((prefixer, seqner, diger, isigers))
 
@@ -2347,8 +2390,14 @@ class Kevery:
                         # snu is fn (first seen ordinal) of event
                         # dtm is dt of event
                         for i in range(ctr.count): # extract each attached quadruple
-                            seqner = yield from  self._extractor(ims, klas=Seqner, cold=cold)
-                            dater = yield from  self._extractor(ims, klas=Dater, cold=cold)
+                            seqner = yield from  self._extractor(ims,
+                                                                 klas=Seqner,
+                                                                 cold=cold,
+                                                                 abort=pipelined)
+                            dater = yield from  self._extractor(ims,
+                                                                klas=Dater,
+                                                                cold=cold,
+                                                                abort=pipelined)
                             frcs.append((seqner, dater))
 
                     else:
@@ -2520,7 +2569,7 @@ class Kevery:
                                                sigers=sigers,
                                                verfers=eserder.verfers)
                     if indices:  # at least one verified signature so log sigs
-                        # not first seen update
+                        # not first seen inception
                         kever.logEvent(serder, sigers)  # idempotent update db logs
 
                 else:   # escrow likely duplicitous event
