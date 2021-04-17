@@ -1523,20 +1523,28 @@ class Kever:
             verfers is list of Verfer instance (public keys)
 
         """
-        # ensure no duplicate sigers by using set math on sigers
-        sigs = oset([siger.qb64 for siger in sigers])
-        sigers = [Siger(qb64=sig) for sig in sigs]
-
-        # verify indexes of attached signatures against verifiers
+        # verify indexes of attached signatures against verifiers and assign
+        # verfer to each siger
         for siger in sigers:
             if siger.index >= len(verfers):
                 raise ValidationError("Index = {} to large for keys for evt = "
                                       "{}.".format(siger.index, serder.ked))
             siger.verfer = verfers[siger.index]  # assign verfer
 
-        # verify signatures
+        # Ensure no duplicate sigers by using set math on sigers' sigs otherwise
+        # indices count for threshold will be erroneous. Does not modify in place
+        # passed in sigers list depends on idempotency of sigs database writes where
+        # identical sigs are not written as duplicates.
+        sigs = oset([siger.qb64 for siger in sigers])
+        usigers = []
+        for sig in sigs:
+            siger = Siger(qb64=sig)
+            siger.verfer = verfers[siger.index]
+            usigers.append(siger)
+
+        # create list of unique verify signature indices for threshold check.
         indices = []
-        for siger in sigers:
+        for siger in usigers:
             if siger.verfer.verify(siger.raw, serder.raw):
                 indices.append(siger.index)
 
