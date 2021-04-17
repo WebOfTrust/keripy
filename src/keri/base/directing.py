@@ -164,7 +164,7 @@ class Habitat():
         self.mgr.move(old=opre, new=self.pre)
 
         self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, framed=True,
-                                   pre=self.pre, local=True)
+                                   opre=self.pre, local=True)
 
         sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
         msg = eventing.messagize(self.iserder, sigers)
@@ -622,7 +622,7 @@ class Reactor(doing.DoDoer):
                                       kevers=self.hab.kevers,
                                       db=self.hab.db,
                                       framed=True,
-                                      pre=self.hab.pre,
+                                      opre=self.hab.pre,
                                       local=False)
         doers = doers if doers is not None else []
         doers.extend([self.msgDo, self.cueDo, self.escrowDo])
@@ -951,7 +951,7 @@ class Reactant(doing.DoDoer):
                                       kevers=self.hab.kevers,
                                       db=self.hab.db,
                                       framed=True,
-                                      pre=self.hab.pre,
+                                      opre=self.hab.pre,
                                       local=False)
         doers = doers if doers is not None else []
         doers.extend([self.msgDo, self.cueDo, self.escrowDo])
