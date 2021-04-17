@@ -1114,22 +1114,24 @@ class Kever:
         self.config(serder=serder, estOnly=estOnly)  # assign config traits perms
 
         # If does not validate then escrows as needed and raises ValidationError
-        self.validateSigs(serder=serder,
-                          sigers=sigers,
-                          verfers=serder.verfers,
-                          tholder=self.tholder)
+        sigers = self.validateSigs(serder=serder,
+                                   sigers=sigers,
+                                   verfers=serder.verfers,
+                                   tholder=self.tholder)
+
+        if False:
+            wigers = self.validateWigs(serder=serder, wigers=wigers, toad=self.toad,
+                              wits=self.wits)
+
 
         if ilk == Ilks.dip:
-            seal = self.validateSeal(serder=serder, sigers=sigers)
+            seal = self.validateSeal(serder=serder, sigers=sigers, wigers=wigers)
             self.delegated = True
             self.delegator = seal.i
         else:
             self.delegated = False
             self.delegator = None
 
-        if False:
-            self.validateWigs(serder=serder, wigers=wigers, toad=self.toad,
-                              wits=self.wits)
 
         # .validateSigs above ensures signing threshold met otherwise raises exception
         # .validateSeals above ensures delegated otherwise raises exception
@@ -1275,10 +1277,14 @@ class Kever:
             tholder, toad, wits, cuts, adds = self.rotate(serder, sn)
 
             # validates and escrows as needed raises ValidationError if not successful
-            self.validateSigs(serder=serder,
-                              sigers=sigers,
-                              verfers=serder.verfers,
-                              tholder=tholder)
+            sigers = self.validateSigs(serder=serder,
+                                       sigers=sigers,
+                                       verfers=serder.verfers,
+                                       tholder=tholder)
+
+            if False:
+                wigers = self.validateWigs(serder=serder, wigers=wigers, toad=toad,
+                                               wits=wits)
 
             if ilk == Ilks.drt:
                 seal = self.validateSeal(serder=serder, sigers=sigers)
@@ -1287,10 +1293,6 @@ class Kever:
                                       "wrong delegator = {} for delegated pre "
                                       " = {} with evt = {}."
                                       "".format(seal.i, ked["i"], ked))
-
-            if False:
-                self.validateWigs(serder=serder, wigers=wigers, toad=toad,
-                                  wits=wits)
 
 
             # nxt and signatures verify so update state
@@ -1340,13 +1342,13 @@ class Kever:
 
             # interaction event use sith and keys from pre-existing Kever state
             # validates and escrows as needed
-            self.validateSigs(serder=serder,
-                              sigers=sigers,
-                              verfers=self.verfers,
-                              tholder=self.tholder)
+            sigers = self.validateSigs(serder=serder,
+                                       sigers=sigers,
+                                       verfers=self.verfers,
+                                       tholder=self.tholder)
 
             if False:
-                self.validateWigs(serder=serder, wigers=wigers, toad=self.toad,
+                wigers = self.validateWigs(serder=serder, wigers=wigers, toad=self.toad,
                                   wits=self.wits)
 
             # update state
@@ -1568,54 +1570,16 @@ class Kever:
         return (uvsigers, indices)
 
 
-    def verifySigsOld(self, serder, sigers, verfers):
-        """
-        Returns list of indices of verified signatures for serder, sigers, and verfers.
-        Assigns verfer to appropriate siger based on index
-        If no signatures verify then indices is empty
-
-        Parameters:
-            serder is Serder of signed event
-            sigers is list of indexed Siger instances (signatures)
-            verfers is list of Verfer instance (public keys)
-
-        """
-        # Ensure no duplicate sigers by using set math on sigers' sigs otherwise
-        # indices count for threshold will be erroneous. Does not modify in place
-        # passed in sigers list, but instead depends on caller to use indices to
-        # modify its copy to filter out unverifiable or duplicate sigers
-        usigs = oset([siger.qb64 for siger in sigers])
-        usigers = [Siger(qb64=sig) for sig in usigs ]
-
-        # verify indexes of attached signatures against verifiers and assign
-        # verfer to each siger
-        for siger in usigers:
-            if siger.index >= len(verfers):
-                raise ValidationError("Index = {} to large for keys for evt = "
-                                      "{}.".format(siger.index, serder.ked))
-            siger.verfer = verfers[siger.index]  # assign verfer
-
-        # create list of unique verify signature indices for threshold check.
-        indices = []
-        for siger in usigers:
-            if siger.verfer.verify(siger.raw, serder.raw):
-                indices.append(siger.index)
-
-        return indices
-
-
-
     def validateSigs(self, serder, sigers, verfers, tholder):
         """
         Validate signatures by validating sith, indexes, and verifying signatures
 
         Parameters:
-            serder
-            sigers
-            verfers
-            tholder
-            sn
-            escrow
+            serder is Serder instance of event
+            sigers is list of Siger instances of indexed controllers signatures.
+                Index is offset into verfers list from which public key may be derived.
+            verfers is list of Verfer instances of keys from latest est event
+            tholder is Tholder instance of sith threshold
 
         """
         if len(verfers) < self.tholder.size:
@@ -1639,6 +1603,7 @@ class Kever:
                                   " for evt = {}.".format(tholder.sith,
                                                 [siger.qb64 for siger in sigers],
                                                 serder.ked))
+        return sigers  # unique verified sigers with assigned .verfer
 
 
     def validateWigs(self, serder, wigers, toad, wits):
@@ -1674,9 +1639,9 @@ class Kever:
                         "on witness sigs for {} for evt = {}.".format(toad,
                                                 [siger.qb64 for siger in wigers],
                                                 serder.ked))
+        return wigers  # unique verified wigers with assigned .verfer
 
-
-    def validateSeal(self, serder, sigers):
+    def validateSeal(self, serder, sigers, wigers=None):
         """
         Returns seal instance of SealLocation if seal validates with respect
         to Delegator's KEL
@@ -1684,9 +1649,11 @@ class Kever:
         Assumes state setup
 
         Parameters:
-            serder is delegated event serder
-            sigers is delegated event list of event sigers
-            sn is int delegated event sequence number
+            serder is Serder instance of delegated event serder
+            sigers is list of Siger instances of indexed controller sigs of
+                delegated event
+            wigers is optional list of Siger instance of indexed witness sigs of
+                delegated event
 
         """
         # verify seal pointing delegator event
@@ -1702,7 +1669,7 @@ class Kever:
             #  escrow event here
             inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
             sn = self.validateSN(ked=serder.ked, inceptive=inceptive)
-            self.escrowPSEvent(serder=serder, sigers=sigers)
+            self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
             raise MissingDelegatingSealError("No delegating event at seal = {} for "
                                              "evt = {}.".format(serder.ked["da"],
                                                      serder.ked))
@@ -1816,13 +1783,12 @@ class Kever:
     def escrowPSEvent(self, serder, sigers, wigers=None):
         """
         Update associated logs for escrow of partially signed event
-        or fully signed delegated event but without delegating event
+        or fully signed delegated event but not yet verified delegation
 
         Parameters:
             serder is Serder instance of event
-            sigers is list of Siger instances of indexed controller signatures
-                of event
-            wigers is list of Siger instance of indexed witness sigantures of event
+            sigers is list of Siger instances of indexed controller sigs
+            wigers is optional list of Siger instance of indexed witness sigs
         """
         dgkey = dgKey(serder.preb, serder.digb)
         self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))   # idempotent
@@ -1835,18 +1801,21 @@ class Kever:
                      "event = %s\n", serder.ked)
 
 
-    def escrowPWEvent(self, serder, wigers):
+    def escrowPWEvent(self, serder, wigers, sigers=None):
         """
         Update associated logs for escrow of partially signed event
         or fully signed delegated event but without delegating event
 
         Parameters:
             serder is Serder instance of  event
-            wigers is list of Siger instance of indexed witness sigantures of event
+            wigers is list of Siger instance of indexed witness sigs
+            sigers is optional list of Siger instances of indexed controller sigs
         """
         dgkey = dgKey(serder.preb, serder.digb)
         self.baser.putDts(dgkey, nowIso8601().encode("utf-8"))  # idempotent
         self.baser.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        if sigers:
+            self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.baser.putEvt(dgkey, serder.raw)
         self.baser.addPwe(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Kever state: Escrowed partially witnessed "
