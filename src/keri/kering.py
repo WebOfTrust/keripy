@@ -121,6 +121,14 @@ class MissingSignatureError(ValidationError):
     """
 
 
+class MissingWitnessSignatureError(ValidationError):
+    """
+    Error Missing Enough Witness Signatures for Threshold
+    Usage:
+        raise MissingWitnessSignatureError("error message")
+    """
+
+
 class MissingDelegatingSealError(ValidationError):
     """
     Error Missing Event with Delegating Seal
