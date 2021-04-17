@@ -1026,6 +1026,11 @@ class Kever:
         .baser is reference to Baser instance that managers the LMDB database
         .kevers is reference to Kevery.kevers when provided
         .cues is reference to Kevery.cues deque when provided
+        .opre is fully qualified base64 identifier prefix of own identifier if any
+            from Kevery when provided
+        .local is Boolean (from kevery when provided)
+            True means only process msgs for own events if .opre
+            False means only process msgs for not own events if .opre
         .version is version of current event state
         .prefixer is prefixer instance for current event state
         .sn is sequence number int
@@ -1660,8 +1665,11 @@ class Kever:
 
         delegator = self.validateDelegation(serder, sigers=sigers, wigers=wigers)
 
-        if False:  # logic here if should constrain on fully witnessed or not
-            #  check if fully witnesses
+        # Kevery .process event logic prevents this from seeing event when
+        # not local and event pre is own pre
+        if ((wits and not self.opre) or  # wits in promiscuous mode
+            (wits and not self.local and self.opre and self.opre not in wits)):
+            # validate that event is fully witnessed
             if toad < 0 or len(wits) < toad:
                 raise ValidationError("Invalid toad = {} for wits = {} for evt"
                                        " = {}.".format(toad, wits, serder.ked))
@@ -1990,9 +1998,9 @@ class Kevery:
         .framed is Boolean stream is packet framed If True Else not framed
         .pipeline is Boolean, True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-        .pre is fully qualified base64 identifier prefix of own identifier if any
-        .local is Boolean, True means only process msgs for own events if .pre
-                           False means only process msgs for not own events if .pre
+        .opre is fully qualified base64 identifier prefix of own identifier if any
+        .local is Boolean, True means only process msgs for own events if .opre
+                           False means only process msgs for not own events if .opre
 
     Properties:
         .kever own Kever if self.pre else None
@@ -2764,7 +2772,9 @@ class Kevery:
                               seqner=seqner,
                               dater=dater,
                               kevers=self.kevers,
-                              cues=self.cues)
+                              cues=self.cues,
+                              opre=self.opre,
+                              local=self.local)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
                 if not self.opre or self.opre != pre:  # not own event when owned
