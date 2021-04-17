@@ -1052,7 +1052,7 @@ class Baser(LMDBer):
             DB is keyed by identifer prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .wiss is named sub DB of indexed witness signatures of event
+        .wigs is named sub DB of indexed witness signatures of event
             Witnesses always have nontransferable indetifier prefixes.
             The index is the offset of the witness into the witness list
             of the most recent establishment event wrt the receipted event.
@@ -1192,7 +1192,7 @@ class Baser(LMDBer):
         self.fels = self.env.open_db(key=b'fels.')
         self.dtss = self.env.open_db(key=b'dtss.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
-        self.wiss = self.env.open_db(key=b'wiss.', dupsort=True)
+        self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
         self.ures = self.env.open_db(key=b'ures.', dupsort=True)
         self.vrcs = self.env.open_db(key=b'vrcs.', dupsort=True)
@@ -1495,29 +1495,28 @@ class Baser(LMDBer):
         """
         return self.delVals(self.sigs, key, val)
 
-#wiss
 
-    def getWiss(self, key):
+    def getWigs(self, key):
         """
         Use dgKey()
         Return list of indexed witness signatures at key
         Returns empty list if no entry at key
         Duplicates are retrieved in lexocographic order not insertion order.
         """
-        return self.getVals(self.wiss, key)
+        return self.getVals(self.wigs, key)
 
 
-    def getWissIter(self, key):
+    def getWigsIter(self, key):
         """
         Use dgKey()
         Return iterator of indexed witness signatures at key
         Raises StopIteration Error when empty
         Duplicates are retrieved in lexocographic order not insertion order.
         """
-        return self.getValsIter(self.wiss, key)
+        return self.getValsIter(self.wigs, key)
 
 
-    def putWiss(self, key, vals):
+    def putWigs(self, key, vals):
         """
         Use dgKey()
         Write each entry from list of bytes indexed witness signatures vals to key
@@ -1526,10 +1525,10 @@ class Baser(LMDBer):
         Apparently always returns True (is this how .put works with dupsort=True)
         Duplicates are inserted in lexocographic order not insertion order.
         """
-        return self.putVals(self.wiss, key, vals)
+        return self.putVals(self.wigs, key, vals)
 
 
-    def addWis(self, key, val):
+    def addWig(self, key, val):
         """
         Use dgKey()
         Add indexed witness signature val bytes as dup to key in db
@@ -1537,25 +1536,25 @@ class Baser(LMDBer):
         Returns True if written else False if dup val already exists
         Duplicates are inserted in lexocographic order not insertion order.
         """
-        return self.addVal(self.wiss, key, val)
+        return self.addVal(self.wigs, key, val)
 
 
-    def cntWiss(self, key):
+    def cntWigs(self, key):
         """
         Use dgKey()
         Return count of indexed witness signatures at key
         Returns zero if no entry at key
         """
-        return self.cntVals(self.wiss, key)
+        return self.cntVals(self.wigs, key)
 
 
-    def delWiss(self, key, val=b''):
+    def delWigs(self, key, val=b''):
         """
         Use dgKey()
         Deletes all values at key if val = b'' else deletes dup val = val.
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
-        return self.delVals(self.wiss, key, val)
+        return self.delVals(self.wigs, key, val)
 
 
     def putRcts(self, key, vals):

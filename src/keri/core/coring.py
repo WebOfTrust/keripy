@@ -2042,6 +2042,23 @@ class IndexerCodex:
 IdrDex = IndexerCodex()
 
 
+@dataclass(frozen=True)
+class IndexedSigCodex:
+    """
+    IndexedSigCodex is codex all indexed signature derivation codes
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+    """
+    Ed25519_Sig:        str = 'A'  # Ed25519 signature.
+    ECDSA_256k1_Sig:    str = 'B'  # ECDSA secp256k1 signature.
+    Ed448_Sig:          str = '0A'  # Ed448 signature.
+
+    def __iter__(self):
+        return iter(astuple(self))
+
+IdxSigDex = IndexedSigCodex()  #  Make instance
+
+
 class Indexer:
     """
     Indexer is fully qualified cryptographic material primitive base class for
@@ -2432,7 +2449,6 @@ class Indexer:
         self._raw = raw
 
 
-
 class Siger(Indexer):
     """
     Siger is subclass of Indexer, indexed signature material,
@@ -2459,7 +2475,9 @@ class Siger(Indexer):
 
         """
         super(Siger, self).__init__(**kwa)
-
+        if self.code not in IdxSigDex:
+            raise ValidationError("Invalid code = {} for Siger."
+                                  "".format(self.code))
         self._verfer = verfer
 
     @property

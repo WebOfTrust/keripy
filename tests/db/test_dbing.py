@@ -958,41 +958,41 @@ def test_baser():
         assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
                        b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
 
-        assert db.getWiss(key) == []
-        assert db.cntWiss(key) == 0
-        assert db.delWiss(key) == False
+        assert db.getWigs(key) == []
+        assert db.cntWigs(key) == 0
+        assert db.delWigs(key) == False
 
         # dup vals are lexocographic
-        assert db.putWiss(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert db.getWiss(key) == [b'a', b'm', b'x', b'z']
-        assert db.cntWiss(key) == 4
-        assert db.putWiss(key, vals=[b'a']) == True   # duplicate but True
-        assert db.getWiss(key) == [b'a', b'm', b'x', b'z']
-        assert db.addWis(key, b'a') == False   # duplicate
-        assert db.addWis(key, b'b') == True
-        assert db.getWiss(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in db.getWissIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert db.delWiss(key) == True
-        assert db.getWiss(key) == []
+        assert db.putWigs(key, vals=[b"z", b"m", b"x", b"a"]) == True
+        assert db.getWigs(key) == [b'a', b'm', b'x', b'z']
+        assert db.cntWigs(key) == 4
+        assert db.putWigs(key, vals=[b'a']) == True   # duplicate but True
+        assert db.getWigs(key) == [b'a', b'm', b'x', b'z']
+        assert db.addWig(key, b'a') == False   # duplicate
+        assert db.addWig(key, b'b') == True
+        assert db.getWigs(key) == [b'a', b'b', b'm', b'x', b'z']
+        assert [val for val in db.getWigsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
+        assert db.delWigs(key) == True
+        assert db.getWigs(key) == []
         vals = [b"z", b"m", b"x", b"a"]
-        assert db.putWiss(key, vals) == True
+        assert db.putWigs(key, vals) == True
         for val in vals:
-            assert db.delWiss(key, val) == True
-        assert db.getWiss(key) == []
-        assert db.putWiss(key, vals) == True
-        for val in db.getWissIter(key):
-            assert db.delWiss(key, val) == True
-        assert db.getWiss(key) == []
+            assert db.delWigs(key, val) == True
+        assert db.getWigs(key) == []
+        assert db.putWigs(key, vals) == True
+        for val in db.getWigsIter(key):
+            assert db.delWigs(key, val) == True
+        assert db.getWigs(key) == []
 
-        assert db.putWiss(key, vals=[sig0b]) == True
-        assert db.getWiss(key) == [sig0b]
-        assert db.putWiss(key, vals=[sig1b]) == True
-        assert db.getWiss(key) == [sig0b, sig1b]
-        assert db.delWiss(key) == True
-        assert db.putWiss(key, vals=[sig1b, sig0b]) == True
-        assert db.getWiss(key) == [sig0b, sig1b]
-        assert db.delWiss(key) == True
-        assert db.getWiss(key) == []
+        assert db.putWigs(key, vals=[sig0b]) == True
+        assert db.getWigs(key) == [sig0b]
+        assert db.putWigs(key, vals=[sig1b]) == True
+        assert db.getWigs(key) == [sig0b, sig1b]
+        assert db.delWigs(key) == True
+        assert db.putWigs(key, vals=[sig1b, sig0b]) == True
+        assert db.getWigs(key) == [sig0b, sig1b]
+        assert db.delWigs(key) == True
+        assert db.getWigs(key) == []
 
         # test .rcts sub db methods dgkey
         assert db.getRcts(key) == []

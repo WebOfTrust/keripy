@@ -142,7 +142,7 @@ def test_replay():
         camKevery = eventing.Kevery(kevers=camHab.kevers,
                                     db=camHab.db,
                                     framed=True,
-                                    pre=camHab.pre,
+                                    opre=camHab.pre,
                                     local=False)
         camKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in camKevery.kevers
@@ -225,7 +225,7 @@ def test_replay():
         debKevery = eventing.Kevery(kevers=debHab.kevers,
                                     db=debHab.db,
                                     framed=True,
-                                    pre=debHab.pre,
+                                    opre=debHab.pre,
                                     local=False)
         debKevery.process(ims=bytearray(camMsgs))  # give copy to process
         assert camHab.pre in debKevery.kevers
@@ -252,7 +252,7 @@ def test_replay():
         bevKevery = eventing.Kevery(kevers=bevHab.kevers,
                                     db=bevHab.db,
                                     framed=True,
-                                    pre=bevHab.pre,
+                                    opre=bevHab.pre,
                                     local=False)
         bevKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in bevKevery.kevers
@@ -459,7 +459,7 @@ def test_replay():
         artKevery = eventing.Kevery(kevers=artHab.kevers,
                                         db=artHab.db,
                                         framed=True,
-                                        pre=artHab.pre,
+                                        opre=artHab.pre,
                                         local=False)
         # process Cam's inception so Art will proces Cam's vrcs without escrowing
         camIcpMsg = camHab.makeOwnInception()
