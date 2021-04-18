@@ -3988,7 +3988,7 @@ class Kevery:
                     if len(atc) % 4:
                         raise ValueError("Invalid attachments size={}, nonintegral"
                                          " quadlets.".format(len(atc)))
-                    pcnt = Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+                    pcnt = Counter(code=CtrDex.AttachedMaterialQuadlets,
                                               count=(len(atc) // 4)).qb64b
                     ims.extend(pcnt)
                     ims.extend(atc)
