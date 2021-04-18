@@ -303,6 +303,43 @@ class Habitat():
         return msg
 
 
+    def witness(self, serder):
+        """
+        Returns own receipt, rct, message of serder with count code and witness
+        indexed receipt signatures if key state of serder.pre shows that own pre
+        is a current witness of event in serder
+        """
+        if self.kever.prefixer.transferable:  # not non-transferable prefix
+            raise ValueError("Attempt to create witness receipt with"
+                             " transferable pre={}.".format(self.pre))
+        ked = serder.ked
+
+        if serder.pre not in self.kvy.kevers:
+            raise ValueError("Attempt by {} to witness event with missing key "
+                             "state.".format(self.pre))
+        kever = self.kvy.kevers[serder.pre]
+        if self.pre not in kever.wits:
+            raise ValueError("Attempt by {} to witness event of {} when not a "
+                             "witness in wits={}.".format(self.pre,
+                                                          serder.pre,
+                                                          kever.wits))
+        index = kever.wits.index(self.pre)
+
+        reserder = eventing.receipt(pre=ked["i"],
+                                    sn=int(ked["s"], 16),
+                                    dig=serder.dig)
+        # sign serder event
+        verfer = Verfer(qb64=self.pre)
+        wigers = self.mgr.sign(ser=serder.raw,
+                               verfers=[verfer],
+                               indexed=True)
+
+        msg = eventing.messagize(reserder, wigers=wigers)
+        self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
+        return msg
+
+
+
     def endorse(self, serder):
         """
         Returns msg with own endorsement of msg from serder with attached signature
