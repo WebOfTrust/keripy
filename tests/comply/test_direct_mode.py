@@ -58,7 +58,7 @@ def test_direct_mode_with_manager():
         sigers = coeMgr.sign(ser=coeSerder.raw, verfers=coeVerfers)
 
         #  create serialized message
-        cmsg = messagize(coeSerder, sigers)
+        cmsg = messagize(coeSerder, sigers=sigers)
         assert cmsg == bytearray(b'{"v":"KERI10JSON0000e6_","i":"EsU9ZQwug7DS-GU040Ugj1t7p6Au14VkBO'
                                  b'CJnPYabcas","s":"0","t":"icp","kt":"1","k":["Dpt7mGZ3y5UmhT1NLEx'
                                  b'b1IW8vMJ8ylQW3K44LfkTgAqE"],"n":"Erpltchg7BUv21Qz3ZXhOhVu63m7S7Y'
@@ -89,7 +89,7 @@ def test_direct_mode_with_manager():
         sigers = valMgr.sign(valSerder.raw, verfers=valVerfers)  # return Siger if index
 
         #  create serialized message
-        vmsg = messagize(valSerder, sigers)
+        vmsg = messagize(valSerder, sigers=sigers)
         assert vmsg == bytearray(b'{"v":"KERI10JSON0000e6_","i":"EBiIFxr_o1b4x1YR21PblAFpFG61qDghqF'
                                  b'BDyVSOXYW0","s":"0","t":"icp","kt":"1","k":["DLSBUmklGu6eLqnA5DA'
                                  b'gj41jetAJYkyn34crqejwXxVw"],"n":"EwmUJaS6DSPRQprlGp_3CIg8BZwmaJl'
@@ -136,7 +136,7 @@ def test_direct_mode_with_manager():
         sigers = valMgr.sign(ser=coeIcpRaw, verfers=valVerfers)  # return Siger if index
 
         # process own validator receipt in validator's Kevery so have copy in own log
-        rmsg = messagize(reserder, sigers)
+        rmsg = messagize(reserder, sigers=sigers)
         assert rmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EsU9ZQwug7DS-GU040Ugj1t7p6Au14VkBOCJnPYabcas",'
                                  b'"s":"0","t":"vrc","d":"Ey2pXEnaoQVwxA4jB6k0QH5G2Us-0juFL5hOAHAwIEkc","a":{"i'
                                  b'":"EBiIFxr_o1b4x1YR21PblAFpFG61qDghqFBDyVSOXYW0","s":"0","d":"ElsHFkbZQjRb7x'
@@ -187,7 +187,7 @@ def test_direct_mode_with_manager():
         sigers = valMgr.sign(ser=coeIcpRaw, verfers=valVerfers)  # return Siger if index
 
         # create receipt message
-        vmsg = messagize(reserder, sigers)
+        vmsg = messagize(reserder, sigers=sigers)
         assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EsU9ZQwug7DS-GU040Ugj1t7p6Au14VkBO'
                                  b'CJnPYabcas","s":"a","t":"vrc","d":"EwxY7Vhkeyr7LBnLAzdGXZzSmTmJV'
                                  b'RctQfNUO0YUqeOU","a":{"i":"EBiIFxr_o1b4x1YR21PblAFpFG61qDghqFBDy'
@@ -232,7 +232,7 @@ def test_direct_mode_with_manager():
         sigers = coeMgr.sign(ser=valIcpRaw, verfers=coeVerfers)  # return Siger if index
 
         # create receipt message
-        cmsg = messagize(reserder, sigers)
+        cmsg = messagize(reserder, sigers=sigers)
         assert cmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EBiIFxr_o1b4x1YR21PblAFpFG61qDghqF'
                                  b'BDyVSOXYW0","s":"0","t":"vrc","d":"ElsHFkbZQjRb7xHnuE-wyiarIZ9j-'
                                  b'1CEQ89I0E3WevcE","a":{"i":"EsU9ZQwug7DS-GU040Ugj1t7p6Au14VkBOCJn'
@@ -273,7 +273,7 @@ def test_direct_mode_with_manager():
         sigers = coeMgr.sign(coeSerder.raw, verfers=coeVerfers)  # returns sigers
 
         #  create serialized message
-        cmsg = messagize(coeSerder, sigers)
+        cmsg = messagize(coeSerder, sigers=sigers)
 
         assert cmsg == bytearray(b'{"v":"KERI10JSON000122_","i":"EsU9ZQwug7DS-GU040Ugj1t7p6Au14VkBO'
                                  b'CJnPYabcas","s":"1","t":"rot","p":"Ey2pXEnaoQVwxA4jB6k0QH5G2Us-0'
@@ -317,7 +317,7 @@ def test_direct_mode_with_manager():
         sigers = valMgr.sign(ser=coeRotRaw, verfers=valVerfers)
 
         # validator create receipt message
-        vmsg = messagize(reserder, sigers)
+        vmsg = messagize(reserder, sigers=sigers)
         assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EsU9ZQwug7DS-GU040Ugj1t7p6Au14VkBO'
                                  b'CJnPYabcas","s":"1","t":"vrc","d":"EO7V6wDClWWiN_7sfGDTD8KsfRQaH'
                                  b'yap6fz_O4CYvsek","a":{"i":"EBiIFxr_o1b4x1YR21PblAFpFG61qDghqFBDy'
@@ -356,7 +356,7 @@ def test_direct_mode_with_manager():
         sigers = coeMgr.sign(coeSerder.raw, verfers=coeVerfers)
 
         # create msg
-        cmsg = messagize(coeSerder, sigers)
+        cmsg = messagize(coeSerder, sigers=sigers)
         assert cmsg == bytearray(b'{"v":"KERI10JSON000098_","i":"EsU9ZQwug7DS-GU040Ugj1t7p6Au14VkBO'
                                  b'CJnPYabcas","s":"2","t":"ixn","p":"EO7V6wDClWWiN_7sfGDTD8KsfRQaH'
                                  b'yap6fz_O4CYvsek","a":[]}-AABAAstaU9Hu1ti8erlnFwEdCrXWkkkW_ydYgrr'
@@ -395,7 +395,7 @@ def test_direct_mode_with_manager():
         sigers = valMgr.sign(ser=coeIxnRaw, verfers=valVerfers)
 
         # create receipt message
-        vmsg = messagize(reserder, sigers)
+        vmsg = messagize(reserder, sigers=sigers)
         assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EsU9ZQwug7DS-GU040Ugj1t7p6Au14VkBO'
                                  b'CJnPYabcas","s":"2","t":"vrc","d":"EuCLxtdKdRgzzgBnPhTwFKz36u58D'
                                  b'qQyMqhX5CUrurPE","a":{"i":"EBiIFxr_o1b4x1YR21PblAFpFG61qDghqFBDy'

@@ -1000,14 +1000,19 @@ def state(pre,
     return Serder(ked=ksd)  # return serialized ksd
 
 
-def messagize(serder, sigers, seal=None, pipelined=False):
+def messagize(serder, sigers=None, seal=None, wigers=None, cigars=None, pipelined=False):
     """
-    Attaches indexed signatures from sigers to KERI message data from serder
+    Attaches indexed signatures from sigers and/or cigars and/or wigers to
+    KERI message data from serder
     Parameters:
         serder is Serder instance containing the event
-        sigers is list of Siger instance to create indexed signatures
+        sigers is optional list of Siger instance to create indexed signatures
         seal is optional seal when present use complex attachment group of triple
-            pre+snu+dig made from (i,s,d) of seal plus attached indexed sigs
+            pre+snu+dig made from (i,s,d) of seal plus attached indexed sigs in sigers
+        wigers is optional list of Siger instances of witness index signatures
+        cigars is optional list of Cigars instances of non-transferable non indexed
+            signatures from  which to form receipt couples.
+            Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
         pipelined is Boolean, True means prepend pipelining count code to attachemnts
             False means to not prepend pipelining count code
 
@@ -1015,15 +1020,39 @@ def messagize(serder, sigers, seal=None, pipelined=False):
     """
     msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
     atc = bytearray()
-    if seal is not None:
-        atc.extend(Counter(CtrDex.TransIndexedSigGroups, count=1).qb64b)
-        atc.extend(seal.i.encode("utf-8"))
-        atc.extend(Seqner(snh=seal.s).qb64b)
-        atc.extend(seal.d.encode("utf-8"))
 
-    atc.extend(Counter(code=CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
-    for siger in sigers:
-        atc.extend(siger.qb64b)
+    if not (sigers or cigars or wigers):
+        raise ValueError("Missing attached signatures on message = {}."
+                         "".format(serder.ked))
+
+    if sigers:
+        if seal is not None:
+            atc.extend(Counter(CtrDex.TransIndexedSigGroups, count=1).qb64b)
+            atc.extend(seal.i.encode("utf-8"))
+            atc.extend(Seqner(snh=seal.s).qb64b)
+            atc.extend(seal.d.encode("utf-8"))
+
+        atc.extend(Counter(code=CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+        for siger in sigers:
+            atc.extend(siger.qb64b)
+
+    if wigers:
+        atc.extend(Counter(code=CtrDex.WitnessIdxSigs, count=len(wigers)).qb64b)
+        for wiger in wigers:
+            if wiger.verfer and wiger.verfer.code not in NonTransDex:
+                raise ValueError("Attempt to use tranferable prefix={} for "
+                                 "receipt.".format(wiger.verfer.qb64))
+            atc.extend(wiger.qb64b)
+
+    if cigars:
+        atc.extend(Counter(code=CtrDex.NonTransReceiptCouples, count=len(cigars)).qb64b)
+        for cigar in cigars:
+            if cigar.verfer.code not in NonTransDex:
+                raise ValueError("Attempt to use tranferable prefix={} for "
+                                 "receipt.".format(cigar.verfer.qb64))
+            atc.extend(cigar.verfer.qb64b)
+            atc.extend(cigar.qb64b)
+
 
     if pipelined:
         if len(atc) % 4:
@@ -1041,7 +1070,7 @@ def receiptize(serder, cigars=None, wigers=None, pipelined=False):
     Attaches nontrans receipt couples from cigars to KERI message data from serder
     Parameters:
         serder is Serder instance containing the receipt message
-        cigars is optiona list of Cigars instances of non-transferable non indexed
+        cigars is optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
             Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
         wigers is optional list of Siger instances of witness index signatures
@@ -1057,7 +1086,7 @@ def receiptize(serder, cigars=None, wigers=None, pipelined=False):
 
     if not (cigars or wigers):
         raise ValueError("Missing attached signatures on receipt"
-                              "msg = {}.".formate(serder.ked))
+                              "msg = {}.".format(serder.ked))
     if cigars:
         atc.extend(Counter(code=CtrDex.NonTransReceiptCouples, count=len(cigars)).qb64b)
 
