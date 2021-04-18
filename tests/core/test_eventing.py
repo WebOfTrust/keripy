@@ -21,7 +21,8 @@ from keri.core.coring import Salter, Serder, Siger, Cigar
 from keri.core.coring import Ilks
 
 from keri.core.eventing import TraitDex, LastEstLoc, Serials, Versify
-from keri.core.eventing import deReceiptCouple, deReceiptTriple, deTransReceiptQuadruple, deTransReceiptQuintuple
+from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deReceiptTriple,
+                                deTransReceiptQuadruple, deTransReceiptQuintuple)
 from keri.core.eventing import (SealDigest, SealRoot, SealEvent, SealLocation,
                                 StateEvent, StateEstEvent)
 from keri.core.eventing import (incept, rotate, interact, receipt, chit,
@@ -36,30 +37,100 @@ from keri import help
 logger = help.ogler.getLogger()
 
 
+def test_dewitnesscouple():
+    """
+    test deWitnessCouple function
+    """
+    dig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    sig = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    digb = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    sigb = b'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+
+    # str
+    couple = dig + sig
+    assert len(couple) == 132
+    diger, siger = deWitnessCouple(couple)
+    assert diger.qb64 == dig
+    assert siger.qb64 == sig
+    assert len(couple) == 132  # not strip delete
+
+    # bytes
+    couple = digb + sigb
+    assert len(couple) == 132
+    diger, siger = deWitnessCouple(couple)
+    assert diger.qb64b == digb
+    assert siger.qb64b == sigb
+    assert len(couple) == 132  # not strip delete
+
+    # memoryview
+    couple = memoryview(couple)
+    assert len(couple) == 132
+    diger, siger = deWitnessCouple(couple)
+    assert diger.qb64b == digb
+    assert siger.qb64b == sigb
+    assert len(couple) == 132  # not strip delete
+
+    # bytearray
+    couple = bytearray(couple)
+    assert len(couple) == 132
+    diger, siger = deWitnessCouple(couple)
+    assert diger.qb64b == digb
+    assert siger.qb64b == sigb
+    assert len(couple) == 132  # not strip delete
+
+    # test strip delete
+    # str
+    couple = dig + sig
+    assert len(couple) == 132
+    with pytest.raises(TypeError):  # immutable str so no delete
+        diger, siger = deWitnessCouple(couple, strip=True)
+    assert len(couple) == 132  # immutable so no delete
+
+    # bytes
+    couple = digb + sigb
+    with pytest.raises(TypeError):  # immutable bytes so no delete
+        diger, siger = deWitnessCouple(couple, strip=True)
+    assert len(couple) == 132  # immutable so no delete
+
+    # memoryview
+    couple = memoryview(couple)
+    with pytest.raises(TypeError):  # memoryview converted to bytes so no delete
+        diger, siger = deWitnessCouple(couple, strip=True)
+    assert len(couple) == 132  # immutable so no delete
+
+    # bytearray
+    couple = bytearray(couple)
+    diger, siger = deWitnessCouple(couple, strip=True)
+    assert diger.qb64b == digb
+    assert siger.qb64b == sigb
+    assert len(couple) == 0  # bytearray mutable so strip delete succeeds
+
+    """end test"""
+
 
 def test_dereceiptcouple():
     """
     test deReceiptCouple function
     """
     pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+    cig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
     preb = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    sigb = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+    cigb = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
     # str
-    couple = pre + sig
+    couple = pre + cig
     assert len(couple) == 132
     prefixer, cigar = deReceiptCouple(couple)
     assert prefixer.qb64 == pre
-    assert cigar.qb64 == sig
+    assert cigar.qb64 == cig
     assert len(couple) == 132  # not strip delete
 
     # bytes
-    couple = preb + sigb
+    couple = preb + cigb
     assert len(couple) == 132
     prefixer, cigar = deReceiptCouple(couple)
     assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
+    assert cigar.qb64b == cigb
     assert len(couple) == 132  # not strip delete
 
     # memoryview
@@ -67,7 +138,7 @@ def test_dereceiptcouple():
     assert len(couple) == 132
     prefixer, cigar = deReceiptCouple(couple)
     assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
+    assert cigar.qb64b == cigb
     assert len(couple) == 132  # not strip delete
 
     # bytearray
@@ -75,19 +146,19 @@ def test_dereceiptcouple():
     assert len(couple) == 132
     prefixer, cigar = deReceiptCouple(couple)
     assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
+    assert cigar.qb64b == cigb
     assert len(couple) == 132  # not strip delete
 
     # test strip delete
     # str
-    couple = pre + sig
+    couple = pre + cig
     assert len(couple) == 132
     with pytest.raises(TypeError):  # immutable str so no delete
         prefixer, cigar = deReceiptCouple(couple, strip=True)
     assert len(couple) == 132  # immutable so no delete
 
     # bytes
-    couple = preb + sigb
+    couple = preb + cigb
     with pytest.raises(TypeError):  # immutable bytes so no delete
         prefixer, cigar = deReceiptCouple(couple, strip=True)
     assert len(couple) == 132  # immutable so no delete
@@ -102,38 +173,38 @@ def test_dereceiptcouple():
     couple = bytearray(couple)
     prefixer, cigar = deReceiptCouple(couple, strip=True)
     assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
+    assert cigar.qb64b == cigb
     assert len(couple) == 0  # bytearray mutable so strip delete succeeds
 
     """end test"""
 
 
-def test_detriple():
+def test_dereceipttriple():
     """
-    test detriple function
+    test deReceiptTriple function
     """
     dig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
     pre = 'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    sig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+    cig = '0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
     digb = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
     preb = b'DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRA'
-    sigb = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
+    cigb = b'0BMszieX0cpTOWZwa2I2LfeFAi9lrDjc1-Ip9ywl1KCNqie4ds_3mrZxHFboMC8Fu_5asnM7m67KlGC9EYaw0KDQ'
 
     # str
-    triple = dig + pre + sig
+    triple = dig + pre + cig
     diger, prefixer, cigar = deReceiptTriple(triple)
     assert diger.qb64 == dig
     assert prefixer.qb64 == pre
-    assert cigar.qb64 == sig
+    assert cigar.qb64 == cig
     assert len(triple) == 176
 
     # bytes
-    triple = digb + preb + sigb
+    triple = digb + preb + cigb
     diger, prefixer, cigar = deReceiptTriple(triple)
     assert diger.qb64b == digb
     assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
+    assert cigar.qb64b == cigb
     assert len(triple) == 176
 
     # memoryview
@@ -141,7 +212,7 @@ def test_detriple():
     diger, prefixer, cigar = deReceiptTriple(triple)
     assert diger.qb64b == digb
     assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
+    assert cigar.qb64b == cigb
     assert len(triple) == 176
 
     # bytearray
@@ -149,19 +220,19 @@ def test_detriple():
     diger, prefixer, cigar = deReceiptTriple(triple)
     assert diger.qb64b == digb
     assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
+    assert cigar.qb64b == cigb
     assert len(triple) == 176
 
     # test strip delete
     # str converts to bytes
-    triple = dig + pre + sig
+    triple = dig + pre + cig
     assert len(triple) == 176
     with pytest.raises(TypeError):
         diger, prefixer, cigar = deReceiptTriple(triple, strip=True)
     assert len(triple) == 176  # immutable so no strip delete
 
     # bytes
-    triple = digb + preb + sigb
+    triple = digb + preb + cigb
     assert len(triple) == 176
     with pytest.raises(TypeError):
         diger, prefixer, cigar = deReceiptTriple(triple, strip=True)
@@ -180,7 +251,7 @@ def test_detriple():
     diger, prefixer, cigar = deReceiptTriple(triple, strip=True)
     assert diger.qb64b == digb
     assert prefixer.qb64b == preb
-    assert cigar.qb64b == sigb
+    assert cigar.qb64b == cigb
     assert len(triple) == 0   # mutable so strip delete
 
     """end test"""
@@ -3771,4 +3842,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_keyeventfuncs()
+    test_dewitnesscouple()
