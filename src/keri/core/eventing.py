@@ -2624,7 +2624,7 @@ class Kevery:
             if cigars:
                 self.processReceiptCouples(serder, cigars, seqner=seqner)
             if trqs:
-                self.processTransReceiptQuadruples(serder, trqs, seqner=seqner)
+                self.processReceiptQuadruples(serder, trqs, seqner=seqner)
 
         elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
             if not (cigars or wigers):
@@ -3090,7 +3090,7 @@ class Kevery:
                                   "validator receipt={}.".format(ked))
 
 
-    def processTransReceiptQuadruples(self, serder, trqs, seqner=None):
+    def processReceiptQuadruples(self, serder, trqs, seqner=None):
         """
         Process one transferable validator receipt (chit) serder with attached sigers
 
