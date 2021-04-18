@@ -42,67 +42,67 @@ def test_dewitnesscouple():
     test deWitnessCouple function
     """
     dig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    sig = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    wig = 'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
     digb = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
-    sigb = b'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
+    wigb = b'AAmdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
 
     # str
-    couple = dig + sig
+    couple = dig + wig
     assert len(couple) == 132
-    diger, siger = deWitnessCouple(couple)
+    diger, wiger = deWitnessCouple(couple)
     assert diger.qb64 == dig
-    assert siger.qb64 == sig
+    assert wiger.qb64 == wig
     assert len(couple) == 132  # not strip delete
 
     # bytes
-    couple = digb + sigb
+    couple = digb + wigb
     assert len(couple) == 132
-    diger, siger = deWitnessCouple(couple)
+    diger, wiger = deWitnessCouple(couple)
     assert diger.qb64b == digb
-    assert siger.qb64b == sigb
+    assert wiger.qb64b == wigb
     assert len(couple) == 132  # not strip delete
 
     # memoryview
     couple = memoryview(couple)
     assert len(couple) == 132
-    diger, siger = deWitnessCouple(couple)
+    diger, wiger = deWitnessCouple(couple)
     assert diger.qb64b == digb
-    assert siger.qb64b == sigb
+    assert wiger.qb64b == wigb
     assert len(couple) == 132  # not strip delete
 
     # bytearray
     couple = bytearray(couple)
     assert len(couple) == 132
-    diger, siger = deWitnessCouple(couple)
+    diger, wiger = deWitnessCouple(couple)
     assert diger.qb64b == digb
-    assert siger.qb64b == sigb
+    assert wiger.qb64b == wigb
     assert len(couple) == 132  # not strip delete
 
     # test strip delete
     # str
-    couple = dig + sig
+    couple = dig + wig
     assert len(couple) == 132
     with pytest.raises(TypeError):  # immutable str so no delete
-        diger, siger = deWitnessCouple(couple, strip=True)
+        diger, wiger = deWitnessCouple(couple, strip=True)
     assert len(couple) == 132  # immutable so no delete
 
     # bytes
-    couple = digb + sigb
+    couple = digb + wigb
     with pytest.raises(TypeError):  # immutable bytes so no delete
-        diger, siger = deWitnessCouple(couple, strip=True)
+        diger, wiger = deWitnessCouple(couple, strip=True)
     assert len(couple) == 132  # immutable so no delete
 
     # memoryview
     couple = memoryview(couple)
     with pytest.raises(TypeError):  # memoryview converted to bytes so no delete
-        diger, siger = deWitnessCouple(couple, strip=True)
+        diger, wiger = deWitnessCouple(couple, strip=True)
     assert len(couple) == 132  # immutable so no delete
 
     # bytearray
     couple = bytearray(couple)
-    diger, siger = deWitnessCouple(couple, strip=True)
+    diger, wiger = deWitnessCouple(couple, strip=True)
     assert diger.qb64b == digb
-    assert siger.qb64b == sigb
+    assert wiger.qb64b == wigb
     assert len(couple) == 0  # bytearray mutable so strip delete succeeds
 
     """end test"""

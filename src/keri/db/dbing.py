@@ -1126,7 +1126,7 @@ class Baser(LMDBer):
             event for the receipted event. Each couple is concatenation of fully
             qualified items, edig+sig where:
                 edig is receipted event digest
-                sig is indexed signature of that event with keypair derived from
+                wig is indexed signature of that event with keypair derived from
                     witness nontrans identifier prefix from witness list and index
                     is offset into witness list of latest establishment event for
                     receipted event
@@ -2275,7 +2275,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Add receipt couple val bytes as dup to key in db
-        Witness couple is edig+sig
+        Witness couple is edig+wig
         Adds to existing values at key if any
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
@@ -2287,7 +2287,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Return list of receipt couples at key
-        Witness couple is edig+sig
+        Witness couple is edig+wig
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
@@ -2298,7 +2298,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Return iterator of receipt couples at key
-        Witness couple is edig+sig
+        Witness couple is edig+wig
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
@@ -2309,7 +2309,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Return last inserted dup partial signed escrowed event couple val at key
-        Witness couple is edig+sig
+        Witness couple is edig+wig
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
@@ -2322,7 +2322,7 @@ class Baser(LMDBer):
         Return all dups of partial signed escrowed event couple items at next
         key after key.
         Item is (key, val) where proem has already been stripped from val
-        val is couple edig+sig
+        val is couple edig+wig
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
         Returns empty list if no entry at key
@@ -2337,7 +2337,7 @@ class Baser(LMDBer):
         Return iterator of partial signed escrowed event couple items at next
         key after key.
         Items is (key, val) where proem has already been stripped from val
-        val is couple edig+sig
+        val is couple edigwsig
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
         Raises StopIteration Error when empty
