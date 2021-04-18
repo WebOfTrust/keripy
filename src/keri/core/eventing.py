@@ -2811,7 +2811,7 @@ class Kevery:
         Process one witness receipt serder with attached witness sigers
 
         Parameters:
-            serder is Serder instance of serialized receipt message
+            serder is Serder instance of serialized receipt message not receipted event
             sigers is list of Siger instances that with witness indexed signatures
                 signature in .raw. Index is offset into witness list of latest
                 establishment event for receipted event. Signature uses key pair
@@ -2854,8 +2854,8 @@ class Kevery:
                 wiger.verfer = Verfer(qb64=kever.wits[wiger.index])  # assign verfer
                 if wiger.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid witness prefix
-                if self.opre and self.opre == wiger.verfer.qb64:  # own receipt when own nontrans
-                    if self.opre == pre:  # own receipt attachment on own event
+                if self.opre and self.opre == wiger.verfer.qb64:  # own is receiptor
+                    if self.opre == pre:  # own receiptor of own event
                         logger.info("Kevery process: skipped own receipt attachment"
                                     " on own event receipt=\n%s\n",
                                                json.dumps(serder.ked, indent=1))
@@ -2882,7 +2882,7 @@ class Kevery:
         Process one receipt serder with attached cigars
 
         Parameters:
-            serder is Serder instance of serialized receipt message
+            serder is Serder instance of serialized receipt message not receipted message
             cigars is list of Cigar instances that contain receipt couple
                 signature in .raw and public key in .verfer
 
@@ -2918,8 +2918,8 @@ class Kevery:
             for cigar in cigars:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
-                if self.opre and self.opre == cigar.verfer.qb64:  # own receipt when own nontrans
-                    if self.opre == pre:  # own receipt attachment on own event
+                if self.opre and self.opre == cigar.verfer.qb64: # own is receiptor
+                    if self.opre == pre:  # own receiptor of own event
                         logger.info("Kevery process: skipped own receipt attachment"
                                     " on own event receipt=\n%s\n",
                                                json.dumps(serder.ked, indent=1))
@@ -2931,9 +2931,16 @@ class Kevery:
                         continue  # skip own receipt attachment on non-local event
 
                 if cigar.verfer.verify(cigar.raw, lserder.raw):
-                    # write receipt couple to database
-                    couple = cigar.verfer.qb64b + cigar.qb64b
-                    self.db.addRct(key=dgkey, val=couple)
+                    kever = self.kevers[pre]  # get key state to check if witness
+                    rpre = cigar.verfer.qb64  # prefix of receiptor
+                    if rpre in kever.wits:  # its a witness receipt
+                        index = kever.wits.index(rpre)
+                        # create witness indexed signature
+                        wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
+                        self.db.addWig(key=dgkey, val=wiger.qb64b)  # write to db
+                    else:  # write receipt couple to database
+                        couple = cigar.verfer.qb64b + cigar.qb64b
+                        self.db.addRct(key=dgkey, val=couple)
 
         else:  # no events to be receipted yet at that sn so escrow
             self.escrowUREvent(serder, cigars, dig=ked["d"])  # digest in receipt
@@ -2945,8 +2952,8 @@ class Kevery:
         Process replay event serder with attached cigars for attached receipt couples.
 
         Parameters:
-            serder is Serder instance of serialized event message to which receipts
-                are attached from replay
+            serder is Serder instance of receipted serialized event message
+                to which receipts are attached from replay
             cigars is list of Cigar instances that contain receipt couple
                 signature in .raw and public key in .verfer
             seqner is Siqner instance of first seen ordinal,
@@ -2981,8 +2988,8 @@ class Kevery:
         for cigar in cigars:
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid couplets
-            if self.opre and self.opre == cigar.verfer.qb64:  # own receipt when own nontrans
-                if self.opre == pre:  # own receipt attachment on own event
+            if self.opre and self.opre == cigar.verfer.qb64:  # own is receiptor
+                if self.opre == pre:  # own receiptor on own event
                     logger.info("Kevery process: skipped own receipt attachment"
                                 " on own event receipt=\n%s\n",
                                            json.dumps(serder.ked, indent=1))
@@ -2994,9 +3001,16 @@ class Kevery:
                     continue  # skip own receipt attachment on non-local event
 
             if cigar.verfer.verify(cigar.raw, serder.raw):
-                # write receipt couple to database
-                couple = cigar.verfer.qb64b + cigar.qb64b
-                self.db.addRct(key=dgKey(pre=pre, dig=ldig), val=couple)
+                kever = self.kevers[pre]  # get key state to check if witness
+                rpre = cigar.verfer.qb64  # prefix of receiptor
+                if rpre in kever.wits:  # its a witness receipt
+                    index = kever.wits.index(rpre)
+                    # create witness indexed signature and write to db
+                    wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
+                    self.db.addWig(key=dgKey(pre, ldig), val=wiger.qb64b)
+                else:  # write receipt couple to database
+                    couple = cigar.verfer.qb64b + cigar.qb64b
+                    self.db.addRct(key=dgKey(pre, ldig), val=couple)
 
 
     def processReceiptChit(self, serder, sigers):
@@ -4288,7 +4302,7 @@ class Kevery:
                                           "".format( pre, sn))
 
                     # assign verfers from witness list
-                    kever = self.kevers[pre]  # get key state
+                    kever = self.kevers[serder.pre]  # get key state
                     if wiger.index >= len(kever.wits):  # bad index remove from escrow
                         logger.info("Kevery unescrow error: Bad witness receipt"
                            " index=%i for pre=%s sn=%x\n", wiger.index, pre, sn)
@@ -4457,9 +4471,16 @@ class Kevery:
                                               "pre={} sn={:x} receipter={}."
                                               "".format( pre, sn, sprefixer.qb64))
 
-                    # write receipt couple to database
-                    couple = cigar.verfer.qb64b + cigar.qb64b
-                    self.db.addRct(key=dgKey(pre, serder.dig), val=couple)
+                    kever = self.kevers[serder.pre]  # get key state to check if witness
+                    rpre = cigar.verfer.qb64  # prefix of receiptor
+                    if rpre in kever.wits:  # its a witness receipt
+                        index = kever.wits.index(rpre)
+                        # create witness indexed signature and write to db
+                        wiger = Siger(raw=cigar.raw, index=index, verfer=cigar.verfer)
+                        self.db.addWig(key=dgKey(pre, serder.dig), val=wiger.qb64b)
+                    else:  # write receipt couple to database
+                        couple = cigar.verfer.qb64b + cigar.qb64b
+                        self.db.addRct(key=dgKey(pre, serder.dig), val=couple)
 
 
                 except UnverifiedReceiptError as ex:
