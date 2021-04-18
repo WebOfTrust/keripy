@@ -153,9 +153,17 @@ class LikelyDuplicitousError(ValidationError):
     """
 
 
+class UnverifiedWitnessReceiptError(ValidationError):
+    """
+    Error witness receipt is unverfied  event not yet in database
+    Usage:
+        raise UnverifiedWitnessReceiptError("error message")
+    """
+
+
 class UnverifiedReceiptError(ValidationError):
     """
-    Error reciept is unverfied
+    Error receipt is unverfied because event not yet in database
     Usage:
         raise UnverifiedReceiptError("error message")
     """

@@ -1071,7 +1071,7 @@ class Baser(LMDBer):
         .ures is named sub DB of unverified event receipt escrowed triples from
             non-transferable signers. Each triple is concatenation of fully
             qualified items. These are: receipted event digest,
-            non-transferable event identfier prefix,
+            non-transferable receiptor identfier prefix,
             plus nonindexed receipt event signature by that prefix.
             snKey
             DB is keyed by receipted event controller prefix plus sn
@@ -1119,6 +1119,20 @@ class Baser(LMDBer):
             snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifer prefix plus sequence number of key event
+            More than one value per DB key is allowed
+
+        .uwes is named sub DB of unverified event indexed escrowed comples from
+            witness signers. Witnesses are from witness list of latest establishment
+            event for the receipted event. Each couple is concatenation of fully
+            qualified items, edig+sig where:
+                edig is receipted event digest
+                wig is indexed signature of that event with keypair derived from
+                    witness nontrans identifier prefix from witness list and index
+                    is offset into witness list of latest establishment event for
+                    receipted event
+            snKey
+            DB is keyed by receipted event controller prefix plus sn
+            of serialized event
             More than one value per DB key is allowed
 
         .ooes is named sub DB of out of order escrowed event tables
@@ -1200,6 +1214,7 @@ class Baser(LMDBer):
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
         self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
+        self.uwes = self.env.open_db(key=b'uwes.', dupsort=True)
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
@@ -1627,7 +1642,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Write each entry from list of bytes receipt triples vals to key
-        Triplet is dig + pre + sig
+        Triple is dig+pre+cig
         Adds to existing receipts at key if any
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
@@ -1639,7 +1654,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Add receipt triple val bytes as dup to key in db
-        Triplet is dig + pre + sig
+        Triple is dig+pre+cig
         Adds to existing values at key if any
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
@@ -1651,7 +1666,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Return list of receipt triplets at key
-        Triplet is dig + pre + sig
+        Triple is dig+pre+cig
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
@@ -1662,7 +1677,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Return iterator of receipt triplets at key
-        Triplet is dig + pre + sig
+        Triple is dig+pre+cig
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
@@ -1673,7 +1688,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Return last inserted dup partial signed escrowed event triple val at key
-        Triplet is dig + pre + sig
+        Triple is dig+pre+cig
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
@@ -1686,7 +1701,7 @@ class Baser(LMDBer):
         Return all dups of partial signed escrowed event triple items at next
         key after key.
         Item is (key, val) where proem has already been stripped from val
-        val is triple dig + pre + sig
+        val is triple dig+pre+cig
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
         Returns empty list if no entry at key
@@ -1701,7 +1716,7 @@ class Baser(LMDBer):
         Return iterator of partial signed escrowed event triple items at next
         key after key.
         Items is (key, val) where proem has already been stripped from val
-        val is triple dig + pre + sig
+        val is triple dig+pre+cig
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
         Raises StopIteration Error when empty
@@ -2242,6 +2257,124 @@ class Baser(LMDBer):
             val is dup val (does not include insertion ordering proem)
         """
         return self.delIoVal(self.pwes, key, val)
+
+
+    def putUwes(self, key, vals):
+        """
+        Use snKey()
+        Write each entry from list of bytes witness receipt triples vals to key
+        Witness couple is edig+sig
+        Adds to existing receipts at key if any
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
+        """
+        return self.putIoVals(self.ures, key, vals)
+
+
+    def addUwe(self, key, val):
+        """
+        Use snKey()
+        Add receipt couple val bytes as dup to key in db
+        Witness couple is edig+wig
+        Adds to existing values at key if any
+        Returns True If at least one of vals is added as dup, False otherwise
+        Duplicates are inserted in insertion order.
+        """
+        return self.addIoVal(self.ures, key, val)
+
+
+    def getUwes(self, key):
+        """
+        Use snKey()
+        Return list of receipt couples at key
+        Witness couple is edig+wig
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoVals(self.ures, key)
+
+
+    def getUwesIter(self, key):
+        """
+        Use snKey()
+        Return iterator of receipt couples at key
+        Witness couple is edig+wig
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValsIter(self.ures, key)
+
+
+    def getUweLast(self, key):
+        """
+        Use snKey()
+        Return last inserted dup partial signed escrowed event couple val at key
+        Witness couple is edig+wig
+        Returns None if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoValLast(self.ures, key)
+
+
+    def getUweItemsNext(self, key=b'', skip=True):
+        """
+        Use snKey()
+        Return all dups of partial signed escrowed event couple items at next
+        key after key.
+        Item is (key, val) where proem has already been stripped from val
+        val is couple edig+wig
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Returns empty list if no entry at key
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNext(self.ures, key, skip)
+
+
+    def getUweItemsNextIter(self, key=b'', skip=True):
+        """
+        Use sgKey()
+        Return iterator of partial signed escrowed event couple items at next
+        key after key.
+        Items is (key, val) where proem has already been stripped from val
+        val is couple edigwsig
+        If key is b'' empty then returns dup items at first key.
+        If skip is False and key is not b'' empty then returns dup items at key
+        Raises StopIteration Error when empty
+        Duplicates are retrieved in insertion order.
+        """
+        return self.getIoItemsNextIter(self.ures, key, skip)
+
+
+    def cntUwes(self, key):
+        """
+        Use snKey()
+        Return count of receipt triplets at key
+        Returns zero if no entry at key
+        """
+        return self.cntIoVals(self.ures, key)
+
+
+    def delUwes(self, key):
+        """
+        Use snKey()
+        Deletes all values at key in db.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoVals(self.ures, key)
+
+
+    def delUwe(self, key, val):
+        """
+        Use snKey()
+        Deletes dup val at key in db.
+        Returns True If dup at  exists in db Else False
+
+        Parameters:
+            key is bytes of key within sub db's keyspace
+            val is dup val (does not include insertion ordering proem)
+        """
+        return self.delIoVal(self.ures, key, val)
 
 
     def putOoes(self, key, vals):
