@@ -2643,7 +2643,7 @@ class Kevery:
                 raise ValidationError("Missing attached signature(s) to receipt"
                                       " for evt = {}.".format(serder.ked))
 
-            self.processChit(serder, sigers)
+            self.processReceiptChit(serder, sigers)
 
         elif ilk in [Ilks.ksn]:  # key state notification msg
 
@@ -2992,7 +2992,7 @@ class Kevery:
                 self.db.addRct(key=dgKey(pre=pre, dig=ldig), val=couple)
 
 
-    def processChit(self, serder, sigers):
+    def processReceiptChit(self, serder, sigers):
         """
         Process one transferable validator receipt (chit) serder with attached sigers
 
