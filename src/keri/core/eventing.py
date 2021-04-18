@@ -1034,6 +1034,7 @@ class Kever:
         .version is version of current event state
         .prefixer is prefixer instance for current event state
         .sn is sequence number int
+        .fn is first seen ordinal number int
         .serder is Serder instance of current event with .serder.diger for digest
         .ilk is str of current event type
         .tholder is Tholder instance for event sith
@@ -1137,7 +1138,7 @@ class Kever:
 
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
         # all validated above so may add to KEL and FEL logs as first seen
-        self.logEvent(serder, sigers, first=True, seqner=seqner, dater=dater)
+        self.fn = self.logEvent(serder, sigers, first=True, seqner=seqner, dater=dater)
 
 
     @property
@@ -1314,7 +1315,7 @@ class Kever:
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
-            self.logEvent(serder, sigers, first=True, seqner=seqner, dater=dater)
+            self.fn = self.logEvent(serder, sigers, first=True, seqner=seqner, dater=dater)
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -1356,7 +1357,7 @@ class Kever:
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
-            self.logEvent(serder, sigers, first=True)  # First seen accepted
+            self.fn = self.logEvent(serder, sigers, first=True)  # First seen accepted
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -1766,6 +1767,7 @@ class Kever:
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
         """
+        fn = None
         dgkey = dgKey(self.prefixer.qb64b, self.serder.diger.qb64b)
         dtsb = nowIso8601().encode("utf-8")
         self.baser.putDts(dgkey, dtsb)  #  idempotent do not change dts if already
@@ -1793,6 +1795,7 @@ class Kever:
         self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
         logger.info("Kever state: %s Added to KEL valid event=\n%s\n",
                         self.prefixer.qb64, json.dumps(serder.ked, indent=1))
+        return fn  # will be fn int if first else None
 
 
     def escrowPSEvent(self, serder, sigers, wigers=None):
@@ -2695,7 +2698,7 @@ class Kevery:
                                                        sigers=sigers,
                                                        verfers=eserder.verfers)
                     if sigers:  # at least one verified signature so log evt with sigs
-                        # not first seen inception
+                        # not first seen inception so ignore return
                         kever.logEvent(serder, sigers)  # idempotent update db logs
 
                 else:   # escrow likely duplicitous event
@@ -2737,7 +2740,7 @@ class Kevery:
                                                    sigers=sigers,
                                                    verfers=eserder.verfers)
                         if sigers:  # at least one verified signature so log evt and sigs
-                            # not first seen update
+                            # not first seen update so ignore return
                             kever.logEvent(serder, sigers)  # idempotent update db logs
 
                     else:   # escrow likely duplicitous event
