@@ -298,7 +298,7 @@ class Habitat():
         cigars = self.mgr.sign(ser=serder.raw,
                                verfers=self.kever.verfers,
                                indexed=False)
-        msg = eventing.receiptize(reserder, cigars)
+        msg = eventing.receiptize(reserder, cigars=cigars)
         self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
         return msg
 

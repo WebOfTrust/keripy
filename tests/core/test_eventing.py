@@ -813,7 +813,7 @@ def test_keyeventfuncs():
 
     cigarE = signerE.sign(ser=serderK.raw)
     assert signerE.verfer.verify(sig=cigarE.raw, ser=serderK.raw)
-    msg = receiptize(serderK, [cigarE])
+    msg = receiptize(serderK, cigars=[cigarE])
     assert msg == bytearray(b'{"v":"KERI10JSON000266_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
                             b'WVK9ZBNZk0","s":"4","t":"ksn","d":"EgNkcl_QewzrRSKH2p9zUskHI462C'
                             b'uIMS_HQIO132Z30","te":"ixn","kt":"1","k":["D3pYGFaqnrALTyejaJaGA'
@@ -945,7 +945,7 @@ def test_keyeventfuncs():
     # create endorsed ksn
     cigarE = signerE.sign(ser=serderK.raw)
     assert signerE.verfer.verify(sig=cigarE.raw, ser=serderK.raw)
-    msg = receiptize(serderK, [cigarE])
+    msg = receiptize(serderK, cigars=[cigarE])
     assert msg == bytearray(b'{"v":"KERI10JSON000292_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
                             b'WVK9ZBNZk0","s":"4","t":"ksn","d":"EgNkcl_QewzrRSKH2p9zUskHI462C'
                             b'uIMS_HQIO132Z30","te":"ixn","kt":"1","k":["D3pYGFaqnrALTyejaJaGA'
@@ -1011,6 +1011,14 @@ def test_messagize():
                                b'PY_XpU3GnFV81dc9STs3UkD1SleC5EzkuIGd1RffI9-scollRbegAMveKc9Dr5YM'
                                b'm_mCQ7p1pjrnu87NgPc-Cg')
 
+        # Test with pipelined
+        msg =  messagize(serder, sigers, pipelined=True)
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ErvwtXHFQwAP0N8BVnV4v13Xb6D0IVCMQA'
+                                b'zP3DFdztcE","s":"0","t":"icp","kt":"1","k":["DxnLqpuCcrO8ITn3i1D'
+                                b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-VAX-A'
+                                b'ABAAPY_XpU3GnFV81dc9STs3UkD1SleC5EzkuIGd1RffI9-scollRbegAMveKc9D'
+                                b'r5YMm_mCQ7p1pjrnu87NgPc-Cg')
+
         # Test with seal
         # create SealEvent for endorsers est evt whose keys use to sign
         seal = SealEvent(i='DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
@@ -1025,6 +1033,16 @@ def test_messagize():
                                 b'1dc9STs3UkD1SleC5EzkuIGd1RffI9-scollRbegAMveKc9Dr5YMm_mCQ7p1pjrn'
                                 b'u87NgPc-Cg')
 
+        # Test with pipelined
+        msg = messagize(serder, sigers, seal=seal, pipelined=True)
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ErvwtXHFQwAP0N8BVnV4v13Xb6D0IVCMQA'
+                                b'zP3DFdztcE","s":"0","t":"icp","kt":"1","k":["DxnLqpuCcrO8ITn3i1D'
+                                b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-VA0-F'
+                                b'ABDyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAA'
+                                b'AAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAPY_XpU3G'
+                                b'nFV81dc9STs3UkD1SleC5EzkuIGd1RffI9-scollRbegAMveKc9Dr5YMm_mCQ7p1'
+                                b'pjrnu87NgPc-Cg')
+
         """ Done Test """
 
 
@@ -1035,28 +1053,99 @@ def test_receiptize():
         mgr = Manager(keeper=ks, salt=salter.qb64)
         verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="")
         serder = incept(keys=[verfers[0].qb64], code=MtrDex.Blake3_256)
+
+
         cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)
         assert isinstance(cigars[0], Cigar)
-        msg = receiptize(serder, cigars)
+        msg = receiptize(serder, cigars=cigars)
         assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsr'
                                 b'vjpcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1D'
                                 b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-CABBx'
                                 b'nLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ0BZqE8BIY0wYqi7swX_5Ch'
                                 b'vHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGjGMHui-QHvy11Eon5bUvXBQ')
 
+        # Test with pipelined
+        msg = receiptize(serder, cigars=cigars, pipelined=True)
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsr'
+                                b'vjpcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1D'
+                                b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-VAi-C'
+                                b'ABBxnLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ0BZqE8BIY0wYqi7swX'
+                                b'_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGjGMHui-QHvy11Eon5'
+                                b'bUvXBQ')
+
+        # Test with wigers
+        wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
+        assert isinstance(wigers[0], Siger)
+        msg = receiptize(serder, wigers=wigers)
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsr'
+                                b'vjpcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1D'
+                                b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-BABAA'
+                                b'ZqE8BIY0wYqi7swX_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGj'
+                                b'GMHui-QHvy11Eon5bUvXBQ')
+
+        #test with cigars and wigers
+        msg = receiptize(serder, cigars=cigars, wigers=wigers)
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsr'
+                                b'vjpcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1D'
+                                b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-CABBx'
+                                b'nLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ0BZqE8BIY0wYqi7swX_5Ch'
+                                b'vHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGjGMHui-QHvy11Eon5bUvX'
+                                b'BQ-BABAAZqE8BIY0wYqi7swX_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA'
+                                b'6vj-leGjGMHui-QHvy11Eon5bUvXBQ')
+
+        #test with cigars and wigers and pipelined
+        msg = receiptize(serder, cigars=cigars, wigers=wigers, pipelined=True)
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsr'
+                                b'vjpcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1D'
+                                b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-VA5-C'
+                                b'ABBxnLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ0BZqE8BIY0wYqi7swX'
+                                b'_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGjGMHui-QHvy11Eon5'
+                                b'bUvXBQ-BABAAZqE8BIY0wYqi7swX_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkja'
+                                b'cpCA6vj-leGjGMHui-QHvy11Eon5bUvXBQ')
+
+
+
         ked = serder.ked
         reserder = receipt(pre=ked["i"],
                            sn=int(ked["s"], 16),
                            dig=serder.dig)
         cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)  # sign event not receipt
-        msg = receiptize(reserder, cigars)
+        msg = receiptize(reserder, cigars=cigars)
         assert msg == bytearray(b'{"v":"KERI10JSON000091_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsr'
                                 b'vjpcc9SzWQ","s":"0","t":"rct","d":"EugpBKqnZiNI_2WR4aEjzKrU2Vdr-'
                                 b'okSy_XOW954CGME"}-CABBxnLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jc'
                                 b'Q0BZqE8BIY0wYqi7swX_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-l'
                                 b'eGjGMHui-QHvy11Eon5bUvXBQ')
 
+        # Test with wigers
+        wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
+        assert isinstance(wigers[0], Siger)
+        msg = receiptize(serder, wigers=wigers)
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsr'
+                                b'vjpcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1D'
+                                b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-BABAA'
+                                b'ZqE8BIY0wYqi7swX_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGj'
+                                b'GMHui-QHvy11Eon5bUvXBQ')
 
+        #test with cigars and wigers
+        msg = receiptize(serder, cigars=cigars, wigers=wigers)
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsr'
+                                b'vjpcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1D'
+                                b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-CABBx'
+                                b'nLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ0BZqE8BIY0wYqi7swX_5Ch'
+                                b'vHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGjGMHui-QHvy11Eon5bUvX'
+                                b'BQ-BABAAZqE8BIY0wYqi7swX_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA'
+                                b'6vj-leGjGMHui-QHvy11Eon5bUvXBQ')
+
+        #test with cigars and wigers and pipelined
+        msg = receiptize(serder, cigars=cigars, wigers=wigers, pipelined=True)
+        assert msg == bytearray(b'{"v":"KERI10JSON0000ba_","i":"ExINzBU4THG-px0LkLV3veaY3ZLr1dqqsr'
+                                b'vjpcc9SzWQ","s":"0","t":"icp","kt":"1","k":["BxnLqpuCcrO8ITn3i1D'
+                                b'hI-zqkgQJdNhAEfsGQLiE1jcQ"],"n":"","wt":"0","w":[],"c":[]}-VA5-C'
+                                b'ABBxnLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ0BZqE8BIY0wYqi7swX'
+                                b'_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkjacpCA6vj-leGjGMHui-QHvy11Eon5'
+                                b'bUvXBQ-BABAAZqE8BIY0wYqi7swX_5ChvHwKKoLlBgXLeVdm3WMeEu6WFxHnSkja'
+                                b'cpCA6vj-leGjGMHui-QHvy11Eon5bUvXBQ')
         """ Done Test """
 
 
@@ -3842,4 +3931,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_dewitnesscouple()
+    test_receiptize()

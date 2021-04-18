@@ -1249,6 +1249,12 @@ class Manager:
            ser is bytes serialization to sign
            pubs is list of qb64 public keys to lookup private keys
            verfers is list of Verfers for public keys
+           indexed is Boolean, True means use offset into pubs/verfers for index
+                and return Siger instances. False means return Cigar instances
+
+        ToDo add indices parameter so index of siger does not have to be same
+        as offset into provided pubs/verfers. So can have missing keys from set
+        but get  index correct for keys or wits lists
 
         if neither pubs or verfers provided then returns empty list of signatures
         If pubs then ignores verfers otherwise uses verferss
@@ -1287,12 +1293,12 @@ class Manager:
         if indexed:
             sigers = []
             for i, signer in enumerate(signers):
-                sigers.append(signer.sign(ser, index=i))
+                sigers.append(signer.sign(ser, index=i))  # assigns .verfer to siger
             return sigers
         else:
             cigars = []
             for signer in signers:
-                cigars.append(signer.sign(ser))
+                cigars.append(signer.sign(ser))  # assigns .verfer to cigar
             return cigars
 
 
