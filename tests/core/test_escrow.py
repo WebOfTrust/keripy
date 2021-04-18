@@ -72,7 +72,7 @@ def test_partial_signed_escrow():
 
         # verify Kevery process partials escrow is idempotent to previously escrowed events
         # assuming not stale but nothing else has changed
-        kvy.processPartials()
+        kvy.processSignPartials()
         assert pre not in kvy.kevers  # event not accepted
         escrows = kvy.db.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
         assert len(escrows) == 1
@@ -97,7 +97,7 @@ def test_partial_signed_escrow():
 
         # verify Kevery process partials escrow now unescrows correctly given
         # two signatures and assuming not stale
-        kvy.processPartials()
+        kvy.processSignPartials()
         assert pre in kvy.kevers  # event now accepted via escrow
         kvr = kvy.kevers[pre]  # kever created so event was validated
         assert kvr.prefixer.qb64 == pre
@@ -170,7 +170,7 @@ def test_partial_signed_escrow():
         # Process partials but stale escrow  despite two sigs set Timeout to 0
         kvy.TimeoutPSE = 0  # forces all escrows to be stale
         time.sleep(0.001)
-        kvy.processPartials()
+        kvy.processSignPartials()
         assert kvr.sn == 0  # key state not updated
         # escrows now empty
         escrows = kvy.db.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
@@ -209,7 +209,7 @@ def test_partial_signed_escrow():
         edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.digb)))
 
         # Process partials but now escrow not stale
-        kvy.processPartials()
+        kvy.processSignPartials()
         assert kvr.serder.dig == srdr.dig  # key state updated so event was validated
         assert kvr.sn == 1  # key state successfully updated
         escrows = kvy.db.getPses(dbing.snKey(pre, int(srdr.ked["s"], 16)))
@@ -297,7 +297,7 @@ def test_partial_signed_escrow():
         assert kvr.serder.diger.qb64 != srdr.dig  # key state not updated
 
         # process escrow
-        kvy.processPartials()
+        kvy.processSignPartials()
         assert kvr.serder.diger.qb64 != srdr.dig  # key state not updated
 
         msg = bytearray(srdr.raw)
@@ -313,7 +313,7 @@ def test_partial_signed_escrow():
         edtsb = bytes(kvy.db.getDts(dbing.dgKey(pre, srdr.digb)))
 
         # process escrow
-        kvy.processPartials()
+        kvy.processSignPartials()
         assert kvr.serder.diger.qb64 == srdr.dig  # key state updated
 
         # get DTS set by first seen event acceptance date time stamp
@@ -451,7 +451,7 @@ def test_missing_delegator_escrow():
 
         # verify Kevery process partials escrow is idempotent to previously escrowed events
         # assuming not stale but nothing else has changed
-        delKvy.processPartials()
+        delKvy.processSignPartials()
         assert delPre not in delKvy.kevers
         assert bobPre not in delKvy.kevers
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
@@ -461,7 +461,7 @@ def test_missing_delegator_escrow():
         # apply Bob's inception to Dels' Kvy
         delKvy.process(ims=bytearray(bobIcpMsg))  # process remote copy of msg
         assert bobPre in delKvy.kevers  # mssage accepted
-        delKvy.processPartials()  # process escrow
+        delKvy.processSignPartials()  # process escrow
         assert delPre not in delKvy.kevers
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 1
@@ -469,7 +469,7 @@ def test_missing_delegator_escrow():
 
         # apply Bob's delegating interaction to Dels' Kvy
         delKvy.process(ims=bytearray(bobIxnMsg))  # process remote copy of msg
-        delKvy.processPartials()  # process escrows
+        delKvy.processSignPartials()  # process escrows
         assert delPre in delKvy.kevers  # event removed from escrow
         assert delKvy.kevers[delPre].serder.diger.qb64 == delSrdr.dig
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
