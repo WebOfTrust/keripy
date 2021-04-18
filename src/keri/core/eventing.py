@@ -186,8 +186,8 @@ def validateSN(sn):
 def deReceiptCouple(data, strip=False):
     """
     Returns tuple of (prefixer, cigar) from concatenated bytes or
-    bytearray of data couple made up of qb64 or qb64b versions of pre+sig
-    couple is used for receipts signed by nontransferable prefix keys
+    bytearray of data couple made up of qb64 or qb64b versions of pre+sig.
+    Couple is used for receipts signed by nontransferable prefix keys
 
     Parameters:
         data is couple of bytes concatenation of pre+sig from receipt
@@ -210,8 +210,9 @@ def deReceiptCouple(data, strip=False):
 def deReceiptTriple(data, strip=False):
     """
     Returns tuple of (diger, prefixer, cigar) from concatenated bytes
-    of data triple made up of qb64 or qb64b versions of dig+pre+sig
-    triple is used for escrows of unverified receipts signed by nontransferable prefix keys
+    of data triple made up of qb64 or qb64b versions of dig+pre+sig.
+    Triple is used for escrows of unverified receipts signed by nontransferable
+    prefix keys
 
     Parameters:
         data is triple of bytes concatenation of dig+pre+sig from receipt
@@ -235,9 +236,10 @@ def deReceiptTriple(data, strip=False):
 
 def deTransReceiptQuadruple(data, strip=False):
     """
-    Returns tuple (quadruple) of (prefixer, seqner, diger, siger) from concatenated bytes
-    of quadruple made up of qb64 or qb64b versions of spre+ssnu+sdig+sig
-    quadruple is used for receipts signed by transferable prefix keys
+    Returns tuple (quadruple) of (prefixer, seqner, diger, siger) from
+    concatenated bytes of quadruple made up of qb64 or qb64b versions of
+    spre+ssnu+sdig+sig.
+    Quadruple is used for receipts signed by transferable prefix keys
 
     Parameters:
         quadruple is bytes concatenation of pre+snu+dig+sig from receipt
@@ -266,7 +268,7 @@ def deTransReceiptQuintuple(data, strip=False):
     """
     Returns tuple of (ediger, seal prefixer, seal seqner, seal diger, siger)
     from concatenated bytes of quintuple made up of qb64 or qb64b versions of
-    quntipuple given by  concatenation of  edig+spre+ssnu+sdig+sig
+    quntipuple given by  concatenation of  edig+spre+ssnu+sdig+sig.
     Quintuple is used for unverified escrows of validator receipts signed
     by transferable prefix keys
 
@@ -2623,15 +2625,14 @@ class Kevery:
         return True  # done state
 
 
-
     def processEvent(self, serder, sigers, wigers=None, seqner=None, dater=None):
         """
         Process one event serder with attached indexd signatures sigers
 
         Parameters:
             serder is Serder instance of event to process
-            sigers is list of Siger instances of attached indexed controller sigs
-            wigers is optional list of Siger instances of attached indexed witness sigs
+            sigers is list of Siger instances of attached controller indexed sigs
+            wigers is optional list of Siger instances of attached witness indexed sigs
             seqner is optional Seqner instance of cloned first seen ordinal
                 If cloned mode then seqner maybe provided (not None)
                 When seqner provided then compare fn of dater and database and
@@ -2822,8 +2823,7 @@ class Kevery:
 
     def processReceiptCouples(self, serder, cigars, seqner=None):
         """
-        Process replay event serder with attached cigars on for each attached
-        receipt coupl.
+        Process replay event serder with attached cigars for attached receipt couples.
 
         Parameters:
             serder is Serder instance of serialized event message to which receipts
@@ -3325,6 +3325,10 @@ class Kevery:
     def escrowUREvent(self, serder, cigars, dig):
         """
         Update associated logs for escrow of Unverified Event Receipt (non-transferable)
+        Escrowed value is triple edig+rpre+sig where:
+           edig is event dig
+           rpre is nontrans receiptor prefix
+           sig is signature on event with key pair derived from rpre
 
         Parameters:
             serder instance of receipt msg not receipted event
