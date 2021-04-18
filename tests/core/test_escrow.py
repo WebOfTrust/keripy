@@ -929,7 +929,7 @@ def test_unverified_receipt_escrow():
         # Process out of unverified but stale escrow  set Timeout to 0
         kvy.TimeoutURE = 0  # forces all escrows to be stale
         time.sleep(0.001)
-        kvy.processUnverifieds()
+        kvy.processNonTransUnverifieds()
         assert pre not in kvy.kevers  # key state not updated
         # check escrows removed
         assert len(kvy.db.getUres(dbing.snKey(pre, 0))) == 0
@@ -973,7 +973,7 @@ def test_unverified_receipt_escrow():
 
         # verify Kevery process unverified receipt escrow i
         # assuming not stale but nothing else has changed
-        kvy.processUnverifieds()
+        kvy.processNonTransUnverifieds()
         # check escrows removed
         assert len(kvy.db.getUres(dbing.snKey(pre, 0))) == 0
         assert len(kvy.db.getUres(dbing.snKey(pre, 1))) == 0

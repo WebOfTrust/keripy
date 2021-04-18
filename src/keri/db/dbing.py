@@ -1627,7 +1627,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Write each entry from list of bytes receipt triples vals to key
-        Triplet is dig + pre + sig
+        Triplet is dig+pre+cig
         Adds to existing receipts at key if any
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
@@ -1639,7 +1639,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Add receipt triple val bytes as dup to key in db
-        Triplet is dig + pre + sig
+        Triplet is dig+pre+cig
         Adds to existing values at key if any
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
@@ -1651,7 +1651,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Return list of receipt triplets at key
-        Triplet is dig + pre + sig
+        Triplet is dig+pre+cig
         Returns empty list if no entry at key
         Duplicates are retrieved in insertion order.
         """
@@ -1662,7 +1662,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Return iterator of receipt triplets at key
-        Triplet is dig + pre + sig
+        Triplet is dig+pre+cig
         Raises StopIteration Error when empty
         Duplicates are retrieved in insertion order.
         """
@@ -1673,7 +1673,7 @@ class Baser(LMDBer):
         """
         Use snKey()
         Return last inserted dup partial signed escrowed event triple val at key
-        Triplet is dig + pre + sig
+        Triplet is dig+pre+cig
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
         """
@@ -1686,7 +1686,7 @@ class Baser(LMDBer):
         Return all dups of partial signed escrowed event triple items at next
         key after key.
         Item is (key, val) where proem has already been stripped from val
-        val is triple dig + pre + sig
+        val is triple dig+pre+cig
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
         Returns empty list if no entry at key
@@ -1701,7 +1701,7 @@ class Baser(LMDBer):
         Return iterator of partial signed escrowed event triple items at next
         key after key.
         Items is (key, val) where proem has already been stripped from val
-        val is triple dig + pre + sig
+        val is triple dig+pre+cig
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
         Raises StopIteration Error when empty

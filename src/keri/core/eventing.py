@@ -186,7 +186,7 @@ def validateSN(sn):
 def deReceiptCouple(data, strip=False):
     """
     Returns tuple of (prefixer, cigar) from concatenated bytes or
-    bytearray of data couple made up of qb64 or qb64b versions of pre+sig.
+    bytearray of data couple made up of qb64 or qb64b versions of pre+cig.
     Couple is used for receipts signed by nontransferable prefix keys
 
     Parameters:
@@ -210,7 +210,7 @@ def deReceiptCouple(data, strip=False):
 def deReceiptTriple(data, strip=False):
     """
     Returns tuple of (diger, prefixer, cigar) from concatenated bytes
-    of data triple made up of qb64 or qb64b versions of dig+pre+sig.
+    of data triple made up of qb64 or qb64b versions of dig+pre+cig.
     Triple is used for escrows of unverified receipts signed by nontransferable
     prefix keys
 
@@ -3325,10 +3325,10 @@ class Kevery:
     def escrowUREvent(self, serder, cigars, dig):
         """
         Update associated logs for escrow of Unverified Event Receipt (non-transferable)
-        Escrowed value is triple edig+rpre+sig where:
+        Escrowed value is triple edig+rpre+cig where:
            edig is event dig
            rpre is nontrans receiptor prefix
-           sig is signature on event with key pair derived from rpre
+           cig is non-indexed signature on event with key pair derived from rpre
 
         Parameters:
             serder instance of receipt msg not receipted event
@@ -3431,7 +3431,7 @@ class Kevery:
             self.processSignPartials()
             self.processWitnessPartials()
             self.processDuplicitous()
-            self.processUnverifieds()
+            self.processNonTransUnverifieds()
             self.processTransUnverifieds()
 
         except Exception as ex:  # log diagnostics errors etc
@@ -3882,17 +3882,23 @@ class Kevery:
             key = ekey #  setup next while iteration, with key after ekey
 
 
-    def processUnverifieds(self):
+    def processNonTransUnverifieds(self):
         """
-        Process event receipts escrowed by Kever that are unverified.
-        A receipt is unverified if the associated event has not been accepted into its KEL.
-        Without the event there is no way to know where to store the receipt couplets.
+        Process escrowed unverified event receipts from nontrans receiptors
+        A receipt is unverified if the associated event has not been accepted
+        into its KEL.
+        Without the event, there is no way to know where to store the receipt couplets.
 
-        The escrow is a triple with dig+spre+sig the verified receipt is just the
-        couple spre+sig that is stored by event dig
+        The escrow is a triple with edig+rpre+cig where:
+           edig is event digest
+           rpre is receiptor (signer) of event
+           cig is non-indexed signature by key-pair derived from rpre of event
+
+        The verified receipt is just the couple rpre+cig that is stored by event
+        digest edig
 
         Escrowed items are indexed in database table keyed by prefix and
-        sn with duplicates given by different recipt triple inserted in insertion order.
+        sn with duplicates given by different receipt triple inserted in insertion order.
         This allows FIFO processing of escrows for events with same prefix and
         sn but different digest.
 
