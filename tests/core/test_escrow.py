@@ -1358,5 +1358,5 @@ def test_unverified_trans_receipt_escrow():
 
 
 if __name__ == "__main__":
-    test_partial_signed_escrow()
+    test_unverified_receipt_escrow()
 
