@@ -1064,58 +1064,6 @@ def messagize(serder, sigers=None, seal=None, wigers=None, cigars=None, pipeline
     msg.extend(atc)
     return msg
 
-
-def receiptize(serder, cigars=None, wigers=None, pipelined=False):
-    """
-    Attaches nontrans receipt couples from cigars to KERI message data from serder
-    Parameters:
-        serder is Serder instance containing the receipt message
-        cigars is optional list of Cigars instances of non-transferable non indexed
-            signatures from  which to form receipt couples.
-            Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
-        wigers is optional list of Siger instances of witness index signatures
-        pipelined is Boolean, True means prepend pipelining count code to attachemnts
-            False means to not prepend pipelining count code
-
-    If both cigars and wigers are empty then raises ValueError exception
-
-    Returns: bytearray KERI event message
-    """
-    msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-    atc = bytearray()
-
-    if not (cigars or wigers):
-        raise ValueError("Missing attached signatures on receipt"
-                              "msg = {}.".format(serder.ked))
-    if cigars:
-        atc.extend(Counter(code=CtrDex.NonTransReceiptCouples, count=len(cigars)).qb64b)
-
-        for cigar in cigars:
-            if cigar.verfer.code not in NonTransDex:
-                raise ValueError("Attempt to use tranferable prefix={} for "
-                                 "receipt.".format(cigar.verfer.qb64))
-            atc.extend(cigar.verfer.qb64b)
-            atc.extend(cigar.qb64b)
-
-    if wigers:
-        atc.extend(Counter(code=CtrDex.WitnessIdxSigs, count=len(wigers)).qb64b)
-        for wiger in wigers:
-            if wiger.verfer and wiger.verfer.code not in NonTransDex:
-                raise ValueError("Attempt to use tranferable prefix={} for "
-                                 "receipt.".format(wiger.verfer.qb64))
-            atc.extend(wiger.qb64b)
-
-    if pipelined:
-        if len(atc) % 4:
-            raise ValueError("Invalid attachments size={}, nonintegral"
-                             " quadlets.".format(len(atc)))
-        msg.extend(Counter(code=CtrDex.AttachedMaterialQuadlets,
-                                  count=(len(atc) // 4)).qb64b)
-
-    msg.extend(atc)
-    return msg
-
-
 class Kever:
     """
     Kever is KERI key event verifier class
