@@ -2379,7 +2379,8 @@ class Kevery:
                 del ims[:serder.size]  # strip off event from front of ims
                 break
 
-        sigers = []  # list of Siger instances for attached indexed signatures
+        sigers = []  # list of Siger instances of attached indexed controller signatures
+        wigers = []  # list of Siger instance of attached indexed witness signatures
         cigars = []  # List of cigars to hold nontrans rct couplets
         # List of tuples from extracted transferable receipt (vrc) quadruples
         trqs = []  # each converted quadruple is (prefixer, seqner, diger, siger)
@@ -2427,7 +2428,12 @@ class Kevery:
                             sigers.append(siger)
 
                     elif ctr.code == CtrDex.WitnessIdxSigs:
-                        pass
+                        for i in range(ctr.count): # extract each attached signature
+                            wiger = yield from self._extractor(ims=ims,
+                                                               klas=Siger,
+                                                               cold=cold,
+                                                               abort=pipelined)
+                            wigers.append(wiger)
 
                     elif ctr.code == CtrDex.NonTransReceiptCouples:
                         # extract attached rct couplets into list of sigvers
@@ -2569,8 +2575,9 @@ class Kevery:
                 raise ValidationError("Missing attached signature(s) for evt "
                                       "= {}.".format(serder.ked))
 
-            self.processEvent(serder,
-                              sigers,
+            self.processEvent(serder=serder,
+                              sigers=sigers,
+                              wigers=wigers,
                               seqner=seqner if cloned else None,
                               dater=dater if cloned else None)
 
@@ -2617,13 +2624,14 @@ class Kevery:
 
 
 
-    def processEvent(self, serder, sigers, seqner=None, dater=None):
+    def processEvent(self, serder, sigers, wigers=None, seqner=None, dater=None):
         """
         Process one event serder with attached indexd signatures sigers
 
         Parameters:
             serder is Serder instance of event to process
-            sigers is list of Siger instances of signatures attached to event
+            sigers is list of Siger instances of attached indexed controller sigs
+            wigers is optional list of Siger instances of attached indexed witness sigs
             seqner is optional Seqner instance of cloned first seen ordinal
                 If cloned mode then seqner maybe provided (not None)
                 When seqner provided then compare fn of dater and database and
@@ -2664,6 +2672,7 @@ class Kevery:
                 # create kever from serder
                 kever = Kever(serder=serder,
                               sigers=sigers,
+                              wigers=wigers,
                               baser=self.db,
                               seqner=seqner,
                               dater=dater,
@@ -2719,7 +2728,7 @@ class Kevery:
                     # verify signatures etc and update state if valid
                     # raise exception if problem.
                     # Otherwise adds to KELs
-                    kever.update(serder=serder, sigers=sigers,
+                    kever.update(serder=serder, sigers=sigers, wigers=wigers,
                                  seqner=seqner, dater=dater)
 
                     if not self.opre or self.opre != pre:  # not own event when owned
