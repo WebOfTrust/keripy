@@ -716,6 +716,25 @@ def test_manager():
         assert psigs == vsigs
         assert psigs == ['AAGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
 
+        # Test sign with indices
+        indices = [3]
+
+        # Test with pubs list
+        psigers = manager.sign(ser=ser, pubs=ps.new.pubs, indices=indices)
+        for siger in psigers:
+            assert isinstance(siger, coring.Siger)
+        assert psigers[0].index == indices[0]
+        psigs = [siger.qb64 for siger in psigers]
+        assert psigs == ['ADGu9G-EJ0zrRjrDKnHszLVcwhbkSRxniDJFmB2eWcRiFzNFw1QM5GHQnmnXz385SgunZH4sLidCMyzhJWmp1IBw']
+
+        # Test with verfers list
+        vsigers = manager.sign(ser=ser, verfers=verfers, indices=indices)
+        for siger in vsigers:
+            assert isinstance(siger, coring.Siger)
+        assert psigers[0].index == indices[0]
+        vsigs = [siger.qb64 for siger in vsigers]
+        assert vsigs == psigs
+
         pcigars = manager.sign(ser=ser, pubs=ps.new.pubs, indexed=False)
         for cigar in pcigars:
             assert isinstance(cigar, coring.Cigar)

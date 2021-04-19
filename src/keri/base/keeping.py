@@ -1241,20 +1241,26 @@ class Manager:
         return (verfers, digers)
 
 
-    def sign(self, ser, pubs=None, verfers=None, indexed=True):
+    def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None):
         """
-        Returns list of signatures of ser if indexed as Sigers else as Cigars
+        Returns list of signatures of ser if indexed as Sigers else as Cigars with
+        .verfer assigned.
 
         Parameters:
-           ser is bytes serialization to sign
-           pubs is list of qb64 public keys to lookup private keys
-           verfers is list of Verfers for public keys
-           indexed is Boolean, True means use offset into pubs/verfers for index
-                and return Siger instances. False means return Cigar instances
+            ser is bytes serialization to sign
+            pubs is list of qb64 public keys to lookup private keys
+            verfers is list of Verfers for public keys
+            indexed is Boolean, True means use offset into pubs/verfers/signers
+                for index and return Siger instances. False means return Cigar instances
+            indices is list of int indexes (offsets) to use for indexed signatures
+                that may differ from the order of appearance in the pubs or verfers
+                lists. This allows witness indexed sigs or controller multi-sig
+                where the parties do not share the same manager or ordering so
+                the default ordering in pubs or verfers is wrong for the index.
+                If provided the length of indices must match pubs/verfers/signers
+                else raises ValueError. If not provided and indexed is True then use
+                default index that is offset into pubs/verfers/signers
 
-        ToDo add indices parameter so index of siger does not have to be same
-        as offset into provided pubs/verfers. So can have missing keys from set
-        but get  index correct for keys or wits lists
 
         if neither pubs or verfers provided then returns empty list of signatures
         If pubs then ignores verfers otherwise uses verferss
@@ -1290,9 +1296,15 @@ class Manager:
                                        transferable=verfer.transferable)
                 signers.append(signer)
 
-        if indexed:
+        if indices and len(indices) != len(signers):
+            raise ValueError("Mismatch length indices={} and resultant signers "
+                             "list={}".format(len(indices), len(signers)))
+
+        if indexed or indices:
             sigers = []
             for i, signer in enumerate(signers):
+                if indices:
+                    i = indices[i]  # get index from indices
                 sigers.append(signer.sign(ser, index=i))  # assigns .verfer to siger
             return sigers
         else:

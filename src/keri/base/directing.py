@@ -329,15 +329,13 @@ class Habitat():
                                     sn=int(ked["s"], 16),
                                     dig=serder.dig)
         # sign serder event
-        verfer = Verfer(qb64=self.pre)
         wigers = self.mgr.sign(ser=serder.raw,
-                               verfers=[verfer],
-                               indexed=True)
+                               pubs=[self.pre],
+                               indices=[index])
 
-        msg = eventing.messagize(reserder, wigers=wigers)
+        msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
         self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
         return msg
-
 
 
     def endorse(self, serder):
@@ -358,14 +356,19 @@ class Habitat():
             sigers = self.mgr.sign(ser=serder.raw,
                                    verfers=self.kever.verfers,
                                    indexed=True)
-            msg = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+            msg = eventing.messagize(serder=serder,
+                                     sigers=sigers,
+                                     seal=seal,
+                                     pipelined=True)
 
         else:
             # sign serder event
             cigars = self.mgr.sign(ser=serder.raw,
                                    verfers=self.kever.verfers,
                                    indexed=False)
-            msg = eventing.messagize(serder=serder, cigars=cigars)
+            msg = eventing.messagize(serder=serder,
+                                     cigars=cigars,
+                                     pipelined=True)
 
         return msg
 
