@@ -167,7 +167,7 @@ class Habitat():
                                    opre=self.pre, local=True)
 
         sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
-        msg = eventing.messagize(self.iserder, sigers)
+        msg = eventing.messagize(self.iserder, sigers=sigers)
         self.kvy.processOne(ims=msg)
         if self.pre not in self.kevers:
             raise kering.ConfigurationError("Improper Habitat inception for "
@@ -223,7 +223,7 @@ class Habitat():
                                  nxt=nxt,
                                  sn=kever.sn+1)
         sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
-        msg = eventing.messagize(serder, sigers)
+        msg = eventing.messagize(serder, sigers=sigers)
 
         # update ownkey event verifier state
         self.kvy.processOne(ims=bytearray(msg))  # make copy as kvr deletes
@@ -246,7 +246,7 @@ class Habitat():
                                    sn=kever.sn+1)
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
-        msg = eventing.messagize(serder, sigers)
+        msg = eventing.messagize(serder, sigers=sigers)
 
         # update ownkey event verifier state
         self.kvy.processOne(ims=bytearray(msg))  # make copy as kvy deletes
@@ -298,7 +298,42 @@ class Habitat():
         cigars = self.mgr.sign(ser=serder.raw,
                                verfers=self.kever.verfers,
                                indexed=False)
-        msg = eventing.receiptize(reserder, cigars)
+        msg = eventing.messagize(reserder, cigars=cigars)
+        self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
+        return msg
+
+
+    def witness(self, serder):
+        """
+        Returns own receipt, rct, message of serder with count code and witness
+        indexed receipt signatures if key state of serder.pre shows that own pre
+        is a current witness of event in serder
+        """
+        if self.kever.prefixer.transferable:  # not non-transferable prefix
+            raise ValueError("Attempt to create witness receipt with"
+                             " transferable pre={}.".format(self.pre))
+        ked = serder.ked
+
+        if serder.pre not in self.kvy.kevers:
+            raise ValueError("Attempt by {} to witness event with missing key "
+                             "state.".format(self.pre))
+        kever = self.kvy.kevers[serder.pre]
+        if self.pre not in kever.wits:
+            raise ValueError("Attempt by {} to witness event of {} when not a "
+                             "witness in wits={}.".format(self.pre,
+                                                          serder.pre,
+                                                          kever.wits))
+        index = kever.wits.index(self.pre)
+
+        reserder = eventing.receipt(pre=ked["i"],
+                                    sn=int(ked["s"], 16),
+                                    dig=serder.dig)
+        # sign serder event
+        wigers = self.mgr.sign(ser=serder.raw,
+                               pubs=[self.pre],
+                               indices=[index])
+
+        msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
         self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
@@ -321,14 +356,19 @@ class Habitat():
             sigers = self.mgr.sign(ser=serder.raw,
                                    verfers=self.kever.verfers,
                                    indexed=True)
-            msg = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+            msg = eventing.messagize(serder=serder,
+                                     sigers=sigers,
+                                     seal=seal,
+                                     pipelined=True)
 
         else:
             # sign serder event
             cigars = self.mgr.sign(ser=serder.raw,
                                    verfers=self.kever.verfers,
                                    indexed=False)
-            msg = eventing.receiptize(serder=serder, cigars=cigars)
+            msg = eventing.messagize(serder=serder,
+                                     cigars=cigars,
+                                     pipelined=True)
 
         return msg
 

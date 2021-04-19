@@ -1000,57 +1000,69 @@ def state(pre,
     return Serder(ked=ksd)  # return serialized ksd
 
 
-def messagize(serder, sigers, seal=None):
+def messagize(serder, sigers=None, seal=None, wigers=None, cigars=None, pipelined=False):
     """
-    Attaches indexed signatures from sigers to KERI message data from serder
+    Attaches indexed signatures from sigers and/or cigars and/or wigers to
+    KERI message data from serder
     Parameters:
         serder is Serder instance containing the event
-        sigers is list of Siger instance to create indexed signatures
-        seal is optional seal when present use comples attachment group of triple
-            pre+snu+dig made from (i,s,d) of seal plus attached indexed sigs
+        sigers is optional list of Siger instance to create indexed signatures
+        seal is optional seal when present use complex attachment group of triple
+            pre+snu+dig made from (i,s,d) of seal plus attached indexed sigs in sigers
+        wigers is optional list of Siger instances of witness index signatures
+        cigars is optional list of Cigars instances of non-transferable non indexed
+            signatures from  which to form receipt couples.
+            Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
+        pipelined is Boolean, True means prepend pipelining count code to attachemnts
+            False means to not prepend pipelining count code
 
     Returns: bytearray KERI event message
     """
     msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-    if seal is not None:
-        count = 1
-        counter = Counter(CtrDex.TransIndexedSigGroups, count=count)
-        msg.extend(counter.qb64b)
-        msg.extend(seal.i.encode("utf-8"))
-        msg.extend(Seqner(snh=seal.s).qb64b)
-        msg.extend(seal.d.encode("utf-8"))
+    atc = bytearray()
 
-    count = len(sigers)
-    counter = Counter(code=CtrDex.ControllerIdxSigs, count=count)
-    msg.extend(counter.qb64b)
-    for siger in sigers:
-        msg.extend(siger.qb64b)
+    if not (sigers or cigars or wigers):
+        raise ValueError("Missing attached signatures on message = {}."
+                         "".format(serder.ked))
 
+    if sigers:
+        if seal is not None:
+            atc.extend(Counter(CtrDex.TransIndexedSigGroups, count=1).qb64b)
+            atc.extend(seal.i.encode("utf-8"))
+            atc.extend(Seqner(snh=seal.s).qb64b)
+            atc.extend(seal.d.encode("utf-8"))
+
+        atc.extend(Counter(code=CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+        for siger in sigers:
+            atc.extend(siger.qb64b)
+
+    if wigers:
+        atc.extend(Counter(code=CtrDex.WitnessIdxSigs, count=len(wigers)).qb64b)
+        for wiger in wigers:
+            if wiger.verfer and wiger.verfer.code not in NonTransDex:
+                raise ValueError("Attempt to use tranferable prefix={} for "
+                                 "receipt.".format(wiger.verfer.qb64))
+            atc.extend(wiger.qb64b)
+
+    if cigars:
+        atc.extend(Counter(code=CtrDex.NonTransReceiptCouples, count=len(cigars)).qb64b)
+        for cigar in cigars:
+            if cigar.verfer.code not in NonTransDex:
+                raise ValueError("Attempt to use tranferable prefix={} for "
+                                 "receipt.".format(cigar.verfer.qb64))
+            atc.extend(cigar.verfer.qb64b)
+            atc.extend(cigar.qb64b)
+
+
+    if pipelined:
+        if len(atc) % 4:
+            raise ValueError("Invalid attachments size={}, nonintegral"
+                             " quadlets.".format(len(atc)))
+        msg.extend(Counter(code=CtrDex.AttachedMaterialQuadlets,
+                                  count=(len(atc) // 4)).qb64b)
+
+    msg.extend(atc)
     return msg
-
-
-def receiptize(serder, cigars):
-    """
-    Attaches nontrans receipt couples from cigars to KERI message data from serder
-    Parameters:
-        serder: Serder instance containing the event
-        cigars: Cigars[] array of non-transferable non indexed signatures
-
-    Returns: bytearray KERI event message
-    """
-    msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-    count = len(cigars)
-    counter = Counter(code=CtrDex.NonTransReceiptCouples, count=count)
-    msg.extend(counter.qb64b)
-    for cigar in cigars:
-        if cigar.verfer.code not in NonTransDex:
-            raise ValueError("Attempt to use tranferable prefix={} for "
-                             "receipt.".format(cigar.verfer.qb64))
-        msg.extend(cigar.verfer.qb64b)
-        msg.extend(cigar.qb64b)
-
-    return msg
-
 
 class Kever:
     """
