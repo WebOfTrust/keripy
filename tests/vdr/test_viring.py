@@ -5,7 +5,8 @@ tests.db.dbing module
 """
 import pytest
 
-from keri.db import dbing, viring
+from keri.db import dbing
+from keri.vdr import viring
 
 def test_issuer():
     """
