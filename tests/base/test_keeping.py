@@ -33,15 +33,15 @@ def test_publot_pubsit():
     assert pl.pubs == []
     assert pl.ridx == 0
     assert pl.kidx == 0
-    assert pl.st == '1'
+    assert pl.st == '0'
     assert pl.dt == ''
 
-    assert asdict(pl) == dict(pubs=[], ridx=0, kidx=0, st='1', dt='')
-    pl = helping.datify(keeping.PubLot, dict(pubs=[], ridx=0, kidx=0, st='1', dt=''))
+    assert asdict(pl) == dict(pubs=[], ridx=0, kidx=0, st='0', dt='')
+    pl = helping.datify(keeping.PubLot, dict(pubs=[], ridx=0, kidx=0, st='0', dt=''))
     assert pl.pubs == []
     assert pl.ridx == 0
     assert pl.kidx == 0
-    assert pl.st == '1'
+    assert pl.st == '0'
     assert pl.dt == ''
 
     st = coring.Tholder(sith=[["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]).limen
@@ -105,13 +105,13 @@ def test_publot_pubsit():
     assert ps.nxt.ridx ==  0
     assert ps.nxt.kidx == 0
     assert ps.nxt.dt == ''
-    assert asdict(ps) == {'old': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '1', 'dt': ''},
-                          'new': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '1', 'dt': ''},
-                          'nxt': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '1', 'dt': ''}}
+    assert asdict(ps) == {'old': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '0', 'dt': ''},
+                          'new': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '0', 'dt': ''},
+                          'nxt': {'pubs': [], 'ridx': 0, 'kidx': 0, 'st': '0', 'dt': ''}}
     ps = helping.datify(keeping.PreSit, dict(
-                                             old=dict(pubs=[], ridx=0, kidx=0, st='1', dt=''),
-                                             new=dict(pubs=[], ridx=0, kidx=0, st='1', dt=''),
-                                             nxt=dict(pubs=[], ridx=0, kidx=0, st='1', dt=''),
+                                             old=dict(pubs=[], ridx=0, kidx=0, st='0', dt=''),
+                                             new=dict(pubs=[], ridx=0, kidx=0, st='0', dt=''),
+                                             nxt=dict(pubs=[], ridx=0, kidx=0, st='0', dt=''),
                                           ))
 
     assert isinstance(ps, keeping.PreSit)
@@ -121,17 +121,17 @@ def test_publot_pubsit():
     assert ps.old.pubs == []
     assert ps.old.ridx ==  0
     assert ps.old.kidx == 0
-    assert ps.old.st == '1'
+    assert ps.old.st == '0'
     assert ps.old.dt == ''
     assert ps.new.pubs == []
     assert ps.new.ridx ==  0
     assert ps.new.kidx == 0
-    assert ps.new.st == '1'
+    assert ps.new.st == '0'
     assert ps.new.dt == ''
     assert ps.nxt.pubs == []
     assert ps.nxt.ridx == 0
     assert ps.nxt.kidx == 0
-    assert ps.nxt.st == '1'
+    assert ps.nxt.st == '0'
     assert ps.nxt.dt == ''
 
     old = keeping.PubLot(ridx=0, kidx=0)
@@ -419,19 +419,24 @@ def test_keeper():
         assert keeper.getPrm(key) == None
 
 
-        #  test .sits sub db methods
+        #  test .sits sub db methods with pubs
         key = prea
         sita = json.dumps(
                     dict(
-                         old=dict(pubs=[], ridx=0, kidx=0, dt=''),
-                         new=dict(pubs=[puba.decode("utf-8")], ridx=1, kidx=1, dt=helping.nowIso8601()),
-                         nxt=dict(pubs=[pubb.decode("utf-8")], ridx=2, kidx=2, dt=helping.nowIso8601())
+                         old=dict(pubs=[], ridx=0, kidx=0, st='0', dt=''),
+                         new=dict(pubs=[puba.decode("utf-8")], ridx=1, kidx=1,
+                                  st='1', dt=helping.nowIso8601()),
+                         nxt=dict(pubs=[pubb.decode("utf-8")], ridx=2, kidx=2,
+                                  st='1', dt=helping.nowIso8601())
                     )).encode("utf-8")
         sitb = json.dumps(
                     dict(
-                         old=dict(pubs=[puba.decode("utf-8")], ridx=0, kidx=0, dt=helping.nowIso8601()),
-                         new=dict(pubs=[pubb.decode("utf-8")], ridx=1, kidx=1, dt=helping.nowIso8601()),
-                         nxt=dict(pubs=[pubc.decode("utf-8")], ridx=2, kidx=2, dt=helping.nowIso8601())
+                         old=dict(pubs=[puba.decode("utf-8")], ridx=0, kidx=0,
+                                  st='1', dt=helping.nowIso8601()),
+                         new=dict(pubs=[pubb.decode("utf-8")], ridx=1, kidx=1,
+                                  st='1',dt=helping.nowIso8601()),
+                         nxt=dict(pubs=[pubc.decode("utf-8")], ridx=2, kidx=2,
+                                  st='1',dt=helping.nowIso8601())
                     )).encode("utf-8")
         assert keeper.getSit(key) == None
         assert keeper.delSit(key) == False

@@ -25,6 +25,7 @@ raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 import os
 import stat
 import json
+import math
 
 from dataclasses import dataclass, asdict, field
 from collections import namedtuple, deque
@@ -49,7 +50,7 @@ class PubLot:
     pubs: list = field(default_factory=list)  # list of fully qualified Base64 public keys. defaults to empty .
     ridx: int = 0  # index of rotation (est event) that uses public key set
     kidx: int = 0  # index of key in sequence of public keys
-    st:   str = '1' # signing threshold as either str hex of int such as '2'
+    st:   str = '0' # signing threshold as either str hex of int such as '2'
                     # or str of weighted clauses such as '1/2,1/2,1/4,1/4,1/4&1,1'
                     # compatible with .limen of Tholder instances
     dt:   str = ""  # datetime ISO8601 when key set created
@@ -957,8 +958,8 @@ class Manager:
         self.keeper.setGbl(b"pidx", b"%x" % pidx)
 
 
-    def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed,
-                     ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
+    def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed, isith=None,
+                     ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed, nsith=None,
                      dcode=coring.MtrDex.Blake3_256,
                      algo=Algos.salty, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
@@ -980,12 +981,16 @@ class Manager:
             icount is int count of incepting public keys when icodes not provided
             icode is str derivation code qb64  of all icount incepting private keys
                 when icodes list not provided
+            isith is incepting signing threshold as:
+                int, str hex, or list of weights
             ncodes is list of private key derivation codes qb64 str
                 one per next key pair
             ncount is int count of next public keys when ncodes not provided
             ncode is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
-            dcode is str derivation code qb64 of digers. Default is MtrDex.Blake3_256
+            nsith is next singning threshold as:
+                int, str hex, or list of weights
+            dcode is str derivation code qb64 of next digers. Default is MtrDex.Blake3_256
             algo is str key creation algorithm code
             salt is str qb64 salt for randomization when salty algorithm used
             stem is path modifier used with salt to derive private keys when using
@@ -1020,6 +1025,8 @@ class Manager:
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
 
         if not icodes:  # all same code, make list of len icount of same code
+            if icount <= 0:
+                raise ValueError("Invalid icount={} must be > 0.".format(icount))
             icodes = [icode for i in range(icount)]
 
         isigners = creator.create(codes=icodes,
@@ -1027,7 +1034,13 @@ class Manager:
                                   transferable=transferable, temp=temp)
         verfers = [signer.verfer for signer in isigners]
 
+        if isith is None:
+            isith = "{:x}".format(max(1, math.ceil(len(isigners) / 2)))
+        ist = coring.Tholder(sith=isith).limen
+
         if not ncodes:  # all same code, make list of len ncount of same code
+            if ncount < 0:  # next may be zero if non-trans
+                raise ValueError("Invalid ncount={} must be >= 0.".format(ncount))
             ncodes = [ncode for i in range(ncount)]
 
         # count set to 0 to ensure does not create signers if ncodes is empty
@@ -1035,6 +1048,10 @@ class Manager:
                                   pidx=pidx, ridx=ridx+1, kidx=kidx+len(icodes),
                                   transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
+
+        if nsith is None:
+            nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
+        nst = coring.Tholder(sith=nsith).limen
 
         pp = PrePrm(pidx=pidx,
                     algo=algo,
@@ -1045,9 +1062,9 @@ class Manager:
         dt = helping.nowIso8601()
         ps = PreSit(
                     new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
-                                   ridx=ridx, kidx=kidx, dt=dt),
+                                   ridx=ridx, kidx=kidx, st=ist, dt=dt),
                     nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
-                                   ridx=ridx+1, kidx=kidx+len(icodes), dt=dt))
+                                   ridx=ridx+1, kidx=kidx+len(icodes), st=nst, dt=dt))
 
         pre = verfers[0].qb64b
         result = self.keeper.putPre(key=pre, val=pre)
@@ -1145,7 +1162,7 @@ class Manager:
 
 
     def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
-                     dcode=coring.MtrDex.Blake3_256,
+                     sith=None, dcode=coring.MtrDex.Blake3_256,
                      transferable=True, temp=False, erase=True):
         """
         Returns duple (verfers, digers) for rotation event of keys for pre where
@@ -1164,6 +1181,8 @@ class Manager:
             count is int count of next public keys when icodes not provided
             code is str derivation code qb64  of all ncount next public keys
                 when ncodes not provided
+            sith is next signing threshold as:
+                int, str hex, or list of weights
             dcode is str derivation code qb64 of digers. Default is MtrDex.Blake3_256
             transferable is Boolean, True means each public key uses transferable
                 derivation code. Default is transferable. Special case is non-transferable
@@ -1210,6 +1229,8 @@ class Manager:
         creator = Creatory(algo=pp.algo).make(salt=pp.salt, stem=pp.stem, tier=pp.tier)
 
         if not codes:  # all same code, make list of len count of same code
+            if count < 0:  # next may be zero if non-trans
+                raise ValueError("Invalid count={} must be >= 0.".format(count))
             codes = [code for i in range(count)]
 
         pidx = self.getPidx()
@@ -1222,9 +1243,13 @@ class Manager:
                                  transferable=transferable, temp=temp)
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in signers]
 
+        if sith is None:
+            sith = "{:x}".format(max(1, math.ceil(len(signers) / 2)))
+        st = coring.Tholder(sith=sith).limen
+
         dt = helping.nowIso8601()
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
-                              ridx=ridx, kidx=kidx, dt=dt)
+                              ridx=ridx, kidx=kidx, st=st, dt=dt)
 
         result = self.keeper.setSit(key=pre.encode("utf-8"),
                                     val=json.dumps(asdict(ps)).encode("utf-8"))
