@@ -49,6 +49,9 @@ class PubLot:
     pubs: list = field(default_factory=list)  # list of fully qualified Base64 public keys. defaults to empty .
     ridx: int = 0  # index of rotation (est event) that uses public key set
     kidx: int = 0  # index of key in sequence of public keys
+    st:   str = '1' # signing threshold as either str hex of int such as '2'
+                    # or str of weighted clauses such as '1/2,1/2,1/4,1/4,1/4&1,1'
+                    # compatible with .limen of Tholder instances
     dt:   str = ""  # datetime ISO8601 when key set created
 
     def __iter__(self):
@@ -71,7 +74,7 @@ class PreSit:
 @dataclass()
 class PrePrm:
     """
-    Prefix's parameters for createing new key pairs
+    Prefix's parameters for creating new key pairs
     """
     pidx: int = 0  # prefix index for this keypair sequence
     algo: str = Algos.salty  # default use indices and salt  to create new key pairs

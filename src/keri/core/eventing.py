@@ -359,9 +359,9 @@ def incept(keys,
 
      Parameters:
         keys is list of qb64 signing keys
-        sith is string, or list format for signing threshold
+        sith is int, string, or list format for signing threshold
         nxt  is qb64 next digest xor
-        toad is int of witness threshold
+        toad is int, or str hex of witness threshold
         wits is list of qb64 witness prefixes
         cnfg is list of strings TraitDex of configuration traits
         version is Version instance
@@ -383,7 +383,10 @@ def incept(keys,
     if len(oset(wits)) != len(wits):
         raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
 
-    if toad is None:
+
+    if isinstance(toad, str):
+        toad = "{:x}".format(toad)
+    elif toad is None:
         if not wits:
             toad = 0
         else:
@@ -449,7 +452,7 @@ def rotate(pre,
         sn is int sequence number
         sith is string or list format for signing threshold
         nxt  is qb64 next digest xor
-        toad is int of witness threshold
+        toad is int or str hex of witness threshold
         wits is list of prior witness prefixes qb64
         cuts is list of witness prefixes to cut qb64
         adds is list of witness prefixes to add qb64
@@ -500,7 +503,9 @@ def rotate(pre,
         raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
                          "and adds = {}.".format(wits, cuts, adds))
 
-    if toad is None:
+    if isinstance(toad, str):
+        toad = "{:x}".format(toad)
+    elif toad is None:
         if not newitset:
             toad = 0
         else:
@@ -674,7 +679,7 @@ def delcept(keys,
         code is derivation code for prefix
         sith is int  of signing threshold
         nxt  is qb64 next digest xor
-        toad is int  of witness threshold
+        toad is int of str hex of witness threshold
         wits is list of qb64 witness prefixes
         cnfg is list of configuration trait dicts including permissions dicts
         version is Version instance
@@ -697,7 +702,9 @@ def delcept(keys,
     if len(oset(wits)) != len(wits):
         raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
 
-    if toad is None:
+    if isinstance(toad, str):
+        toad = "{:x}".format(toad)
+    elif toad is None:
         if not wits:
             toad = 0
         else:
@@ -773,7 +780,7 @@ def deltate(pre,
         sn is int sequence number
         sith is int signing threshold
         nxt  is qb64 next digest xor
-        toad is int of witness threshold
+        toad is int or str hex of witness threshold
         wits is list of prior witness prefixes qb64
         cuts is list of witness prefixes to cut qb64
         adds is list of witness prefixes to add qb64
@@ -827,7 +834,9 @@ def deltate(pre,
         raise ValueError("Invalid member combination among wits = {}, cuts ={}, "
                          "and adds = {}.".format(wits, cuts, adds))
 
-    if toad is None:
+    if isinstance(toad, str):
+        toad = "{:x}".format(toad)
+    elif toad is None:
         if not newitset:
             toad = 0
         else:
