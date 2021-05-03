@@ -36,7 +36,7 @@ def test_replay():
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
-        debHab = directing.Habitat(ks=debKS, db=debDB, sith=sith, count=3,
+        debHab = directing.Habitat(ks=debKS, db=debDB, isith=sith, icount=3,
                                    temp=True)
         assert debHab.ks == debKS
         assert debHab.db == debDB
@@ -45,7 +45,7 @@ def test_replay():
         # setup Cam's habitat using default salt multisig already incepts
         # Cam's receipts will be vrcs with 3 indexed sigantures attached
         sith = '2'  # hex str of threshold int
-        camHab = directing.Habitat(ks=camKS, db=camDB, sith=sith, count=3,
+        camHab = directing.Habitat(ks=camKS, db=camDB, isith=sith, icount=3,
                                    temp=True)
         assert camHab.ks == camKS
         assert camHab.db == camDB
@@ -54,7 +54,7 @@ def test_replay():
         # setup Bev's habitat using default salt nonstransferable already incepts
         # Bev's receipts will be rcts with a receipt couple attached
         sith = '1'  # hex str of threshold int
-        bevHab = directing.Habitat(ks=bevKS, db=bevDB, sith=sith, count=1,
+        bevHab = directing.Habitat(ks=bevKS, db=bevDB, isith=sith, icount=1,
                                    transferable=False, temp=True)
         assert bevHab.ks == bevKS
         assert bevHab.db == bevDB
@@ -65,7 +65,7 @@ def test_replay():
         # Art's receipts will be rcts with a receipt couple attached
         salt = coring.Salter(raw=b'abcdef0123456789').qb64
         sith = '1'  # hex str of threshold int
-        artHab = directing.Habitat(ks=artKS, db=artDB, sith=sith, count=1,
+        artHab = directing.Habitat(ks=artKS, db=artDB, isith=sith, icount=1,
                                    salt=salt, transferable=False, temp=True)
         assert artHab.ks == artKS
         assert artHab.db == artDB

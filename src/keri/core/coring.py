@@ -1505,8 +1505,11 @@ class Nexter(Matter):
             index is int of count of attached receipts for CryCntDex codes
 
         Parameters:
-           limen is string extracted from sith expression in event
-           sith is int threshold or lowercase hex str no leading zeros
+           limen is string extracted from sith expression using Tholder
+           sith is signing threshold as:
+                int threshold or
+                lowercase hex str no leading zeros
+                of list of strs or list of list of strs
            digs is list of qb64 digests of public keys
            keys is list of keys each is qb64 public key str
            ked is key event dict
@@ -1556,7 +1559,12 @@ class Nexter(Matter):
 
         Parameters:
             raw is bytes serialization
-            sith is str lowercase hex
+            imen is string extracted from sith expression using Tholder
+            sith is signing threshold as
+                str lowercase hex or
+                int or
+                list of strs or list of list of strs
+            digs is list of digests qb64
             keys is list of keys qb64
             ked is key event dict
         """
@@ -1598,8 +1606,8 @@ class Nexter(Matter):
                 try:
                     sith = ked["kt"]
                 except Exception as ex:
-                    # default simple majority
-                    sith = "{:x}".format(max(1, ceil(len(keydigs) / 2)))
+                    # default simple majority unless empty
+                    sith = "{:x}".format(max(0, ceil(len(keydigs) / 2)))
 
             limen = Tholder(sith=sith).limen
 
@@ -3217,12 +3225,17 @@ class Tholder:
     verified signatures where indices correspond to offsets in key list of
     associated signatures.
 
+    ClassMethods
+        .fromLimen returns corresponding sith as str or list from a limen str
+
     Has the following public properties:
 
     Properties:
-        .sith is original signing threshold
-        .thold is parsed signing threshold
+        .sith is original signing threshold as str or list of str ratios
+        .thold is parsed signing threshold as int or list of Fractions
         .limen is the extracted string for the next commitment to the threshold
+            [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]] is extracted as
+            '1/2,1/2,1/4,1/4,1/4&1,1'
         .weighted is Boolean True if fractional weighted threshold False if numeric
         .size is int of minimun size of keys list
 
@@ -3238,31 +3251,54 @@ class Tholder:
 
 
     """
+
+    @classmethod
+    def fromLimen(cls, limen):
+        """
+        Returns signing threshold from limen str
+        """
+        sith = limen
+        if '/' in limen:  # weighted threshold
+            sith = []
+            clauses = limen.split('&')
+            for clause in clauses:
+                sith.append(clause.split(','))
+        return sith
+
+
     def __init__(self, sith=''):
         """
         Parse threshold
 
         Parameters:
-            sith is either hex string of threshold number or iterable of fractional
-                weights. Fractional weights may be either an iterable of
-                fraction strings or an iterable of iterables of fractions strings.
+            sith is signing threshold expressed as:
+                either hex string of threshold number
+                or int of threshold number
+                or iterable of strs of fractional weight clauses.
+
+                Fractional weight clauses may be either an iterable of
+                fraction strings or an iterable of iterables of fraction strings.
 
                 The verify method appropriately evaluates each of the threshold
                 forms.
 
         """
-        self._sith = sith
         if isinstance(sith, str):
-            self._weighted = False
-            thold = int(sith, 16)
-            if thold < 1:
-                raise ValueError("Invalid sith = {} < 1.".format(thold))
+            sith = int(sith, 16)
+
+        if isinstance(sith, int):
+            thold = sith
+            if thold < 0:
+                raise ValueError("Invalid sith = {} < 0.".format(thold))
             self._thold = thold
             self._size = self._thold  # used to verify that keys list size is at least size
+            self._weighted = False
             self._satisfy = self._satisfy_numeric
+            self._sith = "{:x}".format(sith)  # store in event form as str
             self._limen = self._sith  # just use hex string
 
         else:  # assumes iterable of weights or iterable of iterables of weights
+            self._sith = sith
             self._weighted = True
             if not sith:  # empty iterable
                 raise ValueError("Invalid sith = {}, empty weight list.".format(sith))
@@ -3281,17 +3317,18 @@ class Tholder:
 
             for clause in thold:  #  sum of fractions in clause must be >= 1
                 if not (sum(clause) >= 1):
-                    raise ValueError("Invalid sith cLause = {}, all clause weight "
+                    raise ValueError("Invalid sith clause = {}, all clause weight "
                                      "sums must be >= 1.".format(thold))
 
             self._thold = thold
             self._size = sum(len(clause) for clause in thold)
             self._satisfy = self._satisfy_weighted
 
-            # extract limen from sith
+            # extract limen from sith by joining ratio str elements of each
+            # clause with "," and joining clauses with "&"
+            # [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]] becomes
+            # '1/2,1/2,1/4,1/4,1/4&1,1'
             self._limen = "&".join([",".join(clause) for clause in sith])
-
-
 
     @property
     def sith(self):
@@ -3319,6 +3356,7 @@ class Tholder:
         return self._limen
 
 
+
     def satisfy(self, indices):
         """
         Returns True if indices list of verified signature key indices satisfies
@@ -3338,7 +3376,7 @@ class Tholder:
             indices is list of indices (offsets into key list) of verified signatures
         """
         try:
-            if len(indices) >= self.thold:
+            if self.thold >  0 and len(indices) >= self.thold:  # at least one
                 return True
 
         except Exception as ex:
@@ -3373,7 +3411,7 @@ class Tholder:
                     if sats[wio]:  # verified signature so weight applies
                         cw += w
                     wio += 1
-                if cw < 1:
+                if cw < 1:  # each clause must sum to at least 1
                     return False
 
             return True  # all clauses including final one cw >= 1

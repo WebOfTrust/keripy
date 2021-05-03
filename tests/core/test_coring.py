@@ -2003,42 +2003,50 @@ def test_nexter():
     with pytest.raises(ValueError):  # bad code
         nexter = Nexter(raw=raw, code=MtrDex.Ed25519)
 
-    nexter = Nexter(digs=digs)  # compute sith from digs using default sith
+    #  defaults provide Blake3_256 digester
+    nexter = Nexter(digs=digs)  # compute limen/sith from digs
     assert nexter.code == MtrDex.Blake3_256
     assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(digs=digs)
     assert nexter.verify(raw=raw)
 
-    nexter = Nexter(sith=sith, digs=digs)  # compute sith from digs using default sith
+    nexter = Nexter(keys=keys)  # compute limen/sith from keys
     assert nexter.code == MtrDex.Blake3_256
     assert len(nexter.raw) == Matter._rawSize(nexter.code)
-    assert nexter.verify(sith=sith, digs=digs)
-    assert nexter.verify(raw=raw)
-
-    nexter = Nexter(sith=sith, keys=keys)  # defaults provide Blake3_256 digester
-    assert nexter.code == MtrDex.Blake3_256
-    assert len(nexter.raw) == Matter._rawSize(nexter.code)
-    assert nexter.verify(sith=sith, keys=keys)
+    assert nexter.verify(keys=keys)
     assert nexter.verify(raw=raw)
     assert nexter.verify(raw=raw+b'ABCDEF') == False
 
     with pytest.raises(EmptyMaterialError):
         nexter = Nexter(sith=sith)
 
-    nexter = Nexter(keys=keys)  # compute sith from keys default sith
+    nexter = Nexter(sith=1, keys=keys)  # compute sith from int
+    raw1 = nexter.raw
     assert nexter.code == MtrDex.Blake3_256
     assert len(nexter.raw) == Matter._rawSize(nexter.code)
-    assert nexter.verify(keys=keys)
-    assert nexter.verify(raw=raw)
+    assert nexter.verify(sith=1, keys=keys)
+    assert nexter.verify(raw=raw1)
 
-    nexter = Nexter(sith="2", keys=keys)  # defaults provide Blake3_256 digester
+    nexter = Nexter(sith=1, digs=digs)
     assert nexter.code == MtrDex.Blake3_256
     assert len(nexter.raw) == Matter._rawSize(nexter.code)
-    assert nexter.verify(sith="2", keys=keys)
-    assert nexter.verify(raw=raw)
+    assert nexter.verify(sith=1, digs=digs)
+    assert nexter.verify(raw=raw1)
+
+    nexter = Nexter(limen='1', digs=digs)
+    assert nexter.code == MtrDex.Blake3_256
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
+    assert nexter.verify(limen='1', digs=digs)
+    assert nexter.verify(raw=raw1)
+
+    nexter = Nexter(limen="1", keys=keys)
+    assert nexter.code == MtrDex.Blake3_256
+    assert len(nexter.raw) == Matter._rawSize(nexter.code)
+    assert nexter.verify(limen="1", keys=keys)
+    assert nexter.verify(raw=raw1)
 
     ked = dict(kt=sith, k=keys)  #  subsequent event
-    nexter = Nexter(ked=ked)  # defaults provide Blake3_256 digester
+    nexter = Nexter(ked=ked)
     assert nexter.code == MtrDex.Blake3_256
     assert len(nexter.raw) == Matter._rawSize(nexter.code)
     assert nexter.verify(ked=ked)
@@ -2186,7 +2194,7 @@ def test_prefixer():
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
     # test with Nexter
-    nexter = Nexter(sith="1", keys=[nxtfer.qb64])
+    nexter = Nexter(keys=[nxtfer.qb64])
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
@@ -2225,7 +2233,7 @@ def test_prefixer():
     # Test with sith with one clause
     keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
     sith = [["1/2", "1/2", "1"]]
-    nexter = Nexter(sith="1", keys=[signers[3].verfer.qb64])
+    nexter = Nexter(keys=[signers[3].verfer.qb64])  # default limen/sith
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
@@ -2306,7 +2314,7 @@ def test_prefixer():
     wits = []
     cnfg = []
 
-    nexter = Nexter(sith="1", keys=[nxtfer.qb64])
+    nexter = Nexter(keys=[nxtfer.qb64])
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
@@ -2838,6 +2846,23 @@ def test_tholder():
     Test Tholder signing threshold satisfier class
     """
 
+    #test classmethod .fromLimen()
+
+    limen = '2'
+    sith = Tholder.fromLimen(limen=limen)
+    assert sith == '2'
+    assert Tholder(sith=sith).limen == limen
+
+    limen = '1/2,1/2,1/4,1/4,1/4&1,1'
+    sith = Tholder.fromLimen(limen=limen)
+    assert sith == [['1/2', '1/2', '1/4', '1/4', '1/4'], ['1', '1']]
+    assert Tholder(sith=sith).limen == limen
+
+    limen = '1/1'
+    sith = Tholder.fromLimen(limen=limen)
+    assert sith == [['1/1']]
+    assert Tholder(sith=sith).limen == limen
+
     with pytest.raises(ValueError):
         tholder = Tholder()
 
@@ -2850,12 +2875,21 @@ def test_tholder():
     assert tholder.satisfy(indices=list(range(tholder.thold)))
     assert tholder.limen == "b"
 
+    tholder = Tholder(sith=15)
+    assert tholder.sith == "f"
+    assert tholder.thold == 15
+    assert not tholder.weighted
+    assert tholder.size == tholder.thold
+    assert not tholder.satisfy(indices=[0, 1, 2])
+    assert tholder.satisfy(indices=list(range(tholder.thold)))
+    assert tholder.limen == "f"
+
 
     with pytest.raises(ValueError):
-        tholder = Tholder(sith=0)
+        tholder = Tholder(sith=-1)
 
     with pytest.raises(ValueError):
-        tholder = Tholder(sith="0")
+        tholder = Tholder(sith="-1")
 
     with pytest.raises(ValueError):
         tholder = Tholder(sith=[])
@@ -2941,4 +2975,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_serder()
+    test_tholder()

@@ -28,7 +28,7 @@ def setupController(name="who", sith=None, count=1, temp=False,
     Setup and return doers list to run controller
     """
     # setup habitat
-    hab = Habitat(name=name, sith=sith, count=count, temp=temp)
+    hab = Habitat(name=name, isith=sith, icount=count, temp=temp)
     logger.info("\nDirect Mode controller %s:\nNamed %s on TCP port %s to port %s.\n\n",
                  hab.pre, hab.name, localPort, remotePort)
 
@@ -71,13 +71,10 @@ class Habitat():
         .erase is Boolean, If True erase old private keys, Otherwise not.
         .ks is lmdb key store keeping.Keeper instance
         .mgr is keeping.Manager instance
-        .ridx is int rotation index (inception == 0)
+        .ridx is int rotation index (inception == 0) needed for key replay
         .kevers is dict of eventing.Kever(s) keyed by qb64 prefix
         .db is lmdb data base dbing.Baser instance
         .kvy is eventing.Kevery instance for local processing of local msgs
-        .sith is default key signing threshold
-        .count is number public keys in key list
-        .ncount is number of public keys in next key list
         .inception is Serder of inception event
         .pre is qb64 prefix of local controller
 
@@ -88,7 +85,9 @@ class Habitat():
 
     def __init__(self, name='test', ks=None, db=None, kevers=None,
                  code=coring.MtrDex.Blake3_256, secrecies=None,
-                 sith=None, count=1, ncount=None, salt=None, tier=None,
+                 isith=None, icount=1, nsith=None, ncount=None,
+                 toad=None, wits=None,
+                 salt=None, tier=None,
                  transferable=True, temp=False, erase=True):
         """
         Initialize instance.
@@ -100,9 +99,16 @@ class Habitat():
             kevers is dict of Kever instance keyed by qb64 prefix
             code is prefix derivation code
             secrecies is list of list of secrets to preload key pairs if any
-            sith is str (hex) of signing threshold int or list expression for
-                    for fractionally weighted signing threshold
-            count is key count for number of keys
+            isith is incepting signing threshold as
+                    either str (hex) representaion of threshold int
+                    or list expression for for fractionally weighted threshold
+            icount is incepting key count for number of keys
+            nsith is next signing threshold as
+                    either str (hex)
+                    or list expression for for fractionally weighted threshold
+            ncount is next key count for number of next keys
+            toad is int or str hex of witness threshold
+            wits is list of qb64 prefixes of witnesses
             salt is qb64 salt for creating key pairs
             tier is security tier for generating keys from salt
             transferable is Boolean True means pre is transferable (default)
@@ -125,38 +131,42 @@ class Habitat():
         self.kevers = kevers if kevers is not None else dict()
         self.db = db if db is not None else dbing.Baser(name=name,
                                                         temp=self.temp)
-        self.sith = sith
-        self.count = count
+        if nsith is None:
+            nsith = isith
+
+        if ncount is None:
+            ncount = icount
         if not self.transferable:
-            self.ncount = 0
+            ncount = 0  # next count
             code = coring.MtrDex.Ed25519N
-        else:
-            self.ncount = ncount if ncount is not None else self.count
+
 
         if secrecies:
             verferies, digers = self.mgr.ingest(secrecies,
-                                                ncount=self.ncount,
+                                                ncount=ncount,
                                                 stem=self.name,
                                                 transferable=self.transferable,
                                                 temp=self.temp)
             opre = verferies[0][0].qb64  # old pre default needed for .replay
-            verfers, digers = self.mgr.replay(pre=opre, ridx=self.ridx)
+            verfers, digers, cst, nst = self.mgr.replay(pre=opre, ridx=self.ridx)
         else:
-            verfers, digers = self.mgr.incept(icount=self.count,
-                                              ncount=self.ncount,
-                                              stem=self.name,
-                                              transferable=self.transferable,
-                                              temp=self.temp)
+            verfers, digers, cst, nst = self.mgr.incept(icount=icount,
+                                                        isith=isith,
+                                                        ncount=ncount,
+                                                        nsith=nsith,
+                                                        stem=self.name,
+                                                        transferable=self.transferable,
+                                                        temp=self.temp)
 
         opre = verfers[0].qb64  # old pre default move below to new pre from incept
         if digers:
-            nxt = coring.Nexter(sith=self.sith,
+            nxt = coring.Nexter(sith=nst,
                                 digs=[diger.qb64 for diger in digers]).qb64
         else:
             nxt = ""
 
         self.iserder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                                         sith=self.sith,
+                                         sith=cst,
                                          nxt=nxt,
                                          code=code)
 
@@ -192,36 +202,47 @@ class Habitat():
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
+
+        Parameters:
+            sith is next signing threshold as int or str hex or list of str weights
+            count is int next number of signing keys
+            erase is Boolean True means erase stale keys
+
         """
-        if sith is not None:
-            self.sith = sith
-        count = count if count is not None else self.ncount
-        erase = erase if erase is not None else self.erase
+        if erase is not None:
+            self.erase = erase
+
+        kever = self.kever  # kever.pre == self.pre
+        if sith is None:
+            sith = kever.tholder.sith  # use previous sith
+        if count is None:
+            count = len(kever.verfers)  # use previous count
 
         try:
-            verfers, digers = self.mgr.replay(pre=self.pre,
+            verfers, digers, cst, nst = self.mgr.replay(pre=self.pre,
                                               ridx=self.ridx+1,
                                               erase=erase)
-
         except IndexError as ex:
-            verfers, digers = self.mgr.rotate(pre=self.pre,
-                                              count=count,
+            verfers, digers, cst, nst = self.mgr.rotate(pre=self.pre,
+                                              count=count,  # old next is new current
+                                              sith=sith,
                                               temp=self.temp,
                                               erase=erase)
 
-        kever = self.kever  # kever.pre == self.pre
         if digers:
-            nxt = coring.Nexter(sith=self.sith,
-                                    digs=[diger.qb64 for diger in digers]).qb64
+            nxt = coring.Nexter(sith=nst,
+                                digs=[diger.qb64 for diger in digers]).qb64
         else:
             nxt = ""
 
+        # this is wrong sith is not kever.tholder.sith as next was different
         serder = eventing.rotate(pre=kever.prefixer.qb64,
                                  keys=[verfer.qb64 for verfer in verfers],
                                  dig=kever.serder.diger.qb64,
-                                 sith=self.sith,
+                                 sith=cst,
                                  nxt=nxt,
                                  sn=kever.sn+1)
+
         sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
         msg = eventing.messagize(serder, sigers=sigers)
 

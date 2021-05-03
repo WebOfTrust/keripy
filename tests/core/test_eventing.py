@@ -744,7 +744,7 @@ def test_keyeventfuncs():
     assert preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
     sith = '1'
     keys = [signerC.verfer.qb64]
-    nexter = Nexter(keys=keys, sith=sith)  # compute nxt digest (dummy reuse keys)
+    nexter = Nexter(keys=keys)  # compute nxt digest (dummy reuse keys)
     nxt = nexter.qb64
     assert nxt == 'E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ'
 
@@ -867,7 +867,7 @@ def test_keyeventfuncs():
     assert preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
     sith = '1'
     keys = [signerC.verfer.qb64]
-    nexter = Nexter(keys=keys, sith=sith)  # compute nxt digest (dummy reuse keys)
+    nexter = Nexter(keys=keys)  # compute nxt digest (dummy reuse keys)
     nxt = nexter.qb64
     assert nxt == 'E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ'
 
@@ -1003,7 +1003,7 @@ def test_messagize():
     with openDB(name="edy") as db, openKS(name="edy") as ks:
         # Init key pair manager
         mgr = Manager(keeper=ks, salt=salter.qb64)
-        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=True, stem="C")
+        verfers, digers, cst, nst = mgr.incept(icount=1, ncount=0, transferable=True, stem="C")
 
         # Test with inception message
         serder = incept(keys=[verfers[0].qb64], code=MtrDex.Blake3_256)
@@ -1050,7 +1050,7 @@ def test_messagize():
                                 b'JysJU5QbUyYrBQ')
 
         # Test with wigers
-        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="W")
+        verfers, digers, cst, nst = mgr.incept(icount=1, ncount=0, transferable=False, stem="W")
         wigers = mgr.sign(ser=serder.raw, verfers=verfers)  # default indexed True
         assert isinstance(wigers[0], Siger)
         msg = messagize(serder, wigers=wigers)
@@ -1069,7 +1069,7 @@ def test_messagize():
                                 b'b4kGOq2OrrZtY9B_BLru3ZaLCw')
 
         # Test with cigars
-        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="R")
+        verfers, digers, cst, nst = mgr.incept(icount=1, ncount=0, transferable=False, stem="R")
         cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)
         assert isinstance(cigars[0], Cigar)
         msg = messagize(serder, cigars=cigars)
@@ -1214,14 +1214,13 @@ def test_kever():
         keys = [skp0.verfer.qb64]
 
         # create next key
-        nxtsith = "1" #  one signer
         #  next signing keypair transferable is default
         skp1 = salter.signer(path="N", temp=True)
         assert skp1.code == MtrDex.Ed25519_Seed
         assert skp1.verfer.code == MtrDex.Ed25519
         nxtkeys = [skp1.verfer.qb64]
         # compute nxt digest
-        nexter = Nexter(sith=nxtsith, keys=nxtkeys)
+        nexter = Nexter(keys=nxtkeys)
         nxt = nexter.qb64
         assert nxt == "E_d8cX6vuQwmD5P62_b663OeaVCLbiBFsirRHJsHn9co"  # transferable so nxt is not empty
 
@@ -1288,13 +1287,12 @@ def test_kever():
         keys = [skp0.verfer.qb64]
 
         # create next key Error case
-        nxtsith = "1" #  one signer
         skp1 = Signer()  #  next signing keypair transferable is default
         assert skp1.code == MtrDex.Ed25519_Seed
         assert skp1.verfer.code == MtrDex.Ed25519
         nxtkeys = [skp1.verfer.qb64]
         # compute nxt digest
-        nexter = Nexter(sith=nxtsith, keys=nxtkeys)
+        nexter = Nexter(keys=nxtkeys)
         nxt = nexter.qb64  # nxt is not empty so error
 
         sn = 0  #  inception event so 0
@@ -3765,13 +3763,12 @@ def test_process_transferable():
     keys = [skp0.verfer.qb64]
 
     # create next key
-    nxtsith = "1" #  one signer
     skp1 = Signer()  #  next signing keypair transferable is default
     assert skp1.code == MtrDex.Ed25519_Seed
     assert skp1.verfer.code == MtrDex.Ed25519
     nxtkeys = [skp1.verfer.qb64]
     # compute nxt digest
-    nexter = Nexter(sith=nxtsith, keys=nxtkeys)
+    nexter = Nexter(keys=nxtkeys)
     nxt = nexter.qb64  # transferable so next is not empty
 
     sn = 0  #  inception event so 0
@@ -3842,7 +3839,7 @@ def test_process_transferable():
 
     #verify nxt digest from event is still valid
     rnxt1 = Nexter(qb64=rser0.ked["n"])
-    assert rnxt1.verify(sith=nxtsith, keys=nxtkeys)
+    assert rnxt1.verify(keys=nxtkeys)
     """ Done Test """
 
 
