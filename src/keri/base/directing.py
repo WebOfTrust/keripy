@@ -71,7 +71,7 @@ class Habitat():
         .erase is Boolean, If True erase old private keys, Otherwise not.
         .ks is lmdb key store keeping.Keeper instance
         .mgr is keeping.Manager instance
-        .ridx is int rotation index (inception == 0)
+        .ridx is int rotation index (inception == 0) needed for key replay
         .kevers is dict of eventing.Kever(s) keyed by qb64 prefix
         .db is lmdb data base dbing.Baser instance
         .kvy is eventing.Kevery instance for local processing of local msgs
