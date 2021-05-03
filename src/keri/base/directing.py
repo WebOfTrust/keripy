@@ -148,23 +148,25 @@ class Habitat():
                                                 transferable=self.transferable,
                                                 temp=self.temp)
             opre = verferies[0][0].qb64  # old pre default needed for .replay
-            verfers, digers = self.mgr.replay(pre=opre, ridx=self.ridx)
+            verfers, digers, cst, nst = self.mgr.replay(pre=opre, ridx=self.ridx)
         else:
-            verfers, digers = self.mgr.incept(icount=icount,
-                                              ncount=ncount,
-                                              stem=self.name,
-                                              transferable=self.transferable,
-                                              temp=self.temp)
+            verfers, digers, cst, nst = self.mgr.incept(icount=icount,
+                                                        isith=isith,
+                                                        ncount=ncount,
+                                                        nsith=nsith,
+                                                        stem=self.name,
+                                                        transferable=self.transferable,
+                                                        temp=self.temp)
 
         opre = verfers[0].qb64  # old pre default move below to new pre from incept
         if digers:
-            nxt = coring.Nexter(sith=nsith,
+            nxt = coring.Nexter(sith=nst,
                                 digs=[diger.qb64 for diger in digers]).qb64
         else:
             nxt = ""
 
         self.iserder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                                         sith=isith,
+                                         sith=cst,
                                          nxt=nxt,
                                          code=code)
 
@@ -217,17 +219,18 @@ class Habitat():
             count = len(kever.verfers)  # use previous count
 
         try:
-            verfers, digers = self.mgr.replay(pre=self.pre,
+            verfers, digers, cst, nst = self.mgr.replay(pre=self.pre,
                                               ridx=self.ridx+1,
                                               erase=erase)
         except IndexError as ex:
-            verfers, digers = self.mgr.rotate(pre=self.pre,
+            verfers, digers, cst, nst = self.mgr.rotate(pre=self.pre,
                                               count=count,  # old next is new current
+                                              sith=sith,
                                               temp=self.temp,
                                               erase=erase)
 
         if digers:
-            nxt = coring.Nexter(sith=sith,
+            nxt = coring.Nexter(sith=nst,
                                 digs=[diger.qb64 for diger in digers]).qb64
         else:
             nxt = ""
@@ -236,7 +239,7 @@ class Habitat():
         serder = eventing.rotate(pre=kever.prefixer.qb64,
                                  keys=[verfer.qb64 for verfer in verfers],
                                  dig=kever.serder.diger.qb64,
-                                 sith=kever.tholder.sith,  # old next is new current
+                                 sith=cst,
                                  nxt=nxt,
                                  sn=kever.sn+1)
 

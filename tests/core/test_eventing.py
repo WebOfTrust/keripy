@@ -1003,7 +1003,7 @@ def test_messagize():
     with openDB(name="edy") as db, openKS(name="edy") as ks:
         # Init key pair manager
         mgr = Manager(keeper=ks, salt=salter.qb64)
-        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=True, stem="C")
+        verfers, digers, cst, nst = mgr.incept(icount=1, ncount=0, transferable=True, stem="C")
 
         # Test with inception message
         serder = incept(keys=[verfers[0].qb64], code=MtrDex.Blake3_256)
@@ -1050,7 +1050,7 @@ def test_messagize():
                                 b'JysJU5QbUyYrBQ')
 
         # Test with wigers
-        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="W")
+        verfers, digers, cst, nst = mgr.incept(icount=1, ncount=0, transferable=False, stem="W")
         wigers = mgr.sign(ser=serder.raw, verfers=verfers)  # default indexed True
         assert isinstance(wigers[0], Siger)
         msg = messagize(serder, wigers=wigers)
@@ -1069,7 +1069,7 @@ def test_messagize():
                                 b'b4kGOq2OrrZtY9B_BLru3ZaLCw')
 
         # Test with cigars
-        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="R")
+        verfers, digers, cst, nst = mgr.incept(icount=1, ncount=0, transferable=False, stem="R")
         cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)
         assert isinstance(cigars[0], Cigar)
         msg = messagize(serder, cigars=cigars)

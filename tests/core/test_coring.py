@@ -2846,6 +2846,23 @@ def test_tholder():
     Test Tholder signing threshold satisfier class
     """
 
+    #test classmethod .fromLimen()
+
+    limen = '2'
+    sith = Tholder.fromLimen(limen=limen)
+    assert sith == '2'
+    assert Tholder(sith=sith).limen == limen
+
+    limen = '1/2,1/2,1/4,1/4,1/4&1,1'
+    sith = Tholder.fromLimen(limen=limen)
+    assert sith == [['1/2', '1/2', '1/4', '1/4', '1/4'], ['1', '1']]
+    assert Tholder(sith=sith).limen == limen
+
+    limen = '1/1'
+    sith = Tholder.fromLimen(limen=limen)
+    assert sith == [['1/1']]
+    assert Tholder(sith=sith).limen == limen
+
     with pytest.raises(ValueError):
         tholder = Tholder()
 
@@ -2869,10 +2886,10 @@ def test_tholder():
 
 
     with pytest.raises(ValueError):
-        tholder = Tholder(sith=0)
+        tholder = Tholder(sith=-1)
 
     with pytest.raises(ValueError):
-        tholder = Tholder(sith="0")
+        tholder = Tholder(sith="-1")
 
     with pytest.raises(ValueError):
         tholder = Tholder(sith=[])
@@ -2958,4 +2975,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_serder()
+    test_tholder()

@@ -27,6 +27,7 @@ import stat
 import json
 import math
 
+from typing import Union
 from dataclasses import dataclass, asdict, field
 from collections import namedtuple, deque
 
@@ -50,9 +51,8 @@ class PubLot:
     pubs: list = field(default_factory=list)  # list of fully qualified Base64 public keys. defaults to empty .
     ridx: int = 0  # index of rotation (est event) that uses public key set
     kidx: int = 0  # index of key in sequence of public keys
-    st:   str = '0' # signing threshold as either str hex of int such as '2'
-                    # or str of weighted clauses such as '1/2,1/2,1/4,1/4,1/4&1,1'
-                    # compatible with .limen of Tholder instances
+    st:   Union[str, int, list] = '0' # signing threshold as either:
+                    # int or str hex of int such as '2' or list of weights
     dt:   str = ""  # datetime ISO8601 when key set created
 
     def __iter__(self):
@@ -162,6 +162,7 @@ class Keeper(dbing.LMDBer):
                   nxt: { pubs: ridx:, kidx:, dt:}
                 }
         .pubs is named sub DB whose values are serialized lists of public keys
+            Enables lookup of private key from public key for replay
             Key is prefix.ridx (rotation index as 32 char hex string)
                 use riKey(pre, ri)
             Value is serialed list of fully qualified public keys that are the
@@ -517,7 +518,7 @@ class Keeper(dbing.LMDBer):
     def putPubs(self, key, val):
         """
         Uses riKey(pre, ri)
-        Write serialized list of public keys as val to key
+        Write serialized list of public keys as val to key for replay
         key is fully qualified prefix
         Does not overwrite existing val if any
         Returns True If val successfully written Else False
@@ -527,13 +528,13 @@ class Keeper(dbing.LMDBer):
             key = key.encode("utf-8")  # convert str to bytes
         if hasattr(val, "encode"):
             val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.sits, key, val)
+        return self.putVal(self.pubs, key, val)
 
 
     def setPubs(self, key, val):
         """
         Uses riKey(pre, ri)
-        Write serialized serialized list of public keys as val to key
+        Write serialized serialized list of public keys as val to key for replay
         key is fully qualified prefix
         Overwrites existing val if any
         Returns True If val successfully written Else False
@@ -542,19 +543,19 @@ class Keeper(dbing.LMDBer):
             key = key.encode("utf-8")  # convert str to bytes
         if hasattr(val, "encode"):
             val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.sits, key, val)
+        return self.setVal(self.pubs, key, val)
 
 
     def getPubs(self, key):
         """
         Uses riKey(pre, ri)
-        Return serialized list of public keys at key
+        Return serialized list of public keys at key for replay
         key is fully qualified prefix
         Returns None if no entry at key
         """
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.sits, key)
+        return self.getVal(self.pubs, key)
 
 
     def delPubs(self, key):
@@ -567,7 +568,7 @@ class Keeper(dbing.LMDBer):
         """
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.sits, key)
+        return self.delVal(self.pubs, key)
 
 
 
@@ -964,11 +965,13 @@ class Manager:
                      algo=Algos.salty, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
         """
-        Returns duple (verfers, digers) for inception event where
+        Returns tuple (verfers, digers, cst, nst) for inception event where
             verfers is list of current public key verfers
                 public key is verfer.qb64
             digers is list of next public key digers
                 digest to xor is diger.raw
+            cst is current signing threshold for verfers for Tholder
+            nst is next signing threshold for digers for Tholder or Nexter
 
         Incept a prefix. Use first public key as temporary prefix.
         Must .repre later to move pubsit dict to correct permanent prefix.
@@ -1036,7 +1039,7 @@ class Manager:
 
         if isith is None:
             isith = "{:x}".format(max(1, math.ceil(len(isigners) / 2)))
-        ist = coring.Tholder(sith=isith).limen
+        cst = coring.Tholder(sith=isith).sith  # current signing threshold
 
         if not ncodes:  # all same code, make list of len ncount of same code
             if ncount < 0:  # next may be zero if non-trans
@@ -1050,8 +1053,8 @@ class Manager:
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
         if nsith is None:
-            nsith = "{:x}".format(max(1, math.ceil(len(nsigners) / 2)))
-        nst = coring.Tholder(sith=nsith).limen
+            nsith = "{:x}".format(max(0, math.ceil(len(nsigners) / 2)))
+        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
         pp = PrePrm(pidx=pidx,
                     algo=algo,
@@ -1062,7 +1065,7 @@ class Manager:
         dt = helping.nowIso8601()
         ps = PreSit(
                     new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
-                                   ridx=ridx, kidx=kidx, st=ist, dt=dt),
+                                   ridx=ridx, kidx=kidx, st=cst, dt=dt),
                     nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
                                    ridx=ridx+1, kidx=kidx+len(icodes), st=nst, dt=dt))
 
@@ -1090,10 +1093,11 @@ class Manager:
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
 
+        # store publics keys for lookup of private key for replay
         self.keeper.putPubs(key=riKey(pre, ri=ridx+1),
                             val=json.dumps(ps.nxt.pubs).encode("utf-8"))
 
-        return (verfers, digers)
+        return (verfers, digers, cst, nst)
 
 
     def move(self, old, new):
@@ -1165,11 +1169,13 @@ class Manager:
                      sith=None, dcode=coring.MtrDex.Blake3_256,
                      transferable=True, temp=False, erase=True):
         """
-        Returns duple (verfers, digers) for rotation event of keys for pre where
+        Returns tuple (verfers, digers, cst, nst) for rotation event of keys for pre where
             verfers is list of current public key verfers
                 public key is verfer.qb64
             digers is list of next public key digers
                 digest to xor is diger.raw
+            cst is current signing threshold for verfers for Tholder
+            nst is next signing threshold fo digers for Tholder or Nexter
 
         Rotate a prefix.
         Store the updated dictified PreSit in the keeper under pre
@@ -1226,6 +1232,8 @@ class Manager:
                                    transferable=verfer.transferable)
             verfers.append(signer.verfer)
 
+        cst = ps.new.st  # get new current signing threshold
+
         creator = Creatory(algo=pp.algo).make(salt=pp.salt, stem=pp.stem, tier=pp.tier)
 
         if not codes:  # all same code, make list of len count of same code
@@ -1244,12 +1252,12 @@ class Manager:
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in signers]
 
         if sith is None:
-            sith = "{:x}".format(max(1, math.ceil(len(signers) / 2)))
-        st = coring.Tholder(sith=sith).limen
+            sith = "{:x}".format(max(0, math.ceil(len(signers) / 2)))
+        nst = coring.Tholder(sith=sith).sith  # next signing threshold
 
         dt = helping.nowIso8601()
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
-                              ridx=ridx, kidx=kidx, st=st, dt=dt)
+                              ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
         result = self.keeper.setSit(key=pre.encode("utf-8"),
                                     val=json.dumps(asdict(ps)).encode("utf-8"))
@@ -1259,6 +1267,7 @@ class Manager:
         for signer in signers:  # store secrets (private key val keyed by public key)
             self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
 
+        # store public keys for lookup of private keys by public key for replay
         self.keeper.putPubs(key=riKey(pre, ri=ps.nxt.ridx),
                             val=json.dumps(ps.nxt.pubs).encode("utf-8"))
 
@@ -1266,7 +1275,7 @@ class Manager:
             for pub in old.pubs:  # remove old prikeys
                 self.keeper.delPri(key=pub.encode("utf-8"))
 
-        return (verfers, digers)
+        return (verfers, digers, cst, nst)
 
 
     def sign(self, ser, pubs=None, verfers=None, indexed=True, indices=None):
@@ -1471,12 +1480,18 @@ class Manager:
         self.keeper.putPubs(key=riKey(pre, ri=ridx),
                             val=json.dumps([signer.verfer.qb64 for signer in nsigners]).encode("utf-8"))
 
+        csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
+        cst = coring.Tholder(sith=csith).sith
+
+        nsith = "{:x}".format(max(0, math.ceil(len(nsigners) / 2)))
+        nst = coring.Tholder(sith=nsith).sith
+
         dt = helping.nowIso8601()
-        old=PubLot(pubs=opubs, ridx=oridx, kidx=okidx, dt=odt)
+        old=PubLot(pubs=opubs, ridx=oridx, kidx=okidx, st='0', dt=odt)
         new=PubLot(pubs=[signer.verfer.qb64 for signer in csigners],
-                           ridx=cridx, kidx=ckidx, dt=dt)
+                           ridx=cridx, kidx=ckidx, st=cst, dt=dt)
         nxt=PubLot(pubs=[signer.verfer.qb64 for signer in nsigners],
-                           ridx=ridx, kidx=kidx, dt=dt)
+                           ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
         ps = PreSit(old=old, new=new, nxt=nxt)
         result = self.keeper.setSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
@@ -1524,11 +1539,17 @@ class Manager:
         if nxtpubs is not None:
             nxtpubs = json.loads(bytes(nxtpubs).decode("utf-8"))
 
-        if not (newpubs and nxtpubs):
-            if (pubs := json.loads(bytes(self.keeper.getPubs(key=riKey(pre, 0))).decode("utf-8"))):
-                raise IndexError("Invalid ridx={} for pubs of pre={}.".format(ridx, pre))
-            else:
-                raise ValueError("No pubs for pre={}.".format(pre))
+        if not (newpubs and nxtpubs):  # replay finished
+            # raises IndexError to indicate replay at ridx past end but valid
+            # next keys at ridx
+            # raise ValueError to indicate replay at ridx is past end of replay
+            # and no valid next keys at ridx
+            if self.keeper.getPubs(key=riKey(pre, ridx)):  # past replay but next pubs
+                raise IndexError("Invalid replay attempt at ridx={} for pubs of "
+                                 "pre={}.".format(ridx, pre))
+            else:  # past replay at ridx and no next keys at ridx
+                raise ValueError("Invalid replay at ridx={} missing pubs for "
+                                 "pre={}.".format(ridx, pre))
 
         if erase and oldpubs:
             for pub in oldpubs:  # remove old prikeys
@@ -1537,4 +1558,10 @@ class Manager:
         verfers = [coring.Verfer(qb64=pub) for pub in newpubs]
         digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtpubs]
 
-        return (verfers, digers)
+        csith = "{:x}".format(max(1, math.ceil(len(verfers) / 2)))
+        cst = coring.Tholder(sith=csith).sith
+
+        nsith = "{:x}".format(max(0, math.ceil(len(digers) / 2)))
+        nst = coring.Tholder(sith=nsith).sith
+
+        return (verfers, digers, cst, nst)

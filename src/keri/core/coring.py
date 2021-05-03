@@ -1606,8 +1606,8 @@ class Nexter(Matter):
                 try:
                     sith = ked["kt"]
                 except Exception as ex:
-                    # default simple majority
-                    sith = "{:x}".format(max(1, ceil(len(keydigs) / 2)))
+                    # default simple majority unless empty
+                    sith = "{:x}".format(max(0, ceil(len(keydigs) / 2)))
 
             limen = Tholder(sith=sith).limen
 
@@ -3225,6 +3225,9 @@ class Tholder:
     verified signatures where indices correspond to offsets in key list of
     associated signatures.
 
+    ClassMethods
+        .fromLimen returns corresponding sith as str or list from a limen str
+
     Has the following public properties:
 
     Properties:
@@ -3248,6 +3251,21 @@ class Tholder:
 
 
     """
+
+    @classmethod
+    def fromLimen(cls, limen):
+        """
+        Returns signing threshold from limen str
+        """
+        sith = limen
+        if '/' in limen:  # weighted threshold
+            sith = []
+            clauses = limen.split('&')
+            for clause in clauses:
+                sith.append(clause.split(','))
+        return sith
+
+
     def __init__(self, sith=''):
         """
         Parse threshold
@@ -3270,8 +3288,8 @@ class Tholder:
 
         if isinstance(sith, int):
             thold = sith
-            if thold < 1:
-                raise ValueError("Invalid sith = {} < 1.".format(thold))
+            if thold < 0:
+                raise ValueError("Invalid sith = {} < 0.".format(thold))
             self._thold = thold
             self._size = self._thold  # used to verify that keys list size is at least size
             self._weighted = False
@@ -3299,7 +3317,7 @@ class Tholder:
 
             for clause in thold:  #  sum of fractions in clause must be >= 1
                 if not (sum(clause) >= 1):
-                    raise ValueError("Invalid sith cLause = {}, all clause weight "
+                    raise ValueError("Invalid sith clause = {}, all clause weight "
                                      "sums must be >= 1.".format(thold))
 
             self._thold = thold
@@ -3311,8 +3329,6 @@ class Tholder:
             # [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]] becomes
             # '1/2,1/2,1/4,1/4,1/4&1,1'
             self._limen = "&".join([",".join(clause) for clause in sith])
-
-
 
     @property
     def sith(self):
@@ -3340,6 +3356,7 @@ class Tholder:
         return self._limen
 
 
+
     def satisfy(self, indices):
         """
         Returns True if indices list of verified signature key indices satisfies
@@ -3359,7 +3376,7 @@ class Tholder:
             indices is list of indices (offsets into key list) of verified signatures
         """
         try:
-            if len(indices) >= self.thold:
+            if self.thold >  0 and len(indices) >= self.thold:  # at least one
                 return True
 
         except Exception as ex:
@@ -3394,7 +3411,7 @@ class Tholder:
                     if sats[wio]:  # verified signature so weight applies
                         cw += w
                     wio += 1
-                if cw < 1:
+                if cw < 1:  # each clause must sum to at least 1
                     return False
 
             return True  # all clauses including final one cw >= 1
