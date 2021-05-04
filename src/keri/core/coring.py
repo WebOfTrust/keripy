@@ -2877,6 +2877,7 @@ class Serder:
         .dig  is qb64 digest from .diger
         .digb is qb64b digest from .diger
         .verfers is list of Verfers converted from .ked["k"]
+        .werfers is list of Verfers converted from .ked["w"]
         .sn is int sequence number converted from .ked["s"]
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
@@ -3175,7 +3176,8 @@ class Serder:
     @property
     def verfers(self):
         """
-        Returns list of Verifier instances as converted from .ked.keys
+        Returns list of Verfer instances as converted from .ked['k'].
+        One for each key.
         verfers property getter
         """
         if "k" in self.ked:  # establishment event
@@ -3184,6 +3186,22 @@ class Serder:
             keys =  []
 
         return [Verfer(qb64=key) for key in keys]
+
+
+    @property
+    def werfers(self):
+        """
+        Returns list of Verfer instances as converted from .ked['k'].
+        One for each witness.
+        werfers property getter
+        """
+        if "w" in self.ked:  # inception establishment event
+            wits = self.ked["w"]
+        else:  # non-establishment event
+            wits =  []
+
+        return [Verfer(qb64=wit) for wit in wits]
+
 
     @property
     def sn(self):

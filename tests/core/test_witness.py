@@ -95,6 +95,8 @@ def test_witness():
         assert camHab.ks == camKS
         assert camHab.db == camDB
         assert camHab.kever.prefixer.transferable
+        for werfer in camHab.iserder.werfers:
+            assert werfer.qb64 in wits
 
         # create non-local kevery for Cam to process onlocal msgs
         camKvy = eventing.Kevery(kevers=camHab.kevers,
