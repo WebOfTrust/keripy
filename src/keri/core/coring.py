@@ -3200,7 +3200,7 @@ class Serder:
         else:  # non-establishment event
             wits =  []
 
-        return [Verfer(qb64=key) for wit in wits]
+        return [Verfer(qb64=wit) for wit in wits]
 
 
     @property
