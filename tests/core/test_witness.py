@@ -158,9 +158,8 @@ def test_witness():
         vanKvy.process(ims=bytearray(camIcpMsg))  # should escrow since not witnesses
         assert camHab.pre not in vanKvy.kevers
         vanKvy.process(ims=bytearray(camWitRctMsg))
-        vanKvy.processEscrows()  # bug here trace it out
         vanKvy.processEscrows()
-        # assert camHab.pre in vanKvy.kevers
+        assert camHab.pre in vanKvy.kevers
 
 
     assert not os.path.exists(wokKS.path)

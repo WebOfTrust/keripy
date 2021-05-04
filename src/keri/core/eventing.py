@@ -1253,7 +1253,8 @@ class Kever:
 
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
         # all validated above so may add to KEL and FEL logs as first seen
-        self.fn = self.logEvent(serder, sigers, first=True, seqner=seqner, dater=dater)
+        self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                first=True, seqner=seqner, dater=dater)
 
 
     @property
@@ -1430,7 +1431,8 @@ class Kever:
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
-            self.fn = self.logEvent(serder, sigers, first=True, seqner=seqner, dater=dater)
+            self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                    first=True, seqner=seqner, dater=dater)
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -1472,7 +1474,8 @@ class Kever:
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
-            self.fn = self.logEvent(serder, sigers, first=True)  # First seen accepted
+            self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                    first=True)  # First seen accepted
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -1686,7 +1689,7 @@ class Kever:
 
 
     def validateSigsDelWigs(self, serder, sigers, verfers, tholder,
-                                          wigers, toad, wits ):
+                                          wigers, toad, wits):
         """
         Returns triple (sigers, delegator, wigers) where:
         sigers is unique validated verified members of inputed sigers
@@ -2827,7 +2830,7 @@ class Kevery:
                                                        verfers=eserder.verfers)
                     if sigers:  # at least one verified signature so log evt with sigs
                         # not first seen inception so ignore return
-                        kever.logEvent(serder, sigers)  # idempotent update db logs
+                        kever.logEvent(serder, sigers=sigers)  # idempotent update db logs
 
                 else:   # escrow likely duplicitous event
                     self.escrowLDEvent(serder=serder, sigers=sigers)
@@ -4034,9 +4037,9 @@ class Kevery:
                                               "".format(bytes(edig)))
 
                     eserder = Serder(raw=bytes(eraw))  # escrowed event
-                    atc.extend(eserder.raw)  # add escrowed event to stream
+                    ims.extend(eserder.raw)  # add escrowed event to stream
 
-                    #  get sigs and attach
+                    #  get sigs and attach via atc
                     sigs = self.db.getSigs(dgKey(pre, bytes(edig)))  # list of sigs
                     if not sigs:  # empty list
                         # no sigs so raise ValidationError which unescrows below
