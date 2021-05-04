@@ -179,6 +179,56 @@ def validateSN(sn):
     return sn
 
 
+def simple(n):
+    """
+    Returns int as simple majority of n when n >=1
+        otherwise returns 0
+    Parameters:
+        n is int total number of elements
+    """
+    return min(max(0, n), (max(0, n)//2)+1)
+
+
+def ample(n, f=None, weak=True):
+    """
+    Returns int as sufficient immune (ample) majority of n when n >=1
+        otherwise returns 0
+    Parameters:
+        n is int total number of elements
+        f is int optional fault number
+        weak is Boolean
+            If f is not None and
+                weak is True then minimize m for f
+                weak is False then maximize m for f that satisfies n >= 3*f+1
+            Else
+                weak is True then find maximum f and minimize m
+                weak is False then find maximum f and maximize m
+
+        n,m,f are subject to
+        f >= 1 if n > 0
+        n >= 3*f+1
+        (n+f+1)/2 <= m <= n-f
+    """
+    n = max(0, n)  # no negatives
+    if f is None:
+        f1 = max(1, max(0, n-1)//3)  # least floor f subject to n >= 3*f+1
+        f2 = max(1, ceil(max(0, n-1)/3))  # most ceil f subject to n >= 3*f+1
+        if weak:  # try both fs to see which one has lowest m
+            return min(n, ceil((n+f1+1)/2), ceil((n+f2+1)/2))
+        else:
+            return min(n, max(0, n-f1, ceil((n+f1+1)/2)))
+    else:
+        f = max(0, f)
+        m1 = ceil((n+f+1)/2)
+        m2 = max(0, n - f)
+        if m2 < m1 and n > 0:
+            raise ValueError("Invalid f={} is too big for n={}.".format(f, n))
+        if weak:
+            return min(n, m1, m2)
+        else:
+            return min(n, max(m1, m2))
+
+
 # Utility functions for extracting groups of primitives
 # bytearray of memoryview makes a copy so does not delete underlying data
 # behind memory view but del on bytearray itself does delete bytearray
@@ -383,14 +433,13 @@ def incept(keys,
     if len(oset(wits)) != len(wits):
         raise ValueError("Invalid wits = {}, has duplicates.".format(wits))
 
-
     if isinstance(toad, str):
         toad = "{:x}".format(toad)
     elif toad is None:
         if not wits:
             toad = 0
-        else:
-            toad = max(1, ceil(len(wits) / 2))
+        else:  # N = M - F,  F = (M -1)//3
+            toad = max(0, len(wits) - (max(0, len(wits) - 1) // 3))
 
     if wits:
         if toad < 1 or toad > len(wits):  # out of bounds toad
@@ -508,8 +557,8 @@ def rotate(pre,
     elif toad is None:
         if not newitset:
             toad = 0
-        else:
-            toad = max(1, ceil(len(newitset) / 2))
+        else:  # N = M - F,  F = (M -1)//3
+            toad = max(0, len(newitset) - (max(0, len(newitset) - 1) // 3))
 
     if newitset:
         if toad < 1 or toad > len(newitset):  # out of bounds toad
@@ -707,8 +756,8 @@ def delcept(keys,
     elif toad is None:
         if not wits:
             toad = 0
-        else:
-            toad = max(1, ceil(len(wits) / 2))
+        else:  # N = M - F,  F = (M -1)//3
+            toad = max(0, len(wits) - (max(0, len(wits) - 1) // 3))
 
     if wits:
         if toad < 1 or toad > len(wits):  # out of bounds toad
@@ -839,8 +888,8 @@ def deltate(pre,
     elif toad is None:
         if not newitset:
             toad = 0
-        else:
-            toad = max(1, ceil(len(newitset) / 2))
+        else:  # N = M - F,  F = (M -1)//3
+            toad = max(0, len(newitset) - (max(0, len(newitset) - 1) // 3))
 
     if newitset:
         if toad < 1 or toad > len(newitset):  # out of bounds toad

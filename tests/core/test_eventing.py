@@ -20,7 +20,8 @@ from keri.core.coring import Seqner, Verfer, Signer, Diger, Nexter, Prefixer
 from keri.core.coring import Salter, Serder, Siger, Cigar
 from keri.core.coring import Ilks
 
-from keri.core.eventing import TraitDex, LastEstLoc, Serials, Versify
+from keri.core.eventing import (TraitDex, LastEstLoc, Serials, Versify,
+                                simple,  ample)
 from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deReceiptTriple,
                                 deTransReceiptQuadruple, deTransReceiptQuintuple)
 from keri.core.eventing import (SealDigest, SealRoot, SealEvent, SealLocation,
@@ -35,6 +36,120 @@ from keri.base.keeping import openKS, Manager
 from keri import help
 
 logger = help.ogler.getLogger()
+
+
+def test_simple():
+    """
+    test simple majority function
+    """
+    assert simple(-2) == 0
+    assert simple(-1) == 0
+    assert simple(0) == 0
+    assert simple(1) == 1
+    assert simple(2) == 2
+    assert simple(3) == 2
+    assert simple(4) == 3
+    assert simple(5) == 3
+    assert simple(6) == 4
+
+
+def test_ample():
+    """
+    test ample majority function  (sufficient immune majority)
+    """
+    assert ample(0) == 0
+    assert ample(0, weak=False) == 0
+    assert ample(0, f=0) == 0
+    assert ample(0, f=0, weak=False) == 0
+    assert ample(0, f=1) == 0
+    assert ample(0, f=1, weak=False) == 0
+
+    assert ample(1) == 1
+    assert ample(1, weak=False) == 1
+    with pytest.raises(ValueError):
+        assert ample(1, f=1) == 1
+    with pytest.raises(ValueError):
+        assert ample(1, f=1, weak=False) == 1
+
+    assert ample(2) == 2
+    assert ample(2, weak=False) == 2
+    with pytest.raises(ValueError):
+        assert ample(2, f=1) == 2
+    with pytest.raises(ValueError):
+        assert ample(2, f=1, weak=False) == 2
+
+    assert ample(3) == 3
+    assert ample(3, weak=False) == 3
+    with pytest.raises(ValueError):
+        assert ample(3, f=1) == 3
+    with pytest.raises(ValueError):
+        assert ample(3, f=1) == 3
+
+    assert ample(4) == 3
+    assert ample(4, weak=False) == 3
+    assert ample(4, f=1) == 3
+    assert ample(4, f=1) == 3
+
+    assert ample(5) == 4
+    assert ample(5, weak=False) == 4
+    assert ample(5, f=1) == 4
+    assert ample(5, f=1) == 4
+
+    assert ample(6) == 4
+    assert ample(6, weak=False) == 5
+    assert ample(6, f=1) == 4
+    assert ample(6, f=1, weak=False) == 5
+
+    assert ample(7) == 5
+    assert ample(7, weak=False) == 5
+    assert ample(7, f=2) == 5
+    assert ample(7, f=2, weak=False) == 5
+
+    assert ample(8) == 6
+    assert ample(8, weak=False) == 6
+    assert ample(8, f=2) == 6
+    assert ample(8, f=2, weak=False) == 6
+
+    assert ample(9) == 6
+    assert ample(9, weak=False) == 7
+    assert ample(9, f=2) == 6
+    assert ample(9, f=2, weak=False) == 7
+
+    assert ample(10) == 7
+    assert ample(10, weak=False) == 7
+    assert ample(10, f=3) == 7
+    assert ample(10, f=3, weak=False) == 7
+
+    assert ample(11) == 8
+    assert ample(11, weak=False) == 8
+    assert ample(11, f=3) == 8
+    assert ample(11, f=3, weak=False) == 8
+
+    assert ample(12) == 8
+    assert ample(12, weak=False) == 9
+    assert ample(12, f=3) == 8
+    assert ample(12, f=3, weak=False) == 9
+
+    assert ample(13) == 9
+    assert ample(13, weak=False) == 9
+    assert ample(13, f=4) == 9
+    assert ample(13, f=4, weak=False) == 9
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def test_dewitnesscouple():
@@ -3971,4 +4086,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_messagize()
+    test_ample()

@@ -99,13 +99,9 @@ class Habitat():
             kevers is dict of Kever instance keyed by qb64 prefix
             code is prefix derivation code
             secrecies is list of list of secrets to preload key pairs if any
-            isith is incepting signing threshold as
-                    either str (hex) representaion of threshold int
-                    or list expression for for fractionally weighted threshold
+            isith is incepting signing threshold as int, str hex, or list
             icount is incepting key count for number of keys
-            nsith is next signing threshold as
-                    either str (hex)
-                    or list expression for for fractionally weighted threshold
+            nsith is next signing threshold as int, str hex or list
             ncount is next key count for number of next keys
             toad is int or str hex of witness threshold
             wits is list of qb64 prefixes of witnesses
