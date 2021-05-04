@@ -38,16 +38,18 @@ def test_witness():
          dbing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS:
 
         # witnesses first so can setup inception event for cam
+        wsith = 1
         # setup Wes's habitat nontrans
         # Wes's receipts will be rcts with a receipt couple attached
-        sith = '1'  # hex str of threshold int
-        wesHab = directing.Habitat(ks=wesKS, db=wesDB, isith=sith, icount=1,
+
+        wesHab = directing.Habitat(name='wes', ks=wesKS, db=wesDB,
+                                   isith=wsith, icount=1,
                                    salt=salt, transferable=False, temp=True)  # stem is .name
         assert wesHab.ks == wesKS
         assert wesHab.db == wesDB
         assert not wesHab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
-        wesKevery = eventing.Kevery(kevers=wesHab.kevers,
+        wesKvy = eventing.Kevery(kevers=wesHab.kevers,
                                     db=wesHab.db,
                                     framed=True,
                                     opre=wesHab.pre,
@@ -55,14 +57,14 @@ def test_witness():
 
         # setup Wok's habitat nontrans
         # Wok's receipts will be rcts with a receipt couple attached
-        sith = '1'  # hex str of threshold int
-        wokHab = directing.Habitat(ks=wokKS, db=wokDB, isith=sith, icount=1,
+        wokHab = directing.Habitat(name='wok',ks=wokKS, db=wokDB,
+                                   isith=wsith, icount=1,
                                    salt=salt, transferable=False, temp=True)  # stem is .name
         assert wokHab.ks == wokKS
         assert wokHab.db == wokDB
         assert not wokHab.kever.prefixer.transferable
         # create non-local kevery for Wok to process nonlocal msgs
-        wokKevery = eventing.Kevery(kevers=wokHab.kevers,
+        wokKvy = eventing.Kevery(kevers=wokHab.kevers,
                                     db=wokHab.db,
                                     framed=True,
                                     opre=wokHab.pre,
@@ -70,51 +72,94 @@ def test_witness():
 
         # setup Wam's habitat nontrans
         # Wams's receipts will be rcts with a receipt couple attached
-        sith = '1'  # hex str of threshold int
-        wamHab = directing.Habitat(ks=wamKS, db=wamDB, isith=sith, icount=1,
+        wamHab = directing.Habitat(name='wam', ks=wamKS, db=wamDB,
+                                   isith=wsith, icount=1,
                                    salt=salt, transferable=False, temp=True)  # stem is .name
         assert wamHab.ks == wamKS
         assert wamHab.db == wamDB
         assert not wamHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
-        wamKevery = eventing.Kevery(kevers=wamHab.kevers,
+        wamKvy = eventing.Kevery(kevers=wamHab.kevers,
                                     db=wamHab.db,
                                     framed=True,
                                     opre=wamHab.pre,
                                     local=False)
 
         # setup Cam's habitat trans multisig
-        sith = '2'  # hex str of threshold int
-        camHab = directing.Habitat(ks=camKS, db=camDB, isith=sith, icount=3,
+        wits = [wesHab.pre, wokHab.pre, wamHab.pre]
+        csith = 2  # hex str of threshold int
+        camHab = directing.Habitat(name='cam', ks=camKS, db=camDB,
+                                   isith=csith, icount=3,
+                                   toad=2, wits=wits,
                                    salt=salt, temp=True)  # stem is .name
         assert camHab.ks == camKS
         assert camHab.db == camDB
         assert camHab.kever.prefixer.transferable
 
         # create non-local kevery for Cam to process onlocal msgs
-        camKevery = eventing.Kevery(kevers=camHab.kevers,
+        camKvy = eventing.Kevery(kevers=camHab.kevers,
                                     db=camHab.db,
                                     framed=True,
                                     opre=camHab.pre,
                                     local=False)
 
         # setup Van's habitat trans multisig
-        sith = '2'  # two of three signing threshold
-        vanHab = directing.Habitat(ks=vanKS, db=vanDB, isith=sith, icount=3,
+        vsith = 2  # two of three signing threshold
+        vanHab = directing.Habitat(name='van', ks=vanKS, db=vanDB,
+                                   isith=vsith, icount=3,
                                    salt=salt, temp=True)  # stem is .name
         assert vanHab.ks == vanKS
         assert vanHab.db == vanDB
         assert vanHab.kever.prefixer.transferable
         # create non-local kevery for Van to process nonlocal msgs
-        vanKevery = eventing.Kevery(kevers=vanHab.kevers,
+        vanKvy = eventing.Kevery(kevers=vanHab.kevers,
                                     db=vanHab.db,
                                     framed=True,
                                     opre=vanHab.pre,
                                     local=False)
 
-        camMsgs = bytearray()
+        # Create Cam inception and send to each of Cam's witnesses
+        camIcpMsg = bytearray(camHab.makeOwnInception())
+        rctMsgs = bytearray()  # receipts from each witness
+        camWitKvys = [wesKvy, wokKvy, wamKvy]
+        camWitHabs = [wesHab, wokHab, wamHab]
+        for i in range(len(camWitKvys)):
+            kvy = camWitKvys[i]
+            kvy.process(ims=bytearray(camIcpMsg))  # send copy of cam icp msg to witness
+            assert camHab.pre in kvy.kevers  # accepted event
+            assert len(kvy.cues) == 1  # queued receipt cue
+            hab = camWitHabs[i]
+            rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
+            assert len(rctMsg) == 559
+            rctMsgs.extend(rctMsg)
 
+        camKvy.process(ims=rctMsgs)  # process rct msgs from all witnesses
+        for hab in camWitHabs:
+            assert hab.pre in camKvy.kevers
 
+        # get from Cam database copies of witness receipts received by Cam
+        # and send to witnesses so all witnesses have full set of receipts
+        # from all other witnesses
+        # reply one event or receipt one event with all witness attachments
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.iserder.dig)
+        wigs = camHab.db.getWigs(dgkey)
+        assert len(wigs) == 3
+        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in  wigs]
+        rserder = eventing.receipt(pre=camHab.pre, sn=0, dig=camHab.iserder.dig)
+        camWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
+        assert len(camWitRctMsg) == 413
+        for i in range(len(camWitKvys)):
+            kvy = camWitKvys[i]
+            kvy.process(ims=bytearray(camWitRctMsg))  # send copy of witness rcts
+            assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
+            assert len(kvy.cues) == 0  # no cues
+
+        # send Cam icp and witness rcts to Van
+        vanKvy.process(ims=bytearray(camIcpMsg))  # should escrow since not witnesses
+        assert camHab.pre not in vanKvy.kevers
+        vanKvy.process(ims=bytearray(camWitRctMsg))
+        vanKvy.processEscrows()
+        assert camHab.pre in vanKvy.kevers
 
 
     assert not os.path.exists(wokKS.path)

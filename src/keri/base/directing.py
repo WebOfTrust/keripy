@@ -75,7 +75,7 @@ class Habitat():
         .kevers is dict of eventing.Kever(s) keyed by qb64 prefix
         .db is lmdb data base dbing.Baser instance
         .kvy is eventing.Kevery instance for local processing of local msgs
-        .inception is Serder of inception event
+        .iserder is Serder of inception event
         .pre is qb64 prefix of local controller
 
     Properties:
@@ -99,13 +99,9 @@ class Habitat():
             kevers is dict of Kever instance keyed by qb64 prefix
             code is prefix derivation code
             secrecies is list of list of secrets to preload key pairs if any
-            isith is incepting signing threshold as
-                    either str (hex) representaion of threshold int
-                    or list expression for for fractionally weighted threshold
+            isith is incepting signing threshold as int, str hex, or list
             icount is incepting key count for number of keys
-            nsith is next signing threshold as
-                    either str (hex)
-                    or list expression for for fractionally weighted threshold
+            nsith is next signing threshold as int, str hex or list
             ncount is next key count for number of next keys
             toad is int or str hex of witness threshold
             wits is list of qb64 prefixes of witnesses
@@ -133,13 +129,11 @@ class Habitat():
                                                         temp=self.temp)
         if nsith is None:
             nsith = isith
-
         if ncount is None:
             ncount = icount
         if not self.transferable:
             ncount = 0  # next count
             code = coring.MtrDex.Ed25519N
-
 
         if secrecies:
             verferies, digers = self.mgr.ingest(secrecies,
@@ -168,6 +162,8 @@ class Habitat():
         self.iserder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                          sith=cst,
                                          nxt=nxt,
+                                         toad=toad,
+                                         wits=wits,
                                          code=code)
 
         self.pre = self.iserder.ked["i"]  # new pre
