@@ -438,8 +438,8 @@ def incept(keys,
     elif toad is None:
         if not wits:
             toad = 0
-        else:  # N = M - F,  F = (M -1)//3
-            toad = max(0, len(wits) - (max(0, len(wits) - 1) // 3))
+        else:  #  compute default f and m for len(wits)
+            toad = ample(len(wits))
 
     if wits:
         if toad < 1 or toad > len(wits):  # out of bounds toad
@@ -557,8 +557,8 @@ def rotate(pre,
     elif toad is None:
         if not newitset:
             toad = 0
-        else:  # N = M - F,  F = (M -1)//3
-            toad = max(0, len(newitset) - (max(0, len(newitset) - 1) // 3))
+        else:  # compute default f and m for len(newitset)
+            toad = ample(len(newitset))
 
     if newitset:
         if toad < 1 or toad > len(newitset):  # out of bounds toad
@@ -756,8 +756,8 @@ def delcept(keys,
     elif toad is None:
         if not wits:
             toad = 0
-        else:  # N = M - F,  F = (M -1)//3
-            toad = max(0, len(wits) - (max(0, len(wits) - 1) // 3))
+        else:  # compute default f and m for len(wits)
+            toad = ample(len(wits))
 
     if wits:
         if toad < 1 or toad > len(wits):  # out of bounds toad
@@ -888,8 +888,8 @@ def deltate(pre,
     elif toad is None:
         if not newitset:
             toad = 0
-        else:  # N = M - F,  F = (M -1)//3
-            toad = max(0, len(newitset) - (max(0, len(newitset) - 1) // 3))
+        else:  #  compute default f and m for len(newitset)
+            toad = ample(len(newitset))
 
     if newitset:
         if toad < 1 or toad > len(newitset):  # out of bounds toad

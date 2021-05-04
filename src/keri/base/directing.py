@@ -129,13 +129,11 @@ class Habitat():
                                                         temp=self.temp)
         if nsith is None:
             nsith = isith
-
         if ncount is None:
             ncount = icount
         if not self.transferable:
             ncount = 0  # next count
             code = coring.MtrDex.Ed25519N
-
 
         if secrecies:
             verferies, digers = self.mgr.ingest(secrecies,
@@ -164,6 +162,8 @@ class Habitat():
         self.iserder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                          sith=cst,
                                          nxt=nxt,
+                                         toad=toad,
+                                         wits=wits,
                                          code=code)
 
         self.pre = self.iserder.ked["i"]  # new pre
