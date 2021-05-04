@@ -166,6 +166,9 @@ def test_witness():
         vanKvy.process(ims=bytearray(camWitRctMsg))
         vanKvy.processEscrows()
         assert camHab.pre in vanKvy.kevers
+        vcKvr = vanKvy.kevers[camHab.pre]
+        assert vcKvr.sn == 0
+        assert vcKvr.wits == wits
 
         # Create Cam ixn and send to each of Cam's witnesses
         camIxnMsg = camHab.interact()
@@ -205,8 +208,9 @@ def test_witness():
 
         # send Cam ixn's witness rcts to Van first then send Cam ixn
         vanKvy.process(ims=bytearray(camWitRctMsg))
+        #vanKvy.processEscrows()
+        #assert vcKvr.sn == 0
         vanKvy.process(ims=bytearray(camIxnMsg))  # should escrow since not witnesses
-        vcKvr =  vanKvy.kevers[camHab.pre]
         assert vcKvr.sn == 0
         vanKvy.processEscrows()
         assert vcKvr.sn == 1
