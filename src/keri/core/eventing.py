@@ -1747,7 +1747,7 @@ class Kever:
 
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
-        if ((wits and not self.opre) or  # wits in promiscuous mode
+        if ((wits and not self.opre) or  # in promiscuous mode so assume must verify toad
             (wits and not self.local and self.opre and self.opre not in wits)):
             # validate that event is fully witnessed
             if toad < 0 or len(wits) < toad:
@@ -3669,10 +3669,10 @@ class Kevery:
 
         try:
             self.processEscrowOutOfOrders()
-            self.processEscrowPartialSigs()
-            self.processEscrowPartialWigs()
-            self.processEscrowDuplicitous()
             self.processEscrowUnverWitness()
+            self.processEscrowPartialWigs()
+            self.processEscrowPartialSigs()
+            self.processEscrowDuplicitous()
             self.processEscrowUnverNonTrans()
             self.processEscrowUnverTrans()
 
@@ -3962,13 +3962,14 @@ class Kevery:
     def processEscrowPartialWigs(self):
         """
         Process events escrowed by Kever that were only partially fulfilled
-        due to missing signatures from witnesses. Envents only make into this
+        due to missing signatures from witnesses. Events only make into this
         escrow after fully signed and if delegated, delegation has been verified.
 
-        Escrowed items are indexed in database table keyed by prefix and
+        Escrowed items in .pwes are indexed in database table keyed by prefix and
         sequence number with duplicates inserted in insertion order. This allows
         FIFO processing of events with same prefix and sn.
-        Uses  .db.addPwe(self, key, val) which is IOVal with dups.
+        Reads db.pwes .db.getPwe put there by  .db.addPwe(self, key, val)
+            which is IOVal with dups.
 
         Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
 
@@ -4269,7 +4270,7 @@ class Kevery:
         A receipt is unverified if the associated event has not been accepted
         into its KEL.
         Without the event, there is no way to know where to store the receipt
-        signatures neither to look up the witness list to verified the indexed
+        signatures neither to look up the witness list to verify the indexed
         signatures.
 
         The escrow is a couple with edig+wig where:
@@ -4285,7 +4286,8 @@ class Kevery:
         This allows FIFO processing of escrows for events with same prefix and
         sn but different digest.
 
-        Uses  .db.addUwe(self, key, val) which is IOVal with dups.
+        Uses .uwes reads .db.getUwe
+        was put there by.db.addUwe(self, key, val) which is IOVal with dups.
 
         Value is couple
 
@@ -4314,10 +4316,10 @@ class Kevery:
         ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, ecouple in self.db.getUreItemsNextIter(key=key):
+            for ekey, ecouple in self.db.getUweItemsNextIter(key=key):
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow db key
-                    ediger, wiger = deWitnessCouple(ecouple)
+                    ediger, wiger = deWitnessCouple(ecouple)  #  escrow diger wiger
 
                     # check date if expired then remove escrow.
                     dtb = self.db.getDts(dgKey(pre, bytes(ediger.qb64b)))
@@ -4340,59 +4342,56 @@ class Kevery:
                         raise ValidationError("Stale event escrow "
                                               "at dig = {}.".format(ediger.qb64b))
 
-                    # get dig of the receipted event using pre and sn lastEvt
-                    raw = self.db.getKeLast(snKey(pre, sn))
-                    if raw is None:
-                        # no event so keep in escrow
-                        logger.info("Kevery unescrow error: Missing receipted "
-                                 "event at pre=%s sn=%x\n", (pre, sn))
+                    # lookup database dig of the receipted event in pwes escrow
+                    # using pre and sn lastEvt
+                    snkey = snKey(pre, sn)
+                    found = False
+                    for raw in self.db.getPwesIter(key=snkey):  # search entries
+                        dig = bytes(raw)  # database dig of receipted event
+                        raw = self.db.getEvt(dgKey(pre, dig))  # get the escrowed event using dig
+                        serder = Serder(raw=bytes(raw))  # receipted event
+                        #  compare digs
+                        if not ediger.compare(ser=serder.raw, dig=dig):
+                            continue  # not match keep looking
+
+                        # assign verfers from witness list
+                        if serder.ked['t'] in (Ilks.icp, Ilks.dip):  # inceptiom
+                            wits = serder.ked['w']  # get wits from event itself
+                        else:  # after inception so get wits from kever key state
+                            # would not be in this escrow if out of order event
+                            wits = self.kevers[serder.pre].wits  # get wits fromkey state
+
+                        if wiger.index >= len(wits):  # bad index
+                            # raise ValidationError which removes from escrow below
+                            logger.info("Kevery unescrow error: Bad witness receipt"
+                               " index=%i for pre=%s sn=%x\n", wiger.index, pre, sn)
+
+                            raise ValidationError("Bad escrowed witness receipt "
+                                              "index={} at pre={} sn={:x}."
+                                              "".format(wiger.index, pre, sn))
+
+                        wiger.verfer = Verfer(qb64=wits[wiger.index])
+                        if not wiger.verfer.verify(wiger.raw, serder.raw): # not verify
+                            # raise ValidationError which unescrows below
+                            logger.info("Kevery unescrow error: Bad witness receipt"
+                                     " wig. pre=%s sn=%x\n", pre, sn)
+
+                            raise ValidationError("Bad escrowed witness receipt wig"
+                                                  " at pre={} sn={:x}."
+                                                  "".format( pre, sn))
+
+                        # write receipt wig to database
+                        self.db.addWig(key=dgKey(pre, serder.dig), val=wiger.qb64b)
+                        found = True
+                        break  # done with search will unescrow below
+
+                    if not found:  # no partial witness escrow of event found
+                        # so keep in escrow by raising UnverifiedWitnessReceiptError
+                        logger.info("Kevery unescrow error: Missing witness "
+                                 "receipted evt at pre=%s sn=%x\n", (pre, sn))
 
                         raise UnverifiedWitnessReceiptError("Missing witness "
                             "receipted evt at pre={}  sn={:x}".format(pre, sn))
-
-                    dig = bytes(raw)
-                    # get receipted event using pre and edig
-                    raw = self.db.getEvt(dgKey(pre, dig))
-                    if raw is None:  # receipted event superseded so remove from escrow
-                        logger.info("Kevery unescrow error: Invalid receipted "
-                                 "event refereance at pre=%s sn=%x\n", pre, sn)
-
-                        raise ValidationError("Invalid receipted evt reference"
-                                          " at pre={} sn={:x}".format(pre, sn))
-
-                    serder = Serder(raw=bytes(raw))  # receipted event
-
-                    #  compare digs
-                    if not ediger.compare(ser=serder.raw, diger=ediger):
-                        logger.info("Kevery unescrow error: Bad witness receipt"
-                             " dig. pre=%s sn=%x\n", pre, sn)
-
-                        raise ValidationError("Bad escrowed witness receipt dig at "
-                                          "pre={} sn={:x}."
-                                          "".format( pre, sn))
-
-                    # assign verfers from witness list
-                    kever = self.kevers[serder.pre]  # get key state
-                    if wiger.index >= len(kever.wits):  # bad index remove from escrow
-                        logger.info("Kevery unescrow error: Bad witness receipt"
-                           " index=%i for pre=%s sn=%x\n", wiger.index, pre, sn)
-
-                        raise ValidationError("Bad escrowed witness receipt "
-                                          "index={} at pre={} sn={:x}."
-                                          "".format(wiger.index, pre, sn))
-
-                    wiger.verfer = Verfer(qb64=kever.wits[wiger.index])
-                    if not wiger.verfer.verify(wiger.raw, serder.raw):
-                        # no sigs so raise ValidationError which unescrows below
-                        logger.info("Kevery unescrow error: Bad witness receipt"
-                                 " wig. pre=%s sn=%x\n", pre, sn)
-
-                        raise ValidationError("Bad escrowed witness receipt wig"
-                                              " at pre={} sn={:x}."
-                                              "".format( pre, sn))
-
-                    # write receipt wig to database
-                    self.db.addWig(key=dgKey(pre, serder.dig), val=wiger.qb64b)
 
                 except UnverifiedWitnessReceiptError as ex:
                     # still waiting on missing prior event to validate

@@ -2164,7 +2164,7 @@ class Baser(LMDBer):
     def addPwe(self, key, val):
         """
         Use snKey()
-        Add Partial witnessed escrow val bytes as dup to key in db
+        Add Partial witnessed escrow dig val bytes as dup to key in db
         Adds to existing event indexes at key if any
         Returns True if written else False if dup val already exists
         Duplicates are inserted in insertion order.
@@ -2262,8 +2262,8 @@ class Baser(LMDBer):
     def putUwes(self, key, vals):
         """
         Use snKey()
-        Write each entry from list of bytes witness receipt triples vals to key
-        Witness couple is edig+sig
+        Write each entry from list of bytes witness receipt couples vals to key
+        Witness couple is edig+wig
         Adds to existing receipts at key if any
         Returns True If at least one of vals is added as dup, False otherwise
         Duplicates are inserted in insertion order.
@@ -2308,7 +2308,7 @@ class Baser(LMDBer):
     def getUweLast(self, key):
         """
         Use snKey()
-        Return last inserted dup partial signed escrowed event couple val at key
+        Return last inserted dup partial signed escrowed receipt couple val at key
         Witness couple is edig+wig
         Returns None if no entry at key
         Duplicates are retrieved in insertion order.
@@ -2319,7 +2319,7 @@ class Baser(LMDBer):
     def getUweItemsNext(self, key=b'', skip=True):
         """
         Use snKey()
-        Return all dups of partial signed escrowed event couple items at next
+        Return all dups of partial signed escrowed receipt couple items at next
         key after key.
         Item is (key, val) where proem has already been stripped from val
         val is couple edig+wig
@@ -2334,10 +2334,10 @@ class Baser(LMDBer):
     def getUweItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
-        Return iterator of partial signed escrowed event couple items at next
+        Return iterator of partial signed escrowed receipt couple items at next
         key after key.
         Items is (key, val) where proem has already been stripped from val
-        val is couple edigwsig
+        val is couple edig+wig
         If key is b'' empty then returns dup items at first key.
         If skip is False and key is not b'' empty then returns dup items at key
         Raises StopIteration Error when empty
@@ -2349,7 +2349,7 @@ class Baser(LMDBer):
     def cntUwes(self, key):
         """
         Use snKey()
-        Return count of receipt triplets at key
+        Return count of receipt couples at key
         Returns zero if no entry at key
         """
         return self.cntIoVals(self.ures, key)

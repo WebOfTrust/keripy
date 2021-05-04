@@ -75,7 +75,7 @@ class Habitat():
         .kevers is dict of eventing.Kever(s) keyed by qb64 prefix
         .db is lmdb data base dbing.Baser instance
         .kvy is eventing.Kevery instance for local processing of local msgs
-        .inception is Serder of inception event
+        .iserder is Serder of inception event
         .pre is qb64 prefix of local controller
 
     Properties:
