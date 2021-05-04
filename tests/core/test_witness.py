@@ -120,11 +120,13 @@ def test_witness():
                                     opre=vanHab.pre,
                                     local=False)
 
-        # Create Cam inception and send to each of Cam's witnesses
-        camIcpMsg = bytearray(camHab.makeOwnInception())
-        rctMsgs = bytearray()  # receipts from each witness
+        # make list so easier to batch
         camWitKvys = [wesKvy, wokKvy, wamKvy]
         camWitHabs = [wesHab, wokHab, wamHab]
+
+        # Create Cam inception and send to each of Cam's witnesses
+        camIcpMsg = camHab.makeOwnInception()
+        rctMsgs = bytearray()  # receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
             kvy.process(ims=bytearray(camIcpMsg))  # send copy of cam icp msg to witness
@@ -143,11 +145,13 @@ def test_witness():
         # and send to witnesses so all witnesses have full set of receipts
         # from all other witnesses
         # reply one event or receipt one event with all witness attachments
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.iserder.dig)
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
         wigs = camHab.db.getWigs(dgkey)
         assert len(wigs) == 3
         wigers = [coring.Siger(qb64b=bytes(wig)) for wig in  wigs]
-        rserder = eventing.receipt(pre=camHab.pre, sn=0, dig=camHab.iserder.dig)
+        rserder = eventing.receipt(pre=camHab.pre,
+                                   sn=camHab.kever.sn,
+                                   dig=camHab.kever.serder.dig)
         camWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
         assert len(camWitRctMsg) == 413
         for i in range(len(camWitKvys)):
@@ -163,6 +167,49 @@ def test_witness():
         vanKvy.processEscrows()
         assert camHab.pre in vanKvy.kevers
 
+        # Create Cam ixn and send to each of Cam's witnesses
+        camIxnMsg = camHab.interact()
+        rctMsgs = bytearray()  # receipts from each witness
+        for i in range(len(camWitKvys)):
+            kvy = camWitKvys[i]
+            kvy.process(ims=bytearray(camIxnMsg))  # send copy of cam icp msg to witness
+            assert camHab.pre in kvy.kevers  # accepted event
+            assert len(kvy.cues) == 1  # queued receipt cue
+            hab = camWitHabs[i]
+            rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
+            assert len(rctMsg) == 281
+            rctMsgs.extend(rctMsg)
+
+        camKvy.process(ims=rctMsgs)  # process rct msgs from all witnesses
+        for hab in camWitHabs:
+            assert hab.pre in camKvy.kevers
+
+        # get from Cam database copies of witness receipts received by Cam
+        # and send to witnesses so all witnesses have full set of receipts
+        # from all other witnesses
+        # reply one event or receipt one event with all witness attachments
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
+        wigs = camHab.db.getWigs(dgkey)
+        assert len(wigs) == 3
+        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in  wigs]
+        rserder = eventing.receipt(pre=camHab.pre,
+                                   sn=camHab.kever.sn,
+                                   dig=camHab.kever.serder.dig)
+        camWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
+        assert len(camWitRctMsg) == 413
+        for i in range(len(camWitKvys)):
+            kvy = camWitKvys[i]
+            kvy.process(ims=bytearray(camWitRctMsg))  # send copy of witness rcts
+            assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
+            assert len(kvy.cues) == 0  # no cues
+
+        # send Cam ixn's witness rcts to Van first then send Cam ixn
+        vanKvy.process(ims=bytearray(camWitRctMsg))
+        vanKvy.process(ims=bytearray(camIxnMsg))  # should escrow since not witnesses
+        vcKvr =  vanKvy.kevers[camHab.pre]
+        assert vcKvr.sn == 0
+        vanKvy.processEscrows()
+        assert vcKvr.sn == 1
 
     assert not os.path.exists(wokKS.path)
     assert not os.path.exists(wokDB.path)

@@ -252,7 +252,7 @@ class Habitat():
         return msg
 
 
-    def interact(self):
+    def interact(self, data=None):
         """
         Perform interaction operation. Register interaction in database.
         Returns: bytearray interaction message with attached signatures.
@@ -260,7 +260,8 @@ class Habitat():
         kever = self.kever
         serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.diger.qb64,
-                                   sn=kever.sn+1)
+                                   sn=kever.sn+1,
+                                   data=data)
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
         msg = eventing.messagize(serder, sigers=sigers)
