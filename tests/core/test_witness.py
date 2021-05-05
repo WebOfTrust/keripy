@@ -208,8 +208,8 @@ def test_witness():
 
         # send Cam ixn's witness rcts to Van first then send Cam ixn
         vanKvy.process(ims=bytearray(camWitRctMsg))
-        #vanKvy.processEscrows()
-        #assert vcKvr.sn == 0
+        vanKvy.processEscrows()
+        assert vcKvr.sn == 0
         vanKvy.process(ims=bytearray(camIxnMsg))  # should escrow since not witnesses
         assert vcKvr.sn == 0
         vanKvy.processEscrows()
