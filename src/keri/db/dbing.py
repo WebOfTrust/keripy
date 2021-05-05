@@ -1239,7 +1239,7 @@ class Baser(LMDBer):
             msg.extend(raw)
 
 
-            #add signatures to attachments
+            #add indexed signatures to attachments
             if not (sigs := self.getSigs(key=dgkey)):
                 raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
             atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
@@ -1247,17 +1247,24 @@ class Baser(LMDBer):
             for sig in sigs:
                 atc.extend(sig)
 
+            # add indexed witness signatures to attachments
+            if (wigs := self.getWigs(key=dgkey)):
+                atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
+                                                  count=len(wigs) ).qb64b)
+                for wig in wigs:
+                    atc.extend(wig)
+
             # add trans receipts quadruples to attachments
             if (quads := self.getVrcs(key=dgkey)):
                 atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
-                                      count=len(quads)).qb64b)
+                                      count=len(quads) ).qb64b)
                 for quad in quads:
                     atc.extend(quad)
 
             # add nontrans receipts couples to attachments
             if (coups := self.getRcts(key=dgkey)):
                 atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
-                                                  count=len(coups)).qb64b)
+                                                  count=len(coups) ).qb64b)
                 for coup in coups:
                     atc.extend(coup)
 

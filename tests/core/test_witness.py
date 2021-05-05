@@ -35,7 +35,8 @@ def test_witness():
          dbing.openDB(name="van") as vanDB, keeping.openKS(name="van") as vanKS, \
          dbing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
          dbing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
-         dbing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS:
+         dbing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
+         dbing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS:
 
         # witnesses first so can setup inception event for cam
         wsith = 1
@@ -85,6 +86,21 @@ def test_witness():
                                     opre=wamHab.pre,
                                     local=False)
 
+        # setup Wil's habitat nontrans
+        # Wil's receipts will be rcts with a receipt couple attached
+        wilHab = directing.Habitat(name='wil', ks=wilKS, db=wilDB,
+                                   isith=wsith, icount=1,
+                                   salt=salt, transferable=False, temp=True)  # stem is .name
+        assert wilHab.ks == wilKS
+        assert wilHab.db == wilDB
+        assert not wilHab.kever.prefixer.transferable
+        # create non-local kevery for Wam to process nonlocal msgs
+        wilKvy = eventing.Kevery(kevers=wilHab.kevers,
+                                    db=wilHab.db,
+                                    framed=True,
+                                    opre=wilHab.pre,
+                                    local=False)
+
         # setup Cam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
         csith = 2  # hex str of threshold int
@@ -97,6 +113,9 @@ def test_witness():
         assert camHab.kever.prefixer.transferable
         for werfer in camHab.iserder.werfers:
             assert werfer.qb64 in wits
+        assert camHab.kever.wits == wits
+        assert camHab.kever.toad == 2
+        assert camHab.kever.sn == 0
 
         # create non-local kevery for Cam to process onlocal msgs
         camKvy = eventing.Kevery(kevers=camHab.kevers,
@@ -126,18 +145,19 @@ def test_witness():
 
         # Create Cam inception and send to each of Cam's witnesses
         camIcpMsg = camHab.makeOwnInception()
-        rctMsgs = bytearray()  # receipts from each witness
+        rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
             kvy.process(ims=bytearray(camIcpMsg))  # send copy of cam icp msg to witness
-            assert camHab.pre in kvy.kevers  # accepted event
+            assert kvy.kevers[camHab.pre].sn == 0  # accepted event
             assert len(kvy.cues) == 1  # queued receipt cue
             hab = camWitHabs[i]
             rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
             assert len(rctMsg) == 559
-            rctMsgs.extend(rctMsg)
+            rctMsgs.append(rctMsg)
 
-        camKvy.process(ims=rctMsgs)  # process rct msgs from all witnesses
+        for msg in rctMsgs:# process rct msgs from all witnesses
+            camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -152,18 +172,18 @@ def test_witness():
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
                                    dig=camHab.kever.serder.dig)
-        camWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
-        assert len(camWitRctMsg) == 413
+        camIcpWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
+        assert len(camIcpWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            kvy.process(ims=bytearray(camWitRctMsg))  # send copy of witness rcts
+            kvy.process(ims=bytearray(camIcpWitRctMsg))  # send copy of witness rcts
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam icp and witness rcts to Van
         vanKvy.process(ims=bytearray(camIcpMsg))  # should escrow since not witnesses
         assert camHab.pre not in vanKvy.kevers
-        vanKvy.process(ims=bytearray(camWitRctMsg))
+        vanKvy.process(ims=bytearray(camIcpWitRctMsg))
         vanKvy.processEscrows()
         assert camHab.pre in vanKvy.kevers
         vcKvr = vanKvy.kevers[camHab.pre]
@@ -172,18 +192,19 @@ def test_witness():
 
         # Create Cam ixn and send to each of Cam's witnesses
         camIxnMsg = camHab.interact()
-        rctMsgs = bytearray()  # receipts from each witness
+        rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
             kvy.process(ims=bytearray(camIxnMsg))  # send copy of cam icp msg to witness
-            assert camHab.pre in kvy.kevers  # accepted event
+            assert kvy.kevers[camHab.pre].sn == 1  # accepted event
             assert len(kvy.cues) == 1  # queued receipt cue
             hab = camWitHabs[i]
             rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
             assert len(rctMsg) == 281
-            rctMsgs.extend(rctMsg)
+            rctMsgs.append(rctMsg)
 
-        camKvy.process(ims=rctMsgs)  # process rct msgs from all witnesses
+        for msg in rctMsgs:# process rct msgs from all witnesses
+            camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -198,22 +219,101 @@ def test_witness():
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
                                    dig=camHab.kever.serder.dig)
-        camWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
-        assert len(camWitRctMsg) == 413
+        camIxnWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
+        assert len(camIxnWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            kvy.process(ims=bytearray(camWitRctMsg))  # send copy of witness rcts
+            kvy.process(ims=bytearray(camIxnWitRctMsg))  # send copy of witness rcts
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam ixn's witness rcts to Van first then send Cam ixn
-        vanKvy.process(ims=bytearray(camWitRctMsg))
+        vanKvy.process(ims=bytearray(camIxnWitRctMsg))
         vanKvy.processEscrows()
         assert vcKvr.sn == 0
         vanKvy.process(ims=bytearray(camIxnMsg))  # should escrow since not witnesses
         assert vcKvr.sn == 0
         vanKvy.processEscrows()
         assert vcKvr.sn == 1
+
+        # Cam replace Wok with Wil as a witness.
+        # Cam update Wil all event witnessed events for Cam by replay
+        # Cam update itself with Wil receipts including Wils inception
+        camReplayMsg = camHab.replay()
+        assert len(camReplayMsg) == 1824
+        wilKvy.process(ims=bytearray(camReplayMsg))
+        assert camHab.pre in wilKvy.kevers
+        assert wilKvy.kevers[camHab.pre].sn == 1  # asscepted both events
+        assert len(wilKvy.cues) == 2
+        wilRctMsg = wilHab.processCues(wilKvy.cues)  # process cue returns rct msg
+        assert len(wilKvy.cues) == 0
+        camKvy.process(ims=bytearray(wilRctMsg))  # make copy
+        assert wilHab.pre in camKvy.kevers
+
+        # Cam rotation with witness rotation
+        camRotMsg = camHab.rotate(toad=2, cuts=[wokHab.pre], adds=[wilHab.pre])
+        assert camHab.kever.wits == [wesHab.pre, wamHab.pre, wilHab.pre]
+        assert camHab.kever.toad == 2
+        assert camHab.kever.sn == 2
+
+        # update lists of witness kvys and habs
+        camWitKvys = [wesKvy, wamKvy, wilKvy]
+        camWitHabs = [wesHab, wamHab, wilHab]
+
+        rctMsgs = []  # list of receipt msgs from each witness
+        for i in range(len(camWitKvys)):
+            kvy = camWitKvys[i]
+            kvy.process(ims=bytearray(camRotMsg))  # send copy of cam msg to witness
+            assert kvy.kevers[camHab.pre].sn == 2  # accepted event
+            assert len(kvy.cues) == 1  # queued receipt cue
+            hab = camWitHabs[i]
+            rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
+            assert len(rctMsg) == 281
+            rctMsgs.append(rctMsg)
+
+        for msg in rctMsgs:# process rct msgs from all witnesses
+            camKvy.process(ims=bytearray(msg))  # make copy
+        for hab in camWitHabs:
+            assert hab.pre in camKvy.kevers
+
+        # get from Cam database copies of witness receipts received by Cam
+        # and send to witnesses so all witnesses have full set of receipts
+        # from all other witnesses
+        # reply one event or receipt one event with all witness attachments
+        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.dig)
+        wigs = camHab.db.getWigs(dgkey)
+        assert len(wigs) == 3
+        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in  wigs]
+        rserder = eventing.receipt(pre=camHab.pre,
+                                   sn=camHab.kever.sn,
+                                   dig=camHab.kever.serder.dig)
+        camRotWitRctMsg = eventing.messagize(serder=rserder, wigers=wigers)
+        assert len(camRotWitRctMsg) == 413
+        for i in range(len(camWitKvys)):
+            kvy = camWitKvys[i]
+            kvy.process(ims=bytearray(camRotWitRctMsg))  # send copy of witness rcts
+            assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
+            assert len(kvy.cues) == 0  # no cues
+
+        # send Cam's rot and wit receipts to Van
+        #vanKvy.process(ims=bytearray(camRotMsg))  # should escrow since not witnesses
+        #vanKvy.process(ims=bytearray(camRotWitRctMsg))
+        #vanKvy.processEscrows()
+        #assert vcKvr.sn == 2
+        #assert vcKvr.wits == camHab.kever.wits
+
+
+        # send Cam rot's witness rcts to Van first then send Cam rot
+        vanKvy.process(ims=bytearray(camRotWitRctMsg))
+        vanKvy.processEscrows()
+        assert vcKvr.sn == 1
+        vanKvy.process(ims=bytearray(camRotMsg))  # should escrow since not witnesses
+        assert vcKvr.sn == 1
+        vanKvy.processEscrows()
+        assert vcKvr.sn == 2
+        assert vcKvr.wits == camHab.kever.wits
+
+
 
     assert not os.path.exists(wokKS.path)
     assert not os.path.exists(wokDB.path)

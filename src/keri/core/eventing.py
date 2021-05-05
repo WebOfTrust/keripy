@@ -4382,7 +4382,41 @@ class Kevery:
                         # assign verfers from witness list
                         if serder.ked['t'] in (Ilks.icp, Ilks.dip):  # inceptiom
                             wits = serder.ked['w']  # get wits from event itself
-                        else:  # after inception so get wits from kever key state
+                            if len(oset(wits)) != len(wits):
+                                raise ValidationError("Invalid wits = {}, has duplicates for evt = {}."
+                                                 "".format(wits, serder.ked))
+
+                        elif serder.ked['t'] in (Ilks.rot, Ilks.drt):  # rotation
+                            # calculate wits from rotation and kever key state.
+                            wits = self.kevers[serder.pre].wits  # get wits from key state
+                            cuts = serder.ked['wr']
+                            adds = serder.ked['wa']
+                            witset = oset(wits)
+                            cutset = oset(cuts)
+                            addset = oset(adds)
+                            if len(cutset) != len(cuts):
+                                raise ValidationError("Invalid cuts = {}, has duplicates for evt = "
+                                                 "{}.".format(cuts, serder.ked))
+
+                            if (witset & cutset) != cutset:  #  some cuts not in wits
+                                raise ValidationError("Invalid cuts = {}, not all members in wits"
+                                                 " for evt = {}.".format(cuts, serder.ked))
+
+                            if len(addset) != len(adds):
+                                raise ValidationError("Invalid adds = {}, has duplicates for evt = "
+                                                 "{}.".format(adds, serder.ked))
+
+                            if cutset & addset:  # non empty intersection
+                                raise ValidationError("Intersecting cuts = {} and  adds = {} for "
+                                                 "evt = {}.".format(cuts, adds, serder.ked))
+
+                            if witset & addset:  # non empty intersection
+                                raise ValidationError("Intersecting wits = {} and  adds = {} for "
+                                                 "evt = {}.".format(self.wits, adds, serder.ked))
+
+                            wits = list((witset - cutset) | addset)
+
+                        else:  # interaction so get wits from kever key state
                             # would not be in this escrow if out of order event
                             wits = self.kevers[serder.pre].wits  # get wits fromkey state
 
