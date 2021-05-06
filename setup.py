@@ -7,16 +7,21 @@ First Time register project on pypi
 https://pypi.org/manage/projects/
 
 
-More secure to use twine to upload
+Pypi Release
 $ pip3 install twine
+
 $ python3 setup.py sdist
 $ twine upload dist/keri-0.0.1.tar.gz
 
+Create release git:
+$ git tag -a v0.4.2 -m "bump version"
+$ git push --tags
+$ git checkout -b release_0.4.2
+$ git push --set-upstream origin release_0.4.2
+$ git checkout master
 
 Best practices for setup.py and requirements.txt
 https://caremad.io/posts/2013/07/setup-vs-requirement/
-
-
 """
 
 
