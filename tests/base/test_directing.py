@@ -3,34 +3,19 @@
 tests.db.dbing module
 
 """
-import pytest
 
-import os
 import logging
+import os
 
-from hio.help import ogling
 from hio.base import doing
 from hio.core.tcp import clienting, serving
 
+from keri import help  # logger support
 from keri.base import basing, keeping, directing
-from keri.db import dbing
 from keri.core import eventing, coring
+from keri.db import dbing
 from keri.demo import demoing
 
-from keri import help  # logger support
-
-def test_habitat():
-    """
-    Test Habitat class
-    """
-    hab = basing.Habitat(temp=True)
-    assert hab.name == "test"
-
-    hab.db.close(clear=True)
-    hab.ks.close(clear=True)
-
-
-    """End Test"""
 
 def test_directing_basic():
     """
@@ -40,15 +25,15 @@ def test_directing_basic():
 
     # set of secrets  (seeds for private keys)
     bobSecrets = [
-                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-                ]
+        'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+        'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+        'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+        'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+        'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+        'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+        'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+        'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+    ]
 
     bobSecrecies = []
     for secret in bobSecrets:  # convert secrets to secrecies
@@ -93,7 +78,7 @@ def test_directing_basic():
     assert eve == 'ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQM'
 
     with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
-         dbing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
+            dbing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
 
         limit = 0.125
         tock = 0.03125
@@ -106,7 +91,7 @@ def test_directing_basic():
 
         # setup bob
         bobHab = basing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
-                                   secrecies=bobSecrecies, temp=True)
+                                secrecies=bobSecrecies, temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
         assert bobHab.iserder.dig == bobSerder.dig
@@ -139,7 +124,7 @@ def test_directing_basic():
 
         # setup eve
         eveHab = basing.Habitat(ks=eveKS, db=eveDB, kevers=eveKevers,
-                                   secrecies=eveSecrecies, temp=True)
+                                secrecies=eveSecrecies, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
         assert eveHab.iserder.dig == eveSerder.dig
@@ -205,7 +190,6 @@ def test_directing_basic():
     """End Test"""
 
 
-
 def test_runcontroller_demo():
     """
     Test demo runController function
@@ -215,18 +199,18 @@ def test_runcontroller_demo():
     name = "bob"
     remote = 5621
     local = 5620
-    expire =  1.0
+    expire = 1.0
 
     secrets = [
-                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-                ]
+        'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+        'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+        'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+        'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+        'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+        'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+        'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+        'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+    ]
 
     doers = demoing.setupDemoController(secrets=secrets,
                                         name=name,
@@ -237,7 +221,6 @@ def test_runcontroller_demo():
 
     help.ogler.resetLevel(level=help.ogler.level)
     """End Test"""
-
 
 
 if __name__ == "__main__":
