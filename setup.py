@@ -82,7 +82,7 @@ setup(
         'cbor2>=5.2.0',
         'multidict>=5.1.0',
         'orderedset>=2.0.3',
-        'hio>=0.3.5',
+        'hio>=0.3.6',
 
     ],
     extras_require={
