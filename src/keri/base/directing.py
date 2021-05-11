@@ -195,7 +195,7 @@ class Habitat():
 
 
     def rotate(self, sith=None, count=None, erase=None,
-               toad=None, cuts=None, adds=None):
+               toad=None, cuts=None, adds=None, data=None):
         """
         Perform rotation operation. Register rotation in database.
         Returns: bytearrayrotation message with attached signatures.
@@ -207,6 +207,7 @@ class Habitat():
             toad is int or str hex of witness threshold after cuts and adds
             cuts is list of qb64 pre of witnesses to be removed from witness list
             adds is list of qb64 pre of witnesses to be added to witness list
+            data is list of dicts of comitted data such as seals
 
         """
         if erase is not None:
@@ -245,7 +246,8 @@ class Habitat():
                                  toad=toad,
                                  wits=kever.wits,
                                  cuts=cuts,
-                                 adds=adds)
+                                 adds=adds,
+                                 data=data)
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
         msg = eventing.messagize(serder, sigers=sigers)

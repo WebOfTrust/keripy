@@ -4,9 +4,11 @@ from dataclasses import dataclass, astuple
 import blake3
 
 from keri.core.coring import Matter, MtrDex, Serder, Serials, Versify
-from keri.core.eventing import SealEvent
+from keri.core.eventing import SealEvent, ample
 from keri.kering import EmptyMaterialError, DerivationError
 from keri.kering import Version
+
+from orderedset import OrderedSet as oset
 
 Ilkage = namedtuple("Ilkage", 'vcp vrt iss rev, bis, brv')  # Event ilk (type of event)
 
@@ -32,6 +34,7 @@ TraitDex = TraitCodex()  # Make instance
 
 def incept(
         pre,
+        toad=None,
         baks=None,
         cnfg=None,
         version=Version,
@@ -45,6 +48,7 @@ def incept(
     Parameters:
          pre is issuer identifier prefix qb64
          cnfg is list of strings TraitDex of configuration traits
+         toad is int, or str hex of backer threshold
          baks is the initial list of backers prefixes for VCs in the Registry
 
          version is the API version
@@ -58,8 +62,29 @@ def incept(
 
     cnfg = cnfg if cnfg is not None else []
 
+    baks = baks if baks is not None else []
     if TraitDex.NoBackers in cnfg and len(baks) > 0:
         raise ValueError("{} backers specified for NB vcp, 0 allowed".format(len(baks)))
+
+    if len(oset(baks)) != len(baks):
+        raise ValueError("Invalid baks = {}, has duplicates.".format(baks))
+
+    if isinstance(toad, str):
+        toad = "{:x}".format(toad)
+    elif toad is None:
+        if not baks:
+            toad = 0
+        else:  #  compute default f and m for len(baks)
+            toad = ample(len(baks))
+
+    if baks:
+        if toad < 1 or toad > len(baks):  # out of bounds toad
+            raise ValueError("Invalid toad = {} for baks = {}".format(toad, baks))
+    else:
+        if toad != 0:  # invalid toad
+            raise ValueError("Invalid toad = {} for baks = {}".format(toad, baks))
+
+
 
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
@@ -67,6 +92,7 @@ def incept(
                s="{:x}".format(isn),  # hex string no leading zeros lowercase
                t=ilk,
                c=cnfg,
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
                b=baks  # list of qb64 may be empty
                )
 
@@ -77,10 +103,13 @@ def incept(
 
 
 def rotate(
-        pre,
         regk,
+        dig,
         sn=1,
+        toad=None,
         baks=None,
+        cuts=None,
+        adds=None,
         version=Version,
         kind=Serials.json,
 ):
@@ -93,8 +122,10 @@ def rotate(
         pre is identifier prefix qb64
         regk is regsitry identifier prefix qb64
         sn is int sequence number
-        baks is new list of backers prefixes for VCs in the Registry
-
+        toad is int or str hex of witness threshold
+        baks is list of prior backers prefixes qb64
+        cuts is list of witness prefixes to cut qb64
+        adds is list of witness prefixes to add qb64
 
     """
 
@@ -104,12 +135,61 @@ def rotate(
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.vrt
 
+    baks = baks if baks is not None else []
+    bakset = oset(baks)
+    if len(bakset) != len(baks):
+        raise ValueError("Invalid baks = {}, has duplicates.".format(baks))
+
+    cuts = cuts if cuts is not None else []
+    cutset = oset(cuts)
+    if len(cutset) != len(cuts):
+        raise ValueError("Invalid cuts = {}, has duplicates.".format(cuts))
+
+    if (bakset & cutset) != cutset:  #  some cuts not in wits
+        raise ValueError("Invalid cuts = {}, not all members in baks.".format(cuts))
+
+    adds = adds if adds is not None else []
+    addset = oset(adds)
+    if len(addset) != len(adds):
+        raise ValueError("Invalid adds = {}, has duplicates.".format(adds))
+
+    if cutset & addset:  # non empty intersection
+        raise ValueError("Intersecting cuts = {} and  adds = {}.".format(cuts, adds))
+
+    if bakset & addset:  # non empty intersection
+        raise ValueError("Intersecting baks = {} and  adds = {}.".format(baks, adds))
+
+    newbakset = (bakset - cutset) | addset
+
+    if len(newbakset) != (len(baks) - len(cuts) + len(adds)):  # redundant?
+        raise ValueError("Invalid member combination among baks = {}, cuts ={}, "
+                         "and adds = {}.".format(baks, cuts, adds))
+
+    if isinstance(toad, str):
+        toad = "{:x}".format(toad)
+    elif toad is None:
+        if not newbakset:
+            toad = 0
+        else:  # compute default f and m for len(newbakset)
+            toad = ample(len(newbakset))
+
+    if newbakset:
+        if toad < 1 or toad > len(newbakset):  # out of bounds toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(newbakset)))
+    else:
+        if toad != 0:  # invalid toad
+            raise ValueError("Invalid toad = {} for resultant wits = {}"
+                             "".format(toad, list(newbakset)))
+
     ked = dict(v=vs,  # version string
                i=regk,  # qb64 prefix
-               ii=pre,
+               p=dig,
                s="{:x}".format(sn),  # hex string no leading zeros lowercase
                t=ilk,
-               b=baks,  # list of qb64 may be empty
+               bt="{:x}".format(toad),  # hex string no leading zeros lowercase
+               br=cuts,  # list of qb64 may be empty
+               ba=adds,  # list of qb64 may be empty
                )
 
     return Serder(ked=ked)  # return serialized ked
@@ -145,7 +225,7 @@ def issue(
 
 def revoke(
         vcdig,
-        regk,
+        dig,
         version=Version,
         kind=Serials.json,
 ):
@@ -157,6 +237,7 @@ def revoke(
     Parameters:
         vcdig is hash digest of vc content qb64
         regk is regsitry identifier prefix qb64
+        dig is digest of previous event qb64
 
     """
 
@@ -168,7 +249,7 @@ def revoke(
                i=vcdig,
                s="{:x}".format(isn),  # hex string no leading zeros lowercase
                t=ilk,
-               ri=regk
+               p=dig
                )
 
     return Serder(ked=ked)  # return serialized ked
@@ -217,6 +298,7 @@ def backer_revoke(
         regk,
         regsn,
         regd,
+        dig,
         version=Version,
         kind=Serials.json,
 ):
@@ -230,11 +312,13 @@ def backer_revoke(
         regk is regsitry identifier prefix qb64
         regsn is int sequence number of anchoring registry TEL event
         regd is digest qb64 of anchoring registry TEL event
+        dig is digest of previous event qb64
+
     """
 
     vs = Versify(version=version, kind=kind, size=0)
     isn = 1
-    ilk = Ilks.rev
+    ilk = Ilks.brv
 
     seal = SealEvent(regk, regsn, regd)
 
@@ -242,6 +326,7 @@ def backer_revoke(
                i=vcdig,
                s="{:x}".format(isn),  # hex string no leading zeros lowercase
                t=ilk,
+               p=dig,
                ra=seal._asdict()
                )
 
