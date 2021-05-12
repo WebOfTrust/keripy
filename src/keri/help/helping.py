@@ -3,19 +3,15 @@
 keri.help.helping module
 
 """
-import os
-import shutil
-import tempfile
 import base64
-import datetime
 import dataclasses
-
-from collections.abc import Iterable, Sequence,  Mapping
+import datetime
+from collections.abc import Iterable, Sequence, Mapping
 
 import pysodium
-
 from multidict import MultiDict  # base class for mdict defined below
 from orderedset import OrderedSet as oset
+
 
 # Utilities
 def isign(i):
@@ -139,7 +135,6 @@ class mdict(MultiDict):
             else:
                 return kwa["default"]
 
-
     def nab(self, key, *pa, **kwa):
         """
         Usage:
@@ -177,7 +172,6 @@ class mdict(MultiDict):
             else:
                 return kwa["default"]
 
-
     def firsts(self):
         """
         Returns list of (key, value) pair where each value is first value at key
@@ -187,7 +181,6 @@ class mdict(MultiDict):
         """
         keys = oset(self.keys())  # get rid of duplicates provided by .keys()
         return [(k, self.getone(k)) for k in keys]
-
 
     def lasts(self):
         """
@@ -220,8 +213,7 @@ def nonStringSequence(obj):
     for non string sequences.
 
     """
-    return (not isinstance(obj, (str, bytes)) and isinstance(obj, Sequence) )
-
+    return (not isinstance(obj, (str, bytes)) and isinstance(obj, Sequence))
 
 
 def extractElementValues(element, values):
@@ -259,6 +251,7 @@ def extractElementValues(element, values):
         raise ValueError("Unexpected element value = {}. Not a str.".format(element))
 
     return
+
 
 def extractValues(ked, labels):
     """
@@ -305,7 +298,7 @@ def toIso8601(dt=None):
     if dt is None:
         dt = datetime.datetime.now(datetime.timezone.utc)  # make it aware
 
-    return(dt.isoformat())
+    return (dt.isoformat())
 
 
 def fromIso8601(dts):
