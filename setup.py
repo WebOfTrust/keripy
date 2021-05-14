@@ -24,7 +24,6 @@ Best practices for setup.py and requirements.txt
 https://caremad.io/posts/2013/07/setup-vs-requirement/
 """
 
-
 from glob import glob
 from os.path import basename
 from os.path import splitext
@@ -32,11 +31,9 @@ from os.path import splitext
 from setuptools import find_packages
 from setuptools import setup
 
-
-
 setup(
     name='keri',
-    version='0.4.3',  #  also change in src/keri/__init__.py
+    version='0.4.3',  # also change in src/keri/__init__.py
     license='Apache Software License 2.0',
     description='Key Event Receipt Infrastructure',
     long_description="KERI Decentralized Key Management Infrastructure",
@@ -59,7 +56,7 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
         # uncomment if you test on these interpreters:
-        #'Programming Language :: Python :: Implementation :: PyPy',
+        # 'Programming Language :: Python :: Implementation :: PyPy',
         # 'Programming Language :: Python :: Implementation :: IronPython',
         # 'Programming Language :: Python :: Implementation :: Jython',
         # 'Programming Language :: Python :: Implementation :: Stackless',
@@ -86,10 +83,8 @@ setup(
 
     ],
     extras_require={
-        # eg:
-        #   'rst': ['docutils>=0.11'],
-        #   ':python_version=="2.6"': ['argparse'],
     },
+    tests_require=['coverage>=5.5', 'pytest>=6.2.4'],
     setup_requires=[
     ],
     entry_points={
