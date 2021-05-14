@@ -64,7 +64,7 @@ class TraitCodex:
     """
     EstOnly:         str = 'EO'  #  Only allow establishment events
     DoNotDelegate:   str = 'DND'  #  Dot not allow delegated identifiers
-
+    NoBackers:       str = 'NB'  # Do not allow any backers for registry
 
     def __iter__(self):
         return iter(astuple(self))
@@ -398,6 +398,7 @@ def incept(keys,
            toad=None,
            wits=None,
            cnfg=None,
+           data=None,
            version=Version,
            kind=Serials.json,
            code=None,
@@ -413,7 +414,8 @@ def incept(keys,
         nxt  is qb64 next digest xor
         toad is int, or str hex of witness threshold
         wits is list of qb64 witness prefixes
-        cnfg is list of strings TraitDex of configuration traits
+        cnfg is list of strings TraitDex of configuration trait strings
+        data is list of seal dicts
         version is Version instance
         kind is serialization kind
         code is derivation code for prefix
@@ -505,7 +507,7 @@ def rotate(pre,
         wits is list of prior witness prefixes qb64
         cuts is list of witness prefixes to cut qb64
         adds is list of witness prefixes to add qb64
-        data is list of dicts of comitted data such as seals
+        data is list of seal dicts
         version is Version instance
         kind is serialization kind
     """
