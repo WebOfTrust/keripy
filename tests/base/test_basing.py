@@ -217,3 +217,8 @@ def test_deserialization():
         assert actual.city == "Riverton"
         assert actual.state == "UT"
         assert actual.zip == 84058
+
+
+
+if __name__ == "__main__":
+    test_happy_path()
