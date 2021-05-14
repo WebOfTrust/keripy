@@ -1740,7 +1740,7 @@ class Prefixer(Matter):
         """
         if ked["t"] not in (Ilks.icp, Ilks.dip, Ilks.vcp):
             raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
-        return (self._derive(ked=ked, seed=seed, secret=secret))
+        return (self._derive(ked=ked))
 
 
     def verify(self, ked, prefixed=False):
