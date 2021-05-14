@@ -3,16 +3,13 @@ from dataclasses import dataclass, astuple
 
 import blake3
 
-from keri.core.coring import Matter, MtrDex, Serder, Serials, Versify
+from keri.core.coring import (Matter, MtrDex, Serder, Serials, Versify, Prefixer,
+                              Ilks)
 from keri.core.eventing import SealEvent, ample
 from keri.kering import EmptyMaterialError, DerivationError
 from keri.kering import Version
 
 from orderedset import OrderedSet as oset
-
-Ilkage = namedtuple("Ilkage", 'vcp vrt iss rev, bis, brv')  # Event ilk (type of event)
-
-Ilks = Ilkage(vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis="bis", brv="brv")
 
 
 @dataclass(frozen=True)
@@ -39,6 +36,7 @@ def incept(
         cnfg=None,
         version=Version,
         kind=Serials.json,
+        code=None,
 ):
     """
 
@@ -53,6 +51,7 @@ def incept(
 
          version is the API version
          kind is the event type
+         code is default code for Prefixer
 
     """
 
@@ -96,7 +95,7 @@ def incept(
                b=baks  # list of qb64 may be empty
                )
 
-    prefixer = Prefixer(ked=ked)  # Derive AID from ked and code
+    prefixer = Prefixer(ked=ked, code=code, allows=[MtrDex.Blake3_256])  # Derive AID from ked and code
     ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
 
     return Serder(ked=ked)  # return serialized ked
@@ -349,156 +348,3 @@ class Tevery:
     Currently placeholder
     """
 
-
-class Prefixer(Matter):
-    """
-    Prefixer is Matter subclass for autonomic identifier prefix using
-    derivation as determined by code from ked
-
-    Attributes:
-
-    Inherited Properties:  (see Matter)
-        .pad  is int number of pad chars given raw
-        .code is  str derivation code to indicate cypher suite
-        .raw is bytes crypto material only without code
-        .index is int count of attached crypto material by context (receipts)
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
-        .nontrans is Boolean, True when non-transferable derivation code False otherwise
-
-    Properties:
-
-    Methods:
-        verify():  Verifies derivation of aid prefix from a ked
-
-    Hidden:
-        ._pad is method to compute  .pad property
-        ._code is str value for .code property
-        ._raw is bytes value for .raw property
-        ._index is int value for .index property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
-    """
-    Dummy = "#"  # dummy spaceholder char for pre. Must not be a valid Base64 char
-    # element labels to exclude in digest or signature derivation from inception vcp
-    VcpExcludes = ["i"]
-
-    def __init__(self, raw=None, code=MtrDex.Blake3_256, ked=None, **kwa):
-        """
-        assign ._derive to derive derivatin of aid prefix from ked
-        assign ._verify to verify derivation of aid prefix  from ked
-
-        Default code is None to force EmptyMaterialError when only raw provided but
-        not code.
-
-        Inherited Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            code is str of derivation code
-            index is int of count of attached receipts for CryCntDex codes
-
-        Parameters:
-            ked is dict of transaction event fields
-
-        """
-        try:
-            super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
-        except EmptyMaterialError as ex:
-            if not ked or (not code and "i" not in ked):
-                raise ex
-
-            if not code:  # get code from pre in ked
-                super(Prefixer, self).__init__(qb64=ked["i"], code=code, **kwa)
-                code = self.code
-
-            if code == MtrDex.Blake3_256:
-                self._derive = self._derive_blake3_256
-            else:
-                raise ValueError("Unsupported code = {} for prefixer.".format(code))
-
-            # use ked and ._derive from code to derive aid prefix and code
-            raw, code = self._derive(ked=ked)
-            super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
-
-        if self.code == MtrDex.Blake3_256:
-            self._verify = self._verify_blake3_256
-        else:
-            raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
-
-    def derive(self, ked, seed=None, secret=None):
-        """
-        Returns tuple (raw, code) of aid prefix as derived from key event dict ked.
-                uses a derivation code specific _derive method
-
-        Parameters:
-            ked is inception key event dict
-            seed is only used for sig derivation it is the secret key/secret
-
-        """
-        if ked["t"] is not Ilks.vcp:
-            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
-        return self._derive(ked=ked)
-
-    def verify(self, ked, prefixed=False):
-        """
-        Returns True if derivation from ked for .code matches .qb64 and
-                If prefixed also verifies ked["i"] matches .qb64
-                False otherwise
-
-        Parameters:
-            ked is inception key event dict
-        """
-        if ked["t"] is not Ilks.vcp:
-            raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
-        return self._verify(ked=ked, pre=self.qb64, prefixed=prefixed)
-
-    def _derive_blake3_256(self, ked):
-        """
-        Returns tuple (raw, code) of basic Ed25519 pre (qb64)
-            as derived from inception key event dict ked
-        """
-        ked = dict(ked)  # make copy so don't clobber original ked
-        ilk = ked["t"]
-        if ilk == Ilks.vcp:
-            labels = [key for key in ked if key not in self.VcpExcludes]
-        else:
-            raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
-
-        # put in dummy pre to get size correct
-        ked["i"] = "{}".format(self.Dummy * Matter.Codes[MtrDex.Blake3_256].fs)
-        serder = Serder(ked=ked)
-        ked = serder.ked  # use updated ked with valid vs element
-
-        for l in labels:
-            if l not in ked:
-                raise DerivationError("Missing element = {} from ked.".format(l))
-
-        dig = blake3.blake3(serder.raw).digest()
-        return dig, MtrDex.Blake3_256
-
-    def _verify_blake3_256(self, ked, pre, prefixed=False):
-        """
-        Returns True if verified False otherwise
-        Verify derivation of fully qualified Base64 prefix from
-        inception key event dict (ked)
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified default to .qb64
-        """
-        try:
-            raw, code = self._derive_blake3_256(ked=ked)
-            crymat = Matter(raw=raw, code=MtrDex.Blake3_256)
-            if crymat.qb64 != pre:
-                return False
-
-            if prefixed and ked["i"] != pre:
-                return False
-
-        except Exception as ex:
-            return False
-
-        return True
