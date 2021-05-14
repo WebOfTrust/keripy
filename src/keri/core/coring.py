@@ -3074,7 +3074,7 @@ class Serder:
         werfers property getter
         """
         if "w" in self.ked:  # inception establishment event
-            wits = self.ked["w"]
+            wits = self.ked["b"]
         else:  # non-establishment event
             wits =  []
 
