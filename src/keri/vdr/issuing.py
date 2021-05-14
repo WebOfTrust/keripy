@@ -1,7 +1,6 @@
 from keri.core.coring import Counter, Seqner, CtrDex, MtrDex
-from keri.core.eventing import SealEvent
+from keri.core.eventing import SealEvent, TraitDex
 from keri.vdr import eventing
-from keri.vdr.eventing import TraitCodex
 from keri.vdr.viring import Registry
 
 
@@ -36,7 +35,7 @@ class Issuer:
         # save backers locally for now.  will be managed by tever when implemented
         self.backers = baks if baks is not None else []
 
-        self.cnfg = [] if self.allowBackers else [TraitCodex.NoBackers]
+        self.cnfg = [] if self.allowBackers else [TraitDex.NoBackers]
 
         self.regser = eventing.incept(self.hab.pre,
                                       baks=self.backers,
