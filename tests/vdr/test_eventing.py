@@ -1,9 +1,10 @@
 import pytest
 
 from keri.core.coring import Versify, Serials, Ilks, MtrDex, Prefixer
-from keri.kering import Version, EmptyMaterialError, DerivationError
+from keri.core.eventing import TraitDex
 from keri.vdr import eventing
-from keri.vdr.eventing import rotate, TraitDex, issue, revoke, backer_issue, backer_revoke
+from keri.kering import Version, EmptyMaterialError, DerivationError
+from keri.vdr.eventing import rotate, issue, revoke, backer_issue, backer_revoke
 
 
 def test_incept():

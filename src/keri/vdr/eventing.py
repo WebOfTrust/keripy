@@ -5,28 +5,12 @@ import blake3
 
 from keri.core.coring import (Matter, MtrDex, Serder, Serials, Versify, Prefixer,
                               Ilks)
-from keri.core.eventing import SealEvent, ample
+from keri.core.eventing import SealEvent, ample, TraitDex
 from keri.kering import EmptyMaterialError, DerivationError
 from keri.kering import Version
 
 from orderedset import OrderedSet as oset
 
-
-@dataclass(frozen=True)
-class TraitCodex:
-    """
-    TraitCodex is codex of TEL inception configuration trait code strings
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-
-    """
-    NoBackers:         str = 'NB'  # Do not allow any backers for registry
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-
-TraitDex = TraitCodex()  # Make instance
 
 
 def incept(
