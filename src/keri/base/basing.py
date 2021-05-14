@@ -127,7 +127,7 @@ class Komer:
     def __serializeJSON(val):
         if val is None:
             return
-        return json.dumps(asdict(val)).encode("utf-8")
+        return json.dumps(asdict(val), separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
     @staticmethod
     def __serializeMGPK(val):
