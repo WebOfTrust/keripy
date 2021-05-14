@@ -1,4 +1,4 @@
-from keri.core.coring import Counter, Seqner, CtrDex
+from keri.core.coring import Counter, Seqner, CtrDex, MtrDex
 from keri.core.eventing import SealEvent
 from keri.vdr import eventing
 from keri.vdr.eventing import TraitCodex
@@ -38,7 +38,11 @@ class Issuer:
 
         self.cnfg = [] if self.allowBackers else [TraitCodex.NoBackers]
 
-        self.regser = eventing.incept(self.hab.pre, baks=self.backers, toad=toad, cnfg=self.cnfg)
+        self.regser = eventing.incept(self.hab.pre,
+                                      baks=self.backers,
+                                      toad=toad,
+                                      cnfg=self.cnfg,
+                                      code=MtrDex.Blake3_256)
         self.regk = self.regser.pre
 
         rseal = SealEvent(self.regk, self.regser.ked["s"], self.regser.diger.qb64)

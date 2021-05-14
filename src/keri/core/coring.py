@@ -92,10 +92,13 @@ def Deversify(vs):
 
     raise ValueError("Invalid version string = {}".format(vs))
 
-Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct vrc ksn')  # Event ilk (type of event)
+# ilk (message type )
+Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct vrc ksn '
+                                  'vcp vrt iss rev, bis, brv')
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              vrc='vrc', ksn='ksn')
+              vrc='vrc', ksn='ksn', vcp='vcp', vrt='vrt', iss='iss', rev='rev',
+              bis='bis', brv='brv')
 
 
 # Base64 utilities
@@ -1667,8 +1670,7 @@ class Prefixer(Matter):
     # element labels to exclude in digest or signature derivation from delegated inception dip
     DipExcludes = ["i"]
 
-    def __init__(self, raw=None, code=None, ked=None,
-                 seed=None, secret=None, **kwa):
+    def __init__(self, raw=None, code=None, ked=None, allows=None, **kwa):
         """
         assign ._derive to derive derivatin of aid prefix from ked
         assign ._verify to verify derivation of aid prefix  from ked
@@ -1685,9 +1687,9 @@ class Prefixer(Matter):
             index is int of count of attached receipts for CryCntDex codes
 
         Parameters:
-            seed is bytes seed when signature derivation
-            secret is qb64 when signature derivation when applicable
-               one of seed or secret must be provided when signature derivation
+            allows (list): allowed codes for prefix. When None then all supported
+                codes are allowed. This enables a particular use case to restrict
+                the codes allowed to a subset of all supported.
 
         """
         try:
@@ -1700,19 +1702,20 @@ class Prefixer(Matter):
                 super(Prefixer, self).__init__(qb64=ked["i"], code=code, **kwa)
                 code = self.code
 
+            if allows is not None and code not in allows:
+                raise ValueError("Unallowed code={} for prefixer.".format(code))
+
             if code == MtrDex.Ed25519N:
                 self._derive = self._derive_ed25519N
             elif code == MtrDex.Ed25519:
                 self._derive = self._derive_ed25519
             elif code == MtrDex.Blake3_256:
                 self._derive = self._derive_blake3_256
-            elif code == MtrDex.Ed25519_Sig:
-                self._derive = self._derive_sig_ed25519
             else:
                 raise ValueError("Unsupported code = {} for prefixer.".format(code))
 
             # use ked and ._derive from code to derive aid prefix and code
-            raw, code = self._derive(ked=ked, seed=seed, secret=secret)
+            raw, code = self._derive(ked=ked)
             super(Prefixer, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code == MtrDex.Ed25519N:
@@ -1721,13 +1724,11 @@ class Prefixer(Matter):
             self._verify = self._verify_ed25519
         elif self.code == MtrDex.Blake3_256:
             self._verify = self._verify_blake3_256
-        elif code == MtrDex.Ed25519_Sig:
-            self._verify = self._verify_sig_ed25519
         else:
             raise ValueError("Unsupported code = {} for prefixer.".format(self.code))
 
 
-    def derive(self, ked, seed=None, secret=None):
+    def derive(self, ked):
         """
         Returns tuple (raw, code) of aid prefix as derived from key event dict ked.
                 uses a derivation code specific _derive method
@@ -1737,7 +1738,7 @@ class Prefixer(Matter):
             seed is only used for sig derivation it is the secret key/secret
 
         """
-        if ked["t"] not in (Ilks.icp, Ilks.dip):
+        if ked["t"] not in (Ilks.icp, Ilks.dip, Ilks.vcp):
             raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
         return (self._derive(ked=ked, seed=seed, secret=secret))
 
@@ -1751,12 +1752,12 @@ class Prefixer(Matter):
         Parameters:
             ked is inception key event dict
         """
-        if ked["t"] not in (Ilks.icp, Ilks.dip):
+        if ked["t"] not in (Ilks.icp, Ilks.dip, Ilks.vcp):
             raise ValueError("Nonincepting ilk={} for prefix derivation.".format(ked["t"]))
         return (self._verify(ked=ked, pre=self.qb64, prefixed=prefixed))
 
 
-    def _derive_ed25519N(self, ked, seed=None, secret=None):
+    def _derive_ed25519N(self, ked):
         """
         Returns tuple (raw, code) of basic nontransferable Ed25519 prefix (qb64)
             as derived from inception key event dict ked keys[0]
@@ -1816,7 +1817,7 @@ class Prefixer(Matter):
         return True
 
 
-    def _derive_ed25519(self, ked, seed=None, secret=None):
+    def _derive_ed25519(self, ked):
         """
         Returns tuple (raw, code) of basic Ed25519 prefix (qb64)
             as derived from inception key event dict ked keys[0]
@@ -1866,29 +1867,20 @@ class Prefixer(Matter):
         return True
 
 
-    def _derive_blake3_256(self, ked, seed=None, secret=None):
+    def _derive_blake3_256(self, ked):
         """
         Returns tuple (raw, code) of basic Ed25519 pre (qb64)
             as derived from inception key event dict ked
         """
         ked = dict(ked)  # make copy so don't clobber original ked
         ilk = ked["t"]
-        if ilk == Ilks.icp:
-            labels = [key for key in ked if key not in self.IcpExcludes]
-        elif ilk == Ilks.dip:
-            labels = [key for key in ked if key not in self.DipExcludes]
-        else:
+        if ilk not in (Ilks.icp, Ilks.dip, Ilks.vcp):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
         ked["i"] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake3_256].fs)
         serder = Serder(ked=ked)
         ked = serder.ked  # use updated ked with valid vs element
-
-        for l in labels:
-            if l not in ked:
-                raise DerivationError("Missing element = {} from ked.".format(l))
-
         dig =  blake3.blake3(serder.raw).digest()
         return (dig, MtrDex.Blake3_256)
 
@@ -1911,120 +1903,6 @@ class Prefixer(Matter):
 
             if prefixed and ked["i"] != pre:
                 return False
-
-        except Exception as ex:
-            return False
-
-        return True
-
-
-    def _derive_sig_ed25519(self, ked, seed=None, secret=None):
-        """
-        Returns tuple (raw, code) of basic Ed25519 pre (qb64)
-            as derived from inception key event dict ked
-        """
-        ked = dict(ked)  # make copy so don't clobber original ked
-        ilk = ked["t"]
-        if ilk == Ilks.icp:
-            labels = [key for key in ked if key not in self.IcpExcludes]
-        elif ilk == Ilks.dip:
-            labels = [key for key in ked if key not in self.DipExcludes]
-        else:
-            raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
-
-        # put in dummy pre to get size correct
-        ked["i"] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Ed25519_Sig].fs)
-        serder = Serder(ked=ked)
-        ked = serder.ked  # use updated ked with valid vs element
-
-        for l in labels:
-            if l not in ked:
-                raise DerivationError("Missing element = {} from ked.".format(l))
-
-        try:
-            keys = ked["k"]
-            if len(keys) != 1:
-                raise DerivationError("Basic derivation needs at most 1 key "
-                                      " got {} keys instead".format(len(keys)))
-            verfer = Verfer(qb64=keys[0])
-        except Exception as ex:
-            raise DerivationError("Error extracting public key ="
-                                  " = {}".format(ex))
-
-        if verfer.code not in [MtrDex.Ed25519]:
-            raise DerivationError("Invalid derivation code = {}"
-                                  "".format(verfer.code))
-
-        if not (seed or secret):
-            raise DerivationError("Missing seed or secret.")
-
-        signer = Signer(raw=seed, qb64=secret)
-
-        if verfer.raw != signer.verfer.raw:
-            raise DerivationError("Key in ked not match seed.")
-
-        cigar = signer.sign(ser=serder.raw)
-
-        # sig = pysodium.crypto_sign_detached(ser, signer.raw + verfer.raw)
-
-        return (cigar.raw, MtrDex.Ed25519_Sig)
-
-
-    def _verify_sig_ed25519(self, ked, pre, prefixed=False):
-        """
-        Returns True if verified False otherwise
-        Verify derivation of fully qualified Base64 prefix from
-        inception key event dict (ked)
-
-        Parameters:
-            ked is inception key event dict
-            pre is Base64 fully qualified prefix default to .qb64
-        """
-        try:
-            dked = dict(ked)  # make copy so don't clobber original ked
-            ilk = dked["t"]
-            if ilk == Ilks.icp:
-                labels = [key for key in dked if key not in self.IcpExcludes]
-            elif ilk == Ilks.dip:
-                labels = [key for key in dked if key not in self.DipExcludes]
-            else:
-                raise DerivationError("Invalid ilk = {} to derive prefix.".format(ilk))
-
-            # put in dummy pre to get size correct
-            dked["i"] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Ed25519_Sig].fs)
-            serder = Serder(ked=dked)
-            dked = serder.ked  # use updated ked with valid vs element
-
-            for l in labels:
-                if l not in dked:
-                    raise DerivationError("Missing element = {} from ked.".format(l))
-
-            try:
-                keys = dked["k"]
-                if len(keys) != 1:
-                    raise DerivationError("Basic derivation needs at most 1 key "
-                                          " got {} keys instead".format(len(keys)))
-                verfer = Verfer(qb64=keys[0])
-            except Exception as ex:
-                raise DerivationError("Error extracting public key ="
-                                      " = {}".format(ex))
-
-            if verfer.code not in [MtrDex.Ed25519]:
-                raise DerivationError("Mismatched derivation code = {}"
-                                      "".format(verfer.code))
-
-            if prefixed and ked["i"] != pre:
-                return False
-
-            cigar = Cigar(qb64=pre, verfer=verfer)
-
-            result = cigar.verfer.verify(sig=cigar.raw, ser=serder.raw)
-            return result
-
-            #try:  # verify returns None if valid else raises ValueError
-                #result = pysodium.crypto_sign_verify_detached(sig, ser, verfer.raw)
-            #except Exception as ex:
-                #return False
 
         except Exception as ex:
             return False

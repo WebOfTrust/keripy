@@ -1,9 +1,9 @@
 import pytest
 
-from keri.core.coring import Versify, Serials
+from keri.core.coring import Versify, Serials, Ilks, MtrDex, Prefixer
 from keri.kering import Version, EmptyMaterialError, DerivationError
 from keri.vdr import eventing
-from keri.vdr.eventing import rotate, TraitDex, issue, revoke, backer_issue, backer_revoke, Ilks, Prefixer
+from keri.vdr.eventing import rotate, TraitDex, issue, revoke, backer_issue, backer_revoke
 
 
 def test_incept():
@@ -17,13 +17,13 @@ def test_incept():
     bak3 = "Dvxo-P4W_Z0xXTfoA3_4DMPn7oi0mLCElOWJDpC0nQXw"
 
     # no backers, allowed to add later
-    serder = eventing.incept(pre, baks=[])
+    serder = eventing.incept(pre, baks=[], code=MtrDex.Blake3_256)
     assert serder.raw == (
         b'{"v":"KERI10JSON0000a9_","i":"EiLMklo_OJmbv8D58wPlv_fudfEzuqsIl3mFYq640Jzg",'
         b'"ii":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","t":"vcp","c":[],"bt":"0","b":[]}')
 
     # no backers allowed
-    serder = eventing.incept(pre, baks=[], cnfg=[TraitDex.NoBackers])
+    serder = eventing.incept(pre, baks=[], cnfg=[TraitDex.NoBackers], code=MtrDex.Blake3_256)
     assert serder.raw == (
         b'{"v":"KERI10JSON0000ad_","i":"EjD_sFljMHXJCC3rEFL93MwHNGguKdC11mcMuQnZitcs",'
         b'"ii":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","t":"vcp","c":["NB"],"bt":"0","b":[]}')
@@ -50,7 +50,8 @@ def test_incept():
 
     # one backer
     serder = eventing.incept(pre,
-                             baks=[bak1])
+                             baks=[bak1],
+                             code=MtrDex.Blake3_256)
     assert serder.raw == (
         b'{"v":"KERI10JSON0000d7_","i":"EVohdnN33-vdNOTPYxeTQIWVzRKtzZzBoiBSGYSSnD0s",'
         b'"ii":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","t":"vcp","c":[],"bt":"1",'
@@ -58,10 +59,8 @@ def test_incept():
 
     # 3 backers
     serder = eventing.incept(pre,
-                             baks=[bak1,
-                                   bak2,
-                                   bak3
-                                   ])
+                             baks=[bak1, bak2, bak3],
+                             code=MtrDex.Blake3_256)
     assert serder.raw == (
         b'{"v":"KERI10JSON000135_","i":"Ez5ncVo7zXjC9DJT8-DM-ZMqJ-WtgpEGGs8JUzXh_Tc0",'
         b'"ii":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","t":"vcp","c":[],"bt":"3",'
@@ -71,7 +70,8 @@ def test_incept():
     # one backer, with threshold
     serder = eventing.incept(pre,
                              toad=1,
-                             baks=[bak1])
+                             baks=[bak1],
+                             code=MtrDex.Blake3_256)
     assert serder.raw == (
         b'{"v":"KERI10JSON0000d7_","i":"EVohdnN33-vdNOTPYxeTQIWVzRKtzZzBoiBSGYSSnD0s",'
         b'"ii":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","t":"vcp","c":[],"bt":"1",'
@@ -80,10 +80,8 @@ def test_incept():
     # 3 backers, with threshold
     serder = eventing.incept(pre,
                              toad=2,
-                             baks=[bak1,
-                                   bak2,
-                                   bak3
-                                   ])
+                             baks=[bak1, bak2, bak3],
+                             code=MtrDex.Blake3_256)
     assert serder.raw == (
         b'{"v":"KERI10JSON000135_","i":"E39gu2hSUBannC3st40r2d8Dy7T6JsyTk0JefYYPtDgE",'
         b'"ii":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","t":"vcp","c":[],"bt":"2",'
@@ -308,7 +306,7 @@ def test_prefixer():
                c=[],
                b=[]
                )
-    prefixer = Prefixer(ked=ked)
+    prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
     assert prefixer.qb64 == "E_TB9WKVB4Zx-Wu3-u1_RQWy2ZrDccaOj2xUpHQcg0MA"
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False
@@ -323,7 +321,7 @@ def test_prefixer():
                b=[]
                )
     with pytest.raises(DerivationError):
-        prefixer = Prefixer(ked=ked)
+        prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
 
     # vcp, no backers allowed
     ked = dict(v=vs,
@@ -334,7 +332,7 @@ def test_prefixer():
                c=[TraitDex.NoBackers],
                b=[]
                )
-    prefixer = Prefixer(ked=ked)
+    prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
     assert prefixer.qb64 == "EEDVlhKzGXA6C7n1igQF8m4WfTAEuwuvitgoM4DI3iCs"
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False
@@ -352,7 +350,7 @@ def test_prefixer():
                c=[],
                b=[bak1]
                )
-    prefixer = Prefixer(ked=ked)
+    prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
     assert prefixer.qb64 == "E_e9zbZI8WCMNoaY1b-3aEVB59M6dc2Br8EDJ1_ozK-8"
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False
@@ -366,7 +364,7 @@ def test_prefixer():
                c=[],
                b=[bak1, bak2, bak3]
                )
-    prefixer = Prefixer(ked=ked)
+    prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256)
     assert prefixer.qb64 == "EEuFeIT3_0_IAaNg8D-5AxO6UtQCmD17n77iksL048Go"
     assert prefixer.verify(ked=ked) is True
     assert prefixer.verify(ked=ked, prefixed=True) is False

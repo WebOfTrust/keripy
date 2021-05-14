@@ -40,7 +40,8 @@ def test_ilks():
     Test Ilkage namedtuple instance Ilks
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
-                          rct='rct', vrc='vrc', ksn='ksn')
+                          rct='rct', vrc='vrc', ksn='ksn', vcp='vcp', vrt='vrt',
+                          iss='iss', rev='rev', bis='bis', brv='brv')
 
     assert isinstance(Ilks, Ilkage)
 
@@ -60,6 +61,19 @@ def test_ilks():
     assert Ilks.vrc == 'vrc'
     assert 'ksn' in Ilks
     assert Ilks.ksn == 'ksn'
+
+    assert 'vcp' in Ilks
+    assert Ilks.vcp == 'vcp'
+    assert 'vrt' in Ilks
+    assert Ilks.vrt == 'vrt'
+    assert 'iss' in Ilks
+    assert Ilks.iss == 'iss'
+    assert 'rev' in Ilks
+    assert Ilks.rev == 'rev'
+    assert 'bis' in Ilks
+    assert Ilks.bis == 'bis'
+    assert 'brv' in Ilks
+    assert Ilks.brv == 'brv'
 
     """End Test """
 
@@ -2295,45 +2309,14 @@ def test_prefixer():
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
-    #  Test signature derivation
+    # test with allows
+    with pytest.raises(ValueError):
+        prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256,
+                            allows=[MtrDex.Ed25519N, MtrDex.Ed25519])
 
-    seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    seed =  (b'\xdf\x95\xf9\xbcK@s="\xee\x95w\xbf>F&\xbb\x82\x8f)\x95\xb9\xc0\x1eS\x1b{L'
-             b't\xcfH\xa6')
-    signer = Signer(raw=seed)
-    secret = signer.qb64
-    assert secret ==  'A35X5vEtAcz0i7pV3vz5GJruCjymVucAeUxt7THTPSKY'
-
-    vs = Versify(version=Version, kind=Serials.json, size=0)
-    sn = 0
-    ilk = Ilks.icp
-    sith = "1"
-    keys = [signer.verfer.qb64]
-    nxt = ""
-    toad = 0
-    wits = []
-    cnfg = []
-
-    nexter = Nexter(keys=[nxtfer.qb64])
-    ked = dict(v=vs,  # version string
-               i="",  # qb64 prefix
-               s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,
-               kt=sith, # hex string no leading zeros lowercase
-               k=keys,  # list of qb64
-               n=nexter.qb64,  # hash qual Base64
-               wt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               w=wits,  # list of qb64 may be empty
-               c=cnfg,  # list of config ordered mappings may be empty
-               )
-
-    prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519_Sig, seed=seed)
-    assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
-    assert prefixer.verify(ked=ked) == True
-    assert prefixer.verify(ked=ked, prefixed=True) == False
-
-    prefixer = Prefixer(ked=ked, code=MtrDex.Ed25519_Sig, secret=secret)
-    assert prefixer.qb64 == '0Bi8d8LQu1Uk6JjsQil1bSWfErSQnobDIHXZOfoLC-d4XNz2MOKFXKkCx2ODKOMuodDjWrkw4sG6jC5HOl-HCRCg'
+    prefixer = Prefixer(ked=ked, code=MtrDex.Blake3_256,
+                        allows=[MtrDex.Blake3_256, MtrDex.Ed25519])
+    assert prefixer.qb64 == 'EZHlPj5b4zrbJgd72n2sg3v5GYlam_BiX7Sl58mPRP84'
     assert prefixer.verify(ked=ked) == True
     assert prefixer.verify(ked=ked, prefixed=True) == False
 
@@ -2975,4 +2958,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_tholder()
+    test_prefixer()
