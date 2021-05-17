@@ -8,7 +8,7 @@ class Issuer:
     """
 
     """
-    def __init__(self, hab, name="test", reg=None, allowBackers=True, baks=None, toad=None,
+    def __init__(self, hab, name="test", reg=None, tevers=None, noBackers=False, baks=None, toad=None,
                  estOnly=False):
         """
         Initialize Instance
@@ -17,25 +17,29 @@ class Issuer:
             name is the alias for this issuer
             hab is Habitat instance of local controller's context
             reg is Registry instance for controller's credentials
-            allowBackers is boolean True to allow specification of TEL specific backers
+            tevers is a dict of Tever instances keys by qb64 prefix of registry
+            noBackers is boolean True to allow specification of TEL specific backers
             backers is the initial list of backer prefixes qb64 for VCs in the Registry
             toad is int or str hex of witness threshold
             estOnly is boolean True for forcing rotation events for every TEL event.
         """
 
         self.estOnly = estOnly
-        self.allowBackers = allowBackers
+        self.noBackers = noBackers
         self.hab = hab
         self.name = name
         self.regi = 0
         self.vcser = None
 
         self.reg = reg if reg is not None else Registry(name=name)
+        self.tevers = tevers if tevers is not None else dict()
+
+
 
         # save backers locally for now.  will be managed by tever when implemented
         self.backers = baks if baks is not None else []
 
-        self.cnfg = [] if self.allowBackers else [TraitDex.NoBackers]
+        self.cnfg = [TraitDex.NoBackers] if self.noBackers else []
 
         self.regser = eventing.incept(self.hab.pre,
                                       baks=self.backers,
@@ -68,7 +72,7 @@ class Issuer:
             adds is list of qb64 pre of backers to be added to witness list
         """
 
-        if not self.allowBackers:
+        if self.noBackers:
             raise ValueError("Attempt to rotate registry {} that does not support backers".format(self.regk))
 
         serder = eventing.rotate(dig=self.regser.dig, regk=self.regk, sn=self.regi+1, toad=toad, baks=self.backers,
@@ -77,7 +81,7 @@ class Issuer:
         self.regser = serder
         rseal = SealEvent(self.regk, serder.ked["s"], self.regser.diger.qb64)
 
-        tevt, kevt = self.anchorMsg(serder, rseal)
+        tevt, kevt = self.anchorMsg(serder, rseal._asdict())
 
         # Process message in local Tevery when ready
         self.regi += 1
@@ -94,15 +98,15 @@ class Issuer:
 
         """
 
-        if self.allowBackers:
-            serder = eventing.backer_issue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64)
-        else:
+        if self.noBackers:
             serder = eventing.issue(vcdig=vcdig, regk=self.regk)
+        else:
+            serder = eventing.backerIssue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64)
 
         self.vcser = serder
         rseal = SealEvent(vcdig, self.vcser.ked["s"], self.vcser.diger.qb64)
 
-        msg, kevt = self.anchorMsg(serder, rseal)
+        msg, kevt = self.anchorMsg(serder, [rseal._asdict()])
 
         # Process message in local Tevery when ready
         return msg, kevt
@@ -117,15 +121,15 @@ class Issuer:
 
         """
 
-        if self.allowBackers:
-            serder = eventing.backer_revoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
-                                            dig=self.vcser.dig)
-        else:
+        if self.noBackers:
             serder = eventing.revoke(vcdig=vcdig, dig=self.vcser.dig)
+        else:
+            serder = eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
+                                           dig=self.vcser.dig)
 
         rseal = SealEvent(vcdig, serder.ked["s"], serder.diger.qb64)
 
-        msg, kevt = self.anchorMsg(serder, rseal)
+        msg, kevt = self.anchorMsg(serder, rseal._asdict())
 
         # Process message in local Tevery when ready
         return msg, kevt
@@ -142,9 +146,9 @@ class Issuer:
 
     def anchorMsg(self, serder, rseal):
         if self.estOnly:
-            kevt = self.hab.rotate(data=rseal)
+            kevt = self.hab.rotate(data=[rseal])
         else:
-            kevt = self.hab.interact(data=rseal)
+            kevt = self.hab.interact(data=[rseal])
 
         seal = SealEvent(i=self.hab.pre, s=self.hab.kever.sn, d=self.hab.kever.serder.dig)
         tevt = self.messagize(serder=serder, seal=seal)

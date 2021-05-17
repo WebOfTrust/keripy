@@ -277,3 +277,10 @@ class UnexpectedOpCodeError(DerivationCodeError):
         raise DerivationCodeError("error message")
     """
 
+
+class MissingAnchorError(ValidationError):
+    """
+    Error TEL event missing anchor to validating KEL event
+    Usage:
+        raise MissingAnchorError("error message")
+    """
