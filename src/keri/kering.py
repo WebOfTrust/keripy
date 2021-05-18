@@ -129,11 +129,11 @@ class MissingWitnessSignatureError(ValidationError):
     """
 
 
-class MissingDelegatingSealError(ValidationError):
+class MissingDelegationError(ValidationError):
     """
-    Error Missing Event with Delegating Seal
+    Error Missing Event with Delegation source attachments
     Usage:
-        raise MissingDelegatingSealError("error message")
+        raise MissingDelegationError("error message")
     """
 
 

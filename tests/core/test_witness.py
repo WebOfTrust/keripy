@@ -153,7 +153,7 @@ def test_witness():
             assert len(kvy.cues) == 1  # queued receipt cue
             hab = camWitHabs[i]
             rctMsg = hab.processCues(kvy.cues)  # process cue returns rct msg
-            assert len(rctMsg) == 559
+            assert len(rctMsg) == 566
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:# process rct msgs from all witnesses
@@ -240,7 +240,7 @@ def test_witness():
         # Cam update Wil all event witnessed events for Cam by replay
         # Cam update itself with Wil receipts including Wils inception
         camReplayMsg = camHab.replay()
-        assert len(camReplayMsg) == 1824
+        assert len(camReplayMsg) == 1831
         wilKvy.process(ims=bytearray(camReplayMsg))
         assert camHab.pre in wilKvy.kevers
         assert wilKvy.kevers[camHab.pre].sn == 1  # asscepted both events
