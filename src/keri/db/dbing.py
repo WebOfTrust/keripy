@@ -1047,6 +1047,17 @@ class Baser(LMDBer):
             DB is keyed by identifer prefix plus digest of serialized event
             Value is ISO 8601 datetime stamp bytes
 
+        .aess is named sub DB of authorizing event source seal couples
+            that map digest to seal source couple of authorizer's
+            (delegator or issuer) event. Each couple is a concatenation of full
+            qualified items, snu+dig of the authorizing (delegating or issuing)
+            source event.
+            dgKey
+            Values are couples used to lookup authorizer's source event in
+            .kels sub DB
+            DB is keyed by identifer prefix plus digest of key event
+            Only one value per DB key is allowed
+
         .sigs is named sub DB of fully qualified indexed event signatures
             dgKey
             DB is keyed by identifer prefix plus digest of serialized event
@@ -1215,6 +1226,7 @@ class Baser(LMDBer):
         self.evts = self.env.open_db(key=b'evts.')
         self.fels = self.env.open_db(key=b'fels.')
         self.dtss = self.env.open_db(key=b'dtss.')
+        self.aess = self.env.open_db(key=b'aess.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
         self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
@@ -1249,8 +1261,7 @@ class Baser(LMDBer):
                 raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
             msg.extend(raw)
 
-
-            #add indexed signatures to attachments
+            # add indexed signatures to attachments
             if not (sigs := self.getSigs(key=dgkey)):
                 raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
             atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
@@ -1264,6 +1275,13 @@ class Baser(LMDBer):
                                                   count=len(wigs) ).qb64b)
                 for wig in wigs:
                     atc.extend(wig)
+
+            # add authorizer (delegator/issure) source seal event couple to attachments
+            couple = self.getAes(dgkey)
+            if couple is not None:
+                atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
+                                      count=1 ).qb64b)
+                atc.extend(couple)
 
             # add trans receipts quadruples to attachments
             if (quads := self.getVrcs(key=dgkey)):
@@ -1466,6 +1484,45 @@ class Baser(LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.dtss, key)
+
+
+    def putAes(self, key, val):
+        """
+        Use dgKey()
+        Write serialized source seal event couple val to key
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Returns False if key already exists
+        """
+        return self.putVal(self.aess, key, val)
+
+
+    def setAes(self, key, val):
+        """
+        Use dgKey()
+        Write serialized source seal event couple val to key
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.aess, key, val)
+
+
+    def getAes(self, key):
+        """
+        Use dgKey()
+        Return source seal event couple at key
+        Returns None if no entry at key
+        """
+        return self.getVal(self.aess, key)
+
+
+    def delAes(self, key):
+        """
+        Use dgKey()
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.aess, key)
 
 
     def getSigs(self, key):

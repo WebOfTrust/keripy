@@ -160,6 +160,8 @@ def test_delegation():
         delK = delKvy.kevers[delPre]
         assert delK.delegated
         assert delK.serder.diger.qb64 == delSrdr.dig
+        couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.dig))
+        assert couple == seqner.qb64b + bobSrdr.diger.qb64b
 
         # apply Del's delegated inception event message to bob's Kevery
         bobKvy.process(ims=bytearray(msg))  # process local copy of msg
@@ -167,6 +169,8 @@ def test_delegation():
         bobDelK = bobKvy.kevers[delPre]
         assert bobDelK.delegated
         assert bobDelK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
+        couple = bobKvy.db.getAes(dbing.dgKey(delPre, delSrdr.dig))
+        assert couple == seqner.qb64b + bobSrdr.diger.qb64b
 
         # Setup Del rotation event assuming that Bob's next event will be an ixn delegating event
         verfers, digers, cst, nst = delMgr.rotate(pre=delPre, temp=True)
@@ -243,11 +247,22 @@ def test_delegation():
         delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bobDelK.delegated
         assert delK.serder.diger.qb64 == delSrdr.dig
+        couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.dig))
+        assert couple == seqner.qb64b + bobSrdr.diger.qb64b
 
         # apply Del's delegated inception event message to bob's Kevery
         bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobDelK.delegated
         assert bobDelK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
+        couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.dig))
+        assert couple == seqner.qb64b + bobSrdr.diger.qb64b
+
+        # test replay
+        msgs = bytearray()
+        for msg in delKvy.db.cloneIter(pre=delPre, fn=0):
+            msgs.extend(msg)
+        assert len(msgs) == 1043
+        assert couple in msgs
 
 
 

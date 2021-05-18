@@ -447,6 +447,8 @@ def test_missing_delegator_escrow():
         bobDelK = bobKvy.kevers[delPre]  # delK in bobs kevery
         assert bobDelK.delegated
         assert bobDelK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
+        couple = bobKvy.db.getAes(dbing.dgKey(delPre, delSrdr.dig))
+        assert couple == seqner.qb64b + bobSrdr.digb
 
         # apply Del's inception msg to Del's Kevery
         # Dels event will fail but will add to its escrow
@@ -488,6 +490,8 @@ def test_missing_delegator_escrow():
         delK = delKvy.kevers[delPre]
         assert delK.delegated
         assert delK.serder.diger.qb64 == delSrdr.dig
+        couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.dig))
+        assert couple == seqner.qb64b + bobSrdr.digb
 
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 0
@@ -549,11 +553,15 @@ def test_missing_delegator_escrow():
         delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delK.delegated
         assert delK.serder.diger.qb64 == delSrdr.dig
+        couple = delKvy.db.getAes(dbing.dgKey(delPre, delSrdr.dig))
+        assert couple == seqner.qb64b + bobSrdr.digb
 
         # apply Del's delegated Rotation event message to bob's Kevery
         bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobDelK.delegated
         assert bobDelK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
+        couple = bobKvy.db.getAes(dbing.dgKey(delPre, delSrdr.dig))
+        assert couple == seqner.qb64b + bobSrdr.digb
 
 
 

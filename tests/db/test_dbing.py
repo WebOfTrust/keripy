@@ -912,6 +912,30 @@ def test_baser():
         assert db.delDts(key) == True
         assert db.getDts(key) == None
 
+        # Test .aess authorizing event source seal couples
+        key = dgKey(preb, digb)
+        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
+                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+
+        # test .aess sub db methods
+        ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAABQ'
+        sdig1 = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAABA'
+        sdig2 = b'EgYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
+        val1 = ssnu1 + sdig1
+        val2 = ssnu2 + sdig2
+
+        assert db.getAes(key) == None
+        assert db.delAes(key) == False
+        assert db.putAes(key, val1) == True
+        assert db.getAes(key) == val1
+        assert db.putAes(key, val2) == False
+        assert db.getAes(key) == val1
+        assert db.setAes(key, val2) == True
+        assert db.getAes(key) == val2
+        assert db.delAes(key) == True
+        assert db.getAes(key) == None
+
         # test .sigs sub db methods
         key = dgKey(preb, digb)
         assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
@@ -1593,7 +1617,7 @@ def test_baser():
         assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
                        b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
 
-        # test .dtss sub db methods
+        # test .pdes sub db methods
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAABQ'
         sdig1 = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAABA'

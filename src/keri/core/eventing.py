@@ -1296,7 +1296,8 @@ class Kever:
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
         # all validated above so may add to KEL and FEL logs as first seen
         self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                first=True, firner=firner, dater=dater)
+                                first=True, seqner=seqner, diger=diger,
+                                firner=firner, dater=dater)
 
 
     @property
@@ -1481,7 +1482,8 @@ class Kever:
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
             self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                    first=True, firner=firner, dater=dater)
+                                    first=True, seqner=seqner, diger=diger,
+                                    firner=firner, dater=dater)
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -1921,7 +1923,7 @@ class Kever:
 
 
     def logEvent(self, serder, sigers=None, wigers=None, first=False,
-                 firner=None, dater=None):
+                 seqner=None, diger=None, firner=None, dater=None):
         """
         Update associated logs for verified event.
         Update is idempotent. Logs will not write dup at key if already exists.
@@ -1933,6 +1935,10 @@ class Kever:
             first is Boolean True means first seen accepted log of event.
                     Otherwise means idempotent log of event to accept additional
                     signatures beyond the threshold provided for first seen
+            seqner is Seqner instance of delegating event sequence number.
+                If this event is not delegated then seqner is ignored
+            diger is Diger instance of of delegating event digest.
+                If this event is not delegated then diger is ignored
             firner is optional Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
@@ -1951,6 +1957,9 @@ class Kever:
             self.baser.putWigs(dgkey, [siger.qb64b for siger in wigers])
         self.baser.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
         if first:  # append event dig to first seen database in order
+            if seqner and diger: # authorized delegated or issued event
+                couple = seqner.qb64b + diger.qb64b
+                self.baser.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
             fn = self.baser.appendFe(self.prefixer.qb64b, self.serder.diger.qb64b)
             if firner and fn != firner.sn:  # cloned replay but replay fn not match
                 if self.cues is not None:
@@ -2912,7 +2921,8 @@ class Kevery:
                     self.cues.append(dict(kin="receipt", serder=serder))
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
-                self.escrowOOEvent(serder=serder, sigers=sigers)
+                self.escrowOOEvent(serder=serder, sigers=sigers,
+                                   seqner=seqner, diger=diger)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre so already first seen
@@ -2949,7 +2959,8 @@ class Kevery:
 
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
-                    self.escrowOOEvent(serder=serder, sigers=sigers)
+                    self.escrowOOEvent(serder=serder, sigers=sigers,
+                                       seqner=seqner, diger=diger)
                     raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
                 elif ((sn == sno) or  # new inorder event or recovery
@@ -3612,19 +3623,24 @@ class Kevery:
                 return None
 
 
-    def escrowOOEvent(self, serder, sigers):
+    def escrowOOEvent(self, serder, sigers, seqner=None, diger=None):
         """
         Update associated logs for escrow of Out-of-Order event
 
         Parameters:
             serder is Serder instance of  event
             sigers is list of Siger instance for  event
+            seqner is Seqner instance of sn of event delegatint/issuing event if any
+            diger is Diger instance of dig of event delegatint/issuing event if any
         """
         dgkey = dgKey(serder.preb, serder.digb)
         self.db.putDts(dgkey, nowIso8601().encode("utf-8"))
         self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         self.db.putEvt(dgkey, serder.raw)
         self.db.addOoe(snKey(serder.preb, serder.sn), serder.digb)
+        if seqner and diger:
+            couple = seqner.qb64b + diger.qb64b
+            self.db.putPde(dgkey, couple)   # idempotent
         # log escrowed
         logger.info("Kevery process: escrowed out of order event=\n%s\n",
                                       json.dumps(serder.ked, indent=1))
