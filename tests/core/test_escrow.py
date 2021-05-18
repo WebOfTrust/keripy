@@ -395,7 +395,7 @@ def test_missing_delegator_escrow():
                                      p=bobK.serder.diger.qb64)
 
         delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
-                                   seal=seal,
+                                   delpre=bobPre,
                                    nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
 
         delPre = delSrdr.ked["i"]
@@ -419,12 +419,11 @@ def test_missing_delegator_escrow():
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
-
         bobIxnMsg = msg
 
         # apply msg to bob's Kevery
         bobKvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert bobK.serder.diger.qb64 == bobSrdr.dig  # key state updated so event was validated
+        assert bobK.serder.dig == bobSrdr.dig  # key state updated so event was validated
 
         # now create msg with Del's delegated inception event
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
@@ -435,15 +434,19 @@ def test_missing_delegator_escrow():
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
-
+        counter = coring.Counter(code=coring.CtrDex.SealSourceCouples,
+                                     count=1)
+        msg.extend(counter.qb64b)
+        seqner = coring.Seqner(sn=bobK.sn)
+        msg.extend(seqner.qb64b)
+        msg.extend(bobSrdr.digb)
 
         # apply Del's delegated inception event message to bob's Kevery
         bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert delPre in bobKvy.kevers  # successfully validated
-        delKbobKvy = bobKvy.kevers[delPre]  # delK in bobs kevery
-        assert delKbobKvy.delegated
-        assert delKbobKvy.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
-
+        bobDelK = bobKvy.kevers[delPre]  # delK in bobs kevery
+        assert bobDelK.delegated
+        assert bobDelK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
 
         # apply Del's inception msg to Del's Kevery
         # Dels event will fail but will add to its escrow
@@ -453,6 +456,8 @@ def test_missing_delegator_escrow():
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.digb  #  escrow entry for event
+        escrow = delKvy.db.getPde(dbing.dgKey(delPre, delSrdr.dig))
+        assert escrow == seqner.qb64b + bobSrdr.digb  #  escrow entry for event
 
         # verify Kevery process partials escrow is idempotent to previously escrowed events
         # assuming not stale but nothing else has changed
@@ -462,41 +467,44 @@ def test_missing_delegator_escrow():
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.digb  #  escrow entry for event
+        escrow = delKvy.db.getPde(dbing.dgKey(delPre, delSrdr.dig))
+        assert escrow == seqner.qb64b + bobSrdr.digb  #  escrow entry for event
 
         # apply Bob's inception to Dels' Kvy
         delKvy.process(ims=bytearray(bobIcpMsg))  # process remote copy of msg
-        assert bobPre in delKvy.kevers  # mssage accepted
+        assert bobPre in delKvy.kevers  # message accepted
         delKvy.processEscrowPartialSigs()  # process escrow
         assert delPre not in delKvy.kevers
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.digb  #  escrow entry for event
+        escrow = delKvy.db.getPde(dbing.dgKey(delPre, delSrdr.dig))
+        assert escrow == seqner.qb64b + bobSrdr.digb  #  escrow entry for event
 
         # apply Bob's delegating interaction to Dels' Kvy
         delKvy.process(ims=bytearray(bobIxnMsg))  # process remote copy of msg
         delKvy.processEscrowPartialSigs()  # process escrows
         assert delPre in delKvy.kevers  # event removed from escrow
-        assert delKvy.kevers[delPre].serder.diger.qb64 == delSrdr.dig
+        delK = delKvy.kevers[delPre]
+        assert delK.delegated
+        assert delK.serder.diger.qb64 == delSrdr.dig
+
         escrows = delKvy.db.getPses(dbing.snKey(delPre, int(delSrdr.ked["s"], 16)))
         assert len(escrows) == 0
+        escrow = delKvy.db.getPde(dbing.dgKey(delPre, delSrdr.dig))
+        assert escrow is None
 
-        # Setup Del rotation event assuming that Bob's next event will be an ixn delegating event
+        # Setup Del rotation event
         verfers, digers, cst, nst = delMgr.rotate(pre=delPre, temp=True)
 
-        seal = eventing.SealLocation(i=bobK.prefixer.qb64,
-                                     s="{:x}".format(bobK.sn+1),
-                                     t=coring.Ilks.ixn,
-                                     p=bobK.serder.diger.qb64)
-
-        delSrdr = eventing.deltate(pre=delKbobKvy.prefixer.qb64,
+        delSrdr = eventing.deltate(pre=bobDelK.prefixer.qb64,
                                    keys=[verfer.qb64 for verfer in verfers],
-                                   dig=delKbobKvy.serder.diger.qb64,
-                                   seal=seal,
-                                   sn=delKbobKvy.sn+1,
+                                   dig=bobDelK.serder.diger.qb64,
+                                   sn=bobDelK.sn+1,
                                    nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
 
-        # Now create delegating rotation event
-        seal = eventing.SealEvent(i=delKbobKvy.prefixer.qb64,
+        # Now create delegating interaction event
+        seal = eventing.SealEvent(i=bobDelK.prefixer.qb64,
                                   s=delSrdr.ked["s"],
                                   d=delSrdr.dig)
         bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
@@ -530,15 +538,24 @@ def test_missing_delegator_escrow():
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
+        counter = coring.Counter(code=coring.CtrDex.SealSourceCouples,
+                                     count=1)
+        msg.extend(counter.qb64b)
+        seqner = coring.Seqner(sn=bobK.sn)
+        msg.extend(seqner.qb64b)
+        msg.extend(bobSrdr.digb)
 
-        # apply Del's delegated inception event message to bob's Kevery
-        bobKvy.process(ims=bytearray(msg))  # process local copy of msg
-        assert delKbobKvy.delegated
-        assert delKbobKvy.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
-
-        # apply msg to del's Kevery
+        # apply Del's delegated Rotation event message to del's Kevery
         delKvy.process(ims=bytearray(msg))  # process remote copy of msg
-        assert delKvy.kevers[delPre].serder.diger.qb64 == delSrdr.dig
+        assert delK.delegated
+        assert delK.serder.diger.qb64 == delSrdr.dig
+
+        # apply Del's delegated Rotation event message to bob's Kevery
+        bobKvy.process(ims=bytearray(msg))  # process local copy of msg
+        assert bobDelK.delegated
+        assert bobDelK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated
+
+
 
     assert not os.path.exists(delKS.path)
     assert not os.path.exists(delDB.path)
@@ -1375,5 +1392,5 @@ def test_unverified_trans_receipt_escrow():
 
 
 if __name__ == "__main__":
-    test_partial_signed_escrow()
+    test_missing_delegator_escrow()
 

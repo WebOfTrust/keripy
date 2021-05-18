@@ -53,7 +53,7 @@ def test_direct_mode_bob_eve_demo():
                                 code=coring.MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
-    assert bob == 'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
+    assert bob == 'EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq93bjPu5wuqA'
 
 
     # set of secrets (seeds for private keys)
@@ -80,7 +80,7 @@ def test_direct_mode_bob_eve_demo():
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
+    assert eve == 'ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQM'
 
     with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
          dbing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
@@ -219,7 +219,7 @@ def test_direct_mode_sam_eve_demo():
                                 code=coring.MtrDex.Blake3_256)
 
     sam = samSerder.ked["i"]
-    assert sam == 'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
+    assert sam == 'EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq93bjPu5wuqA'
 
 
     # set of secrets (seeds for private keys)
@@ -246,7 +246,7 @@ def test_direct_mode_sam_eve_demo():
                                 code=coring.MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
-    assert eve == 'EpDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
+    assert eve == 'ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQM'
 
 
 

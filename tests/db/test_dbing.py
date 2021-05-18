@@ -1588,6 +1588,29 @@ def test_baser():
         assert items == []  # empty
         assert not items
 
+        # Test .pdes partial delegated escrow seal source couples
+        key = dgKey(preb, digb)
+        assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'
+                       b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+
+        # test .dtss sub db methods
+        ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAABQ'
+        sdig1 = b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAABA'
+        sdig2 = b'EgYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
+        val1 = ssnu1 + sdig1
+        val2 = ssnu2 + sdig2
+
+        assert db.getPde(key) == None
+        assert db.delPde(key) == False
+        assert db.putPde(key, val1) == True
+        assert db.getPde(key) == val1
+        assert db.putPde(key, val2) == False
+        assert db.getPde(key) == val1
+        assert db.setPde(key, val2) == True
+        assert db.getPde(key) == val2
+        assert db.delPde(key) == True
+        assert db.getPde(key) == None
 
         # Partially Witnessed Escrow Events
         # test .pwes insertion order dup methods.  dup vals are insertion order

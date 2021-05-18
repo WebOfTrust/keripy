@@ -22,7 +22,8 @@ from keri.core.coring import Ilks
 
 from keri.core.eventing import (TraitDex, LastEstLoc, Serials, Versify,
                                 simple,  ample)
-from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deReceiptTriple,
+from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deSourceCouple,
+                                deReceiptTriple,
                                 deTransReceiptQuadruple, deTransReceiptQuintuple)
 from keri.core.eventing import (SealDigest, SealRoot, SealEvent, SealLocation,
                                 StateEvent, StateEstEvent)
@@ -274,6 +275,78 @@ def test_dereceiptcouple():
     prefixer, cigar = deReceiptCouple(couple, strip=True)
     assert prefixer.qb64b == preb
     assert cigar.qb64b == cigb
+    assert len(couple) == 0  # bytearray mutable so strip delete succeeds
+
+    """end test"""
+
+
+def test_desourcecouple():
+    """
+    test deSourceCouple function
+    """
+    snu = '0AAAAAAAAAAAAAAAAAAAAABQ'
+    dig = 'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+    snub = b'0AAAAAAAAAAAAAAAAAAAAABQ'
+    digb = b'E62X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ'
+
+
+    # str
+    couple = snu + dig
+    assert len(couple) == 68
+    seqner, diger = deSourceCouple(couple)
+    assert seqner.qb64 == snu
+    assert diger.qb64 == dig
+    assert len(couple) == 68  # not strip delete
+
+    # bytes
+    couple = snub + digb
+    assert len(couple) == 68
+    seqner, diger = deSourceCouple(couple)
+    assert seqner.qb64b == snub
+    assert diger.qb64b == digb
+    assert len(couple) == 68  # not strip delete
+
+    # memoryview
+    couple = memoryview(couple)
+    assert len(couple) == 68
+    seqner, diger = deSourceCouple(couple)
+    assert seqner.qb64b == snub
+    assert diger.qb64b == digb
+    assert len(couple) == 68  # not strip delete
+
+    # bytearray
+    couple = bytearray(couple)
+    assert len(couple) == 68
+    seqner, diger = deSourceCouple(couple)
+    assert seqner.qb64b == snub
+    assert diger.qb64b == digb
+    assert len(couple) == 68  # not strip delete
+
+    # test strip delete
+    # str
+    couple = snu + dig
+    assert len(couple) == 68
+    with pytest.raises(TypeError):  # immutable str so no delete
+        seqner, diger = deSourceCouple(couple, strip=True)
+    assert len(couple) == 68  # immutable so no delete
+
+    # bytes
+    couple = snub + digb
+    with pytest.raises(TypeError):  # immutable bytes so no delete
+        seqner, diger = deSourceCouple(couple, strip=True)
+    assert len(couple) == 68  # immutable so no delete
+
+    # memoryview
+    couple = memoryview(couple)
+    with pytest.raises(TypeError):  # memoryview converted to bytes so no delete
+        seqner, diger = deSourceCouple(couple, strip=True)
+    assert len(couple) == 68  # immutable so no delete
+
+    # bytearray
+    couple = bytearray(couple)
+    seqner, diger = deSourceCouple(couple, strip=True)
+    assert seqner.qb64b == snub
+    assert diger.qb64b == digb
     assert len(couple) == 0  # bytearray mutable so strip delete succeeds
 
     """end test"""
@@ -758,7 +831,6 @@ def test_keyeventfuncs():
     serderR = deltate(pre=pre,
                       keys=keysR,
                       dig='EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
-                      delpre=delpre,
                       sn=4,
                       nxt=nxtR)
 
@@ -766,12 +838,11 @@ def test_keyeventfuncs():
     assert serderR.ked["s"] == '4'
     assert serderR.ked["t"] == Ilks.drt
     assert serderR.ked["n"] == nxtR
-    assert serderR.raw == (b'{"v":"KERI10JSON000156_","i":"EZUY3a0vbBLqUtC1d9ZrutSeg1nlMPVuDfxUi4LpE03g",'
+    assert serderR.raw == (b'{"v":"KERI10JSON000122_","i":"EZUY3a0vbBLqUtC1d9ZrutSeg1nlMPVuDfxUi4LpE03g",'
                            b'"s":"4","t":"drt","p":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","kt":"1'
                            b'","k":["D8u3hipCxZnkM_O0jfaZLJMk9ERI428T0psRO0JVgh4c"],"n":"EAXTvbATMnVRGjyC'
-                           b'_VCNuXcPTxxpLanfzj14u3QMsD_U","bt":"0","br":[],"ba":[],"a":[],"di":"ENdHxtdj'
-                           b'CQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd"}')
-    assert serderR.dig == 'E7fIsCZoypD4IYlDWaYQYzG_rcWiuvqXvwGv9hrLQRf8'
+                           b'_VCNuXcPTxxpLanfzj14u3QMsD_U","bt":"0","br":[],"ba":[],"a":[]}')
+    assert serderR.dig == 'E99ece6FIrvll2dlnNjXfuHGvclWeNqvErHxCZPZDwGs'
 
 
     # State KSN
@@ -4082,4 +4153,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_direct_mode_cbor_mgpk()
+    test_desourcecouple()

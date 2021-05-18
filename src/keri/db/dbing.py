@@ -233,7 +233,7 @@ class LMDBer:
     TempHeadDir = "/tmp"
     TempPrefix = "keri_lmdb_"
     TempSuffix = "_test"
-    MaxNamedDBs = 16
+    MaxNamedDBs = 20
 
     def __init__(self, name='main', temp=False, headDirPath=None, dirMode=None,
                  reopen=True):
@@ -1114,6 +1114,16 @@ class Baser(LMDBer):
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
 
+        .pdes is named sub DB of partially delegated escrowed couples
+            that map digest to seal source couple that provides source
+            (delegator or issuer) event seal. Each couples is concatenations
+            of full qualified items, snu+dig of of authorizing (delegating or
+            issuing) source event.
+            dgKey
+            Values are couples used to lookup source event in .kels sub DB
+            DB is keyed by identifer prefix plus digest of key event
+            Only one value per DB key is allowed
+
         .pwes is named sub DB of partially witnessed escrowed event tables
             that map sequence numbers to serialized event digests.
             snKey
@@ -1121,7 +1131,7 @@ class Baser(LMDBer):
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .uwes is named sub DB of unverified event indexed escrowed comples from
+        .uwes is named sub DB of unverified event indexed escrowed couples from
             witness signers. Witnesses are from witness list of latest establishment
             event for the receipted event. Each couple is concatenation of fully
             qualified items, edig+sig where:
@@ -1213,6 +1223,7 @@ class Baser(LMDBer):
         self.vres = self.env.open_db(key=b'vres.', dupsort=True)
         self.kels = self.env.open_db(key=b'kels.', dupsort=True)
         self.pses = self.env.open_db(key=b'pses.', dupsort=True)
+        self.pdes = self.env.open_db(key=b'pdes.')
         self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
         self.uwes = self.env.open_db(key=b'uwes.', dupsort=True)
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
@@ -2155,6 +2166,45 @@ class Baser(LMDBer):
             val is dup val (does not include insertion ordering proem)
         """
         return self.delIoVal(self.pses, key, val)
+
+
+    def putPde(self, key, val):
+        """
+        Use dgKey()
+        Write serialized event source couple to key (snu+dig)
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Returns False if key already exists
+        """
+        return self.putVal(self.pdes, key, val)
+
+
+    def setPde(self, key, val):
+        """
+        Use dgKey()
+        Write serialized seal source couple to key (snu+dig)
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.pdes, key, val)
+
+
+    def getPde(self, key):
+        """
+        Use dgKey()
+        Return seal source couple at key
+        Returns None if no entry at key
+        """
+        return self.getVal(self.pdes, key)
+
+
+    def delPde(self, key):
+        """
+        Use dgKey()
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.pdes, key)
 
 
     def putPwes(self, key, vals):
