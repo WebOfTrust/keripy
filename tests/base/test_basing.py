@@ -170,7 +170,7 @@ def test_serialization():
         assert srl(jim) == expected
 
         srl = k._serializer(Serials.json)
-        expected = b'{"first": "Jim", "last": "Black", "street": "100 Main Street", "city": "Riverton", "state": "UT", "zip": 84058}'
+        expected = b'{"first":"Jim","last":"Black","street":"100 Main Street","city":"Riverton","state":"UT","zip":84058}'
         assert srl(jim) == expected
 
 
