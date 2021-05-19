@@ -1441,7 +1441,7 @@ class Kever:
         sn = self.validateSN(ked=ked, inceptive=False)
         ilk = ked["t"]
 
-        if ilk in (Ilks.rot, Ilks.drt) :  # rotation (or delegated rotation) event
+        if ilk in (Ilks.rot, Ilks.drt):  # rotation (or delegated rotation) event
             if self.delegated and ilk != Ilks.drt:
                 raise ValidationError("Attempted non delegated rotation on "
                                       "delegated pre = {} with evt = {}."
