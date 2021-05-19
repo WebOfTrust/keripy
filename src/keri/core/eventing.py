@@ -1761,7 +1761,7 @@ class Kever:
         if not tholder.satisfy(indices):  #  at least one but not enough
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
             if seqner and diger:
-                self.escrowPDEvent(serder=serder, seqner=seqner, diger=diger)
+                self.escrowPACouple(serder=serder, seqner=seqner, diger=diger)
             raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                   " for evt = {}.".format(tholder.sith,
                                                 [siger.qb64 for siger in sigers],
@@ -1829,7 +1829,7 @@ class Kever:
             inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
             sn = self.validateSN(sn=serder.ked["s"], inceptive=inceptive)
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
-            self.escrowPDEvent(serder=serder, seqner=seqner, diger=diger)
+            self.escrowPACouple(serder=serder, seqner=seqner, diger=diger)
             raise MissingDelegationError("No delegating event from {} at {} for "
                                              "evt = {}.".format(delegator,
                                                                 diger.qb64,
@@ -1960,7 +1960,7 @@ class Kever:
         logger.info("Kever state: Escrowed partially signed "
                      "event = %s\n", serder.ked)
 
-    def escrowPDEvent(self, serder, seqner, diger):
+    def escrowPACouple(self, serder, seqner, diger):
         """
         Update associated logs for escrow of partially signed event
         or fully signed delegated event but not yet verified delegation
@@ -3031,7 +3031,7 @@ class Kevery:
 
         else:  # no events to be receipted yet at that sn so escrow
             # get digest from receipt message not receipted event
-            self.escrowUWEvent(serder=serder, wigers=wigers, dig=ked["d"])
+            self.escrowUWReceipt(serder=serder, wigers=wigers, dig=ked["d"])
             raise UnverifiedWitnessReceiptError("Unverified witness receipt={}."
                                                 "".format(ked))
 
@@ -3103,7 +3103,7 @@ class Kevery:
                         self.db.addRct(key=dgkey, val=couple)
 
         else:  # no events to be receipted yet at that sn so escrow
-            self.escrowUREvent(serder, cigars, dig=ked["d"])  # digest in receipt
+            self.escrowUReceipt(serder, cigars, dig=ked["d"])  # digest in receipt
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
 
@@ -3134,7 +3134,7 @@ class Kevery:
 
         if ldig is None:  # escrow because event does not yet exist in database
             # # take advantage of fact that receipt and event have same pre, sn fields
-            self.escrowUREvent(serder, cigars, dig=serder.dig)  # digest in receipt
+            self.escrowUReceipt(serder, cigars, dig=serder.dig)  # digest in receipt
             raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
 
         ldig = bytes(ldig).decode("utf-8")  # verify digs match
@@ -3201,7 +3201,7 @@ class Kevery:
 
         if ldig is None:  # escrow because event does not yet exist in database
             # take advantage of fact that receipt and event have same pre, sn fields
-            self.escrowTREvent(serder, tsgs)
+            self.escrowTRGroups(serder, tsgs)
             raise UnverifiedTransferableReceiptError("Unverified receipt={}.".format(ked))
 
         # retrieve event by dig assumes if ldig is not None that event exists at ldig
@@ -3230,7 +3230,7 @@ class Kevery:
                                                       sn=sseqner.sn))
                 if sdig is None:
                     # receipter's est event not yet in receipters's KEL
-                    self.escrowVRQuadruple(serder, sprefixer, sseqner, sdiger, siger)
+                    self.escrowTReceipts(serder, sprefixer, sseqner, sdiger, sigers)
                     raise UnverifiedTransferableReceiptError("Unverified receipt: "
                                         "missing establishment event of transferable "
                                         "receipter for event={}."
@@ -3320,7 +3320,7 @@ class Kevery:
                 if sdig is None:
                     # receipter's est event not yet in receipter's KEL
                     # receipter's seal event not in receipter's KEL
-                    self.escrowVRQuadruple(serder, sprefixer, sseqner, sdiger, siger)
+                    self.escrowTRQuadruple(serder, sprefixer, sseqner, sdiger, siger)
                     raise UnverifiedTransferableReceiptError("Unverified receipt: "
                                         "missing establishment event of transferable "
                                         "validator receipt quadruple for event={}."
@@ -3364,7 +3364,7 @@ class Kevery:
 
 
             else:  # escrow  either receiptor or receipted event not yet in database
-                self.escrowVRQuadruple(serder, sprefixer, sseqner, sdiger, siger)
+                self.escrowTRQuadruple(serder, sprefixer, sseqner, sdiger, siger)
                 raise UnverifiedTransferableReceiptError("Unverified receipt: "
                                       "missing associated event for transferable "
                                       "validator receipt quadruple for event={}."
@@ -3615,7 +3615,7 @@ class Kevery:
                                             json.dumps(serder.ked, indent=1))
 
 
-    def escrowUWEvent(self, serder, wigers, dig):
+    def escrowUWReceipt(self, serder, wigers, dig):
         """
         Update associated logs for escrow of Unverified Event Witness Receipt
         (non-transferable)
@@ -3653,7 +3653,7 @@ class Kevery:
 
 
 
-    def escrowUREvent(self, serder, cigars, dig):
+    def escrowUReceipt(self, serder, cigars, dig):
         """
         Update associated logs for escrow of Unverified Event Receipt (non-transferable)
         Escrowed value is triple edig+rpre+cig where:
@@ -3685,10 +3685,10 @@ class Kevery:
                      " sn=%x dig=%s\n", serder.pre, serder.sn, dig)
 
 
-    def escrowTREvent(self, serder, tsgs):
+    def escrowTRGroups(self, serder, tsgs):
         """
-        Update associated logs for escrow of Transferable Event Receipt Group
-        (transferable)
+        Update associated logs for escrow of Transferable Receipt Groups for
+        event (transferable)
 
         Parameters:
             serder instance of receipt message not receipted event
@@ -3731,17 +3731,26 @@ class Kevery:
                              serder.sn, serder.ked["d"], prefixer.qb64)
 
 
-    def escrowVREvent(self, serder, sigers, seal, dig):
+    def escrowTReceipts(self, serder, prefixer, seqner, diger, sigers):
         """
-        Update associated logs for escrow of Unverified Validator Event Receipt
+        Update associated logs for escrow of Transferable Event Receipt Group
         (transferable)
 
         Parameters:
             serder instance of receipt message not receipted event
-            sigers is list of Siger instances attached to receipt message
-            seal is SealEvent instance (namedTuple)
-            dig is digest of receipted event provided in receipt
+            prefixer is Prefixer instance of prefix of receipter
+            seqner is Seqner instance of  sn of est event of receiptor
+            diger is Diger instance of digest of est event of receiptor
+            igers is list of Siger instances of multi-sig of receiptor
 
+        escrow quintuple for each siger
+            quintuple = edig+pre+snu+dig+sig
+            where:
+                edig is receipted event dig (serder.dig)
+                pre is receipter prefix
+                snu is receipter est event sn
+                dig is receipt est evant dig
+                sig is indexed sig of receiptor of receipted event
         """
         # Receipt dig algo may not match database dig. So must always
         # serder.compare to match. So receipts for same event may have different
@@ -3751,20 +3760,23 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
-        self.db.putDts(dgKey(serder.preb, dig), nowIso8601().encode("utf-8"))
-        prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
-                  Seqner(snh=seal.s).qb64b + seal.d.encode("utf-8"))
+        self.db.putDts(dgKey(serder.preb, serder.digb), nowIso8601().encode("utf-8"))
+        # since serder of of receipt not receipted event must use dig in
+        # serder.ked["d"] not serder.dig
+        prelet = (serder.ked["d"].encode("utf-8") + prefixer.qb64b +
+                  seqner.qb64b + diger.qb64b)
         for siger in sigers:  # escrow each quintlet
             quintuple = prelet + siger.qb64b  # quintuple
             self.db.addVre(key=snKey(serder.preb, serder.sn), val=quintuple)
         # log escrowed
-        logger.info("Kevery process: escrowed unverified transferabe validator "
-                     "receipt of pre= %s sn=%x dig=%s\n", serder.pre, serder.sn, dig)
+        logger.info("Kevery process: escrowed unverified transferable receipt "
+                     "of pre=%s sn=%x dig=%s by pre=%s\n", serder.pre,
+                         serder.sn, serder.ked["d"], prefixer.qb64)
 
 
-    def escrowVRQuadruple(self, serder, sprefixer, sseqner, sdiger, siger):
+    def escrowTRQuadruple(self, serder, sprefixer, sseqner, sdiger, siger):
         """
-        Update associated logs for escrow of Unverified Validator Event Receipt
+        Update associated logs for escrow of Unverified Transferable Receipt
         (transferable)
 
         escrow quintuple made from quadruple where:
