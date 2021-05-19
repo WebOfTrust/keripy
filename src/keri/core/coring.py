@@ -93,11 +93,11 @@ def Deversify(vs):
     raise ValueError("Invalid version string = {}".format(vs))
 
 # ilk (message type )
-Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct vrc ksn '
+Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct ksn '
                                   'vcp vrt iss rev, bis, brv')
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              vrc='vrc', ksn='ksn', vcp='vcp', vrt='vrt', iss='iss', rev='rev',
+              ksn='ksn', vcp='vcp', vrt='vrt', iss='iss', rev='rev',
               bis='bis', brv='brv')
 
 

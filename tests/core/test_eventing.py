@@ -27,7 +27,7 @@ from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deSourceCouple
                                 deTransReceiptQuadruple, deTransReceiptQuintuple)
 from keri.core.eventing import (SealDigest, SealRoot, SealEvent, SealLocation,
                                 StateEvent, StateEstEvent)
-from keri.core.eventing import (incept, rotate, interact, receipt, chit,
+from keri.core.eventing import (incept, rotate, interact, receipt,
                                 delcept, deltate, state, messagize)
 from keri.core.eventing import Kever, Kevery
 
@@ -772,22 +772,30 @@ def test_keyeventfuncs():
                            b'"s":"0","t":"rct","d":"ENjADDuGb8QwXfG2-Q6mqFCZqnze_L9dufxLAg8AGtCE"}')
 
 
-    # ValReceipt  chit
+    # Receipt  transferable identifier
     serderA = incept(keys=keys0, nxt=nxt1, code=MtrDex.Blake3_256)
     seal = SealEvent(i=serderA.ked["i"], s=serderA.ked["s"], d=serderA.dig)
     assert seal.i == serderA.ked["i"]
     assert seal.d == serderA.dig
 
-    serder4 = chit(pre=pre, sn=2, dig=serder2.dig, seal=seal)
+    serder4 = receipt(pre=pre, sn=2, dig=serder2.dig)
+
     assert serder4.ked["i"] == pre
     assert serder4.ked["s"] == "2"
-    assert serder4.ked["t"] == Ilks.vrc
+    assert serder4.ked["t"] == Ilks.rct
     assert serder4.ked["d"] == serder2.dig
-    assert serder4.ked["a"] == seal._asdict()
-    assert serder4.raw == (b'{"v":"KERI10JSON000105_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
-                           b'"s":"2","t":"vrc","d":"ENjADDuGb8QwXfG2-Q6mqFCZqnze_L9dufxLAg8AGtCE","a":{"i'
-                           b'":"EheV9-CZwshHxId9DgDh_r3r00QpK7jzbA4EF2HIZ9oc","s":"0","d":"EEl4SNEyeZhL_T'
-                           b'fPclHCaaXNaofpNedM6l21ilJ0I3i4"}}')
+    assert serder4.raw == (b'{"v":"KERI10JSON000091_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
+                           b'"s":"2","t":"rct","d":"ENjADDuGb8QwXfG2-Q6mqFCZqnze_L9dufxLAg8AGtCE"}')
+
+    siger = signer0.sign(ser=serderA.raw, index=0)
+    msg = messagize(serder=serder4, sigers=[siger], seal=seal)
+    assert msg == bytearray(b'{"v":"KERI10JSON000091_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-'
+                            b'Wk1x4ejhcc","s":"2","t":"rct","d":"ENjADDuGb8QwXfG2-Q6mqFCZqnze_'
+                            b'L9dufxLAg8AGtCE"}-FABEheV9-CZwshHxId9DgDh_r3r00QpK7jzbA4EF2HIZ9o'
+                            b'c0AAAAAAAAAAAAAAAAAAAAAAAEEl4SNEyeZhL_TfPclHCaaXNaofpNedM6l21ilJ'
+                            b'0I3i4-AABAAUMALurW2PdrOG5l_sfRdiIdKqpDZShNcPNQ-6vJb6dwG9-wahbQrj'
+                            b'303CRsAVT0gOqI9Ty4EoEyiv6LAX5w9Cw')
+
 
     # Delegated Inception:
     # Transferable not abandoned i.e. next not empty
@@ -2998,10 +3006,9 @@ def test_direct_mode():
                          d=valKever.lastEst.d)
         coeK = valKevery.kevers[coepre]  # lookup coeKever from val's .kevers
         # create validator receipt
-        reserder = chit(pre=coeK.prefixer.qb64,
+        reserder = receipt(pre=coeK.prefixer.qb64,
                         sn=coeK.sn,
-                        dig=coeK.serder.diger.qb64,
-                        seal=seal)
+                        dig=coeK.serder.diger.qb64)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIcpDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
@@ -3011,40 +3018,21 @@ def test_direct_mode():
                              b'"s":"0","t":"icp","kt":"1","k":["DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunR'
                              b'A"],"n":"EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqU","bt":"0","b":[],"c":['
                              b'],"a":[]}')
-        counter = Counter(CtrDex.ControllerIdxSigs)
-        assert counter.qb64 == '-AAB'
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
         assert siger.qb64 == 'AAocy9m9ToxeeZk-FkgjFh1x839Ims4peTy2C5MdawIwoa9wlIDbD-wGmiGO4QdrQ1lSntqUAUMkcGAzB0Q6SsAA'
+        rmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        assert rmsg == (b'{"v":"KERI10JSON000091_","i":"EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq9'
+                        b'3bjPu5wuqA","s":"0","t":"rct","d":"EXeKMHPw0ql8vHiBOpo72AOrOsWZ3'
+                        b'bRDL-DKkYHo4v6w"}-FABED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQ'
+                        b'M0AAAAAAAAAAAAAAAAAAAAAAAEeGqW24EnxUgO_wfuFo6GR_vii-RNv5iGo8ibUr'
+                        b'he6Z0-AABAAocy9m9ToxeeZk-FkgjFh1x839Ims4peTy2C5MdawIwoa9wlIDbD-w'
+                        b'GmiGO4QdrQ1lSntqUAUMkcGAzB0Q6SsAA')
 
         # process own Val receipt in Val's Kevery so have copy in own log
-        rmsg = bytearray(reserder.raw)
-        rmsg.extend(counter.qb64b)
-        rmsg.extend(siger.qb64b)
-        assert rmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq9'
-                                 b'3bjPu5wuqA","s":"0","t":"vrc","d":"EXeKMHPw0ql8vHiBOpo72AOrOsWZ3'
-                                 b'bRDL-DKkYHo4v6w","a":{"i":"ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2'
-                                 b'KMl3FQM","s":"0","d":"EeGqW24EnxUgO_wfuFo6GR_vii-RNv5iGo8ibUrhe6'
-                                 b'Z0"}}-AABAAocy9m9ToxeeZk-FkgjFh1x839Ims4peTy2C5MdawIwoa9wlIDbD-w'
-                                 b'GmiGO4QdrQ1lSntqUAUMkcGAzB0Q6SsAA')
-
-
         valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach reciept message to existing message with val's incept message
         vmsg.extend(rmsg)
-        assert vmsg == bytearray(b'{"v":"KERI10JSON0000ed_","i":"ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fj'
-                                 b'ew2KMl3FQM","s":"0","t":"icp","kt":"1","k":["D8KY1sKmgyjAiUDdUBP'
-                                 b'NPyrSz_ad_Qf9yzhDNZlEKiMc"],"n":"EOWDAJvex5dZzDxeHBANyaIoUG3F4-i'
-                                 b'c81G6GwtnC4f4","bt":"0","b":[],"c":[],"a":[]}-AABAArFZxr-FnvQVZF'
-                                 b'X8WSipIxCGVCJjT6fj6qkZ-ei9UAGshPsqdX7scy0zNIB4_AfIjdSLLRWgL33AJm'
-                                 b'C2neaxuDg{"v":"KERI10JSON000105_","i":"EQf1hzB6s5saaQPdDAsEzSMEF'
-                                 b'oQx_WLsq93bjPu5wuqA","s":"0","t":"vrc","d":"EXeKMHPw0ql8vHiBOpo7'
-                                 b'2AOrOsWZ3bRDL-DKkYHo4v6w","a":{"i":"ED9EB3sA5u2vCPOEmX3d7bEyHiSh'
-                                 b'7Xi8fjew2KMl3FQM","s":"0","d":"EeGqW24EnxUgO_wfuFo6GR_vii-RNv5iG'
-                                 b'o8ibUrhe6Z0"}}-AABAAocy9m9ToxeeZk-FkgjFh1x839Ims4peTy2C5MdawIwoa'
-                                 b'9wlIDbD-wGmiGO4QdrQ1lSntqUAUMkcGAzB0Q6SsAA')
-
-
         # Simulate send to coe of val's incept and val's receipt of coe's inception message
         coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
@@ -3064,24 +3052,20 @@ def test_direct_mode():
 
         # create receipt to escrow use invalid dig and sn so not in coe's db
         fake = reserder.dig  # some other dig
-        reserder = chit(pre=coeK.prefixer.qb64,
+        reserder = receipt(pre=coeK.prefixer.qb64,
                         sn=10,
-                        dig=fake,
-                        seal=seal)
+                        dig=fake)
         # sign event not receipt
-        counter = Counter(CtrDex.ControllerIdxSigs)
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
 
         # create message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq9'
-                                 b'3bjPu5wuqA","s":"a","t":"vrc","d":"Eaw5euq1ktf7YA3J7uiOJhPkB1YTd'
-                                 b'oco9UHVQTjsXQCI","a":{"i":"ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2'
-                                 b'KMl3FQM","s":"0","d":"EeGqW24EnxUgO_wfuFo6GR_vii-RNv5iGo8ibUrhe6'
-                                 b'Z0"}}-AABAAocy9m9ToxeeZk-FkgjFh1x839Ims4peTy2C5MdawIwoa9wlIDbD-w'
-                                 b'GmiGO4QdrQ1lSntqUAUMkcGAzB0Q6SsAA')
+        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        assert vmsg == (b'{"v":"KERI10JSON000091_","i":"EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq9'
+                        b'3bjPu5wuqA","s":"a","t":"rct","d":"EpX7M0uQUxXFaY80_-O6Tn3xGRe9_'
+                        b'unGqSTN8a9bAnTw"}-FABED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQ'
+                        b'M0AAAAAAAAAAAAAAAAAAAAAAAEeGqW24EnxUgO_wfuFo6GR_vii-RNv5iGo8ibUr'
+                        b'he6Z0-AABAAocy9m9ToxeeZk-FkgjFh1x839Ims4peTy2C5MdawIwoa9wlIDbD-w'
+                        b'GmiGO4QdrQ1lSntqUAUMkcGAzB0Q6SsAA')
         coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if receipt quadruple in escrow database
         result = coeKevery.db.getVres(key=snKey(pre=coeKever.prefixer.qb64,
@@ -3101,10 +3085,9 @@ def test_direct_mode():
                          d=coeKever.lastEst.d)
         valK = coeKevery.kevers[valpre]  # lookup valKever from coe's .kevers
         # create validator receipt
-        reserder = chit(pre=valK.prefixer.qb64,
+        reserder = receipt(pre=valK.prefixer.qb64,
                         sn=valK.sn,
-                        dig=valK.serder.diger.qb64,
-                        seal=seal)
+                        dig=valK.serder.diger.qb64)
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
         valIcpDig = bytes(coeKevery.db.getKeLast(key=snKey(pre=valpre, sn=vsn)))
@@ -3115,21 +3098,16 @@ def test_direct_mode():
                              b'c"],"n":"EOWDAJvex5dZzDxeHBANyaIoUG3F4-ic81G6GwtnC4f4","bt":"0","b":[],"c":['
                              b'],"a":[]}')
 
-        counter = Counter(CtrDex.ControllerIdxSigs)
-        assert counter.qb64 == '-AAB'
         siger = coeSigners[vesn].sign(ser=valIcpRaw, index=0)  # return Siger if index
         assert siger.qb64 == 'AAv33KFtbsfcOWbefKGnlf1hbtypw8RFtLZ-tdpZ3Purcs2YA1q1PDInwgm8nRV57M8dtRUG62DrNVtE7t8onjAA'
-
         # create receipt message
-        cmsg = bytearray(reserder.raw)
-        cmsg.extend(counter.qb64b)
-        cmsg.extend(siger.qb64b)
-        assert cmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fj'
-                                 b'ew2KMl3FQM","s":"0","t":"vrc","d":"EeGqW24EnxUgO_wfuFo6GR_vii-RN'
-                                 b'v5iGo8ibUrhe6Z0","a":{"i":"EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq93bj'
-                                 b'Pu5wuqA","s":"0","d":"EXeKMHPw0ql8vHiBOpo72AOrOsWZ3bRDL-DKkYHo4v'
-                                 b'6w"}}-AABAAv33KFtbsfcOWbefKGnlf1hbtypw8RFtLZ-tdpZ3Purcs2YA1q1PDI'
-                                 b'nwgm8nRV57M8dtRUG62DrNVtE7t8onjAA')
+        cmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        assert cmsg == (b'{"v":"KERI10JSON000091_","i":"ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fj'
+                        b'ew2KMl3FQM","s":"0","t":"rct","d":"EeGqW24EnxUgO_wfuFo6GR_vii-RN'
+                        b'v5iGo8ibUrhe6Z0"}-FABEQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq93bjPu5wuq'
+                        b'A0AAAAAAAAAAAAAAAAAAAAAAAEXeKMHPw0ql8vHiBOpo72AOrOsWZ3bRDL-DKkYH'
+                        b'o4v6w-AABAAv33KFtbsfcOWbefKGnlf1hbtypw8RFtLZ-tdpZ3Purcs2YA1q1PDI'
+                        b'nwgm8nRV57M8dtRUG62DrNVtE7t8onjAA')
 
         # coe process own receipt in own Kevery so have copy in own log
         coeKevery.processOne(ims=bytearray(cmsg))  # make copy
@@ -3192,10 +3170,9 @@ def test_direct_mode():
                          s="{:x}".format(valKever.lastEst.s),
                          d=valKever.lastEst.d)
         # create validator receipt
-        reserder = chit(pre=coeK.prefixer.qb64,
+        reserder = receipt(pre=coeK.prefixer.qb64,
                         sn=coeK.sn,
-                        dig=coeK.serder.diger.qb64,
-                        seal=seal)
+                        dig=coeK.serder.diger.qb64)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeRotDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
@@ -3206,20 +3183,16 @@ def test_direct_mode():
                              b'","k":["DVcuJOOJF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJI"],"n":"E-dapdcC6XR1KWmW'
                              b'DsNl4J_OxcGxNZw1Xd95JH5a34fI","bt":"0","br":[],"ba":[],"a":[]}')
 
-        counter = Counter(CtrDex.ControllerIdxSigs)
         siger = valSigners[vesn].sign(ser=coeRotRaw, index=0)  # return Siger if index
         assert siger.qb64 == 'AAVFlKWaMfEee7tvDO7PLUVoCfbylu4zDH8Lrj2tmbsInqIN5oNSupo7S_j7AnCOdBaGf9WQMwwfHkeQpayCCyAA'
-
         # val create receipt message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq9'
-                                 b'3bjPu5wuqA","s":"1","t":"vrc","d":"EQK8BvEIsvM9r3VGd1Qi10Gzzllod'
-                                 b'v0Vmnl7nl_a05eY","a":{"i":"ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2'
-                                 b'KMl3FQM","s":"0","d":"EeGqW24EnxUgO_wfuFo6GR_vii-RNv5iGo8ibUrhe6'
-                                 b'Z0"}}-AABAAVFlKWaMfEee7tvDO7PLUVoCfbylu4zDH8Lrj2tmbsInqIN5oNSupo'
-                                 b'7S_j7AnCOdBaGf9WQMwwfHkeQpayCCyAA')
+        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        assert vmsg == (b'{"v":"KERI10JSON000091_","i":"EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq9'
+                        b'3bjPu5wuqA","s":"1","t":"rct","d":"EQK8BvEIsvM9r3VGd1Qi10Gzzllod'
+                        b'v0Vmnl7nl_a05eY"}-FABED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQ'
+                        b'M0AAAAAAAAAAAAAAAAAAAAAAAEeGqW24EnxUgO_wfuFo6GR_vii-RNv5iGo8ibUr'
+                        b'he6Z0-AABAAVFlKWaMfEee7tvDO7PLUVoCfbylu4zDH8Lrj2tmbsInqIN5oNSupo'
+                        b'7S_j7AnCOdBaGf9WQMwwfHkeQpayCCyAA')
 
         # val process own receipt in own kevery so have copy in own log
         valKevery.processOne(ims=bytearray(vmsg))  # make copy
@@ -3280,10 +3253,9 @@ def test_direct_mode():
                          s="{:x}".format(valKever.lastEst.s),
                          d=valKever.lastEst.d)
         # create validator receipt
-        reserder = chit(pre=coeK.prefixer.qb64,
+        reserder = receipt(pre=coeK.prefixer.qb64,
                         sn=coeK.sn,
-                        dig=coeK.serder.diger.qb64,
-                        seal=seal)
+                        dig=coeK.serder.diger.qb64)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIxnDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
@@ -3291,20 +3263,16 @@ def test_direct_mode():
         coeIxnRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
         assert coeIxnRaw == (b'{"v":"KERI10JSON000098_","i":"EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq93bjPu5wuqA",'
                              b'"s":"2","t":"ixn","p":"EQK8BvEIsvM9r3VGd1Qi10Gzzllodv0Vmnl7nl_a05eY","a":[]}')
-        counter = Counter(CtrDex.ControllerIdxSigs)
         siger = valSigners[vesn].sign(ser=coeIxnRaw, index=0)  # return Siger if index
         assert siger.qb64 == 'AAFyuqh4gxmfs7NcXRV5RN6iL2_OJAtYbDjBv3oL_UwFyolhS1EhBBjeLXvsCAVXOqrj7GMW9t3tpxL7Xtfsc5Bw'
-
         # create receipt message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'{"v":"KERI10JSON000105_","i":"EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq9'
-                                 b'3bjPu5wuqA","s":"2","t":"vrc","d":"EaQ7xvXmDpg7twdzEUEJGokBS6S_T'
-                                 b'XzmlY1a93ZQkx84","a":{"i":"ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2'
-                                 b'KMl3FQM","s":"0","d":"EeGqW24EnxUgO_wfuFo6GR_vii-RNv5iGo8ibUrhe6'
-                                 b'Z0"}}-AABAAFyuqh4gxmfs7NcXRV5RN6iL2_OJAtYbDjBv3oL_UwFyolhS1EhBBj'
-                                 b'eLXvsCAVXOqrj7GMW9t3tpxL7Xtfsc5Bw')
+        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        assert vmsg == (b'{"v":"KERI10JSON000091_","i":"EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq9'
+                        b'3bjPu5wuqA","s":"2","t":"rct","d":"EaQ7xvXmDpg7twdzEUEJGokBS6S_T'
+                        b'XzmlY1a93ZQkx84"}-FABED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQ'
+                        b'M0AAAAAAAAAAAAAAAAAAAAAAAEeGqW24EnxUgO_wfuFo6GR_vii-RNv5iGo8ibUr'
+                        b'he6Z0-AABAAFyuqh4gxmfs7NcXRV5RN6iL2_OJAtYbDjBv3oL_UwFyolhS1EhBBj'
+                        b'eLXvsCAVXOqrj7GMW9t3tpxL7Xtfsc5Bw')
 
         # val process own receipt in own kevery so have copy in own log
         valKevery.processOne(ims=bytearray(vmsg))  # make copy
@@ -3488,10 +3456,9 @@ def test_direct_mode_cbor_mgpk():
                          d=valKever.lastEst.d)
         coeK = valKevery.kevers[coepre]  # lookup coeKever from val's .kevers
         # create validator receipt
-        reserder = chit(pre=coeK.prefixer.qb64,
+        reserder = receipt(pre=coeK.prefixer.qb64,
                         sn=coeK.sn,
                         dig=coeK.serder.diger.qb64,
-                        seal=seal,
                         kind=Serials.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
@@ -3502,38 +3469,20 @@ def test_direct_mode_cbor_mgpk():
                              b'0atcicpbkta1ak\x81x,DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOoeKtWTOunRAanx,EPYuj8m'
                              b'q_PYYsoBKkzX1kxSPGYBWaIya3slgCOyOtlqUbbta0ab\x80ac\x80aa\x80')
 
-
-        counter = Counter(CtrDex.ControllerIdxSigs)
-        assert counter.qb64 == '-AAB'
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
-
         # process own Val receipt in Val's Kevery so have copy in own log
-        rmsg = bytearray(reserder.raw)
-        rmsg.extend(counter.qb64b)
-        rmsg.extend(siger.qb64b)
-        assert rmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EVA41BuPTjEEtBXWwBSeD4yRHz_'
-                                 b'TyyzfGE1ldQTDqe1w\xa1s\xa10\xa1t\xa3vrc\xa1d\xd9,ETtM9-qTtHK-KKnFe'
-                                 b'rFmtFQAaw70dGBFOQwz7tp85w6E\xa1a\x83\xa1i\xd9,EPtxTO5d2FgPXkav6c'
-                                 b'S9NEPvcxhfomsfKi3fvyMMuhZw\xa1s\xa10\xa1d\xd9,EER-hNqduuxWenrs4S'
-                                 b'lX0RFV-VmcU-SSywAKr5PZV-0k-AABAA-ul0YeOLwffGCc5GUnAvgzwITCF2KXLf'
-                                 b'AzSbCANOkbrapY5w0Ybyeyiy1jTB_3OPEWa0_3tEMt6wZpb2zqICCw')
+        rmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        assert rmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1i\xd9,EVA41BuPTjEEtBXWwBSeD4yRHz_'
+                        b'TyyzfGE1ldQTDqe1w\xa1s\xa10\xa1t\xa3rct\xa1d\xd9,ETtM9-qTtHK-KKnFe'
+                        b'rFmtFQAaw70dGBFOQwz7tp85w6E-FABEPtxTO5d2FgPXkav6cS9NEPvcxhfomsfK'
+                        b'i3fvyMMuhZw0AAAAAAAAAAAAAAAAAAAAAAAEER-hNqduuxWenrs4SlX0RFV-VmcU'
+                        b'-SSywAKr5PZV-0k-AABAA-ul0YeOLwffGCc5GUnAvgzwITCF2KXLfAzSbCANOkbr'
+                        b'apY5w0Ybyeyiy1jTB_3OPEWa0_3tEMt6wZpb2zqICCw')
 
         valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach reciept message to existing message with val's incept message
         vmsg.extend(rmsg)
-        assert vmsg == bytearray(b'\x8b\xa1v\xb1KERI10MGPK0000c3_\xa1i\xd9,EPtxTO5d2FgPXkav6cS9NEPvcxh'
-                                 b'fomsfKi3fvyMMuhZw\xa1s\xa10\xa1t\xa3icp\xa2kt\xa11\xa1k\x91\xd9,D8K'
-                                 b'Y1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc\xa1n\xd9,EOWDAJvex5dZzDx'
-                                 b'eHBANyaIoUG3F4-ic81G6GwtnC4f4\xa2bt\xa10\xa1b\x90\xa1c\x90'
-                                 b'\xa1a\x90-AABAABD5vMFZKjWg2GBWr0mXxYCqGUMXLNRL_4cn6dunE9eHFVst5CkV'
-                                 b'd8Oam6ZuDV3IPHoy1FAXJrxouHuiAKKmRCg\x86\xa1v\xb1KERI10MGPK0000e6_'
-                                 b'\xa1i\xd9,EVA41BuPTjEEtBXWwBSeD4yRHz_TyyzfGE1ldQTDqe1w\xa1s\xa10'
-                                 b'\xa1t\xa3vrc\xa1d\xd9,ETtM9-qTtHK-KKnFerFmtFQAaw70dGBFOQwz7tp85w'
-                                 b'6E\xa1a\x83\xa1i\xd9,EPtxTO5d2FgPXkav6cS9NEPvcxhfomsfKi3fvyMMuhZ'
-                                 b'w\xa1s\xa10\xa1d\xd9,EER-hNqduuxWenrs4SlX0RFV-VmcU-SSywAKr5PZV-0'
-                                 b'k-AABAA-ul0YeOLwffGCc5GUnAvgzwITCF2KXLfAzSbCANOkbrapY5w0Ybyeyiy1'
-                                 b'jTB_3OPEWa0_3tEMt6wZpb2zqICCw')
 
         # Simulate send to coe of val's receipt of coe's inception message
         coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
@@ -3553,25 +3502,21 @@ def test_direct_mode_cbor_mgpk():
 
         # create receipt to escrow use invalid dig so not in coe's db
         fake = reserder.dig  # some other dig
-        reserder = chit(pre=coeK.prefixer.qb64,
+        reserder = receipt(pre=coeK.prefixer.qb64,
                         sn=10,
                         dig=fake,
-                        seal=seal,
                         kind=Serials.mgpk)
         # sign event not receipt
-        counter = Counter(CtrDex.ControllerIdxSigs)
         siger = valSigners[vesn].sign(ser=coeIcpRaw, index=0)  # return Siger if index
 
         # create message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EVA41BuPTjEEtBXWwBSeD4yRHz_'
-                                 b'TyyzfGE1ldQTDqe1w\xa1s\xa1a\xa1t\xa3vrc\xa1d\xd9,Ej76g_I4timcAPyEg'
-                                 b'pKLpwM8LUjmJFZuVMHdnYOLELwc\xa1a\x83\xa1i\xd9,EPtxTO5d2FgPXkav6c'
-                                 b'S9NEPvcxhfomsfKi3fvyMMuhZw\xa1s\xa10\xa1d\xd9,EER-hNqduuxWenrs4S'
-                                 b'lX0RFV-VmcU-SSywAKr5PZV-0k-AABAA-ul0YeOLwffGCc5GUnAvgzwITCF2KXLf'
-                                 b'AzSbCANOkbrapY5w0Ybyeyiy1jTB_3OPEWa0_3tEMt6wZpb2zqICCw')
+        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        assert vmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1i\xd9,EVA41BuPTjEEtBXWwBSeD4yRHz_'
+                        b'TyyzfGE1ldQTDqe1w\xa1s\xa1a\xa1t\xa3rct\xa1d\xd9,Eo-3IvwDgH3uR3M0z'
+                        b'Op8eYnrZTDHibWlhkISlU_HxRek-FABEPtxTO5d2FgPXkav6cS9NEPvcxhfomsfK'
+                        b'i3fvyMMuhZw0AAAAAAAAAAAAAAAAAAAAAAAEER-hNqduuxWenrs4SlX0RFV-VmcU'
+                        b'-SSywAKr5PZV-0k-AABAA-ul0YeOLwffGCc5GUnAvgzwITCF2KXLfAzSbCANOkbr'
+                        b'apY5w0Ybyeyiy1jTB_3OPEWa0_3tEMt6wZpb2zqICCw')
 
         coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if in escrow database
@@ -3592,10 +3537,9 @@ def test_direct_mode_cbor_mgpk():
                          d=coeKever.lastEst.d)
         valK = coeKevery.kevers[valpre]  # lookup valKever from coe's .kevers
         # create validator receipt
-        reserder = chit(pre=valK.prefixer.qb64,
+        reserder = receipt(pre=valK.prefixer.qb64,
                         sn=valK.sn,
                         dig=valK.serder.diger.qb64,
-                        seal=seal,
                         kind=Serials.cbor)
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
@@ -3607,19 +3551,15 @@ def test_direct_mode_cbor_mgpk():
                              b'NPyrSz_ad_Qf9yzhDNZlEKiMc\xa1n\xd9,EOWDAJvex5dZzDxeHBANyaIoUG3F4-ic81G6Gwt'
                              b'nC4f4\xa2bt\xa10\xa1b\x90\xa1c\x90\xa1a\x90')
 
-        counter = Counter(CtrDex.ControllerIdxSigs)
-        assert counter.qb64 == '-AAB'
         siger = coeSigners[vesn].sign(ser=valIcpRaw, index=0)  # return Siger if index
-
         # create receipt message
-        cmsg = bytearray(reserder.raw)
-        cmsg.extend(counter.qb64b)
-        cmsg.extend(siger.qb64b)
-        assert cmsg == bytearray(b'\xa6avqKERI10CBOR0000e6_aix,EPtxTO5d2FgPXkav6cS9NEPvcxhfomsfKi3fvyM'
-                                 b'MuhZwasa0atcvrcadx,EER-hNqduuxWenrs4SlX0RFV-VmcU-SSywAKr5PZV-0ka'
-                                 b'a\xa3aix,EVA41BuPTjEEtBXWwBSeD4yRHz_TyyzfGE1ldQTDqe1wasa0adx,ETtM9-'
-                                 b'qTtHK-KKnFerFmtFQAaw70dGBFOQwz7tp85w6E-AABAAJiCMw2ToI_EUZpMQh9TZ'
-                                 b'59CPmV40IiFtY01yW-7pXSVZO5Bd7Ldj8mgJvTxMs9zMVDcSKsTKRBLMqtjeJjcSCA')
+        cmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        assert cmsg == (b'\xa5avqKERI10CBOR00007f_aix,EPtxTO5d2FgPXkav6cS9NEPvcxhfomsfKi3fvyM'
+                        b'MuhZwasa0atcrctadx,EER-hNqduuxWenrs4SlX0RFV-VmcU-SSywAKr5PZV-0k-'
+                        b'FABEVA41BuPTjEEtBXWwBSeD4yRHz_TyyzfGE1ldQTDqe1w0AAAAAAAAAAAAAAAA'
+                        b'AAAAAAAETtM9-qTtHK-KKnFerFmtFQAaw70dGBFOQwz7tp85w6E-AABAAJiCMw2T'
+                        b'oI_EUZpMQh9TZ59CPmV40IiFtY01yW-7pXSVZO5Bd7Ldj8mgJvTxMs9zMVDcSKsT'
+                        b'KRBLMqtjeJjcSCA')
 
         # coe process own receipt in own Kevery so have copy in own log
         coeKevery.processOne(ims=bytearray(cmsg))  # make copy
@@ -3683,10 +3623,9 @@ def test_direct_mode_cbor_mgpk():
                          s="{:x}".format(valKever.lastEst.s),
                          d=valKever.lastEst.d)
         # create validator receipt
-        reserder = chit(pre=coeK.prefixer.qb64,
+        reserder = receipt(pre=coeK.prefixer.qb64,
                         sn=coeK.sn,
                         dig=coeK.serder.diger.qb64,
-                        seal=seal,
                         kind=Serials.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
@@ -3698,19 +3637,15 @@ def test_direct_mode_cbor_mgpk():
                              b'JF1IE8svqEtrSuyQjGTd2HhfAkt9y2QkUtFJIanx,E-dapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd9'
                              b'5JH5a34fIbbta0bbr\x80bba\x80aa\x80')
 
-        counter = Counter(CtrDex.ControllerIdxSigs, )
         siger = valSigners[vesn].sign(ser=coeRotRaw, index=0)  # return Siger if index
-
         # create receipt message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EVA41BuPTjEEtBXWwBSeD4yRHz_'
-                                 b'TyyzfGE1ldQTDqe1w\xa1s\xa11\xa1t\xa3vrc\xa1d\xd9,EPHvonlASEhFuMiLw'
-                                 b'zbNp9cB9t2DJrcnvVvrK_P4G4Ss\xa1a\x83\xa1i\xd9,EPtxTO5d2FgPXkav6c'
-                                 b'S9NEPvcxhfomsfKi3fvyMMuhZw\xa1s\xa10\xa1d\xd9,EER-hNqduuxWenrs4S'
-                                 b'lX0RFV-VmcU-SSywAKr5PZV-0k-AABAAVRZVF2PkwQe5oFFQoDM_efMgGHCKlf1d'
-                                 b'enoAa1NJZ45jnz1AP1VeVmfSFLsjApfJmgCBp-mYw0mP8KwrolsICQ')
+        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        assert vmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1i\xd9,EVA41BuPTjEEtBXWwBSeD4yRHz_'
+                        b'TyyzfGE1ldQTDqe1w\xa1s\xa11\xa1t\xa3rct\xa1d\xd9,EPHvonlASEhFuMiLw'
+                        b'zbNp9cB9t2DJrcnvVvrK_P4G4Ss-FABEPtxTO5d2FgPXkav6cS9NEPvcxhfomsfK'
+                        b'i3fvyMMuhZw0AAAAAAAAAAAAAAAAAAAAAAAEER-hNqduuxWenrs4SlX0RFV-VmcU'
+                        b'-SSywAKr5PZV-0k-AABAAVRZVF2PkwQe5oFFQoDM_efMgGHCKlf1denoAa1NJZ45'
+                        b'jnz1AP1VeVmfSFLsjApfJmgCBp-mYw0mP8KwrolsICQ')
 
 
         # val process own receipt in own kevery so have copy in own log
@@ -3773,10 +3708,9 @@ def test_direct_mode_cbor_mgpk():
                          s="{:x}".format(valKever.lastEst.s),
                          d=valKever.lastEst.d)
         # create validator receipt
-        reserder = chit(pre=coeK.prefixer.qb64,
+        reserder = receipt(pre=coeK.prefixer.qb64,
                         sn=coeK.sn,
                         dig=coeK.serder.diger.qb64,
-                        seal=seal,
                         kind=Serials.mgpk)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
@@ -3786,19 +3720,15 @@ def test_direct_mode_cbor_mgpk():
         assert coeIxnRaw == (b'\xa6avqKERI10CBOR000082_aix,EVA41BuPTjEEtBXWwBSeD4yRHz_TyyzfGE1ldQTDqe1wasa'
                              b'2atcixnapx,EPHvonlASEhFuMiLwzbNp9cB9t2DJrcnvVvrK_P4G4Ssaa\x80')
 
-        counter = Counter(CtrDex.ControllerIdxSigs)
         siger = valSigners[vesn].sign(ser=coeIxnRaw, index=0)  # return Siger if index
-
         # create receipt message
-        vmsg = bytearray(reserder.raw)
-        vmsg.extend(counter.qb64b)
-        vmsg.extend(siger.qb64b)
-        assert vmsg == bytearray(b'\x86\xa1v\xb1KERI10MGPK0000e6_\xa1i\xd9,EVA41BuPTjEEtBXWwBSeD4yRHz_'
-                                 b'TyyzfGE1ldQTDqe1w\xa1s\xa12\xa1t\xa3vrc\xa1d\xd9,EOMlWNCvqWStLVUUB'
-                                 b'lhwEbo3slpOD6-iVCtPBEsW9ofQ\xa1a\x83\xa1i\xd9,EPtxTO5d2FgPXkav6c'
-                                 b'S9NEPvcxhfomsfKi3fvyMMuhZw\xa1s\xa10\xa1d\xd9,EER-hNqduuxWenrs4S'
-                                 b'lX0RFV-VmcU-SSywAKr5PZV-0k-AABAAMkr7U_m3dAj9t4l6vBYp-KJaioD46oc5'
-                                 b'uUdwRzrt8bmyvx7qJuFeM_rv9mYvY_lHN5kP9BDjig6dD6Fheo2fDg')
+        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        assert vmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1i\xd9,EVA41BuPTjEEtBXWwBSeD4yRHz_'
+                        b'TyyzfGE1ldQTDqe1w\xa1s\xa12\xa1t\xa3rct\xa1d\xd9,EOMlWNCvqWStLVUUB'
+                        b'lhwEbo3slpOD6-iVCtPBEsW9ofQ-FABEPtxTO5d2FgPXkav6cS9NEPvcxhfomsfK'
+                        b'i3fvyMMuhZw0AAAAAAAAAAAAAAAAAAAAAAAEER-hNqduuxWenrs4SlX0RFV-VmcU'
+                        b'-SSywAKr5PZV-0k-AABAAMkr7U_m3dAj9t4l6vBYp-KJaioD46oc5uUdwRzrt8bm'
+                        b'yvx7qJuFeM_rv9mYvY_lHN5kP9BDjig6dD6Fheo2fDg')
 
 
         # val process own receipt in own kevery so have copy in own log
@@ -4153,4 +4083,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_desourcecouple()
+    test_direct_mode_cbor_mgpk()

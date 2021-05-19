@@ -1120,23 +1120,14 @@ def test_unverified_trans_receipt_escrow():
         ricpmsg = msg
 
 
-        # create chit receipt(s) of inception message
+        # create transferable receipt of inception message
         seal = eventing.SealEvent(i=rpre,
                                   s=rsrdr.ked["s"],
                                   d=rsrdr.dig)
-        reserder = eventing.chit(pre=pre, sn=0, dig=icpdig, seal=seal)
+        reserder = eventing.receipt(pre=pre, sn=0, dig=icpdig)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                               count=len(resigers))
-
-        msg = bytearray()
-        msg.extend(reserder.raw)
-        msg.extend(recnt.qb64b)
-        for siger in resigers:
-            msg.extend(siger.qb64b)
-
-        rcticpmsg = msg
+        rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers, seal=seal)
 
         # Process receipt by kvy
         kvy.process(ims=bytearray(rcticpmsg))  # process local copy of msg
@@ -1198,20 +1189,10 @@ def test_unverified_trans_receipt_escrow():
         seal = eventing.SealEvent(i=rpre,
                                   s=rsrdr.ked["s"],
                                   d=rsrdr.dig)
-        reserder = eventing.chit(pre=pre, sn=1, dig=ixndig, seal=seal)
+        reserder = eventing.receipt(pre=pre, sn=1, dig=ixndig)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                               count=len(resigers))
-
-
-        msg = bytearray()
-        msg.extend(reserder.raw)
-        msg.extend(recnt.qb64b)
-        for siger in resigers:
-            msg.extend(siger.qb64b)
-
-        rctixnmsg = msg
+        rctixnmsg = eventing.messagize(serder=reserder, sigers=resigers, seal=seal)
 
         # Process receipt by kvy
         kvy.process(ims=bytearray(rctixnmsg))  # process local copy of msg
@@ -1263,19 +1244,10 @@ def test_unverified_trans_receipt_escrow():
         seal = eventing.SealEvent(i=rpre,
                                       s= rsrdr.ked["s"],
                                       d=rsrdr.dig)
-        reserder = eventing.chit(pre=pre, sn=2, dig=rotdig, seal=seal)
+        reserder = eventing.receipt(pre=pre, sn=2, dig=rotdig)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        recnt = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                               count=len(resigers))
-
-        msg = bytearray()
-        msg.extend(reserder.raw)
-        msg.extend(recnt.qb64b)
-        for siger in resigers:
-            msg.extend(siger.qb64b)
-
-        rctrotmsg = msg
+        rctrotmsg = eventing.messagize(serder=reserder, sigers=resigers, seal=seal)
 
         # Process receipt by kvy
         kvy.process(ims=bytearray(rctrotmsg))  # process local copy of msg
@@ -1400,5 +1372,5 @@ def test_unverified_trans_receipt_escrow():
 
 
 if __name__ == "__main__":
-    test_missing_delegator_escrow()
+    test_unverified_trans_receipt_escrow()
 

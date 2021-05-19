@@ -5,7 +5,8 @@ import os
 from keri.core.coring import Salter, MtrDex, CtrDex, Counter
 from keri.core.coring import Seqner
 from keri.base.keeping import Manager, openKS
-from keri.core.eventing import incept, rotate, interact, messagize, Nexter, Kevery, SealEvent, chit
+from keri.core.eventing import (incept, rotate, interact, messagize, Nexter,
+                                Kevery, SealEvent, receipt)
 from keri.db.dbing import dgKey, snKey, openDB
 
 
@@ -99,11 +100,14 @@ def test_direct_mode_with_manager():
                          s="{:x}".format(valKever.lastEst.s),
                          d=valKever.lastEst.d)
         coeK = valKevery.kevers[coepre]  # lookup coeKever from validator's .kevers
-        # create validator receipt
-        reserder = chit(pre=coeK.prefixer.qb64,
-                        sn=coeK.sn,
-                        dig=coeK.serder.diger.qb64,
-                        seal=seal)
+        # create trans receipt
+        reserder = receipt(pre=coeK.prefixer.qb64,
+                           sn=coeK.sn,
+                           dig=coeK.serder.diger.qb64)
+        #reserder = chit(pre=coeK.prefixer.qb64,
+                        #sn=coeK.sn,
+                        #dig=coeK.serder.diger.qb64,
+                        #seal=seal)
         # Validate receipt
 
         # sign controller's event not receipt
@@ -112,12 +116,13 @@ def test_direct_mode_with_manager():
         assert coeIcpDig == coeK.serder.diger.qb64b
         coeIcpRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIcpDig)))
 
-        counter = Counter(CtrDex.ControllerIdxSigs)
-        assert counter.qb64 == '-AAB'
+        #counter = Counter(CtrDex.ControllerIdxSigs)
+        #assert counter.qb64 == '-AAB'
         sigers = valMgr.sign(ser=coeIcpRaw, verfers=valVerfers)  # return Siger if index
 
         # process own validator receipt in validator's Kevery so have copy in own log
-        rmsg = messagize(reserder, sigers=sigers)
+        rmsg = messagize(reserder, sigers=sigers, seal=seal)
+        assert len(rmsg) == 353
 
         valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
@@ -141,15 +146,13 @@ def test_direct_mode_with_manager():
 
         # create receipt to escrow use invalid digest and sequence number so not in controller's db
         fake = reserder.dig  # some other digest
-        reserder = chit(pre=coeK.prefixer.qb64,
+        reserder = receipt(pre=coeK.prefixer.qb64,
                         sn=10,
-                        dig=fake,
-                        seal=seal)
+                        dig=fake)
         # sign event not receipt
         sigers = valMgr.sign(ser=coeIcpRaw, verfers=valVerfers)  # return Siger if index
-
         # create receipt message
-        vmsg = messagize(reserder, sigers=sigers)
+        vmsg = messagize(reserder, sigers=sigers, seal=seal)
 
         coeKevery.process(ims=vmsg)  # controller process the escrow receipt from validator
         #  check if receipt quadruple in escrow database
@@ -168,23 +171,18 @@ def test_direct_mode_with_manager():
                          s="{:x}".format(coeKever.lastEst.s),
                          d=coeKever.lastEst.d)
         valK = coeKevery.kevers[valpre]  # lookup valKever from controller's .kevers
-        # create validator receipt
-        reserder = chit(pre=valK.prefixer.qb64,
+        # create trans receipt
+        reserder = receipt(pre=valK.prefixer.qb64,
                         sn=valK.sn,
-                        dig=valK.serder.diger.qb64,
-                        seal=seal)
+                        dig=valK.serder.diger.qb64,)
         # sign validator's event not receipt
         # look up event to sign from controller's kever for validator
         valIcpDig = bytes(coeKevery.db.getKeLast(key=snKey(pre=valpre, sn=vsn)))
         assert valIcpDig == valK.serder.diger.qb64b
         valIcpRaw = bytes(coeKevery.db.getEvt(key=dgKey(pre=valpre, dig=valIcpDig)))
-
-        counter = Counter(CtrDex.ControllerIdxSigs)
-        assert counter.qb64 == '-AAB'
         sigers = coeMgr.sign(ser=valIcpRaw, verfers=coeVerfers)  # return Siger if index
-
         # create receipt message
-        cmsg = messagize(reserder, sigers=sigers)
+        cmsg = messagize(reserder, sigers=sigers, seal=seal)
         # controller process own receipt in own Kevery so have copy in own log
         coeKevery.processOne(ims=bytearray(cmsg))  # make copy
 
@@ -235,20 +233,17 @@ def test_direct_mode_with_manager():
                          s="{:x}".format(valKever.lastEst.s),
                          d=valKever.lastEst.d)
         # create validator receipt
-        reserder = chit(pre=coeK.prefixer.qb64,
-                        sn=coeK.sn,
-                        dig=coeK.serder.diger.qb64,
-                        seal=seal)
+        reserder = receipt(pre=coeK.prefixer.qb64,
+                           sn=coeK.sn,
+                           dig=coeK.serder.diger.qb64)
         # sign controller's event not receipt
         # look up event to sign from validator's kever for controller
         coeRotDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeRotDig == coeK.serder.diger.qb64b
         coeRotRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeRotDig)))
-
         sigers = valMgr.sign(ser=coeRotRaw, verfers=valVerfers)
-
         # validator create receipt message
-        vmsg = messagize(reserder, sigers=sigers)
+        vmsg = messagize(reserder, sigers=sigers, seal=seal)
 
         # validator process own receipt in own kevery so have copy in own log
         valKevery.processOne(ims=bytearray(vmsg))  # make copy
@@ -297,20 +292,17 @@ def test_direct_mode_with_manager():
                          s="{:x}".format(valKever.lastEst.s),
                          d=valKever.lastEst.d)
         # create validator receipt
-        reserder = chit(pre=coeK.prefixer.qb64,
+        reserder = receipt(pre=coeK.prefixer.qb64,
                         sn=coeK.sn,
-                        dig=coeK.serder.diger.qb64,
-                        seal=seal)
+                        dig=coeK.serder.diger.qb64)
         # sign controller's event not receipt
         # look up event to sign from validator's kever for controller
         coeIxnDig = bytes(valKevery.db.getKeLast(key=snKey(pre=coepre, sn=csn)))
         assert coeIxnDig == coeK.serder.diger.qb64b
         coeIxnRaw = bytes(valKevery.db.getEvt(key=dgKey(pre=coepre, dig=coeIxnDig)))
-
         sigers = valMgr.sign(ser=coeIxnRaw, verfers=valVerfers)
-
         # create receipt message
-        vmsg = messagize(reserder, sigers=sigers)
+        vmsg = messagize(reserder, sigers=sigers, seal=seal)
 
         # validator process own receipt in own kevery so have copy in own log
         valKevery.processOne(ims=bytearray(vmsg))  # make copy
