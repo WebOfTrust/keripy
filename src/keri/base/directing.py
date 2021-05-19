@@ -285,28 +285,28 @@ class Habitat():
         return msg
 
 
-    def chit(self, serder):
-        """
-        Returns own chit, vrc, message of serder with count code and signatures
-        Builds msg and then processes it into own db to validate.
-        """
-        # create seal of own last est event
-        seal = eventing.SealEvent(i=self.pre,
-                                  s="{:x}".format(self.kever.lastEst.s),
-                                  d=self.kever.lastEst.d)
-        ked = serder.ked
-        # create validator receipt for serder event
-        reserder = eventing.chit(pre=ked["i"],
-                                 sn=int(ked["s"], 16),
-                                 dig=serder.dig,
-                                 seal=seal)
-        # sign serder event
-        sigers = self.mgr.sign(ser=serder.raw,
-                                   verfers=self.kever.verfers,
-                                   indexed=True)
-        msg = eventing.messagize(serder=reserder, sigers=sigers)
-        self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
-        return msg
+    #def chit(self, serder):
+        #"""
+        #Returns own chit, vrc, message of serder with count code and signatures
+        #Builds msg and then processes it into own db to validate.
+        #"""
+        ## create seal of own last est event
+        #seal = eventing.SealEvent(i=self.pre,
+                                  #s="{:x}".format(self.kever.lastEst.s),
+                                  #d=self.kever.lastEst.d)
+        #ked = serder.ked
+        ## create validator receipt for serder event
+        #reserder = eventing.chit(pre=ked["i"],
+                                 #sn=int(ked["s"], 16),
+                                 #dig=serder.dig,
+                                 #seal=seal)
+        ## sign serder event
+        #sigers = self.mgr.sign(ser=serder.raw,
+                                   #verfers=self.kever.verfers,
+                                   #indexed=True)
+        #msg = eventing.messagize(serder=reserder, sigers=sigers)
+        #self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
+        #return msg
 
 
     def receipt(self, serder):
@@ -315,18 +315,26 @@ class Habitat():
         couples (pre+cig)
         Builds msg and then processes it into own db to validate
         """
-        if self.kever.prefixer.transferable:  # not non-transferable prefix
-            raise ValueError("Attempt to create non-transferable receipt with"
-                             " transferable pre={}.".format(self.pre))
         ked = serder.ked
         reserder = eventing.receipt(pre=ked["i"],
                                     sn=int(ked["s"], 16),
                                     dig=serder.dig)
+
         # sign serder event
-        cigars = self.mgr.sign(ser=serder.raw,
+        if self.kever.prefixer.transferable:
+            seal = eventing.SealEvent(i=self.pre,
+                                      s="{:x}".format(self.kever.lastEst.s),
+                                      d=self.kever.lastEst.d)
+            sigers = self.mgr.sign(ser=serder.raw,
+                                       verfers=self.kever.verfers,
+                                           indexed=True)
+            msg = eventing.messagize(serder=reserder, sigers=sigers, seal=seal)
+        else:
+            cigars = self.mgr.sign(ser=serder.raw,
                                verfers=self.kever.verfers,
                                indexed=False)
-        msg = eventing.messagize(reserder, cigars=cigars)
+            msg = eventing.messagize(reserder, cigars=cigars)
+
         self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
@@ -483,11 +491,11 @@ class Habitat():
             cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
             logger.info("%s got cue: kin=%s\n%s\n\n", self.pre, cueKin,
                                              json.dumps(cuedKed, indent=1))
-            if cueKin in ("receipt", ):  # received event from other cued pre
+            if cueKin in ("receipt", ):  # cue to receipt a received event from other pre
                 if  cuedKed["t"] == coring.Ilks.icp:
                     dgkey = dbing.dgKey(self.pre, self.iserder.dig)
                     found = False
-                    if cuedPrefixer.transferable:  # find if already vrcs of own icp
+                    if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
                         for quadruple in self.db.getVrcsIter(dgkey):
                             if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
                                 found = True  # yes so don't send own inception
@@ -500,10 +508,8 @@ class Habitat():
                         # no vrcs or rct of own icp from remote so send own inception
                         msgs.extend(self.makeOwnInception())
 
-                if self.kever.prefixer.transferable:  #  send trans receipt chit
-                    msgs.extend(self.chit(cuedSerder))
-                else:  # send nontrans receipt
-                    msgs.extend(self.receipt(cuedSerder))
+                msgs.extend(self.receipt(cuedSerder))
+
                 yield msgs
 
 
