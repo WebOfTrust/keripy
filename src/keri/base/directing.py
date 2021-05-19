@@ -285,30 +285,6 @@ class Habitat():
         return msg
 
 
-    #def chit(self, serder):
-        #"""
-        #Returns own chit, vrc, message of serder with count code and signatures
-        #Builds msg and then processes it into own db to validate.
-        #"""
-        ## create seal of own last est event
-        #seal = eventing.SealEvent(i=self.pre,
-                                  #s="{:x}".format(self.kever.lastEst.s),
-                                  #d=self.kever.lastEst.d)
-        #ked = serder.ked
-        ## create validator receipt for serder event
-        #reserder = eventing.chit(pre=ked["i"],
-                                 #sn=int(ked["s"], 16),
-                                 #dig=serder.dig,
-                                 #seal=seal)
-        ## sign serder event
-        #sigers = self.mgr.sign(ser=serder.raw,
-                                   #verfers=self.kever.verfers,
-                                   #indexed=True)
-        #msg = eventing.messagize(serder=reserder, sigers=sigers)
-        #self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
-        #return msg
-
-
     def receipt(self, serder):
         """
         Returns own receipt, rct, message of serder with count code and receipt

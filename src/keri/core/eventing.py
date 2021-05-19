@@ -915,47 +915,6 @@ def receipt(pre,
     return Serder(ked=ked)  # return serialized ked
 
 
-def chit(pre,
-         sn,
-         dig,
-         seal,
-         version=Version,
-         kind=Serials.json
-        ):
-
-    """
-    Returns serder of validator event receipt message for transferable receipter
-    prefix.
-    Utility function to automate creation of interaction events.
-
-     Parameters:
-        pre is qb64 str of prefix of event being receipted
-        sn  is int sequence number of event being receipted
-        dig is qb64 of digest of event being receipted
-        seal is namedTuple of SealEvent of receipter's last Est event
-            pre is qb64 of receipter's prefix
-            dig is qb64 digest of receipter's last Est event
-        version is Version instance of receipt
-        kind  is serialization kind of receipt
-
-    """
-    vs = Versify(version=version, kind=kind, size=0)
-    ilk = Ilks.vrc
-    if sn < 0:
-        raise ValueError("Invalid sn = {} for rct.".format(sn))
-
-    ked = dict(v=vs,  # version string
-               i=pre,  # qb64 prefix
-               s="{:x}".format(sn),  # hex string no leading zeros lowercase
-               t=ilk,  #  Ilks.rct
-               d=dig,  # qb64 digest of receipted event
-               a=seal._asdict()  # event seal: pre, dig
-               )
-
-    return Serder(ked=ked)  # return serialized ked
-
-
-
 def state(pre,
           sn,
           dig,
@@ -2823,14 +2782,6 @@ class Kevery:
             if tsgs:
                 self.processReceiptTrans(serder=serder, tsgs=tsgs)
 
-        elif ilk in [Ilks.vrc]:  # validator event receipt msg (transferable)
-
-            if not sigers:
-                raise ValidationError("Missing attached signature(s) to receipt"
-                                      " for evt = {}.".format(serder.ked))
-
-            self.processReceiptChit(serder, sigers)
-
         elif ilk in [Ilks.ksn]:  # key state notification msg
 
             if not (cigars or tsgs):
@@ -3313,105 +3264,6 @@ class Kevery:
                         quadruple = sprefixer.qb64b + sseqner.qb64b + sdiger.qb64b + siger.qb64b
                         self.db.addVrc(key=dgKey(pre=pre, dig=ldig),
                                        val=quadruple)  # dups kept
-
-
-
-    def processReceiptChit(self, serder, sigers):
-        """
-        Process one transferable validator receipt (chit) serder with attached sigers
-
-        Parameters:
-            serder is chit serder (transferable validator receipt message)
-            sigers is list of Siger instances that contain signature
-
-        Chit dict labels
-            v vs  # version string
-            i pre  # qb64 prefix
-            s sn   # hex of sequence number
-            t ilk  # vrc
-            d dig  # qb64 digest of receipted event
-            a seal # event seal of receipters last est event at time of receipt
-
-        Seal labels
-            i pre  # qb64 prefix of receipter
-            s sn   # hex of sequence number of est event for receipter keys
-            d dig  # qb64 digest of est event for receipter keys
-
-        """
-        # fetch  pre, dig,seal to process
-        ked = serder.ked
-        pre = serder.pre
-        sn = self.validateSN(ked)
-
-        # Only accept receipt if for last seen version of receipted event at sn
-        ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
-        seal = SealEvent(**ked["a"])
-        if self.opre and self.opre == seal.i:  # own chit
-            if self.opre == pre:  # skip own chits of own events
-                raise ValidationError("Own pre={} chit of own event {}."
-                                  "".format(self.opre, ked))
-            if not self.local:  # skip own chits of nonlocal events
-                raise ValidationError("Own pre={} seal in chit of nonlocal event "
-                                  "{}.".format(self.opre, ked))
-
-        if ldig is not None and seal.i in self.kevers:  #  verify digs match last seen and receipt dig
-            # both receipted event and receipter in database
-            # so retreive
-            ldig = bytes(ldig).decode("utf-8")
-
-            # retrieve event by dig assumes if ldig is not None that event exists at ldig
-            dgkey = dgKey(pre=pre, dig=ldig)
-            lraw = bytes(self.db.getEvt(key=dgkey))  # retrieve receipted event at dig
-            # assumes db ensures that raw must not be none because ldig was in KE
-            lserder = Serder(raw=lraw)  # deserialize event raw
-
-            if not lserder.compare(dig=ked["d"]):  # stale receipt at sn discard
-                raise ValidationError("Stale receipt at sn = {} for rct = {}."
-                                      "".format(ked["s"], ked))
-
-            # retrieve dig of last event at sn of receipter.
-            sdig = self.db.getKeLast(key=snKey(pre=seal.i, sn=int(seal.s, 16)))
-            if sdig is None:
-                # receipter's est event not yet in receipter's KEL
-                # receipter's seal event not in receipter's KEL
-                self.escrowVREvent(serder, sigers, seal, dig=ked["d"])
-                raise UnverifiedTransferableReceiptError("Unverified receipt: "
-                                    "missing establishment event of transferable "
-                                    "validator, receipt={}.".format(ked))
-
-            # retrieve last event itself of receipter
-            sraw = self.db.getEvt(key=dgKey(pre=seal.i, dig=bytes(sdig)))
-            # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = Serder(raw=bytes(sraw))
-            if not sserder.compare(dig=seal.d):  # seal dig not match event
-                raise ValidationError("Bad chit seal at sn = {} for rct = {}."
-                                      "".format(seal.s, ked))
-
-            verfers = sserder.verfers
-            if not verfers:
-                raise ValidationError("Invalid seal est. event dig = {} for "
-                                      "receipt from pre ={} no keys."
-                                      "".format(seal.d, seal.i))
-
-            # convert sn in seal to fully qualified SeqNumber 24 bytes, raw 16 bytes
-            sealet = seal.i.encode("utf-8") + Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8")
-
-            for siger in sigers:  # verify sigs
-                if siger.index >= len(verfers):
-                    raise ValidationError("Index = {} to large for keys."
-                                          "".format(siger.index))
-
-                siger.verfer = verfers[siger.index]  # assign verfer
-                if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
-                    # good sig so write receipt quadruple to database
-                    quadruple = sealet + siger.qb64b
-                    self.db.addVrc(key=dgkey, val=quadruple)  # dups kept
-
-        else:  # escrow  either receiptor or receipted event not yet in database
-            self.escrowVREvent(serder, sigers, seal, dig=ked["d"])
-            raise UnverifiedTransferableReceiptError("Unverified receipt: "
-                                  "missing associated event for transferable "
-                                  "validator receipt={}.".format(ked))
 
 
     def processReceiptQuadruples(self, serder, trqs, firner=None):
