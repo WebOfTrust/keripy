@@ -772,22 +772,30 @@ def test_keyeventfuncs():
                            b'"s":"0","t":"rct","d":"ENjADDuGb8QwXfG2-Q6mqFCZqnze_L9dufxLAg8AGtCE"}')
 
 
-    # ValReceipt  chit
+    # Receipt  transferable identifier
     serderA = incept(keys=keys0, nxt=nxt1, code=MtrDex.Blake3_256)
     seal = SealEvent(i=serderA.ked["i"], s=serderA.ked["s"], d=serderA.dig)
     assert seal.i == serderA.ked["i"]
     assert seal.d == serderA.dig
 
-    serder4 = chit(pre=pre, sn=2, dig=serder2.dig, seal=seal)
+    serder4 = receipt(pre=pre, sn=2, dig=serder2.dig)
+
     assert serder4.ked["i"] == pre
     assert serder4.ked["s"] == "2"
-    assert serder4.ked["t"] == Ilks.vrc
+    assert serder4.ked["t"] == Ilks.rct
     assert serder4.ked["d"] == serder2.dig
-    assert serder4.ked["a"] == seal._asdict()
-    assert serder4.raw == (b'{"v":"KERI10JSON000105_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
-                           b'"s":"2","t":"vrc","d":"ENjADDuGb8QwXfG2-Q6mqFCZqnze_L9dufxLAg8AGtCE","a":{"i'
-                           b'":"EheV9-CZwshHxId9DgDh_r3r00QpK7jzbA4EF2HIZ9oc","s":"0","d":"EEl4SNEyeZhL_T'
-                           b'fPclHCaaXNaofpNedM6l21ilJ0I3i4"}}')
+    assert serder4.raw == (b'{"v":"KERI10JSON000091_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
+                           b'"s":"2","t":"rct","d":"ENjADDuGb8QwXfG2-Q6mqFCZqnze_L9dufxLAg8AGtCE"}')
+
+    siger = signer0.sign(ser=serderA.raw, index=0)
+    msg = messagize(serder=serder4, sigers=[siger], seal=seal)
+    assert msg == bytearray(b'{"v":"KERI10JSON000091_","i":"DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-'
+                            b'Wk1x4ejhcc","s":"2","t":"rct","d":"ENjADDuGb8QwXfG2-Q6mqFCZqnze_'
+                            b'L9dufxLAg8AGtCE"}-FABEheV9-CZwshHxId9DgDh_r3r00QpK7jzbA4EF2HIZ9o'
+                            b'c0AAAAAAAAAAAAAAAAAAAAAAAEEl4SNEyeZhL_TfPclHCaaXNaofpNedM6l21ilJ'
+                            b'0I3i4-AABAAUMALurW2PdrOG5l_sfRdiIdKqpDZShNcPNQ-6vJb6dwG9-wahbQrj'
+                            b'303CRsAVT0gOqI9Ty4EoEyiv6LAX5w9Cw')
+
 
     # Delegated Inception:
     # Transferable not abandoned i.e. next not empty
@@ -4153,4 +4161,4 @@ def test_process_manual():
 
 
 if __name__ == "__main__":
-    test_desourcecouple()
+    test_keyeventfuncs()

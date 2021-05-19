@@ -3864,16 +3864,19 @@ class Kevery:
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
         for tsg in tsgs:
-            prefixer, seqner, diger, sigers = deTransReceiptQuadruple(tsg)
+            prefixer, seqner, diger, sigers = tsg
             self.db.putDts(dgKey(serder.preb, serder.digb), nowIso8601().encode("utf-8"))
-            prelet = serder.digb + prefixer.qb64b + seqner.qb64b + diger.qb64b
+            # since serder of of receipt not receipted event must use dig in
+            # serder.ked["d"] not serder.dig
+            prelet = (serder.ked["d"].encode("utf-8") + prefixer.qb64b +
+                      seqner.qb64b + diger.qb64b)
             for siger in sigers:  # escrow each quintlet
                 quintuple = prelet + siger.qb64b  # quintuple
                 self.db.addVre(key=snKey(serder.preb, serder.sn), val=quintuple)
             # log escrowed
             logger.info("Kevery process: escrowed unverified transferable receipt "
-                         "of pre=%s sn=%x dig=%s by pre=%s\n", serder.pre, serder.sn,
-                                                               serder.dig, prefixer.qb64)
+                         "of pre=%s sn=%x dig=%s by pre=%s\n", serder.pre,
+                             serder.sn, serder.ked["d"], prefixer.qb64)
 
 
     def escrowVREvent(self, serder, sigers, seal, dig):
