@@ -225,6 +225,28 @@ def test_issuer():
         assert issuer.delTel(telKey) is True
         assert issuer.getTel(telKey) is None
 
+        bak1 = b'Bm1Q98kT0HRn9R62lY-LufjjKdbCeL1mqu9arTgOmbqI'
+        bak2 = b'DSEpNJeSJjxo6oAxkNE8eCOJg2HRPstqkeHWBAvN9XNU'
+        bak3 = b'Dvxo-P4W_Z0xXTfoA3_4DMPn7oi0mLCElOWJDpC0nQXw'
+        bak4 = b'BleAn9JkFuEOOwDhfkhnxtGsRQkMh2AH1oGB9QHAvl1U'
+        bak5 = b'Behy5f2BIJbAYdgoy00OcOEZwEyxCGCUDlzbGkbz1RAI'
+        baks = [bak1, bak2, bak3, bak4]
+
+        # test .baks insertion order dup methods.  dup vals are insertion order
+        assert issuer.getBaks(key) == []
+        assert issuer.cntBaks(key) == 0
+        assert issuer.delBaks(key) is False
+        assert issuer.putBaks(key, baks) is True
+        assert issuer.getBaks(key) == baks
+        assert issuer.cntBaks(key) == len(baks) == 4
+        assert issuer.putBaks(key, vals=[bak1]) is False
+        assert issuer.getBaks(key) == baks
+        assert issuer.addBak(key, bak1) is False
+        assert issuer.addBak(key, bak5) is True
+        assert issuer.getBaks(key) == [bak1, bak2, bak3, bak4, bak5]
+        assert [val for val in issuer.getBaksIter(key)] == [bak1, bak2, bak3, bak4, bak5]
+        assert issuer.delBaks(key) is True
+        assert issuer.getBaks(key) == []
 
 
     """End Test"""
