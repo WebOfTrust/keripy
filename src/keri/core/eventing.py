@@ -165,7 +165,7 @@ Colds = Coldage(msg='msg', txt='txt', bny='bny')
 # to/from dicts easily  example: dict(kin="receipt", serder=serder)
 
 
-def validateSN(sn):
+def validateSN(sn, inceptive=False):
     """
     Returns int of sn, raises ValueError if invalid sn
 
@@ -179,8 +179,15 @@ def validateSN(sn):
         sn = int(sn, 16)
     except Exception as ex:
         raise ValueError("Invalid sn = {}.".format(sn))
-    if sn <  0:
-        raise ValueError("Negative sn = {}.".format(sn))
+
+    if inceptive:
+        if sn != 0:
+            raise ValidationError("Nonzero sn = {} for inception evt."
+                                  "".format(sn))
+    else:
+        if sn < 1:
+            raise ValidationError("Zero or less sn = {} for non-inception evt."
+                                  "".format(sn))
     return sn
 
 
@@ -422,6 +429,52 @@ def deTransReceiptQuintuple(data, strip=False):
         data = data[len(sdiger.qb64b):]
     siger = Siger(qb64b=data, strip=strip)  #  indexed siger of event
     return (ediger, sprefixer, sseqner, sdiger, siger)
+
+
+def verifySigs(serder, sigers, verfers):
+    """
+    Returns tuple of (vsigers, vindices) where:
+        vsigers is list  of unique verified sigers with assigned verfer
+        vindices is list of indices from those verified sigers
+
+    The returned vsigers  and vindices may be used for threshold validation
+
+    Assigns appropriate verfer from verfers to each siger based on siger index
+    If no signatures verify then sigers and indices are empty
+
+    Parameters:
+        serder is Serder of signed event
+        sigers is list of indexed Siger instances (signatures)
+        verfers is list of Verfer instance (public keys)
+
+    """
+    if sigers is None:
+        sigers = []
+    # Ensure no duplicate sigers by using set math on sigers' sigs otherwise
+    # indices count for threshold will be erroneous. Does not modify in place
+    # passed in sigers list, but instead depends on caller to use indices to
+    # modify its copy to filter out unverifiable or duplicate sigers
+    usigs = oset([siger.qb64 for siger in sigers])
+    usigers = [Siger(qb64=sig) for sig in usigs ]
+
+    # verify indexes of attached signatures against verifiers and assign
+    # verfer to each siger
+    for siger in usigers:
+        if siger.index >= len(verfers):
+            raise ValidationError("Index = {} to large for keys for evt = "
+                                  "{}.".format(siger.index, serder.ked))
+        siger.verfer = verfers[siger.index]  # assign verfer
+
+    # create lists of unique verified signatures and indices
+    vindices = []
+    vsigers = []
+    for siger in usigers:
+        if siger.verfer.verify(siger.raw, serder.raw):
+            vindices.append(siger.index)
+            vsigers.append(siger)
+
+    return (vsigers, vindices)
+
 
 
 def incept(keys,
@@ -1023,7 +1076,9 @@ def state(pre,
     if not eevt or not isinstance(eevt, StateEstEvent):
         raise ValueError("Missing or invalid latest est event = {} for key "
                          "state.".format(eevt))
-    validateSN(eevt.s)
+
+    incpt = eilk in (Ilks.icp, Ilks.dip)
+    validateSN(eevt.s, inceptive=incpt)
 
     if len(oset(eevt.br)) != len(eevt.br):  # duplicates in cuts
         raise ValueError("Invalid cuts = {} in latest est event, has duplicates"
@@ -1386,7 +1441,7 @@ class Kever:
         sn = self.validateSN(ked=ked, inceptive=False)
         ilk = ked["t"]
 
-        if ilk in (Ilks.rot, Ilks.drt) :  # rotation (or delegated rotation) event
+        if ilk in (Ilks.rot, Ilks.drt):  # rotation (or delegated rotation) event
             if self.delegated and ilk != Ilks.drt:
                 raise ValidationError("Attempted non delegated rotation on "
                                       "delegated pre = {} with evt = {}."
@@ -1639,68 +1694,7 @@ class Kever:
         if sn is None:
             sn = ked["s"]
 
-        if len(sn) > 32:
-            raise ValidationError("Oversize sn = {} for evt={}."
-                                  "".format(sn, ked))
-        try:
-            sn = int(sn, 16)
-        except Exception as ex:
-            raise ValidationError("Noninteger sn = {} for evt={}.".format(sn, ked))
-
-        if inceptive:
-            if sn != 0:
-                raise ValidationError("Nonzero sn = {} for inception evt={}."
-                                      "".format(sn, ked))
-        else:
-            if sn == 0:
-                raise ValidationError("Zero sn = {} for non-inception evt={}."
-                                      "".format(sn, ked))
-        return sn
-
-
-    def verifySigs(self, serder, sigers, verfers):
-        """
-        Returns tuple of (vsigers, vindices) where:
-            vsigers is list  of unique verified sigers with assigned verfer
-            vindices is list of indices from those verified sigers
-
-        The returned vsigers  and vindices may be used for threshold validation
-
-        Assigns appropriate verfer from verfers to each siger based on siger index
-        If no signatures verify then sigers and indices are empty
-
-        Parameters:
-            serder is Serder of signed event
-            sigers is list of indexed Siger instances (signatures)
-            verfers is list of Verfer instance (public keys)
-
-        """
-        if sigers is None:
-            sigers = []
-        # Ensure no duplicate sigers by using set math on sigers' sigs otherwise
-        # indices count for threshold will be erroneous. Does not modify in place
-        # passed in sigers list, but instead depends on caller to use indices to
-        # modify its copy to filter out unverifiable or duplicate sigers
-        usigs = oset([siger.qb64 for siger in sigers])
-        usigers = [Siger(qb64=sig) for sig in usigs ]
-
-        # verify indexes of attached signatures against verifiers and assign
-        # verfer to each siger
-        for siger in usigers:
-            if siger.index >= len(verfers):
-                raise ValidationError("Index = {} to large for keys for evt = "
-                                      "{}.".format(siger.index, serder.ked))
-            siger.verfer = verfers[siger.index]  # assign verfer
-
-        # create lists of unique verified signatures and indices
-        vindices = []
-        vsigers = []
-        for siger in usigers:
-            if siger.verfer.verify(siger.raw, serder.raw):
-                vindices.append(siger.index)
-                vsigers.append(siger)
-
-        return (vsigers, vindices)
+        return validateSN(sn, inceptive=inceptive)
 
 
     def valSigsDelWigs(self, serder, sigers, verfers, tholder,
@@ -1742,7 +1736,7 @@ class Kever:
                                        serder.ked))
 
         # get unique verified sigers and indices lists from sigers list
-        sigers, indices = self.verifySigs(serder=serder, sigers=sigers, verfers=verfers)
+        sigers, indices = verifySigs(serder=serder, sigers=sigers, verfers=verfers)
         # sigers  now have .verfer assigned
 
         werfers = [Verfer(qb64=wit) for wit in wits]
@@ -1750,7 +1744,7 @@ class Kever:
             #werfers.append(Verfer(qb64=wit))
 
         # get unique verified wigers and windices lists from wigers list
-        wigers, windices = self.verifySigs(serder=serder, sigers=wigers, verfers=werfers)
+        wigers, windices = verifySigs(serder=serder, sigers=wigers, verfers=werfers)
         # each wiger now has werfer of corresponding wit
 
         # check if fully signed
@@ -2891,13 +2885,13 @@ class Kevery:
                     # raises ValidationError if no valid sig
                     kever = self.kevers[pre]  # get key state
                     # get unique verified lists of sigers and indices from sigers
-                    sigers, indices = kever.verifySigs(serder=serder,
-                                                       sigers=sigers,
-                                                       verfers=eserder.verfers)
+                    sigers, indices = verifySigs(serder=serder,
+                                                 sigers=sigers,
+                                                 verfers=eserder.verfers)
 
-                    wigers, windices = kever.verifySigs(serder=serder,
-                                                        sigers=wigers,
-                                                        verfers=eserder.werfers)
+                    wigers, windices = verifySigs(serder=serder,
+                                                  sigers=wigers,
+                                                  verfers=eserder.werfers)
 
                     if sigers or wigers:  # at least one verified sig or wig so log evt
                         # not first seen inception so ignore return
@@ -2940,18 +2934,18 @@ class Kevery:
                         # raises ValidationError if no valid sig
                         kever = self.kevers[pre]
                         # get unique verified lists of sigers and indices from sigers
-                        sigers, indices = kever.verifySigs(serder=serder,
-                                                   sigers=sigers,
-                                                   verfers=eserder.verfers)
+                        sigers, indices = verifySigs(serder=serder,
+                                                     sigers=sigers,
+                                                     verfers=eserder.verfers)
 
                         # only verify wigers if lastest est event of current key state
                         # matches est event of processed event
                         if (eserder.sn == kever.lastEst.s and
                                 eserder.dig == kever.lastEst.d):
                             werfers = [Verfer(qb64=wit) for wit in kever.wits]
-                            wigers, windices = kever.verifySigs(serder=serder,
-                                                                sigers=wigers,
-                                                                verfers=werfers)
+                            wigers, windices = verifySigs(serder=serder,
+                                                          sigers=wigers,
+                                                          verfers=werfers)
                         else:
                             wigers = []
 
