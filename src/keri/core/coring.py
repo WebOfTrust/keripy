@@ -1920,7 +1920,7 @@ class IndexerCodex:
     Ed25519_Sig:        str = 'A'  # Ed25519 signature.
     ECDSA_256k1_Sig:    str = 'B'  # ECDSA secp256k1 signature.
     Ed448_Sig:          str = '0A'  # Ed448 signature.
-    Label:              str = '0B'  # Variable len bytes label L=N*4 <= 4095 char quadlets
+    Label:              str = '0B'  # Variable len label L=N*4 <= 4095 char quadlets
 
     def __iter__(self):
         return iter(astuple(self))  # enables inclusion test with "in"
