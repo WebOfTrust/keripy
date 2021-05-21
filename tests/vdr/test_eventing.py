@@ -7,8 +7,9 @@ from keri.db import dbing
 from keri.db.dbing import snKey, dgKey
 from keri.vdr import eventing, viring
 from keri.kering import Version, EmptyMaterialError, DerivationError, MissingAnchorError, ValidationError, \
-    MissingWitnessSignatureError
-from keri.vdr.eventing import rotate, issue, revoke, backerIssue, backerRevoke, Tever
+    MissingWitnessSignatureError, LikelyDuplicitousError
+from keri.vdr.eventing import rotate, issue, revoke, backerIssue, backerRevoke, Tever, Tevery, VcStates
+from keri.vdr.viring import nsKey
 
 
 def test_incept():
@@ -263,10 +264,10 @@ def test_simple_issue_revoke():
     assert serder.raw == (b'{"v":"KERI10JSON000092_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0",'
                           b'"t":"iss","ri":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw"}')
 
-    serder = revoke(vcdig=vcdig, dig=dig)
+    serder = revoke(vcdig=vcdig, regk=regk, dig=dig)
     assert serder.raw == (
-        b'{"v":"KERI10JSON000091_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","t":"rev",'
-        b'"p":"EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"}')
+        b'{"v":"KERI10JSON0000c5_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","t":"rev",'
+        b'"ri":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"}')
 
     """ End Test """
 
@@ -484,6 +485,9 @@ def test_tever_no_backers():
 
         tev = Tever(serder=vcp, anchor=anc, db=db, reger=reg)
 
+        assert tev.prefixer.qb64 == vcp.pre
+        assert tev.sn == 0
+
         dgkey = dgKey(pre=regk, dig=vcp.dig)
         assert reg.getTvt(dgkey) == (
             b'{"v":"KERI10JSON0000ad_","i":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw",'
@@ -518,7 +522,9 @@ def test_tever_no_backers():
         anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
 
         tev.update(iss, anc)
-        dgkey = dgKey(pre=vcdig, dig=iss.dig)
+
+        vci = nsKey([regk, vcdig])
+        dgkey = dgKey(pre=vci, dig=iss.dig)
         assert reg.getTvt(dgkey) == (
             b'{"v":"KERI10JSON000092_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"0","t":"iss",'
             b'"ri":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"}')
@@ -527,7 +533,7 @@ def test_tever_no_backers():
             b'EC41xCFcd_4rbTn3fcmlgq6BjUSk6cjBKBX1uf3ygyrM')
 
         # revoke vc with no backers
-        rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), dig=iss.dig)
+        rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.dig)
 
         # successfully anchor to a rotation event
         rseal = SealEvent(rev.ked["i"], rev.ked["s"], rev.diger.qb64)
@@ -536,11 +542,13 @@ def test_tever_no_backers():
         anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
 
         tev.update(rev, anc)
-        dgkey = dgKey(pre=vcdig, dig=rev.dig)
-        assert reg.getTvt(dgkey) == (b'{"v":"KERI10JSON000091_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU",'
-                                     b'"s":"1","t":"rev","p":"EMghaQVkY8iMi44zZGzx6LifEw3X5uL8am7IhoPOLJjE"}')
-        assert reg.getAnc(dgkey) == (b'EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY0AAAAAAAAAAAAAAAAAAAAABAEJK-'
-                                     b'nBlH-RLAVjq5HOi2ulIkmomQRhF1Mez2qXn9A0LE')
+        dgkey = dgKey(pre=vci, dig=rev.dig)
+        assert reg.getTvt(dgkey) == (
+            b'{"v":"KERI10JSON0000c5_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"1","t":"rev",'
+            b'"ri":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw","p":"EMghaQVkY8iMi44zZGzx6LifEw3X5uL8am7IhoPOLJjE"}')
+        assert reg.getAnc(dgkey) == (
+            b'EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY0AAAAAAAAAAAAAAAAAAAAABAECgc6yHeTRhsKh1M7k65feWZGCf_'
+            b'MG0dWoei5Q6SwgqU')
 
 
 def test_tever_backers():
@@ -623,12 +631,74 @@ def test_tever_backers():
 
         tev.update(bis, anc, bigers=[valCigar, debCigar])
 
-        dgkey = dgKey(pre=vcdig, dig=bis.dig)
+        vci = nsKey([regk, vcdig])
+        dgkey = dgKey(pre=vci, dig=bis.dig)
         assert reg.getTvt(dgkey) == (
             b'{"v":"KERI10JSON000105_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU",'
             b'"ii":"EBZR8LxEozgFa6UXwtSAmiXsmdChrT7Hr-jcxc9NFfrU","s":"0","t":"bis",'
             b'"ra":{"i":"EBZR8LxEozgFa6UXwtSAmiXsmdChrT7Hr-jcxc9NFfrU","s":1,'
             b'"d":"EZH2Cfw3nvcMRgY31Jyc2zHVh4a0LO_bVZ4EmL4V8Ol8"}}')
+
+
+def test_tevery():
+    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openDB() as reg:
+        hab = buildHab(db, kpr)
+
+        vcp = eventing.incept(hab.pre,
+                              baks=[],
+                              toad=0,
+                              cnfg=["NB"],
+                              code=MtrDex.Blake3_256)
+        regk = vcp.pre
+
+        # successfully anchor to a rotation event
+        rseal = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.diger.qb64)
+
+        rot = hab.rotate(data=[rseal._asdict()])
+        rotser = Serder(raw=rot)
+
+        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+
+        tvy = Tevery(reger=reg, db=db)
+
+        tvy.processEvent(serder=vcp, anchor=anc)
+
+        assert regk in tvy.tevers
+        tev = tvy.tevers[regk]
+        assert tev.prefixer.qb64 == vcp.pre
+        assert tev.sn == 0
+
+        # send vcp again, get error
+        with pytest.raises(LikelyDuplicitousError):
+            tvy.processEvent(serder=vcp, anchor=anc)
+
+        # process issue vc event
+        vcdig = b'EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU'
+
+        iss = eventing.issue(vcdig=vcdig.decode("utf-8"), regk=regk)
+
+        # successfully anchor to a rotation event
+        rseal = SealEvent(iss.ked["i"], iss.ked["s"], iss.diger.qb64)
+        rot = hab.rotate(data=[rseal._asdict()])
+        rotser = Serder(raw=rot)
+        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+
+        tvy.processEvent(serder=iss, anchor=anc)
+        assert tev.vcState(vcdig) == VcStates.issued
+        assert tev.vcSn(vcdig) == 0
+
+        # revoke the vc
+        rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.dig)
+
+        # successfully anchor to a rotation event
+        rseal = SealEvent(rev.ked["i"], rev.ked["s"], rev.diger.qb64)
+        rot = hab.rotate(data=[rseal._asdict()])
+        rotser = Serder(raw=rot)
+        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+
+        tvy.processEvent(serder=rev, anchor=anc)
+        assert tev.vcState(vcdig) == VcStates.revoked
+        assert tev.vcSn(vcdig) == 1
 
 
 def buildHab(db, kpr):
@@ -652,11 +722,12 @@ def buildHab(db, kpr):
 
 
 if __name__ == "__main__":
-    # test_incept()
-    # test_rotate()
-    # test_simple_issue_revoke()
-    # test_backer_issue_revoke()
-    # test_prefixer()
-    # test_tever_escrow()
+    test_incept()
+    test_rotate()
+    test_simple_issue_revoke()
+    test_backer_issue_revoke()
+    test_prefixer()
+    test_tever_escrow()
     test_tever_no_backers()
     test_tever_backers()
+    test_tevery()
