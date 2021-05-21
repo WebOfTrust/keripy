@@ -51,9 +51,9 @@ class Issuer:
         rseal = SealEvent(self.regk, self.regser.ked["s"], self.regser.diger.qb64)
 
         if self.estOnly:
-            self.ianchor = self.hab.rotate(data=rseal)
+            self.ianchor = self.hab.rotate(data=[rseal._asdict()])
         else:
-            self.ianchor = self.hab.interact(data=rseal)
+            self.ianchor = self.hab.interact(data=[rseal._asdict()])
 
         seal = SealEvent(i=self.hab.pre, s=self.hab.kever.sn, d=self.hab.kever.serder.dig)
 
@@ -106,7 +106,7 @@ class Issuer:
         self.vcser = serder
         rseal = SealEvent(vcdig, self.vcser.ked["s"], self.vcser.diger.qb64)
 
-        msg, kevt = self.anchorMsg(serder, [rseal._asdict()])
+        msg, kevt = self.anchorMsg(serder, rseal._asdict())
 
         # Process message in local Tevery when ready
         return msg, kevt
@@ -122,7 +122,7 @@ class Issuer:
         """
 
         if self.noBackers:
-            serder = eventing.revoke(vcdig=vcdig, dig=self.vcser.dig)
+            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=self.vcser.dig)
         else:
             serder = eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
                                            dig=self.vcser.dig)
