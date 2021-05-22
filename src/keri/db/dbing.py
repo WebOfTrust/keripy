@@ -642,6 +642,21 @@ class LMDBer:
                 count = cursor.count()
             return count
 
+    def cntPres(self, db, pre, on=0):
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = onKey(pre, on)  # start replay at this enty 0 is earliest
+            count = 0
+            if not cursor.set_range(key):  #  moves to val at key >= key
+                return count # no values end of db
+
+            for val in cursor.iternext(values=False):  # get key, val at cursor
+                cpre, cn = splitKeyON(key)
+                if cpre != pre:  # prev is now the last event for pre
+                    break  # done
+                count = count+1
+
+            return count
 
     def delVals(self, db, key, val=b''):
         """

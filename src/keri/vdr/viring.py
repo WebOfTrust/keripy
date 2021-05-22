@@ -200,6 +200,17 @@ class Registry(dbing.LMDBer):
         """
         return self.delVal(self.tels, key)
 
+    def cntTels(self, pre, fn=0):
+        """
+        Returns count of all (fn, dig)  for all events
+        with same prefix, pre, in database.
+
+        Parameters:
+            pre is bytes of itdentifier prefix
+            fn is int fn to resume replay. Earliset is fn=0
+        """
+        return self.cntPres(db=self.tels, pre=pre, on=fn)
+
     def getTibs(self, key):
         """
         Use dgKey()
