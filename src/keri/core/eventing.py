@@ -4494,8 +4494,8 @@ class Parser:
                                                     framed=framed,
                                                     pipeline=pipeline,
                                                     cloned=cloned,
-                                                    kevery=kvy,
-                                                    tevery=tvy)
+                                                    kvy=kvy,
+                                                    tvy=tvy)
 
             except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -4571,8 +4571,8 @@ class Parser:
                                                     framed=framed,
                                                     pipeline=pipeline,
                                                     cloned=cloned,
-                                                    kevery=kvy,
-                                                    tevery=tvy)
+                                                    kvy=kvy,
+                                                    tvy=tvy)
 
             except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -4648,8 +4648,8 @@ class Parser:
                                                     framed=framed,
                                                     pipeline=pipeline,
                                                     cloned=cloned,
-                                                    kevery=kvy,
-                                                    tevery=tvy)
+                                                    kvy=kvy,
+                                                    tvy=tvy)
 
             except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -4678,7 +4678,7 @@ class Parser:
 
 
     def msgProcessor(self, ims=None, framed=True, pipeline=False, cloned=False,
-                     kevery=None, tevery=None):
+                     kvy=None, tvy=None):
         """
         Returns generator that extracts one msg with attached crypto material
         (signature etc) from incoming message stream, ims, and dispatches
@@ -4755,6 +4755,7 @@ class Parser:
         frcs = []  # each converted couple is (seqner, dater)
         # List of tuples from extracted source seal couples (delegator or issuer)
         sscs = []  # each converted couple is (seqner, diger)
+        tets = []  # TEL event seal triples
         pipelined = False  # all attachments in one big pipeline counted group
         # extract and deserialize attachments
         try:  # catch errors here to flush only counted part of stream
@@ -4957,7 +4958,7 @@ class Parser:
                 raise ValidationError("Missing attached signature(s) for evt "
                                       "= {}.".format(serder.ked))
             try:
-                kevery.processEvent(serder=serder,
+                kvy.processEvent(serder=serder,
                                         sigers=sigers,
                                         wigers=wigers,
                                         seqner=seqner,
@@ -4966,9 +4967,9 @@ class Parser:
                                         dater=dater if cloned else None)
 
                 if cigars:
-                    kevery.processReceiptCouples(serder, cigars, firner=firner)
+                    kvy.processReceiptCouples(serder, cigars, firner=firner)
                 if trqs:
-                    kevery.processReceiptQuadruples(serder, trqs, firner=firner)
+                    kvy.processReceiptQuadruples(serder, trqs, firner=firner)
 
             except AttributeError:
                 raise ValidationError("No kevery to process so dropped msg"
@@ -4980,13 +4981,13 @@ class Parser:
                                       "msg = {}.".format(serder.ked))
             try:
                 if cigars:
-                    kevery.processReceipt(serder=serder, cigars=cigars)
+                    kvy.processReceipt(serder=serder, cigars=cigars)
 
                 if wigers:
-                    kevery.processReceiptWitness(serder=serder, wigers=wigers )
+                    kvy.processReceiptWitness(serder=serder, wigers=wigers )
 
                 if tsgs:
-                    kevery.processReceiptTrans(serder=serder, tsgs=tsgs)
+                    kvy.processReceiptTrans(serder=serder, tsgs=tsgs)
 
             except AttributeError:
                 raise ValidationError("No kevery to process so dropped msg"
@@ -5002,14 +5003,26 @@ class Parser:
                 if cigars:  # process separately so do not clash on errors
                     # may want two different functions One for processKeyStateNoticeNonTrans
                     # and one for processKeyStateNoticeTrans
-                    kevery.processKeyStateNotice(serder, cigars=cigars)  # nontrans
+                    kvy.processKeyStateNotice(serder, cigars=cigars)  # nontrans
 
                 if tsgs:  # process separately so do not clash on errors
-                    kevery.processKeyStateNotice(serder, tsgs=tsgs)  #  trans
+                    kvy.processKeyStateNotice(serder, tsgs=tsgs)  #  trans
 
             except AttributeError:
                 raise ValidationError("No kevery to process so dropped msg"
                                       "= {}.".format(serder.pretty))
+
+        elif ilk in [Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv]:
+            # TEL msg
+            anchor = None #  tets[-1] if tets else None
+            try:
+                tvy.processEvent(serder, anchor=anchor, wigers=wigers)
+
+            except AttributeError:
+                raise ValidationError("No tevery to process so dropped msg"
+                                      "= {}.".format(serder.pretty))
+
+
 
         else:
             raise ValidationError("Unexpected message ilk = {} for evt ="
