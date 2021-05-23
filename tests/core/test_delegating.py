@@ -67,7 +67,7 @@ def test_delegation():
                     b'AV73XOaAw')
 
         # apply msg to bob's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kevery=bobKvy)
+        eventing.Parser().process(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         bobK = bobKvy.kevers[bob]
         assert bobK.prefixer.qb64 == bob
@@ -75,7 +75,7 @@ def test_delegation():
         assert bobK.serder.diger.qb64 == 'E1-QL0TCdsBTRaKoakLjFhjSlELK60Vv8WdRaG6zMnTM'
 
         # apply msg to del's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kevery=delKvy)
+        eventing.Parser().process(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bob in delKvy.kevers
 
@@ -121,12 +121,12 @@ def test_delegation():
                         b'uFHyOofiDRt5tRE09PlS0uZdot6byFNr-AA')
 
         # apply msg to bob's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kevery=bobKvy)
+        eventing.Parser().process(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobK.serder.diger.qb64 == bobSrdr.dig  # key state updated so event was validated
 
         # apply msg to del's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kevery=delKvy)
+        eventing.Parser().process(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[bob].serder.diger.qb64 == bobSrdr.dig
 
@@ -159,7 +159,7 @@ def test_delegation():
                         b'hjyII')
 
         # apply Del's delegated inception event message to Del's own Kevery
-        eventing.Parser().process(ims=bytearray(msg), kevery=delKvy)
+        eventing.Parser().process(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delPre in delKvy.kevers
         delK = delKvy.kevers[delPre]
@@ -169,7 +169,7 @@ def test_delegation():
         assert couple == seqner.qb64b + bobSrdr.diger.qb64b
 
         # apply Del's delegated inception event message to bob's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kevery=bobKvy)
+        eventing.Parser().process(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert delPre in bobKvy.kevers  # successfully validated
         bobDelK = bobKvy.kevers[delPre]
@@ -215,12 +215,12 @@ def test_delegation():
                                 b'AmfBa03KgrDVqmB7qG2VXQbOHevkzOgRdDA')
 
         # apply msg to bob's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kevery=bobKvy)
+        eventing.Parser().process(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobK.serder.diger.qb64 == bobSrdr.dig  # key state updated so event was validated
 
         # apply msg to del's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kevery=delKvy)
+        eventing.Parser().process(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[bob].serder.diger.qb64 == bobSrdr.dig
 
@@ -252,7 +252,7 @@ def test_delegation():
 
 
         # apply msg to del's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kevery=delKvy)
+        eventing.Parser().process(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bobDelK.delegated
         assert delK.serder.diger.qb64 == delSrdr.dig
@@ -260,7 +260,7 @@ def test_delegation():
         assert couple == seqner.qb64b + bobSrdr.diger.qb64b
 
         # apply Del's delegated inception event message to bob's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kevery=bobKvy)
+        eventing.Parser().process(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobDelK.delegated
         assert bobDelK.serder.diger.qb64 == delSrdr.dig  # key state updated so event was validated

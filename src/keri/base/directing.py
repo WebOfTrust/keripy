@@ -172,7 +172,7 @@ class Habitat():
 
         self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db,
                                    opre=self.pre, local=True)
-        self.psr = eventing.Parser(framed=True, kevery=self.kvy)
+        self.psr = eventing.Parser(framed=True, kvy=self.kvy)
 
         sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
         msg = eventing.messagize(self.iserder, sigers=sigers)
@@ -676,7 +676,7 @@ class Reactor(doing.DoDoer):
                                       local=False)
         self.parser = eventing.Parser(ims=self.client.rxbs,
                                       framed=True,
-                                      kevery=self.kevery)
+                                      kvy=self.kevery)
         doers = doers if doers is not None else []
         doers.extend([self.msgDo, self.cueDo, self.escrowDo])
         super(Reactor, self).__init__(doers=doers, **kwa)
@@ -1006,7 +1006,7 @@ class Reactant(doing.DoDoer):
                                       local=False)
         self.parser = eventing.Parser(ims=self.remoter.rxbs,
                                       framed=True,
-                                      kevery=self.kevery)
+                                      kvy=self.kevery)
         doers = doers if doers is not None else []
         doers.extend([self.msgDo, self.cueDo, self.escrowDo])
         super(Reactant, self).__init__(doers=doers, **kwa)
