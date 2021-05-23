@@ -36,7 +36,7 @@ def test_directing_basic():
     """
     Test directing
     """
-    help.ogler.resetLevel(level=logging.DEBUG)
+    help.ogler.resetLevel(level=logging.INFO)
 
     # set of secrets  (seeds for private keys)
     bobSecrets = [
@@ -126,7 +126,7 @@ def test_directing_basic():
         assert bobReactor.client == bobClient
         assert id(bobReactor.hab.kvy.kevers) == id(bobKevers)
         assert bobReactor.hab.kvy.db == bobDB
-        assert id(bobReactor.kevery.ims) == id(bobReactor.client.rxbs)
+        assert id(bobReactor.parser.ims) == id(bobReactor.client.rxbs)
         assert id(bobReactor.client.rxbs) == id(bobDirector.client.rxbs)
 
         bobServer = serving.Server(host="", port=bobPort)
@@ -159,7 +159,7 @@ def test_directing_basic():
         assert eveReactor.client == eveClient
         assert id(eveReactor.hab.kvy.kevers) == id(eveKevers)
         assert eveReactor.hab.kvy.db == eveDB
-        assert id(eveReactor.kevery.ims) == id(eveReactor.client.rxbs)
+        assert id(eveReactor.parser.ims) == id(eveReactor.client.rxbs)
         assert id(eveReactor.client.rxbs) == id(eveDirector.client.rxbs)
 
         eveServer = serving.Server(host="", port=evePort)

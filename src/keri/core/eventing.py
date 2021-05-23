@@ -2785,7 +2785,7 @@ class Kevery:
             if cigars:  # process separately so do not clash on errors
                 # may want two different functions One for processKeyStateNoticeNonTrans
                 # and one for processKeyStateNoticeTrans
-                self.kevery.processKeyStateNotice(serder, cigars=cigars)  # nontrans
+                self.processKeyStateNotice(serder, cigars=cigars)  # nontrans
 
             if tsgs:  # process separately so do not clash on errors
                 self.processKeyStateNotice(serder, tsgs=tsgs)  #  trans
@@ -4993,7 +4993,7 @@ class Parser:
     """
 
     def __init__(self, ims=None, framed=True, pipeline=False, cloned=False,
-                 opre=None, local=False, kevery=None, tevery=None):
+                 kevery=None, tevery=None):
         """
         Initialize instance:
 
@@ -5005,17 +5005,12 @@ class Parser:
                 ims msgs when stream includes pipelined count codes.
             cloned i(Boolen): True means cloned message stream so use attached
                 datetimes from clone source not own
-            opre (str): own identifier prefix (local). Some restriction if present
-            local (Boolean): True means only process msgs for own events if .opre
-                        False means only process msgs for not own events if .opre
             kevery (Kevery):
         """
         self.ims = ims if ims is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream
         self.pipeline = True if pipeline else False  # process as pipelined
         self.cloned = True if cloned else False  # process as cloned
-        self.opre = opre  # local prefix for restrictions on local events
-        self.local = True if local else False  # local vs nonlocal restrictions
         self.kevery = kevery
         self.tevery = tevery
 
@@ -5140,6 +5135,49 @@ class Parser:
                                        kevery=kevery,
                                        tevery=tevery)
 
+        while True:
+            try:
+                next(processor)
+            except StopIteration:
+                break
+
+
+    def processOne(self, ims=None, framed=True, pipeline=False, cloned=False,
+                   kevery=None, tevery=None):
+        """
+        Processes one messages from incoming message stream, ims,
+        when provided. Otherwise process message from .ims
+        Returns once one message is processed.
+        Convenience executor for .processOneGen when ims is not live, i.e. fixed
+
+        Parameters:
+            ims is bytearray of serialized incoming message stream.
+                May contain one or more sets each of a serialized message with
+                attached cryptographic material such as signatures or receipts.
+
+            framed is Boolean, True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+
+            pipeline is Boolean, True means use pipeline processor to process
+                ims msgs when stream includes pipelined count codes.
+
+            cloned is Boolen, True means cloned message stream so use attached
+                datetimes from clone source not own. False means ignore attached
+                datetimes.
+
+            kevery (Kevery): route KERI KEL message types to this instance
+            tevery (Tevery): route TEL message types to this instance
+
+        New Logic:
+            Attachments must all have counters so know if txt or bny format for
+            attachments. So even when framed==True must still have counters.
+        """
+        processor = self.onceProcessor(ims=ims,
+                                        framed=framed,
+                                        pipeline=pipeline,
+                                        cloned=cloned,
+                                        kevery=kevery,
+                                        tevery=tevery)
         while True:
             try:
                 next(processor)
@@ -5277,24 +5315,24 @@ class Parser:
             except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
+                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
                 else:
-                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
+                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
 
             except (ColdStartError, ExtractionError) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
+                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
                 else:
-                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
+                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
                 del ims[:]  # delete rest of stream to force cold restart
 
             except (ValidationError, Exception) as ex:  # non Extraction Error
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg non-extraction error: %s\n", ex.args[0])
+                    logger.exception("Parser msg non-extraction error: %s\n", ex.args[0])
                 else:
-                    logger.error("Kevery msg non-extraction error: %s\n", ex.args[0])
+                    logger.error("Parser msg non-extraction error: %s\n", ex.args[0])
             yield
 
         return True
@@ -5378,47 +5416,6 @@ class Parser:
         return done
 
 
-    def processOne(self, ims=None, framed=True, pipeline=False, cloned=False,
-                   kevery=None, tevery=None):
-        """
-        Processes one messages from incoming message stream, ims,
-        when provided. Otherwise process message from .ims
-        Returns once one message is processed.
-        Convenience executor for .processOneGen when ims is not live, i.e. fixed
-
-        Parameters:
-            ims is bytearray of serialized incoming message stream.
-                May contain one or more sets each of a serialized message with
-                attached cryptographic material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
-                counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-
-            cloned is Boolen, True means cloned message stream so use attached
-                datetimes from clone source not own. False means ignore attached
-                datetimes.
-
-            kevery (Kevery): route KERI KEL message types to this instance
-            tevery (Tevery): route TEL message types to this instance
-
-        New Logic:
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counters.
-        """
-        processor = self.msgProcessor(ims=ims,
-                                        framed=framed,
-                                        pipeline=pipeline,
-                                        cloned=cloned,
-                                        kevery=kevery,
-                                        tevery=tevery)
-        while True:
-            try:
-                next(processor)
-            except StopIteration:
-                break
 
 
     def msgProcessor(self, ims=None, framed=True, pipeline=False, cloned=False,

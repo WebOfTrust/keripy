@@ -63,20 +63,21 @@ class Habitat():
        e.g. context or environment
 
     Attributes:
-        .name is str alias of controller
-        .transferable is Boolean True means pre is transferable (default)
+        name (str): alias of controller
+        transferable (Boolean): True means pre is transferable (default)
                     False means pre is nontransferable
-        .temp is Boolean True for testing it modifies tier of salty key
+        temp (Boolean): True for testing it modifies tier of salty key
             generation algorithm and persistence of db and ks
-        .erase is Boolean, If True erase old private keys, Otherwise not.
-        .ks is lmdb key store keeping.Keeper instance
-        .mgr is keeping.Manager instance
-        .ridx is int rotation index (inception == 0) needed for key replay
-        .kevers is dict of eventing.Kever(s) keyed by qb64 prefix
-        .db is lmdb data base dbing.Baser instance
-        .kvy is eventing.Kevery instance for local processing of local msgs
-        .iserder is Serder of inception event
-        .pre is qb64 prefix of local controller
+        erase (Boolean): If True erase old private keys, Otherwise not.
+        ks (keeping.Keeper): lmdb key store
+        mgr (keeping.Manager): creates and rotates keys in key store
+        ridx (int): rotation index (inception == 0) needed for key replay
+        kevers (dict): of eventing.Kever(s) keyed by qb64 prefix
+        db (dbing.Baser): lmdb data base for KEL etc
+        kvy (eventing.Kevery): instance for local processing of local msgs
+        parser (eventing.Parser):  parses local messages for .kvy
+        iserder (coring.Serder): own inception event
+        pre (str): qb64 prefix of own local controller
 
     Properties:
         .kever is Kever instance of key state of local controller
@@ -171,10 +172,11 @@ class Habitat():
 
         self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, framed=True,
                                    opre=self.pre, local=True)
+        self.parser = eventing.Parser(framed=True, kevery=self.kvy)
 
         sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
         msg = eventing.messagize(self.iserder, sigers=sigers)
-        self.kvy.processOne(ims=msg)
+        self.parser.processOne(ims=msg)
         if self.pre not in self.kevers:
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={}.".format(self.pre))
@@ -253,7 +255,7 @@ class Habitat():
         msg = eventing.messagize(serder, sigers=sigers)
 
         # update ownkey event verifier state
-        self.kvy.processOne(ims=bytearray(msg))  # make copy as kvr deletes
+        self.parser.processOne(ims=bytearray(msg))  # make copy as kvr deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
@@ -277,7 +279,7 @@ class Habitat():
         msg = eventing.messagize(serder, sigers=sigers)
 
         # update ownkey event verifier state
-        self.kvy.processOne(ims=bytearray(msg))  # make copy as kvy deletes
+        self.parser.processOne(ims=bytearray(msg))  # make copy as kvy deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre))
@@ -311,7 +313,7 @@ class Habitat():
                                indexed=False)
             msg = eventing.messagize(reserder, cigars=cigars)
 
-        self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
+        self.parser.processOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
 
@@ -326,10 +328,10 @@ class Habitat():
                              " transferable pre={}.".format(self.pre))
         ked = serder.ked
 
-        if serder.pre not in self.kvy.kevers:
+        if serder.pre not in self.kevers:
             raise ValueError("Attempt by {} to witness event with missing key "
                              "state.".format(self.pre))
-        kever = self.kvy.kevers[serder.pre]
+        kever = self.kevers[serder.pre]
         if self.pre not in kever.wits:
             raise ValueError("Attempt by {} to witness event of {} when not a "
                              "witness in wits={}.".format(self.pre,
@@ -346,7 +348,7 @@ class Habitat():
                                indices=[index])
 
         msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
-        self.kvy.processOne(ims=bytearray(msg))  # process local copy into db
+        self.parser.processOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
 
@@ -674,6 +676,9 @@ class Reactor(doing.DoDoer):
                                       framed=True,
                                       opre=self.hab.pre,
                                       local=False)
+        self.parser = eventing.Parser(ims=self.client.rxbs,
+                                      framed=True,
+                                      kevery=self.kevery)
         doers = doers if doers is not None else []
         doers.extend([self.msgDo, self.cueDo, self.escrowDo])
         super(Reactor, self).__init__(doers=doers, **kwa)
@@ -711,9 +716,9 @@ class Reactor(doing.DoDoer):
         Usage:
             add to doers list
         """
-        if self.kevery.ims:
-            logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.kevery.ims[:1024])
-        done = yield from self.kevery.processor()  # process messages continuously
+        if self.parser.ims:
+            logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
+        done = yield from self.parser.processor()  # process messages continuously
         return done  # should nover get here except forced close
 
 
@@ -1003,6 +1008,9 @@ class Reactant(doing.DoDoer):
                                       framed=True,
                                       opre=self.hab.pre,
                                       local=False)
+        self.parser = eventing.Parser(ims=self.remoter.rxbs,
+                                      framed=True,
+                                      kevery=self.kevery)
         doers = doers if doers is not None else []
         doers.extend([self.msgDo, self.cueDo, self.escrowDo])
         super(Reactant, self).__init__(doers=doers, **kwa)
@@ -1040,10 +1048,10 @@ class Reactant(doing.DoDoer):
         Usage:
             add to doers list
         """
-        if self.kevery.ims:
+        if self.parser.ims:
             logger.info("Server %s: %s received:\n%s\n...\n", self.hab.name,
-                        self.hab.pre, self.kevery.ims[:1024])
-        done = yield from self.kevery.processor()  # process messages continuously
+                        self.hab.pre, self.parser.ims[:1024])
+        done = yield from self.parser.processor()  # process messages continuously
         return done  # should nover get here except forced close
 
 
