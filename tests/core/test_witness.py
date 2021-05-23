@@ -148,7 +148,8 @@ def test_witness():
         rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            kvy.process(ims=bytearray(camIcpMsg))  # send copy of cam icp msg to witness
+            eventing.Parser().process(ims=bytearray(camIcpMsg), kevery=kvy)
+            # kvy.process(ims=bytearray(camIcpMsg))  # send copy of cam icp msg to witness
             assert kvy.kevers[camHab.pre].sn == 0  # accepted event
             assert len(kvy.cues) == 1  # queued receipt cue
             hab = camWitHabs[i]
@@ -157,7 +158,8 @@ def test_witness():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:# process rct msgs from all witnesses
-            camKvy.process(ims=bytearray(msg))  # make copy
+            eventing.Parser().process(ims=bytearray(msg), kevery=camKvy)
+            # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -176,14 +178,17 @@ def test_witness():
         assert len(camIcpWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            kvy.process(ims=bytearray(camIcpWitRctMsg))  # send copy of witness rcts
+            eventing.Parser().process(ims=bytearray(camIcpWitRctMsg), kevery=kvy)
+            # kvy.process(ims=bytearray(camIcpWitRctMsg))  # send copy of witness rcts
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam icp and witness rcts to Van
-        vanKvy.process(ims=bytearray(camIcpMsg))  # should escrow since not witnesses
+        eventing.Parser().process(ims=bytearray(camIcpMsg), kevery=vanKvy)
+        # vanKvy.process(ims=bytearray(camIcpMsg))  # should escrow since not witnesses
         assert camHab.pre not in vanKvy.kevers
-        vanKvy.process(ims=bytearray(camIcpWitRctMsg))
+        eventing.Parser().process(ims=bytearray(camIcpWitRctMsg), kevery=vanKvy)
+        # vanKvy.process(ims=bytearray(camIcpWitRctMsg))
         vanKvy.processEscrows()
         assert camHab.pre in vanKvy.kevers
         vcKvr = vanKvy.kevers[camHab.pre]
@@ -195,7 +200,8 @@ def test_witness():
         rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            kvy.process(ims=bytearray(camIxnMsg))  # send copy of cam icp msg to witness
+            eventing.Parser().process(ims=bytearray(camIxnMsg), kevery=kvy)
+            # kvy.process(ims=bytearray(camIxnMsg))  # send copy of cam icp msg to witness
             assert kvy.kevers[camHab.pre].sn == 1  # accepted event
             assert len(kvy.cues) == 1  # queued receipt cue
             hab = camWitHabs[i]
@@ -204,7 +210,8 @@ def test_witness():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:# process rct msgs from all witnesses
-            camKvy.process(ims=bytearray(msg))  # make copy
+            eventing.Parser().process(ims=bytearray(msg), kevery=camKvy)
+            # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -223,15 +230,18 @@ def test_witness():
         assert len(camIxnWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            kvy.process(ims=bytearray(camIxnWitRctMsg))  # send copy of witness rcts
+            eventing.Parser().process(ims=bytearray(camIxnWitRctMsg), kevery=kvy)
+            # kvy.process(ims=bytearray(camIxnWitRctMsg))  # send copy of witness rcts
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam ixn's witness rcts to Van first then send Cam ixn
-        vanKvy.process(ims=bytearray(camIxnWitRctMsg))
+        eventing.Parser().process(ims=bytearray(camIxnWitRctMsg), kevery=vanKvy)
+        # vanKvy.process(ims=bytearray(camIxnWitRctMsg))
         vanKvy.processEscrows()
         assert vcKvr.sn == 0
-        vanKvy.process(ims=bytearray(camIxnMsg))  # should escrow since not witnesses
+        eventing.Parser().process(ims=bytearray(camIxnMsg), kevery=vanKvy)
+        # vanKvy.process(ims=bytearray(camIxnMsg))  # should escrow since not witnesses
         assert vcKvr.sn == 0
         vanKvy.processEscrows()
         assert vcKvr.sn == 1
@@ -241,13 +251,15 @@ def test_witness():
         # Cam update itself with Wil receipts including Wils inception
         camReplayMsg = camHab.replay()
         assert len(camReplayMsg) == 1831
-        wilKvy.process(ims=bytearray(camReplayMsg))
+        eventing.Parser().process(ims=bytearray(camReplayMsg), kevery=wilKvy)
+        # wilKvy.process(ims=bytearray(camReplayMsg))
         assert camHab.pre in wilKvy.kevers
         assert wilKvy.kevers[camHab.pre].sn == 1  # asscepted both events
         assert len(wilKvy.cues) == 2
         wilRctMsg = wilHab.processCues(wilKvy.cues)  # process cue returns rct msg
         assert len(wilKvy.cues) == 0
-        camKvy.process(ims=bytearray(wilRctMsg))  # make copy
+        eventing.Parser().process(ims=bytearray(wilRctMsg), kevery=camKvy)
+        # camKvy.process(ims=bytearray(wilRctMsg))  # make copy
         assert wilHab.pre in camKvy.kevers
 
         # Cam rotation with witness rotation
@@ -263,7 +275,8 @@ def test_witness():
         rctMsgs = []  # list of receipt msgs from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            kvy.process(ims=bytearray(camRotMsg))  # send copy of cam msg to witness
+            eventing.Parser().process(ims=bytearray(camRotMsg), kevery=kvy)
+            # kvy.process(ims=bytearray(camRotMsg))  # send copy of cam msg to witness
             assert kvy.kevers[camHab.pre].sn == 2  # accepted event
             assert len(kvy.cues) == 1  # queued receipt cue
             hab = camWitHabs[i]
@@ -272,7 +285,8 @@ def test_witness():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:# process rct msgs from all witnesses
-            camKvy.process(ims=bytearray(msg))  # make copy
+            eventing.Parser().process(ims=bytearray(msg), kevery=camKvy)
+            # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
 
@@ -291,7 +305,8 @@ def test_witness():
         assert len(camRotWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            kvy.process(ims=bytearray(camRotWitRctMsg))  # send copy of witness rcts
+            eventing.Parser().process(ims=bytearray(camRotWitRctMsg), kevery=kvy)
+            # kvy.process(ims=bytearray(camRotWitRctMsg))  # send copy of witness rcts
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
@@ -304,10 +319,12 @@ def test_witness():
 
 
         # send Cam rot's witness rcts to Van first then send Cam rot
-        vanKvy.process(ims=bytearray(camRotWitRctMsg))
+        eventing.Parser().process(ims=bytearray(camRotWitRctMsg), kevery=vanKvy)
+        # vanKvy.process(ims=bytearray(camRotWitRctMsg))
         vanKvy.processEscrows()
         assert vcKvr.sn == 1
-        vanKvy.process(ims=bytearray(camRotMsg))  # should escrow since not witnesses
+        eventing.Parser().process(ims=bytearray(camRotMsg), kevery=vanKvy)
+        # vanKvy.process(ims=bytearray(camRotMsg))  # should escrow since not witnesses
         assert vcKvr.sn == 1
         vanKvy.processEscrows()
         assert vcKvr.sn == 2

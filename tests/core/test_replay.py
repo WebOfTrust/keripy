@@ -144,7 +144,8 @@ def test_replay():
                                     framed=True,
                                     opre=camHab.pre,
                                     local=False)
-        camKevery.process(ims=bytearray(debMsgs))  # give copy to process
+        eventing.Parser().process(ims=bytearray(debMsgs), kevery=camKevery)
+        # camKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in camKevery.kevers
         assert camKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(camKevery.cues) == 7
@@ -227,7 +228,8 @@ def test_replay():
                                     framed=True,
                                     opre=debHab.pre,
                                     local=False)
-        debKevery.process(ims=bytearray(camMsgs))  # give copy to process
+        eventing.Parser().process(ims=bytearray(camMsgs), kevery=debKevery)
+        # debKevery.process(ims=bytearray(camMsgs))  # give copy to process
         assert camHab.pre in debKevery.kevers
         assert debKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
         assert len(debKevery.cues) == 1
@@ -255,7 +257,8 @@ def test_replay():
                                     framed=True,
                                     opre=bevHab.pre,
                                     local=False)
-        bevKevery.process(ims=bytearray(debMsgs))  # give copy to process
+        eventing.Parser().process(ims=bytearray(debMsgs), kevery=bevKevery)
+        # bevKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in bevKevery.kevers
         assert bevKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(bevKevery.cues) == 7
@@ -300,7 +303,8 @@ def test_replay():
                         b'wCuF9ub3T-CA')
 
         # Play bevMsgs to Deb
-        debKevery.process(ims=bytearray(bevMsgs))  # give copy to process
+        eventing.Parser().process(ims=bytearray(bevMsgs), kevery=debKevery)
+        # debKevery.process(ims=bytearray(bevMsgs))  # give copy to process
         assert bevHab.pre in debKevery.kevers
         assert debKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
         assert len(debKevery.cues) == 1
@@ -442,13 +446,15 @@ def test_replay():
         assert msgs == debFelMsgs
 
         # Play Cam's messages to Bev
-        bevKevery.process(ims=bytearray(camMsgs))  # give copy to process
+        eventing.Parser().process(ims=bytearray(camMsgs), kevery=bevKevery)
+        # bevKevery.process(ims=bytearray(camMsgs))  # give copy to process
         assert camHab.pre in bevKevery.kevers
         assert bevKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
         assert len(bevKevery.cues) == 1
 
         # Play Bev's messages to Cam
-        camKevery.process(ims=bytearray(bevMsgs))  # give copy to process
+        eventing.Parser().process(ims=bytearray(bevMsgs), kevery=camKevery)
+        # camKevery.process(ims=bytearray(bevMsgs))  # give copy to process
         assert bevHab.pre in camKevery.kevers
         assert camKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
         assert len(camKevery.cues) == 1
@@ -466,11 +472,13 @@ def test_replay():
                                         local=False)
         # process Cam's inception so Art will proces Cam's vrcs without escrowing
         camIcpMsg = camHab.makeOwnInception()
-        artKevery.process(ims=bytearray(camIcpMsg))
+        eventing.Parser().process(ims=bytearray(camIcpMsg), kevery=artKevery)
+        # artKevery.process(ims=bytearray(camIcpMsg))
         assert camHab.pre in artKevery.kevers
         assert len(artKevery.cues) == 1
 
-        artKevery.process(ims=bytearray(debFelMsgs), cloned=True)  # give copy to process
+        eventing.Parser().process(ims=bytearray(debFelMsgs), kevery=artKevery, cloned=True)
+        # artKevery.process(ims=bytearray(debFelMsgs), cloned=True)  # give copy to process
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 8

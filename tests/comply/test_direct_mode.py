@@ -94,7 +94,8 @@ def test_direct_mode_with_manager():
         assert valKever.prefixer.qb64 == valpre
 
         # simulate sending of controller's inception message to validator
-        valKevery.process(ims=bytearray(cmsg))  # make copy of msg
+        Parser().process(ims=bytearray(cmsg), kevery=valKevery)
+        # valKevery.process(ims=bytearray(cmsg))  # make copy of msg
         assert coepre in valKevery.kevers  # creates Kever for controller in validator's .kevers
 
         # create receipt of controller's inception
@@ -160,7 +161,8 @@ def test_direct_mode_with_manager():
         # create receipt message
         vmsg = messagize(reserder, sigers=sigers, seal=seal)
 
-        coeKevery.process(ims=vmsg)  # controller process the escrow receipt from validator
+        Parser().process(ims=bytearray(vmsg), kevery=coeKevery)
+        # coeKevery.process(ims=vmsg)  # controller process the escrow receipt from validator
         #  check if receipt quadruple in escrow database
         result = coeKevery.db.getVres(key=snKey(pre=coeKever.prefixer.qb64,
                                                    sn=10))
@@ -194,7 +196,8 @@ def test_direct_mode_with_manager():
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
 
         # Simulate sending controller's receipt of validator's inception message to validator
-        valKevery.process(ims=cmsg)  # controller process validator's inception and receipt
+        Parser().process(ims=cmsg, kevery=valKevery)
+        # valKevery.process(ims=cmsg)  # controller process validator's inception and receipt
 
         #  check if receipt quadruple from controller in validator's receipt database
         result = valKevery.db.getVrcs(key=dgKey(pre=valKever.prefixer.qb64,
@@ -230,7 +233,8 @@ def test_direct_mode_with_manager():
         assert coeKever.serder.diger.qb64 == coeSerder.dig
 
         # simulate send message from controller to validator
-        valKevery.process(ims=cmsg)
+        Parser().process(ims=cmsg, kevery=valKevery)
+        # valKevery.process(ims=cmsg)
         # verify validator's copy of controller's event stream is updated
         assert coeK.sn == csn
         assert coeK.serder.diger.qb64 == coeSerder.dig
@@ -258,7 +262,8 @@ def test_direct_mode_with_manager():
         # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to controller of validator's receipt of controller's rotation message
-        coeKevery.process(ims=vmsg)  # controller process validator's incept and receipt
+        Parser().process(ims=vmsg, kevery=coeKevery)
+        # coeKevery.process(ims=vmsg)  # controller process validator's incept and receipt
 
         # check if receipt quadruple from validator in receipt database
         result = coeKevery.db.getVrcs(key=dgKey(pre=coeKever.prefixer.qb64,
@@ -291,7 +296,8 @@ def test_direct_mode_with_manager():
         assert coeKever.serder.diger.qb64 == coeSerder.dig
 
         # simulate send message from controller to validator
-        valKevery.process(ims=cmsg)
+        Parser().process(ims=cmsg, kevery=valKevery)
+        # valKevery.process(ims=cmsg)
         # verify validator's copy of controller's event stream is updated
         assert coeK.sn == csn
         assert coeK.serder.diger.qb64 == coeSerder.dig
