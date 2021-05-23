@@ -642,7 +642,18 @@ class LMDBer:
                 count = cursor.count()
             return count
 
-    def cntPres(self, db, pre, on=0):
+
+    def cntValsAllPre(self, db, pre, on=0):
+        """
+        Returns (int): count of of all vals with same pre in key but different
+            on in key in db starting at ordinal number on of pre
+
+        Does not count dups
+
+        Parameters:
+            db is opened named sub db
+            pre is bytes of key within sub db's keyspace pre.on
+        """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             key = onKey(pre, on)  # start replay at this enty 0 is earliest

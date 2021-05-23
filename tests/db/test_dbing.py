@@ -324,7 +324,7 @@ def test_lmdber():
         assert on == 4
         assert dber.getVal(db, keyB4) == digY
 
-        assert dber.cntPres(db, preB) == 5
+        assert dber.cntValsAllPre(db, preB) == 5
 
         # replay preB events in database
         items = [item for item in dber.getAllOrdItemPreIter(db, preB)]
