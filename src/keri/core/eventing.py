@@ -5673,9 +5673,6 @@ class Parser:
                                       "= {}.".format(serder.pretty))
 
         elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
-            if not self.kevery:
-                raise ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty))
             if not (cigars or wigers or tsgs):
                 raise ValidationError("Missing attached signatures on receipt"
                                       "msg = {}.".format(serder.ked))
@@ -5695,9 +5692,6 @@ class Parser:
 
 
         elif ilk in [Ilks.ksn]:  # key state notification msg
-            if not self.kevery:
-                raise ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty))
             if not (cigars or tsgs):
                 raise ValidationError("Missing attached endorser signature(s) "
                        "to key state notification msg = {}.".format(serder.ked))

@@ -245,7 +245,8 @@ def test_replay():
                               b'pIfOxaY8VATudBBBg')
 
         # Play disjoints debCamVrcs to Cam
-        camKevery.processOne(ims=bytearray(debCamVrcs))  # give copy to process
+        eventing.Parser().processOne(ims=bytearray(debCamVrcs), kevery=camKevery)
+        # camKevery.processOne(ims=bytearray(debCamVrcs))  # give copy to process
 
         # Play debMsgs to Bev
         # create non-local kevery for Bev to process msgs from Deb
@@ -319,7 +320,8 @@ def test_replay():
 
 
         # Play disjoints debBevVrcs to Bev
-        bevKevery.processOne(ims=bytearray(debBevVrcs))  # give copy to process
+        eventing.Parser().processOne(ims=bytearray(debBevVrcs), kevery=bevKevery)
+        # bevKevery.processOne(ims=bytearray(debBevVrcs))  # give copy to process
 
         # now setup conjoint replay
 
