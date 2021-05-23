@@ -141,7 +141,6 @@ def test_replay():
         # create non-local kevery for Cam to process msgs from Deb
         camKevery = eventing.Kevery(kevers=camHab.kevers,
                                     db=camHab.db,
-                                    framed=True,
                                     opre=camHab.pre,
                                     local=False)
         eventing.Parser().process(ims=bytearray(debMsgs), kevery=camKevery)
@@ -225,7 +224,6 @@ def test_replay():
         # create non-local kevery for Deb to process msgs from Cam
         debKevery = eventing.Kevery(kevers=debHab.kevers,
                                     db=debHab.db,
-                                    framed=True,
                                     opre=debHab.pre,
                                     local=False)
         eventing.Parser().process(ims=bytearray(camMsgs), kevery=debKevery)
@@ -254,7 +252,6 @@ def test_replay():
         # create non-local kevery for Bev to process msgs from Deb
         bevKevery = eventing.Kevery(kevers=bevHab.kevers,
                                     db=bevHab.db,
-                                    framed=True,
                                     opre=bevHab.pre,
                                     local=False)
         eventing.Parser().process(ims=bytearray(debMsgs), kevery=bevKevery)
@@ -467,7 +464,6 @@ def test_replay():
         # create non-local kevery for Art to process conjoint replay msgs from Deb
         artKevery = eventing.Kevery(kevers=artHab.kevers,
                                         db=artHab.db,
-                                        framed=True,
                                         opre=artHab.pre,
                                         local=False)
         # process Cam's inception so Art will proces Cam's vrcs without escrowing

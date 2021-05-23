@@ -117,7 +117,7 @@ def test_direct_mode_bob_eve_demo():
         assert bobReactor.client == bobClient
         assert bobReactor.hab.kvy.kevers == bobKevers
         assert bobReactor.hab.kvy.db == bobDB
-        assert bobReactor.hab.kvy.ims == bobReactor.client.rxbs
+        assert bobReactor.hab.psr.ims == bobReactor.client.rxbs
 
         bobServer = serving.Server(host="", port=bobPort)
         bobServerDoer = doing.ServerDoer(server=bobServer)
@@ -150,7 +150,7 @@ def test_direct_mode_bob_eve_demo():
         assert eveReactor.client == eveClient
         assert eveReactor.hab.kvy.kevers == eveKevers
         assert eveReactor.hab.kvy.db == eveDB
-        assert eveReactor.hab.kvy.ims == eveReactor.client.rxbs
+        assert eveReactor.hab.psr.ims == eveReactor.client.rxbs
 
         eveServer = serving.Server(host="", port=evePort)
         eveServerDoer = doing.ServerDoer(server=eveServer)
@@ -286,7 +286,7 @@ def test_direct_mode_sam_eve_demo():
         assert samReactor.client == samClient
         assert samReactor.hab.kvy.kevers == samKevers
         assert samReactor.hab.kvy.db == samDB
-        assert samReactor.hab.kvy.ims == samReactor.client.rxbs
+        assert samReactor.hab.psr.ims == samReactor.client.rxbs
 
         samServer = serving.Server(host="", port=samPort)
         samServerDoer = doing.ServerDoer(server=samServer)
@@ -318,7 +318,7 @@ def test_direct_mode_sam_eve_demo():
         assert eveReactor.client == eveClient
         assert eveReactor.hab.kvy.kevers == eveKevers
         assert eveReactor.hab.kvy.db == eveDB
-        assert eveReactor.hab.kvy.ims == eveReactor.client.rxbs
+        assert eveReactor.hab.psr.ims == eveReactor.client.rxbs
 
         eveServer = serving.Server(host="", port=evePort)
         eveServerDoer = doing.ServerDoer(server=eveServer)

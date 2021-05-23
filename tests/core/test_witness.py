@@ -67,7 +67,6 @@ def test_witness():
         # create non-local kevery for Wok to process nonlocal msgs
         wokKvy = eventing.Kevery(kevers=wokHab.kevers,
                                     db=wokHab.db,
-                                    framed=True,
                                     opre=wokHab.pre,
                                     local=False)
 
@@ -82,7 +81,6 @@ def test_witness():
         # create non-local kevery for Wam to process nonlocal msgs
         wamKvy = eventing.Kevery(kevers=wamHab.kevers,
                                     db=wamHab.db,
-                                    framed=True,
                                     opre=wamHab.pre,
                                     local=False)
 
@@ -97,7 +95,6 @@ def test_witness():
         # create non-local kevery for Wam to process nonlocal msgs
         wilKvy = eventing.Kevery(kevers=wilHab.kevers,
                                     db=wilHab.db,
-                                    framed=True,
                                     opre=wilHab.pre,
                                     local=False)
 
@@ -120,7 +117,6 @@ def test_witness():
         # create non-local kevery for Cam to process onlocal msgs
         camKvy = eventing.Kevery(kevers=camHab.kevers,
                                     db=camHab.db,
-                                    framed=True,
                                     opre=camHab.pre,
                                     local=False)
 
@@ -135,7 +131,6 @@ def test_witness():
         # create non-local kevery for Van to process nonlocal msgs
         vanKvy = eventing.Kevery(kevers=vanHab.kevers,
                                     db=vanHab.db,
-                                    framed=True,
                                     opre=vanHab.pre,
                                     local=False)
 

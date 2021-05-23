@@ -3063,7 +3063,8 @@ def test_direct_mode():
                         b'GmiGO4QdrQ1lSntqUAUMkcGAzB0Q6SsAA')
 
         # process own Val receipt in Val's Kevery so have copy in own log
-        valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
+        Parser().processOne(ims=bytearray(rmsg), kevery=valKevery)
+        # valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach reciept message to existing message with val's incept message
         vmsg.extend(rmsg)
@@ -3320,7 +3321,7 @@ def test_direct_mode():
 
         # val process own receipt in own kevery so have copy in own log
         Parser().processOne(ims=bytearray(vmsg), kevery=valKevery)
-        valKevery.processOne(ims=bytearray(vmsg))  # make copy
+        # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
         Parser().process(ims=vmsg, kevery=coeKevery)

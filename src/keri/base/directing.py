@@ -170,13 +170,13 @@ class Habitat():
         self.pre = self.iserder.ked["i"]  # new pre
         self.mgr.move(old=opre, new=self.pre)
 
-        self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, framed=True,
+        self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db,
                                    opre=self.pre, local=True)
-        self.parser = eventing.Parser(framed=True, kevery=self.kvy)
+        self.psr = eventing.Parser(framed=True, kevery=self.kvy)
 
         sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
         msg = eventing.messagize(self.iserder, sigers=sigers)
-        self.parser.processOne(ims=msg)
+        self.psr.processOne(ims=msg)
         if self.pre not in self.kevers:
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={}.".format(self.pre))
@@ -255,7 +255,7 @@ class Habitat():
         msg = eventing.messagize(serder, sigers=sigers)
 
         # update ownkey event verifier state
-        self.parser.processOne(ims=bytearray(msg))  # make copy as kvr deletes
+        self.psr.processOne(ims=bytearray(msg))  # make copy as kvr deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
@@ -279,7 +279,7 @@ class Habitat():
         msg = eventing.messagize(serder, sigers=sigers)
 
         # update ownkey event verifier state
-        self.parser.processOne(ims=bytearray(msg))  # make copy as kvy deletes
+        self.psr.processOne(ims=bytearray(msg))  # make copy as kvy deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre))
@@ -313,7 +313,7 @@ class Habitat():
                                indexed=False)
             msg = eventing.messagize(reserder, cigars=cigars)
 
-        self.parser.processOne(ims=bytearray(msg))  # process local copy into db
+        self.psr.processOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
 
@@ -348,7 +348,7 @@ class Habitat():
                                indices=[index])
 
         msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
-        self.parser.processOne(ims=bytearray(msg))  # process local copy into db
+        self.psr.processOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
 
@@ -670,10 +670,8 @@ class Reactor(doing.DoDoer):
         """
         self.hab = hab
         self.client = client  # use client for both rx and tx
-        self.kevery = eventing.Kevery(ims=self.client.rxbs,
-                                      kevers=self.hab.kevers,
+        self.kevery = eventing.Kevery(kevers=self.hab.kevers,
                                       db=self.hab.db,
-                                      framed=True,
                                       opre=self.hab.pre,
                                       local=False)
         self.parser = eventing.Parser(ims=self.client.rxbs,
@@ -1002,10 +1000,8 @@ class Reactant(doing.DoDoer):
         self.hab = hab
         self.remoter = remoter  # use remoter for both rx and tx
         #  neeeds unique kevery with ims per remoter connnection
-        self.kevery = eventing.Kevery(ims=self.remoter.rxbs,
-                                      kevers=self.hab.kevers,
+        self.kevery = eventing.Kevery(kevers=self.hab.kevers,
                                       db=self.hab.db,
-                                      framed=True,
                                       opre=self.hab.pre,
                                       local=False)
         self.parser = eventing.Parser(ims=self.remoter.rxbs,
