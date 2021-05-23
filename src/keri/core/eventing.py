@@ -3863,7 +3863,6 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
             for ekey, edig in self.db.getOoeItemsNextIter(key=key):
@@ -3901,7 +3900,6 @@ class Kevery:
                                               "".format(bytes(edig)))
 
                     eserder = Serder(raw=bytes(eraw))  # escrowed event
-                    ims.extend(eserder.raw)
 
                     #  get sigs and attach
                     sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
@@ -3913,14 +3911,9 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt sigs at "
                                               "dig = {}.".format(bytes(edig)))
 
-                    counter = Counter(code=CtrDex.ControllerIdxSigs,
-                                      count=len(sigs))
-                    ims.extend(counter.qb64b)
-                    for sig in sigs:  # stored in db as qb64b
-                        ims.extend(sig)
-
                     # process event
-                    self.processOne(ims=ims)  # default framed True
+                    sigers = [Siger(qb64b=bytes(sig)) for sig in  sigs]
+                    self.processEvent(serder=eserder, sigers=sigers)
 
                     # If process does NOT validate event with sigs, becasue it is
                     # still out of order then process will attempt to re-escrow
@@ -4000,7 +3993,6 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
             for ekey, edig in self.db.getPseItemsNextIter(key=key):
@@ -4039,8 +4031,6 @@ class Kevery:
                                               "".format(bytes(edig)))
 
                     eserder = Serder(raw=bytes(eraw))  # escrowed event
-                    ims.extend(eserder.raw)
-
                     #  get sigs and attach
                     sigs = self.db.getSigs(dgkey)
                     if not sigs:  #  otherwise its a list of sigs
@@ -4051,22 +4041,16 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt sigs at "
                                               "dig = {}.".format(bytes(edig)))
 
-                    counter = Counter(code=CtrDex.ControllerIdxSigs, count=len(sigs))
-                    ims.extend(counter.qb64b)
-                    for sig in sigs:  # stored in db as qb64b
-                        ims.extend(sig)
-
                     # seal source (delegator issuer if any)
+                    seqner = diger = None
                     couple = self.db.getPde(dgkey)
                     if couple is not None:
                         seqner, diger = deSourceCouple(couple)
-                        counter = Counter(code=CtrDex.SealSourceCouples, count=1)
-                        ims.extend(counter.qb64b)
-                        ims.extend(seqner.qb64b)
-                        ims.extend(diger.qb64b)
 
                     # process event
-                    self.processOne(ims=ims)  # default framed True
+                    sigers = [Siger(qb64b=bytes(sig)) for sig in  sigs]
+                    self.processEvent(serder=eserder, sigers=sigers,
+                                      seqner=seqner, diger=diger)
 
                     # If process does NOT validate sigs or delegation seal (when delegated),
                     # but there is still one valid signature then process will
@@ -4148,8 +4132,7 @@ class Kevery:
                         Process event as if it came in over the wire
                         If successful then remove from escrow table
         """
-        ims = bytearray()
-        atc = bytearray()
+
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
             for ekey, edig in self.db.getPweItemsNextIter(key=key):
@@ -4187,9 +4170,8 @@ class Kevery:
                                               "".format(bytes(edig)))
 
                     eserder = Serder(raw=bytes(eraw))  # escrowed event
-                    ims.extend(eserder.raw)  # add escrowed event to stream
 
-                    #  get sigs and attach via atc
+                    #  get sigs
                     sigs = self.db.getSigs(dgKey(pre, bytes(edig)))  # list of sigs
                     if not sigs:  # empty list
                         # no sigs so raise ValidationError which unescrows below
@@ -4198,12 +4180,8 @@ class Kevery:
 
                         raise ValidationError("Missing escrowed evt sigs at "
                                               "dig = {}.".format(bytes(edig)))
-                    counter = Counter(code=CtrDex.ControllerIdxSigs, count=len(sigs))
-                    atc.extend(counter.qb64b)
-                    for sig in sigs:  # stored in db as qb64b
-                        atc.extend(sig)
 
-                    #  get wigs and attach
+                    #  get wigs
                     wigs = self.db.getWigs(dgKey(pre, bytes(edig)))  # list of wigs
 
                     if not wigs:  # empty list
@@ -4214,25 +4192,13 @@ class Kevery:
                         logger.info("Kevery unescrow wigs: No event wigs yet at."
                                  "dig = %s\n", bytes(edig))
 
-                        #raise ValidationError("Missing escrowed evt sigs at "
+                        #raise ValidationError("Missing escrowed evt wigs at "
                                               #"dig = {}.".format(bytes(edig)))
-                    else:
-                        counter = Counter(code=CtrDex.WitnessIdxSigs, count=len(wigs))
-                        atc.extend(counter.qb64b)
-                        for wig in wigs:  # stored in db as qb64b
-                            atc.extend(wig)
-
-                    # prepend pipelining counter to attachments
-                    if len(atc) % 4:
-                        raise ValueError("Invalid attachments size={}, nonintegral"
-                                         " quadlets.".format(len(atc)))
-                    pcnt = Counter(code=CtrDex.AttachedMaterialQuadlets,
-                                              count=(len(atc) // 4)).qb64b
-                    ims.extend(pcnt)
-                    ims.extend(atc)
 
                     # process event
-                    self.processOne(ims=ims)  # default framed True
+                    sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+                    wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
+                    self.processEvent(serder=eserder, sigers=sigers, wigers=wigers)
 
                     # If process does NOT validate wigs then process will attempt
                     # to re-escrow and then raise MissingWitnessSignatureError
@@ -4315,8 +4281,6 @@ class Kevery:
                         Process event as if it came in over the wire
                         If successful then remove from escrow table
         """
-
-        ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
             for ekey, edig in self.db.getLdeItemsNextIter(key=key):
@@ -4354,7 +4318,6 @@ class Kevery:
                                               "".format(bytes(edig)))
 
                     eserder = Serder(raw=bytes(eraw))  # escrowed event
-                    ims.extend(eserder.raw)
 
                     #  get sigs and attach
                     sigs = self.db.getSigs(dgKey(pre, bytes(edig)))
@@ -4366,14 +4329,8 @@ class Kevery:
                         raise ValidationError("Missing escrowed evt sigs at "
                                               "dig = {}.".format(bytes(edig)))
 
-                    counter = Counter(code=CtrDex.ControllerIdxSigs,
-                                      count=len(sigs))
-                    ims.extend(counter.qb64b)
-                    for sig in sigs:  # stored in db as qb64b
-                        ims.extend(sig)
-
-                    # process event
-                    self.processOne(ims=ims)  # default framed True
+                    sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+                    self.processEvent(serder=eserder, sigers=sigers)
 
                     # If process does NOT validate event with sigs, becasue it is
                     # still out of order then process will attempt to re-escrow

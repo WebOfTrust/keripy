@@ -1372,5 +1372,5 @@ def test_unverified_trans_receipt_escrow():
 
 
 if __name__ == "__main__":
-    test_unverified_trans_receipt_escrow()
+    test_out_of_order_escrow()
 
