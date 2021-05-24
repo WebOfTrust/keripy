@@ -4754,8 +4754,7 @@ class Parser:
         # List of tuples from extracted first seen replay couples
         frcs = []  # each converted couple is (seqner, dater)
         # List of tuples from extracted source seal couples (delegator or issuer)
-        sscs = []  # each converted couple is (seqner, diger)
-        tets = []  # TEL event seal triples
+        sscs = []  # each converted couple is (seqner, diger) for delegating/issuing event
         pipelined = False  # all attachments in one big pipeline counted group
         # extract and deserialize attachments
         try:  # catch errors here to flush only counted part of stream
@@ -5014,9 +5013,9 @@ class Parser:
 
         elif ilk in [Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv]:
             # TEL msg
-            anchor = None #  tets[-1] if tets else None
+            seqner, diger = sscs[-1] if sscs else (None, None)  # use last one if more than one
             try:
-                tvy.processEvent(serder, anchor=anchor, wigers=wigers)
+                tvy.processEvent(serder, seqner=seqner, diger=diger, wigers=wigers)
 
             except AttributeError:
                 raise ValidationError("No tevery to process so dropped msg"
