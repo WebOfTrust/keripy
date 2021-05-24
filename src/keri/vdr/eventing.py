@@ -370,13 +370,15 @@ class Tever:
     """
     NoBackers=False
 
-    def __init__(self, serder, anchor=None, bigers=None, db=None, reger=None, noBackers=None,
-                 regk=None, local=False):
+    def __init__(self, serder, seqner=None, diger=None, bigers=None, db=None,
+                 reger=None, noBackers=None, regk=None, local=False):
         """
         Create incepting tever and state from registry inception serder
 
         Parameters:
             serder is Serder instance of registry inception event
+            seqner (Seqner): issuing event sequence number from controlling KEL.
+            diger (Diger): issuing event digest from controlling KEL.
             anchor is EventSeal of anchor to controlling KEL
             bigers is list of Siger instances of indexed backer signatures of
                 event. Index is offset into baks list of latest est event
@@ -411,7 +413,8 @@ class Tever:
         self.config(serder=serder, noBackers=noBackers)
 
         anchor, bigers = self.valAnchorBigs(serder=serder,
-                                            anchor=anchor,
+                                            seqner=seqner,
+                                            diger=diger,
                                             bigers=bigers,
                                             toad=self.toad,
                                             baks=self.baks)
@@ -464,7 +467,7 @@ class Tever:
         if TraitDex.NoBackers in cnfg:
             self.noBackers = True
 
-    def update(self, serder, anchor, bigers=None):
+    def update(self, serder, seqner=None, diger=None, bigers=None):
         """
         Process registry non-inception events.
         """
@@ -777,7 +780,7 @@ class Tever:
                     pre, json.dumps(serder.ked, indent=1))
 
 
-    def valAnchorBigs(self, serder, anchor, bigers, toad, baks):
+    def valAnchorBigs(self, serder, seqner, diger, bigers, toad, baks):
         """
         Returns double (anchors, bigers) where:
         anchor is seal anchor to KEL event
@@ -791,7 +794,8 @@ class Tever:
 
         Parameters:
             serder is Serder instance of event
-            anchor is seal anchor to KEL event
+            seqner (Seqner): issuing event sequence number from controlling KEL.
+            diger (Diger): issuing event digest from controlling KEL.
             bigers is list of Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived.
@@ -801,7 +805,7 @@ class Tever:
 
         """
 
-        # get anchroed event, extract seal and verify digest
+        # get anchored event, extract seal and verify digest
         anchor = self.verifyAnchor(serder=serder, anchor=anchor)
 
         berfers = [Verfer(qb64=bak) for bak in baks]
@@ -982,13 +986,14 @@ class Tevery:
         self.local = True if local else False  # local vs nonlocal restrictions
 
 
-    def processEvent(self, serder, anchor, wigers=None):
+    def processEvent(self, serder, seqner, diger, wigers=None):
         """
         Process one event serder with attached indexd signatures sigers
 
         Parameters:
-            serder is Serder instance of event to process
-            anchor is EventSeal of anchor to controlling KEL
+            serder (Serder): event to process
+            seqner (Seqner): issuing event sequence number from controlling KEL.
+            diger (Diger): issuing event digest from controlling KEL.
             wigers is optional list of Siger instances of attached witness indexed sigs
 
         """
@@ -1006,7 +1011,7 @@ class Tevery:
         ilk = ked["t"]
         dig = serder.dig
 
-        incept =  ilk in (Ilks.vcp, Ilks.iss, Ilks.bis)
+        incept = ilk in (Ilks.vcp, Ilks.iss, Ilks.bis)
 
         # validate SN for
         sn = validateSN(sn, inceptive=incept)
@@ -1026,7 +1031,8 @@ class Tevery:
             if ilk is Ilks.vcp:
                 # incepting a new registry, Tever create will validate anchor, etc.
                 tever = Tever(serder=serder,
-                              anchor=anchor,
+                              seqner=seqner,
+                              diger=diger,
                               bigers=wigers,
                               reger=self.reger,
                               db=self.db,
@@ -1040,7 +1046,7 @@ class Tevery:
                     self.cues.append(dict(kin="receipt", serder=serder))
             else:
                 # out of order, need to escrow
-                self.escrowOOEvent(serder=serder, anchor=anchor)
+                self.escrowOOEvent(serder=serder, seqner=seqner, diger=diger)
                 raise OutOfOrderError("escrowed out of order event {}".format(ked))
 
         else:
@@ -1060,10 +1066,10 @@ class Tevery:
 
             if sn > sno:  # sn later than sno so out of order escrow
                 # escrow out-of-order event
-                self.escrowOOEvent(serder=serder, anchor=anchor)
+                self.escrowOOEvent(serder=serder,  seqner=seqner, diger=diger)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
             elif sn == sno:  # new inorder event
-                tever.update(serder=serder, anchor=anchor, bigers=wigers)
+                tever.update(serder=serder, seqner=seqner, diger=diger, bigers=wigers)
 
                 if not self.regk or self.regk != regk:
                     # witness style backers will need to send receipts so lets queue them up for now
