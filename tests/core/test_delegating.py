@@ -269,7 +269,7 @@ def test_delegation():
 
         # test replay
         msgs = bytearray()
-        for msg in delKvy.db.cloneIter(pre=delPre, fn=0):
+        for msg in delKvy.db.clonePreIter(pre=delPre, fn=0):
             msgs.extend(msg)
         assert len(msgs) == 1043
         assert couple in msgs

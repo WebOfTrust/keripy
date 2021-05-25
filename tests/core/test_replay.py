@@ -331,7 +331,7 @@ def test_replay():
         # so we either have to force dts in db or we parse in pieces
         debFelMsgs = bytearray()
         fn = 0
-        cloner = debHab.db.cloneIter(pre=debHab.pre, fn=fn)  # create iterator
+        cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn)  # create iterator
         msg = next(cloner)  # get zeroth event with attachments
         assert len(msg) == 1423
         debFelMsgs.extend(msg)
@@ -408,7 +408,7 @@ def test_replay():
         """
 
         fn += 1
-        cloner = debHab.db.cloneIter(pre=debHab.pre, fn=fn)  # create iterator not at 0
+        cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn)  # create iterator not at 0
         msg = next(cloner)  # next event with attachments
         assert len(msg) == 1228
         serder = coring.Serder(raw=msg)
@@ -494,5 +494,166 @@ def test_replay():
     """End Test"""
 
 
+def test_replay_all():
+    """
+    Test conjoint replay all
+
+    Setup database with events from Deb, Cam, Bev, abd Art
+    Replay all the events in database.
+
+    """
+
+    with dbing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
+         dbing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
+         dbing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS, \
+         dbing.openDB(name="art") as artDB, keeping.openKS(name="art") as artKS:
+
+        # setup Deb's habitat using default salt multisig already incepts
+        sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
+        debHab = directing.Habitat(ks=debKS, db=debDB, isith=sith, icount=3,
+                                   temp=True)
+        assert debHab.ks == debKS
+        assert debHab.db == debDB
+        assert debHab.kever.prefixer.transferable
+
+        # setup Cam's habitat using default salt multisig already incepts
+        # Cam's receipts will be vrcs with 3 indexed sigantures attached
+        sith = '2'  # hex str of threshold int
+        camHab = directing.Habitat(ks=camKS, db=camDB, isith=sith, icount=3,
+                                   temp=True)
+        assert camHab.ks == camKS
+        assert camHab.db == camDB
+        assert camHab.kever.prefixer.transferable
+
+        # setup Bev's habitat using default salt nonstransferable already incepts
+        # Bev's receipts will be rcts with a receipt couple attached
+        sith = '1'  # hex str of threshold int
+        bevHab = directing.Habitat(ks=bevKS, db=bevDB, isith=sith, icount=1,
+                                   transferable=False, temp=True)
+        assert bevHab.ks == bevKS
+        assert bevHab.db == bevDB
+        assert not bevHab.kever.prefixer.transferable
+
+        # setup Art's habitat using custom salt nonstransferable so not match Bev
+        # already incepts
+        # Art's receipts will be rcts with a receipt couple attached
+        salt = coring.Salter(raw=b'abcdef0123456789').qb64
+        sith = '1'  # hex str of threshold int
+        artHab = directing.Habitat(ks=artKS, db=artDB, isith=sith, icount=1,
+                                   salt=salt, transferable=False, temp=True)
+        assert artHab.ks == artKS
+        assert artHab.db == artDB
+        assert not artHab.kever.prefixer.transferable
+
+
+        # Create series of event for Deb
+        debMsgs = bytearray()
+        debMsgs.extend(debHab.makeOwnInception())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.rotate())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.interact())
+
+        # Play debMsgs to Cam
+        # create non-local kevery for Cam to process msgs from Deb
+        camKevery = eventing.Kevery(kevers=camHab.kevers,
+                                    db=camHab.db,
+                                    opre=camHab.pre,
+                                    local=False)
+        eventing.Parser().process(ims=bytearray(debMsgs), kvy=camKevery)
+        # camKevery.process(ims=bytearray(debMsgs))  # give copy to process
+        assert debHab.pre in camKevery.kevers
+        assert camKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
+        assert len(camKevery.cues) == 7
+
+        # get disjoints receipts (vrcs) from Cam of Deb's events by processing Cam's cues
+        camMsgs = camHab.processCues(camKevery.cues)
+
+        # Play camMsgs to Deb
+        # create non-local kevery for Deb to process msgs from Cam
+        debKevery = eventing.Kevery(kevers=debHab.kevers,
+                                    db=debHab.db,
+                                    opre=debHab.pre,
+                                    local=False)
+        eventing.Parser().process(ims=bytearray(camMsgs), kvy=debKevery)
+        # debKevery.process(ims=bytearray(camMsgs))  # give copy to process
+        assert camHab.pre in debKevery.kevers
+        assert debKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
+        assert len(debKevery.cues) == 1
+
+        # get disjoints receipts (vrcs) from Deb of Cam's events by processing Deb's cues
+        debCamVrcs = debHab.processCues(debKevery.cues)
+
+        # Play disjoints debCamVrcs to Cam
+        eventing.Parser().processOne(ims=bytearray(debCamVrcs), kvy=camKevery)
+        # camKevery.processOne(ims=bytearray(debCamVrcs))  # give copy to process
+
+        # Play debMsgs to Bev
+        # create non-local kevery for Bev to process msgs from Deb
+        bevKevery = eventing.Kevery(kevers=bevHab.kevers,
+                                    db=bevHab.db,
+                                    opre=bevHab.pre,
+                                    local=False)
+        eventing.Parser().process(ims=bytearray(debMsgs), kvy=bevKevery)
+        # bevKevery.process(ims=bytearray(debMsgs))  # give copy to process
+        assert debHab.pre in bevKevery.kevers
+        assert bevKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
+        assert len(bevKevery.cues) == 7
+
+        # get disjoints receipts (rcts) from Bev of Deb's events by processing Bevs's cues
+        bevMsgs = bevHab.processCues(bevKevery.cues)
+
+        # Play bevMsgs to Deb
+        eventing.Parser().process(ims=bytearray(bevMsgs), kvy=debKevery)
+        # debKevery.process(ims=bytearray(bevMsgs))  # give copy to process
+        assert bevHab.pre in debKevery.kevers
+        assert debKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
+        assert len(debKevery.cues) == 1
+
+        # get disjoints receipts (vrcs) from Deb of Bev's events by processing Deb's cues
+        debBevVrcs = debHab.processCues(debKevery.cues)
+
+        # Play disjoints debBevVrcs to Bev
+        eventing.Parser().processOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
+        # bevKevery.processOne(ims=bytearray(debBevVrcs))  # give copy to process
+
+        # now setup replay
+        debAllFelMsgs = debHab.replayAll()
+        assert len(debAllFelMsgs) == 11267
+
+        # create non-local kevery for Art to process conjoint replay msgs from Deb
+        artKevery = eventing.Kevery(kevers=artHab.kevers,
+                                        db=artHab.db,
+                                        opre=artHab.pre,
+                                        local=False)
+        # process Cam's inception so Art will proces Cam's vrcs without escrowing
+        camIcpMsg = camHab.makeOwnInception()
+        eventing.Parser().process(ims=bytearray(camIcpMsg), kvy=artKevery)
+        assert camHab.pre in artKevery.kevers
+        assert len(artKevery.cues) == 1
+        # give copy to process
+        eventing.Parser().process(ims=bytearray(debAllFelMsgs), kvy=artKevery, cloned=True)
+        # artKevery.process(ims=bytearray(debFelMsgs), cloned=True)
+        assert debHab.pre in artKevery.kevers
+        assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
+        assert len(artKevery.cues) == 9
+        artAllFelMsgs = artHab.replayAll()
+        assert len(artAllFelMsgs) == 11016
+
+
+    assert not os.path.exists(artKS.path)
+    assert not os.path.exists(artDB.path)
+    assert not os.path.exists(bevKS.path)
+    assert not os.path.exists(bevDB.path)
+    assert not os.path.exists(camKS.path)
+    assert not os.path.exists(camDB.path)
+    assert not os.path.exists(debKS.path)
+    assert not os.path.exists(debDB.path)
+
+    """End Test"""
+
+
 if __name__ == "__main__":
-    test_replay()
+    test_replay_all()

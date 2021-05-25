@@ -401,7 +401,21 @@ class Habitat():
         if not pre:
             pre = self.pre
         msgs = bytearray()
-        for msg in self.db.cloneIter(pre=pre, fn=fn):
+        for msg in self.db.clonePreIter(pre=pre, fn=fn):
+            msgs.extend(msg)
+        return msgs
+
+
+    def replayAll(self, key=b''):
+        """
+        Returns replay of FEL first seen event log for all pre starting at key
+
+        Parameters:
+            key (bytes): fnKey(pre, fn)
+
+        """
+        msgs = bytearray()
+        for msg in self.db.cloneAllPreIter(key=key):
             msgs.extend(msg)
         return msgs
 

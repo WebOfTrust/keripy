@@ -1270,7 +1270,7 @@ class Baser(LMDBer):
 
 
 
-    def cloneIter(self, pre, fn=0):
+    def clonePreIter(self, pre, fn=0):
         """
         Returns iterator of first seen event messages with attachments for the
         identifier prefix pre starting at first seen order number, fn.
@@ -1280,6 +1280,80 @@ class Baser(LMDBer):
             pre = pre.encode("utf-8")
 
         for fn, dig in self.getFelItemPreIter(pre, fn=fn):
+            msg = bytearray()  # message
+            atc = bytearray()  # attachments
+            dgkey = dgKey(pre, dig) # get message
+            if not (raw := self.getEvt(key=dgkey)):
+                raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+            msg.extend(raw)
+
+            # add indexed signatures to attachments
+            if not (sigs := self.getSigs(key=dgkey)):
+                raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
+            atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                      count=len(sigs)).qb64b)
+            for sig in sigs:
+                atc.extend(sig)
+
+            # add indexed witness signatures to attachments
+            if (wigs := self.getWigs(key=dgkey)):
+                atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
+                                                  count=len(wigs) ).qb64b)
+                for wig in wigs:
+                    atc.extend(wig)
+
+            # add authorizer (delegator/issure) source seal event couple to attachments
+            couple = self.getAes(dgkey)
+            if couple is not None:
+                atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
+                                      count=1 ).qb64b)
+                atc.extend(couple)
+
+            # add trans receipts quadruples to attachments
+            if (quads := self.getVrcs(key=dgkey)):
+                atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
+                                      count=len(quads) ).qb64b)
+                for quad in quads:
+                    atc.extend(quad)
+
+            # add nontrans receipts couples to attachments
+            if (coups := self.getRcts(key=dgkey)):
+                atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
+                                                  count=len(coups) ).qb64b)
+                for coup in coups:
+                    atc.extend(coup)
+
+            # add first seen replay couple to attachments
+            atc.extend(coring.Counter(code=coring.CtrDex.FirstSeenReplayCouples,
+                                      count=1).qb64b)
+            atc.extend(coring.Seqner(sn=fn).qb64b)
+            if not (dts := self.getDts(key=dgkey)):
+                raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
+            atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
+
+            # prepend pipelining counter to attachments
+            if len(atc) % 4:
+                raise ValueError("Invalid attachments size={}, nonintegral"
+                                 " quadlets.".format(len(atc)))
+            pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+                                      count=(len(atc) // 4)).qb64b
+            msg.extend(pcnt)
+            msg.extend(atc)
+            yield msg
+
+
+    def cloneAllPreIter(self, key=b''):
+        """
+        Returns iterator of first seen event messages with attachments for all
+        identifier prefixes starting at key. If key == b'' then rstart at first
+        key in databse. Use key to resume replay.
+        Essentially a replay in first seen order with attachments of entire
+        set of FELs.
+
+        Parameters:
+            key (bytes): fnKey(pre, fn)
+        """
+        for pre, fn, dig in self.getFelItemAllPreIter(key=key):
             msg = bytearray()  # message
             atc = bytearray()  # attachments
             dgkey = dgKey(pre, dig) # get message
@@ -1456,7 +1530,7 @@ class Baser(LMDBer):
 
     def getFelItemAllPreIter(self, key=b''):
         """
-        Returns iterator of all (pre, fn, dig) tripes in first seen order for
+        Returns iterator of all (pre, fn, dig) triples in first seen order for
         all events for all prefixes in database. Items are sorted by
         fnKey(pre, fn) where fn is first seen order number int.
         Returns all First Seen Event Logs FELs.
