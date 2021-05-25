@@ -1,7 +1,7 @@
 import pytest
 
 from keri.base import keeping, directing
-from keri.core.coring import Versify, Serials, Ilks, MtrDex, Prefixer, Serder, Signer
+from keri.core.coring import Versify, Serials, Ilks, MtrDex, Prefixer, Serder, Signer, Seqner, Diger
 from keri.core.eventing import TraitDex, SealEvent
 from keri.db import dbing
 from keri.db.dbing import snKey, dgKey
@@ -396,17 +396,12 @@ def test_tever_escrow():
         assert vcp.ked["ii"] == hab.pre
 
         # anchor to nothing, exception expected
-        anc = SealEvent(i=regk, s="0", d="")
+        seqner = Seqner(sn=4)
 
         # invalid seal sn
         with pytest.raises(ValidationError):
-            Tever(serder=vcp, anchor=anc, db=db, reger=reg)
-        dgkey = dgKey(pre=regk, dig=vcp.dig)
+            Tever(serder=vcp, seqner=seqner, diger=None, db=db, reger=reg)
 
-        assert reg.getTvt(dgkey) is None
-        assert reg.getTae(snKey(pre=regk, sn=0)) is None
-        assert reg.getTel(snKey(pre=regk, sn=0)) is None
-        assert (reg.getAnc(dgkey)) is None
 
     # registry with no backers
     with dbing.openDB() as db, keeping.openKS() as kpr, viring.openDB() as reg:
@@ -419,9 +414,11 @@ def test_tever_escrow():
         regk = vcp.pre
 
         # anchoring event not in db, exception and escrow
-        anc = SealEvent(i=regk, s="1", d="")
+        seqner = Seqner(sn=1)
+
         with pytest.raises(MissingAnchorError):
-            Tever(serder=vcp, anchor=anc, db=db, reger=reg)
+            Tever(serder=vcp, seqner=seqner, db=db, reger=reg)
+
         dgkey = dgKey(pre=regk, dig=vcp.dig)
         assert reg.getTvt(dgkey) == (
             b'{"v":"KERI10JSON0000a9_","i":"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",'
@@ -444,10 +441,11 @@ def test_tever_escrow():
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
 
-        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+        seqner = Seqner(sn=int(rotser.ked["s"], 16))
+        diger = rotser.diger
 
         with pytest.raises(MissingWitnessSignatureError):
-            Tever(serder=vcp, anchor=anc, db=db, reger=reg)
+            Tever(serder=vcp, seqner=seqner, diger=diger, db=db, reger=reg)
 
         dgkey = dgKey(pre=regk, dig=vcp.dig)
         assert reg.getTvt(dgkey) == (
@@ -456,8 +454,7 @@ def test_tever_escrow():
             b'"b":["BoOcciw30IVQsaenKXpiyMVrjtPDW3KeD_6KFnSfoaqI"]}')
 
         assert reg.getAnc(dgkey) == (
-            b'EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY0AAAAAAAAAAAAAAAAAAAAAAQE1NdOqtN0HlhBPc7'
-            b'-MHvsA4vajMwFYp2eIturQQo0stM')
+            b'0AAAAAAAAAAAAAAAAAAAAAAQE1NdOqtN0HlhBPc7-MHvsA4vajMwFYp2eIturQQo0stM')
         assert reg.getTel(snKey(pre=regk, sn=0)) is None
         assert reg.getTwe(snKey(pre=regk, sn=0)) == b'EjhsbizNCwN_EFuOxbUt8CN0xOctGRIVOW8X-XqA3fSk'
 
@@ -481,9 +478,10 @@ def test_tever_no_backers():
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
 
-        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+        seqner = Seqner(sn=int(rotser.ked["s"], 16))
+        diger = rotser.diger
 
-        tev = Tever(serder=vcp, anchor=anc, db=db, reger=reg)
+        tev = Tever(serder=vcp, seqner=seqner, diger=diger, db=db, reger=reg)
 
         assert tev.prefixer.qb64 == vcp.pre
         assert tev.sn == 0
@@ -494,8 +492,7 @@ def test_tever_no_backers():
             b'"ii":"EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY","s":"0","t":"vcp","c":["NB"],"bt":"0","b":[]}')
 
         assert reg.getAnc(dgkey) == (
-            b'EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY0AAAAAAAAAAAAAAAAAAAAAAQE-yQ6BjCaJg-u2mNuE-ycVWVTq7IZ8TuN'
-            b'-Ew8soLijSA')
+            b'0AAAAAAAAAAAAAAAAAAAAAAQE-yQ6BjCaJg-u2mNuE-ycVWVTq7IZ8TuN-Ew8soLijSA')
         assert reg.getTel(snKey(pre=regk, sn=0)) == b'ElYstqTocyQixLLz4zYCAs2unaFco_p6LqH0W01loIg4'
         assert reg.getTibs(dgkey) == []
         assert reg.getTwe(snKey(pre=regk, sn=0)) is None
@@ -505,11 +502,12 @@ def test_tever_no_backers():
         rseal = SealEvent(regk, vrt.ked["s"], vrt.diger.qb64)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
-        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+        seqner = Seqner(sn=int(rotser.ked["s"], 16))
+        diger = rotser.diger
 
         # should raise validation err because rotation is not supported
         with pytest.raises(ValidationError):
-            tev.update(serder=vrt, anchor=anc)
+            tev.update(serder=vrt, seqner=seqner, diger=diger)
 
         vcdig = b'EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU'
 
@@ -519,18 +517,17 @@ def test_tever_no_backers():
         rseal = SealEvent(iss.ked["i"], iss.ked["s"], iss.diger.qb64)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
-        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+        seqner = Seqner(sn=int(rotser.ked["s"], 16))
+        diger = rotser.diger
 
-        tev.update(iss, anc)
+        tev.update(iss, seqner=seqner, diger=diger)
 
         vci = nsKey([regk, vcdig])
         dgkey = dgKey(pre=vci, dig=iss.dig)
         assert reg.getTvt(dgkey) == (
             b'{"v":"KERI10JSON000092_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"0","t":"iss",'
             b'"ri":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"}')
-        assert reg.getAnc(dgkey) == (
-            b'EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY0AAAAAAAAAAAAAAAAAAAAAAw'
-            b'EC41xCFcd_4rbTn3fcmlgq6BjUSk6cjBKBX1uf3ygyrM')
+        assert reg.getAnc(dgkey) == b'0AAAAAAAAAAAAAAAAAAAAAAwEC41xCFcd_4rbTn3fcmlgq6BjUSk6cjBKBX1uf3ygyrM'
 
         # revoke vc with no backers
         rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.dig)
@@ -539,16 +536,15 @@ def test_tever_no_backers():
         rseal = SealEvent(rev.ked["i"], rev.ked["s"], rev.diger.qb64)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
-        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+        seqner = Seqner(sn=int(rotser.ked["s"], 16))
+        diger = rotser.diger
 
-        tev.update(rev, anc)
+        tev.update(rev, seqner=seqner, diger=diger)
         dgkey = dgKey(pre=vci, dig=rev.dig)
         assert reg.getTvt(dgkey) == (
             b'{"v":"KERI10JSON0000c5_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"1","t":"rev",'
             b'"ri":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw","p":"EMghaQVkY8iMi44zZGzx6LifEw3X5uL8am7IhoPOLJjE"}')
-        assert reg.getAnc(dgkey) == (
-            b'EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY0AAAAAAAAAAAAAAAAAAAAABAECgc6yHeTRhsKh1M7k65feWZGCf_'
-            b'MG0dWoei5Q6SwgqU')
+        assert reg.getAnc(dgkey) == b'0AAAAAAAAAAAAAAAAAAAAABAECgc6yHeTRhsKh1M7k65feWZGCf_MG0dWoei5Q6SwgqU'
 
 
 def test_tever_backers():
@@ -578,17 +574,17 @@ def test_tever_backers():
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
 
-        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+        seqner = Seqner(sn=int(rotser.ked["s"], 16))
+        diger = rotser.diger
 
-        tev = Tever(serder=vcp, anchor=anc, bigers=[valCigar], db=db, reger=reg)
+        tev = Tever(serder=vcp, seqner=seqner, diger=diger, bigers=[valCigar], db=db, reger=reg)
 
         dgkey = dgKey(pre=regk, dig=vcp.dig)
         assert reg.getTvt(dgkey) == (b'{"v":"KERI10JSON0000d7_","i":"EBZR8LxEozgFa6UXwtSAmiXsmdChrT7Hr-jcxc9NFfrU",'
                                      b'"ii":"EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY","s":"0","t":"vcp","c":[],'
                                      b'"bt":"1",'
                                      b'"b":["B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc"]}')
-        assert reg.getAnc(dgkey) == (b'EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY0AAAAAAAAAAAAAAAAAAAAAAQEpWPsFsCc'
-                                     b'su5SpVH0416qHx3gvG0CWlrP_i7BVdbmRBg')
+        assert reg.getAnc(dgkey) == b'0AAAAAAAAAAAAAAAAAAAAAAQEpWPsFsCcsu5SpVH0416qHx3gvG0CWlrP_i7BVdbmRBg'
         assert reg.getTel(snKey(pre=regk, sn=0)) == b'EJTWiS0ebp8VSyLr38x73dAHdUqivisUtAaGpEHt5HDc'
         assert [bytes(tib) for tib in reg.getTibs(dgkey)] == [
             b'00000000000000000000000000000000.B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc']
@@ -610,9 +606,10 @@ def test_tever_backers():
         rseal = SealEvent(regk, vrt.ked["s"], vrt.diger.qb64)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
-        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+        seqner = Seqner(sn=int(rotser.ked["s"], 16))
+        diger = rotser.diger
 
-        tev.update(serder=vrt, anchor=anc, bigers=[valCigar, debCigar])
+        tev.update(serder=vrt, seqner=seqner, diger=diger, bigers=[valCigar, debCigar])
 
         assert tev.baks == ['B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc',
                             'BbWeWTNGXPMQrVuJmScNQn81YF7T2fhh2kXwT8E_NbeI']
@@ -627,9 +624,10 @@ def test_tever_backers():
         rseal = SealEvent(bis.ked["i"], bis.ked["s"], bis.diger.qb64)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
-        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+        seqner = Seqner(sn=int(rotser.ked["s"], 16))
+        diger = rotser.diger
 
-        tev.update(bis, anc, bigers=[valCigar, debCigar])
+        tev.update(bis, seqner=seqner, diger=diger, bigers=[valCigar, debCigar])
 
         vci = nsKey([regk, vcdig])
         dgkey = dgKey(pre=vci, dig=bis.dig)
@@ -657,11 +655,12 @@ def test_tevery():
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
 
-        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+        seqner = Seqner(sn=int(rotser.ked["s"], 16))
+        diger = rotser.diger
 
         tvy = Tevery(reger=reg, db=db)
 
-        tvy.processEvent(serder=vcp, anchor=anc)
+        tvy.processEvent(serder=vcp, seqner=seqner, diger=diger)
 
         assert regk in tvy.tevers
         tev = tvy.tevers[regk]
@@ -670,7 +669,7 @@ def test_tevery():
 
         # send vcp again, get error
         with pytest.raises(LikelyDuplicitousError):
-            tvy.processEvent(serder=vcp, anchor=anc)
+            tvy.processEvent(serder=vcp, seqner=seqner, diger=diger)
 
         # process issue vc event
         vcdig = b'EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU'
@@ -681,9 +680,10 @@ def test_tevery():
         rseal = SealEvent(iss.ked["i"], iss.ked["s"], iss.diger.qb64)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
-        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+        seqner = Seqner(sn=int(rotser.ked["s"], 16))
+        diger = rotser.diger
 
-        tvy.processEvent(serder=iss, anchor=anc)
+        tvy.processEvent(serder=iss, seqner=seqner, diger=diger)
         assert tev.vcState(vcdig) == VcStates.issued
         assert tev.vcSn(vcdig) == 0
 
@@ -694,9 +694,10 @@ def test_tevery():
         rseal = SealEvent(rev.ked["i"], rev.ked["s"], rev.diger.qb64)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = Serder(raw=rot)
-        anc = SealEvent(i=rotser.pre, s=rotser.ked["s"], d=rotser.dig)
+        seqner = Seqner(sn=int(rotser.ked["s"], 16))
+        diger = rotser.diger
 
-        tvy.processEvent(serder=rev, anchor=anc)
+        tvy.processEvent(serder=rev, seqner=seqner, diger=diger)
         assert tev.vcState(vcdig) == VcStates.revoked
         assert tev.vcSn(vcdig) == 1
 
