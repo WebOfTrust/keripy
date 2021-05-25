@@ -11,7 +11,7 @@ import pytest
 from keri import help
 from keri.help import helping
 from keri.db import dbing
-from keri.base import keeping, directing
+from keri.base import basing, keeping, directing
 from keri.core import coring, eventing
 
 
@@ -43,7 +43,7 @@ def test_witness():
         # setup Wes's habitat nontrans
         # Wes's receipts will be rcts with a receipt couple attached
 
-        wesHab = directing.Habitat(name='wes', ks=wesKS, db=wesDB,
+        wesHab = basing.Habitat(name='wes', ks=wesKS, db=wesDB,
                                    isith=wsith, icount=1,
                                    salt=salt, transferable=False, temp=True)  # stem is .name
         assert wesHab.ks == wesKS
@@ -57,7 +57,7 @@ def test_witness():
 
         # setup Wok's habitat nontrans
         # Wok's receipts will be rcts with a receipt couple attached
-        wokHab = directing.Habitat(name='wok',ks=wokKS, db=wokDB,
+        wokHab = basing.Habitat(name='wok',ks=wokKS, db=wokDB,
                                    isith=wsith, icount=1,
                                    salt=salt, transferable=False, temp=True)  # stem is .name
         assert wokHab.ks == wokKS
@@ -71,7 +71,7 @@ def test_witness():
 
         # setup Wam's habitat nontrans
         # Wams's receipts will be rcts with a receipt couple attached
-        wamHab = directing.Habitat(name='wam', ks=wamKS, db=wamDB,
+        wamHab = basing.Habitat(name='wam', ks=wamKS, db=wamDB,
                                    isith=wsith, icount=1,
                                    salt=salt, transferable=False, temp=True)  # stem is .name
         assert wamHab.ks == wamKS
@@ -85,7 +85,7 @@ def test_witness():
 
         # setup Wil's habitat nontrans
         # Wil's receipts will be rcts with a receipt couple attached
-        wilHab = directing.Habitat(name='wil', ks=wilKS, db=wilDB,
+        wilHab = basing.Habitat(name='wil', ks=wilKS, db=wilDB,
                                    isith=wsith, icount=1,
                                    salt=salt, transferable=False, temp=True)  # stem is .name
         assert wilHab.ks == wilKS
@@ -100,7 +100,7 @@ def test_witness():
         # setup Cam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
         csith = 2  # hex str of threshold int
-        camHab = directing.Habitat(name='cam', ks=camKS, db=camDB,
+        camHab = basing.Habitat(name='cam', ks=camKS, db=camDB,
                                    isith=csith, icount=3,
                                    toad=2, wits=wits,
                                    salt=salt, temp=True)  # stem is .name
@@ -121,7 +121,7 @@ def test_witness():
 
         # setup Van's habitat trans multisig
         vsith = 2  # two of three signing threshold
-        vanHab = directing.Habitat(name='van', ks=vanKS, db=vanDB,
+        vanHab = basing.Habitat(name='van', ks=vanKS, db=vanDB,
                                    isith=vsith, icount=3,
                                    salt=salt, temp=True)  # stem is .name
         assert vanHab.ks == vanKS

@@ -1,10 +1,9 @@
 from hio.base import doing
 from hio.core.tcp import serving
 
-from keri.base import directing, keeping
-
 from .. import help
 from ..db import dbing
+from ..base import basing, keeping, directing
 
 logger = help.ogler.getLogger()
 
@@ -13,7 +12,7 @@ def setupWitness(name="witness", localPort=5620):
 
     wsith = 1
 
-    hab = directing.Habitat(name=name, temp=False, transferable=False,
+    hab = basing.Habitat(name=name, temp=False, transferable=False,
                             isith=wsith, icount=1,)
     logger.info("\nWitness- %s:\nNamed %s on TCP port %s.\n\n",
                 hab.pre, hab.name, localPort)

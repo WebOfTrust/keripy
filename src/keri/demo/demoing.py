@@ -16,7 +16,7 @@ from hio.core.tcp import clienting, serving
 from .. import kering
 from ..db import dbing
 from ..core import coring, eventing
-from ..base import keeping, directing
+from ..base import keeping, basing, directing
 
 from .. import help
 
@@ -408,7 +408,7 @@ def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620, in
         secrecies.append([secret])
 
     # setup habitat
-    hab = directing.Habitat(name=name, secrecies=secrecies, temp=True)
+    hab = basing.Habitat(name=name, secrecies=secrecies, temp=True)
     logger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
                  hab.pre, hab.name, localPort, remotePort)
 

@@ -1,6 +1,6 @@
 import pytest
 
-from keri.base import keeping, directing
+from keri.base import basing, keeping, directing
 from keri.core.coring import Serder
 from keri.db import dbing
 from keri.vdr.issuing import Issuer
@@ -292,7 +292,7 @@ def buildHab(db, kpr):
     for secret in secrets:  # convert secrets to secrecies
         secrecies.append([secret])
     # setup hab
-    hab = directing.Habitat(ks=kpr, db=db, kevers=kevers, secrecies=secrecies, temp=True)
+    hab = basing.Habitat(ks=kpr, db=db, kevers=kevers, secrecies=secrecies, temp=True)
     return hab
 
 
