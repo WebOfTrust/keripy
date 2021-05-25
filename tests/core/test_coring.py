@@ -235,7 +235,8 @@ def test_matter():
                                             'Ed448': '1AAD',
                                             'Ed448_Sig': '1AAE',
                                             'Tag': '1AAF',
-                                            'DateTime': '1AAG'
+                                            'DateTime': '1AAG',
+                                            'GPG': '9A',
                                          }
 
     assert Matter.Codex == MtrDex
@@ -248,7 +249,7 @@ def test_matter():
         'a': 1, 'b': 1, 'c': 1, 'd': 1, 'e': 1, 'f': 1, 'g': 1, 'h': 1, 'i': 1,
         'j': 1, 'k': 1, 'l': 1, 'm': 1, 'n': 1, 'o': 1, 'p': 1, 'q': 1, 'r': 1,
         's': 1, 't': 1, 'u': 1, 'v': 1, 'w': 1, 'x': 1, 'y': 1, 'z': 1,
-        '0': 2, '1': 4, '2': 5, '3': 6, '4': 8, '5': 9, '6': 10
+        '0': 2, '1': 4, '2': 5, '3': 6, '4': 8, '5': 9, '6': 10, '9': 2,
     }
 
     # Codes table with sizes of code (hard) and full primitive material
@@ -280,7 +281,8 @@ def test_matter():
                             '1AAD': Sizage(hs=4, ss=0, fs=80),
                             '1AAE': Sizage(hs=4, ss=0, fs=56),
                             '1AAF': Sizage(hs=4, ss=0, fs=8),
-                            '1AAG': Sizage(hs=4, ss=0, fs=36)
+                            '1AAG': Sizage(hs=4, ss=0, fs=36),
+                            '9A': Sizage(hs=2, ss=2, fs=None),
                         }
 
     assert Matter.Codes['A'].hs == 1  # hard size
@@ -291,9 +293,13 @@ def test_matter():
     for ckey in Matter.Codes.keys():
         assert Matter.Sizes[ckey[0]] == Matter.Codes[ckey].hs
 
-    #  verify all Codes have  ss == 0 and not fs % 4 and hs > 0 and fs > hs
+    #  verify all Codes have ss == 0 and not fs % 4 and hs > 0 and fs > hs
+    #  if fs is not None else not (hs + ss) % 4
     for val in Matter.Codes.values():
-        assert  val.ss == 0 and not val.fs % 4 and  val.hs > 0 and  val.fs > val.hs
+        if val.fs is not None:
+            assert val.ss == 0 and not val.fs % 4 and  val.hs > 0 and  val.fs > val.hs
+        else:
+            assert not (val.hs + val.ss) % 4
 
     # Bizes maps bytes of sextet of decoded first character of code with hard size of code
     # verify equivalents of items for Sizes and Bizes

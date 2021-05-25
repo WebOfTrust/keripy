@@ -331,6 +331,7 @@ class MatterCodex:
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
     Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
+    GPG:                  str = '9A'    # Legacy GPG variable length material
 
 
     def __iter__(self):
@@ -415,13 +416,17 @@ class Matter:
     """
     Codex = MtrDex
     # Sizes table maps from bytes Base64 first code char to int of hard size, hs,
-    # (stable) of code. The soft size, ss, (unstable) is always 0 for Matter.
+    # (stable) of code. The soft size, ss, (unstable) is always 0 for Matter
+    # unless fs is None which allows for variable size multiple of 4, i.e.
+    # not (hs + ss) % 4.
     Sizes = ({chr(c): 1 for c in range(65, 65+26)})  # size of hard part of code
     Sizes.update({chr(c): 1 for c in range(97, 97+26)})
-    Sizes.update([('0', 2), ('1', 4), ('2', 5), ('3', 6), ('4', 8), ('5', 9), ('6', 10)])
+    Sizes.update([('0', 2), ('1', 4), ('2', 5), ('3', 6), ('4', 8), ('5', 9),
+                  ('6', 10), ('9', 2)])
     # Codes table maps to Sizage namedtuple of (hs, ss, fs) from hs chars of code
     # where hs is hard size, ss is soft size, and fs is full size
-    # soft size, ss, should always be 0 for Matter
+    # soft size, ss, should always be 0 for Matter unless fs is None which allows
+    # for variable size multiple of 4, i.e. not (hs + ss) % 4.
     Codes = {
                 'A': Sizage(hs=1, ss=0, fs=44),
                 'B': Sizage(hs=1, ss=0, fs=44),
@@ -451,25 +456,27 @@ class Matter:
                 '1AAE': Sizage(hs=4, ss=0, fs=56),
                 '1AAF': Sizage(hs=4, ss=0, fs=8),
                 '1AAG': Sizage(hs=4, ss=0, fs=36),
+                '9A': Sizage(hs=2, ss=2, fs=None),
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.
     Bizes = ({b64ToB2(c): hs for c, hs in Sizes.items()})
 
 
-    def __init__(self, raw=None, code=MtrDex.Ed25519N, qb64b=None, qb64=None,
-                 qb2=None, strip=False):
+    def __init__(self, raw=None, code=MtrDex.Ed25519N, size=None,
+                 qb64b=None, qb64=None, qb2=None, strip=False):
         """
         Validate as fully qualified
         Parameters:
-            raw is bytes of unqualified crypto material usable for crypto operations
-            code is str of stable (hard) part of derivation code
-            qb64b is bytes of fully qualified crypto material
-            qb64 is str or bytes  of fully qualified crypto material
-            qb2 is bytes of fully qualified crypto material
-            strip is Boolean True means strip counter contents from input stream
+            raw (bytes): unqualified crypto material usable for crypto operations
+            code (str): stable (hard) part of derivation code
+            size (int): number of quadlets when variable sized material besides
+                        full derivation code else None
+            qb64b (bytes): fully qualified crypto material Base64
+            qb64 (str, bytes):  fully qualified crypto material Base64
+            qb2 (bytes): fully qualified crypto material Base2
+            strip (Boolean): True means strip counter contents from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
-
 
 
         Needs either (raw and code) or qb64b or qb64 or qb2
@@ -489,8 +496,22 @@ class Matter:
             if code not in self.Codes:
                 raise UnknownCodeError("Unsupported code={}.".format(code))
 
-            #hs, ss, fs = self.Codes[code]  # get sizes
-            #rawsize = (fs - (hs + ss)) * 3 // 4
+            hs, ss, fs = self.Codes[code]  # get sizes
+
+            if not fs:  # compute fs from size
+                if size is None or size < 0 or size > (64 ** ss - 1):
+                    raise InvalidCodeSizeError("Invalid size={} for code={}."
+                                               "".format(size, code))
+                bs = hs + ss
+                if bs % 4:
+                    raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
+                                    "variable length material. bs={}.".format(bs))
+            else:
+                if size is not None:
+                    raise InvalidCodeSizeError("Invalid size={} for code={}.".format(size, code))
+
+            self._size = size
+
             rawsize = Matter._rawSize(code)
             raw = raw[:rawsize]  # copy only exact size from raw stream
             if len(raw) != rawsize:  # forbids shorter
@@ -521,12 +542,44 @@ class Matter:
 
 
     @classmethod
-    def _rawSize(cls, code):
+    def _rawSize(cls, code, size=None):
         """
-        Returns raw size in bytes for a given code
+        Returns raw size in bytes for a given code and optional size
+        Parameters:
+            code (str): derivation code Base64
+            size (int): number of quadlets of material besides code
         """
         hs, ss, fs = cls.Codes[code]  # get sizes
-        return ( (fs - (hs + ss)) * 3 // 4 )
+        bs = hs + ss  # both hard + soft code size
+        if not fs:  # compute fs from .size
+            if size is None or size < 0 or size > (64 ** ss - 1):
+                raise InvalidCodeSizeError("Invalid size={} for code={}."
+                                           "".format(size, code))
+
+            if bs % 4:
+                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
+                                    "variable length material. bs={}.".format(bs))
+            fs = (size * 4) + bs
+        return ((fs - bs) * 3 // 4)
+
+
+    def _fullSize(self):
+        """
+        Returns full size in bytes for .code and .size
+        """
+        hs, ss, fs = self.Codes[self.code]  # get sizes
+
+        if not fs:  # compute fs from .size
+            if self.size is None or self.size < 0 or self.size > (64 ** ss - 1):
+                raise InvalidCodeSizeError("Invalid size={} for code={}."
+                                           "".format(self.size, self.code))
+
+            bs = hs + ss  # both hard + soft code size
+            if bs % 4:
+                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
+                                    "variable length material. bs={}.".format(bs))
+            fs = (self.size * 4) + bs
+        return fs
 
 
     @property
@@ -536,6 +589,15 @@ class Matter:
         Makes .code read only
         """
         return self._code
+
+
+    @property
+    def size(self):
+        """
+        Returns ._size
+        Makes .size read only
+        """
+        return self._size
 
 
     @property
@@ -602,14 +664,31 @@ class Matter:
         self.code + converted self.raw to Base64 with pad chars stripped
         """
         code = self.code  # codex value
+        size = self.size  # optional size if variable length
         raw = self.raw  #  bytes or bytearray
+
+        hs, ss, fs = self.Codes[code]
+        if not fs:  # compute code both from size
+            bs = hs + ss  # both hard + soft size
+            if bs % 4:
+                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
+                                      "variable length material. bs={}.".format(bs))
+
+            if size < 0 or size > (64 ** ss - 1):
+                raise InvalidCodeIndexError("Invalid size={} for code={}."
+                                            "".format(size, code))
+            # both is hard code + converted index
+            both = "{}{}".format(code, intToB64(size, l=ss))
+        else:
+            both = code
+
         ps = (3 - (len(raw) % 3)) % 3  # pad size
         # check valid pad size for code size
-        if len(code) % 4 != ps:  # pad size is not remainder of len(code) % 4
+        if len(both) % 4 != ps:  # pad size is not remainder of len(both) % 4
             raise InvalidCodeSizeError("Invalid code = {} for converted raw "
-                                       "pad size= {}.".format(code, ps))
+                                       "pad size= {}.".format(both, ps))
         # prepend derivation code and strip off trailing pad characters
-        return (code.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
+        return (both.encode("utf-8") + encodeB64(raw)[:-ps if ps else None])
 
 
     def _exfil(self, qb64b):
@@ -644,9 +723,21 @@ class Matter:
 
         hs, ss, fs = self.Codes[code]
         bs = hs + ss  # both hs and ss
+        size = None
+        if not fs:  # compute fs from size chars in ss part of code
+            if bs % 4:
+                raise ValidationError("Whole code size not multiple of 4 for "
+                                      "variable length material. bs={}.".format(bs))
+            size = qb64b[hs:hs+ss]  # extract size chars
+            if hasattr(size, "decode"):
+                size = size.decode("utf-8")
+            size = b64ToInt(size)  # compute int size
+            fs = (size * 4) + bs
+
         # assumes that unit tests on Matter and MatterCodex ensure that
         # .Codes and .Sizes are well formed.
-        # hs == cs and ss == 0 and not fs % 4 and hs > 0 and fs > hs
+        # hs == cs and ss == 0 and not fs % 4 and hs > 0 and fs > hs unless
+        # fs is None
 
         if len(qb64b) < fs:  # need more bytes
             raise ShortageError("Need {} more chars.".format(fs-len(qb64b)))
@@ -662,6 +753,7 @@ class Matter:
             raise ConversionError("Improperly qualified material = {}".format(qb64b))
 
         self._code = code
+        self._size = size
         self._raw = raw
 
 
@@ -672,21 +764,38 @@ class Matter:
         equivalent of Base64 decode of .qb64 into .qb2
         """
         code = self.code  # codex value
+        size = self.size  # optional size if variable length
         raw = self.raw  #  bytes or bytearray
 
         hs, ss, fs = self.Codes[code]
         bs = hs + ss
-        if len(code) != bs:
+
+        if not fs:  # compute code both from size
+            bs = hs + ss  # both hard + soft size
+            if bs % 4:
+                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
+                                      "variable length material. bs={}.".format(bs))
+
+            if size < 0 or size > (64 ** ss - 1):
+                raise InvalidCodeIndexError("Invalid size={} for code={}."
+                                            "".format(size, code))
+            # both is hard code + converted index
+            both = "{}{}".format(code, intToB64(size, l=ss))
+        else:
+            both = code
+
+
+        if len(both) != bs:
             raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
                                           .format(bs, len(code)))
         n = sceil(bs * 3 / 4)  # number of b2 bytes to hold b64 code
-        bcode = b64ToInt(code).to_bytes(n,'big')  # right aligned b2 code
+        bcode = b64ToInt(both).to_bytes(n,'big')  # right aligned b2 code
 
         full = bcode + raw
         bfs = len(full)
         if bfs % 3 or (bfs * 4 // 3) != fs:  # invalid size
             raise InvalidCodeSizeError("Invalid code = {} for raw size= {}."
-                                          .format(code, len(raw)))
+                                          .format(both, len(raw)))
 
         i = int.from_bytes(full, 'big') << (2 * (bs % 4))  # left shift in pad bits
         return (i.to_bytes(bfs, 'big'))
@@ -722,6 +831,19 @@ class Matter:
 
         hs, ss, fs = self.Codes[code]
         bs = hs + ss  # both hs and ss
+        size = None
+        if not fs:  # compute fs from size chars in ss part of code
+            if bs % 4:
+                raise ValidationError("Whole code size not multiple of 4 for "
+                                      "variable length material. bs={}.".format(bs))
+            bbs = ceil(bs * 3 / 4)  # bbs is min bytes to hold bs sextets
+            if len(qb2) < bbs:  # need more bytes
+                raise ShortageError("Need {} more bytes.".format(bbs-len(qb2)))
+
+            both = b2ToB64(qb2, bs)  # extract and convert both hard and soft part of code
+            size = b64ToInt(both[hs:hs+ss])  # get size
+            fs = (size * 4) + bs
+
         # assumes that unit tests on Matter and MatterCodex ensure that
         # .Codes and .Sizes are well formed.
         # hs == cs and ss == 0 and not fs % 4 and hs > 0 and fs > hs
@@ -741,6 +863,7 @@ class Matter:
             raise ConversionError("Improperly qualified material = {}".format(qb2))
 
         self._code = code
+        self._size = size
         self._raw = raw
 
 
@@ -2141,12 +2264,6 @@ class Indexer:
         raw = self.raw  # bytes or bytearray
 
         hs, ss, fs = self.Codes[code]
-        bs = hs + ss  # both hard + soft size
-        if not fs:  # compute fs from index
-            if bs % 4:
-                raise InvalidCodeSizeError("Whole code size not multiple of 4 for "
-                                      "variable length material. bs={}.".format(bs))
-            fs = (index * 4) + bs
 
         if index < 0 or index > (64 ** ss - 1):
             raise InvalidCodeIndexError("Invalid index={} for code={}."
@@ -2314,6 +2431,8 @@ class Indexer:
 
         both = b2ToB64(qb2, bs)  # extract and convert both hard and soft part of code
         index = b64ToInt(both[hs:hs+ss])  # get index
+        if not fs:
+            fs = (index * 4) + bs
 
         bfs = sceil(fs * 3 / 4)  # bfs is min bytes to hold fs sextets
         if len(qb2) < bfs:  # need more bytes
