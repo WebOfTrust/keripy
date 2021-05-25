@@ -3,12 +3,9 @@
 tests.db.dbing module
 
 """
-import pytest
-
 import os
 import logging
 
-from hio.help import ogling
 from hio.base import doing
 from hio.core.tcp import clienting, serving
 
@@ -482,5 +479,182 @@ def test_run_sam_eve_demo():
     """End Test"""
 
 
+def test_indirect_mode_sam_cam_wit_demo():
+    """ Test indirect mode, bob and eve with witness """
+
+    help.ogler.resetLevel(level=logging.DEBUG)
+    # set of secrets (seeds for private keys)
+    camSecrets = ['AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw',
+                  'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ',
+                  'AK-nVhMMJciMPvmF5VZE_9H-nhrgng9aJWf7_UHPtRNM',
+                  'AT2cx-P5YUjIw_SLCHQ0pqoBWGk9s4N1brD-4pD_ANbs',
+                  'Ap5waegfnuP6ezC18w7jQiPyQwYYsp9Yv9rYMlKAYL8k',
+                  'Aqlc_FWWrxpxCo7R12uIz_Y2pHUH2prHx1kjghPa8jT8',
+                  'AagumsL8FeGES7tYcnr_5oN6qcwJzZfLKxoniKUpG4qc',
+                  'ADW3o9m3udwEf0aoOdZLLJdf1aylokP0lwwI_M2J9h0s']
+
+    camSecrecies = []
+    for secret in camSecrets:  # convert secrets to secrecies
+        camSecrecies.append([secret])
+
+    #  create cam signers
+    camSigners = [coring.Signer(qb64=secret) for secret in camSecrets]
+    assert [signer.qb64 for signer in camSigners] == camSecrets
+
+    # set of secrets  (seeds for private keys)
+    samSecrets = [
+                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
+                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
+                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
+                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
+                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
+                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
+                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
+                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
+                ]
+
+    samSecrecies = []
+    for secret in samSecrets:  # convert secrets to secrecies
+        samSecrecies.append([secret])
+
+    #  create sam signers
+    samSigners = [coring.Signer(qb64=secret) for secret in samSecrets]
+    assert [signer.qb64 for signer in samSigners] == samSecrets
+
+    with dbing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
+         dbing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS, \
+         dbing.openDB(name="wit") as witDB, keeping.openKS(name="wit") as witKS:
+
+        limit = 1.0
+        tock = 0.03125
+        samDoist = doing.Doist(limit=limit, tock=tock)
+        camDoist = doing.Doist(limit=limit, tock=tock)
+
+        samPort = 5620  # sam's TCP listening port for server
+        witPort = 5621  # wit' TCP listneing port for server
+        samKevers = dict()
+        camKevers = dict()
+        witKevers = dict()
+
+        # setup the witness
+        witHab = directing.Habitat(name='Wit', ks=witKS, db=witDB, kevers=witKevers, isith=1, icount=1,
+                                   temp=True, transferable=False)
+        wit = witHab.pre
+        assert witHab.ks == witKS
+        assert witHab.db == witDB
+        witServer = serving.Server(host="", port=witPort)
+        witServerDoer = doing.ServerDoer(server=witServer)
+        witDirectant = directing.Directant(hab=witHab, server=witServer)
+
+
+
+        # setup cam
+        # cam inception transferable (nxt digest not empty)
+        camSerder = eventing.incept(keys=[camSigners[0].verfer.qb64],
+                                    nxt=coring.Nexter(keys=[camSigners[1].verfer.qb64]).qb64,
+                                    code=coring.MtrDex.Blake3_256)
+
+        cam = camSerder.ked["i"]
+        assert cam == 'ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQM'
+
+        # sam inception transferable (nxt digest not empty)
+        samSerder = eventing.incept(keys=[samSigners[0].verfer.qb64], wits=[wit],
+                                    nxt=coring.Nexter(keys=[samSigners[1].verfer.qb64]).qb64,
+                                    code=coring.MtrDex.Blake3_256)
+
+        sam = samSerder.ked["i"]
+        print(sam)
+        assert sam == 'EhnaYUqhHoo8kZaXJuTDCZ-h5ZDx3st4NemgqSITWp48'
+
+
+        samHab = directing.Habitat(name='Sam', ks=samKS, db=samDB, kevers=samKevers, wits=[wit],
+                                   secrecies=samSecrecies, temp=True)
+        assert samHab.ks == samKS
+        assert samHab.db == samDB
+        assert samHab.iserder.dig == samSerder.dig
+        assert samHab.pre == sam
+
+        samClient = clienting.Client(tymth=samDoist.tymen(), host='127.0.0.1', port=witPort)
+        samClientDoer = doing.ClientDoer(client=samClient)
+
+        samDirector = demoing.SamDirector(hab=samHab, client=samClient, tock=0.125)
+        assert samDirector.hab == samHab
+        assert samDirector.client == samClient
+        assert samDirector.hab.kvy.kevers == samKevers
+        assert samDirector.hab.kvy.db == samDB
+        assert samDirector.tock == 0.125
+
+        samReactor = directing.Reactor(hab=samHab, client=samClient)
+        assert samReactor.hab == samHab
+        assert samReactor.client == samClient
+        assert samReactor.hab.kvy.kevers == samKevers
+        assert samReactor.hab.kvy.db == samDB
+        assert samReactor.hab.psr.ims == samReactor.client.rxbs
+
+        samServer = serving.Server(host="", port=samPort)
+        samServerDoer = doing.ServerDoer(server=samServer)
+
+        samDirectant = directing.Directant(hab=samHab, server=samServer)
+        assert samDirectant.hab == samHab
+        assert samDirectant.server == samServer
+        # Sam's Reactants created on demand
+
+        # setup cam
+        camHab = directing.Habitat(name='Cam', ks=camKS,  db=camDB, kevers=camKevers,
+                                   secrecies=camSecrecies, temp=True)
+
+        assert camHab.ks == camKS
+        assert camHab.db == camDB
+        assert camHab.iserder.dig == camSerder.dig
+        assert camHab.pre == cam
+
+        camClient = clienting.Client(tymth=camDoist.tymen(), host='127.0.0.1', port=witPort)
+        camClientDoer = doing.ClientDoer(client=camClient)
+
+        camDirector = demoing.CamDirector(hab=camHab, remotePre=sam, client=camClient, tock=0.125)
+        assert camDirector.hab == camHab
+        assert camDirector.client == camClient
+        assert camDirector.hab.kvy.kevers == camKevers
+        assert camDirector.hab.kvy.db == camDB
+        assert camDirector.tock == 0.125
+
+        camReactor = directing.Reactor(hab=camHab, client=camClient)
+        assert camReactor.hab == camHab
+        assert camReactor.client == camClient
+        assert camReactor.hab.kvy.kevers == camKevers
+        assert camReactor.hab.kvy.db == camDB
+        assert camReactor.hab.psr.ims == camReactor.client.rxbs
+
+        samDoers = [samClientDoer, samDirector, samReactor, samServerDoer, samDirectant,
+                    witServerDoer, witDirectant]
+        samDoist.do(doers=samDoers)
+        assert samDoist.tyme == limit
+
+        # camDoers = [camClientDoer, camDirector, camReactor, witServerDoer, witDirectant]
+        # camDoist.do(doers=camDoers)
+        # assert camDoist.tyme == limit
+        #
+        #
+        assert samClient.opened is False
+        assert samServer.opened is False
+        assert camClient.opened is False
+
+        assert samHab.pre in samHab.kevers
+        assert camHab.pre in camHab.kevers
+
+        assert not samClient.txbs
+
+        # TODO: fix this when I figure out how to delay Cam until after Sam is finished.
+        # assert samHab.pre in camHab.kevers
+
+        #  verify final event states
+
+    assert not os.path.exists(camDB.path)
+    assert not os.path.exists(samDB.path)
+
+    help.ogler.resetLevel(level=help.ogler.level)
+    """End Test"""
+
+
 if __name__ == "__main__":
-    test_direct_mode_sam_eve_demo()
+    test_indirect_mode_sam_cam_wit_demo()

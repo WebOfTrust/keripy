@@ -52,7 +52,6 @@ def test_witness():
         # create non-local kevery for Wes to process nonlocal msgs
         wesKvy = eventing.Kevery(kevers=wesHab.kevers,
                                     db=wesHab.db,
-                                    framed=True,
                                     opre=wesHab.pre,
                                     local=False)
 

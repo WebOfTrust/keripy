@@ -4,40 +4,29 @@ keri.core.eventing module
 
 """
 import datetime
-import re
 import json
 import logging
-
-from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
-from base64 import urlsafe_b64encode as encodeB64
-from base64 import urlsafe_b64decode as decodeB64
+from dataclasses import dataclass, astuple
 from math import ceil
-
-import cbor2 as cbor
-import msgpack
-import pysodium
-import blake3
 
 from orderedset import OrderedSet as oset
 
+from .coring import MtrDex, NonTransDex, CtrDex, Counter
+from .coring import Seqner, Siger, Cigar, Dater
+from .coring import Verfer, Diger, Nexter, Prefixer, Serder, Tholder
+from .coring import Versify, Serials, Ilks
+from .. import help
+from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, Baser
+from ..help.helping import nowIso8601, fromIso8601
 from ..kering import (ExtractionError, ShortageError, ColdStartError,
                       SizedGroupError, UnexpectedCountCodeError,
-                      ValidationError,  MissingSignatureError,
+                      ValidationError, MissingSignatureError,
                       MissingWitnessSignatureError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError)
-from ..kering import Versionage, Version
-from ..help.helping import nowIso8601, fromIso8601, toIso8601
-from ..db.dbing import dgKey, snKey, fnKey, splitKey, splitKeySN, Baser
-
-from .coring import Versify, Serials, Ilks
-from .coring import MtrDex, NonTransDex, IdrDex, CtrDex, Counter
-from .coring import Signer, Verfer, Diger, Nexter, Prefixer, Serder, Tholder
-from .coring import Seqner, Siger, Cigar, Dater
-
-from .. import help
+from ..kering import Version
 
 logger = help.ogler.getLogger()
 
@@ -932,8 +921,6 @@ def interact(pre,
     return Serder(ked=ked)  # return serialized ked
 
 
-
-
 def receipt(pre,
             sn,
             dig,
@@ -1106,6 +1093,52 @@ def state(pre,
                )
 
     return Serder(ked=ksd)  # return serialized ksd
+
+
+def query(pre,
+          res,
+          dt=None,
+          dta=None,
+          dtb=None,
+          version=Version,
+          kind=Serials.json):
+
+    """
+    Returns serder of query event message.
+    Utility function to automate creation of interaction events.
+
+     Parameters:
+        pre is identifier prefix qb64
+        dig is digest of previous event qb64
+        sn is int sequence number
+        data is list of dicts of comitted data such as seals
+        version is Version instance
+        kind is serialization kind
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.req
+
+    qry = dict(
+        i=pre
+    )
+
+    if dt is not None:
+        qry["dt"] = dt
+
+    if dta is not None:
+        qry["dta"] = dt
+
+    if dtb is not None:
+        qry["dtb"] = dt
+
+
+    ked = dict(v=vs,  # version string
+               t=ilk,
+               r=res,  # resource type for single item request
+               q=qry
+               )
+
+    return Serder(ked=ked)  # return serialized ked
 
 
 def messagize(serder, sigers=None, seal=None, wigers=None, cigars=None, pipelined=False):
@@ -2064,8 +2097,7 @@ class Kevery:
     TimeoutVRE = 3600  # seconds to timeout unverified transferable receipt escrows
 
 
-    def __init__(self, cues=None, kevers=None, db=None, framed=True,
-                 pipeline=False, cloned=False, opre=None, local=False):
+    def __init__(self, cues=None, kevers=None, db=None, opre=None, local=False, indirect=False):
         """
         Initialize instance:
 
@@ -2073,15 +2105,10 @@ class Kevery:
             cues is deque if cues to create responses to messages
             kevers is dict of Kever instances of key state in db
             db is Baser instance
-            framed is Boolean, True means ims contains only one frame of msg plus
-                attachments instead of stream with multiple messages
-            pipeline is Boolean, True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-            cloned is Boolen, True means cloned message stream so use attached
-                datetimes from clone source not own
             opre is local or own identifier prefix. Some restriction if present
             local is Boolean, True means only process msgs for own events if .pre
                         False means only process msgs for not own events if .pre
+            indirect is Boolean, True means don't cue receipts
         """
         self.cues = cues if cues is not None else deque()
         self.kevers = kevers if kevers is not None else dict()
@@ -2090,6 +2117,7 @@ class Kevery:
         self.db = db
         self.opre = opre  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions
+        self.indirect = True if indirect else False
 
 
     @property
@@ -2166,7 +2194,7 @@ class Kevery:
                               local=self.local)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
-                if not self.opre or self.opre != pre:  # not own event when owned
+                if not self.indirect or not self.opre or self.opre != pre:  # not own event when owned
                     # create cue for receipt   direct mode for now
                     #  receipt of actual type is dependent on own type of identifier
                     self.cues.append(dict(kin="receipt", serder=serder))
@@ -2223,7 +2251,7 @@ class Kevery:
                                  seqner=seqner, diger=diger,
                                  firner=firner, dater=dater)
 
-                    if not self.opre or self.opre != pre:  # not own event when owned
+                    if not self.indirect or not self.opre or self.opre != pre:  # not own event when owned
                         # create cue for receipt   direct mode for now
                         #  receipt of actual type is dependent on own type of identifier
                         self.cues.append(dict(kin="receipt", serder=serder))
@@ -2818,6 +2846,35 @@ class Kevery:
                                       #"missing associated event for transferable "
                                       #"validator receipt quadruple for event={}."
                                       #"".format(ked))
+
+    def processQuery(self, serder):
+        """
+        Process query mode replay message for collective or single element query.
+        Assume promiscuous mode for now.
+
+        Parameters:
+            serder is query message serder
+        """
+        ked = serder.ked
+
+        ilk = ked["t"]
+        res = ked["r"]
+        qry = ked["q"]
+
+        if res == "logs":
+            pre = qry["i"]
+            cloner = self.db.cloneIter(pre=pre, fn=0)  # create iterator not at 0
+            msgs = bytearray()  # outgoing messages
+            for msg in cloner:
+                msgs.extend(msg)
+
+            self.cues.append(dict(kin="replay", msgs=msgs))
+        elif res == "tels":
+            print("tels")
+
+        else:
+            raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
+
 
 
     def validateSN(self, ked):
@@ -5006,6 +5063,13 @@ class Parser:
 
                 if tsgs:  # process separately so do not clash on errors
                     kvy.processKeyStateNotice(serder, tsgs=tsgs)  #  trans
+
+            except AttributeError:
+                raise ValidationError("No kevery to process so dropped msg"
+                                      "= {}.".format(serder.pretty))
+        elif ilk in [Ilks.req]:
+            try:
+                kvy.processQuery(serder=serder)
 
             except AttributeError:
                 raise ValidationError("No kevery to process so dropped msg"

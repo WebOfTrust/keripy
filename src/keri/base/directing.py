@@ -286,6 +286,18 @@ class Habitat():
 
         return msg
 
+    def query(self, pre, res, dt=None, dta=None, dtb=None):
+        """
+        Returns query message for querying for a single element of type res
+        """
+        kever = self.kever
+        serder = eventing.query(pre=pre,res=res, dt=dt, dta=dta, dtb=dtb)
+
+        sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
+        msg = eventing.messagize(serder, sigers=sigers)
+
+        return msg
+
 
     def receipt(self, serder):
         """
@@ -478,12 +490,13 @@ class Habitat():
             msgs = bytearray()
             cue = cues.popleft()
             cueKin = cue["kin"]  # type or kind of cue
-            cuedSerder = cue["serder"]  # Serder of received event for other pre
-            cuedKed = cuedSerder.ked
-            cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
-            logger.info("%s got cue: kin=%s\n%s\n\n", self.pre, cueKin,
-                                             json.dumps(cuedKed, indent=1))
+
             if cueKin in ("receipt", ):  # cue to receipt a received event from other pre
+                cuedSerder = cue["serder"]  # Serder of received event for other pre
+                cuedKed = cuedSerder.ked
+                cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
+                logger.info("%s got cue: kin=%s\n%s\n\n", self.pre, cueKin,
+                                                 json.dumps(cuedKed, indent=1))
                 if  cuedKed["t"] == coring.Ilks.icp:
                     dgkey = dbing.dgKey(self.pre, self.iserder.dig)
                     found = False
@@ -502,6 +515,12 @@ class Habitat():
 
                 msgs.extend(self.receipt(cuedSerder))
 
+                yield msgs
+
+            elif cueKin in ("replay", ):
+                msgs = cue["msgs"]
+                print("processing replay")
+                print(msgs)
                 yield msgs
 
 
@@ -668,7 +687,7 @@ class Reactor(doing.DoDoer):
     """
 
 
-    def __init__(self, hab, client, doers=None, **kwa):
+    def __init__(self, hab, client, indirect=False, doers=None, **kwa):
         """
         Initialize instance.
 
@@ -680,19 +699,26 @@ class Reactor(doing.DoDoer):
         Parameters:
             hab is Habitat instance of local controller's context
             client is TCP Client instance
+            indirect is Boolean, True means don't process cue'ed receipts
 
         """
         self.hab = hab
         self.client = client  # use client for both rx and tx
+        self.indirect = True if indirect else False
         self.kevery = eventing.Kevery(kevers=self.hab.kevers,
                                       db=self.hab.db,
                                       opre=self.hab.pre,
+                                      indirect=self.indirect,
                                       local=False)
         self.parser = eventing.Parser(ims=self.client.rxbs,
                                       framed=True,
-                                      kvy=self.kevery)
+                                      kvy=self.kevery,
+                                      cloned=self.indirect)
         doers = doers if doers is not None else []
-        doers.extend([self.msgDo, self.cueDo, self.escrowDo])
+        doers.extend([self.msgDo, self.escrowDo])
+        if not self.indirect:
+            doers.extend([self.cueDo])
+
         super(Reactor, self).__init__(doers=doers, **kwa)
         if self.tymth:
             self.client.wind(self.tymth)
@@ -1087,7 +1113,7 @@ class Reactant(doing.DoDoer):
         """
         while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
-                self.sendMessage(msg, label="chit or receipt")
+                self.sendMessage(msg, label="chit or receipt or replay")
                 yield  # throttle just do one cue at a time
             yield
         return False  # should never get here except forced close

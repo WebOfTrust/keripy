@@ -41,7 +41,7 @@ def test_ilks():
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
                           rct='rct', ksn='ksn', vcp='vcp', vrt='vrt',
-                          iss='iss', rev='rev', bis='bis', brv='brv')
+                          iss='iss', rev='rev', bis='bis', brv='brv', req="req")
 
     assert isinstance(Ilks, Ilkage)
 
@@ -2964,4 +2964,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_prefixer()
+    test_ilks()
