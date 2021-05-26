@@ -368,7 +368,7 @@ class Tever:
 
 
     """
-    NoBackers=False
+    NoBackers = False
 
     def __init__(self, serder, seqner=None, diger=None, bigers=None, db=None,
                  reger=None, noBackers=None, regk=None, local=False):
@@ -397,7 +397,7 @@ class Tever:
         self.local = True if local else False
 
         ilk = serder.ked["t"]
-        if ilk is not Ilks.vcp:
+        if ilk not in [Ilks.vcp]:
             raise ValidationError("Expected ilk {} got {} for evt: {}".format(Ilks.vcp, ilk, serder))
 
         self.ilk = ilk
@@ -481,16 +481,15 @@ class Tever:
         ilk = ked["t"]
         sn = ked["s"]
 
-        incept =  ilk in (Ilks.iss, Ilks.bis)
+        incept = ilk in (Ilks.iss, Ilks.bis)
 
         # validate SN for
         sn = validateSN(sn, inceptive=incept)
 
-        if ilk is Ilks.vrt:
+        if ilk in [Ilks.vrt]:
             if self.noBackers is True:
                 raise ValidationError("invalid rotation evt {} against backerless registry {}".
                                       format(ked, self.regk))
-
             toad, baks, cuts, adds = self.rotate(serder, sn=sn)
 
             bigers = self.valAnchorBigs(serder=serder,
@@ -544,7 +543,7 @@ class Tever:
             raise ValidationError("Invalid sn = {} expecting = {} for evt "
                                   "= {}.".format(sn, self.sn+1, ked))
 
-        if not self.serder.compare(dig=ked["p"]):  # prior event dig not match
+        if not self.serder.compare(dig=dig):  # prior event dig not match
             raise ValidationError("Mismatch event dig = {} with state dig"
                                   " = {} for evt = {}.".format(ked["p"],
                                                                self.serder.diger.qb64,
@@ -555,31 +554,31 @@ class Tever:
         cutset = oset(cuts)
         if len(cutset) != len(cuts):
             raise ValidationError("Invalid cuts = {}, has duplicates for evt = "
-                             "{}.".format(cuts, ked))
+                                  "{}.".format(cuts, ked))
 
-        if (witset & cutset) != cutset:  #  some cuts not in baks
+        if (witset & cutset) != cutset:  # some cuts not in baks
             raise ValidationError("Invalid cuts = {}, not all members in baks"
-                             " for evt = {}.".format(cuts, ked))
+                                  " for evt = {}.".format(cuts, ked))
 
         adds = ked["ba"]
         addset = oset(adds)
         if len(addset) != len(adds):
             raise ValidationError("Invalid adds = {}, has duplicates for evt = "
-                             "{}.".format(adds, ked))
+                                  "{}.".format(adds, ked))
 
         if cutset & addset:  # non empty intersection
             raise ValidationError("Intersecting cuts = {} and  adds = {} for "
-                             "evt = {}.".format(cuts, adds, ked))
+                                  "evt = {}.".format(cuts, adds, ked))
 
         if witset & addset:  # non empty intersection
             raise ValidationError("Intersecting baks = {} and  adds = {} for "
-                             "evt = {}.".format(self.baks, adds, ked))
+                                  "evt = {}.".format(self.baks, adds, ked))
 
         baks = list((witset - cutset) | addset)
 
         if len(baks) != (len(self.baks) - len(cuts) + len(adds)):  # redundant?
             raise ValidationError("Invalid member combination among baks = {}, cuts ={}, "
-                             "and adds = {} for evt = {}.".format(self.baks,
+                                  "and adds = {} for evt = {}.".format(self.baks,
                                                                   cuts,
                                                                   adds,
                                                                   ked))
@@ -588,13 +587,13 @@ class Tever:
         if baks:
             if toad < 1 or toad > len(baks):  # out of bounds toad
                 raise ValidationError("Invalid toad = {} for baks = {} for evt "
-                                 "= {}.".format(toad, baks, ked))
+                                      "= {}.".format(toad, baks, ked))
         else:
             if toad != 0:  # invalid toad
                 raise ValidationError("Invalid toad = {} for baks = {} for evt "
-                                 "= {}.".format(toad, baks, ked))
+                                      "= {}.".format(toad, baks, ked))
 
-        return (toad, baks, cuts, adds)
+        return toad, baks, cuts, adds
 
 
     def issue(self, serder, seqner, diger, sn, bigers=None):
@@ -748,7 +747,7 @@ class Tever:
           vcpre:  the VC identifier
 
         """
-        vci =nsKey([self.prefixer.qb64, vcpre])
+        vci = nsKey([self.prefixer.qb64, vcpre])
         cnt = self.reger.cntTels(vci)
 
         return None if cnt == 0 else cnt - 1
@@ -760,15 +759,17 @@ class Tever:
         Update is idempotent. Logs will not write dup at key if already exists.
 
         Parameters:
-            serder is Serder instance of current event
+            pre (qb64): is event prefix
+            sn (int): is event sequence number
+            serder (Serder): is Serder instance of current event
             seqner (Seqner): issuing event sequence number from controlling KEL.
             diger (Diger): issuing event digest from controlling KEL.
-            bigers is optional list of Siger instance of indexed backer sigs
-            seqner is optional Seqner instance of cloned first seen ordinal
+            bigers (Siger): is optional list of Siger instance of indexed backer sigs
+            seqner (Seqner): is optional Seqner instance of cloned first seen ordinal
                 If cloned mode then seqner maybe provided (not None)
                 When seqner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
-            dater is optional Dater instance of cloned replay datetime
+            baks (qb64): is optional Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
         """
@@ -790,8 +791,7 @@ class Tever:
 
     def valAnchorBigs(self, serder, seqner, diger, bigers, toad, baks):
         """
-        Returns double (anchors, bigers) where:
-        anchor is seal anchor to KEL event
+        Returns double (bigers) where:
         bigers is unique validated signature verified members of inputed bigers
 
         Validates sigers signatures by validating indexes, verifying signatures, and
@@ -814,8 +814,6 @@ class Tever:
         """
 
         berfers = [Verfer(qb64=bak) for bak in baks]
-        #for wit in wits:  # create list of werfers one for each witness
-            #werfers.append(Verfer(qb64=wit))
 
         # get unique verified bigers and bindices lists from bigers list
         bigers, bindices = verifySigs(serder=serder, sigers=bigers, verfers=berfers)
@@ -826,25 +824,25 @@ class Tever:
             self.escrowALEvent(serder=serder, bigers=bigers)
 
             raise MissingAnchorError("Failure verify event = {} "
-                        "".format(serder.ked))
+                                     "".format(serder.ked))
 
 
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
         if ((baks and not self.regk) or  # in promiscuous mode so assume must verify toad
-            (baks and not self.local and self.regk and self.regk not in baks)):
+           (baks and not self.local and self.regk and self.regk not in baks)):
             # validate that event is fully witnessed
             if isinstance(toad, str):
                 toad = int(toad, 16)
             if toad < 0 or len(baks) < toad:
                 raise ValidationError("Invalid toad = {} for wits = {} for evt"
-                                       " = {}.".format(toad, baks, serder.ked))
+                                      " = {}.".format(toad, baks, serder.ked))
 
             if len(bindices) < toad:  # not fully witnessed yet
                 self.escrowPWEvent(serder=serder, seqner=seqner, diger=diger, bigers=bigers)
 
                 raise MissingWitnessSignatureError("Failure satisfying toad = {} "
-                            "on witness sigs for {} for evt = {}.".format(toad,
+                                                   "on witness sigs for {} for evt = {}.".format(toad,
                                                     [siger.qb64 for siger in bigers],
                                                     serder.ked))
         return bigers
@@ -888,7 +886,6 @@ class Tever:
             and serder.dig == sdig:
             return True
 
-        print("just nope")
         return False
 
 
@@ -990,7 +987,7 @@ class Tevery:
             serder (Serder): event to process
             seqner (Seqner): issuing event sequence number from controlling KEL.
             diger (Diger): issuing event digest from controlling KEL.
-            wigers is optional list of Siger instances of attached witness indexed sigs
+            wigers (Siger): is optional list of Siger instances of attached witness indexed sigs
 
         """
         ked = serder.ked
@@ -1005,12 +1002,11 @@ class Tevery:
         ked = serder.ked
         sn = ked["s"]
         ilk = ked["t"]
-        dig = serder.dig
 
-        incept = ilk in (Ilks.vcp, Ilks.iss, Ilks.bis)
+        inceptive = ilk in (Ilks.vcp, Ilks.iss, Ilks.bis)
 
         # validate SN for
-        sn = validateSN(sn, inceptive=incept)
+        sn = validateSN(sn, inceptive=inceptive)
 
         if self.regk:
             if self.local:
@@ -1022,9 +1018,8 @@ class Tevery:
                     raise ValueError("Local event regk={} when nonlocal mode."
                                                       "".format(regk))
 
-
-        if regk not in self.tevers: # first seen for this registry
-            if ilk is Ilks.vcp:
+        if regk not in self.tevers:  # first seen for this registry
+            if ilk in [Ilks.vcp]:
                 # incepting a new registry, Tever create will validate anchor, etc.
                 tever = Tever(serder=serder,
                               seqner=seqner,
@@ -1034,9 +1029,7 @@ class Tevery:
                               db=self.db,
                               regk=self.regk,
                               local=self.local)
-
                 self.tevers[regk] = tever
-
                 if not self.regk or self.regk != regk:
                     # witness style backers will need to send receipts so lets queue them up for now
                     self.cues.append(dict(kin="receipt", serder=serder))
@@ -1046,14 +1039,14 @@ class Tevery:
                 raise OutOfOrderError("escrowed out of order event {}".format(ked))
 
         else:
-            if ilk is Ilks.vcp:
+            if ilk in [Ilks.vcp]:
                 # we don't have multiple signatures to verify so this
                 # is already first seen and then lifely duplicitious
                 raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
             tever = self.tevers[regk]
 
-            if ilk is Ilks.vrt:
+            if ilk in [Ilks.vrt]:
                 sno = tever.sn + 1  # proper sn of new inorder event
             else:
                 esn = tever.vcSn(pre)
@@ -1062,7 +1055,7 @@ class Tevery:
 
             if sn > sno:  # sn later than sno so out of order escrow
                 # escrow out-of-order event
-                self.escrowOOEvent(serder=serder,  seqner=seqner, diger=diger)
+                self.escrowOOEvent(serder=serder, seqner=seqner, diger=diger)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
             elif sn == sno:  # new inorder event
                 tever.update(serder=serder, seqner=seqner, diger=diger, bigers=wigers)
@@ -1070,12 +1063,45 @@ class Tevery:
                 if not self.regk or self.regk != regk:
                     # witness style backers will need to send receipts so lets queue them up for now
                     self.cues.append(dict(kin="receipt", serder=serder))
-            else: # duplicitious
+            else:  # duplicitious
                 raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
 
+    def processQuery(self, serder):
+        """
+        Process query mode replay message for collective or single element query.
+        Assume promiscuous mode for now.
 
-    def registryKey(self, serder):
+        Parameters:
+            serder is query message serder
+        """
+        ked = serder.ked
+
+        ilk = ked["t"]
+        res = ked["r"]
+        qry = ked["q"]
+
+        if res == "tels":
+            mgmt = qry["ri"]
+            vcpre = qry["i"]
+
+            cloner = self.reger.cloneIter(pre=mgmt, fn=0)  # create iterator at 0
+            msgs = bytearray()  # outgoing messages
+            for msg in cloner:
+                msgs.extend(msg)
+
+            cloner = self.reger.cloneIter(pre=vcpre, fn=0)  # create iterator at 0
+            msgs = bytearray()  # outgoing messages
+            for msg in cloner:
+                msgs.extend(msg)
+
+            self.cues.append(dict(kin="replay", msgs=msgs))
+        else:
+            raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
+
+
+    @staticmethod
+    def registryKey(serder):
         ilk = serder.ked["t"]
 
         if ilk in (Ilks.vcp, Ilks.vrt):
@@ -1088,11 +1114,11 @@ class Tevery:
         else:
             raise ValidationError("invalid ilk {} for tevery event = {}".format(ilk, serder.ked))
 
-    def escrowOOEvent(self, serder, anchor):
+    def escrowOOEvent(self, serder, seqner, diger):
         key = dgKey(serder.preb, serder.digb)
         self.reger.putTvt(key, serder.raw)
-        sealet = anchor.i.encode("utf-8") + Seqner(sn=int(anchor.s, 16)).qb64b + anchor.d.encode("utf-8")
+        sealet = seqner.qb64b + diger.qb64b
         self.reger.putAnc(key, sealet)
         self.reger.putOot(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Tever state: Escrowed anchorless event "
-                     "event = %s\n", serder.ked)
+                    "event = %s\n", serder.ked)

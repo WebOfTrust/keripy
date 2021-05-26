@@ -1,14 +1,22 @@
-from keri.core.coring import Counter, Seqner, CtrDex, MtrDex
-from keri.core.eventing import SealEvent, TraitDex
+from keri import kering
+from keri.core.coring import Counter, Seqner, CtrDex, MtrDex, Diger
+from keri.core.eventing import SealEvent, SealSource, TraitDex, Parser
+from keri.db.dbing import snKey
 from keri.vdr import eventing
-from keri.vdr.viring import Registry
+from keri.vdr.viring import Registry, nsKey
 
 
 class Issuer:
     """
+    Issuer provides encapsulation of creating a Verfiable Credential Registry with issuance
+    and revocation of VCs against that registry.
+
+    The Regsitry consists of 1 management TEL for maintaining the state of the registry wrt special
+    Backers that can act as witnesses of VC events, and 1 VC TEL for each VC issued that tracks the
+    issuance and revocation status of those VCs.
 
     """
-    def __init__(self, hab, name="test", reg=None, tevers=None, noBackers=False, baks=None, toad=None,
+    def __init__(self, hab, name="test", reger=None, tevers=None, regk=None, noBackers=False, baks=None, toad=None,
                  estOnly=False):
         """
         Initialize Instance
@@ -16,7 +24,7 @@ class Issuer:
         Parameters:
             name is the alias for this issuer
             hab is Habitat instance of local controller's context
-            reg is Registry instance for controller's credentials
+            reger is Registry database instance for controller's credentials
             tevers is a dict of Tever instances keys by qb64 prefix of registry
             noBackers is boolean True to allow specification of TEL specific backers
             backers is the initial list of backer prefixes qb64 for VCs in the Registry
@@ -24,43 +32,71 @@ class Issuer:
             estOnly is boolean True for forcing rotation events for every TEL event.
         """
 
-        self.estOnly = estOnly
-        self.noBackers = noBackers
         self.hab = hab
         self.name = name
-        self.regi = 0
-        self.vcser = None
+        self.estOnly = estOnly
+        self.regk = regk
 
-        self.reg = reg if reg is not None else Registry(name=name)
+        self.reger = reger if reger is not None else Registry(name=name)
         self.tevers = tevers if tevers is not None else dict()
 
+        if self.regk is None:
+            self.regi = 0
+
+            self.noBackers = noBackers
+
+            # save backers locally for now.  will be managed by tever when implemented
+            self.backers = baks if baks is not None else []
+
+            self.cnfg = [TraitDex.NoBackers] if self.noBackers else []
+
+            self.regser = eventing.incept(self.hab.pre,
+                                          baks=self.backers,
+                                          toad=toad,
+                                          cnfg=self.cnfg,
+                                          code=MtrDex.Blake3_256)
+            self.regk = self.regser.pre
+            self.tvy = eventing.Tevery(tevers=self.tevers, reger=self.reger, db=self.hab.db,
+                                       regk=self.regk, local=True)
+            self.psr = Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
 
-        # save backers locally for now.  will be managed by tever when implemented
-        self.backers = baks if baks is not None else []
+            rseal = SealEvent(self.regk, self.regser.ked["s"], self.regser.diger.qb64)
 
-        self.cnfg = [TraitDex.NoBackers] if self.noBackers else []
+            if self.estOnly:
+                self.ianchor = self.hab.rotate(data=[rseal._asdict()])
+            else:
+                self.ianchor = self.hab.interact(data=[rseal._asdict()])
 
-        self.regser = eventing.incept(self.hab.pre,
-                                      baks=self.backers,
-                                      toad=toad,
-                                      cnfg=self.cnfg,
-                                      code=MtrDex.Blake3_256)
-        self.regk = self.regser.pre
+            seal = SealEvent(i=self.hab.pre, s=self.hab.kever.sn, d=self.hab.kever.serder.dig)
 
-        rseal = SealEvent(self.regk, self.regser.ked["s"], self.regser.diger.qb64)
+            msg = self.messagize(serder=self.regser, seal=seal)
 
-        if self.estOnly:
-            self.ianchor = self.hab.rotate(data=[rseal._asdict()])
+            # Process message in local Tevery when ready for now assign to self for testing
+            self.incept = bytearray(msg)
+            self.psr.processOne(ims=msg)
+            if self.regk not in self.tevers:
+                raise kering.ConfigurationError("Improper Issuer inception for "
+                                                "pre={}.".format(self.regk))
         else:
-            self.ianchor = self.hab.interact(data=[rseal._asdict()])
+            self.tvy = eventing.Tevery(tevers=self.tevers, reger=self.reger, db=self.hab.db,
+                                       regk=self.regk, local=True)
+            self.psr = Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
-        seal = SealEvent(i=self.hab.pre, s=self.hab.kever.sn, d=self.hab.kever.serder.dig)
+            clone = self.reger.cloneIter(self.regk)
+            for msg in clone:
+                self.psr.processOne(ims=msg)
 
-        msg = self.messagize(serder=self.regser, seal=seal)
+            if self.regk not in self.tevers:
+                raise kering.ConfigurationError("Improper Issuer inception for "
+                                                "pre={}.".format(self.regk))
 
-        # Process message in local Tevery when ready for now assign to self for testing
-        self.incept = msg
+
+        tever = self.tevers[self.regk]
+        self.noBackers = tever.noBackers
+        self.backers = tever.baks
+        self.regi = int(tever.serder.ked["s"], 16)
+
 
     def rotate(self, toad=None, cuts=None, adds=None):
         """
@@ -75,6 +111,7 @@ class Issuer:
         if self.noBackers:
             raise ValueError("Attempt to rotate registry {} that does not support backers".format(self.regk))
 
+        tever = self.tevers[self.regk]
         serder = eventing.rotate(dig=self.regser.dig, regk=self.regk, sn=self.regi+1, toad=toad, baks=self.backers,
                                  adds=adds, cuts=cuts)
 
@@ -83,8 +120,14 @@ class Issuer:
 
         tevt, kevt = self.anchorMsg(serder, rseal._asdict())
 
-        # Process message in local Tevery when ready
-        self.regi += 1
+        self.psr.processOne(ims=bytearray(tevt))
+        if tever.serder.dig != serder.dig:
+            raise kering.ValidationError("Improper Issuer registry rotation for "
+                                         "pre={}.".format(self.regk))
+
+        tever = self.tevers[self.regk]
+        self.backers = tever.baks
+        self.regi = int(tever.serder.ked["s"], 16)
 
         return tevt, kevt
 
@@ -103,12 +146,13 @@ class Issuer:
         else:
             serder = eventing.backerIssue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64)
 
-        self.vcser = serder
-        rseal = SealEvent(vcdig, self.vcser.ked["s"], self.vcser.diger.qb64)
+        rseal = SealEvent(vcdig, serder.ked["s"], serder.diger.qb64)
 
         msg, kevt = self.anchorMsg(serder, rseal._asdict())
 
         # Process message in local Tevery when ready
+        self.psr.processOne(ims=bytearray(msg))  # make copy as kvr deletes
+
         return msg, kevt
 
     def revoke(self, vcdig):
@@ -121,24 +165,33 @@ class Issuer:
 
         """
 
+        vckey = nsKey([self.regk, vcdig])
+        vcser = self.reger.getTel(snKey(pre=vckey, sn=0))
+        if vcser is None:
+            raise kering.ValidationError("Invalid revoke of {} that has not been issued "
+                                         "pre={}.".format(vcdig, self.regk))
+        pdig = Diger(raw=bytes(vcser))
+
         if self.noBackers:
-            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=self.vcser.dig)
+            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=pdig.qb64)
         else:
             serder = eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
-                                           dig=self.vcser.dig)
+                                           dig=pdig.qb64)
 
         rseal = SealEvent(vcdig, serder.ked["s"], serder.diger.qb64)
 
         msg, kevt = self.anchorMsg(serder, rseal._asdict())
 
         # Process message in local Tevery when ready
+        # Process message in local Tevery when ready
+        self.psr.processOne(ims=bytearray(msg))  # make copy as kvr deletes
+
         return msg, kevt
 
     @staticmethod
     def messagize(serder, seal):
         msg = bytearray(serder.raw)
-        msg.extend(Counter(CtrDex.EventSealQuadlets, count=1).qb64b)
-        msg.extend(seal.i.encode("utf-8"))
+        msg.extend(Counter(CtrDex.SealSourceCouples, count=1).qb64b)
         msg.extend(Seqner(sn=seal.s).qb64b)
         msg.extend(seal.d.encode("utf-8"))
 
@@ -150,7 +203,7 @@ class Issuer:
         else:
             kevt = self.hab.interact(data=[rseal])
 
-        seal = SealEvent(i=self.hab.pre, s=self.hab.kever.sn, d=self.hab.kever.serder.dig)
+        seal = SealSource(s=self.hab.kever.sn, d=self.hab.kever.serder.dig)
         tevt = self.messagize(serder=serder, seal=seal)
 
         return tevt, kevt

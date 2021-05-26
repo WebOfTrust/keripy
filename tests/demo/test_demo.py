@@ -618,7 +618,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert camDirector.hab.kvy.db == camDB
         assert camDirector.tock == 0.125
 
-        camReactor = directing.Reactor(hab=camHab, client=camClient)
+        camReactor = directing.Reactor(hab=camHab, client=camClient, indirect=True)
         assert camReactor.hab == camHab
         assert camReactor.client == camClient
         assert camReactor.hab.kvy.kevers == camKevers
