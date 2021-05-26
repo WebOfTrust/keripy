@@ -2876,7 +2876,7 @@ class Kevery:
 
         if res == "logs":
             pre = qry["i"]
-            cloner = self.db.cloneIter(pre=pre, fn=0)  # create iterator at 0
+            cloner = self.db.clonePreIter(pre=pre, fn=0)  # create iterator at 0
             msgs = bytearray()  # outgoing messages
             for msg in cloner:
                 msgs.extend(msg)
@@ -5078,20 +5078,26 @@ class Parser:
                 raise ValidationError("No kevery to process so dropped msg"
                                       "= {}.".format(serder.pretty))
         elif ilk in [Ilks.req]:
-            try:
-                res = serder.ked["r"]
-                if res in ["logs"]:
+            res = serder.ked["r"]
+            if res in ["logs"]:
+                try:
                     kvy.processQuery(serder=serder)
+                except AttributeError:
+                    raise ValidationError("No kevery to process so dropped msg"
+                                          "= {}.".format(serder.pretty))
 
-                elif res in ["tels"]:
+            elif res in ["tels"]:
+                try:
                     tvy.processQuery(serder=serder)
-                else:
-                    raise ValidationError("Invalid resource type {} so dropped msg"
-                                          "= {}.".format(res, serder.pretty))
+                except AttributeError:
+                    raise ValidationError("No kevery to process so dropped msg"
+                                          "= {}.".format(serder.pretty))
 
-            except AttributeError:
-                raise ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty))
+            else:
+                raise ValidationError("Invalid resource type {} so dropped msg"
+                                      "= {}.".format(res, serder.pretty))
+
+
 
         elif ilk in [Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv]:
             # TEL msg

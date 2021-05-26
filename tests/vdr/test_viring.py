@@ -322,7 +322,7 @@ def test_clone():
         assert issuer.putTibs(dgkey, vals=[tib03]) is True
 
         msgs = bytearray()  # outgoing messages
-        for msg in issuer.cloneIter(regk):
+        for msg in issuer.clonePreIter(regk):
             msgs.extend(msg)
 
         assert msgs == (

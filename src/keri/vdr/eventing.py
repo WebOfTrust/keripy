@@ -1085,12 +1085,12 @@ class Tevery:
             mgmt = qry["ri"]
             vcpre = qry["i"]
 
-            cloner = self.reger.cloneIter(pre=mgmt, fn=0)  # create iterator at 0
+            cloner = self.reger.clonePreIter(pre=mgmt, fn=0)  # create iterator at 0
             msgs = bytearray()  # outgoing messages
             for msg in cloner:
                 msgs.extend(msg)
 
-            cloner = self.reger.cloneIter(pre=vcpre, fn=0)  # create iterator at 0
+            cloner = self.reger.clonePreIter(pre=vcpre, fn=0)  # create iterator at 0
             msgs = bytearray()  # outgoing messages
             for msg in cloner:
                 msgs.extend(msg)

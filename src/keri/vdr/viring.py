@@ -135,7 +135,7 @@ class Registry(dbing.LMDBer):
         self.taes = self.env.open_db(key=b'taes.')
 
 
-    def cloneIter(self, pre, fn=0):
+    def clonePreIter(self, pre, fn=0):
         """
         Returns iterator of first seen event messages with attachments for the
         TEL prefix pre starting at first seen order number, fn.
