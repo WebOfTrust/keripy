@@ -11,6 +11,7 @@ from hio.core.tcp import serving
 
 from .. import help
 from ..db import dbing
+from ..core import  coring, eventing
 from . import basing, keeping, directing
 
 logger = help.ogler.getLogger()
@@ -127,7 +128,7 @@ class Indirector(doing.DoDoer):
         if not self.indirect:
             doers.extend([self.cueDo])
 
-        super(Reactor, self).__init__(doers=doers, **kwa)
+        super(Indirector, self).__init__(doers=doers, **kwa)
         if self.tymth:
             self.client.wind(self.tymth)
 
@@ -137,7 +138,7 @@ class Indirector(doing.DoDoer):
         Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
         Updates winds .tymer .tymth
         """
-        super(Reactor, self).wind(tymth)
+        super(Indirector, self).wind(tymth)
         self.client.wind(tymth)
 
 
