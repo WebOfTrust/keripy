@@ -11,6 +11,10 @@ from typing import Type
 import cbor2
 import msgpack
 
+from hio.base import doing
+from hio.core import wiring
+from hio.core.tcp import clienting, serving
+
 from .. import kering
 from ..db import dbing
 from ..core import coring, eventing
@@ -487,7 +491,6 @@ class Habitat():
                 print("processing replay")
                 print(msgs)
                 yield msgs
-
 
 
 class Komer:

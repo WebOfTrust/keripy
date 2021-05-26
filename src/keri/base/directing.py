@@ -58,26 +58,23 @@ def setupController(name="who", sith=None, count=1, temp=False,
     return [ksDoer, dbDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
 
 
-
 class Director(doing.Doer):
     """
-    Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
-    Generator logic is to iterate through initiation of events for demo
-
-    Inherited Attributes:
+    Base class for Direct Mode KERI Controller Doer with habitat and TCP Client
 
     Attributes:
-        .hab is Habitat instance of local controller's context
-        .client is TCP client instance. Assumes operated by another doer.
+        hab (Habitat: local controller's context
+        client (serving.Client): hio TCP client instance.
+            Assumes operated by another doer.
 
     Inherited Properties:
-        .tyme is float relative cycle time of associated Tymist .tyme obtained
+        tyme (float): relative cycle time of associated Tymist, obtained
             via injected .tymth function wrapper closure.
-        .tymth is function wrapper closure returned by Tymist .tymeth() method.
-            When .tymth is called it returns associated Tymist .tyme.
+        tymth (function): function wrapper closure returned by Tymist .tymeth()
+            method.  When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
-        .tock is desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
+        tock (float): desired time in seconds between runs or until next run,
+            non negative, zero means run asap
 
     Properties:
 
@@ -103,12 +100,12 @@ class Director(doing.Doer):
 
         Parameters:
             hab is Habitat instance
-            client is TCP Client instance
+            client is TCP Client instance. Assumes opened/closed elsewhere
 
         """
         super(Director, self).__init__(**kwa)
         self.hab = hab
-        self.client = client  # use client for tx only
+        self.client = client  # use client to initiate comms
         if self.tymth:
             self.client.wind(self.tymth)
 
@@ -119,32 +116,6 @@ class Director(doing.Doer):
         """
         super(Director, self).wind(tymth)
         self.client.wind(tymth)
-
-
-    def do(self, tymth=None, tock=0.0, **opts):
-        """
-        Generator method to run this doer
-        Calling this method returns generator
-        """
-        try:
-            # enter context
-            self.wind(tymth)  # change tymist and dependencies
-            self.tock = tock
-            # tyme = self.tyme
-
-            while (True):  # recur context
-                tyme = (yield (tock))  # yields tock then waits for next send
-
-        except GeneratorExit:  # close context, forced exit due to .close
-            pass
-
-        except Exception:  # abort context, forced exit due to uncaught exception
-            raise
-
-        finally:  # exit context,  unforced exit due to normal exit of try
-            pass
-
-        return True  # return value of yield from, or yield ex.value of StopIteration
 
 
     def sendOwnEvent(self, sn):
@@ -162,6 +133,7 @@ class Director(doing.Doer):
         Utility to send own inception on client
         """
         self.sendOwnEvent(sn=0)
+
 
 
 class Reactor(doing.DoDoer):
