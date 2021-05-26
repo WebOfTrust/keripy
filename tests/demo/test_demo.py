@@ -5,8 +5,10 @@ tests.db.dbing module
 """
 import os
 import logging
+import time
 
 from hio.base import doing
+from hio.help import timing
 from hio.core.tcp import clienting, serving
 
 from keri.base import basing, keeping, directing
@@ -525,10 +527,6 @@ def test_indirect_mode_sam_cam_wit_demo():
          dbing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS, \
          dbing.openDB(name="wit") as witDB, keeping.openKS(name="wit") as witKS:
 
-        limit = 1.0
-        tock = 0.03125
-        samDoist = doing.Doist(limit=limit, tock=tock)
-        camDoist = doing.Doist(limit=limit, tock=tock)
 
         samPort = 5620  # sam's TCP listening port for server
         witPort = 5621  # wit' TCP listneing port for server
@@ -546,7 +544,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         witServerDoer = doing.ServerDoer(server=witServer)
         witDirectant = directing.Directant(hab=witHab, server=witServer)
 
-        witDoers = [wit]
+        witDoers = [witServerDoer, witDirectant]
 
         # setup cam
         # cam inception transferable (nxt digest not empty)
@@ -574,7 +572,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert samHab.iserder.dig == samSerder.dig
         assert samHab.pre == sam
 
-        samClient = clienting.Client(tymth=samDoist.tymen(), host='127.0.0.1', port=witPort)
+        samClient = clienting.Client(host='127.0.0.1', port=witPort)
         samClientDoer = doing.ClientDoer(client=samClient)
 
         samDirector = demoing.SamDirector(hab=samHab, client=samClient, tock=0.125)
@@ -599,8 +597,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert samDirectant.server == samServer
         # Sam's Reactants created on demand
 
-        samDoers = [samClientDoer, samDirector, samReactor, samServerDoer, samDirectant,
-                    witServerDoer, witDirectant]
+        samDoers = [samClientDoer, samDirector, samReactor, samServerDoer, samDirectant]
 
         # setup cam
         camHab = basing.Habitat(name='Cam', ks=camKS,  db=camDB, kevers=camKevers,
@@ -611,7 +608,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert camHab.iserder.dig == camSerder.dig
         assert camHab.pre == cam
 
-        camClient = clienting.Client(tymth=camDoist.tymen(), host='127.0.0.1', port=witPort)
+        camClient = clienting.Client(host='127.0.0.1', port=witPort)
         camClientDoer = doing.ClientDoer(client=camClient)
 
         camDirector = demoing.CamDirector(hab=camHab, remotePre=sam, client=camClient, tock=0.125)
@@ -630,29 +627,50 @@ def test_indirect_mode_sam_cam_wit_demo():
 
         camDoers = [camClientDoer, camDirector, camReactor]
 
-        # Manually stage SamDoers and then camDoers
+        # Manually stage SamDoers and wit doers and then camDoers
 
-        samDoist.do(doers=samDoers)
-        assert samDoist.tyme == limit
+        tock = 0.03125
+        doist = doing.Doist(doers=samDoers + witDoers, tock=tock)
 
-        # camDoers = [camClientDoer, camDirector, camReactor]
-        # camDoist.do(doers=camDoers)
-        # assert camDoist.tyme == limit
-        #
-        #
+        # manually prep doers
+        doist.done = False
+        doist.ready()  # injects doist.tymth() dependency to all doers
+        assert len(doist.deeds) == len(samDoers + witDoers)
+        while doist.tyme < doist.tock *  16:
+            doist.once()  # iterate 16 times
+            time.sleep(doist.tock)
+
+        assert len(doist.deeds) == len(samDoers + witDoers)
+        assert not doist.done
+        assert samHab.pre in samHab.kevers
+
+
+        # now start up cam doers
+        doist.extend(camDoers)
+        assert len(doist.deeds) == len(samDoers + witDoers + camDoers)
+
+        while doist.tyme < doist.tock * 32:
+            doist.once()  # iterate 16 times
+            time.sleep(doist.tock)
+
+        assert len(doist.deeds) == len(samDoers + witDoers + camDoers) - 1
+        # camDirector completes
+        assert camDirector.done
+        # one of the doers exited likely due to an error
+        assert not doist.done
+        assert camHab.pre in camHab.kevers
+        assert samHab.pre in camHab.kevers
+
+
+        #  verify final event states
+
+
+        doist.close()
         assert samClient.opened is False
         assert samServer.opened is False
         assert camClient.opened is False
 
-        assert samHab.pre in samHab.kevers
-        assert camHab.pre in camHab.kevers
 
-        assert not samClient.txbs
-
-        # TODO: fix this when I figure out how to delay Cam until after Sam is finished.
-        # assert samHab.pre in camHab.kevers
-
-        #  verify final event states
 
     assert not os.path.exists(camDB.path)
     assert not os.path.exists(samDB.path)

@@ -82,7 +82,7 @@ class Issuer:
                                        regk=self.regk, local=True)
             self.psr = Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
-            clone = self.reger.cloneIter(self.regk)
+            clone = self.reger.clonePreIter(self.regk)
             for msg in clone:
                 self.psr.processOne(ims=msg)
 
