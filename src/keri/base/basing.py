@@ -11,22 +11,24 @@ from typing import Type
 import cbor2
 import msgpack
 
-from hio.base import doing
-from hio.core import wiring
-from hio.core.tcp import clienting, serving
-
-from .. import kering
-from ..db import dbing
-from ..core import coring, eventing
-from .. import help
-from ..help import helping
 from . import keeping
+from .keeping import PubLot
+from .. import help
+from .. import kering
+from ..core import coring, eventing
+from ..db import dbing
+from ..help import helping
 
 logger = help.ogler.getLogger()
 
 
+@dataclass
+class HabitatRecord:
+    name: str
+    prefix: str
 
-class Habitat():
+
+class Habitat:
     """
     Habitat class provides direct mode controller's local shared habitat
        e.g. context or environment
@@ -79,7 +81,7 @@ class Habitat():
             tier is security tier for generating keys from salt
             transferable is Boolean True means pre is transferable (default)
                     False means pre is nontransferable
-            temp is Boolean used for persistance of lmdb ks and db directories
+            temp is Boolean used for persistence of lmdb ks and db directories
                 and mode for key generation
             erase is Boolean True means erase private keys once stale
         """
@@ -88,15 +90,6 @@ class Habitat():
         self.temp = temp
         self.erase = erase
 
-        self.ks = ks if ks is not None else keeping.Keeper(name=name,
-                                                           temp=self.temp)
-        if salt is None:
-            salt = coring.Salter(raw=b'0123456789abcdef').qb64
-        self.mgr = keeping.Manager(keeper=self.ks, salt=salt, tier=tier)
-        self.ridx = 0  # rotation index of latest establishment event
-        self.kevers = kevers if kevers is not None else dict()
-        self.db = db if db is not None else dbing.Baser(name=name,
-                                                        temp=self.temp)
         if nsith is None:
             nsith = isith
         if ncount is None:
@@ -104,48 +97,101 @@ class Habitat():
         if not self.transferable:
             ncount = 0  # next count
             code = coring.MtrDex.Ed25519N
+        pidx = None
 
-        if secrecies:
-            verferies, digers = self.mgr.ingest(secrecies,
-                                                ncount=ncount,
-                                                stem=self.name,
-                                                transferable=self.transferable,
-                                                temp=self.temp)
-            opre = verferies[0][0].qb64  # old pre default needed for .replay
-            verfers, digers, cst, nst = self.mgr.replay(pre=opre, ridx=self.ridx)
+        self.db = db if db is not None else dbing.Baser(name=name, temp=self.temp)
+        self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
+
+        # for persisted Habitats, check the KOM first to see if there is an existing one we can restart from
+        # otherwise initialize a new one
+        existing = False
+        kom = Komer(db=self.db, schema=HabitatRecord, subdb='habitats.')
+        habKeys = ('hab', name)
+        if not self.temp:
+            ex = kom.get(keys=habKeys)
+            # found existing habitat, otherwise leave __init__ to incept a new one.
+            if ex is not None:
+                prms = json.loads(bytes(ks.getPrm(key=ex.prefix)).decode("utf-8"))
+                salt = prms['salt']
+                tier = prms['tier']
+                pidx = prms['pidx']
+                self.pre = ex.prefix
+                existing = True
+
+        if salt is None:
+            salt = coring.Salter(raw=b'0123456789abcdef').qb64
+
+        self.mgr = keeping.Manager(keeper=self.ks, pidx=pidx, salt=salt, tier=tier)
+        self.ridx = 0  # rotation index of latest establishment event
+        self.kevers = kevers if kevers is not None else dict()
+
+        if existing:
+            self.reinitialize()
         else:
-            verfers, digers, cst, nst = self.mgr.incept(icount=icount,
-                                                        isith=isith,
-                                                        ncount=ncount,
-                                                        nsith=nsith,
-                                                        stem=self.name,
-                                                        transferable=self.transferable,
-                                                        temp=self.temp)
+            if secrecies:
+                verferies, digers = self.mgr.ingest(secrecies,
+                                                    ncount=ncount,
+                                                    stem=self.name,
+                                                    transferable=self.transferable,
+                                                    temp=self.temp)
+                opre = verferies[0][0].qb64  # old pre default needed for .replay
+                verfers, digers, cst, nst = self.mgr.replay(pre=opre, ridx=self.ridx)
+            else:
+                verfers, digers, cst, nst = self.mgr.incept(icount=icount,
+                                                            isith=isith,
+                                                            ncount=ncount,
+                                                            nsith=nsith,
+                                                            stem=self.name,
+                                                            transferable=self.transferable,
+                                                            temp=self.temp)
 
-        opre = verfers[0].qb64  # old pre default move below to new pre from incept
-        if digers:
-            nxt = coring.Nexter(sith=nst,
-                                digs=[diger.qb64 for diger in digers]).qb64
-        else:
-            nxt = ""
+            opre = verfers[0].qb64  # old pre default move below to new pre from incept
+            if digers:
+                nxt = coring.Nexter(sith=nst,
+                                    digs=[diger.qb64 for diger in digers]).qb64
+            else:
+                nxt = ""
 
-        self.iserder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                                         sith=cst,
-                                         nxt=nxt,
-                                         toad=toad,
-                                         wits=wits,
-                                         code=code)
+            self.iserder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                                           sith=cst,
+                                           nxt=nxt,
+                                           toad=toad,
+                                           wits=wits,
+                                           code=code)
+            self.pre = self.iserder.ked["i"]  # new pre
+            self.mgr.move(old=opre, new=self.pre)
 
-        self.pre = self.iserder.ked["i"]  # new pre
-        self.mgr.move(old=opre, new=self.pre)
+            sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
+            msg = eventing.messagize(self.iserder, sigers=sigers)
 
-        self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db,
-                                   opre=self.pre, local=True)
+            self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, opre=self.pre, local=True)
+            self.psr = eventing.Parser(framed=True, kvy=self.kvy)
+
+            self.psr.processOne(ims=msg)
+            if self.pre not in self.kevers:
+                raise kering.ConfigurationError("Improper Habitat inception for "
+                                                "pre={}.".format(self.pre))
+
+            kom.put(keys=habKeys, data=HabitatRecord(name=name, prefix=self.pre))
+
+    def reinitialize(self):
+        if self.pre is None:
+            raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
+
+        self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, opre=self.pre, local=True)
         self.psr = eventing.Parser(framed=True, kvy=self.kvy)
 
-        sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
-        msg = eventing.messagize(self.iserder, sigers=sigers)
-        self.psr.processOne(ims=msg)
+        msgs = self.replay()
+        self.psr.process(ims=bytearray(msgs), kvy=self.kvy)
+
+        msgs = self.replayAll()
+        tkvy = eventing.Kevery(kevers=self.kevers, db=self.db, opre=self.pre, local=False)
+        self.psr.process(ims=bytearray(msgs), kvy=tkvy)
+
+        # ridx for replay may be an issue when loading from existing
+        sit = json.loads(bytes(self.ks.getSit(key=self.pre)).decode("utf-8"))
+        self.ridx = helping.datify(keeping.PubLot, sit['new']).ridx
+
         if self.pre not in self.kevers:
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={}.".format(self.pre))
@@ -157,13 +203,11 @@ class Habitat():
         """
         return self.kevers[self.pre]
 
-
     def incept(self):
         """
         Perform inception operation. Register inception in database.
         Returns: bytearray inception message with attached signatures.
         """
-
 
     def rotate(self, sith=None, count=None, erase=None,
                toad=None, cuts=None, adds=None, data=None):
@@ -178,7 +222,7 @@ class Habitat():
             toad is int or str hex of witness threshold after cuts and adds
             cuts is list of qb64 pre of witnesses to be removed from witness list
             adds is list of qb64 pre of witnesses to be added to witness list
-            data is list of dicts of comitted data such as seals
+            data is list of dicts of committed data such as seals
 
         """
         if erase is not None:
@@ -192,14 +236,14 @@ class Habitat():
 
         try:
             verfers, digers, cst, nst = self.mgr.replay(pre=self.pre,
-                                              ridx=self.ridx+1,
-                                              erase=erase)
-        except IndexError as ex:
+                                                        ridx=self.ridx + 1,
+                                                        erase=erase)
+        except IndexError:
             verfers, digers, cst, nst = self.mgr.rotate(pre=self.pre,
-                                              count=count,  # old next is new current
-                                              sith=sith,
-                                              temp=self.temp,
-                                              erase=erase)
+                                                        count=count,  # old next is new current
+                                                        sith=sith,
+                                                        temp=self.temp,
+                                                        erase=erase)
 
         if digers:
             nxt = coring.Nexter(sith=nst,
@@ -211,7 +255,7 @@ class Habitat():
         serder = eventing.rotate(pre=kever.prefixer.qb64,
                                  keys=[verfer.qb64 for verfer in verfers],
                                  dig=kever.serder.diger.qb64,
-                                 sn=kever.sn+1,
+                                 sn=kever.sn + 1,
                                  sith=cst,
                                  nxt=nxt,
                                  toad=toad,
@@ -223,15 +267,13 @@ class Habitat():
         sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
         msg = eventing.messagize(serder, sigers=sigers)
 
-        # update ownkey event verifier state
+        # update own key event verifier state
         self.psr.processOne(ims=bytearray(msg))  # make copy as kvr deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
-
         self.ridx += 1  # successful rotate so increment for next time
         return msg
-
 
     def interact(self, data=None):
         """
@@ -241,13 +283,13 @@ class Habitat():
         kever = self.kever
         serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.diger.qb64,
-                                   sn=kever.sn+1,
+                                   sn=kever.sn + 1,
                                    data=data)
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
         msg = eventing.messagize(serder, sigers=sigers)
 
-        # update ownkey event verifier state
+        # update own key event verifier state
         self.psr.processOne(ims=bytearray(msg))  # make copy as kvy deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat interaction for "
@@ -285,18 +327,17 @@ class Habitat():
                                       s="{:x}".format(self.kever.lastEst.s),
                                       d=self.kever.lastEst.d)
             sigers = self.mgr.sign(ser=serder.raw,
-                                       verfers=self.kever.verfers,
-                                           indexed=True)
+                                   verfers=self.kever.verfers,
+                                   indexed=True)
             msg = eventing.messagize(serder=reserder, sigers=sigers, seal=seal)
         else:
             cigars = self.mgr.sign(ser=serder.raw,
-                               verfers=self.kever.verfers,
-                               indexed=False)
+                                   verfers=self.kever.verfers,
+                                   indexed=False)
             msg = eventing.messagize(reserder, cigars=cigars)
 
         self.psr.processOne(ims=bytearray(msg))  # process local copy into db
         return msg
-
 
     def witness(self, serder):
         """
@@ -332,7 +373,6 @@ class Habitat():
         self.psr.processOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
-
     def endorse(self, serder):
         """
         Returns msg with own endorsement of msg from serder with attached signature
@@ -345,8 +385,8 @@ class Habitat():
         if self.kever.prefixer.transferable:
             # create SealEvent for endorsers est evt whose keys use to sign
             seal = eventing.SealEvent(i=self.kever.prefixer.qb64,
-                             s=self.kever.lastEst.sn,
-                             d=self.kever.lastEst.dig)
+                                      s=self.kever.lastEst.sn,
+                                      d=self.kever.lastEst.dig)
             # sign serder event
             sigers = self.mgr.sign(ser=serder.raw,
                                    verfers=self.kever.verfers,
@@ -366,7 +406,6 @@ class Habitat():
                                      pipelined=True)
 
         return msg
-
 
     def replay(self, pre=None, fn=0):
         """
@@ -400,7 +439,6 @@ class Habitat():
             msgs.extend(msg)
         return msgs
 
-
     def makeOwnEvent(self, sn):
         """
         Returns: messagized bytearray message with attached signatures of
@@ -419,11 +457,10 @@ class Habitat():
         key = dbing.dgKey(self.pre, dig)  # digest key
         msg.extend(self.db.getEvt(key))
         msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                  count=self.db.cntSigs(key)).qb64b) # attach cnt
+                                  count=self.db.cntSigs(key)).qb64b)  # attach cnt
         for sig in self.db.getSigsIter(key):
-            msg.extend(sig) # attach sig
+            msg.extend(sig)  # attach sig
         return (msg)
-
 
     def makeOwnInception(self):
         """
@@ -432,7 +469,6 @@ class Habitat():
                  from database.
         """
         return self.makeOwnEvent(sn=0)
-
 
     def processCues(self, cues):
         """
@@ -445,7 +481,6 @@ class Habitat():
         for msg in self.processCuesIter(cues):
             msgs.extend(msg)
         return msgs
-
 
     def processCuesIter(self, cues):
         """
@@ -465,8 +500,9 @@ class Habitat():
                 cuedKed = cuedSerder.ked
                 cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
                 logger.info("%s got cue: kin=%s\n%s\n\n", self.pre, cueKin,
-                                                 json.dumps(cuedKed, indent=1))
-                if  cuedKed["t"] == coring.Ilks.icp:
+                            json.dumps(cuedKed, indent=1))
+
+                if cuedKed["t"] == coring.Ilks.icp:
                     dgkey = dbing.dgKey(self.pre, self.iserder.dig)
                     found = False
                     if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
@@ -483,7 +519,6 @@ class Habitat():
                         msgs.extend(self.makeOwnInception())
 
                 msgs.extend(self.receipt(cuedSerder))
-
                 yield msgs
 
             elif cueKin in ("replay", ):

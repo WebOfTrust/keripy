@@ -8,10 +8,10 @@ from keri.vdr.viring import Registry, nsKey
 
 class Issuer:
     """
-    Issuer provides encapsulation of creating a Verfiable Credential Registry with issuance
+    Issuer provides encapsulation of creating a Verifiable Credential Registry with issuance
     and revocation of VCs against that registry.
 
-    The Regsitry consists of 1 management TEL for maintaining the state of the registry wrt special
+    The Registry consists of 1 management TEL for maintaining the state of the registry wrt special
     Backers that can act as witnesses of VC events, and 1 VC TEL for each VC issued that tracks the
     issuance and revocation status of those VCs.
 
@@ -60,7 +60,6 @@ class Issuer:
                                        regk=self.regk, local=True)
             self.psr = Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
-
             rseal = SealEvent(self.regk, self.regser.ked["s"], self.regser.diger.qb64)
 
             if self.estOnly:
@@ -91,12 +90,10 @@ class Issuer:
                 raise kering.ConfigurationError("Improper Issuer inception for "
                                                 "pre={}.".format(self.regk))
 
-
         tever = self.tevers[self.regk]
         self.noBackers = tever.noBackers
         self.backers = tever.baks
         self.regi = int(tever.serder.ked["s"], 16)
-
 
     def rotate(self, toad=None, cuts=None, adds=None):
         """

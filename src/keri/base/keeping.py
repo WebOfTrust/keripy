@@ -144,7 +144,7 @@ class Keeper(dbing.LMDBer):
             Key is first public key in key sequence for a prefix (fully qualified qb64)
             Value is prefix or first public key (temporary) (fully qualified qb64
         .prms is named sub DB whose values are serialized dicts of PrePrm instance
-            Key is identifer prefix (fully qualified qb64)
+            Key is identifier prefix (fully qualified qb64)
             Value is  serialized parameter dict (JSON) of public key parameters
             {
                 pidx: ,

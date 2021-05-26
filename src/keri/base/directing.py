@@ -6,19 +6,16 @@ keri.base.directing module
 simple direct mode demo support classes
 """
 import os
-import json
 
 from hio.base import doing
 from hio.core import wiring
 from hio.core.tcp import clienting, serving
 
-from .. import kering
-from ..db import dbing
-from ..core import coring, eventing
-from . import keeping
 from . import basing
-
+from . import keeping
 from .. import help
+from ..core import eventing
+from ..db import dbing
 
 logger = help.ogler.getLogger()
 
@@ -31,11 +28,11 @@ def setupController(name="who", sith=None, count=1, temp=False,
     # setup habitat
     hab = basing.Habitat(name=name, isith=sith, icount=count, temp=temp)
     logger.info("\nDirect Mode controller %s:\nNamed %s on TCP port %s to port %s.\n\n",
-                 hab.pre, hab.name, localPort, remotePort)
+                hab.pre, hab.name, localPort, remotePort)
 
     # setup doers
-    ksDoer = keeping.KeeperDoer(keeper=hab.ks)   # doer do reopens if not opened and closes
-    dbDoer = dbing.BaserDoer(baser=hab.db)   # doer do reopens if not opened and closes
+    ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
+    dbDoer = dbing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)
@@ -90,7 +87,7 @@ class Director(doing.Doer):
        ._tock is hidden attribute for .tock property
     """
 
-    def __init__(self, hab, client,  **kwa):
+    def __init__(self, hab, client, **kwa):
         """
         Initialize instance.
 
@@ -117,7 +114,6 @@ class Director(doing.Doer):
         super(Director, self).wind(tymth)
         self.client.wind(tymth)
 
-
     def sendOwnEvent(self, sn):
         """
         Utility to send own event at sequence number sn
@@ -127,13 +123,11 @@ class Director(doing.Doer):
         self.client.tx(msg)
         logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(msg))
 
-
     def sendOwnInception(self):
         """
         Utility to send own inception on client
         """
         self.sendOwnEvent(sn=0)
-
 
 
 class Reactor(doing.DoDoer):
@@ -193,7 +187,6 @@ class Reactor(doing.DoDoer):
 
     """
 
-
     def __init__(self, hab, client, indirect=False, doers=None, **kwa):
         """
         Initialize instance.
@@ -230,7 +223,6 @@ class Reactor(doing.DoDoer):
         if self.tymth:
             self.client.wind(self.tymth)
 
-
     def wind(self, tymth):
         """
         Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
@@ -238,7 +230,6 @@ class Reactor(doing.DoDoer):
         """
         super(Reactor, self).wind(tymth)
         self.client.wind(tymth)
-
 
     @doing.doize()
     def msgDo(self, tymth=None, tock=0.0, **opts):
@@ -265,7 +256,6 @@ class Reactor(doing.DoDoer):
             logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
         done = yield from self.parser.processor()  # process messages continuously
         return done  # should nover get here except forced close
-
 
     @doing.doize()
     def cueDo(self, tymth=None, tock=0.0, **opts):
@@ -294,7 +284,6 @@ class Reactor(doing.DoDoer):
             yield
         return False  # should never get here except forced close
 
-
     @doing.doize()
     def escrowDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -319,7 +308,6 @@ class Reactor(doing.DoDoer):
             self.kevery.processEscrows()
             yield
         return False  # should never get here except forced close
-
 
     def sendMessage(self, msg, label=""):
         """
@@ -410,7 +398,6 @@ class Directant(doing.DoDoer):
         if self.tymth:
             self.server.wind(self.tymth)
 
-
     def wind(self, tymth):
         """
         Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
@@ -418,7 +405,6 @@ class Directant(doing.DoDoer):
         """
         super(Directant, self).wind(tymth)
         self.server.wind(tymth)
-
 
     @doing.doize()
     def serviceDo(self, tymth=None, tock=0.0, **opts):
@@ -560,7 +546,6 @@ class Reactant(doing.DoDoer):
         if self.tymth:
             self.remoter.wind(self.tymth)
 
-
     def wind(self, tymth):
         """
         Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
@@ -568,7 +553,6 @@ class Reactant(doing.DoDoer):
         """
         super(Reactant, self).wind(tymth)
         self.remoter.wind(tymth)
-
 
     @doing.doize()
     def msgDo(self, tymth=None, tock=0.0, **opts):
@@ -597,7 +581,6 @@ class Reactant(doing.DoDoer):
         done = yield from self.parser.processor()  # process messages continuously
         return done  # should nover get here except forced close
 
-
     @doing.doize()
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -625,7 +608,6 @@ class Reactant(doing.DoDoer):
             yield
         return False  # should never get here except forced close
 
-
     @doing.doize()
     def escrowDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -651,8 +633,6 @@ class Reactant(doing.DoDoer):
             yield
         return False  # should never get here except forced close
 
-
-
     def sendMessage(self, msg, label=""):
         """
         Sends message msg and loggers label if any
@@ -660,7 +640,6 @@ class Reactant(doing.DoDoer):
         self.remoter.tx(msg)  # send to remote
         logger.info("Server %s: %s sent %s:\n%s\n\n", self.hab.name,
                     self.hab.pre, label, bytes(msg))
-
 
 
 def runController(doers, expire=0.0):
