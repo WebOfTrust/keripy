@@ -10,8 +10,7 @@ import logging
 
 from keri import __version__
 from keri import help  # logger support
-from keri.base import directing
-from keri.witness import witnessing
+from keri.base import directing, indirecting
 
 
 def runWitness(name="witness", local=5621, expire=0.0):
@@ -19,7 +18,7 @@ def runWitness(name="witness", local=5621, expire=0.0):
     Setup and run one witness
     """
 
-    doers = witnessing.setupWitness(name=name,
+    doers = indirecting.setupWitness(name=name,
                                     localPort=local)
 
     directing.runController(doers=doers, expire=expire)
