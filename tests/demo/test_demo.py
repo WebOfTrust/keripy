@@ -546,7 +546,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         witServerDoer = doing.ServerDoer(server=witServer)
         witDirectant = directing.Directant(hab=witHab, server=witServer)
 
-
+        witDoers = [wit]
 
         # setup cam
         # cam inception transferable (nxt digest not empty)
@@ -599,6 +599,9 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert samDirectant.server == samServer
         # Sam's Reactants created on demand
 
+        samDoers = [samClientDoer, samDirector, samReactor, samServerDoer, samDirectant,
+                    witServerDoer, witDirectant]
+
         # setup cam
         camHab = basing.Habitat(name='Cam', ks=camKS,  db=camDB, kevers=camKevers,
                                    secrecies=camSecrecies, temp=True)
@@ -625,12 +628,14 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert camReactor.hab.kvy.db == camDB
         assert camReactor.hab.psr.ims == camReactor.client.rxbs
 
-        samDoers = [samClientDoer, samDirector, samReactor, samServerDoer, samDirectant,
-                    witServerDoer, witDirectant]
+        camDoers = [camClientDoer, camDirector, camReactor]
+
+        # Manually stage SamDoers and then camDoers
+
         samDoist.do(doers=samDoers)
         assert samDoist.tyme == limit
 
-        # camDoers = [camClientDoer, camDirector, camReactor, witServerDoer, witDirectant]
+        # camDoers = [camClientDoer, camDirector, camReactor]
         # camDoist.do(doers=camDoers)
         # assert camDoist.tyme == limit
         #
