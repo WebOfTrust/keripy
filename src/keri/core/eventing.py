@@ -1258,7 +1258,7 @@ class Kever:
 
     def __init__(self, serder, sigers, wigers=None, baser=None, estOnly=None,
                  seqner=None, diger=None, firner=None, dater=None,
-                 kevers=None, cues=None, opre=None, local=False):
+                 kevers=None, cues=None, opre=None, local=False, check=False):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -1291,6 +1291,10 @@ class Kever:
             local is Boolean, True means only process msgs for own controller's
                 events if .opre. False means only process msgs for not own events
                 if .opre
+            check (Boolean): True means do not update the database in any
+                non-idempotent way. Useful for reinitializing the Kevers from
+                a persisted KEL without updating non-idempotent first seen .fels
+                and timestamps.
         """
 
         if baser is None:
@@ -1343,7 +1347,7 @@ class Kever:
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
         # all validated above so may add to KEL and FEL logs as first seen
         self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                first=True, seqner=seqner, diger=diger,
+                                first=True if not check else False, seqner=seqner, diger=diger,
                                 firner=firner, dater=dater)
 
 
@@ -1438,7 +1442,7 @@ class Kever:
 
 
     def update(self, serder,  sigers, wigers=None, seqner=None, diger=None,
-               firner=None, dater=None):
+               firner=None, dater=None, check=False):
         """
         Not an inception event. Verify event serder and indexed signatures
         in sigers and update state
@@ -1459,6 +1463,10 @@ class Kever:
             dater is optional Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
+            check (Boolean): True means do not update the database in any
+                non-idempotent way. Useful for reinitializing the Kevers from
+                a persisted KEL without updating non-idempotent first seen .fels
+                and timestamps.
 
         """
         if not self.transferable:  # not transferable so no events after inception allowed
@@ -1529,7 +1537,7 @@ class Kever:
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
             self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                    first=True, seqner=seqner, diger=diger,
+                                    first=True if not check else False, seqner=seqner, diger=diger,
                                     firner=firner, dater=dater)
 
 
@@ -1573,7 +1581,7 @@ class Kever:
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
             self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                    first=True)  # First seen accepted
+                                    first=True if not check else False)  # First seen accepted
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -2130,7 +2138,7 @@ class Kevery:
 
     def processEvent(self, serder, sigers, wigers=None,
                      seqner=None, diger=None,
-                     firner=None, dater=None):
+                     firner=None, dater=None, check=False):
         """
         Process one event serder with attached indexd signatures sigers
 
@@ -2149,6 +2157,10 @@ class Kevery:
             dater is optional Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
+            check (Boolean): True means do not update the database in any
+                non-idempotent way. Useful for reinitializing the Kevers from
+                a persisted KEL without updating non-idempotent first seen .fels
+                and timestamps.
         """
         # fetch ked ilk  pre, sn, dig to see how to process
         ked = serder.ked
@@ -2191,7 +2203,8 @@ class Kevery:
                               kevers=self.kevers,
                               cues=self.cues,
                               opre=self.opre,
-                              local=self.local)
+                              local=self.local,
+                              check=check)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
                 if not self.indirect or not self.opre or self.opre != pre:  # not own event when owned
@@ -2249,7 +2262,7 @@ class Kevery:
                     # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers, wigers=wigers,
                                  seqner=seqner, diger=diger,
-                                 firner=firner, dater=dater)
+                                 firner=firner, dater=dater, check=check)
 
                     if not self.indirect or not self.opre or self.opre != pre:  # not own event when owned
                         # create cue for receipt   direct mode for now
