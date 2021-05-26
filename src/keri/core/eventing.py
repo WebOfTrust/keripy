@@ -2863,15 +2863,12 @@ class Kevery:
 
         if res == "logs":
             pre = qry["i"]
-            cloner = self.db.cloneIter(pre=pre, fn=0)  # create iterator not at 0
+            cloner = self.db.cloneIter(pre=pre, fn=0)  # create iterator at 0
             msgs = bytearray()  # outgoing messages
             for msg in cloner:
                 msgs.extend(msg)
 
             self.cues.append(dict(kin="replay", msgs=msgs))
-        elif res == "tels":
-            print("tels")
-
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
 
@@ -4786,6 +4783,7 @@ class Parser:
 
         while not ims:
             yield
+
         cold = self._sniff(ims)  # check for spurious counters at front of stream
         if cold in (Colds.txt, Colds.bny):  # not message error out to flush stream
             # replace with pipelining here once CESR message format supported.
@@ -5006,7 +5004,6 @@ class Parser:
 
 
         ilk = serder.ked["t"]  # dispatch abased on ilk
-
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
             firner, dater = frcs[-1] if frcs else (None, None)  # use last one if more than one
             seqner, diger = sscs[-1] if sscs else (None, None)  # use last one if more than one
@@ -5069,7 +5066,15 @@ class Parser:
                                       "= {}.".format(serder.pretty))
         elif ilk in [Ilks.req]:
             try:
-                kvy.processQuery(serder=serder)
+                res = serder.ked["r"]
+                if res in ["logs"]:
+                    kvy.processQuery(serder=serder)
+
+                elif res in ["tels"]:
+                    tvy.processQuery(serder=serder)
+                else:
+                    raise ValidationError("Invalid resource type {} so dropped msg"
+                                          "= {}.".format(res, serder.pretty))
 
             except AttributeError:
                 raise ValidationError("No kevery to process so dropped msg"

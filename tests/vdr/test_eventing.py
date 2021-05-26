@@ -383,7 +383,7 @@ def test_tever_escrow():
         Tever()
 
     # registry with no backers, invalid anchor
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openDB() as reg:
+    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=[],
@@ -404,7 +404,7 @@ def test_tever_escrow():
 
 
     # registry with no backers
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openDB() as reg:
+    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=[],
@@ -426,7 +426,7 @@ def test_tever_escrow():
         assert reg.getTae(snKey(pre=regk, sn=0)) == b'EvpB-_BWD7tOhLI0cDyEQbziBt6IMyQnkrh0booR4vhg'
 
     # registry with backers, no signatures.  should escrow
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openDB() as reg:
+    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=["BoOcciw30IVQsaenKXpiyMVrjtPDW3KeD_6KFnSfoaqI"],
@@ -462,7 +462,7 @@ def test_tever_escrow():
 def test_tever_no_backers():
     # registry with no backers
     # registry with backer and receipt
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openDB() as reg:
+    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
 
         vcp = eventing.incept(hab.pre,
@@ -549,7 +549,7 @@ def test_tever_no_backers():
 
 def test_tever_backers():
     # registry with backer and receipt
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openDB() as reg:
+    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         valSecret = 'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw'
 
         # create receipt signer prefixer default code is non-transferable
@@ -587,7 +587,7 @@ def test_tever_backers():
         assert reg.getAnc(dgkey) == b'0AAAAAAAAAAAAAAAAAAAAAAQEpWPsFsCcsu5SpVH0416qHx3gvG0CWlrP_i7BVdbmRBg'
         assert reg.getTel(snKey(pre=regk, sn=0)) == b'EJTWiS0ebp8VSyLr38x73dAHdUqivisUtAaGpEHt5HDc'
         assert [bytes(tib) for tib in reg.getTibs(dgkey)] == [
-            b'00000000000000000000000000000000.B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc']
+            b'AAGhpPxAoltsRAnqxf7NsBzWSxWYLZ_ALImVVBiTlzJSdlATxRp_hBK4AbOzu-a900hwRxa0RX-yVWbVJA6oxoBw']
         assert reg.getTwe(snKey(pre=regk, sn=0)) is None
 
         debSecret = 'AKUotEE0eAheKdDJh9QvNmSEmO_bjIav8V_GmctGpuCQ'
@@ -639,7 +639,7 @@ def test_tever_backers():
 
 
 def test_tevery():
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openDB() as reg:
+    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
 
         vcp = eventing.incept(hab.pre,
