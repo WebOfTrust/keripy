@@ -15,18 +15,12 @@ parser.add_argument('--name', '-n', help='Humane reference')
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="")
 
 
-# parser.add_argument('--with-tel', dest='with_tel', action='store_true', help='Initialize support TEL')
-
-
-def incept(name, file):  # config, with_tel
+def incept(name, file):
     with dbing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
         hab = Habitat(name=name, ks=ks, db=db, isith=1, icount=1, ncount=1, temp=False)
 
         pre = hab.kever.prefixer.qb64
         pub = hab.kever.verfers[0].qb64
-
-        # if with_tel:
-        #     Registry(name=name)
 
         print(f'{name} created')
         print(f'Prefix\t\t{pre}')
