@@ -656,7 +656,6 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert len(doist.deeds) == len(samDoers + witDoers + camDoers) - 1
         # camDirector completes
         assert camDirector.done
-        # one of the doers exited likely due to an error
         assert not doist.done
         assert camHab.pre in camHab.kevers
         assert samHab.pre in camHab.kevers
