@@ -67,7 +67,7 @@ class Issuer:
             else:
                 self.ianchor = self.hab.interact(data=[rseal._asdict()])
 
-            seal = SealEvent(i=self.hab.pre, s=self.hab.kever.sn, d=self.hab.kever.serder.dig)
+            seal = SealSource(s=self.hab.kever.sn, d=self.hab.kever.serder.dig)
 
             msg = self.messagize(serder=self.regser, seal=seal)
 

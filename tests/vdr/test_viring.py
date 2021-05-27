@@ -23,7 +23,7 @@ def test_issuer():
     assert issuer.name == "main"
     assert issuer.temp is False
     assert isinstance(issuer.env, lmdb.Environment)
-    assert issuer.path.endswith("keri/db/main")
+    assert issuer.path.endswith("keri/reg/main")
     assert issuer.env.path() == issuer.path
     assert os.path.exists(issuer.path)
 
@@ -46,7 +46,7 @@ def test_issuer():
     assert issuer.opened
     assert issuer.path is not None
     assert isinstance(issuer.env, lmdb.Environment)
-    assert issuer.path.endswith("keri/db/main")
+    assert issuer.path.endswith("keri/reg/main")
     assert issuer.env.path() == issuer.path
     assert os.path.exists(issuer.path)
 
@@ -61,8 +61,9 @@ def test_issuer():
         assert issuer.name == "test"
         assert issuer.temp is True
         assert isinstance(issuer.env, lmdb.Environment)
-        assert issuer.path.startswith("/tmp/keri_lmdb_")
-        assert issuer.path.endswith("_test/keri/db/test")
+        print(issuer.path)
+        assert issuer.path.startswith("/tmp/keri_reg_")
+        assert issuer.path.endswith("_test/keri/reg/test")
         assert issuer.env.path() == issuer.path
         assert os.path.exists(issuer.path)
 
@@ -341,4 +342,5 @@ def test_clone():
 
 
 if __name__ == "__main__":
+    test_issuer()
     test_clone()

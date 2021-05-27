@@ -11,6 +11,11 @@ from hio.base import doing
 from hio.core import wiring
 from hio.core.tcp import clienting, serving
 
+from .. import kering
+from ..db import dbing
+from ..core import coring, eventing
+from ..vdr.eventing import Tevery
+from . import keeping
 from . import basing
 from . import keeping
 from .. import help
@@ -187,7 +192,7 @@ class Reactor(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, client, indirect=False, doers=None, **kwa):
+    def __init__(self, hab, client, verifier=None, indirect=False, doers=None, **kwa):
         """
         Initialize instance.
 
@@ -199,21 +204,34 @@ class Reactor(doing.DoDoer):
         Parameters:
             hab is Habitat instance of local controller's context
             client is TCP Client instance
+            verifier is Verifier instance of local controller's TEL context
             indirect is Boolean, True means don't process cue'ed receipts
 
         """
         self.hab = hab
         self.client = client  # use client for both rx and tx
+        self.verifier = verifier
         self.indirect = True if indirect else False
         self.kevery = eventing.Kevery(kevers=self.hab.kevers,
                                       db=self.hab.db,
                                       opre=self.hab.pre,
                                       indirect=self.indirect,
                                       local=False)
+
+        if self.verifier is not None:
+            self.tvy = Tevery(tevers=self.verifier.tevers,
+                              reger=self.verifier.reger,
+                              db=self.hab.db,
+                              regk=None, local=False)
+        else:
+            self.tvy = None
+
         self.parser = eventing.Parser(ims=self.client.rxbs,
                                       framed=True,
                                       kvy=self.kevery,
-                                      cloned=self.indirect)
+                                      cloned=self.indirect,
+                                      tvy=self.tvy)
+
         doers = doers if doers is not None else []
         doers.extend([self.msgDo, self.escrowDo])
         if not self.indirect:
@@ -377,7 +395,7 @@ class Directant(doing.DoDoer):
        ._tock is hidden attribute for .tock property
     """
 
-    def __init__(self, hab, server, doers=None, **kwa):
+    def __init__(self, hab, server, verifier=None, doers=None, **kwa):
         """
         Initialize instance.
 
@@ -387,9 +405,11 @@ class Directant(doing.DoDoer):
 
         Parameters:
             hab is Habitat instance of local controller's context
+            verifier (optional) is Verifier instance of local controller's TEL context
             server is TCP Server instance
         """
         self.hab = hab
+        self.verifier = verifier
         self.server = server  # use server for cx
         self.rants = dict()
         doers = doers if doers is not None else []
@@ -435,7 +455,7 @@ class Directant(doing.DoDoer):
                     continue
 
                 if ca not in self.rants:  # create Reactant and extend doers with it
-                    rant = Reactant(tymth=self.tymth, hab=self.hab, remoter=ix)
+                    rant = Reactant(tymth=self.tymth, hab=self.hab, verifier=self.verifier, remoter=ix)
                     self.rants[ca] = rant
                     # add Reactant (rant) doer to running doers
                     self.extend(doers=[rant])  # open and run rant as doer
@@ -515,7 +535,7 @@ class Reactant(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, remoter, doers=None, **kwa):
+    def __init__(self, hab, remoter, verifier=None, doers=None, **kwa):
         """
         Initialize instance.
 
@@ -526,22 +546,38 @@ class Reactant(doing.DoDoer):
 
         Parameters:
             hab is Habitat instance of local controller's context
+            verifier is Verifier instance of local controller's TEL context
             remoter is TCP Remoter instance
             doers is list of doers (do generator instances, functions or methods)
 
         """
         self.hab = hab
+        self.verifier = verifier
         self.remoter = remoter  # use remoter for both rx and tx
+
+        doers = doers if doers is not None else []
+        doers.extend([self.msgDo, self.cueDo, self.escrowDo])
+
         #  neeeds unique kevery with ims per remoter connnection
         self.kevery = eventing.Kevery(kevers=self.hab.kevers,
                                       db=self.hab.db,
                                       opre=self.hab.pre,
                                       local=False)
+
+        if self.verifier is not None:
+            self.tevery = Tevery(tevers=self.verifier.tevers,
+                                 reger=self.verifier.reger,
+                                 db=self.hab.db,
+                                 regk=None, local=False)
+            doers.extend([self.verifierDo])
+        else:
+            self.tevery = None
+
         self.parser = eventing.Parser(ims=self.remoter.rxbs,
                                       framed=True,
-                                      kvy=self.kevery)
-        doers = doers if doers is not None else []
-        doers.extend([self.msgDo, self.cueDo, self.escrowDo])
+                                      kvy=self.kevery,
+                                      tvy=self.tevery)
+
         super(Reactant, self).__init__(doers=doers, **kwa)
         if self.tymth:
             self.remoter.wind(self.tymth)
@@ -604,6 +640,33 @@ class Reactant(doing.DoDoer):
         while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
                 self.sendMessage(msg, label="chit or receipt or replay")
+                yield  # throttle just do one cue at a time
+            yield
+        return False  # should never get here except forced close
+
+    @doing.doize()
+    def verifierDo(self, tymth=None, tock=0.0, **opts):
+        """
+         Returns Doist compatibile generator method (doer dog) to process
+            .tevery.cues deque
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        Usage:
+            add to doers list
+        """
+        while True:
+            for msg in self.verifier.processCuesIter(self.tevery.cues):
+                self.sendMessage(msg, label="replay")
                 yield  # throttle just do one cue at a time
             yield
         return False  # should never get here except forced close

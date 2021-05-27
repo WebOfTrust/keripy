@@ -13,6 +13,7 @@ from .. import help
 from ..db import dbing
 from ..core import  coring, eventing
 from . import basing, keeping, directing
+from ..vdr import verifying
 
 logger = help.ogler.getLogger()
 
@@ -22,19 +23,22 @@ def setupWitness(name="witness", localPort=5620):
     wsith = 1
 
     hab = basing.Habitat(name=name, temp=False, transferable=False,
-                            isith=wsith, icount=1,)
+                         isith=wsith, icount=1,)
+    verf = verifying.Verifier(name=name, hab=hab)
+
     logger.info("\nWitness- %s:\nNamed %s on TCP port %s.\n\n",
                 hab.pre, hab.name, localPort)
 
     # setup doers
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
     dbDoer = dbing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+    regDoer = dbing.BaserDoer(baser=verf.reger)
 
     server = serving.Server(host="", port=localPort)
     serverDoer = doing.ServerDoer(server=server)
-    directant = directing.Directant(hab=hab, server=server)
+    directant = directing.Directant(hab=hab, server=server, verifier=verf)
 
-    return [ksDoer, dbDoer, directant, serverDoer]
+    return [ksDoer, dbDoer, regDoer, directant, serverDoer]
 
 
 class Indirector(doing.DoDoer):

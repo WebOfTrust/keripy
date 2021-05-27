@@ -1,19 +1,15 @@
-from collections import namedtuple, deque
-from dataclasses import dataclass, astuple
-
-import blake3
 import json
-
-from keri.db.dbing import Baser, fnKey, dgKey, snKey
-from keri.core.coring import (Matter, MtrDex, Serder, Serials, Versify, Prefixer,
-                              Ilks, Seqner, Verfer)
-from keri.core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
-from keri.kering import (EmptyMaterialError, DerivationError, MissingWitnessSignatureError, Version,
-                         MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
-
-from keri.vdr.viring import Registry, nsKey
+from collections import namedtuple, deque
 
 from orderedset import OrderedSet as oset
+
+from keri.core.coring import (MtrDex, Serder, Serials, Versify, Prefixer,
+                              Ilks, Seqner, Verfer)
+from keri.core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
+from keri.db.dbing import Baser, dgKey, snKey
+from keri.kering import (MissingWitnessSignatureError, Version,
+                         MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
+from keri.vdr.viring import Registry, nsKey
 from .. import help
 
 logger = help.ogler.getLogger()
@@ -30,7 +26,6 @@ BRV_LABELS = ["v", "i", "s", "t", "ra", "p"]
 VcState = namedtuple("VcState", 'issued revoked')
 
 VcStates = VcState(issued='issued', revoked="revoked")
-
 
 
 def incept(
@@ -334,6 +329,55 @@ def backerRevoke(
                )
 
     return Serder(ked=ked)  # return serialized ked
+
+
+def query(regk,
+          vcid,
+          res,
+          dt=None,
+          dta=None,
+          dtb=None,
+          version=Version,
+          kind=Serials.json):
+
+    """
+    Returns serder of query event message.
+    Utility function to automate creation of interaction events.
+
+     Parameters:
+        pre is identifier prefix qb64
+        dig is digest of previous event qb64
+        sn is int sequence number
+        data is list of dicts of comitted data such as seals
+        version is Version instance
+        kind is serialization kind
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.req
+
+    qry = dict(
+        i=vcid,
+        ri=regk
+    )
+
+    if dt is not None:
+        qry["dt"] = dt
+
+    if dta is not None:
+        qry["dta"] = dt
+
+    if dtb is not None:
+        qry["dtb"] = dt
+
+
+    ked = dict(v=vs,  # version string
+               t=ilk,
+               r=res,  # resource type for single item request
+               q=qry
+               )
+
+    return Serder(ked=ked)  # return serialized ked
+
 
 
 class Tever:
@@ -661,10 +705,10 @@ class Tever:
         Process VC TEL revocation events (rev, brv)
         Currently placeholder
         """
+
         ked = serder.ked
         vcpre = ked["i"]
         ilk = ked["t"]
-        vci =nsKey([self.prefixer.qb64, vcpre])
 
         labels = REV_LABELS if ilk == Ilks.rev else BRV_LABELS
 
@@ -674,7 +718,7 @@ class Tever:
                                       "evt = {}.".format(k, ilk, ked))
 
         # have to compare with VC issuance serder
-        vci =nsKey([self.prefixer.qb64, vcpre])
+        vci = nsKey([self.prefixer.qb64, vcpre])
 
         dig = self.reger.getTel(snKey(pre=vci, sn=sn-1))
         ievt = self.reger.getTvt(dgKey(pre=vci, dig=dig))
@@ -689,7 +733,7 @@ class Tever:
                                                                self.serder.diger.qb64,
                                                                ked))
 
-        if ilk is Ilks.rev: # simple revoke
+        if ilk is Ilks.rev:  # simple revoke
             if self.noBackers is False:
                 raise ValidationError("invalid simple issue evt {} against backer based registry {}".
                                       format(ked, self.regk))
@@ -699,11 +743,11 @@ class Tever:
                 self.escrowALEvent(serder=serder)
 
                 raise MissingAnchorError("Failure verify event = {} "
-                            "".format(serder.ked))
+                                         "".format(serder.ked))
 
             self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, diger=diger)
 
-        elif ilk is Ilks.brv: # backer revoke
+        elif ilk is Ilks.brv:  # backer revoke
             if self.noBackers is True:
                 raise ValidationError("invalid backer issue evt {} against backerless registry {}".
                                       format(ked, self.regk))
@@ -729,7 +773,7 @@ class Tever:
         Parameters:
           vcpre:  the VC identifier
         """
-        vci =nsKey([self.prefixer.qb64, vcpre])
+        vci = nsKey([self.prefixer.qb64, vcpre])
         cnt = self.reger.cntTels(vci)
         if cnt == 1:
             return VcStates.issued
@@ -785,7 +829,7 @@ class Tever:
             self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
         self.reger.putTvt(key, serder.raw)
         self.reger.putTel(snKey(pre, sn), dig)
-        logger.info("Tever state: %s Added to KEL valid event=\n%s\n",
+        logger.info("Tever state: %s Added to TEL valid event=\n%s\n",
                     pre, json.dumps(serder.ked, indent=1))
 
 
@@ -855,7 +899,7 @@ class Tever:
         verify pre, sn and dig against serder
         """
 
-        dig = self.db.getFe(key=fnKey(pre=self.pre, sn=seqner.sn))
+        dig = self.db.getKeLast(key=snKey(pre=self.pre, sn=seqner.sn))
         if not dig:
             return False
         else:
@@ -947,6 +991,7 @@ class Tever:
         baks = [bytes(bak) for bak in self.reger.getBaks(dgkey)]
 
         return rtoad, baks
+
 
 class Tevery:
     """
@@ -1064,7 +1109,7 @@ class Tevery:
                     # witness style backers will need to send receipts so lets queue them up for now
                     self.cues.append(dict(kin="receipt", serder=serder))
             else:  # duplicitious
-                raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
+                raise LikelyDuplicitousError("Likely Duplicitous event={} with sn {}.".format(ked, sn))
 
 
     def processQuery(self, serder):
@@ -1084,14 +1129,14 @@ class Tevery:
         if res == "tels":
             mgmt = qry["ri"]
             vcpre = qry["i"]
+            vck = nsKey([mgmt, vcpre])
 
             cloner = self.reger.clonePreIter(pre=mgmt, fn=0)  # create iterator at 0
             msgs = bytearray()  # outgoing messages
             for msg in cloner:
                 msgs.extend(msg)
 
-            cloner = self.reger.clonePreIter(pre=vcpre, fn=0)  # create iterator at 0
-            msgs = bytearray()  # outgoing messages
+            cloner = self.reger.clonePreIter(pre=vck, fn=0)  # create iterator at 0
             for msg in cloner:
                 msgs.extend(msg)
 

@@ -5089,9 +5089,9 @@ class Parser:
             elif res in ["tels"]:
                 try:
                     tvy.processQuery(serder=serder)
-                except AttributeError:
+                except AttributeError as e:
                     raise ValidationError("No kevery to process so dropped msg"
-                                          "= {}.".format(serder.pretty))
+                                      "= {} from {}.".format(serder.pretty, e))
 
             else:
                 raise ValidationError("Invalid resource type {} so dropped msg"

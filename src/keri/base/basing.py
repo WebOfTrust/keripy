@@ -523,8 +523,6 @@ class Habitat:
 
             elif cueKin in ("replay", ):
                 msgs = cue["msgs"]
-                print("processing replay")
-                print(msgs)
                 yield msgs
 
 

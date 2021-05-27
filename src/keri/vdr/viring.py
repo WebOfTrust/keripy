@@ -85,6 +85,10 @@ class Registry(dbing.LMDBer):
 
 
     """
+    TailDirPath = "keri/reg"
+    AltTailDirPath = ".keri/reg"
+    TempPrefix = "keri_reg_"
+
     def __init__(self, headDirPath=None, reopen=True, **kwa):
         """
         Setup named sub databases.
