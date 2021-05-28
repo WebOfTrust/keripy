@@ -473,8 +473,9 @@ def test_replay():
         assert camHab.pre in artKevery.kevers
         assert len(artKevery.cues) == 1
 
-        eventing.Parser().process(ims=bytearray(debFelMsgs), kvy=artKevery, cloned=True)
-        # artKevery.process(ims=bytearray(debFelMsgs), cloned=True)  # give copy to process
+        # process in cloned mode
+        artKevery.cloned = True
+        eventing.Parser().process(ims=bytearray(debFelMsgs), kvy=artKevery)
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 8
@@ -633,9 +634,9 @@ def test_replay_all():
         eventing.Parser().process(ims=bytearray(camIcpMsg), kvy=artKevery)
         assert camHab.pre in artKevery.kevers
         assert len(artKevery.cues) == 1
-        # give copy to process
-        eventing.Parser().process(ims=bytearray(debAllFelMsgs), kvy=artKevery, cloned=True)
-        # artKevery.process(ims=bytearray(debFelMsgs), cloned=True)
+        # give copy to process in cloned mode
+        artKevery.cloned = True
+        eventing.Parser().process(ims=bytearray(debAllFelMsgs), kvy=artKevery)
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 9

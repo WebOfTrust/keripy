@@ -100,7 +100,7 @@ class Indirector(doing.DoDoer):
     """
 
 
-    def __init__(self, hab, client, indirect=False, doers=None, **kwa):
+    def __init__(self, hab, client, direct=True, doers=None, **kwa):
         """
         Initialize instance.
 
@@ -112,24 +112,25 @@ class Indirector(doing.DoDoer):
         Parameters:
             hab is Habitat instance of local controller's context
             client is TCP Client instance
-            indirect is Boolean, True means don't process cue'ed receipts
+            direct is Boolean, True means direwct mode process cured receipts
+                               False means indirect mode don't process cue'ed receipts
 
         """
         self.hab = hab
         self.client = client  # use client for both rx and tx
-        self.indirect = True if indirect else False
+        self.direct = True if direct else False
         self.kevery = eventing.Kevery(kevers=self.hab.kevers,
                                       db=self.hab.db,
                                       opre=self.hab.pre,
-                                      indirect=self.indirect,
-                                      local=False)
+                                      local=False,
+                                      cloned=not self.direct,
+                                      direct=self.direct)
         self.parser = eventing.Parser(ims=self.client.rxbs,
                                       framed=True,
-                                      kvy=self.kevery,
-                                      cloned=self.indirect)
+                                      kvy=self.kevery)
         doers = doers if doers is not None else []
         doers.extend([self.msgDo, self.escrowDo])
-        if not self.indirect:
+        if self.direct:
             doers.extend([self.cueDo])
 
         super(Indirector, self).__init__(doers=doers, **kwa)
