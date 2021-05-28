@@ -698,7 +698,7 @@ class Consoler(doing.Doer):
             return False
         chunks = line.lower().split()
         if not chunks:  # empty list
-            console.put("Try one of: l[eft] r[ight] w[alk] s[top]\n")
+            self.console.put("Try one of: l[eft] r[ight] w[alk] s[top]\n")
             return False
         command = None
         verb = chunks[0]
