@@ -2089,6 +2089,10 @@ class Kevery:
         .opre is fully qualified base64 identifier prefix of own identifier if any
         .local is Boolean, True means only process msgs for own events if .opre
                            False means only process msgs for not own events if .opre
+        cloned (Boolen): True means cloned message stream so use attached
+                datetimes from clone source not own
+        direct is Boolean, True means direct mode so cue receipts
+                               False means indirect mode so don't cue receipts
 
     Properties:
         .kever own Kever if self.pre else None
@@ -2105,7 +2109,8 @@ class Kevery:
     TimeoutVRE = 3600  # seconds to timeout unverified transferable receipt escrows
 
 
-    def __init__(self, cues=None, kevers=None, db=None, opre=None, local=False, indirect=False):
+    def __init__(self, cues=None, kevers=None, db=None, opre=None, local=False,
+                 cloned=False, direct=True):
         """
         Initialize instance:
 
@@ -2116,7 +2121,10 @@ class Kevery:
             opre is local or own identifier prefix. Some restriction if present
             local is Boolean, True means only process msgs for own events if .pre
                         False means only process msgs for not own events if .pre
-            indirect is Boolean, True means don't cue receipts
+            cloned (Boolen): True means cloned message stream so use attached
+                datetimes from clone source not own
+            direct is Boolean, True means direct mode so cue receipts
+                               False means indirect mode so don't cue receipts
         """
         self.cues = cues if cues is not None else deque()
         self.kevers = kevers if kevers is not None else dict()
@@ -2125,7 +2133,8 @@ class Kevery:
         self.db = db
         self.opre = opre  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions
-        self.indirect = True if indirect else False
+        self.cloned = True if cloned else False  # process as cloned
+        self.direct = True if direct else False
 
 
     @property
@@ -2198,8 +2207,8 @@ class Kevery:
                               baser=self.db,
                               seqner=seqner,
                               diger=diger,
-                              firner=firner,
-                              dater=dater,
+                              firner=firner if self.cloned else None,
+                              dater=dater if self.cloned else None,
                               kevers=self.kevers,
                               cues=self.cues,
                               opre=self.opre,
@@ -2207,7 +2216,7 @@ class Kevery:
                               check=check)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
-                if not self.indirect or not self.opre or self.opre != pre:  # not own event when owned
+                if self.direct or not self.opre or self.opre != pre:  # not own event when owned
                     # create cue for receipt   direct mode for now
                     #  receipt of actual type is dependent on own type of identifier
                     self.cues.append(dict(kin="receipt", serder=serder))
@@ -2262,9 +2271,11 @@ class Kevery:
                     # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers, wigers=wigers,
                                  seqner=seqner, diger=diger,
-                                 firner=firner, dater=dater, check=check)
+                                 firner=firner if self.cloned else None,
+                                 dater=dater if self.cloned else None,
+                                 check=check)
 
-                    if not self.indirect or not self.opre or self.opre != pre:  # not own event when owned
+                    if self.direct or not self.opre or self.opre != pre:  # not own event when owned
                         # create cue for receipt   direct mode for now
                         #  receipt of actual type is dependent on own type of identifier
                         self.cues.append(dict(kin="receipt", serder=serder))
@@ -4311,16 +4322,12 @@ class Parser:
         framed (Boolean): True means stream is packet framed
         pipeline (Boolean): True means use pipeline processor to process
                 whenever stream includes pipelined count codes.
-        opre (str): fully qualified base64 identifier prefix of own identifier if any
-        local (Boolean): True means only process msgs for own events if .opre
-                         False means only process msgs for not own events if .opre
         kvy (Kevery): route KEL message types to this instance
         tvy (Tevery): route TEL message types to this instance
 
     """
 
-    def __init__(self, ims=None, framed=True, pipeline=False, cloned=False,
-                 kvy=None, tvy=None):
+    def __init__(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
         """
         Initialize instance:
 
@@ -4330,15 +4337,12 @@ class Parser:
                 its foot of attachments, not multiple sets of msg body plus foot
             pipeline (Boolean): True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-            cloned i(Boolen): True means cloned message stream so use attached
-                datetimes from clone source not own
             kvy (Kevery): route KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
         """
         self.ims = ims if ims is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream
         self.pipeline = True if pipeline else False  # process as pipelined
-        self.cloned = True if cloned else False  # process as cloned
         self.kvy = kvy
         self.tvy = tvy
 
@@ -4426,8 +4430,7 @@ class Parser:
                 yield
 
 
-    def process(self, ims=None, framed=None, pipeline=None, cloned=None,
-                kvy=None, tvy=None):
+    def process(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
         """
         Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
@@ -4445,10 +4448,6 @@ class Parser:
             pipeline is Boolean, True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
 
-            cloned is Boolen, True means cloned message stream so use attached
-                datetimes from clone source not own. False means ignore attached
-                datetimes.
-
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
 
@@ -4459,7 +4458,6 @@ class Parser:
         processor = self.allProcessor(ims=ims,
                                        framed=framed,
                                        pipeline=pipeline,
-                                       cloned=cloned,
                                        kvy=kvy,
                                        tvy=tvy)
 
@@ -4470,8 +4468,7 @@ class Parser:
                 break
 
 
-    def processOne(self, ims=None, framed=True, pipeline=False, cloned=False,
-                   kvy=None, tvy=None):
+    def processOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
         """
         Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
@@ -4489,10 +4486,6 @@ class Parser:
             pipeline is Boolean, True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
 
-            cloned is Boolen, True means cloned message stream so use attached
-                datetimes from clone source not own. False means ignore attached
-                datetimes.
-
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
 
@@ -4503,7 +4496,6 @@ class Parser:
         processor = self.onceProcessor(ims=ims,
                                         framed=framed,
                                         pipeline=pipeline,
-                                        cloned=cloned,
                                         kvy=kvy,
                                         tvy=tvy)
         while True:
@@ -4513,8 +4505,7 @@ class Parser:
                 break
 
 
-    def allProcessor(self, ims=None, framed=None, pipeline=None, cloned=None,
-                     kvy=None, tvy=None):
+    def allProcessor(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
         """
         Returns generator to process all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
@@ -4532,10 +4523,6 @@ class Parser:
             pipeline is Boolean, True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
 
-            cloned is Boolen, True means cloned message stream so use attached
-                datetimes from clone source not own. False means ignore attached
-                datetimes.
-
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
 
@@ -4551,7 +4538,6 @@ class Parser:
 
         framed = framed if framed is not None else self.framed
         pipeline = pipeline if pipeline is not None else self.pipeline
-        cloned = cloned if cloned is not None else self.cloned
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
 
@@ -4560,7 +4546,6 @@ class Parser:
                 done = yield from self.msgProcessor(ims=ims,
                                                     framed=framed,
                                                     pipeline=pipeline,
-                                                    cloned=cloned,
                                                     kvy=kvy,
                                                     tvy=tvy)
 
@@ -4590,8 +4575,7 @@ class Parser:
         return True
 
 
-    def onceProcessor(self, ims=None, framed=None, pipeline=None, cloned=None,
-                      kvy=None, tvy=None):
+    def onceProcessor(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
         """
         Returns generator to process one message from incoming message stream, ims.
         If ims not provided process messages from .ims
@@ -4606,10 +4590,6 @@ class Parser:
 
             pipeline is Boolean, True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-
-            cloned is Boolen, True means cloned message stream so use attached
-                datetimes from clone source not own. False means ignore attached
-                datetimes.
 
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
@@ -4626,7 +4606,6 @@ class Parser:
 
         framed = framed if framed is not None else self.framed
         pipeline = pipeline if pipeline is not None else self.pipeline
-        cloned = cloned if cloned is not None else self.cloned
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
 
@@ -4637,7 +4616,6 @@ class Parser:
                 done = yield from self.msgProcessor(ims=ims,
                                                     framed=framed,
                                                     pipeline=pipeline,
-                                                    cloned=cloned,
                                                     kvy=kvy,
                                                     tvy=tvy)
 
@@ -4668,8 +4646,7 @@ class Parser:
         return done
 
 
-    def processor(self, ims=None, framed=None, pipeline=None, cloned=None,
-                  kvy=None, tvy=None):
+    def processor(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
         """
         Returns generator to continually process messages from incoming message
         stream, ims. Yields waits whenever ims empty.
@@ -4686,10 +4663,6 @@ class Parser:
             pipeline is Boolean, True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
 
-            cloned is Boolen, True means cloned message stream so use attached
-                datetimes from clone source not own. False means ignore attached
-                datetimes.
-
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
 
@@ -4705,7 +4678,6 @@ class Parser:
 
         framed = framed if framed is not None else self.framed
         pipeline = pipeline if pipeline is not None else self.pipeline
-        cloned = cloned if cloned is not None else self.cloned
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
 
@@ -4714,7 +4686,6 @@ class Parser:
                 done = yield from self.msgProcessor(ims=ims,
                                                     framed=framed,
                                                     pipeline=pipeline,
-                                                    cloned=cloned,
                                                     kvy=kvy,
                                                     tvy=tvy)
 
@@ -4744,8 +4715,7 @@ class Parser:
         return True
 
 
-    def msgProcessor(self, ims=None, framed=True, pipeline=False, cloned=False,
-                     kvy=None, tvy=None):
+    def msgProcessor(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
         """
         Returns generator that extracts one msg with attached crypto material
         (signature etc) from incoming message stream, ims, and dispatches
@@ -4766,10 +4736,6 @@ class Parser:
 
             pipeline is Boolean, True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-
-            cloned is Boolen, True means cloned message stream so use attached
-                datetimes from clone source not own. False means ignore attached
-                datetimes.
 
             kevery (Kevery): route KERI KEL message types to this instance
             tevery (Tevery): route TEL message types to this instance
@@ -5029,8 +4995,8 @@ class Parser:
                                         wigers=wigers,
                                         seqner=seqner,
                                         diger=diger,
-                                        firner=firner if cloned else None,
-                                        dater=dater if cloned else None)
+                                        firner=firner,
+                                        dater=dater)
 
                 if cigars:
                     kvy.processReceiptCouples(serder, cigars, firner=firner)
