@@ -228,12 +228,14 @@ class LMDBer:
     """
     HeadDirPath = "/usr/local/var"  # default in /usr/local/var
     TailDirPath = "keri/db"
+    CleanTailDirPath = "keri/clean/db"
     AltHeadDirPath = "~"  #  put in ~ as fallback when desired not permitted
     AltTailDirPath = ".keri/db"
+    AltCleanTailDirPath = ".keri/clean/db"
     TempHeadDir = "/tmp"
     TempPrefix = "keri_lmdb_"
     TempSuffix = "_test"
-    MaxNamedDBs = 20
+    MaxNamedDBs = 32
 
     def __init__(self, name='main', temp=False, headDirPath=None, dirMode=None,
                  reopen=True):
@@ -269,7 +271,8 @@ class LMDBer:
 
     def reopen(self, temp=None, headDirPath=None, dirMode=None):
         """
-        Use or Create if not preexistent, directory path for lmdb at .path
+        Open if closed or close and reopen if opened or create and open if not
+        if not preexistent, directory path for lmdb at .path and then
         Open lmdb and assign to .env
 
         Parameters:
@@ -284,6 +287,28 @@ class LMDBer:
         if self.opened:
             self.close()
 
+        self.makePath(temp=temp, headDirPath=headDirPath, dirMode=dirMode)
+
+        # open lmdb major database instance
+        # creates files data.mdb and lock.mdb in .dbDirPath
+        self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs)
+        self.opened = True
+
+
+    def makePath(self, temp=None, headDirPath=None, dirMode=None):
+        """
+        Make .path by opening or creating and opening if not preexistent, directory
+        path for lmdb and assigning to .path
+
+        Parameters:
+            temp is optional boolean:
+                If None ignore Otherwise
+                    Assign to .temp
+                    If True then open temporary directory, clear on close
+                    If False then open persistent directory, do not clear on close
+            headDirPath is optional str head directory pathname of main database
+                If not provided use default .HeadDirpath
+        """
         if temp is not None:
             self.temp = True if temp else False  # need .temp for clear on .close
 
@@ -339,11 +364,6 @@ class LMDBer:
             if dirMode is not None:  # set mode if mode and not temp
                 os.chmod(self.path, dirMode)
 
-        # open lmdb major database instance
-        # creates files data.mdb and lock.mdb in .dbDirPath
-        self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs)
-        self.opened = True
-
 
     def close(self, clear=False):
         """
@@ -366,7 +386,7 @@ class LMDBer:
 
     def clearDirPath(self):
         """
-        Remove lmdb directory at .path
+        Remove lmdb directory at end of .path
         """
         if os.path.exists(self.path):
             shutil.rmtree(self.path)
