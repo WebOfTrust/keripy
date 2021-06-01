@@ -1,13 +1,15 @@
+from unittest import mock
+
 import pytest
 
-from keri.base import basing, keeping, directing
-from keri.core.coring import Versify, Serials, Ilks, MtrDex, Prefixer, Serder, Signer, Seqner, Diger
+from keri.base import basing, keeping
+from keri.core.coring import Versify, Serials, Ilks, MtrDex, Prefixer, Serder, Signer, Seqner
 from keri.core.eventing import TraitDex, SealEvent
 from keri.db import dbing
 from keri.db.dbing import snKey, dgKey
-from keri.vdr import eventing, viring
 from keri.kering import Version, EmptyMaterialError, DerivationError, MissingAnchorError, ValidationError, \
     MissingWitnessSignatureError, LikelyDuplicitousError
+from keri.vdr import eventing, viring
 from keri.vdr.eventing import rotate, issue, revoke, backerIssue, backerRevoke, Tever, Tevery, VcStates
 from keri.vdr.viring import nsKey
 
@@ -255,24 +257,28 @@ def test_rotate():
     """ End Test """
 
 
-def test_simple_issue_revoke():
+def test_simple_issue_revoke(mockHelpingNowIso8601):
     vcdig = "DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM"
     regk = "EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw"
     dig = "EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"
 
     serder = issue(vcdig=vcdig, regk=regk)
-    assert serder.raw == (b'{"v":"KERI10JSON000092_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0",'
-                          b'"t":"iss","ri":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw"}')
+
+    assert serder.raw == (b'{"v":"KERI10JSON0000ba_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0",'
+                          b'"t":"iss","ri":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",'
+                          b'"dt":"2021-05-30T17:42:26.716070+00:00"}')
 
     serder = revoke(vcdig=vcdig, regk=regk, dig=dig)
+
     assert serder.raw == (
-        b'{"v":"KERI10JSON0000c5_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","t":"rev",'
-        b'"ri":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"}')
+        b'{"v":"KERI10JSON0000ed_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","t":"rev",'
+        b'"ri":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg",'
+        b'"dt":"2021-05-30T17:42:26.716070+00:00"}')
 
     """ End Test """
 
 
-def test_backer_issue_revoke():
+def test_backer_issue_revoke(mockHelpingNowIso8601):
     vcdig = "DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM"
     regk = "EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw"
     sn = 3
@@ -281,17 +287,17 @@ def test_backer_issue_revoke():
 
     serder = backerIssue(vcdig=vcdig, regk=regk, regsn=sn, regd=regd)
     assert serder.raw == (
-        b'{"v":"KERI10JSON000105_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM",'
+        b'{"v":"KERI10JSON00012d_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM",'
         b'"ii":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":"0","t":"bis",'
         b'"ra":{"i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":3,'
-        b'"d":"Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"}}')
+        b'"d":"Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"},"dt":"2021-05-30T17:42:26.716070+00:00"}')
 
     serder = backerRevoke(vcdig=vcdig, regk=regk, regsn=sn, regd=regd, dig=dig)
     assert serder.raw == (
-        b'{"v":"KERI10JSON000104_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","t":"brv",'
+        b'{"v":"KERI10JSON00012c_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","t":"brv",'
         b'"p":"EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg",'
         b'"ra":{"i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":3,'
-        b'"d":"Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"}}')
+        b'"d":"Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"},"dt":"2021-05-30T17:42:26.716070+00:00"}')
 
     """ End Test """
 
@@ -459,7 +465,7 @@ def test_tever_escrow():
         assert reg.getTwe(snKey(pre=regk, sn=0)) == b'EjhsbizNCwN_EFuOxbUt8CN0xOctGRIVOW8X-XqA3fSk'
 
 
-def test_tever_no_backers():
+def test_tever_no_backers(mockHelpingNowIso8601):
     # registry with no backers
     # registry with backer and receipt
     with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
@@ -524,10 +530,10 @@ def test_tever_no_backers():
 
         vci = nsKey([regk, vcdig])
         dgkey = dgKey(pre=vci, dig=iss.dig)
-        assert reg.getTvt(dgkey) == (
-            b'{"v":"KERI10JSON000092_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"0","t":"iss",'
-            b'"ri":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"}')
-        assert reg.getAnc(dgkey) == b'0AAAAAAAAAAAAAAAAAAAAAAwEC41xCFcd_4rbTn3fcmlgq6BjUSk6cjBKBX1uf3ygyrM'
+        assert bytes(reg.getTvt(dgkey)) == (
+            b'{"v":"KERI10JSON0000ba_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"0","t":"iss",'
+            b'"ri":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw","dt":"2021-05-30T17:42:26.716070+00:00"}')
+        assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAAwEXs-HnlZg21mpy11b9npOboGsNhtJC7qK41llK-pgW_s'
 
         # revoke vc with no backers
         rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.dig)
@@ -541,13 +547,15 @@ def test_tever_no_backers():
 
         tev.update(rev, seqner=seqner, diger=diger)
         dgkey = dgKey(pre=vci, dig=rev.dig)
-        assert reg.getTvt(dgkey) == (
-            b'{"v":"KERI10JSON0000c5_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"1","t":"rev",'
-            b'"ri":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw","p":"EMghaQVkY8iMi44zZGzx6LifEw3X5uL8am7IhoPOLJjE"}')
-        assert reg.getAnc(dgkey) == b'0AAAAAAAAAAAAAAAAAAAAABAECgc6yHeTRhsKh1M7k65feWZGCf_MG0dWoei5Q6SwgqU'
+        assert bytes(reg.getTvt(dgkey)) == (
+            b'{"v":"KERI10JSON0000ed_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU",'
+            b'"s":"1","t":"rev","ri":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw","p":"E'
+            b'rVwJASyaJ9JgDebTAbCKxECbvECW1LmYrgQ5vIolYXM","dt":"2021-05-30T17:42:26.71607'
+            b'0+00:00"}')
+        # assert reg.getAnc(dgkey) == b'0AAAAAAAAAAAAAAAAAAAAABAECgc6yHeTRhsKh1M7k65feWZGCf_MG0dWoei5Q6SwgqU'
 
 
-def test_tever_backers():
+def test_tever_backers(mockHelpingNowIso8601):
     # registry with backer and receipt
     with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         valSecret = 'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw'
@@ -631,11 +639,11 @@ def test_tever_backers():
 
         vci = nsKey([regk, vcdig])
         dgkey = dgKey(pre=vci, dig=bis.dig)
-        assert reg.getTvt(dgkey) == (
-            b'{"v":"KERI10JSON000105_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU",'
+        assert bytes(reg.getTvt(dgkey)) == (
+            b'{"v":"KERI10JSON00012d_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU",'
             b'"ii":"EBZR8LxEozgFa6UXwtSAmiXsmdChrT7Hr-jcxc9NFfrU","s":"0","t":"bis",'
             b'"ra":{"i":"EBZR8LxEozgFa6UXwtSAmiXsmdChrT7Hr-jcxc9NFfrU","s":1,'
-            b'"d":"EZH2Cfw3nvcMRgY31Jyc2zHVh4a0LO_bVZ4EmL4V8Ol8"}}')
+            b'"d":"EZH2Cfw3nvcMRgY31Jyc2zHVh4a0LO_bVZ4EmL4V8Ol8"},"dt":"2021-05-30T17:42:26.716070+00:00"}')
 
 
 def test_tevery():

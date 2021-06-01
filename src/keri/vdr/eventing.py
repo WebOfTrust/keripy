@@ -1,5 +1,5 @@
 import json
-from collections import namedtuple, deque
+from collections import deque, namedtuple
 
 from orderedset import OrderedSet as oset
 
@@ -7,6 +7,7 @@ from keri.core.coring import (MtrDex, Serder, Serials, Versify, Prefixer,
                               Ilks, Seqner, Verfer)
 from keri.core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
 from keri.db.dbing import Baser, dgKey, snKey
+from keri.help import helping
 from keri.kering import (MissingWitnessSignatureError, Version,
                          MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
 from keri.vdr.viring import Registry, nsKey
@@ -17,11 +18,11 @@ logger = help.ogler.getLogger()
 VCP_LABELS = ["v", "i", "s", "t", "bt", "b", "c"]
 VRT_LABELS = ["v", "i", "s", "t", "p", "bt", "b", "ba", "br"]
 
-ISS_LABELS = ["v", "i", "s", "t", "ri"]
-BIS_LABELS = ["v", "i", "s", "t", "ra"]
+ISS_LABELS = ["v", "i", "s", "t", "ri", "dt"]
+BIS_LABELS = ["v", "i", "s", "t", "ra", "dt"]
 
-REV_LABELS = ["v", "i", "s", "t", "p"]
-BRV_LABELS = ["v", "i", "s", "t", "ra", "p"]
+REV_LABELS = ["v", "i", "s", "t", "p", "dt"]
+BRV_LABELS = ["v", "i", "s", "t", "ra", "p", "dt"]
 
 VcState = namedtuple("VcState", 'issued revoked')
 
@@ -213,7 +214,8 @@ def issue(
                i=vcdig,  # qb64 prefix
                s="{:x}".format(0),  # hex string no leading zeros lowercase
                t=Ilks.iss,
-               ri=regk
+               ri=regk,
+               dt=helping.nowIso8601()
                )
 
     return Serder(ked=ked)  # return serialized ked
@@ -247,7 +249,8 @@ def revoke(
                s="{:x}".format(isn),  # hex string no leading zeros lowercase
                t=ilk,
                ri=regk,
-               p=dig
+               p=dig,
+               dt=helping.nowIso8601()
                )
 
     return Serder(ked=ked)  # return serialized ked
@@ -268,7 +271,7 @@ def backerIssue(
 
     Parameters:
         vcdig is hash digest of vc content qb64
-        regk is regsitry identifier prefix qb64
+        regk is registry identifier prefix qb64
         regsn is int sequence number of anchoring registry TEL event
         regd is digest qb64 of anchoring registry TEL event
 
@@ -285,7 +288,8 @@ def backerIssue(
                ii=regk,
                s="{:x}".format(isn),  # hex string no leading zeros lowercase
                t=ilk,
-               ra=seal._asdict()
+               ra=seal._asdict(),
+               dt=helping.nowIso8601(),
                )
 
     return Serder(ked=ked)  # return serialized ked
@@ -325,7 +329,8 @@ def backerRevoke(
                s="{:x}".format(isn),  # hex string no leading zeros lowercase
                t=ilk,
                p=dig,
-               ra=seal._asdict()
+               ra=seal._asdict(),
+               dt=helping.nowIso8601(),
                )
 
     return Serder(ked=ked)  # return serialized ked
@@ -470,7 +475,6 @@ class Tever:
                       bigers=bigers,
                       baks=self.baks)
 
-
     def incept(self, serder):
 
         ked = serder.ked
@@ -525,12 +529,12 @@ class Tever:
         ilk = ked["t"]
         sn = ked["s"]
 
-        incept = ilk in (Ilks.iss, Ilks.bis)
+        icp = ilk in (Ilks.iss, Ilks.bis)
 
         # validate SN for
-        sn = validateSN(sn, inceptive=incept)
+        sn = validateSN(sn, inceptive=icp)
 
-        if ilk in [Ilks.vrt]:
+        if ilk in (Ilks.vrt,):
             if self.noBackers is True:
                 raise ValidationError("invalid rotation evt {} against backerless registry {}".
                                       format(ked, self.regk))
@@ -546,7 +550,6 @@ class Tever:
             self.sn = sn
             self.serder = serder
             self.ilk = ilk
-
             self.toad = toad
             self.baks = baks
             self.cuts = cuts
@@ -568,7 +571,6 @@ class Tever:
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
 
-
     def rotate(self, serder, sn):
         """
         Process registry management TEL, non-inception events (vrt)
@@ -585,7 +587,7 @@ class Tever:
                                                                ked))
         if not sn == (self.sn + 1):  # sn not in order
             raise ValidationError("Invalid sn = {} expecting = {} for evt "
-                                  "= {}.".format(sn, self.sn+1, ked))
+                                  "= {}.".format(sn, self.sn + 1, ked))
 
         if not self.serder.compare(dig=dig):  # prior event dig not match
             raise ValidationError("Mismatch event dig = {} with state dig"
@@ -623,9 +625,9 @@ class Tever:
         if len(baks) != (len(self.baks) - len(cuts) + len(adds)):  # redundant?
             raise ValidationError("Invalid member combination among baks = {}, cuts ={}, "
                                   "and adds = {} for evt = {}.".format(self.baks,
-                                                                  cuts,
-                                                                  adds,
-                                                                  ked))
+                                                                       cuts,
+                                                                       adds,
+                                                                       ked))
 
         toad = int(ked["bt"], 16)
         if baks:
@@ -639,7 +641,6 @@ class Tever:
 
         return toad, baks, cuts, adds
 
-
     def issue(self, serder, seqner, diger, sn, bigers=None):
         """
         Process VC TEL issuance events (iss, bis)
@@ -649,7 +650,7 @@ class Tever:
         ked = serder.ked
         vcpre = ked["i"]
         ilk = ked["t"]
-        vci =nsKey([self.prefixer.qb64, vcpre])
+        vci = nsKey([self.prefixer.qb64, vcpre])
 
         labels = ISS_LABELS if ilk == Ilks.iss else BIS_LABELS
 
@@ -657,7 +658,6 @@ class Tever:
             if k not in ked:
                 raise ValidationError("Missing element = {} from {} event for "
                                       "evt = {}.".format(k, ilk, ked))
-
 
         if ilk == Ilks.iss:  # simple issue
             if self.noBackers is False:
@@ -676,12 +676,12 @@ class Tever:
                 self.escrowALEvent(serder=serder)
 
                 raise MissingAnchorError("Failure verify event = {} "
-                            "".format(serder.ked,
-                                                    ))
+                                         "".format(serder.ked,
+                                                   ))
 
             self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, diger=diger)
 
-        elif ilk == Ilks.bis: # backer issue
+        elif ilk == Ilks.bis:  # backer issue
             if self.noBackers is True:
                 raise ValidationError("invalid backer issue evt {} against backerless registry {}".
                                       format(ked, self.regk))
@@ -698,7 +698,6 @@ class Tever:
 
         else:
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
-
 
     def revoke(self, serder, seqner, diger, sn, bigers=None):
         """
@@ -720,7 +719,7 @@ class Tever:
         # have to compare with VC issuance serder
         vci = nsKey([self.prefixer.qb64, vcpre])
 
-        dig = self.reger.getTel(snKey(pre=vci, sn=sn-1))
+        dig = self.reger.getTel(snKey(pre=vci, sn=sn - 1))
         ievt = self.reger.getTvt(dgKey(pre=vci, dig=dig))
         if ievt is None:
             raise ValidationError("revoke without issue... probably have to escrow")
@@ -796,7 +795,6 @@ class Tever:
 
         return None if cnt == 0 else cnt - 1
 
-
     def logEvent(self, pre, sn, serder, seqner, diger, bigers=None, baks=None):
         """
         Update associated logs for verified event.
@@ -831,7 +829,6 @@ class Tever:
         self.reger.putTel(snKey(pre, sn), dig)
         logger.info("Tever state: %s Added to TEL valid event=\n%s\n",
                     pre, json.dumps(serder.ked, indent=1))
-
 
     def valAnchorBigs(self, serder, seqner, diger, bigers, toad, baks):
         """
@@ -870,11 +867,10 @@ class Tever:
             raise MissingAnchorError("Failure verify event = {} "
                                      "".format(serder.ked))
 
-
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
         if ((baks and not self.regk) or  # in promiscuous mode so assume must verify toad
-           (baks and not self.local and self.regk and self.regk not in baks)):
+                (baks and not self.local and self.regk and self.regk not in baks)):
             # validate that event is fully witnessed
             if isinstance(toad, str):
                 toad = int(toad, 16)
@@ -887,10 +883,10 @@ class Tever:
 
                 raise MissingWitnessSignatureError("Failure satisfying toad = {} "
                                                    "on witness sigs for {} for evt = {}.".format(toad,
-                                                    [siger.qb64 for siger in bigers],
-                                                    serder.ked))
+                                                                                                 [siger.qb64 for siger
+                                                                                                  in bigers],
+                                                                                                 serder.ked))
         return bigers
-
 
     def verifyAnchor(self, serder, seqner, diger):
         """
@@ -927,11 +923,10 @@ class Tever:
         sdig = seal["d"]
 
         if spre == serder.ked["i"] and ssn == serder.ked["s"] \
-            and serder.dig == sdig:
+                and serder.dig == sdig:
             return True
 
         return False
-
 
     def escrowPWEvent(self, serder, seqner, diger, bigers=None):
         """
@@ -948,8 +943,7 @@ class Tever:
         self.reger.putTvt(dgkey, serder.raw)
         self.reger.putTwe(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Tever state: Escrowed partially witnessed "
-                     "event = %s\n", serder.ked)
-
+                    "event = %s\n", serder.ked)
 
     def escrowALEvent(self, serder, bigers=None):
         """
@@ -964,12 +958,11 @@ class Tever:
         self.reger.putTvt(key, serder.raw)
         self.reger.putTae(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Tever state: Escrowed anchorless event "
-                     "event = %s\n", serder.ked)
+                    "event = %s\n", serder.ked)
 
     def getBackerState(self, ked):
         rega = ked["ra"]
         regi = rega["i"]
-        regs = rega["s"]
         regd = rega["d"]
 
         if regi != self.prefixer.qb64:
@@ -1023,7 +1016,6 @@ class Tevery:
         self.regk = regk  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions
 
-
     def processEvent(self, serder, seqner, diger, wigers=None):
         """
         Process one event serder with attached indexd signatures sigers
@@ -1057,11 +1049,11 @@ class Tevery:
             if self.local:
                 if self.regk != regk:  # nonlocal event when in local mode
                     raise ValueError("Nonlocal event regk={} when local mode for regk={}."
-                                                      "".format(regk, self.regk))
+                                     "".format(regk, self.regk))
             else:
                 if self.regk == regk:  # local event when not in local mode
                     raise ValueError("Local event regk={} when nonlocal mode."
-                                                      "".format(regk))
+                                     "".format(regk))
 
         if regk not in self.tevers:  # first seen for this registry
             if ilk in [Ilks.vcp]:
@@ -1084,7 +1076,7 @@ class Tevery:
                 raise OutOfOrderError("escrowed out of order event {}".format(ked))
 
         else:
-            if ilk in [Ilks.vcp]:
+            if ilk in (Ilks.vcp,):
                 # we don't have multiple signatures to verify so this
                 # is already first seen and then lifely duplicitious
                 raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
@@ -1095,8 +1087,7 @@ class Tevery:
                 sno = tever.sn + 1  # proper sn of new inorder event
             else:
                 esn = tever.vcSn(pre)
-                sno = 0 if esn is None else esn+1
-
+                sno = 0 if esn is None else esn + 1
 
             if sn > sno:  # sn later than sno so out of order escrow
                 # escrow out-of-order event
@@ -1110,7 +1101,6 @@ class Tevery:
                     self.cues.append(dict(kin="receipt", serder=serder))
             else:  # duplicitious
                 raise LikelyDuplicitousError("Likely Duplicitous event={} with sn {}.".format(ked, sn))
-
 
     def processQuery(self, serder):
         """
@@ -1143,7 +1133,6 @@ class Tevery:
             self.cues.append(dict(kin="replay", msgs=msgs))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
-
 
     @staticmethod
     def registryKey(serder):

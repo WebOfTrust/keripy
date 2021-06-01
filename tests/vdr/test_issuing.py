@@ -1,17 +1,13 @@
-import logging
-
 import pytest
 
-from keri.base import basing, keeping, directing
+from keri.base import basing, keeping
 from keri.core.coring import Serder
 from keri.db import dbing
 from keri.vdr import viring
 from keri.vdr.issuing import Issuer
 
-from keri import help  # logger support
 
-
-def test_issuer():
+def test_issuer(mockHelpingNowIso8601):
     # help.ogler.resetLevel(level=logging.DEBUG)
     with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
@@ -49,16 +45,35 @@ def test_issuer():
         assert ser.diger.qb64 == 'EpltHxeKueSR1a7e0_oSAhgO6U7VDnX7x4KqNCwBqbI0'
 
         tevt, kevt = issuer.issue(vcdig="EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8")
-        assert tevt == bytearray(b'{"v":"KERI10JSON000105_","i":"EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8","ii":"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY","s":"0","t":"bis","ra":{"i":"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY","s":1,"d":"EpltHxeKueSR1a7e0_oSAhgO6U7VDnX7x4KqNCwBqbI0"}}-GAB0AAAAAAAAAAAAAAAAAAAAAAwEqShtJnn-xjtbY8Tesz_0V6jPlPPUomUThNgFbFmW4C4')
-        assert kevt == bytearray(b'{"v":"KERI10JSON000107_","i":"EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY","s":"3","t":"ixn","p":"Ef12IRHtb_gVo5ClaHHNV90b43adA0f8vRs3jeU-AstY","a":[{"i":"EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8","s":"0","d":"EEK-dBgrpgJOh322FaVLOEnZDhKS785Jx9YCz2_zbCHA"}]}-AABAADp5I4829RH3lt_BMons2A5Rz3HImJCzKx9AM1-IjeeM7kT8wPgkHfDWN88quV-YK0QJWyK4uBV-OmA9U-Mj3Ag')
+        assert tevt == bytearray(b'{"v":"KERI10JSON00012d_","i":"EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8","ii":'
+                                 b'"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY","s":"0","t":"bis","ra":{"i":'
+                                 b'"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY","s":1,'
+                                 b'"d":"EpltHxeKueSR1a7e0_oSAhgO6U7VDnX7x4KqNCwBqbI0"},'
+                                 b'"dt":"2021-05-30T17:42:26.716070+00:00"}'
+                                 b'-GAB0AAAAAAAAAAAAAAAAAAAAAAwEoMfCsxCEcACq-PRlu2dhpzhZ-NyH1TVBdU742bE4c0Q')
+        assert kevt == bytearray(b'{"v":"KERI10JSON000107_","i":"EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY","s":"3",'
+                                 b'"t":"ixn","p":"Ef12IRHtb_gVo5ClaHHNV90b43adA0f8vRs3jeU-AstY","a":[{"i":'
+                                 b'"EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8","s":"0","d":"EMtpKbB4WlgiYBvRpA-1vDYz'
+                                 b'-Bk1_JRHtkuSnGVkiRjc"}]}-AABAAdCcaZm05OGh0eRd9VujtWRFvNis9J6nihcO6O1p6P5WgntUaxfX'
+                                 b'YgIJRMpjk1yx9OzJK1NuI_8c0F9O0iiEUDQ')
         ser = Serder(raw=tevt)
-        assert ser.diger.qb64 == "EEK-dBgrpgJOh322FaVLOEnZDhKS785Jx9YCz2_zbCHA"
+        assert ser.diger.qb64 == "EMtpKbB4WlgiYBvRpA-1vDYz-Bk1_JRHtkuSnGVkiRjc"
 
         tevt, kevt = issuer.revoke(vcdig="EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8")
-        assert tevt == bytearray(b'{"v":"KERI10JSON000104_","i":"EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8","s":"1","t":"brv","p":"ERUVLLWRCZ3JwZ0pPaDMyMkZhVkxPRW5aRGhLUzc4NUo","ra":{"i":"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY","s":1,"d":"EpltHxeKueSR1a7e0_oSAhgO6U7VDnX7x4KqNCwBqbI0"}}-GAB0AAAAAAAAAAAAAAAAAAAAABAEGrumf0GeUHoUckTwkKpsZth72W8xa7yCzpgrZ9ttDUc')
-        assert kevt == bytearray(b'{"v":"KERI10JSON000107_","i":"EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY","s":"4","t":"ixn","p":"EqShtJnn-xjtbY8Tesz_0V6jPlPPUomUThNgFbFmW4C4","a":[{"i":"EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8","s":"1","d":"EHR9ChXcp6P49dbi94FeZZKMfbcPLp3iahPgWXMfn5sk"}]}-AABAAfl7kaEycAdQmbLIQMedCjbUak5j5iT9M0HgVRNdOKdvGUH6abOgwTZWtwVo-ZPEqB1VZs7ZrT0pC3scKLMI2AQ')
+        assert tevt == bytearray(b'{"v":"KERI10JSON00012c_","i":"EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3UL'
+                                 b'vaU6Z-i0d8","s":"1","t":"brv","p":"ERU10cEtiQjRXbGdpWUJ2UnBBLTF2'
+                                 b'RFl6LUJrMV9KUkg","ra":{"i":"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGe'
+                                 b'LWHb9vSY","s":1,"d":"EpltHxeKueSR1a7e0_oSAhgO6U7VDnX7x4KqNCwBqbI'
+                                 b'0"},"dt":"2021-05-30T17:42:26.716070+00:00"}-GAB0AAAAAAAAAAAAAAA'
+                                 b'AAAAAABAEEa_G2yEAXr6IZElpKbv1HTpcTzUD7Juc5349jhGDcc8')
+        assert kevt == bytearray(b'{"v":"KERI10JSON000107_","i":"EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wu'
+                                 b'k5aMtSrMtY","s":"4","t":"ixn","p":"EoMfCsxCEcACq-PRlu2dhpzhZ-NyH'
+                                 b'1TVBdU742bE4c0Q","a":[{"i":"EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULva'
+                                 b'U6Z-i0d8","s":"1","d":"E05xrOuJ9flPR1-KzVXCSF5OOyyDqXOVapUJZnvAA'
+                                 b'2EU"}]}-AABAALS8NaIbjPxKXZp4T4Djf7RiuUODAt4OF0bTeQftwdotxNW2JHf9'
+                                 b'qkK00r10YAvfX8rr_gXjylPqXmi87iFBrAw')
         ser = Serder(raw=tevt)
-        assert ser.diger.qb64 == "EHR9ChXcp6P49dbi94FeZZKMfbcPLp3iahPgWXMfn5sk"
+        assert ser.diger.qb64 == "E05xrOuJ9flPR1-KzVXCSF5OOyyDqXOVapUJZnvAA2EU"
 
         # issuer, not allowed to issue backers
         issuer = Issuer(hab=hab, name="test", noBackers=True)
@@ -92,7 +107,7 @@ def test_issuer():
         seal = ser.ked["a"][0]
         assert seal["i"] == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
         assert seal["s"] == "0"
-        assert seal["d"] == "EXTVuADWAm9XOG6XKMyKRs8FO2dYPFo12rinap96BUjU"
+        assert seal["d"] == "EzWu1JpF_RC__sEZiyyISxiuIEnDYguSvvcBvqrxIYtI"
 
         tevt, kevt = issuer.revoke(vcdig="EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8")
         ser = Serder(raw=tevt)
@@ -106,7 +121,7 @@ def test_issuer():
         seal = ser.ked["a"][0]
         assert seal["i"] == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
         assert seal["s"] == "1"
-        assert seal["d"] == "Epb9TpQOCneEKGg9Ogc-xztVcYlc8iVbwzcXLtcr-Bfg"
+        assert seal["d"] == "EEu7o1wTExOXYuIG6iD4yMpXNshxMLPA5uSOOdJEzycs"
 
     with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)

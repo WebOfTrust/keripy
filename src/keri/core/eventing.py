@@ -4981,7 +4981,6 @@ class Parser:
                                 "attachment group of size={}.".format(pags))
             raise  # no pipeline group so can't preflush, must flush stream
 
-
         ilk = serder.ked["t"]  # dispatch abased on ilk
         if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
             firner, dater = frcs[-1] if frcs else (None, None)  # use last one if more than one
@@ -5025,8 +5024,7 @@ class Parser:
                 raise ValidationError("No kevery to process so dropped msg"
                                       "= {}.".format(serder.pretty))
 
-
-        elif ilk in [Ilks.ksn]:  # key state notification msg
+        elif ilk in (Ilks.ksn,):  # key state notification msg
             if not (cigars or tsgs):
                 raise ValidationError("Missing attached endorser signature(s) "
                        "to key state notification msg = {}.".format(serder.ked))
@@ -5063,9 +5061,7 @@ class Parser:
                 raise ValidationError("Invalid resource type {} so dropped msg"
                                       "= {}.".format(res, serder.pretty))
 
-
-
-        elif ilk in [Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv]:
+        elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
             # TEL msg
             seqner, diger = sscs[-1] if sscs else (None, None)  # use last one if more than one
             try:
@@ -5074,8 +5070,6 @@ class Parser:
             except AttributeError:
                 raise ValidationError("No tevery to process so dropped msg"
                                       "= {}.".format(serder.pretty))
-
-
 
         else:
             raise ValidationError("Unexpected message ilk = {} for evt ="
