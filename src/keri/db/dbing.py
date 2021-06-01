@@ -365,6 +365,78 @@ class LMDBer:
                 os.chmod(self.path, dirMode)
 
 
+    def makePathNew(self, temp=None, headDirPath=None, dirMode=None, clean=False):
+        """
+        Make .path by opening or creating and opening if not preexistent, directory
+        path for lmdb and assigning to .path
+
+        Parameters:
+            temp (Boolean): optional
+                None means ignore,
+                True means open temporary directory, may clear on close
+                False menans open persistent directory, may not clear on close
+
+            headDirPath (str): optional head directory pathname of main database
+
+            clean (Boolean): True means make path for cleaned version of db
+                             False means make path for regular version of db
+        """
+        if temp is not None:
+            self.temp = True if temp else False  # need .temp for clear on .close
+
+        if headDirPath is None:
+            headDirPath = self.headDirPath
+
+        if dirMode is None:
+            dirMode = self.dirMode
+
+        if self.temp:
+            headDirPath = tempfile.mkdtemp(prefix=self.TempPrefix,
+                                           suffix=self.TempSuffix,
+                                           dir=self.TempHeadDir)
+            self.path = os.path.abspath(
+                                os.path.join(headDirPath,
+                                             self.TailDirPath,
+                                             self.name))
+            os.makedirs(self.path)
+
+        else:
+            if not headDirPath:
+                headDirPath = self.HeadDirPath
+
+            self.path = os.path.abspath(
+                                os.path.expanduser(
+                                    os.path.join(headDirPath,
+                                                 self.TailDirPath,
+                                                 self.name)))
+
+            if not os.path.exists(self.path):
+                try:
+                    os.makedirs(self.path)
+                except OSError as ex:
+                    headDirPath = self.AltHeadDirPath
+                    self.path = os.path.abspath(
+                                        os.path.expanduser(
+                                            os.path.join(headDirPath,
+                                                         self.AltTailDirPath,
+                                                         self.name)))
+                    if not os.path.exists(self.path):
+                        os.makedirs(self.path)
+            else:
+                if not os.access(self.path, os.R_OK | os.W_OK):
+                    headDirPath = self.AltHeadDirPath
+                    self.path = os.path.abspath(
+                                        os.path.expanduser(
+                                            os.path.join(headDirPath,
+                                                         self.AltTailDirPath,
+                                                         self.name)))
+                    if not os.path.exists(self.path):
+                        os.makedirs(self.path)
+
+            if dirMode is not None:  # set mode if mode and not temp
+                os.chmod(self.path, dirMode)
+
+
     def close(self, clear=False):
         """
         Close lmdb at .env and if clear or .temp then remove lmdb directory at .path
