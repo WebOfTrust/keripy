@@ -306,4 +306,5 @@ def buildHab(db, kpr):
 
 
 if __name__ == "__main__":
-    test_issuer()
+    from conftest import mockHelpingNowIso8601
+    test_issuer(mockHelpingNowIso8601)
