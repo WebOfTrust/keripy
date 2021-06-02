@@ -128,6 +128,7 @@ def test_issuer():
         assert ser.ked["t"] == "rev"
         assert ser.ked["ri"] == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
 
+        print("\nXXXXXXXXXXXXXXXXTESTXXXXXXXXXXXX\n")
         ser = Serder(raw=kevt)
         assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
         assert ser.ked["t"] == "ixn"
