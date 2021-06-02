@@ -3263,7 +3263,7 @@ class Kevery:
                                               "at dig = {}.".format(bytes(edig)))
 
                     # do date math here and discard if stale nowIso8601() bytes
-                    dtnow = datetime.datetime.now(datetime.timezone.utc)
+                    dtnow = helping.nowUTC()
                     dte = helping.fromIso8601(bytes(dtb))
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutOOE):
                         # escrow stale so raise ValidationError which unescrows below
@@ -3394,7 +3394,7 @@ class Kevery:
                                               "at dig = {}.".format(bytes(edig)))
 
                     # do date math here and discard if stale nowIso8601() bytes
-                    dtnow =  datetime.datetime.now(datetime.timezone.utc)
+                    dtnow = helping.nowUTC()
                     dte = helping.fromIso8601(bytes(dtb))
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPSE):
                         # escrow stale so raise ValidationError which unescrows below
@@ -3533,7 +3533,7 @@ class Kevery:
                                               "at dig = {}.".format(bytes(edig)))
 
                     # do date math here and discard if stale nowIso8601() bytes
-                    dtnow =  datetime.datetime.now(datetime.timezone.utc)
+                    dtnow = helping.nowUTC()
                     dte = helping.fromIso8601(bytes(dtb))
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutPWE):
                         # escrow stale so raise ValidationError which unescrows below
@@ -3681,7 +3681,7 @@ class Kevery:
                                               "at dig = {}.".format(bytes(edig)))
 
                     # do date math here and discard if stale nowIso8601() bytes
-                    dtnow =  datetime.datetime.now(datetime.timezone.utc)
+                    dtnow = helping.nowUTC()
                     dte = helping.fromIso8601(bytes(dtb))
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutLDE):
                         # escrow stale so raise ValidationError which unescrows below
@@ -3826,7 +3826,7 @@ class Kevery:
                                               "at dig = {}.".format(ediger.qb64b))
 
                     # do date math here and discard if stale nowIso8601() bytes
-                    dtnow =  datetime.datetime.now(datetime.timezone.utc)
+                    dtnow = helping.nowUTC()
                     dte = helping.fromIso8601(bytes(dtb))
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutUWE):
                         # escrow stale so raise ValidationError which unescrows below
@@ -4016,7 +4016,7 @@ class Kevery:
                                               "at dig = {}.".format(ediger.qb64b))
 
                     # do date math here and discard if stale nowIso8601() bytes
-                    dtnow =  datetime.datetime.now(datetime.timezone.utc)
+                    dtnow = helping.nowUTC()
                     dte = helping.fromIso8601(bytes(dtb))
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutURE):
                         # escrow stale so raise ValidationError which unescrows below
@@ -4173,7 +4173,7 @@ class Kevery:
                                               "at dig = {}.".format(ediger.qb64b))
 
                     # do date math here and discard if stale nowIso8601() bytes
-                    dtnow =  datetime.datetime.now(datetime.timezone.utc)
+                    dtnow = helping.nowUTC()
                     dte = helping.fromIso8601(bytes(dtb))
                     if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutVRE):
                         # escrow stale so raise ValidationError which unescrows below

@@ -13,11 +13,18 @@ def test_issuer():
     def mock_nowIso8601():
         return "2021-05-30T17:42:26.716070+00:00"
 
+    def mock_nowUTC():
+        return helping.fromIso8601("2021-05-30T17:42:26.716070+00:00" )
+
     from keri.help import helping
-    save_nowIso8601 = helping.nowIso8601
-    assert save_nowIso8601.__name__ == "nowIso8601"
-    helping.nowIso8601 = mock_nowIso8601
-    assert helping.nowIso8601.__name__ == 'mock_nowIso8601'
+    save_nowUTC = helping.nowUTC
+    helping.nowUTC = mock_nowUTC
+    assert helping.nowUTC.__name__ == 'mock_nowUTC'
+
+    #save_nowIso8601 = helping.nowIso8601
+    #assert save_nowIso8601.__name__ == "nowIso8601"
+    #helping.nowIso8601 = mock_nowIso8601
+    #assert helping.nowIso8601.__name__ == 'mock_nowIso8601'
 
     assert helping.nowIso8601() == "2021-05-30T17:42:26.716070+00:00"
 
@@ -296,7 +303,9 @@ def test_issuer():
         assert ser.ked["t"] == "rot"
         assert vrtser.diger.qb64 == 'EnUD_KZu-dGpFSEWZOlFdQSydioYY78qIDPfzA7Fhr-Q'
 
-    helping.nowIso8601 = save_nowIso8601
+    helping.nowUTC = save_nowUTC
+    # helping.nowIso8601 = save_nowIso8601
+
     """ End Test """
 
 
