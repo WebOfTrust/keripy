@@ -23,9 +23,7 @@ from keri.core.coring import MtrDex, MtrDex, MtrDex
 from keri.core.coring import Serials, Vstrings, Versify
 
 from keri.core.eventing import incept, rotate, interact, Kever, Kevery
-
-from keri.help.helping import nowIso8601, toIso8601, fromIso8601
-
+from keri.help import helping
 
 def test_key_funcs():
     """
@@ -52,7 +50,7 @@ def test_key_funcs():
                                         b'|2021-02-13T19:16:50.750302+00:00')
 
     assert splitKey(dtKey(pre, dts), sep=b'|') == (pre, dts)
-    assert splitKeyDT(dtKey(pre, dts)) == (pre, fromIso8601(dts.decode("utf-8")))
+    assert splitKeyDT(dtKey(pre, dts)) == (pre, helping.fromIso8601(dts.decode("utf-8")))
 
     #  Str
     pre = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
@@ -74,7 +72,7 @@ def test_key_funcs():
                                 b'|2021-02-13T19:16:50.750302+00:00')
 
     assert splitKey(dtKey(pre, dts).decode("utf-8"), sep=b'|') == (pre, dts)
-    assert splitKeyDT(dtKey(pre, dts).decode("utf-8")) == (pre, fromIso8601(dts))
+    assert splitKeyDT(dtKey(pre, dts).decode("utf-8")) == (pre, helping.fromIso8601(dts))
 
 
     with pytest.raises(TypeError):
@@ -102,7 +100,7 @@ def test_key_funcs():
 
     key = memoryview(dtKey(pre, dts))
     assert splitKey(key, sep=b'|') == (pre, dts)
-    assert splitKeyDT(key) == (pre, fromIso8601(dts.decode("utf-8")))
+    assert splitKeyDT(key) == (pre, helping.fromIso8601(dts.decode("utf-8")))
 
     """Done Test"""
 

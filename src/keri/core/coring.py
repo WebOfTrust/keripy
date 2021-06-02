@@ -29,7 +29,8 @@ from ..kering import (EmptyMaterialError, RawMaterialError, UnknownCodeError,
                       ShortageError, UnexpectedCodeError, DeserializationError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 from ..kering import Versionage, Version
-from ..help.helping import sceil, nowIso8601
+from ..help import helping
+from ..help.helping import sceil
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
@@ -1028,7 +1029,7 @@ class Dater(Matter):
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if dts is None:  # defaults to now
-                dts = nowIso8601()
+                dts = helping.nowIso8601()
             if len(dts) != 32:
                 raise ValueError("Invalid length of date time string")
             if hasattr(dts, "decode"):

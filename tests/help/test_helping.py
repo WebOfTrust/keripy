@@ -11,10 +11,10 @@ import fractions
 
 from dataclasses import dataclass, asdict
 
+from keri.help import helping
 from keri.help.helping import isign, sceil
 from keri.help.helping import mdict
 from keri.help.helping import extractValues
-from keri.help.helping import nowIso8601, toIso8601, fromIso8601
 from keri.help.helping import datify
 
 def test_utilities():
@@ -178,30 +178,30 @@ def test_iso8601():
     """
     # dts = datetime.datetime.now(datetime.timezone.utc).isoformat()
     dts = '2020-08-22T20:34:41.687702+00:00'
-    dt = fromIso8601(dts)
+    dt = helping.fromIso8601(dts)
     assert dt.year == 2020
     assert dt.month == 8
     assert dt.day == 22
 
     dtb = b'2020-08-22T20:34:41.687702+00:00'
-    dt = fromIso8601(dts)
+    dt = helping.fromIso8601(dts)
     assert dt.year == 2020
     assert dt.month == 8
     assert dt.day == 22
 
 
-    dts1 = nowIso8601()
-    dt1 = fromIso8601(dts1)
-    dts2 = nowIso8601()
-    dt2 = fromIso8601(dts2)
+    dts1 = helping.nowIso8601()
+    dt1 = helping.fromIso8601(dts1)
+    dts2 = helping.nowIso8601()
+    dt2 = helping.fromIso8601(dts2)
 
     assert dt2 > dt1
 
-    assert dts1 == toIso8601(dt1)
-    assert dts2 == toIso8601(dt2)
+    assert dts1 == helping.toIso8601(dt1)
+    assert dts2 == helping.toIso8601(dt2)
 
-    dts3 = toIso8601()
-    dt3 = fromIso8601(dts3)
+    dts3 = helping.toIso8601()
+    dt3 = helping.fromIso8601(dts3)
 
     assert dt3 > dt2
 
@@ -209,9 +209,9 @@ def test_iso8601():
     assert td.microseconds > 0.0
 
     dt4 = dt + datetime.timedelta(seconds=25.0)
-    dts4 = toIso8601(dt4)
+    dts4 = helping.toIso8601(dt4)
     assert dts4 == '2020-08-22T20:35:06.687702+00:00'
-    dt4 = fromIso8601(dts4)
+    dt4 = helping.fromIso8601(dts4)
     assert (dt4 - dt).seconds == 25.0
 
 
