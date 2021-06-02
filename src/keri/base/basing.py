@@ -42,12 +42,17 @@ def clean(self, old, kvy=None):
 
 
     """
+    with dbing.reopenDB(db=old, readonly=True) as env:  # reopen old in readonly mode
+        with dbing.openDB(name=old.name,
+                          temp=old.temp,
+                          headDirPath=old.headDirPath,
+                          dirMode=old.dirMode,
+                          clean=True) as new:
 
-    old.close()  # close existing
-    # reopen old but in readonly mode
-    old.reopen()
-    with lmdb.open(old.path, max_dbs=self.MaxNamedDBs,
-                         mode=self.dirMode, readonly=True ) as env:
+            if not kvy:  # new kvy for clone
+                kvy = eventing.Kevery(db=new)
+
+
 
         # make path for cleaned cloned db copy
         cpath = self.makePath(name=self.name,
@@ -59,8 +64,7 @@ def clean(self, old, kvy=None):
         with lmdb.open(cpath, max_dbs=self.MaxNamedDBs, mode=self.dirMode) as cenv:
             pass
             # clone into new clean db
-            if not kvy:  # new kvy for clone
-                kvy = eventing.Kevery()
+
 
 
 
