@@ -236,6 +236,7 @@ class LMDBer:
     TempPrefix = "keri_lmdb_"
     TempSuffix = "_test"
     MaxNamedDBs = 32
+    DirMode = None  # stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700
 
     def __init__(self, name='main', temp=False, headDirPath=None, dirMode=None,
                  reopen=True):
@@ -259,8 +260,8 @@ class LMDBer:
         """
         self.name = name
         self.temp = True if temp else False
-        self.headDirPath = headDirPath
-        self.dirMode = dirMode
+        self.headDirPath = headDirPath if headDirPath is not None else self.HeadDirPath
+        self.dirMode = dirMode if dirMode is not None else self.DirMode
         self.path = None
         self.env = None
         self.opened = False
@@ -287,7 +288,17 @@ class LMDBer:
         if self.opened:
             self.close()
 
-        self.makePath(temp=temp, headDirPath=headDirPath, dirMode=dirMode)
+        if temp is not None:
+            self.temp = temp
+        if headDirPath is not None:
+            self.headDirPath = headDirPath
+        if dirMode is not None:
+            self.dirMode = dirMode
+
+        self.path = self.makePath(name=self.name,
+                                  temp=self.temp,
+                                  headDirPath=self.headDirPath,
+                                  dirMode=self.dirMode)
 
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
@@ -295,7 +306,89 @@ class LMDBer:
         self.opened = True
 
 
-    def makePath(self, temp=None, headDirPath=None, dirMode=None):
+    def makePath(self, name, temp=None, headDirPath=None, dirMode=None, clean=False):
+        """
+        Make .path by opening or creating and opening if not preexistent, directory
+        path for lmdb and assigning to .path
+
+        Parameters:
+            temp (Boolean): optional
+                None means ignore,
+                True means open temporary directory, may clear on close
+                False menans open persistent directory, may not clear on close
+
+            headDirPath (str): optional head directory pathname of main database
+
+            dirMode (int): directory permissions such as
+                stat.S_IRUSR Owner has read permission.
+                stat.S_IWUSR Owner has write permission.
+                stat.S_IXUSR Owner has execute permission.
+
+            clean (Boolean): True means make path for cleaned version of db
+                             False means make path for regular version of db
+        """
+        temp = True if temp else False
+
+        if headDirPath is None:
+            headDirPath = self.HeadDirPath
+
+        tailDirPath = self.CleanTailDirPath if clean else self.TailDirPath
+        altTailDirPath = self.AltCleanTailDirPath if clean else self.AltTailDirPath
+
+        if temp:
+            headDirPath = tempfile.mkdtemp(prefix=self.TempPrefix,
+                                           suffix=self.TempSuffix,
+                                           dir=self.TempHeadDir)
+            path = os.path.abspath(
+                                os.path.join(headDirPath,
+                                             tailDirPath,
+                                             name))
+
+            if clean and os.path.exists(path):
+                shutil.rmtree(path)
+
+            os.makedirs(path)
+
+        else:
+            path = os.path.abspath(
+                                os.path.expanduser(
+                                    os.path.join(headDirPath,
+                                                 tailDirPath,
+                                                 name)))
+
+            if clean and os.path.exists(path):
+                shutil.rmtree(path)
+
+            if not os.path.exists(path):
+                try:
+                    os.makedirs(path)
+                except OSError as ex:
+                    headDirPath = self.AltHeadDirPath
+                    path = os.path.abspath(
+                                        os.path.expanduser(
+                                            os.path.join(headDirPath,
+                                                         altTailDirPath,
+                                                         name)))
+                    if not os.path.exists(path):
+                        os.makedirs(path)
+            else:
+                if not os.access(path, os.R_OK | os.W_OK):
+                    headDirPath = self.AltHeadDirPath
+                    path = os.path.abspath(
+                                        os.path.expanduser(
+                                            os.path.join(headDirPath,
+                                                         altTailDirPath,
+                                                         name)))
+                    if not os.path.exists(path):
+                        os.makedirs(path)
+
+            if dirMode is not None:  # set mode if mode and not temp
+                os.chmod(path, dirMode)
+
+        return path
+
+
+    def makePathOld(self, temp=None, headDirPath=None, dirMode=None):
         """
         Make .path by opening or creating and opening if not preexistent, directory
         path for lmdb and assigning to .path
@@ -364,74 +457,6 @@ class LMDBer:
             if dirMode is not None:  # set mode if mode and not temp
                 os.chmod(self.path, dirMode)
 
-
-    def makePathNew(self, temp=None, headDirPath=None, dirMode=None, clean=False):
-        """
-        Make .path by opening or creating and opening if not preexistent, directory
-        path for lmdb and assigning to .path
-
-        Parameters:
-            temp (Boolean): optional
-                None means ignore,
-                True means open temporary directory, may clear on close
-                False menans open persistent directory, may not clear on close
-
-            headDirPath (str): optional head directory pathname of main database
-
-            clean (Boolean): True means make path for cleaned version of db
-                             False means make path for regular version of db
-        """
-        if temp is not None:
-            self.temp = True if temp else False  # need .temp for clear on .close
-
-        if dirMode is None:
-            dirMode = self.dirMode
-
-        if self.temp:
-            headDirPath = tempfile.mkdtemp(prefix=self.TempPrefix,
-                                           suffix=self.TempSuffix,
-                                           dir=self.TempHeadDir)
-            self.path = os.path.abspath(
-                                os.path.join(headDirPath,
-                                             self.TailDirPath,
-                                             self.name))
-            os.makedirs(self.path)
-
-        else:
-            if not headDirPath:
-                headDirPath = self.HeadDirPath
-
-            self.path = os.path.abspath(
-                                os.path.expanduser(
-                                    os.path.join(headDirPath,
-                                                 self.TailDirPath,
-                                                 self.name)))
-
-            if not os.path.exists(self.path):
-                try:
-                    os.makedirs(self.path)
-                except OSError as ex:
-                    headDirPath = self.AltHeadDirPath
-                    self.path = os.path.abspath(
-                                        os.path.expanduser(
-                                            os.path.join(headDirPath,
-                                                         self.AltTailDirPath,
-                                                         self.name)))
-                    if not os.path.exists(self.path):
-                        os.makedirs(self.path)
-            else:
-                if not os.access(self.path, os.R_OK | os.W_OK):
-                    headDirPath = self.AltHeadDirPath
-                    self.path = os.path.abspath(
-                                        os.path.expanduser(
-                                            os.path.join(headDirPath,
-                                                         self.AltTailDirPath,
-                                                         self.name)))
-                    if not os.path.exists(self.path):
-                        os.makedirs(self.path)
-
-            if dirMode is not None:  # set mode if mode and not temp
-                os.chmod(self.path, dirMode)
 
 
     def close(self, clear=False):
