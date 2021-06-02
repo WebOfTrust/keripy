@@ -275,6 +275,7 @@ def nowUTC():
     """
     return (datetime.datetime.now(datetime.timezone.utc))
 
+
 def nowIso8601():
     """
     Returns time now in ISO 8601 format
