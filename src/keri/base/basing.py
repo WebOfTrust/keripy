@@ -4,27 +4,75 @@ KERI
 keri.base.basing module
 Support for application data via an LMDB keyspace object mapper (KOM)
 """
+import shutil
 import json
 from dataclasses import dataclass, asdict
 from typing import Type
 
 import cbor2
 import msgpack
+import lmdb
 
 from hio.base import doing
 from hio.core.serial import serialing
 
-
-from . import keeping
-from .keeping import PubLot
-from .. import help
 from .. import kering
-from ..core import coring, eventing
-from ..db import dbing
+from .. import help
 from ..help import helping
+from ..db import dbing
+from . import keeping
+from ..core import coring, eventing
+
 
 logger = help.ogler.getLogger()
 
+
+def clean(self, old, kvy=None):
+    """
+    Clean old database by creating re-verified cloned copy and then replacing
+    original with cleaned copy
+
+    Database usage should be offline during cleaning as it will be cloned in
+    readonly mode
+
+    Parameters:
+        old (Baser): instance to clean
+        kvy (eventing.Kevery): instance to process cloned events. Othewise uses
+            default
+
+
+    """
+
+    old.close()  # close existing
+    # reopen old but in readonly mode
+    old.reopen()
+    with lmdb.open(old.path, max_dbs=self.MaxNamedDBs,
+                         mode=self.dirMode, readonly=True ) as env:
+
+        # make path for cleaned cloned db copy
+        cpath = self.makePath(name=self.name,
+                            temp=self.temp,
+                            headDirPath=self.headDirPath,
+                            dirMode=self.dirMode,
+                            clean=True)
+        # open new clean db for cloning into
+        with lmdb.open(cpath, max_dbs=self.MaxNamedDBs, mode=self.dirMode) as cenv:
+            pass
+            # clone into new clean db
+            if not kvy:  # new kvy for clone
+                kvy = eventing.Kevery()
+
+
+
+        # remove old db directory replace with clean clone
+        if os.path.exists(self.path):
+            shutil.rmtree(self.path)
+
+
+
+
+    if os.path.exists(cpath):
+        shutil.rmtree(cpath)
 
 @dataclass
 class HabitatRecord:

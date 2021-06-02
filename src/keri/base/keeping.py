@@ -187,7 +187,7 @@ class Keeper(dbing.LMDBer):
     TempPrefix = "keri_keep_"
     TempSuffix = "_test"
     MaxNamedDBs = 8
-    DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700
+    DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700 == 960
 
     def __init__(self, headDirPath=None, dirMode=None, reopen=True, **kwa):
         """
@@ -244,6 +244,8 @@ class Keeper(dbing.LMDBer):
         self.prms = self.env.open_db(key=b'prms.')
         self.sits = self.env.open_db(key=b'sits.')
         self.pubs = self.env.open_db(key=b'pubs.')
+
+        return self.env
 
 
     # .gbls methods

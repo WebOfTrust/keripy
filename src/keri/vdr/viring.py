@@ -138,6 +138,8 @@ class Registry(dbing.LMDBer):
         self.twes = self.env.open_db(key=b'twes.')
         self.taes = self.env.open_db(key=b'taes.')
 
+        return self.env
+
 
     def clonePreIter(self, pre, fn=0):
         """

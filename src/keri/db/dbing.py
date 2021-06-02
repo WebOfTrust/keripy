@@ -46,6 +46,7 @@ l
 """
 
 import os
+import stat
 import shutil
 import tempfile
 from contextlib import contextmanager
@@ -57,7 +58,6 @@ from hio.base import doing
 from  .. import kering
 from  ..help import helping
 from  ..core import coring
-
 
 
 ProemSize =  33
@@ -224,7 +224,17 @@ class LMDBer:
 
     Properties:
 
+    Fire/Directory Creation Mode Notes:
+        DirMode is for Restricted Access Permissions to directory of db
 
+        stat.S_ISVTX  is Sticky bit. When this bit is set on a directory it means
+            that a file in that directory can be renamed or deleted only by the
+            owner of the file, by the owner of the directory, or by a privileged process.
+        stat.S_IRUSR Owner has read permission.
+        stat.S_IWUSR Owner has write permission.
+        stat.S_IXUSR Owner has execute permission.
+
+        # stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
     """
     HeadDirPath = "/usr/local/var"  # default in /usr/local/var
     TailDirPath = "keri/db"
@@ -236,26 +246,31 @@ class LMDBer:
     TempPrefix = "keri_lmdb_"
     TempSuffix = "_test"
     MaxNamedDBs = 32
-    DirMode = None  # stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700
+    DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
 
     def __init__(self, name='main', temp=False, headDirPath=None, dirMode=None,
-                 reopen=True):
+                 reopen=True, clean=False, readonly=False):
         """
         Setup main database directory at .dirpath.
         Create main database environment at .env using .dirpath.
 
         Parameters:
-            name is str directory path name differentiator for main database
+            name (str): directory path name differentiator for main database
                 When system employs more than one keri database, name allows
                 differentiating each instance by name
-            temp is boolean, assign to .temp
+            temp (Boolean): assign to .temp
                 True then open in temporary directory, clear on close
                 Othewise then open persistent directory, do not clear on close
-            headDirPath is optional str head directory pathname for main database
-                If not provided use default .HeadDirpath
-            dirMode is int numeric os dir permissions for database directory
-                default is use os defaults and not set the dirMode
-            reopen is boolean, IF True then database will be reopened by this init
+            headDirPath (str): optional head directory pathname for main database
+                Default .HeadDirpath
+            dirMode (int): optional numeric os dir permissions for database
+                directory and database files. Default .DirMode
+            reopen (Boolean): True means database will be reopened by this init
+                              False means databse not opened by this init
+            clean (Boolean): True means path uses clean tail variant
+                             False means path uses normal tail variant
+            readonly (Boolean): True means open database in readonly mode
+                                False means open database in read/write mode
 
         """
         self.name = name
@@ -267,23 +282,29 @@ class LMDBer:
         self.opened = False
 
         if reopen:
-            self.reopen(headDirPath=self.headDirPath, dirMode=dirMode)
+            self.reopen(headDirPath=self.headDirPath, dirMode=dirMode,
+                        clean=clean, readonly=readonly)
 
 
-    def reopen(self, temp=None, headDirPath=None, dirMode=None):
+    def reopen(self, temp=None, headDirPath=None, dirMode=None, clean=False,
+               readonly=False):
         """
         Open if closed or close and reopen if opened or create and open if not
         if not preexistent, directory path for lmdb at .path and then
         Open lmdb and assign to .env
 
         Parameters:
-            temp is optional boolean:
-                If None ignore Otherwise
-                    Assign to .temp
-                    If True then open temporary directory, clear on close
-                    If False then open persistent directory, do not clear on close
-            headDirPath is optional str head directory pathname of main database
-                If not provided use default .HeadDirpath
+            temp (Boolean): assign to .temp
+                True then open in temporary directory, clear on close
+                Othewise then open persistent directory, do not clear on close
+            headDirPath (str): optional head directory pathname for main database
+                Default .HeadDirpath
+            dirMode (int): optional numeric os dir permissions for database
+                directory and database files. Default .DirMode
+            clean (Boolean): True means path uses clean tail variant
+                             False means path uses normal tail variant
+            readonly (Boolean): True means open database in readonly mode
+                                False means open database in read/write mode
         """
         if self.opened:
             self.close()
@@ -298,12 +319,15 @@ class LMDBer:
         self.path = self.makePath(name=self.name,
                                   temp=self.temp,
                                   headDirPath=self.headDirPath,
-                                  dirMode=self.dirMode)
+                                  dirMode=self.dirMode,
+                                  clean=clean)
 
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
-        self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs)
+        self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs,
+                             mode=self.dirMode, readonly=readonly)
         self.opened = True
+        return self.env
 
 
     def makePath(self, name, temp=None, headDirPath=None, dirMode=None, clean=False):
@@ -312,6 +336,7 @@ class LMDBer:
         path for lmdb and assigning to .path
 
         Parameters:
+            name (str): unique name alias portion of path
             temp (Boolean): optional
                 None means ignore,
                 True means open temporary directory, may clear on close
@@ -331,6 +356,8 @@ class LMDBer:
 
         if headDirPath is None:
             headDirPath = self.HeadDirPath
+        if dirMode is None:
+            dirMode = self.DirMode
 
         tailDirPath = self.CleanTailDirPath if clean else self.TailDirPath
         altTailDirPath = self.AltCleanTailDirPath if clean else self.AltTailDirPath
@@ -382,81 +409,9 @@ class LMDBer:
                     if not os.path.exists(path):
                         os.makedirs(path)
 
-            if dirMode is not None:  # set mode if mode and not temp
-                os.chmod(path, dirMode)
+            os.chmod(path, dirMode)  # set dir creation mode
 
         return path
-
-
-    def makePathOld(self, temp=None, headDirPath=None, dirMode=None):
-        """
-        Make .path by opening or creating and opening if not preexistent, directory
-        path for lmdb and assigning to .path
-
-        Parameters:
-            temp is optional boolean:
-                If None ignore Otherwise
-                    Assign to .temp
-                    If True then open temporary directory, clear on close
-                    If False then open persistent directory, do not clear on close
-            headDirPath is optional str head directory pathname of main database
-                If not provided use default .HeadDirpath
-        """
-        if temp is not None:
-            self.temp = True if temp else False  # need .temp for clear on .close
-
-        if headDirPath is None:
-            headDirPath = self.headDirPath
-
-        if dirMode is None:
-            dirMode = self.dirMode
-
-        if self.temp:
-            headDirPath = tempfile.mkdtemp(prefix=self.TempPrefix,
-                                           suffix=self.TempSuffix,
-                                           dir=self.TempHeadDir)
-            self.path = os.path.abspath(
-                                os.path.join(headDirPath,
-                                             self.TailDirPath,
-                                             self.name))
-            os.makedirs(self.path)
-
-        else:
-            if not headDirPath:
-                headDirPath = self.HeadDirPath
-
-            self.path = os.path.abspath(
-                                os.path.expanduser(
-                                    os.path.join(headDirPath,
-                                                 self.TailDirPath,
-                                                 self.name)))
-
-            if not os.path.exists(self.path):
-                try:
-                    os.makedirs(self.path)
-                except OSError as ex:
-                    headDirPath = self.AltHeadDirPath
-                    self.path = os.path.abspath(
-                                        os.path.expanduser(
-                                            os.path.join(headDirPath,
-                                                         self.AltTailDirPath,
-                                                         self.name)))
-                    if not os.path.exists(self.path):
-                        os.makedirs(self.path)
-            else:
-                if not os.access(self.path, os.R_OK | os.W_OK):
-                    headDirPath = self.AltHeadDirPath
-                    self.path = os.path.abspath(
-                                        os.path.expanduser(
-                                            os.path.join(headDirPath,
-                                                         self.AltTailDirPath,
-                                                         self.name)))
-                    if not os.path.exists(self.path):
-                        os.makedirs(self.path)
-
-            if dirMode is not None:  # set mode if mode and not temp
-                os.chmod(self.path, dirMode)
-
 
 
     def close(self, clear=False):
@@ -1382,6 +1337,7 @@ class Baser(LMDBer):
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
+        return self.env
 
 
     def clonePreIter(self, pre, fn=0):
