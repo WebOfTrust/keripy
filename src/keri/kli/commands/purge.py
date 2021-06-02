@@ -6,8 +6,8 @@ keri.kli.commands module
 import argparse
 import shutil
 
-from keri.app import keeping
-from keri.db import dbing, basing
+from ...app import keeping
+from ...db import basing
 
 parser = argparse.ArgumentParser(description='Delete existing KERI database')
 parser.set_defaults(handler=lambda args: purge(args.name))

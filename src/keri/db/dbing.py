@@ -239,7 +239,7 @@ class LMDBer:
     HeadDirPath = "/usr/local/var"  # default in /usr/local/var
     TailDirPath = "keri/db"
     CleanTailDirPath = "keri/clean/db"
-    AltHeadDirPath = "~"  #  put in ~ as fallback when desired not permitted
+    AltHeadDirPath = "~"  # put in ~ as fallback when desired not permitted
     AltTailDirPath = ".keri/db"
     AltCleanTailDirPath = ".keri/clean/db"
     TempHeadDir = "/tmp"
@@ -260,9 +260,9 @@ class LMDBer:
                 differentiating each instance by name
             temp (Boolean): assign to .temp
                 True then open in temporary directory, clear on close
-                Othewise then open persistent directory, do not clear on close
+                Otherwise then open persistent directory, do not clear on close
             headDirPath (str): optional head directory pathname for main database
-                Default .HeadDirpath
+                Default .HeadDirPath
             dirMode (int): optional numeric os dir permissions for database
                 directory and database files. Default .DirMode
             reopen (Boolean): True means database will be reopened by this init

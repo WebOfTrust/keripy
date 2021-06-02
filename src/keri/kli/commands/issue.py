@@ -6,12 +6,12 @@ keri.kli.commands module
 import argparse
 import json
 
-from keri.app import keeping
-from keri.app.habbing import Habitat
-from keri.core.coring import Matter, MtrDex, Diger
-from keri.db import dbing, basing
-from keri.help import helping
-from keri.vdr.issuing import Issuer
+from ...app import keeping
+from ...app.habbing import Habitat
+from ...core.coring import Matter, MtrDex, Diger
+from ...db import basing
+from ...help import helping
+from ...vdr.issuing import Issuer
 
 parser = argparse.ArgumentParser(description='Issue a verifiable credential')
 parser.set_defaults(handler=lambda args: issue(args.name, args.didSubjectId, args.lei))
