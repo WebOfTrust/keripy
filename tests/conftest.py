@@ -9,6 +9,16 @@ import pytest
 
 from keri.help import helping
 
+@pytest.fixture()
+def mockHelpingNowUTC(monkeypatch):
+    """
+    Replace nowUTC universally with fixed value for testing
+    """
+    def mockNowUTC():
+        return helping.fromIso8601("2021-05-30T17:42:26.716070+00:00" )
+
+    monkeypatch.setattr(helping, "nowUTC", mockNowUTC)
+
 
 @pytest.fixture()
 def mockHelpingNowIso8601(monkeypatch):
