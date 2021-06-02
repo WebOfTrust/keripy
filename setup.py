@@ -80,7 +80,6 @@ setup(
         'orderedset>=2.0.3',
         'hio>=0.3.8',
         'multicommand>=0.0.8',
-        'pytest>=6.2.4',
     ],
     extras_require={
     },
