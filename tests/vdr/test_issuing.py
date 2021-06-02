@@ -3,12 +3,17 @@ import pytest
 from keri.base import basing, keeping
 from keri.core.coring import Serder
 from keri.db import dbing
+from keri.help import helping
+
 from keri.vdr import viring
 from keri.vdr.issuing import Issuer
 
-
-def test_issuer(mockHelpingNowIso8601):
+def test_issuer(mockHelpingNowUTC):
     # help.ogler.resetLevel(level=logging.DEBUG)
+
+    assert helping.nowIso8601() == "2021-05-30T17:42:26.716070+00:00"
+
+
     with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
 
@@ -121,7 +126,8 @@ def test_issuer(mockHelpingNowIso8601):
         seal = ser.ked["a"][0]
         assert seal["i"] == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
         assert seal["s"] == "1"
-        assert seal["d"] == "EEu7o1wTExOXYuIG6iD4yMpXNshxMLPA5uSOOdJEzycs"
+        assert seal["d"] == 'EESqpWTkUklke73mGjf6TE-ojHEJLultMlQhKddfNx6w'
+        # assert seal["d"] == "EEu7o1wTExOXYuIG6iD4yMpXNshxMLPA5uSOOdJEzycs"
 
     with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
@@ -129,7 +135,7 @@ def test_issuer(mockHelpingNowIso8601):
         # issuer, allowed backers, initial set of backers
         issuer = Issuer(hab=hab, reger=reg, baks=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
         ser = Serder(raw=issuer.incept)
-        print(ser.pre)
+        # print(ser.pre)
         assert ser.pre == "EaU321874i434f59ab7cMH6YlN52PJ395nrLS_6tLq6c"
         assert ser.ked["t"] == "vcp"
         assert ser.ked["b"] == ["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"]
@@ -281,6 +287,8 @@ def test_issuer(mockHelpingNowIso8601):
         assert ser.ked["t"] == "rot"
         assert vrtser.diger.qb64 == 'EnUD_KZu-dGpFSEWZOlFdQSydioYY78qIDPfzA7Fhr-Q'
 
+
+
     """ End Test """
 
 
@@ -305,4 +313,5 @@ def buildHab(db, kpr):
 
 
 if __name__ == "__main__":
+    # pytest.main(['-vv', 'test_issuing.py::test_issuer'])
     test_issuer()

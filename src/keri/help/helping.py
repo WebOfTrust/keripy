@@ -268,6 +268,13 @@ def extractValues(ked, labels):
 
     return values
 
+def nowUTC():
+    """
+    Returns timezone aware datetime of current UTC time
+    Convenience function that allows monkeypatching in tests to mock time
+    """
+    return (datetime.datetime.now(datetime.timezone.utc))
+
 
 def nowIso8601():
     """
@@ -280,7 +287,7 @@ def nowIso8601():
     Assumes TZ aware
     For nanosecond use instead attotime or datatime64 in pandas or numpy
     """
-    return (datetime.datetime.now(datetime.timezone.utc).isoformat())
+    return (nowUTC().isoformat())
 
 
 def toIso8601(dt=None):
@@ -296,7 +303,7 @@ def toIso8601(dt=None):
     For nanosecond use instead attotime or datatime64 in pandas or numpy
     """
     if dt is None:
-        dt = datetime.datetime.now(datetime.timezone.utc)  # make it aware
+        dt = nowUTC()  # make it aware
 
     return (dt.isoformat())
 

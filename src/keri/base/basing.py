@@ -106,8 +106,8 @@ class Habitat:
         self.db = db if db is not None else dbing.Baser(name=name, temp=self.temp)
         self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
 
-        # for persisted Habitats, check the KOM first to see if there is an existing one we can restart from
-        # otherwise initialize a new one
+        # for persisted Habitats, check the KOM first to see if there is an existing
+        # one we can restart from otherwise initialize a new one
         existing = False
         kom = Komer(db=self.db, schema=HabitatRecord, subdb='habitats.')
         habKeys = ('hab', name)
@@ -177,6 +177,7 @@ class Habitat:
                                                 "pre={}.".format(self.pre))
 
             kom.put(keys=habKeys, data=HabitatRecord(name=name, prefix=self.pre))
+
 
     def reinitialize(self):
         if self.pre is None:
