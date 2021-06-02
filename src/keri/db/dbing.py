@@ -384,9 +384,6 @@ class LMDBer:
         if temp is not None:
             self.temp = True if temp else False  # need .temp for clear on .close
 
-        if headDirPath is None:
-            headDirPath = self.headDirPath
-
         if dirMode is None:
             dirMode = self.dirMode
 
