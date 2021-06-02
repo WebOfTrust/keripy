@@ -6,9 +6,22 @@ from keri.db import dbing
 from keri.vdr import viring
 from keri.vdr.issuing import Issuer
 
-
-def test_issuer(mockHelpingNowIso8601):
+# def test_issuer(mockHelpingNowIso8601):
+def test_issuer():
     # help.ogler.resetLevel(level=logging.DEBUG)
+
+    def mock_nowIso8601():
+        return "2021-05-30T17:42:26.716070+00:00"
+
+    from keri.help import helping
+    save_nowIso8601 = helping.nowIso8601
+    assert save_nowIso8601.__name__ == "nowIso8601"
+    helping.nowIso8601 = mock_nowIso8601
+    assert helping.nowIso8601.__name__ == 'mock_nowIso8601'
+
+    assert helping.nowIso8601() == "2021-05-30T17:42:26.716070+00:00"
+
+
     with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
 
@@ -282,6 +295,7 @@ def test_issuer(mockHelpingNowIso8601):
         assert ser.ked["t"] == "rot"
         assert vrtser.diger.qb64 == 'EnUD_KZu-dGpFSEWZOlFdQSydioYY78qIDPfzA7Fhr-Q'
 
+    helping.nowIso8601 = save_nowIso8601
     """ End Test """
 
 
@@ -306,5 +320,5 @@ def buildHab(db, kpr):
 
 
 if __name__ == "__main__":
-    from conftest import mockHelpingNowIso8601
-    test_issuer(mockHelpingNowIso8601)
+    # pytest.main(['-vv', 'test_issuing.py::test_issuer'])
+    test_issuer()
