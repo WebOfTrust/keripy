@@ -8,15 +8,14 @@ from keri.help import helping
 from keri.vdr import viring
 from keri.vdr.issuing import Issuer
 
+
 def test_issuer(mockHelpingNowUTC):
     # help.ogler.resetLevel(level=logging.DEBUG)
 
     assert helping.nowIso8601() == "2021-05-30T17:42:26.716070+00:00"
 
-
     with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
-
         # setup issuer with defaults for allowBackers, backers and estOnly
         issuer = Issuer(hab=hab, name="bob", reger=reg)
         assert issuer.incept == (
@@ -80,54 +79,60 @@ def test_issuer(mockHelpingNowUTC):
         ser = Serder(raw=tevt)
         assert ser.diger.qb64 == "E05xrOuJ9flPR1-KzVXCSF5OOyyDqXOVapUJZnvAA2EU"
 
-        # issuer, not allowed to issue backers
-        issuer = Issuer(hab=hab, name="test", noBackers=True)
-        ser = Serder(raw=issuer.incept)
-        assert ser.pre == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
-        assert ser.ked["t"] == "vcp"
-        assert ser.ked["c"] == ["NB"]
-        assert ser.ked["b"] == []
-        assert ser.ked["bt"] == "0"
+        with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
+            hab = buildHab(db, kpr)
+            # issuer, not allowed to issue backers
+            issuer = Issuer(hab=hab, name="bob", noBackers=True, reger=reg)
+            ser = Serder(raw=issuer.incept)
+            assert ser.pre == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
+            assert ser.ked["t"] == "vcp"
+            assert ser.ked["c"] == ["NB"]
+            assert ser.ked["b"] == []
+            assert ser.ked["bt"] == "0"
 
-        ser = Serder(raw=issuer.ianchor)
-        assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
-        assert ser.ked["t"] == "ixn"
-        seal = ser.ked["a"][0]
-        assert seal["i"] == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
-        assert seal["s"] == "0"
-        assert seal["d"] == "ElYstqTocyQixLLz4zYCAs2unaFco_p6LqH0W01loIg4"
+            ser = Serder(raw=issuer.ianchor)
+            assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
+            assert ser.ked["t"] == "ixn"
+            seal = ser.ked["a"][0]
+            assert seal["i"] == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
+            assert seal["s"] == "0"
+            assert seal["d"] == "ElYstqTocyQixLLz4zYCAs2unaFco_p6LqH0W01loIg4"
 
-        with pytest.raises(ValueError):
-            issuer.rotate(adds=["EqoNZAX5Lu8RuHzwwyn5tCZTe-mDBq5zusCrRo5TDugs"])
+            with pytest.raises(ValueError):
+                issuer.rotate(adds=["EqoNZAX5Lu8RuHzwwyn5tCZTe-mDBq5zusCrRo5TDugs"])
 
-        tevt, kevt = issuer.issue(vcdig="EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8")
-        ser = Serder(raw=tevt)
-        assert ser.pre == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
-        assert ser.ked["ri"] == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
-        assert ser.ked["t"] == "iss"
+        with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
+            hab = buildHab(db, kpr)
+            issuer = Issuer(hab=hab, name="bob", noBackers=True, reger=reg)
 
-        ser = Serder(raw=kevt)
-        assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
-        assert ser.ked["t"] == "ixn"
-        seal = ser.ked["a"][0]
-        assert seal["i"] == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
-        assert seal["s"] == "0"
-        assert seal["d"] == "EzWu1JpF_RC__sEZiyyISxiuIEnDYguSvvcBvqrxIYtI"
+            tevt, kevt = issuer.issue(vcdig="EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8")
+            ser = Serder(raw=tevt)
+            assert ser.pre == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
+            assert ser.ked["ri"] == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
+            assert ser.ked["t"] == "iss"
 
-        tevt, kevt = issuer.revoke(vcdig="EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8")
-        ser = Serder(raw=tevt)
-        assert ser.pre == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
-        assert ser.ked["t"] == "rev"
-        assert ser.ked["ri"] == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
+            ser = Serder(raw=kevt)
+            assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
+            assert ser.ked["t"] == "ixn"
+            seal = ser.ked["a"][0]
+            assert seal["i"] == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
+            assert seal["s"] == "0"
+            assert seal["d"] == "EzWu1JpF_RC__sEZiyyISxiuIEnDYguSvvcBvqrxIYtI"
 
-        ser = Serder(raw=kevt)
-        assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
-        assert ser.ked["t"] == "ixn"
-        seal = ser.ked["a"][0]
-        assert seal["i"] == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
-        assert seal["s"] == "1"
-        assert seal["d"] == 'EESqpWTkUklke73mGjf6TE-ojHEJLultMlQhKddfNx6w'
-        # assert seal["d"] == "EEu7o1wTExOXYuIG6iD4yMpXNshxMLPA5uSOOdJEzycs"
+            tevt, kevt = issuer.revoke(vcdig="EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8")
+            ser = Serder(raw=tevt)
+            assert ser.pre == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
+            assert ser.ked["t"] == "rev"
+            assert ser.ked["ri"] == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
+
+            ser = Serder(raw=kevt)
+            assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
+            assert ser.ked["t"] == "ixn"
+            seal = ser.ked["a"][0]
+            assert seal["i"] == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
+            assert seal["s"] == "1"
+            # assert seal["d"] == 'EESqpWTkUklke73mGjf6TE-ojHEJLultMlQhKddfNx6w'
+            assert seal["d"] == "EEu7o1wTExOXYuIG6iD4yMpXNshxMLPA5uSOOdJEzycs"
 
     with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
@@ -286,8 +291,6 @@ def test_issuer(mockHelpingNowUTC):
         assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
         assert ser.ked["t"] == "rot"
         assert vrtser.diger.qb64 == 'EnUD_KZu-dGpFSEWZOlFdQSydioYY78qIDPfzA7Fhr-Q'
-
-
 
     """ End Test """
 
