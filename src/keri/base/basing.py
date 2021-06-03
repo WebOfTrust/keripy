@@ -28,7 +28,7 @@ from ..core import coring, eventing
 logger = help.ogler.getLogger()
 
 
-def clean(self, orig, kvy=None):
+def clean(orig, kvy=None):
     """
     Clean orig (original) database by creating re-verified cleaned cloned copy
     and then replacing original with cleaned cloned controller
@@ -49,7 +49,7 @@ def clean(self, orig, kvy=None):
                       dirMode=orig.dirMode,
                       clean=True) as copy:
 
-        with dbing.reopenDB(db=orig, readonly=True):  # reopen orig readonly
+        with dbing.reopenDB(db=orig, reuse=True, readonly=True):  # reopen orig readonly
             if not os.path.exists(orig.path):
                 raise ValueError("Error cloning, no orig at {}."
                                  "".format(orig.path))
@@ -76,7 +76,7 @@ def clean(self, orig, kvy=None):
             raise ValueError("Error cloning, unable to move {} to {}."
                              "".format(copy.path, orig.path))
 
-        with dbing.reopenDB(db=orig):  # make sure can reopen
+        with dbing.reopenDB(db=orig, reuse=True):  # make sure can reopen
             if not isinstance(orig.env, lmdb.Environment):
                 raise ValueError("Error cloning, unable to reopen."
                                  "".format(orig.path))

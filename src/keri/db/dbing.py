@@ -249,7 +249,7 @@ class LMDBer:
     DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
 
     def __init__(self, name='main', temp=False, headDirPath=None, dirMode=None,
-                 reopen=True, clear=False, clean=False, readonly=False):
+                 reopen=True, clear=False, reuse=False, clean=False, readonly=False):
         """
         Setup main database directory at .dirpath.
         Create main database environment at .env using .dirpath.
@@ -269,6 +269,8 @@ class LMDBer:
                               False means databse not opened by this init
             clear (Boolean): True means remove directory upon close if reopon
                              False means do not remove directory upon close if reopen
+            reuse (Boolean): True means reuse self.path if already exists
+                             False means do not reuse but remake self.path
             clean (Boolean): True means path uses clean tail variant
                              False means path uses normal tail variant
             readonly (Boolean): True means open database in readonly mode
@@ -285,11 +287,11 @@ class LMDBer:
 
         if reopen:
             self.reopen(headDirPath=self.headDirPath, dirMode=dirMode,
-                        clear=clear, clean=clean, readonly=readonly)
+                        clear=clear, reuse=reuse, clean=clean, readonly=readonly)
 
 
     def reopen(self, temp=None, headDirPath=None, dirMode=None, clear=False,
-               clean=False, readonly=False):
+               reuse=False, clean=False, readonly=False):
         """
         Open if closed or close and reopen if opened or create and open if not
         if not preexistent, directory path for lmdb at .path and then
@@ -305,6 +307,8 @@ class LMDBer:
                 directory and database files. Default .DirMode
             clear (Boolean): True means remove directory upon close
                              False means do not remove directory upon close
+            reuse (Boolean): True means reuse self.path if already exists
+                             False means do not reuse but remake self.path
             clean (Boolean): True means path uses clean tail variant
                              False means path uses normal tail variant
             readonly (Boolean): True means open database in readonly mode
@@ -320,11 +324,12 @@ class LMDBer:
         if dirMode is not None:
             self.dirMode = dirMode
 
-        self.path = self.makePath(name=self.name,
-                                  temp=self.temp,
-                                  headDirPath=self.headDirPath,
-                                  dirMode=self.dirMode,
-                                  clean=clean)
+        if not reuse or not self.path:
+            self.path = self.makePath(name=self.name,
+                                      temp=self.temp,
+                                      headDirPath=self.headDirPath,
+                                      dirMode=self.dirMode,
+                                      clean=clean)
 
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath

@@ -12,6 +12,7 @@ import pytest
 
 from keri.base import basing, keeping
 from keri.base.basing import Habitat
+from keri.core import coring, eventing
 from keri.core.coring import Serials
 from keri.db import dbing
 from keri.help import helping
@@ -282,6 +283,8 @@ def test_clean():
         assert natHab.kever.prefixer.transferable
         assert natHab.db.opened
         assert natHab.pre in natHab.kevers
+        assert natHab.db.path.endswith("/keri/db/nat")
+        path = natHab.db.path  # save for later
 
         # Create series of events for Nat
         natHab.interact()
@@ -293,11 +296,42 @@ def test_clean():
 
         assert natHab.kever.sn == 6
         assert natHab.kever.serder.dig == 'EDnOtySjCSGG7rdRKv8rEuBz26fa8UEhTrVMQ_jrLz40'
+        ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+        assert ldig == natHab.kever.serder.digb
+        serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+        assert serder.dig == natHab.kever.serder.dig
         assert natHab.db.env.stat()['entries'] == 19
 
-        # now clean it
-        # basing.clean(orig=natHab.db)
+        # test reopenDB with reuse  (because temp)
+        with dbing.reopenDB(db=natHab.db, reuse=True):
+            assert natHab.db.path == path
+            ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+            assert ldig == natHab.kever.serder.digb
+            serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+            assert serder.dig == natHab.kever.serder.dig
+            assert natHab.db.env.stat()['entries'] == 19
 
+
+        # test openDB copy db with clean
+        with dbing.openDB(name=natHab.db.name,
+                          temp=natHab.db.temp,
+                          headDirPath=natHab.db.headDirPath,
+                          dirMode=natHab.db.dirMode,
+                          clean=True) as copy:
+            assert copy.path.endswith("/keri/clean/db/nat")
+            assert copy.env.stat()['entries'] >= 18
+
+        # now clean it
+        basing.clean(orig=natHab.db)
+
+        # now see if its back where it belongs
+        with dbing.reopenDB(db=natHab.db, reuse=True):
+            assert natHab.db.path == path
+            ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+            assert ldig == natHab.kever.serder.digb
+            serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+            assert serder.dig == natHab.kever.serder.dig
+            assert natHab.db.env.stat()['entries'] >= 18
 
     assert not os.path.exists(natKS.path)
     assert not os.path.exists(natDB.path)
