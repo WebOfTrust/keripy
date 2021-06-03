@@ -295,6 +295,7 @@ def test_clean():
         natHab.interact()
 
         assert natHab.kever.sn == 6
+        assert natHab.kever.fn == 6
         assert natHab.kever.serder.dig == 'EDnOtySjCSGG7rdRKv8rEuBz26fa8UEhTrVMQ_jrLz40'
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
         assert ldig == natHab.kever.serder.digb
@@ -318,7 +319,11 @@ def test_clean():
                                        sn=natHab.kever.sn+1,
                                        sith=2,
                                        nxt=natHab.kever.nexter.qb64)
-            # natHab.kever.logEvent()
+            fn = natHab.kever.logEvent(serder=badsrdr, first=True)
+            assert fn == 7
+            # verify garbage event in database
+            assert natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
+            assert natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
 
 
         # test openDB copy db with clean
@@ -331,9 +336,17 @@ def test_clean():
             assert copy.env.stat()['entries'] >= 18
 
         # now clean it
-        basing.clean(orig=natHab.db)
+        natHab.kevers.clear()  # clear kevers dict in place
+        assert not natHab.kevers
+        kvy = eventing.Kevery(kevers=natHab.kevers)  # use inplace kevers & promiscuous mode
+        basing.clean(orig=natHab.db, kvy=kvy)
 
-        # now see if its back where it belongs
+        # see if kevers dict is back to what it was before
+        assert natHab.kever.sn == 6
+        assert natHab.kever.fn == 6
+        assert natHab.kever.serder.dig == 'EDnOtySjCSGG7rdRKv8rEuBz26fa8UEhTrVMQ_jrLz40'
+
+        # see if database is back where it belongs
         with dbing.reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
             ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
@@ -341,6 +354,11 @@ def test_clean():
             serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
             assert serder.dig == natHab.kever.serder.dig
             assert natHab.db.env.stat()['entries'] >= 18
+
+            # confirm bad event missing from database
+            assert not natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
+            assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
+
 
     assert not os.path.exists(natKS.path)
     assert not os.path.exists(natDB.path)

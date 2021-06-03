@@ -55,7 +55,8 @@ def clean(orig, kvy=None):
                                  "".format(orig.path))
 
             if not kvy:  # new kvy for clone
-                kvy = eventing.Kevery(db=copy)  # promiscuous mode
+                kvy = eventing.Kevery()  # promiscuous mode
+            kvy.db = copy
             psr = eventing.Parser(kvy=kvy)
 
             # Revise in future to NOT parse msgs but to extract the processed
@@ -169,9 +170,8 @@ class Habitat:
         # one we can restart from otherwise initialize a new one
         existing = False
         kom = Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
-        habKeys = (name)
         if not self.temp:
-            ex = kom.get(keys=habKeys)
+            ex = kom.get(keys=(self.name, ))
             # found existing habitat, otherwise leave __init__ to incept a new one.
             if ex is not None:
                 prms = json.loads(bytes(ks.getPrm(key=ex.prefix)).decode("utf-8"))
@@ -235,7 +235,7 @@ class Habitat:
                 raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
 
-            kom.put(keys=habKeys, data=HabitatRecord(name=name, prefix=self.pre))
+            kom.put(keys=(self.name, ), data=HabitatRecord(name=self.name, prefix=self.pre))
 
 
     def reinitialize(self):

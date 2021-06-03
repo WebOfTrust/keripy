@@ -1140,7 +1140,7 @@ def reopenDB(db, clear=False, **kwa):
 
     """
     try:
-        env = db.reopen(**kwa)
+        env = db.reopen(clear=clear, **kwa)
         yield env
 
     finally:
@@ -1385,65 +1385,10 @@ class Baser(LMDBer):
             pre = pre.encode("utf-8")
 
         for fn, dig in self.getFelItemPreIter(pre, fn=fn):
-            msg = bytearray()  # message
-            atc = bytearray()  # attachments
-            dgkey = dgKey(pre, dig) # get message
-            if not (raw := self.getEvt(key=dgkey)):
-                raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
-            msg.extend(raw)
-
-            # add indexed signatures to attachments
-            if not (sigs := self.getSigs(key=dgkey)):
-                raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
-            atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                      count=len(sigs)).qb64b)
-            for sig in sigs:
-                atc.extend(sig)
-
-            # add indexed witness signatures to attachments
-            if (wigs := self.getWigs(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
-                                                  count=len(wigs) ).qb64b)
-                for wig in wigs:
-                    atc.extend(wig)
-
-            # add authorizer (delegator/issure) source seal event couple to attachments
-            couple = self.getAes(dgkey)
-            if couple is not None:
-                atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                      count=1 ).qb64b)
-                atc.extend(couple)
-
-            # add trans receipts quadruples to attachments
-            if (quads := self.getVrcs(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
-                                      count=len(quads) ).qb64b)
-                for quad in quads:
-                    atc.extend(quad)
-
-            # add nontrans receipts couples to attachments
-            if (coups := self.getRcts(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
-                                                  count=len(coups) ).qb64b)
-                for coup in coups:
-                    atc.extend(coup)
-
-            # add first seen replay couple to attachments
-            atc.extend(coring.Counter(code=coring.CtrDex.FirstSeenReplayCouples,
-                                      count=1).qb64b)
-            atc.extend(coring.Seqner(sn=fn).qb64b)
-            if not (dts := self.getDts(key=dgkey)):
-                raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
-            atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
-
-            # prepend pipelining counter to attachments
-            if len(atc) % 4:
-                raise ValueError("Invalid attachments size={}, nonintegral"
-                                 " quadlets.".format(len(atc)))
-            pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
-                                      count=(len(atc) // 4)).qb64b
-            msg.extend(pcnt)
-            msg.extend(atc)
+            try:
+                msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
+            except Exception:
+                continue  # skip this event
             yield msg
 
 
@@ -1459,66 +1404,85 @@ class Baser(LMDBer):
             key (bytes): fnKey(pre, fn)
         """
         for pre, fn, dig in self.getFelItemAllPreIter(key=key):
-            msg = bytearray()  # message
-            atc = bytearray()  # attachments
-            dgkey = dgKey(pre, dig) # get message
-            if not (raw := self.getEvt(key=dgkey)):
-                raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
-            msg.extend(raw)
-
-            # add indexed signatures to attachments
-            if not (sigs := self.getSigs(key=dgkey)):
-                raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
-            atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                      count=len(sigs)).qb64b)
-            for sig in sigs:
-                atc.extend(sig)
-
-            # add indexed witness signatures to attachments
-            if (wigs := self.getWigs(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
-                                                  count=len(wigs) ).qb64b)
-                for wig in wigs:
-                    atc.extend(wig)
-
-            # add authorizer (delegator/issure) source seal event couple to attachments
-            couple = self.getAes(dgkey)
-            if couple is not None:
-                atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                      count=1 ).qb64b)
-                atc.extend(couple)
-
-            # add trans receipts quadruples to attachments
-            if (quads := self.getVrcs(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
-                                      count=len(quads) ).qb64b)
-                for quad in quads:
-                    atc.extend(quad)
-
-            # add nontrans receipts couples to attachments
-            if (coups := self.getRcts(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
-                                                  count=len(coups) ).qb64b)
-                for coup in coups:
-                    atc.extend(coup)
-
-            # add first seen replay couple to attachments
-            atc.extend(coring.Counter(code=coring.CtrDex.FirstSeenReplayCouples,
-                                      count=1).qb64b)
-            atc.extend(coring.Seqner(sn=fn).qb64b)
-            if not (dts := self.getDts(key=dgkey)):
-                raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
-            atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
-
-            # prepend pipelining counter to attachments
-            if len(atc) % 4:
-                raise ValueError("Invalid attachments size={}, nonintegral"
-                                 " quadlets.".format(len(atc)))
-            pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
-                                      count=(len(atc) // 4)).qb64b
-            msg.extend(pcnt)
-            msg.extend(atc)
+            try:
+                msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
+            except Exception:
+                continue  # skip this event
             yield msg
+
+
+    def cloneEvtMsg(self, pre, fn, dig):
+        """
+        Clones Event as Serialized CESR Message with Body and attached Foot
+
+        Parameters:
+            pre (bytes): identifier prefix of event
+            fn (int): first seen number (ordinal) of event
+            dig (bytes): digest of event
+
+        Returns:
+            bytearray: message body with attachments
+        """
+        msg = bytearray()  # message
+        atc = bytearray()  # attachments
+        dgkey = dgKey(pre, dig) # get message
+        if not (raw := self.getEvt(key=dgkey)):
+            raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+        msg.extend(raw)
+
+        # add indexed signatures to attachments
+        if not (sigs := self.getSigs(key=dgkey)):
+            raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
+        atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                  count=len(sigs)).qb64b)
+        for sig in sigs:
+            atc.extend(sig)
+
+        # add indexed witness signatures to attachments
+        if (wigs := self.getWigs(key=dgkey)):
+            atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
+                                              count=len(wigs) ).qb64b)
+            for wig in wigs:
+                atc.extend(wig)
+
+        # add authorizer (delegator/issure) source seal event couple to attachments
+        couple = self.getAes(dgkey)
+        if couple is not None:
+            atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
+                                  count=1 ).qb64b)
+            atc.extend(couple)
+
+        # add trans receipts quadruples to attachments
+        if (quads := self.getVrcs(key=dgkey)):
+            atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
+                                  count=len(quads) ).qb64b)
+            for quad in quads:
+                atc.extend(quad)
+
+        # add nontrans receipts couples to attachments
+        if (coups := self.getRcts(key=dgkey)):
+            atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
+                                              count=len(coups) ).qb64b)
+            for coup in coups:
+                atc.extend(coup)
+
+        # add first seen replay couple to attachments
+        if not (dts := self.getDts(key=dgkey)):
+            raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
+        atc.extend(coring.Counter(code=coring.CtrDex.FirstSeenReplayCouples,
+                                  count=1).qb64b)
+        atc.extend(coring.Seqner(sn=fn).qb64b)
+        atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
+
+        # prepend pipelining counter to attachments
+        if len(atc) % 4:
+            raise ValueError("Invalid attachments size={}, nonintegral"
+                             " quadlets.".format(len(atc)))
+        pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+                                  count=(len(atc) // 4)).qb64b
+        msg.extend(pcnt)
+        msg.extend(atc)
+        return msg
 
 
     def putEvt(self, key, val):
