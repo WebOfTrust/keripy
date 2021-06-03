@@ -204,7 +204,8 @@ def openLMDB(cls=None, name="test", temp=True, **kwa):
         yield lmdber
 
     finally:
-        lmdber.close()  # clears if lmdber.temp
+        lmdber.close(clear=lmdber.temp)  # clears if lmdber.temp
+
 
 class LMDBer:
     """
@@ -248,7 +249,7 @@ class LMDBer:
     DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
 
     def __init__(self, name='main', temp=False, headDirPath=None, dirMode=None,
-                 reopen=True, clean=False, readonly=False):
+                 reopen=True, clear=False, reuse=False, clean=False, readonly=False):
         """
         Setup main database directory at .dirpath.
         Create main database environment at .env using .dirpath.
@@ -266,6 +267,10 @@ class LMDBer:
                 directory and database files. Default .DirMode
             reopen (Boolean): True means database will be reopened by this init
                               False means databse not opened by this init
+            clear (Boolean): True means remove directory upon close if reopon
+                             False means do not remove directory upon close if reopen
+            reuse (Boolean): True means reuse self.path if already exists
+                             False means do not reuse but remake self.path
             clean (Boolean): True means path uses clean tail variant
                              False means path uses normal tail variant
             readonly (Boolean): True means open database in readonly mode
@@ -282,11 +287,11 @@ class LMDBer:
 
         if reopen:
             self.reopen(headDirPath=self.headDirPath, dirMode=dirMode,
-                        clean=clean, readonly=readonly)
+                        clear=clear, reuse=reuse, clean=clean, readonly=readonly)
 
 
-    def reopen(self, temp=None, headDirPath=None, dirMode=None, clean=False,
-               readonly=False):
+    def reopen(self, temp=None, headDirPath=None, dirMode=None, clear=False,
+               reuse=False, clean=False, readonly=False):
         """
         Open if closed or close and reopen if opened or create and open if not
         if not preexistent, directory path for lmdb at .path and then
@@ -300,13 +305,17 @@ class LMDBer:
                 Default .HeadDirpath
             dirMode (int): optional numeric os dir permissions for database
                 directory and database files. Default .DirMode
+            clear (Boolean): True means remove directory upon close
+                             False means do not remove directory upon close
+            reuse (Boolean): True means reuse self.path if already exists
+                             False means do not reuse but remake self.path
             clean (Boolean): True means path uses clean tail variant
                              False means path uses normal tail variant
             readonly (Boolean): True means open database in readonly mode
                                 False means open database in read/write mode
         """
         if self.opened:
-            self.close()
+            self.close(clear=clear)
 
         if temp is not None:
             self.temp = temp
@@ -315,11 +324,12 @@ class LMDBer:
         if dirMode is not None:
             self.dirMode = dirMode
 
-        self.path = self.makePath(name=self.name,
-                                  temp=self.temp,
-                                  headDirPath=self.headDirPath,
-                                  dirMode=self.dirMode,
-                                  clean=clean)
+        if not reuse or not self.path:
+            self.path = self.makePath(name=self.name,
+                                      temp=self.temp,
+                                      headDirPath=self.headDirPath,
+                                      dirMode=self.dirMode,
+                                      clean=clean)
 
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
@@ -348,7 +358,8 @@ class LMDBer:
                 stat.S_IWUSR Owner has write permission.
                 stat.S_IXUSR Owner has execute permission.
 
-            clean (Boolean): True means make path for cleaned version of db
+            clean (Boolean): True means make path for cleaned version of db and
+                               remove old directory at clean path if exists
                              False means make path for regular version of db
         """
         temp = True if temp else False
@@ -428,7 +439,7 @@ class LMDBer:
         self.env = None
         self.opened = False
 
-        if clear or self.temp:
+        if clear:
             self.clearDirPath()
 
 
@@ -497,6 +508,34 @@ class LMDBer:
         """
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             return (txn.delete(key))
+
+
+    def getAllItemIter(self, db, key=b'', split=True, sep=b'.'):
+        """
+        Returns iterator of item duple (key, val), at each key over all
+        keys in db. If split is true then the key is split at sep and instead
+        of returing duple it results tuple with one entry for each key split
+        as well as the value.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is key location in db to resume replay,
+                   If empty then start at first key in database
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # return key, val at cursor
+                if split:
+                    splits = bytes(key).split(sep)
+                    splits.append(bytes(val))
+                else:
+                    splits = (bytes(key), bytes(val))
+                yield tuple(splits)
 
 
     # For subdbs with no duplicate values allowed at each key. (dupsort==False)
@@ -1129,7 +1168,7 @@ def reopenDB(db, clear=False, **kwa):
 
     """
     try:
-        env = db.reopen(**kwa)
+        env = db.reopen(clear=clear, **kwa)
         yield env
 
     finally:
@@ -1374,65 +1413,10 @@ class Baser(LMDBer):
             pre = pre.encode("utf-8")
 
         for fn, dig in self.getFelItemPreIter(pre, fn=fn):
-            msg = bytearray()  # message
-            atc = bytearray()  # attachments
-            dgkey = dgKey(pre, dig) # get message
-            if not (raw := self.getEvt(key=dgkey)):
-                raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
-            msg.extend(raw)
-
-            # add indexed signatures to attachments
-            if not (sigs := self.getSigs(key=dgkey)):
-                raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
-            atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                      count=len(sigs)).qb64b)
-            for sig in sigs:
-                atc.extend(sig)
-
-            # add indexed witness signatures to attachments
-            if (wigs := self.getWigs(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
-                                                  count=len(wigs) ).qb64b)
-                for wig in wigs:
-                    atc.extend(wig)
-
-            # add authorizer (delegator/issure) source seal event couple to attachments
-            couple = self.getAes(dgkey)
-            if couple is not None:
-                atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                      count=1 ).qb64b)
-                atc.extend(couple)
-
-            # add trans receipts quadruples to attachments
-            if (quads := self.getVrcs(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
-                                      count=len(quads) ).qb64b)
-                for quad in quads:
-                    atc.extend(quad)
-
-            # add nontrans receipts couples to attachments
-            if (coups := self.getRcts(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
-                                                  count=len(coups) ).qb64b)
-                for coup in coups:
-                    atc.extend(coup)
-
-            # add first seen replay couple to attachments
-            atc.extend(coring.Counter(code=coring.CtrDex.FirstSeenReplayCouples,
-                                      count=1).qb64b)
-            atc.extend(coring.Seqner(sn=fn).qb64b)
-            if not (dts := self.getDts(key=dgkey)):
-                raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
-            atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
-
-            # prepend pipelining counter to attachments
-            if len(atc) % 4:
-                raise ValueError("Invalid attachments size={}, nonintegral"
-                                 " quadlets.".format(len(atc)))
-            pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
-                                      count=(len(atc) // 4)).qb64b
-            msg.extend(pcnt)
-            msg.extend(atc)
+            try:
+                msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
+            except Exception:
+                continue  # skip this event
             yield msg
 
 
@@ -1448,66 +1432,85 @@ class Baser(LMDBer):
             key (bytes): fnKey(pre, fn)
         """
         for pre, fn, dig in self.getFelItemAllPreIter(key=key):
-            msg = bytearray()  # message
-            atc = bytearray()  # attachments
-            dgkey = dgKey(pre, dig) # get message
-            if not (raw := self.getEvt(key=dgkey)):
-                raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
-            msg.extend(raw)
-
-            # add indexed signatures to attachments
-            if not (sigs := self.getSigs(key=dgkey)):
-                raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
-            atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                      count=len(sigs)).qb64b)
-            for sig in sigs:
-                atc.extend(sig)
-
-            # add indexed witness signatures to attachments
-            if (wigs := self.getWigs(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
-                                                  count=len(wigs) ).qb64b)
-                for wig in wigs:
-                    atc.extend(wig)
-
-            # add authorizer (delegator/issure) source seal event couple to attachments
-            couple = self.getAes(dgkey)
-            if couple is not None:
-                atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                      count=1 ).qb64b)
-                atc.extend(couple)
-
-            # add trans receipts quadruples to attachments
-            if (quads := self.getVrcs(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
-                                      count=len(quads) ).qb64b)
-                for quad in quads:
-                    atc.extend(quad)
-
-            # add nontrans receipts couples to attachments
-            if (coups := self.getRcts(key=dgkey)):
-                atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
-                                                  count=len(coups) ).qb64b)
-                for coup in coups:
-                    atc.extend(coup)
-
-            # add first seen replay couple to attachments
-            atc.extend(coring.Counter(code=coring.CtrDex.FirstSeenReplayCouples,
-                                      count=1).qb64b)
-            atc.extend(coring.Seqner(sn=fn).qb64b)
-            if not (dts := self.getDts(key=dgkey)):
-                raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
-            atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
-
-            # prepend pipelining counter to attachments
-            if len(atc) % 4:
-                raise ValueError("Invalid attachments size={}, nonintegral"
-                                 " quadlets.".format(len(atc)))
-            pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
-                                      count=(len(atc) // 4)).qb64b
-            msg.extend(pcnt)
-            msg.extend(atc)
+            try:
+                msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
+            except Exception:
+                continue  # skip this event
             yield msg
+
+
+    def cloneEvtMsg(self, pre, fn, dig):
+        """
+        Clones Event as Serialized CESR Message with Body and attached Foot
+
+        Parameters:
+            pre (bytes): identifier prefix of event
+            fn (int): first seen number (ordinal) of event
+            dig (bytes): digest of event
+
+        Returns:
+            bytearray: message body with attachments
+        """
+        msg = bytearray()  # message
+        atc = bytearray()  # attachments
+        dgkey = dgKey(pre, dig) # get message
+        if not (raw := self.getEvt(key=dgkey)):
+            raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+        msg.extend(raw)
+
+        # add indexed signatures to attachments
+        if not (sigs := self.getSigs(key=dgkey)):
+            raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
+        atc.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                  count=len(sigs)).qb64b)
+        for sig in sigs:
+            atc.extend(sig)
+
+        # add indexed witness signatures to attachments
+        if (wigs := self.getWigs(key=dgkey)):
+            atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
+                                              count=len(wigs) ).qb64b)
+            for wig in wigs:
+                atc.extend(wig)
+
+        # add authorizer (delegator/issure) source seal event couple to attachments
+        couple = self.getAes(dgkey)
+        if couple is not None:
+            atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
+                                  count=1 ).qb64b)
+            atc.extend(couple)
+
+        # add trans receipts quadruples to attachments
+        if (quads := self.getVrcs(key=dgkey)):
+            atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
+                                  count=len(quads) ).qb64b)
+            for quad in quads:
+                atc.extend(quad)
+
+        # add nontrans receipts couples to attachments
+        if (coups := self.getRcts(key=dgkey)):
+            atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
+                                              count=len(coups) ).qb64b)
+            for coup in coups:
+                atc.extend(coup)
+
+        # add first seen replay couple to attachments
+        if not (dts := self.getDts(key=dgkey)):
+            raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
+        atc.extend(coring.Counter(code=coring.CtrDex.FirstSeenReplayCouples,
+                                  count=1).qb64b)
+        atc.extend(coring.Seqner(sn=fn).qb64b)
+        atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
+
+        # prepend pipelining counter to attachments
+        if len(atc) % 4:
+            raise ValueError("Invalid attachments size={}, nonintegral"
+                             " quadlets.".format(len(atc)))
+        pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+                                  count=(len(atc) // 4)).qb64b
+        msg.extend(pcnt)
+        msg.extend(atc)
+        return msg
 
 
     def putEvt(self, key, val):
@@ -3028,4 +3031,4 @@ class BaserDoer(doing.Doer):
 
     def exit(self):
         """"""
-        self.baser.close()
+        self.baser.close(clear=self.baser.temp)

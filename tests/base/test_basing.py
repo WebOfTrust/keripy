@@ -12,6 +12,7 @@ import pytest
 
 from keri.base import basing, keeping
 from keri.base.basing import Habitat
+from keri.core import coring, eventing
 from keri.core.coring import Serials
 from keri.db import dbing
 from keri.help import helping
@@ -65,7 +66,7 @@ def test_habitat_reinitialization():
         hab.ks.close(clear=True)
     """End Test"""
 
-
+# Komer tests
 def test_kom_happy_path():
     """
     Test Komer object class
@@ -127,6 +128,52 @@ def test_kom_happy_path():
 
     assert not os.path.exists(db.path)
     assert not db.opened
+
+
+def test_kom_get_item_iter():
+    """
+    Test Komer object class
+    """
+
+    @dataclass
+    class Stuff:
+        a: str  # dummy
+        b: str  # dummy too
+
+        def __iter__(self):
+            return iter(asdict(self))
+
+    w = Stuff(a="Big", b="Blue")
+    x = Stuff(a="Tall", b="Red")
+    y = Stuff(a="Fat", b="Green")
+    z = Stuff(a="Eat", b="White")
+
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        mydb = basing.Komer(db=db, schema=Stuff, subdb='recs.')
+        assert isinstance(mydb, basing.Komer)
+
+
+        mydb.put(keys=("a","1"), data=w)
+        mydb.put(keys=("a","2"), data=x)
+        mydb.put(keys=("a","3"), data=y)
+        mydb.put(keys=("a","4"), data=z)
+
+        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
+                        (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
+                        (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
+                        (('a', '4'), {'a': 'Eat', 'b': 'White'})]
+
+
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+
 
 
 def test_put_invalid_dataclass():
@@ -268,6 +315,102 @@ def test_deserialization():
         assert actual.state == "UT"
         assert actual.zip == 84058
 
+# End Komer tests
+
+def test_clean():
+    """
+    Test Baser db clean clone function
+    """
+    with dbing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
+        # setup Nat's habitat using default salt multisig already incepts
+        natHab = basing.Habitat(ks=natKS, db=natDB, isith=2, icount=3,temp=True)
+        assert natHab.ks == natKS
+        assert natHab.db == natDB
+        assert natHab.kever.prefixer.transferable
+        assert natHab.db.opened
+        assert natHab.pre in natHab.kevers
+        assert natHab.db.path.endswith("/keri/db/nat")
+        path = natHab.db.path  # save for later
+
+        # Create series of events for Nat
+        natHab.interact()
+        natHab.rotate()
+        natHab.interact()
+        natHab.interact()
+        natHab.interact()
+        natHab.interact()
+
+        assert natHab.kever.sn == 6
+        assert natHab.kever.fn == 6
+        assert natHab.kever.serder.dig == 'EDnOtySjCSGG7rdRKv8rEuBz26fa8UEhTrVMQ_jrLz40'
+        ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+        assert ldig == natHab.kever.serder.digb
+        serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+        assert serder.dig == natHab.kever.serder.dig
+        assert natHab.db.env.stat()['entries'] == 19
+
+        # test reopenDB with reuse  (because temp)
+        with dbing.reopenDB(db=natHab.db, reuse=True):
+            assert natHab.db.path == path
+            ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+            assert ldig == natHab.kever.serder.digb
+            serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+            assert serder.dig == natHab.kever.serder.dig
+            assert natHab.db.env.stat()['entries'] == 19
+
+            # add garbage event to corrupt database
+            badsrdr = eventing.rotate(pre=natHab.pre,
+                                       keys=[verfer.qb64 for verfer in natHab.kever.verfers],
+                                       dig=natHab.kever.serder.dig,
+                                       sn=natHab.kever.sn+1,
+                                       sith=2,
+                                       nxt=natHab.kever.nexter.qb64)
+            fn = natHab.kever.logEvent(serder=badsrdr, first=True)
+            assert fn == 7
+            # verify garbage event in database
+            assert natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
+            assert natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
+
+
+        # test openDB copy db with clean
+        with dbing.openDB(name=natHab.db.name,
+                          temp=natHab.db.temp,
+                          headDirPath=natHab.db.headDirPath,
+                          dirMode=natHab.db.dirMode,
+                          clean=True) as copy:
+            assert copy.path.endswith("/keri/clean/db/nat")
+            assert copy.env.stat()['entries'] >= 18
+
+        # now clean it
+        natHab.kevers.clear()  # clear kevers dict in place
+        assert not natHab.kevers
+        kvy = eventing.Kevery(kevers=natHab.kevers)  # use inplace kevers & promiscuous mode
+        basing.clean(orig=natHab.db, kvy=kvy)
+
+        # see if kevers dict is back to what it was before
+        assert natHab.kever.sn == 6
+        assert natHab.kever.fn == 6
+        assert natHab.kever.serder.dig == 'EDnOtySjCSGG7rdRKv8rEuBz26fa8UEhTrVMQ_jrLz40'
+
+        # see if database is back where it belongs
+        with dbing.reopenDB(db=natHab.db, reuse=True):
+            assert natHab.db.path == path
+            ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+            assert ldig == natHab.kever.serder.digb
+            serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+            assert serder.dig == natHab.kever.serder.dig
+            assert natHab.db.env.stat()['entries'] >= 18
+
+            # confirm bad event missing from database
+            assert not natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
+            assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
+
+
+    assert not os.path.exists(natKS.path)
+    assert not os.path.exists(natDB.path)
+
+    """End Test"""
+
 
 if __name__ == "__main__":
-    test_kom_happy_path()
+    test_kom_get_item_iter()

@@ -632,7 +632,7 @@ class KeeperDoer(doing.Doer):
 
     def exit(self):
         """"""
-        self.keeper.close()
+        self.keeper.close(clear=self.keeper.temp)
 
 
 class Creator:

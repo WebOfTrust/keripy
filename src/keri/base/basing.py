@@ -28,56 +28,63 @@ from ..core import coring, eventing
 logger = help.ogler.getLogger()
 
 
-def clean(self, old, kvy=None):
+def clean(orig, kvy=None):
     """
-    Clean old database by creating re-verified cloned copy and then replacing
-    original with cleaned copy
+    Clean orig (original) database by creating re-verified cleaned cloned copy
+    and then replacing original with cleaned cloned controller
 
     Database usage should be offline during cleaning as it will be cloned in
     readonly mode
 
     Parameters:
-        old (Baser): instance to clean
+        orig (Baser): original instance to clean
         kvy (eventing.Kevery): instance to process cloned events. Othewise uses
             default
 
 
     """
-    with dbing.reopenDB(db=old, readonly=True) as env:  # reopen old in readonly mode
-        with dbing.openDB(name=old.name,
-                          temp=old.temp,
-                          headDirPath=old.headDirPath,
-                          dirMode=old.dirMode,
-                          clean=True) as new:
+    with dbing.openDB(name=orig.name,
+                      temp=orig.temp,
+                      headDirPath=orig.headDirPath,
+                      dirMode=orig.dirMode,
+                      clean=True) as copy:
+
+        with dbing.reopenDB(db=orig, reuse=True, readonly=True):  # reopen orig readonly
+            if not os.path.exists(orig.path):
+                raise ValueError("Error cloning, no orig at {}."
+                                 "".format(orig.path))
 
             if not kvy:  # new kvy for clone
-                kvy = eventing.Kevery(db=new)
+                kvy = eventing.Kevery()  # promiscuous mode
+            kvy.db = copy
+            psr = eventing.Parser(kvy=kvy)
 
+            # Revise in future to NOT parse msgs but to extract the processed
+            # objects so can pass directly to kvy.processEvent()
+            # need new method cloneObjAllPreIter()
+            # process event doesn't capture exceptions so we can more easily
+            # detect in the cloning that some events did not make it through
 
+            for msg in orig.cloneAllPreIter():
+                psr.processOne(ims=msg)
 
-        # make path for cleaned cloned db copy
-        cpath = self.makePath(name=self.name,
-                            temp=self.temp,
-                            headDirPath=self.headDirPath,
-                            dirMode=self.dirMode,
-                            clean=True)
-        # open new clean db for cloning into
-        with lmdb.open(cpath, max_dbs=self.MaxNamedDBs, mode=self.dirMode) as cenv:
-            pass
-            # clone into new clean db
+        # remove orig db directory replace with clean clone copy
+        if os.path.exists(orig.path):
+            shutil.rmtree(orig.path)
 
+        dst = shutil.move(copy.path, orig.path)  # move copy back to orig
+        if not dst:  #  move failed leave new in place so can manually fix
+            raise ValueError("Error cloning, unable to move {} to {}."
+                             "".format(copy.path, orig.path))
 
+        with dbing.reopenDB(db=orig, reuse=True):  # make sure can reopen
+            if not isinstance(orig.env, lmdb.Environment):
+                raise ValueError("Error cloning, unable to reopen."
+                                 "".format(orig.path))
 
-
-        # remove old db directory replace with clean clone
-        if os.path.exists(self.path):
-            shutil.rmtree(self.path)
-
-
-
-
-    if os.path.exists(cpath):
-        shutil.rmtree(cpath)
+    # clone success so remove if still there
+    if os.path.exists(copy.path):
+        shutil.rmtree(copy.path)
 
 @dataclass
 class HabitatRecord:
@@ -162,10 +169,9 @@ class Habitat:
         # for persisted Habitats, check the KOM first to see if there is an existing
         # one we can restart from otherwise initialize a new one
         existing = False
-        kom = Komer(db=self.db, schema=HabitatRecord, subdb='habitats.')
-        habKeys = ('hab', name)
+        kom = Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
         if not self.temp:
-            ex = kom.get(keys=habKeys)
+            ex = kom.get(keys=(self.name, ))
             # found existing habitat, otherwise leave __init__ to incept a new one.
             if ex is not None:
                 prms = json.loads(bytes(ks.getPrm(key=ex.prefix)).decode("utf-8"))
@@ -229,7 +235,7 @@ class Habitat:
                 raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
 
-            kom.put(keys=habKeys, data=HabitatRecord(name=name, prefix=self.pre))
+            kom.put(keys=(self.name, ), data=HabitatRecord(name=self.name, prefix=self.pre))
 
 
     def reinitialize(self):
@@ -619,7 +625,7 @@ class Komer:
                              "".format(type(data), data, self.schema))
 
         self.db.putVal(db=self.sdb,
-                       key=":".join(keys).encode("utf-8"),
+                       key=".".join(keys).encode("utf-8"),
                        val=self.serializer(data))
 
     def get(self, keys: tuple):
@@ -628,8 +634,10 @@ class Komer:
             keys (tuple): of key strs to be combined in order to form key
         """
 
-        data = helping.datify(self.schema, self.deserializer(self.db.getVal(db=self.sdb,
-                                                                            key=":".join(keys).encode("utf-8"))))
+        data = helping.datify(self.schema,
+                              self.deserializer(
+                                  self.db.getVal(db=self.sdb,
+                                                 key=".".join(keys).encode("utf-8"))))
 
         if data is None:
             return
@@ -646,7 +654,33 @@ class Komer:
             keys (tuple): of key strs to be combined in order to form key
         """
         self.db.delVal(db=self.sdb,
-                       key=":".join(keys).encode("utf-8"))
+                       key=".".join(keys).encode("utf-8"))
+
+
+    def getItemIter(self):
+        """
+        Parameters:
+            key (bytes): with split at sep
+            split (Boolean): True means split key at sep if any
+                             False means do not split key at sep
+            sep (bytes): separator character for key
+
+        Returns:
+            iterator: of tuples of split keys and val for each entry in db
+            For example: if key == b'a.b' and val == 'hello' then
+
+                returned item is (b'a, b'b', b'hello')
+        """
+        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            data = helping.datify(self.schema, self.deserializer(val))
+
+            if not isinstance(data, self.schema):
+                raise ValueError("Invalid schema type={} of data={}, expected {}."
+                                 "".format(type(data), data, self.schema))
+            keys = tuple(key.decode("utf-8").split('.'))
+            yield (keys, data)
+
+
 
     def _serializer(self, kind):
         """

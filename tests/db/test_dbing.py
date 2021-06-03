@@ -227,6 +227,21 @@ def test_lmdber():
         assert dber.delVal(db, key) == True
         assert dber.getVal(db, key) == None
 
+        # Test getAllItemIter(self, db, key=b'', split=True, sep=b'.')
+        key = b"a.1"
+        val = b"wow"
+        assert dber.putVal(db, key, val) == True
+        key = b"a.2"
+        val = b"wee"
+        assert dber.putVal(db, key, val) == True
+        key = b"b.1"
+        val = b"woo"
+        assert dber.putVal(db, key, val) == True
+        assert [(bytes(pre), bytes(num), bytes(val)) for pre, num, val
+                     in dber.getAllItemIter(db=db)] == [(b'a', b'1', b'wow'),
+                                                        (b'a', b'2', b'wee'),
+                                                        (b'b', b'1', b'woo')]
+
         # test OrdVal OrdItem ordinal numbered event sub db
         db = dber.env.open_db(key=b'seen.')
 
