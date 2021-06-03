@@ -264,16 +264,16 @@ def test_simple_issue_revoke(mockHelpingNowUTC):
 
     serder = issue(vcdig=vcdig, regk=regk)
 
-    assert serder.raw == (b'{"v":"KERI10JSON0000ba_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0",'
-                          b'"t":"iss","ri":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",'
-                          b'"dt":"2021-05-30T17:42:26.716070+00:00"}')
+    assert serder.raw == (b'{"v":"KERI10JSON0000b3_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM",'
+                          b'"s":"0","t":"iss","ri":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","dt":"'
+                          b'2021-01-01T00:00:00+00:00"}')
 
     serder = revoke(vcdig=vcdig, regk=regk, dig=dig)
 
-    assert serder.raw == (
-        b'{"v":"KERI10JSON0000ed_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","t":"rev",'
-        b'"ri":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg",'
-        b'"dt":"2021-05-30T17:42:26.716070+00:00"}')
+    assert serder.raw == (b'{"v":"KERI10JSON0000e6_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM",'
+                          b'"s":"1","t":"rev","ri":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"E'
+                          b'Y2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","dt":"2021-01-01T00:00:00+00:00'
+                          b'"}')
 
     """ End Test """
 
@@ -286,19 +286,16 @@ def test_backer_issue_revoke(mockHelpingNowUTC):
     dig = "EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"
 
     serder = backerIssue(vcdig=vcdig, regk=regk, regsn=sn, regd=regd)
-    assert serder.raw == (
-        b'{"v":"KERI10JSON00012d_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM",'
-        b'"ii":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":"0","t":"bis",'
-        b'"ra":{"i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":3,'
-        b'"d":"Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"},"dt":"2021-05-30T17:42:26.716070+00:00"}')
+    assert serder.raw == (b'{"v":"KERI10JSON000126_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM",'
+                          b'"ii":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":"0","t":"bis","ra":{'
+                          b'"i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":3,"d":"Ezpq06UecHwzy-'
+                          b'K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"},"dt":"2021-01-01T00:00:00+00:00"}')
 
     serder = backerRevoke(vcdig=vcdig, regk=regk, regsn=sn, regd=regd, dig=dig)
-    assert serder.raw == (
-        b'{"v":"KERI10JSON00012c_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","t":"brv",'
-        b'"p":"EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg",'
-        b'"ra":{"i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":3,'
-        b'"d":"Ezpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"},"dt":"2021-05-30T17:42:26.716070+00:00"}')
-
+    assert serder.raw == (b'{"v":"KERI10JSON000125_","i":"DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM",'
+                          b'"s":"1","t":"brv","p":"EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","ra":{"'
+                          b'i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":3,"d":"Ezpq06UecHwzy-K'
+                          b'9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"},"dt":"2021-01-01T00:00:00+00:00"}')
     """ End Test """
 
 
@@ -407,7 +404,6 @@ def test_tever_escrow():
         # invalid seal sn
         with pytest.raises(ValidationError):
             Tever(serder=vcp, seqner=seqner, diger=None, db=db, reger=reg)
-
 
     # registry with no backers
     with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
@@ -531,9 +527,10 @@ def test_tever_no_backers(mockHelpingNowUTC):
         vci = nsKey([regk, vcdig])
         dgkey = dgKey(pre=vci, dig=iss.dig)
         assert bytes(reg.getTvt(dgkey)) == (
-            b'{"v":"KERI10JSON0000ba_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU","s":"0","t":"iss",'
-            b'"ri":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw","dt":"2021-05-30T17:42:26.716070+00:00"}')
-        assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAAwEXs-HnlZg21mpy11b9npOboGsNhtJC7qK41llK-pgW_s'
+            b'{"v":"KERI10JSON0000b3_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU",'
+            b'"s":"0","t":"iss","ri":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw","dt":"'
+            b'2021-01-01T00:00:00+00:00"}')
+        assert bytes(reg.getAnc(dgkey)) == b'0AAAAAAAAAAAAAAAAAAAAAAwEkFr6l3ExFwKYvqW7cN5UUZRdp9elfZxvlba0ypwv6dM'
 
         # revoke vc with no backers
         rev = eventing.revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.dig)
@@ -548,10 +545,10 @@ def test_tever_no_backers(mockHelpingNowUTC):
         tev.update(rev, seqner=seqner, diger=diger)
         dgkey = dgKey(pre=vci, dig=rev.dig)
         assert bytes(reg.getTvt(dgkey)) == (
-            b'{"v":"KERI10JSON0000ed_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU",'
+            b'{"v":"KERI10JSON0000e6_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU",'
             b'"s":"1","t":"rev","ri":"Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw","p":"E'
-            b'rVwJASyaJ9JgDebTAbCKxECbvECW1LmYrgQ5vIolYXM","dt":"2021-05-30T17:42:26.71607'
-            b'0+00:00"}')
+            b'GOAiLLYXF4ZoVWDQaRV1WsdSRFhwDrjSS_5V5POIKQM","dt":"2021-01-01T00:00:00+00:00'
+            b'"}')
         # assert reg.getAnc(dgkey) == b'0AAAAAAAAAAAAAAAAAAAAABAECgc6yHeTRhsKh1M7k65feWZGCf_MG0dWoei5Q6SwgqU'
 
 
@@ -640,10 +637,10 @@ def test_tever_backers(mockHelpingNowUTC):
         vci = nsKey([regk, vcdig])
         dgkey = dgKey(pre=vci, dig=bis.dig)
         assert bytes(reg.getTvt(dgkey)) == (
-            b'{"v":"KERI10JSON00012d_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU",'
-            b'"ii":"EBZR8LxEozgFa6UXwtSAmiXsmdChrT7Hr-jcxc9NFfrU","s":"0","t":"bis",'
-            b'"ra":{"i":"EBZR8LxEozgFa6UXwtSAmiXsmdChrT7Hr-jcxc9NFfrU","s":1,'
-            b'"d":"EZH2Cfw3nvcMRgY31Jyc2zHVh4a0LO_bVZ4EmL4V8Ol8"},"dt":"2021-05-30T17:42:26.716070+00:00"}')
+            b'{"v":"KERI10JSON000126_","i":"EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU",'
+            b'"ii":"EBZR8LxEozgFa6UXwtSAmiXsmdChrT7Hr-jcxc9NFfrU","s":"0","t":"bis","ra":{'
+            b'"i":"EBZR8LxEozgFa6UXwtSAmiXsmdChrT7Hr-jcxc9NFfrU","s":1,"d":"EZH2Cfw3nvcMRg'
+            b'Y31Jyc2zHVh4a0LO_bVZ4EmL4V8Ol8"},"dt":"2021-01-01T00:00:00+00:00"}')
 
 
 def test_tevery():
