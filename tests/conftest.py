@@ -15,16 +15,11 @@ def mockHelpingNowUTC(monkeypatch):
     Replace nowUTC universally with fixed value for testing
     """
     def mockNowUTC():
+        """
+        Use predetermined value for now
+        "2021-01-01T00:00:00.000000+00:00"
+        """
         return helping.fromIso8601("2021-05-30T17:42:26.716070+00:00" )
 
     monkeypatch.setattr(helping, "nowUTC", mockNowUTC)
 
-
-@pytest.fixture()
-def mockHelpingNowIso8601(monkeypatch):
-    """keri.help.helping.nowIso8601() mocked to return 2021-05-30T17:42:26.716070+00:00"""
-
-    def mock_nowIso8601():
-        return "2021-05-30T17:42:26.716070+00:00"
-
-    monkeypatch.setattr(helping, "nowIso8601", mock_nowIso8601)
