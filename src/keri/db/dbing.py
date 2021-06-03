@@ -204,7 +204,8 @@ def openLMDB(cls=None, name="test", temp=True, **kwa):
         yield lmdber
 
     finally:
-        lmdber.close()  # clears if lmdber.temp
+        lmdber.close(clear=lmdber.temp)  # clears if lmdber.temp
+
 
 class LMDBer:
     """
@@ -248,7 +249,7 @@ class LMDBer:
     DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
 
     def __init__(self, name='main', temp=False, headDirPath=None, dirMode=None,
-                 reopen=True, clean=False, readonly=False):
+                 reopen=True, clear=False, clean=False, readonly=False):
         """
         Setup main database directory at .dirpath.
         Create main database environment at .env using .dirpath.
@@ -266,6 +267,8 @@ class LMDBer:
                 directory and database files. Default .DirMode
             reopen (Boolean): True means database will be reopened by this init
                               False means databse not opened by this init
+            clear (Boolean): True means remove directory upon close if reopon
+                             False means do not remove directory upon close if reopen
             clean (Boolean): True means path uses clean tail variant
                              False means path uses normal tail variant
             readonly (Boolean): True means open database in readonly mode
@@ -282,11 +285,11 @@ class LMDBer:
 
         if reopen:
             self.reopen(headDirPath=self.headDirPath, dirMode=dirMode,
-                        clean=clean, readonly=readonly)
+                        clear=clear, clean=clean, readonly=readonly)
 
 
-    def reopen(self, temp=None, headDirPath=None, dirMode=None, clean=False,
-               readonly=False):
+    def reopen(self, temp=None, headDirPath=None, dirMode=None, clear=False,
+               clean=False, readonly=False):
         """
         Open if closed or close and reopen if opened or create and open if not
         if not preexistent, directory path for lmdb at .path and then
@@ -300,13 +303,15 @@ class LMDBer:
                 Default .HeadDirpath
             dirMode (int): optional numeric os dir permissions for database
                 directory and database files. Default .DirMode
+            clear (Boolean): True means remove directory upon close
+                             False means do not remove directory upon close
             clean (Boolean): True means path uses clean tail variant
                              False means path uses normal tail variant
             readonly (Boolean): True means open database in readonly mode
                                 False means open database in read/write mode
         """
         if self.opened:
-            self.close()
+            self.close(clear=clear)
 
         if temp is not None:
             self.temp = temp
@@ -348,7 +353,8 @@ class LMDBer:
                 stat.S_IWUSR Owner has write permission.
                 stat.S_IXUSR Owner has execute permission.
 
-            clean (Boolean): True means make path for cleaned version of db
+            clean (Boolean): True means make path for cleaned version of db and
+                               remove old directory at clean path if exists
                              False means make path for regular version of db
         """
         temp = True if temp else False
@@ -428,7 +434,7 @@ class LMDBer:
         self.env = None
         self.opened = False
 
-        if clear or self.temp:
+        if clear:
             self.clearDirPath()
 
 
@@ -3028,4 +3034,4 @@ class BaserDoer(doing.Doer):
 
     def exit(self):
         """"""
-        self.baser.close()
+        self.baser.close(clear=self.baser.temp)

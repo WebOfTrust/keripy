@@ -65,7 +65,7 @@ def test_habitat_reinitialization():
         hab.ks.close(clear=True)
     """End Test"""
 
-
+# Komer tests
 def test_kom_happy_path():
     """
     Test Komer object class
@@ -268,6 +268,42 @@ def test_deserialization():
         assert actual.state == "UT"
         assert actual.zip == 84058
 
+# End Komer tests
+
+def test_clean():
+    """
+    Test Baser db clean clone function
+    """
+    with dbing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
+        # setup Nat's habitat using default salt multisig already incepts
+        natHab = basing.Habitat(ks=natKS, db=natDB, isith=2, icount=3,temp=True)
+        assert natHab.ks == natKS
+        assert natHab.db == natDB
+        assert natHab.kever.prefixer.transferable
+        assert natHab.db.opened
+        assert natHab.pre in natHab.kevers
+
+        # Create series of events for Nat
+        natHab.interact()
+        natHab.rotate()
+        natHab.interact()
+        natHab.interact()
+        natHab.interact()
+        natHab.interact()
+
+        assert natHab.kever.sn == 6
+        assert natHab.kever.serder.dig == 'EDnOtySjCSGG7rdRKv8rEuBz26fa8UEhTrVMQ_jrLz40'
+        assert natHab.db.env.stat()['entries'] == 19
+
+        # now clean it
+        # basing.clean(orig=natHab.db)
+
+
+    assert not os.path.exists(natKS.path)
+    assert not os.path.exists(natDB.path)
+
+    """End Test"""
+
 
 if __name__ == "__main__":
-    test_kom_happy_path()
+    test_clean()
