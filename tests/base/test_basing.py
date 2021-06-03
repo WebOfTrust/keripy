@@ -311,6 +311,15 @@ def test_clean():
             assert serder.dig == natHab.kever.serder.dig
             assert natHab.db.env.stat()['entries'] == 19
 
+            # add garbage event to corrupt database
+            badsrdr = eventing.rotate(pre=natHab.pre,
+                                       keys=[verfer.qb64 for verfer in natHab.kever.verfers],
+                                       dig=natHab.kever.serder.dig,
+                                       sn=natHab.kever.sn+1,
+                                       sith=2,
+                                       nxt=natHab.kever.nexter.qb64)
+            # natHab.kever.logEvent()
+
 
         # test openDB copy db with clean
         with dbing.openDB(name=natHab.db.name,

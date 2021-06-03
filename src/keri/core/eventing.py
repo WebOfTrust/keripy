@@ -1945,7 +1945,7 @@ class Kever:
                 When dater provided then use dater for first seen datetime
         """
         fn = None
-        dgkey = dgKey(self.prefixer.qb64b, self.serder.diger.qb64b)
+        dgkey = dgKey(self.prefixer.qb64b, serder.diger.qb64b)
         dtsb = helping.nowIso8601().encode("utf-8")
         self.baser.putDts(dgkey, dtsb)  #  idempotent do not change dts if already
         if sigers:
@@ -1957,7 +1957,7 @@ class Kever:
             if seqner and diger: # authorized delegated or issued event
                 couple = seqner.qb64b + diger.qb64b
                 self.baser.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-            fn = self.baser.appendFe(self.prefixer.qb64b, self.serder.diger.qb64b)
+            fn = self.baser.appendFe(self.prefixer.qb64b, serder.diger.qb64b)
             if firner and fn != firner.sn:  # cloned replay but replay fn not match
                 if self.cues is not None:
                     self.cues.append(dict(kin="noticeBadCloneFN", serder=serder,
@@ -1972,7 +1972,7 @@ class Kever:
             logger.info("Kever state: %s First seen ordinal %s at %s\nEvent=\n%s\n",
                          self.prefixer.qb64, fn, dtsb.decode("utf-8"),
                          json.dumps(serder.ked, indent=1))
-        self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), self.serder.diger.qb64b)
+        self.baser.addKe(snKey(self.prefixer.qb64b, self.sn), serder.diger.qb64b)
         logger.info("Kever state: %s Added to KEL valid event=\n%s\n",
                         self.prefixer.qb64, json.dumps(serder.ked, indent=1))
         return fn  # will be fn int if first else None
