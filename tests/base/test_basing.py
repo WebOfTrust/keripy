@@ -130,6 +130,52 @@ def test_kom_happy_path():
     assert not db.opened
 
 
+def test_kom_get_item_iter():
+    """
+    Test Komer object class
+    """
+
+    @dataclass
+    class Stuff:
+        a: str  # dummy
+        b: str  # dummy too
+
+        def __iter__(self):
+            return iter(asdict(self))
+
+    w = Stuff(a="Big", b="Blue")
+    x = Stuff(a="Tall", b="Red")
+    y = Stuff(a="Fat", b="Green")
+    z = Stuff(a="Eat", b="White")
+
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        mydb = basing.Komer(db=db, schema=Stuff, subdb='recs.')
+        assert isinstance(mydb, basing.Komer)
+
+
+        mydb.put(keys=("a","1"), data=w)
+        mydb.put(keys=("a","2"), data=x)
+        mydb.put(keys=("a","3"), data=y)
+        mydb.put(keys=("a","4"), data=z)
+
+        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
+                        (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
+                        (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
+                        (('a', '4'), {'a': 'Eat', 'b': 'White'})]
+
+
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+
+
+
 def test_put_invalid_dataclass():
     @dataclass
     class Record:
@@ -367,4 +413,4 @@ def test_clean():
 
 
 if __name__ == "__main__":
-    test_clean()
+    test_kom_get_item_iter()

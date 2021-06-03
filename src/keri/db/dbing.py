@@ -510,6 +510,34 @@ class LMDBer:
             return (txn.delete(key))
 
 
+    def getAllItemIter(self, db, key=b'', split=True, sep=b'.'):
+        """
+        Returns iterator of item duple (key, val), at each key over all
+        keys in db. If split is true then the key is split at sep and instead
+        of returing duple it results tuple with one entry for each key split
+        as well as the value.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is key location in db to resume replay,
+                   If empty then start at first key in database
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # return key, val at cursor
+                if split:
+                    splits = bytes(key).split(sep)
+                    splits.append(bytes(val))
+                else:
+                    splits = (bytes(key), bytes(val))
+                yield tuple(splits)
+
+
     # For subdbs with no duplicate values allowed at each key. (dupsort==False)
     # and use keys with ordinal as monotonically increasing number part
     # such as sn or fn

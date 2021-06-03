@@ -656,6 +656,32 @@ class Komer:
         self.db.delVal(db=self.sdb,
                        key=".".join(keys).encode("utf-8"))
 
+
+    def getItemIter(self):
+        """
+        Parameters:
+            key (bytes): with split at sep
+            split (Boolean): True means split key at sep if any
+                             False means do not split key at sep
+            sep (bytes): separator character for key
+
+        Returns:
+            iterator: of tuples of split keys and val for each entry in db
+            For example: if key == b'a.b' and val == 'hello' then
+
+                returned item is (b'a, b'b', b'hello')
+        """
+        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            data = helping.datify(self.schema, self.deserializer(val))
+
+            if not isinstance(data, self.schema):
+                raise ValueError("Invalid schema type={} of data={}, expected {}."
+                                 "".format(type(data), data, self.schema))
+            keys = tuple(key.decode("utf-8").split('.'))
+            yield (keys, data)
+
+
+
     def _serializer(self, kind):
         """
         Parameters:
