@@ -4,6 +4,7 @@ KERI
 keri.base.basing module
 Support for application data via an LMDB keyspace object mapper (KOM)
 """
+import os
 import shutil
 import json
 from dataclasses import dataclass, asdict
