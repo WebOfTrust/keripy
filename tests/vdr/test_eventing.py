@@ -257,7 +257,7 @@ def test_rotate():
     """ End Test """
 
 
-def test_simple_issue_revoke(mockHelpingNowIso8601):
+def test_simple_issue_revoke(mockHelpingNowUTC):
     vcdig = "DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM"
     regk = "EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw"
     dig = "EY2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"
@@ -278,7 +278,7 @@ def test_simple_issue_revoke(mockHelpingNowIso8601):
     """ End Test """
 
 
-def test_backer_issue_revoke(mockHelpingNowIso8601):
+def test_backer_issue_revoke(mockHelpingNowUTC):
     vcdig = "DntNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM"
     regk = "EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw"
     sn = 3
@@ -465,7 +465,7 @@ def test_tever_escrow():
         assert reg.getTwe(snKey(pre=regk, sn=0)) == b'EjhsbizNCwN_EFuOxbUt8CN0xOctGRIVOW8X-XqA3fSk'
 
 
-def test_tever_no_backers(mockHelpingNowIso8601):
+def test_tever_no_backers(mockHelpingNowUTC):
     # registry with no backers
     # registry with backer and receipt
     with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
@@ -555,7 +555,7 @@ def test_tever_no_backers(mockHelpingNowIso8601):
         # assert reg.getAnc(dgkey) == b'0AAAAAAAAAAAAAAAAAAAAABAECgc6yHeTRhsKh1M7k65feWZGCf_MG0dWoei5Q6SwgqU'
 
 
-def test_tever_backers(mockHelpingNowIso8601):
+def test_tever_backers(mockHelpingNowUTC):
     # registry with backer and receipt
     with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         valSecret = 'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw'

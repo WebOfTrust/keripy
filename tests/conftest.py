@@ -16,8 +16,8 @@ def mockHelpingNowUTC(monkeypatch):
     """
     def mockNowUTC():
         """
-        Use predetermined value for now
-        "2021-01-01T00:00:00.000000+00:00"
+        Use predetermined value for now (current time)
+        '2021-01-01T00:00:00.000000+00:00'
         """
         return helping.fromIso8601("2021-05-30T17:42:26.716070+00:00" )
 
