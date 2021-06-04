@@ -10,7 +10,7 @@ import pytest
 
 from keri import help
 from keri.help import helping
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.app import keeping
 from keri.core import coring
 from keri.core import eventing
@@ -27,7 +27,7 @@ def test_partial_signed_escrow():
     psr = eventing.Parser()
 
     # init event DB and keep DB
-    with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
+    with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
         mgr = keeping.Manager(keeper=ks, salt=salt)
 
@@ -360,9 +360,9 @@ def test_missing_delegator_escrow():
 
     psr = eventing.Parser()
 
-    with dbing.openDB(name="bob") as bobDB, \
+    with basing.openDB(name="bob") as bobDB, \
           keeping.openKS(name="bob") as bobKS, \
-          dbing.openDB(name="del") as delDB, \
+          basing.openDB(name="del") as delDB, \
           keeping.openKS(name="del") as delKS:
 
         # Init key pair managers
@@ -607,7 +607,7 @@ def test_out_of_order_escrow():
     psr = eventing.Parser()
 
     # init event DB and keep DB
-    with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
+    with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
         mgr = keeping.Manager(keeper=ks, salt=salt)
 
@@ -809,7 +809,7 @@ def test_unverified_receipt_escrow():
     psr = eventing.Parser()
 
     # init event DB and keep DB
-    with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
+    with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
         mgr = keeping.Manager(keeper=ks, salt=salt)
 
@@ -1097,7 +1097,7 @@ def test_unverified_trans_receipt_escrow():
     psr = eventing.Parser()
 
     # init event DB and keep DB
-    with dbing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
+    with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
         mgr = keeping.Manager(keeper=ks, salt=salt)
 

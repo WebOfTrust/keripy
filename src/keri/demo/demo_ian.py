@@ -16,7 +16,7 @@ from hio.core.tcp import clienting
 from keri import __version__
 from keri import help  # logger support
 from keri.app import habbing, keeping, directing,
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.demo.demoing import IanDirector
 from keri.vdr import issuing
 
@@ -64,8 +64,8 @@ def setupController(secrets, vcfile, did, lei, remotePort=5621, indirect=False):
     iss = issuing.Issuer(hab=hab, name="ian", noBackers=True)
     # setup doers
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = dbing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
-    regDoer = dbing.BaserDoer(baser=iss.reger)
+    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+    regDoer = basing.BaserDoer(baser=iss.reger)
 
     path = os.path.dirname(__file__)
     path = os.path.join(path, 'logs')

@@ -20,7 +20,7 @@ from hio.core.serial import serialing
 from .. import kering
 from .. import help
 from ..help import helping
-from ..db import dbing, koming
+from ..db import dbing, basing, koming
 from . import keeping
 from ..core import coring, eventing
 from . import apping
@@ -51,7 +51,7 @@ class Habitat:
         mgr (keeping.Manager): creates and rotates keys in key store
         ridx (int): rotation index (inception == 0) needed for key replay
         kevers (dict): of eventing.Kever(s) keyed by qb64 prefix
-        db (dbing.Baser): lmdb data base for KEL etc
+        db (basing.Baser): lmdb data base for KEL etc
         kvy (eventing.Kevery): instance for local processing of local msgs
         parser (eventing.Parser):  parses local messages for .kvy
         iserder (coring.Serder): own inception event
@@ -106,16 +106,18 @@ class Habitat:
             code = coring.MtrDex.Ed25519N
         pidx = None
 
-        self.db = db if db is not None else dbing.Baser(name=name, temp=self.temp)
+        self.db = db if db is not None else basing.Baser(name=name, temp=self.temp)
         self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
 
         # for persisted Habitats, check the KOM first to see if there is an existing
         # one we can restart from otherwise initialize a new one
         existing = False
         # add .habs attribute to db habitat name Komer subdb
-        self.db.habs = koming.Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
+        # self.db.habs = koming.Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
+        kom = koming.Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
         if not self.temp:
-            ex = self.db.habs.get(keys=(self.name, ))
+            # ex = self.db.habs.get(keys=self.name)
+            ex = kom.get(keys=self.name)
             # found existing habitat, otherwise leave __init__ to incept a new one.
             if ex is not None:
                 prms = json.loads(bytes(ks.getPrm(key=ex.prefix)).decode("utf-8"))
@@ -179,7 +181,8 @@ class Habitat:
                 raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
 
-            self.db.habs.put(keys=(self.name, ), data=HabitatRecord(name=self.name, prefix=self.pre))
+            # self.db.habs.put(keys=(self.name, ), data=HabitatRecord(name=self.name, prefix=self.pre))
+            kom.put(keys=(self.name, ), data=HabitatRecord(name=self.name, prefix=self.pre))
 
 
     def reinitialize(self):

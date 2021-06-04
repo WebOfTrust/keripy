@@ -7,7 +7,8 @@ from keri.core.coring import Seqner
 from keri.app.keeping import Manager, openKS
 from keri.core.eventing import (incept, rotate, interact, messagize, Nexter,
                                 Kevery, Parser, SealEvent, receipt)
-from keri.db.dbing import dgKey, snKey, openDB
+from keri.db.dbing import dgKey, snKey
+from keri.db.basing import  openDB
 
 
 def test_direct_mode_with_manager():

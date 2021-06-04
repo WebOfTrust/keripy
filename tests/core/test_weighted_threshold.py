@@ -8,7 +8,7 @@ import os
 import pytest
 
 from keri import help
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.app import keeping
 from keri.core import coring
 from keri.core import eventing
@@ -24,7 +24,7 @@ def test_weighted():
     wesSalt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
 
     # init event DB and keep DB
-    with dbing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
+    with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
         # Init key pair manager
         wesMgr = keeping.Manager(keeper=wesKS, salt=wesSalt)
 

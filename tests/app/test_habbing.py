@@ -6,6 +6,7 @@ tests.app.apping module
 
 import json
 import os
+import shutil
 from dataclasses import dataclass, asdict
 
 import pytest
@@ -13,7 +14,7 @@ import pytest
 from keri.app import apping, habbing, keeping
 from keri.core import coring, eventing
 from keri.core.coring import Serials
-from keri.db import dbing, koming
+from keri.db import dbing, basing, koming
 
 
 
@@ -35,7 +36,14 @@ def test_habitat_reinitialization():
     Test Reinitializing Habitat class
     """
     name = "bob-test"
-    with dbing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
+    if os.path.exists('/usr/local/var/keri/db/bob-test'):
+        shutil.rmtree('/usr/local/var/keri/db/bob-test')
+    if os.path.exists('/usr/local/var/keri/keep/bob-test'):
+        shutil.rmtree('/usr/local/var/keri/keep/bob-test')
+
+    with basing.openDB(name=name, clear=True, temp=False) as db, \
+         keeping.openKS(name=name, clear=True, temp=False) as ks:
+
         hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
 
         opre = hab.pre
@@ -43,7 +51,7 @@ def test_habitat_reinitialization():
         odig = hab.kever.serder.dig
         assert hab.ridx == 0
 
-    with dbing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
+    with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
         hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
         hab.rotate()
 
@@ -69,4 +77,4 @@ def test_habitat_reinitialization():
 
 
 if __name__ == "__main__":
-    test_habitat()
+    test_habitat_reinitialization()

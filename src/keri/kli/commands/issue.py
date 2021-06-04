@@ -9,7 +9,7 @@ import json
 from keri.app import keeping
 from keri.app.habbing import Habitat
 from keri.core.coring import Matter, MtrDex, Diger
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.help import helping
 from keri.vdr.issuing import Issuer
 
@@ -28,7 +28,7 @@ vlei = dict(
 
 
 def issue(name, didSubjectId, lei):
-    with dbing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
+    with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
         hab = Habitat(name=name, ks=ks, db=db, temp=False)
 
         iss = Issuer(name=f"{name}_tel", hab=hab, noBackers=True, estOnly=True)

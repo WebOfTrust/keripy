@@ -6,7 +6,7 @@ keri.app.apping module
 """
 import json
 from dataclasses import dataclass, asdict
-from typing import Type
+from typing import Type, Union
 
 import cbor2
 import msgpack
@@ -46,7 +46,7 @@ class Komer:
         self.serializer = self._serializer(kind)
         self.deserializer = self._deserializer(kind)
 
-    def put(self, keys: tuple, data: dataclass):
+    def put(self, keys: Union[tuple, str], data: dataclass):
         """
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -55,16 +55,20 @@ class Komer:
         if not isinstance(data, self.schema):
             raise ValueError("Invalid schema type={} of data={}, expected {}."
                              "".format(type(data), data, self.schema))
+        if isinstance(keys, str):
+            keys = (keys, )  # make a tuple
 
         self.db.putVal(db=self.sdb,
                        key=".".join(keys).encode("utf-8"),
                        val=self.serializer(data))
 
-    def get(self, keys: tuple):
+    def get(self, keys: Union[tuple, str]):
         """
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
         """
+        if isinstance(keys, str):
+            keys = (keys, )  # make a tuple
 
         data = helping.datify(self.schema,
                               self.deserializer(
@@ -80,28 +84,30 @@ class Komer:
 
         return data
 
-    def rem(self, keys: tuple):
+    def rem(self, keys: Union[tuple, str]):
         """
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
         """
+        if isinstance(keys, str):
+            keys = (keys, )  # make a tuple
+
         self.db.delVal(db=self.sdb,
                        key=".".join(keys).encode("utf-8"))
 
 
     def getItemIter(self):
         """
-        Parameters:
-            key (bytes): with split at sep
-            split (Boolean): True means split key at sep if any
-                             False means do not split key at sep
-            sep (bytes): separator character for key
+        Return iterator over the all the items in subdb
 
         Returns:
-            iterator: of tuples of split keys and val for each entry in db
-            For example: if key == b'a.b' and val == 'hello' then
+            iterator: of tuples of keys tuple and val dataclass instance for
+            each entry in db
 
-                returned item is (b'a, b'b', b'hello')
+        Example:
+            if key in database is "a.b" and val is serialization of dataclass
+               with attributes x and y then returns
+               (("a","b"), dataclass(x=1,y=2))
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
             data = helping.datify(self.schema, self.deserializer(val))

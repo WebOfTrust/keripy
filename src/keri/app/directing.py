@@ -12,7 +12,7 @@ from hio.core import wiring
 from hio.core.tcp import clienting, serving
 
 from .. import kering
-from ..db import dbing
+from ..db import dbing, basing
 from ..core import coring, eventing
 from ..vdr.eventing import Tevery
 from . import keeping
@@ -37,7 +37,7 @@ def setupController(name="who", sith=None, count=1, temp=False,
 
     # setup doers
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = dbing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)

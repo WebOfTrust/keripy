@@ -7,7 +7,7 @@ import argparse
 
 from keri.app import keeping
 from keri.app.habbing import Habitat
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.vdr.issuing import Issuer
 
 parser = argparse.ArgumentParser(description='Revoke a verifiable credential')
@@ -17,7 +17,7 @@ parser.add_argument('--vcdig', help='vcdig is hash digest of vc content qb64')
 
 
 def issue(name, vcdig):
-    with dbing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
+    with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
         hab = Habitat(name=name, ks=ks, db=db, temp=False)
         iss = Issuer(hab=hab, name=name)
 

@@ -12,7 +12,7 @@ from hio.help import timing
 from hio.core.tcp import clienting, serving
 
 from keri.app import habbing, keeping, directing
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.core import eventing, coring
 from keri.demo import demoing
 
@@ -81,8 +81,8 @@ def test_direct_mode_bob_eve_demo():
     eve = eveSerder.ked["i"]
     assert eve == 'ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQM'
 
-    with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
-         dbing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
+    with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
+         basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
 
         limit = 1.0
         tock = 0.03125
@@ -249,8 +249,8 @@ def test_direct_mode_sam_eve_demo():
 
 
 
-    with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
-         dbing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS:
+    with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
+         basing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS:
 
         limit = 1.0
         tock = 0.03125
@@ -523,9 +523,9 @@ def test_indirect_mode_sam_cam_wit_demo():
     samSigners = [coring.Signer(qb64=secret) for secret in samSecrets]
     assert [signer.qb64 for signer in samSigners] == samSecrets
 
-    with dbing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-         dbing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS, \
-         dbing.openDB(name="wit") as witDB, keeping.openKS(name="wit") as witKS:
+    with basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
+         basing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS, \
+         basing.openDB(name="wit") as witDB, keeping.openKS(name="wit") as witKS:
 
 
         samPort = 5620  # sam's TCP listening port for server

@@ -10,7 +10,7 @@ import pytest
 
 from keri import help
 from keri.help import helping
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.app import habbing, keeping, directing
 from keri.core import coring, eventing
 
@@ -31,12 +31,12 @@ def test_witness():
     """
     salt = coring.Salter(raw=b'abcdef0123456789').qb64
 
-    with dbing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-         dbing.openDB(name="van") as vanDB, keeping.openKS(name="van") as vanKS, \
-         dbing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-         dbing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
-         dbing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
-         dbing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS:
+    with basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
+         basing.openDB(name="van") as vanDB, keeping.openKS(name="van") as vanKS, \
+         basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
+         basing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
+         basing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
+         basing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS:
 
         # witnesses first so can setup inception event for cam
         wsith = 1

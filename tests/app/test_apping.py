@@ -13,14 +13,14 @@ import pytest
 from keri.app import apping, habbing, keeping
 from keri.core import coring, eventing
 from keri.core.coring import Serials
-from keri.db import dbing, koming
+from keri.db import dbing, basing, koming
 
 
 def test_clean():
     """
     Test Baser db clean clone function
     """
-    with dbing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
+    with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
         # setup Nat's habitat using default salt multisig already incepts
         natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
                                 isith=2, icount=3, temp=True)
@@ -51,7 +51,7 @@ def test_clean():
         assert natHab.db.env.stat()['entries'] == 19
 
         # test reopenDB with reuse  (because temp)
-        with dbing.reopenDB(db=natHab.db, reuse=True):
+        with basing.reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
             ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
             assert ldig == natHab.kever.serder.digb
@@ -60,8 +60,7 @@ def test_clean():
             assert natHab.db.env.stat()['entries'] == 19
 
             # verify name pre kom in db
-            # kdb = koming.Komer(db=natHab.db, schema=habbing.HabitatRecord, subdb='habs.')
-            data = natHab.db.habs.get(keys=(natHab.name, ))
+            data = natHab.db.habs.get(keys=natHab.name)
             assert data.prefix == natHab.pre
             assert data.name == natHab.name
 
@@ -80,7 +79,7 @@ def test_clean():
 
 
         # test openDB copy db with clean
-        with dbing.openDB(name=natHab.db.name,
+        with basing.openDB(name=natHab.db.name,
                           temp=natHab.db.temp,
                           headDirPath=natHab.db.headDirPath,
                           dirMode=natHab.db.dirMode,
@@ -100,7 +99,7 @@ def test_clean():
         assert natHab.kever.serder.dig == 'En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI'
 
         # see if database is back where it belongs
-        with dbing.reopenDB(db=natHab.db, reuse=True):
+        with basing.reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
             ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
             assert ldig == natHab.kever.serder.digb
@@ -113,8 +112,7 @@ def test_clean():
             assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
 
             # verify name pre kom in db
-            # kdb = koming.Komer(db=natHab.db, schema=habbing.HabitatRecord, subdb='habs.')
-            data = natHab.db.habs.get(keys=(natHab.name, ))
+            data = natHab.db.habs.get(keys=natHab.name)
             assert data.prefix == natHab.pre
             assert data.name == natHab.name
 

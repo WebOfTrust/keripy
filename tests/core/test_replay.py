@@ -10,7 +10,7 @@ import pytest
 
 from keri import help
 from keri.help import helping
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.app import habbing, keeping, directing
 from keri.core import coring, eventing
 
@@ -29,10 +29,10 @@ def test_replay():
     Compare replay of Deb's events with receipts by both Deb and Cam to confirm identical
     """
 
-    with dbing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
-         dbing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-         dbing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS, \
-         dbing.openDB(name="art") as artDB, keeping.openKS(name="art") as artKS:
+    with basing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
+         basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
+         basing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS, \
+         basing.openDB(name="art") as artDB, keeping.openKS(name="art") as artKS:
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
@@ -502,10 +502,10 @@ def test_replay_all():
 
     """
 
-    with dbing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
-         dbing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-         dbing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS, \
-         dbing.openDB(name="art") as artDB, keeping.openKS(name="art") as artKS:
+    with basing.openDB(name="deb") as debDB, keeping.openKS(name="deb") as debKS, \
+         basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
+         basing.openDB(name="bev") as bevDB, keeping.openKS(name="bev") as bevKS, \
+         basing.openDB(name="art") as artDB, keeping.openKS(name="art") as artKS:
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold

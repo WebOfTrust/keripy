@@ -20,7 +20,7 @@ from hio.core.serial import serialing
 from .. import kering
 from .. import help
 from ..help import helping
-from ..db import dbing, koming
+from ..db import dbing, basing, koming
 from . import keeping
 from ..core import coring, eventing
 from . import habbing
@@ -44,13 +44,13 @@ def clean(orig, kvy=None):
 
 
     """
-    with dbing.openDB(name=orig.name,
+    with basing.openDB(name=orig.name,
                       temp=orig.temp,
                       headDirPath=orig.headDirPath,
                       dirMode=orig.dirMode,
                       clean=True) as copy:
 
-        with dbing.reopenDB(db=orig, reuse=True, readonly=True):  # reopen orig readonly
+        with basing.reopenDB(db=orig, reuse=True, readonly=True):  # reopen orig readonly
             if not os.path.exists(orig.path):
                 raise ValueError("Error cloning, no orig at {}."
                                  "".format(orig.path))
@@ -69,7 +69,6 @@ def clean(orig, kvy=None):
                 psr.processOne(ims=msg)
 
             # clone habitat name prefix Komer subdb
-            # okdb = koming.Komer(db=orig, schema=habbing.HabitatRecord, subdb='habs.')  # orig
             copy.habs = koming.Komer(db=copy, schema=habbing.HabitatRecord, subdb='habs.')  # copy
             for keys, data in orig.habs.getItemIter():
                 copy.habs.put(keys=keys, data=data)
@@ -87,7 +86,7 @@ def clean(orig, kvy=None):
             raise ValueError("Error cloning, unable to move {} to {}."
                              "".format(copy.path, orig.path))
 
-        with dbing.reopenDB(db=orig, reuse=True):  # make sure can reopen
+        with basing.reopenDB(db=orig, reuse=True):  # make sure can reopen
             if not isinstance(orig.env, lmdb.Environment):
                 raise ValueError("Error cloning, unable to reopen."
                                  "".format(orig.path))

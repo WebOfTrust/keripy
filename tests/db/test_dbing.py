@@ -13,11 +13,12 @@ import lmdb
 from hio.base import doing
 
 from keri.db import dbing
-from keri.db.dbing import clearDatabaserDir, openLMDB, openDB
+from keri.db.dbing import clearDatabaserDir, openLMDB
 from keri.db.dbing import (dgKey, onKey, fnKey, snKey, dtKey, splitKey,
                            splitKeyON, splitKeyFN, splitKeySN, splitKeyDT)
-from keri.db.dbing import LMDBer, Baser
-
+from keri.db.dbing import LMDBer
+from keri.db import basing
+from keri.db.basing import openDB, Baser
 from keri.core.coring import Signer, Nexter, Prefixer, Serder
 from keri.core.coring import MtrDex, MtrDex, MtrDex
 from keri.core.coring import Serials, Vstrings, Versify
@@ -2514,21 +2515,21 @@ def test_baserdoer():
 
 
     """
-    db0 = dbing.Baser(name='test0', temp=True, reopen=False)
+    db0 = basing.Baser(name='test0', temp=True, reopen=False)
     assert db0.opened == False
     assert db0.path == None
     assert db0.env == None
 
-    dbDoer0 = dbing.BaserDoer(baser=db0)
+    dbDoer0 = basing.BaserDoer(baser=db0)
     assert dbDoer0.baser == db0
     assert dbDoer0.baser.opened == False
 
-    db1 = dbing.Baser(name='test1', temp=True, reopen=False)
+    db1 = basing.Baser(name='test1', temp=True, reopen=False)
     assert db1.opened == False
     assert db1.path == None
     assert db1.env == None
 
-    dbDoer1 = dbing.BaserDoer(baser=db1)
+    dbDoer1 = basing.BaserDoer(baser=db1)
     assert dbDoer1.baser == db1
     assert dbDoer1.baser.opened == False
 

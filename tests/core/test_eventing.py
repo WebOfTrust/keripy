@@ -31,7 +31,9 @@ from keri.core.eventing import (incept, rotate, interact, receipt,
                                 delcept, deltate, state, messagize)
 from keri.core.eventing import Kever, Kevery, Parser
 
-from keri.db.dbing import dgKey, snKey, openDB, Baser
+from keri.db.dbing import dgKey, snKey
+from keri.db import basing
+from keri.db.basing import openDB
 from keri.app.keeping import openKS, Manager
 
 from keri import help

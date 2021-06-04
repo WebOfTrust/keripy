@@ -13,7 +13,7 @@ from hio.core.tcp import clienting, serving
 from keri import help  # logger support
 from keri.app import habbing, keeping, directing
 from keri.core import eventing, coring
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.demo import demoing
 
 
@@ -77,8 +77,8 @@ def test_directing_basic():
     eve = eveSerder.ked["i"]
     assert eve == 'ED9EB3sA5u2vCPOEmX3d7bEyHiSh7Xi8fjew2KMl3FQM'
 
-    with dbing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
-            dbing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
+    with basing.openDB(name="eve") as eveDB, keeping.openKS(name="eve") as eveKS, \
+            basing.openDB(name="bob") as bobDB, keeping.openKS(name="bob") as bobKS:
 
         limit = 0.125
         tock = 0.03125

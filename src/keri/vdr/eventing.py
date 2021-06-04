@@ -6,7 +6,8 @@ from orderedset import OrderedSet as oset
 from keri.core.coring import (MtrDex, Serder, Serials, Versify, Prefixer,
                               Ilks, Seqner, Verfer)
 from keri.core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
-from keri.db.dbing import Baser, dgKey, snKey
+from keri.db import basing
+from keri.db.dbing import dgKey, snKey
 from keri.help import helping
 from keri.kering import (MissingWitnessSignatureError, Version,
                          MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
@@ -440,7 +441,7 @@ class Tever:
                 if .regk
         """
         self.reger = reger if reger is not None else Registry()
-        self.db = db if db is not None else Baser()
+        self.db = db if db is not None else basing.Baser()
         self.version = serder.version
         self.regk = regk
         self.local = True if local else False
@@ -1008,7 +1009,7 @@ class Tevery:
         self.cues = deque()
 
         if db is None:
-            db = Baser()  # default name = "main"
+            db = basing.Baser()  # default name = "main"
         self.db = db
         if reger is None:
             reger = Registry()

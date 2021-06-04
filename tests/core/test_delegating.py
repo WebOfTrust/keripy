@@ -9,7 +9,7 @@ import pytest
 
 from keri import kering
 from keri import help
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.app import keeping
 from keri.core import coring
 from keri.core import eventing
@@ -27,9 +27,9 @@ def test_delegation():
     bobSalt = coring.Salter(raw=b'0123456789abcdef').qb64
     delSalt = coring.Salter(raw=b'abcdef0123456789').qb64
 
-    with dbing.openDB(name="bob") as bobDB, \
+    with basing.openDB(name="bob") as bobDB, \
           keeping.openKS(name="bob") as bobKS, \
-          dbing.openDB(name="del") as delDB, \
+          basing.openDB(name="del") as delDB, \
           keeping.openKS(name="del") as delKS:
 
         # Init key pair managers

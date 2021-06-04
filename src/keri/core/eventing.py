@@ -19,8 +19,8 @@ from .coring import MtrDex, NonTransDex, CtrDex, Counter
 from .coring import Seqner, Siger, Cigar, Dater
 from .coring import Verfer, Diger, Nexter, Prefixer, Serder, Tholder
 from .coring import Versify, Serials, Ilks
-
-from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, Baser
+from ..db import basing
+from ..db.dbing import dgKey, snKey, fnKey, splitKeySN
 
 from ..kering import (ExtractionError, ShortageError, ColdStartError,
                       SizedGroupError, UnexpectedCountCodeError,
@@ -1301,7 +1301,7 @@ class Kever:
         """
 
         if baser is None:
-            baser = Baser()  # default name = "main"
+            baser = basing.Baser()  # default name = "main"
         self.baser = baser
         self.kevers = kevers
         self.cues = cues
@@ -2131,7 +2131,7 @@ class Kevery:
         self.cues = cues if cues is not None else deque()
         self.kevers = kevers if kevers is not None else dict()
         if db is None:
-            db = Baser()  # default name = "main"
+            db = basing.Baser()  # default name = "main"
         self.db = db
         self.opre = opre  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions

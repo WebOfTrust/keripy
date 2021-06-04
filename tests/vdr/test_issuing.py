@@ -2,7 +2,7 @@ import pytest
 
 from keri.app import habbing, keeping
 from keri.core.coring import Serder
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.vdr import viring
 from keri.vdr.issuing import Issuer
 
@@ -10,7 +10,7 @@ from keri.vdr.issuing import Issuer
 def test_issuer(mockHelpingNowUTC):
     # help.ogler.resetLevel(level=logging.DEBUG)
 
-    with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
+    with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
         # setup issuer with defaults for allowBackers, backers and estOnly
         issuer = Issuer(hab=hab, name="bob", reger=reg)
@@ -76,7 +76,7 @@ def test_issuer(mockHelpingNowUTC):
         ser = Serder(raw=tevt)
         assert ser.diger.qb64 == "ECM3wT3VERIap8qaLqBAn5CXW49x6ufUf0wrypQa2qFE"
 
-        with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
+        with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
             hab = buildHab(db, kpr)
             # issuer, not allowed to issue backers
             issuer = Issuer(hab=hab, name="bob", noBackers=True, reger=reg)
@@ -98,7 +98,7 @@ def test_issuer(mockHelpingNowUTC):
             with pytest.raises(ValueError):
                 issuer.rotate(adds=["EqoNZAX5Lu8RuHzwwyn5tCZTe-mDBq5zusCrRo5TDugs"])
 
-        with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
+        with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
             hab = buildHab(db, kpr)
             issuer = Issuer(hab=hab, name="bob", noBackers=True, reger=reg)
 
@@ -131,7 +131,7 @@ def test_issuer(mockHelpingNowUTC):
             # assert seal["d"] == 'EESqpWTkUklke73mGjf6TE-ojHEJLultMlQhKddfNx6w'
             assert seal["d"] == "EeGcnkr-jaYNmimVYCxHMLldRgZRiUwROhhUId6qRAxQ"
 
-    with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
+    with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
 
         # issuer, allowed backers, initial set of backers
@@ -194,7 +194,7 @@ def test_issuer(mockHelpingNowUTC):
         assert seal["i"] == "EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8"
         assert seal["s"] == "1"
 
-    with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
+    with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
 
         # issuer, no backers allowed, establishment events only
@@ -232,7 +232,7 @@ def test_issuer(mockHelpingNowUTC):
         with pytest.raises(ValueError):
             issuer.rotate(adds=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
 
-    with dbing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
+    with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
 
         # issuer, backers allowed, initial backer, establishment events only

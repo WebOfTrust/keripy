@@ -10,7 +10,7 @@ from hio.base import doing
 from hio.core.tcp import serving
 
 from .. import help
-from ..db import dbing
+from ..db import dbing, basing
 from ..core import  coring, eventing
 from . import habbing, keeping, directing
 from ..vdr import verifying
@@ -31,8 +31,8 @@ def setupWitness(name="witness", localPort=5620):
 
     # setup doers
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = dbing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
-    regDoer = dbing.BaserDoer(baser=verf.reger)
+    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+    regDoer = basing.BaserDoer(baser=verf.reger)
 
     server = serving.Server(host="", port=localPort)
     serverDoer = doing.ServerDoer(server=server)

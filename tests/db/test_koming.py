@@ -76,6 +76,32 @@ def test_kom_happy_path():
         actual = mydb.get(keys=keys)
         assert actual is None
 
+        # test with keys as string not tuple
+        keys = "keystr"
+
+        bob = Record(first="Bob",
+                     last="Brown",
+                     street="100 Center Street",
+                     city="Bluffdale",
+                     state="UT",
+                     zip=84043)
+
+        mydb.put(keys=keys, data=bob)
+        actual = mydb.get(keys=keys)
+
+        assert actual.first == "Bob"
+        assert actual.last == "Brown"
+        assert actual.street == "100 Center Street"
+        assert actual.city == "Bluffdale"
+        assert actual.state == "UT"
+        assert actual.zip == 84043
+
+        mydb.rem(keys)
+
+        actual = mydb.get(keys=keys)
+        assert actual is None
+
+
     assert not os.path.exists(db.path)
     assert not db.opened
 
@@ -266,4 +292,4 @@ def test_deserialization():
 
 
 if __name__ == "__main__":
-    test_clean()
+    test_kom_happy_path()
