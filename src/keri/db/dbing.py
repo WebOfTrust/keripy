@@ -314,8 +314,7 @@ class LMDBer:
             readonly (Boolean): True means open database in readonly mode
                                 False means open database in read/write mode
         """
-        if self.opened:
-            self.close(clear=clear)
+        self.close(clear=clear)
 
         if temp is not None:
             self.temp = temp
@@ -447,7 +446,7 @@ class LMDBer:
         """
         Remove lmdb directory at end of .path
         """
-        if os.path.exists(self.path):
+        if self.path and os.path.exists(self.path):
             shutil.rmtree(self.path)
 
 

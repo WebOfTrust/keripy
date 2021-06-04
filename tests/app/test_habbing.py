@@ -35,11 +35,12 @@ def test_habitat_reinitialization():
     """
     Test Reinitializing Habitat class
     """
-    name = "bob-test"
     if os.path.exists('/usr/local/var/keri/db/bob-test'):
         shutil.rmtree('/usr/local/var/keri/db/bob-test')
     if os.path.exists('/usr/local/var/keri/keep/bob-test'):
         shutil.rmtree('/usr/local/var/keri/keep/bob-test')
+
+    name = "bob-test"
 
     with basing.openDB(name=name, clear=True, temp=False) as db, \
          keeping.openKS(name=name, clear=True, temp=False) as ks:
@@ -69,8 +70,11 @@ def test_habitat_reinitialization():
         assert hab.kever.serder.dig != odig
         assert hab.kever.serder.dig == ndig
 
-        hab.db.close(clear=True)
         hab.ks.close(clear=True)
+        hab.db.close(clear=True)
+
+    assert not os.path.exists(hab.ks.path)
+    assert not os.path.exists(hab.db.path)
     """End Test"""
 
 
