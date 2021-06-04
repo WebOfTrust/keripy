@@ -64,9 +64,18 @@ def clean(orig, kvy=None):
             # need new method cloneObjAllPreIter()
             # process event doesn't capture exceptions so we can more easily
             # detect in the cloning that some events did not make it through
-
-            for msg in orig.cloneAllPreIter():
+            for msg in orig.cloneAllPreIter():  # clone orig into copy
                 psr.processOne(ims=msg)
+
+            # clone habitat name prefix Komer subdb
+            okdb = Komer(db=orig, schema=HabitatRecord, subdb='habs.')  # orig
+            ckdb = Komer(db=copy, schema=HabitatRecord, subdb='habs.')  # copy
+            for keys, data in okdb.getItemIter():
+                ckdb.put(keys=keys, data=data)
+
+            if not ckdb.get(keys=(orig.name, )):
+                raise ValueError("Error cloning, missing orig name={} subdb."
+                                 "".format(orig.name))
 
         # remove orig db directory replace with clean clone copy
         if os.path.exists(orig.path):
