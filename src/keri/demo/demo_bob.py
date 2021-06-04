@@ -10,7 +10,7 @@ import argparse
 import logging
 
 from keri import __version__
-from keri.base import directing
+from keri.app import directing
 from keri.demo import demoing
 from keri import help
 

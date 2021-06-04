@@ -11,7 +11,7 @@ import pytest
 from keri import help
 from keri.help import helping
 from keri.db import dbing
-from keri.base import keeping
+from keri.app import keeping
 from keri.core import coring
 from keri.core import eventing
 

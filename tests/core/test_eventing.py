@@ -32,7 +32,7 @@ from keri.core.eventing import (incept, rotate, interact, receipt,
 from keri.core.eventing import Kever, Kevery, Parser
 
 from keri.db.dbing import dgKey, snKey, openDB, Baser
-from keri.base.keeping import openKS, Manager
+from keri.app.keeping import openKS, Manager
 
 from keri import help
 

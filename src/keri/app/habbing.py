@@ -1,8 +1,8 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.base.basing module
-Support for application data via an LMDB keyspace object mapper (KOM)
+keri.app.habbing module
+
 """
 import os
 import shutil
@@ -20,80 +20,14 @@ from hio.core.serial import serialing
 from .. import kering
 from .. import help
 from ..help import helping
-from ..db import dbing
+from ..db import dbing, koming
 from . import keeping
 from ..core import coring, eventing
+from . import apping
 
 
 logger = help.ogler.getLogger()
 
-
-def clean(orig, kvy=None):
-    """
-    Clean orig (original) database by creating re-verified cleaned cloned copy
-    and then replacing original with cleaned cloned controller
-
-    Database usage should be offline during cleaning as it will be cloned in
-    readonly mode
-
-    Parameters:
-        orig (Baser): original instance to clean
-        kvy (eventing.Kevery): instance to process cloned events. Othewise uses
-            default
-
-
-    """
-    with dbing.openDB(name=orig.name,
-                      temp=orig.temp,
-                      headDirPath=orig.headDirPath,
-                      dirMode=orig.dirMode,
-                      clean=True) as copy:
-
-        with dbing.reopenDB(db=orig, reuse=True, readonly=True):  # reopen orig readonly
-            if not os.path.exists(orig.path):
-                raise ValueError("Error cloning, no orig at {}."
-                                 "".format(orig.path))
-
-            if not kvy:  # new kvy for clone
-                kvy = eventing.Kevery()  # promiscuous mode
-            kvy.db = copy
-            psr = eventing.Parser(kvy=kvy)
-
-            # Revise in future to NOT parse msgs but to extract the processed
-            # objects so can pass directly to kvy.processEvent()
-            # need new method cloneObjAllPreIter()
-            # process event doesn't capture exceptions so we can more easily
-            # detect in the cloning that some events did not make it through
-            for msg in orig.cloneAllPreIter():  # clone orig into copy
-                psr.processOne(ims=msg)
-
-            # clone habitat name prefix Komer subdb
-            okdb = Komer(db=orig, schema=HabitatRecord, subdb='habs.')  # orig
-            ckdb = Komer(db=copy, schema=HabitatRecord, subdb='habs.')  # copy
-            for keys, data in okdb.getItemIter():
-                ckdb.put(keys=keys, data=data)
-
-            if not ckdb.get(keys=(orig.name, )):
-                raise ValueError("Error cloning, missing orig name={} subdb."
-                                 "".format(orig.name))
-
-        # remove orig db directory replace with clean clone copy
-        if os.path.exists(orig.path):
-            shutil.rmtree(orig.path)
-
-        dst = shutil.move(copy.path, orig.path)  # move copy back to orig
-        if not dst:  #  move failed leave new in place so can manually fix
-            raise ValueError("Error cloning, unable to move {} to {}."
-                             "".format(copy.path, orig.path))
-
-        with dbing.reopenDB(db=orig, reuse=True):  # make sure can reopen
-            if not isinstance(orig.env, lmdb.Environment):
-                raise ValueError("Error cloning, unable to reopen."
-                                 "".format(orig.path))
-
-    # clone success so remove if still there
-    if os.path.exists(copy.path):
-        shutil.rmtree(copy.path)
 
 @dataclass
 class HabitatRecord:
@@ -178,7 +112,7 @@ class Habitat:
         # for persisted Habitats, check the KOM first to see if there is an existing
         # one we can restart from otherwise initialize a new one
         existing = False
-        kom = Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
+        kom = koming.Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
         if not self.temp:
             ex = kom.get(keys=(self.name, ))
             # found existing habitat, otherwise leave __init__ to incept a new one.
@@ -597,227 +531,3 @@ class Habitat:
             elif cueKin in ("replay", ):
                 msgs = cue["msgs"]
                 yield msgs
-
-
-class Komer:
-    """
-    Keyspace Object Mapper factory class
-    """
-
-    def __init__(self,
-                 db: Type[dbing.LMDBer],
-                 schema: Type[dataclass],
-                 subdb: str = 'docs.',
-                 kind: str = coring.Serials.json):
-        """
-        Parameters:
-            db (dbing.LMDBer): base db
-            schema (dataclass):  reference to Class definition for dataclass sub class
-            subdb (str):  LMDB sub database key
-            kind (str): serialization/deserialization type
-        """
-        self.db = db
-        self.schema = schema
-        self.sdb = self.db.env.open_db(key=subdb.encode("utf-8"))
-        self.kind = kind
-        self.serializer = self._serializer(kind)
-        self.deserializer = self._deserializer(kind)
-
-    def put(self, keys: tuple, data: dataclass):
-        """
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            data (dataclass): instance of dataclass of type self.schema as value
-        """
-        if not isinstance(data, self.schema):
-            raise ValueError("Invalid schema type={} of data={}, expected {}."
-                             "".format(type(data), data, self.schema))
-
-        self.db.putVal(db=self.sdb,
-                       key=".".join(keys).encode("utf-8"),
-                       val=self.serializer(data))
-
-    def get(self, keys: tuple):
-        """
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-        """
-
-        data = helping.datify(self.schema,
-                              self.deserializer(
-                                  self.db.getVal(db=self.sdb,
-                                                 key=".".join(keys).encode("utf-8"))))
-
-        if data is None:
-            return
-
-        if not isinstance(data, self.schema):
-            raise ValueError("Invalid schema type={} of data={}, expected {}."
-                             "".format(type(data), data, self.schema))
-
-        return data
-
-    def rem(self, keys: tuple):
-        """
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-        """
-        self.db.delVal(db=self.sdb,
-                       key=".".join(keys).encode("utf-8"))
-
-
-    def getItemIter(self):
-        """
-        Parameters:
-            key (bytes): with split at sep
-            split (Boolean): True means split key at sep if any
-                             False means do not split key at sep
-            sep (bytes): separator character for key
-
-        Returns:
-            iterator: of tuples of split keys and val for each entry in db
-            For example: if key == b'a.b' and val == 'hello' then
-
-                returned item is (b'a, b'b', b'hello')
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            data = helping.datify(self.schema, self.deserializer(val))
-
-            if not isinstance(data, self.schema):
-                raise ValueError("Invalid schema type={} of data={}, expected {}."
-                                 "".format(type(data), data, self.schema))
-            keys = tuple(key.decode("utf-8").split('.'))
-            yield (keys, data)
-
-
-
-    def _serializer(self, kind):
-        """
-        Parameters:
-            kind (str): serialization
-        """
-        if kind == coring.Serials.mgpk:
-            return self.__serializeMGPK
-        elif kind == coring.Serials.cbor:
-            return self.__serializeCBOR
-        else:
-            return self.__serializeJSON
-
-    def _deserializer(self, kind):
-        """
-        Parameters:
-            kind (str): deserialization
-        """
-        if kind == coring.Serials.mgpk:
-            return self.__deserializeMGPK
-        elif kind == coring.Serials.cbor:
-            return self.__deserializeCBOR
-        else:
-            return self.__deserializeJSON
-
-    @staticmethod
-    def __deserializeJSON(val):
-        if val is None:
-            return
-        return json.loads(bytes(val).decode("utf-8"))
-
-    @staticmethod
-    def __deserializeMGPK(val):
-        if val is None:
-            return
-        return msgpack.loads(bytes(val))
-
-    @staticmethod
-    def __deserializeCBOR(val):
-        if val is None:
-            return
-        return cbor2.loads(bytes(val))
-
-    @staticmethod
-    def __serializeJSON(val):
-        if val is None:
-            return
-        return json.dumps(asdict(val), separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-
-    @staticmethod
-    def __serializeMGPK(val):
-        if val is None:
-            return
-        return msgpack.dumps(asdict(val))
-
-    @staticmethod
-    def __serializeCBOR(val):
-        if val is None:
-            return
-        return cbor2.dumps(asdict(val))
-
-
-
-
-class Consoler(doing.Doer):
-    """
-    Manages command console
-    """
-
-    def __init__(self, console=None, **kwa):
-        """
-
-        """
-        super(Consoler, self).__init__(**kwa)
-        self.console = console if console is not None else serialing.Console()
-
-
-    def recur(self, tyme):
-        """
-        Do 'recur' context actions. Override in subclass.
-        Regular method that perform repetitive actions once per invocation.
-        Assumes resource setup in .enter() and resource takedown in .exit()
-        (see ReDoer below for example of .recur that is a generator method)
-
-        Returns completion state of recurrence actions.
-           True means done False means continue
-
-        Parameters:
-            Doist feeds its .tyme through .send to .do yield which passes it here.
-
-
-        .recur maybe implemented by a subclass either as a non-generator method
-        or a generator method. This stub here is as a non-generator method.
-        The base class .do detects which type:
-            If non-generator .do method runs .recur method once per iteration
-                until .recur returns (True)
-            If generator .do method runs .recur with (yield from) until .recur
-                returns (see ReDoer for example of generator .recur)
-
-        """
-        line = self.console.get()  # process one line of input
-        if not line:
-            return False
-        chunks = line.lower().split()
-        if not chunks:  # empty list
-            self.console.put("Try one of: l[eft] r[ight] w[alk] s[top]\n")
-            return False
-        command = None
-        verb = chunks[0]
-
-        if verb.startswith('r'):
-            command = ('turn', 'right')
-
-        elif verb.startswith('l'):
-            command = ('turn', 'left')
-
-        elif verb.startswith('w'):
-            command = ('walk', 1)
-
-        elif verb.startswith('s'):
-            command = ('stop', '')
-
-        else:
-            self.console.put("Invalid command: {0}\n".format(verb))
-            self.console.put("Try one of: t[urn] s[top] w[alk]\n")
-            return False
-
-        self.console.put("Did: {} {}\n".format(command[0], command[1]))
-
-        return (False)
-

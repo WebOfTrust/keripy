@@ -11,7 +11,7 @@ from hio.base import doing
 from hio.core.tcp import clienting, serving
 
 from keri import help  # logger support
-from keri.base import basing, keeping, directing
+from keri.app import habbing, keeping, directing
 from keri.core import eventing, coring
 from keri.db import dbing
 from keri.demo import demoing
@@ -90,7 +90,7 @@ def test_directing_basic():
         eveKevers = dict()
 
         # setup bob
-        bobHab = basing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
+        bobHab = habbing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
                                 secrecies=bobSecrecies, temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
@@ -123,7 +123,7 @@ def test_directing_basic():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = basing.Habitat(ks=eveKS, db=eveDB, kevers=eveKevers,
+        eveHab = habbing.Habitat(ks=eveKS, db=eveDB, kevers=eveKevers,
                                 secrecies=eveSecrecies, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB

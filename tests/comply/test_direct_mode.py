@@ -4,7 +4,7 @@ import os
 
 from keri.core.coring import Salter, MtrDex, CtrDex, Counter
 from keri.core.coring import Seqner
-from keri.base.keeping import Manager, openKS
+from keri.app.keeping import Manager, openKS
 from keri.core.eventing import (incept, rotate, interact, messagize, Nexter,
                                 Kevery, Parser, SealEvent, receipt)
 from keri.db.dbing import dgKey, snKey, openDB

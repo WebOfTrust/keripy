@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.base.directing module
+keri.app.directing module
 
 simple direct mode demo support classes
 """
@@ -18,7 +18,7 @@ from .. import kering
 from ..core.coring import Matter, MtrDex, Diger
 from ..db import dbing
 from ..core import coring, eventing
-from ..base import keeping, basing, directing
+from ..app import habbing, keeping, directing
 
 from .. import help
 from ..help import helping
@@ -520,7 +520,7 @@ class VicDirector(directing.Director):
                                              vcid=vcid,
                                              vcdata=vcdata,
                                              vcsig=vcsig)
-                
+
                 if valid is True:
                     sub = vc["credentialSubject"]
                     logger.info("%s:\n\n\n Valid vLEI credential for LEI: %s.\n\n",
@@ -529,7 +529,7 @@ class VicDirector(directing.Director):
                     logger.error("%s:\n\n\n Invalid vLEI credential.\n\n",
                                  self.hab.pre)
 
-                    
+
 
 
 
@@ -701,7 +701,7 @@ def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620, in
         secrecies.append([secret])
 
     # setup habitat
-    hab = basing.Habitat(name=name, secrecies=secrecies, temp=True)
+    hab = habbing.Habitat(name=name, secrecies=secrecies, temp=True)
     logger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
                  hab.pre, hab.name, localPort, remotePort)
 

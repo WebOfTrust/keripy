@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-tests.base.keeping module
+tests.app.keeping module
 
 """
 import pytest
@@ -16,7 +16,7 @@ from hio.base import doing
 
 from keri.help import helping
 from keri.core import coring
-from keri.base import keeping
+from keri.app import keeping
 
 
 def test_publot_pubsit():

@@ -15,7 +15,7 @@ from hio.core.tcp import clienting
 
 from keri import __version__
 from keri import help  # logger support
-from keri.base import directing, basing, keeping
+from keri.app import habbing, keeping, directing,
 from keri.db import dbing
 from keri.demo.demoing import IanDirector
 from keri.vdr import issuing
@@ -57,7 +57,7 @@ def setupController(secrets, vcfile, did, lei, remotePort=5621, indirect=False):
         secrecies.append([secret])
 
     # setup habitat
-    hab = basing.Habitat(name="ian", secrecies=secrecies, temp=True)
+    hab = habbing.Habitat(name="ian", secrecies=secrecies, temp=True)
     logger.info("\nDirect Mode demo of %s:\nNamed %s to TCP port %s.\n\n",
                 hab.pre, hab.name, remotePort)
 

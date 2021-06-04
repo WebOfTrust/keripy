@@ -6,8 +6,8 @@ keri.kli.commands module
 import argparse
 import json
 
-from keri.base import keeping
-from keri.base.basing import Habitat
+from keri.app import keeping
+from keri.app.habbing import Habitat
 from keri.core.coring import Matter, MtrDex, Diger
 from keri.db import dbing
 from keri.help import helping

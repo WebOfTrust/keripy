@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.base.indirecting module
+keri.app.indirecting module
 
 simple indirect mode demo support classes
 """
@@ -12,7 +12,7 @@ from hio.core.tcp import serving
 from .. import help
 from ..db import dbing
 from ..core import  coring, eventing
-from . import basing, keeping, directing
+from . import habbing, keeping, directing
 from ..vdr import verifying
 
 logger = help.ogler.getLogger()
@@ -22,7 +22,7 @@ def setupWitness(name="witness", localPort=5620):
 
     wsith = 1
 
-    hab = basing.Habitat(name=name, temp=False, transferable=False,
+    hab = habbing.Habitat(name=name, temp=False, transferable=False,
                          isith=wsith, icount=1,)
     verf = verifying.Verifier(name=name, hab=hab)
 

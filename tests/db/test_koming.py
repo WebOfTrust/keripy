@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-tests.base.basing module
+tests.app.apping module
 
 """
 
@@ -10,61 +10,13 @@ from dataclasses import dataclass, asdict
 
 import pytest
 
-from keri.base import basing, keeping
-from keri.base.basing import Habitat
+from keri.app import apping, habbing, keeping
 from keri.core import coring, eventing
 from keri.core.coring import Serials
-from keri.db import dbing
+from keri.db import dbing, koming
 from keri.help import helping
 
 
-def test_habitat():
-    """
-    Test Habitat class
-    """
-    hab = Habitat(temp=True)
-    assert hab.name == "test"
-
-    hab.db.close(clear=True)
-    hab.ks.close(clear=True)
-
-    """End Test"""
-
-
-def test_habitat_reinitialization():
-    """
-    Test Reinitializing Habitat class
-    """
-    name = "bob-test"
-    with dbing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
-        hab = basing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
-
-        opre = hab.pre
-        opub = hab.kever.verfers[0].qb64
-        odig = hab.kever.serder.dig
-        assert hab.ridx == 0
-
-    with dbing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
-        hab = basing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
-        hab.rotate()
-
-        assert hab.ridx == 1
-        assert opub != hab.kever.verfers[0].qb64
-        assert odig != hab.kever.serder.dig
-
-        npub = hab.kever.verfers[0].qb64
-        ndig = hab.kever.serder.dig
-
-        assert opre == hab.pre
-        assert hab.kever.verfers[0].qb64 == npub
-        assert hab.ridx == 1
-
-        assert hab.kever.serder.dig != odig
-        assert hab.kever.serder.dig == ndig
-
-        hab.db.close(clear=True)
-        hab.ks.close(clear=True)
-    """End Test"""
 
 # Komer tests
 def test_kom_happy_path():
@@ -100,8 +52,8 @@ def test_kom_happy_path():
         assert db.name == "test"
         assert db.opened
 
-        mydb = basing.Komer(db=db, schema=Record, subdb='records.')
-        assert isinstance(mydb, basing.Komer)
+        mydb = koming.Komer(db=db, schema=Record, subdb='records.')
+        assert isinstance(mydb, koming.Komer)
 
         sue = Record(first="Susan",
                      last="Black",
@@ -154,8 +106,8 @@ def test_kom_get_item_iter():
         assert db.name == "test"
         assert db.opened
 
-        mydb = basing.Komer(db=db, schema=Stuff, subdb='recs.')
-        assert isinstance(mydb, basing.Komer)
+        mydb = koming.Komer(db=db, schema=Stuff, subdb='recs.')
+        assert isinstance(mydb, koming.Komer)
 
 
         mydb.put(keys=("a","1"), data=w)
@@ -187,7 +139,7 @@ def test_put_invalid_dataclass():
         age: int
 
     with dbing.openLMDB() as db:
-        mydb = basing.Komer(db=db, schema=AnotherClass, subdb='records.')
+        mydb = koming.Komer(db=db, schema=AnotherClass, subdb='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
 
@@ -208,12 +160,12 @@ def test_get_invalid_dataclass():
         age: int
 
     with dbing.openLMDB() as db:
-        mydb = basing.Komer(db=db, schema=Record, subdb='records.')
+        mydb = koming.Komer(db=db, schema=Record, subdb='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
         mydb.put(keys=keys, data=sue)
 
-        mydb = basing.Komer(db=db, schema=AnotherClass, subdb='records.')
+        mydb = koming.Komer(db=db, schema=AnotherClass, subdb='records.')
         with pytest.raises(ValueError):
             mydb.get(keys)
 
@@ -227,7 +179,7 @@ def test_not_found_entity():
             return iter(asdict(self))
 
     with dbing.openLMDB() as db:
-        mydb = basing.Komer(db=db, schema=Record, subdb='records.')
+        mydb = koming.Komer(db=db, schema=Record, subdb='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
 
@@ -254,7 +206,7 @@ def test_serialization():
                  zip=84058)
 
     with dbing.openLMDB() as db:
-        k = basing.Komer(db=db, schema=Record, subdb='records.')
+        k = koming.Komer(db=db, schema=Record, subdb='records.')
         srl = k._serializer(Serials.mgpk)
 
         expected = b'\x86\xa5first\xa3Jim\xa4last\xa5Black\xa6street\xaf100 Main Street\xa4city\xa8Riverton\xa5state\xa2UT\xa3zip\xce\x00\x01HZ'
@@ -284,7 +236,7 @@ def test_deserialization():
     json = b'{"first": "Jim", "last": "Black", "street": "100 Main Street", "city": "Riverton", "state": "UT", "zip": 84058}'
 
     with dbing.openLMDB() as db:
-        k = basing.Komer(db=db, schema=Record, subdb='records.')
+        k = koming.Komer(db=db, schema=Record, subdb='records.')
 
         desrl = k._deserializer(Serials.mgpk)
         actual = helping.datify(Record, desrl(msgp))
@@ -321,7 +273,7 @@ def test_clean():
     """
     with dbing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
         # setup Nat's habitat using default salt multisig already incepts
-        natHab = basing.Habitat(name='nat', ks=natKS, db=natDB,
+        natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
                                 isith=2, icount=3, temp=True)
         assert natHab.name == 'nat'
         assert natHab.ks == natKS
@@ -359,7 +311,7 @@ def test_clean():
             assert natHab.db.env.stat()['entries'] == 19
 
             # verify name pre kom in db
-            kdb = basing.Komer(db=natHab.db, schema=basing.HabitatRecord, subdb='habs.')
+            kdb = koming.Komer(db=natHab.db, schema=habbing.HabitatRecord, subdb='habs.')
             data = kdb.get(keys=(natHab.name, ))
             assert data.prefix == natHab.pre
             assert data.name == natHab.name
@@ -391,7 +343,7 @@ def test_clean():
         natHab.kevers.clear()  # clear kevers dict in place
         assert not natHab.kevers
         kvy = eventing.Kevery(kevers=natHab.kevers)  # use inplace kevers & promiscuous mode
-        basing.clean(orig=natHab.db, kvy=kvy)
+        apping.clean(orig=natHab.db, kvy=kvy)
 
         # see if kevers dict is back to what it was before
         assert natHab.kever.sn == 6
@@ -412,7 +364,7 @@ def test_clean():
             assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
 
             # verify name pre kom in db
-            kdb = basing.Komer(db=natHab.db, schema=basing.HabitatRecord, subdb='habs.')
+            kdb = koming.Komer(db=natHab.db, schema=habbing.HabitatRecord, subdb='habs.')
             data = kdb.get(keys=(natHab.name, ))
             assert data.prefix == natHab.pre
             assert data.name == natHab.name

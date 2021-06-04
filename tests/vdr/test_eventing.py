@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 
-from keri.base import basing, keeping
+from keri.app import habbing, keeping
 from keri.core.coring import Versify, Serials, Ilks, MtrDex, Prefixer, Serder, Signer, Seqner
 from keri.core.eventing import TraitDex, SealEvent
 from keri.db import dbing
@@ -723,7 +723,7 @@ def buildHab(db, kpr):
     for secret in secrets:  # convert secrets to secrecies
         secrecies.append([secret])
     # setup hab
-    hab = basing.Habitat(ks=kpr, db=db, kevers=kevers, secrecies=secrecies, temp=True)
+    hab = habbing.Habitat(ks=kpr, db=db, kevers=kevers, secrecies=secrecies, temp=True)
     return hab
 
 

@@ -5,8 +5,8 @@ keri.kli.commands module
 """
 import argparse
 
-from keri.base import keeping
-from keri.base.basing import Habitat
+from keri.app import keeping
+from keri.app.habbing import Habitat
 from keri.db import dbing
 
 parser = argparse.ArgumentParser(description='Initialize a prefix')

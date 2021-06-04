@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.base.directing module
+keri.app.directing module
 
 simple direct mode demo support classes
 """
@@ -16,7 +16,7 @@ from ..db import dbing
 from ..core import coring, eventing
 from ..vdr.eventing import Tevery
 from . import keeping
-from . import basing
+from . import habbing
 from . import keeping
 from .. import help
 from ..core import eventing
@@ -31,7 +31,7 @@ def setupController(name="who", sith=None, count=1, temp=False,
     Setup and return doers list to run controller
     """
     # setup habitat
-    hab = basing.Habitat(name=name, isith=sith, icount=count, temp=temp)
+    hab = habbing.Habitat(name=name, isith=sith, icount=count, temp=temp)
     logger.info("\nDirect Mode controller %s:\nNamed %s on TCP port %s to port %s.\n\n",
                 hab.pre, hab.name, localPort, remotePort)
 

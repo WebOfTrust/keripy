@@ -11,7 +11,7 @@ from hio.base import doing
 from hio.help import timing
 from hio.core.tcp import clienting, serving
 
-from keri.base import basing, keeping, directing
+from keri.app import habbing, keeping, directing
 from keri.db import dbing
 from keri.core import eventing, coring
 from keri.demo import demoing
@@ -94,7 +94,7 @@ def test_direct_mode_bob_eve_demo():
         eveKevers = dict()
 
         # setup bob
-        bobHab = basing.Habitat(name='Bob', ks=bobKS, db=bobDB, kevers=bobKevers,
+        bobHab = habbing.Habitat(name='Bob', ks=bobKS, db=bobDB, kevers=bobKevers,
                                    secrecies=bobSecrecies, temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
@@ -127,7 +127,7 @@ def test_direct_mode_bob_eve_demo():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = basing.Habitat(name='Eve', ks=eveKS,  db=eveDB, kevers=eveKevers,
+        eveHab = habbing.Habitat(name='Eve', ks=eveKS,  db=eveDB, kevers=eveKevers,
                                    secrecies=eveSecrecies, temp=True)
 
         assert eveHab.ks == eveKS
@@ -262,7 +262,7 @@ def test_direct_mode_sam_eve_demo():
         eveKevers = dict()
 
         # setup Sam
-        samHab = basing.Habitat(name='Sam', ks=samKS,  db=samDB, kevers=samKevers,
+        samHab = habbing.Habitat(name='Sam', ks=samKS,  db=samDB, kevers=samKevers,
                                    secrecies=samSecrecies, temp=True)
 
         assert samHab.ks == samKS
@@ -296,7 +296,7 @@ def test_direct_mode_sam_eve_demo():
         # Sam's Reactants created on demand
 
         # setup eve
-        eveHab = basing.Habitat(name='Eve', ks=eveKS,  db=eveDB, kevers=eveKevers,
+        eveHab = habbing.Habitat(name='Eve', ks=eveKS,  db=eveDB, kevers=eveKevers,
                                    secrecies=eveSecrecies, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
@@ -535,7 +535,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         witKevers = dict()
 
         # setup the witness
-        witHab = basing.Habitat(name='Wit', ks=witKS, db=witDB, kevers=witKevers, isith=1, icount=1,
+        witHab = habbing.Habitat(name='Wit', ks=witKS, db=witDB, kevers=witKevers, isith=1, icount=1,
                                    temp=True, transferable=False)
         wit = witHab.pre
         assert witHab.ks == witKS
@@ -565,7 +565,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert sam == 'EhnaYUqhHoo8kZaXJuTDCZ-h5ZDx3st4NemgqSITWp48'
 
 
-        samHab = basing.Habitat(name='Sam', ks=samKS, db=samDB, kevers=samKevers, wits=[wit],
+        samHab = habbing.Habitat(name='Sam', ks=samKS, db=samDB, kevers=samKevers, wits=[wit],
                                    secrecies=samSecrecies, temp=True)
         assert samHab.ks == samKS
         assert samHab.db == samDB
@@ -600,7 +600,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         samDoers = [samClientDoer, samDirector, samReactor, samServerDoer, samDirectant]
 
         # setup cam
-        camHab = basing.Habitat(name='Cam', ks=camKS,  db=camDB, kevers=camKevers,
+        camHab = habbing.Habitat(name='Cam', ks=camKS,  db=camDB, kevers=camKevers,
                                    secrecies=camSecrecies, temp=True)
 
         assert camHab.ks == camKS
