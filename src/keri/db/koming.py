@@ -6,7 +6,7 @@ keri.app.apping module
 """
 import json
 from dataclasses import dataclass, asdict
-from typing import Type, Union
+from typing import Type, Union, Iterable
 
 import cbor2
 import msgpack
@@ -26,6 +26,7 @@ class Komer:
     """
     Keyspace Object Mapper factory class
     """
+    Sep = '.'  # separator for combining key iterables
 
     def __init__(self,
                  db: Type[dbing.LMDBer],
@@ -46,7 +47,7 @@ class Komer:
         self.serializer = self._serializer(kind)
         self.deserializer = self._deserializer(kind)
 
-    def put(self, keys: Union[tuple, str], data: dataclass):
+    def put(self, keys: Union[str, Iterable], data: dataclass):
         """
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -55,45 +56,32 @@ class Komer:
         if not isinstance(data, self.schema):
             raise ValueError("Invalid schema type={} of data={}, expected {}."
                              "".format(type(data), data, self.schema))
-        if isinstance(keys, str):
-            keys = (keys, )  # make a tuple
-
         self.db.putVal(db=self.sdb,
-                       key=".".join(keys).encode("utf-8"),
+                       key=self._tokey(keys),
                        val=self.serializer(data))
 
-    def get(self, keys: Union[tuple, str]):
+    def get(self, keys: Union[str, Iterable]):
         """
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
         """
-        if isinstance(keys, str):
-            keys = (keys, )  # make a tuple
-
         data = helping.datify(self.schema,
                               self.deserializer(
                                   self.db.getVal(db=self.sdb,
-                                                 key=".".join(keys).encode("utf-8"))))
+                                                 key=self._tokey(keys))))
 
-        if data is None:
-            return
-
-        if not isinstance(data, self.schema):
+        if data and not isinstance(data, self.schema):
             raise ValueError("Invalid schema type={} of data={}, expected {}."
                              "".format(type(data), data, self.schema))
-
         return data
 
-    def rem(self, keys: Union[tuple, str]):
+
+    def rem(self, keys: Union[str, Iterable]):
         """
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
         """
-        if isinstance(keys, str):
-            keys = (keys, )  # make a tuple
-
-        self.db.delVal(db=self.sdb,
-                       key=".".join(keys).encode("utf-8"))
+        self.db.delVal(db=self.sdb, key=self._tokey(keys))
 
 
     def getItemIter(self):
@@ -117,6 +105,21 @@ class Komer:
                                  "".format(type(data), data, self.schema))
             keys = tuple(key.decode("utf-8").split('.'))
             yield (keys, data)
+
+
+    def _tokey(self, keys: Union[str, Iterable]):
+        """
+        Converts key to key str with proper separators and returns key bytes.
+        If key is already str then returns. Else If key is iterable (non-str)
+        of strs then joins with separator converts to bytes and returns
+
+        Parameters:
+           keys (Union[str, Iterable]): str or Iterable of str.
+
+        """
+        if isinstance(keys, str):
+            return keys.encode("utf-8")
+        return (self.Sep.join(keys).encode("utf-8"))
 
 
     def _serializer(self, kind):
