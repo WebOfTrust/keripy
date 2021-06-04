@@ -1965,17 +1965,15 @@ class Kever:
                                 fn=fn, firner=firner, dater=dater))
                 logger.info("Kever Mismatch Cloned Replay FN: %s First seen "
                             "ordinal fn %s and clone fn %s \nEvent=\n%s\n",
-                             serder.preb, fn, firner.sn,
-                             json.dumps(serder.ked, indent=1))
+                             serder.preb, fn, firner.sn, serder.pretty)
             if dater:  # cloned replay use original's dts from dater
                 dtsb = dater.dtsb
             self.baser.setDts(dgkey, dtsb)  # first seen so set dts to now
             logger.info("Kever state: %s First seen ordinal %s at %s\nEvent=\n%s\n",
-                         serder.preb, fn, dtsb.decode("utf-8"),
-                         json.dumps(serder.ked, indent=1))
+                         serder.preb, fn, dtsb.decode("utf-8"), serder.pretty)
         self.baser.addKe(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Kever state: %s Added to KEL valid event=\n%s\n",
-                        serder.preb, json.dumps(serder.ked, indent=1))
+                                               serder.preb, serder.pretty)
         return fn  # will be fn int if first else None
 
 

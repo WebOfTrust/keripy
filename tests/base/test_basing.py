@@ -169,8 +169,6 @@ def test_kom_get_item_iter():
                         (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
                         (('a', '4'), {'a': 'Eat', 'b': 'White'})]
 
-
-
     assert not os.path.exists(db.path)
     assert not db.opened
 
@@ -323,7 +321,9 @@ def test_clean():
     """
     with dbing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
         # setup Nat's habitat using default salt multisig already incepts
-        natHab = basing.Habitat(ks=natKS, db=natDB, isith=2, icount=3,temp=True)
+        natHab = basing.Habitat(name='nat', ks=natKS, db=natDB,
+                                isith=2, icount=3, temp=True)
+        assert natHab.name == 'nat'
         assert natHab.ks == natKS
         assert natHab.db == natDB
         assert natHab.kever.prefixer.transferable
@@ -342,7 +342,7 @@ def test_clean():
 
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.dig == 'EDnOtySjCSGG7rdRKv8rEuBz26fa8UEhTrVMQ_jrLz40'
+        assert natHab.kever.serder.dig == 'En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI'
         ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
         assert ldig == natHab.kever.serder.digb
         serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
@@ -357,6 +357,12 @@ def test_clean():
             serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
             assert serder.dig == natHab.kever.serder.dig
             assert natHab.db.env.stat()['entries'] == 19
+
+            # verify name pre kom in db
+            kdb = basing.Komer(db=natHab.db, schema=basing.HabitatRecord, subdb='habs.')
+            data = kdb.get(keys=(natHab.name, ))
+            assert data.prefix == natHab.pre
+            assert data.name == natHab.name
 
             # add garbage event to corrupt database
             badsrdr = eventing.rotate(pre=natHab.pre,
@@ -390,7 +396,7 @@ def test_clean():
         # see if kevers dict is back to what it was before
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
-        assert natHab.kever.serder.dig == 'EDnOtySjCSGG7rdRKv8rEuBz26fa8UEhTrVMQ_jrLz40'
+        assert natHab.kever.serder.dig == 'En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI'
 
         # see if database is back where it belongs
         with dbing.reopenDB(db=natHab.db, reuse=True):
@@ -405,6 +411,12 @@ def test_clean():
             assert not natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
             assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
 
+            # verify name pre kom in db
+            kdb = basing.Komer(db=natHab.db, schema=basing.HabitatRecord, subdb='habs.')
+            data = kdb.get(keys=(natHab.name, ))
+            assert data.prefix == natHab.pre
+            assert data.name == natHab.name
+
 
     assert not os.path.exists(natKS.path)
     assert not os.path.exists(natDB.path)
@@ -413,4 +425,4 @@ def test_clean():
 
 
 if __name__ == "__main__":
-    test_kom_get_item_iter()
+    test_clean()
