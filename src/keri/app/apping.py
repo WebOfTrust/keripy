@@ -69,7 +69,7 @@ def clean(orig, kvy=None):
                 psr.processOne(ims=msg)
 
             # clone habitat name prefix Komer subdb
-            copy.habs = koming.Komer(db=copy, schema=habbing.HabitatRecord, subdb='habs.')  # copy
+            copy.habs = koming.Komer(db=copy, schema=basing.HabitatRecord, subdb='habs.')  # copy
             for keys, data in orig.habs.getItemIter():
                 copy.habs.put(keys=keys, data=data)
 

@@ -24,6 +24,7 @@ import stat
 import shutil
 import tempfile
 from contextlib import contextmanager
+from dataclasses import dataclass, asdict
 
 import lmdb
 
@@ -32,7 +33,14 @@ from hio.base import doing
 from  .. import kering
 from  ..help import helping
 from  ..core import coring
-from . import dbing
+from . import dbing, koming
+
+
+
+@dataclass
+class HabitatRecord:
+    name: str
+    prefix: str
 
 
 def openDB(name="test", **kwa):
@@ -226,6 +234,9 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
 
+        .habs is named subDB instance of Komer that maps habitat names to prefixes
+            key is habitate name str
+            value is serialized HabitatRecord dataclass
 
     Properties:
 
@@ -290,6 +301,10 @@ class Baser(dbing.LMDBer):
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
+
+        self.habs = koming.Komer(db=self,
+                                 schema=HabitatRecord,
+                                 subdb='habs.')
 
         return self.env
 

@@ -29,12 +29,6 @@ from . import apping
 logger = help.ogler.getLogger()
 
 
-@dataclass
-class HabitatRecord:
-    name: str
-    prefix: str
-
-
 class Habitat:
     """
     Habitat class provides direct mode controller's local shared habitat
@@ -114,10 +108,9 @@ class Habitat:
         existing = False
         # add .habs attribute to db habitat name Komer subdb
         # self.db.habs = koming.Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
-        kom = koming.Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
+        # kom = koming.Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
         if not self.temp:
-            # ex = self.db.habs.get(keys=self.name)
-            ex = kom.get(keys=self.name)
+            ex = self.db.habs.get(keys=self.name)
             # found existing habitat, otherwise leave __init__ to incept a new one.
             if ex is not None:
                 prms = json.loads(bytes(ks.getPrm(key=ex.prefix)).decode("utf-8"))
@@ -181,8 +174,10 @@ class Habitat:
                 raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
 
-            # self.db.habs.put(keys=(self.name, ), data=HabitatRecord(name=self.name, prefix=self.pre))
-            kom.put(keys=(self.name, ), data=HabitatRecord(name=self.name, prefix=self.pre))
+            self.db.habs.put(keys=self.name,
+                             data=basing.HabitatRecord(name=self.name,
+                                                       prefix=self.pre))
+
 
 
     def reinitialize(self):
