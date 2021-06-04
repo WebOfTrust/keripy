@@ -112,9 +112,10 @@ class Habitat:
         # for persisted Habitats, check the KOM first to see if there is an existing
         # one we can restart from otherwise initialize a new one
         existing = False
-        kom = koming.Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
+        # add .habs attribute to db habitat name Komer subdb
+        self.db.habs = koming.Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
         if not self.temp:
-            ex = kom.get(keys=(self.name, ))
+            ex = self.db.habs.get(keys=(self.name, ))
             # found existing habitat, otherwise leave __init__ to incept a new one.
             if ex is not None:
                 prms = json.loads(bytes(ks.getPrm(key=ex.prefix)).decode("utf-8"))
@@ -178,7 +179,7 @@ class Habitat:
                 raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
 
-            kom.put(keys=(self.name, ), data=HabitatRecord(name=self.name, prefix=self.pre))
+            self.db.habs.put(keys=(self.name, ), data=HabitatRecord(name=self.name, prefix=self.pre))
 
 
     def reinitialize(self):

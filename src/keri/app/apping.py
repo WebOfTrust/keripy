@@ -69,12 +69,12 @@ def clean(orig, kvy=None):
                 psr.processOne(ims=msg)
 
             # clone habitat name prefix Komer subdb
-            okdb = koming.Komer(db=orig, schema=habbing.HabitatRecord, subdb='habs.')  # orig
-            ckdb = koming.Komer(db=copy, schema=habbing.HabitatRecord, subdb='habs.')  # copy
-            for keys, data in okdb.getItemIter():
-                ckdb.put(keys=keys, data=data)
+            # okdb = koming.Komer(db=orig, schema=habbing.HabitatRecord, subdb='habs.')  # orig
+            copy.habs = koming.Komer(db=copy, schema=habbing.HabitatRecord, subdb='habs.')  # copy
+            for keys, data in orig.habs.getItemIter():
+                copy.habs.put(keys=keys, data=data)
 
-            if not ckdb.get(keys=(orig.name, )):
+            if not copy.habs.get(keys=(orig.name, )):
                 raise ValueError("Error cloning, missing orig name={} subdb."
                                  "".format(orig.name))
 

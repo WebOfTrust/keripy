@@ -60,8 +60,8 @@ def test_clean():
             assert natHab.db.env.stat()['entries'] == 19
 
             # verify name pre kom in db
-            kdb = koming.Komer(db=natHab.db, schema=habbing.HabitatRecord, subdb='habs.')
-            data = kdb.get(keys=(natHab.name, ))
+            # kdb = koming.Komer(db=natHab.db, schema=habbing.HabitatRecord, subdb='habs.')
+            data = natHab.db.habs.get(keys=(natHab.name, ))
             assert data.prefix == natHab.pre
             assert data.name == natHab.name
 
@@ -113,8 +113,8 @@ def test_clean():
             assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
 
             # verify name pre kom in db
-            kdb = koming.Komer(db=natHab.db, schema=habbing.HabitatRecord, subdb='habs.')
-            data = kdb.get(keys=(natHab.name, ))
+            # kdb = koming.Komer(db=natHab.db, schema=habbing.HabitatRecord, subdb='habs.')
+            data = natHab.db.habs.get(keys=(natHab.name, ))
             assert data.prefix == natHab.pre
             assert data.name == natHab.name
 
