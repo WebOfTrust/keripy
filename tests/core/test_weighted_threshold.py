@@ -70,7 +70,7 @@ def test_weighted():
                                 b'yFauoQECZyNIlUnnxVHuk2_Fqi5xK_Lu9Pt76Aw')
 
         # apply msg to Wes's Kevery
-        parsing.Parser().process(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         wesK = wesKvy.kevers[wesPre]  # kever created so event was validated
         assert wesK.prefixer.qb64 == wesPre
@@ -100,7 +100,7 @@ def test_weighted():
                                 b'g6hhztstGt8TthRQ0TJn6rkvatkbn6yzRjBw')
 
         # apply msg to wes's Kevery
-        parsing.Parser().process(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
@@ -141,7 +141,7 @@ def test_weighted():
                          b'KpKITRx3ZTvme7sKbvr_NfR-0ECg')
 
         # apply msg to Wes's Kevery
-        parsing.Parser().process(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
@@ -186,7 +186,7 @@ def test_weighted():
 
 
         # apply msg to Wes's Kevery
-        parsing.Parser().process(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
@@ -234,7 +234,7 @@ def test_weighted():
 
 
         # apply msg to Wes's Kevery
-        parsing.Parser().process(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 

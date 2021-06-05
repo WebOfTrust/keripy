@@ -170,7 +170,7 @@ class Indirector(doing.DoDoer):
         """
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
-        done = yield from self.parser.processor()  # process messages continuously
+        done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
 

@@ -83,7 +83,7 @@ class Issuer:
 
             # Process message in local Tevery when ready for now assign to self for testing
             self.incept = bytearray(msg)
-            self.psr.processOne(ims=msg)
+            self.psr.parseOne(ims=msg)
             if self.regk not in self.tevers:
                 raise kering.ConfigurationError("Improper Issuer inception for "
                                                 "pre={}.".format(self.regk))
@@ -94,7 +94,7 @@ class Issuer:
 
             clone = self.reger.clonePreIter(self.regk)
             for msg in clone:
-                self.psr.processOne(ims=msg)
+                self.psr.parseOne(ims=msg)
 
             if self.regk not in self.tevers:
                 raise kering.ConfigurationError("Improper Issuer inception for "
@@ -127,7 +127,7 @@ class Issuer:
 
         tevt, kevt = self.anchorMsg(serder, rseal._asdict())
 
-        self.psr.processOne(ims=bytearray(tevt))
+        self.psr.parseOne(ims=bytearray(tevt))
         if tever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Issuer registry rotation for "
                                          "pre={}.".format(self.regk))
@@ -158,7 +158,7 @@ class Issuer:
         msg, kevt = self.anchorMsg(serder, rseal._asdict())
 
         # Process message in local Tevery when ready
-        self.psr.processOne(ims=bytearray(msg))  # make copy as kvr deletes
+        self.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
 
         return msg, kevt
 
@@ -191,7 +191,7 @@ class Issuer:
 
         # Process message in local Tevery when ready
         # Process message in local Tevery when ready
-        self.psr.processOne(ims=bytearray(msg))  # make copy as kvr deletes
+        self.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
 
         return msg, kevt
 

@@ -169,7 +169,7 @@ class Habitat:
             self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, opre=self.pre, local=True)
             self.psr = parsing.Parser(framed=True, kvy=self.kvy)
 
-            self.psr.processOne(ims=msg)
+            self.psr.parseOne(ims=msg)
             if self.pre not in self.kevers:
                 raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
@@ -188,11 +188,11 @@ class Habitat:
         self.psr = parsing.Parser(framed=True, kvy=self.kvy)
 
         msgs = self.replay()
-        self.psr.process(ims=bytearray(msgs), kvy=self.kvy)
+        self.psr.parse(ims=bytearray(msgs), kvy=self.kvy)
 
         msgs = self.replayAll()
         tkvy = eventing.Kevery(kevers=self.kevers, db=self.db, opre=self.pre, local=False)
-        self.psr.process(ims=bytearray(msgs), kvy=tkvy)
+        self.psr.parse(ims=bytearray(msgs), kvy=tkvy)
 
         # ridx for replay may be an issue when loading from existing
         sit = json.loads(bytes(self.ks.getSit(key=self.pre)).decode("utf-8"))
@@ -274,7 +274,7 @@ class Habitat:
         msg = eventing.messagize(serder, sigers=sigers)
 
         # update own key event verifier state
-        self.psr.processOne(ims=bytearray(msg))  # make copy as kvr deletes
+        self.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
@@ -296,7 +296,7 @@ class Habitat:
         msg = eventing.messagize(serder, sigers=sigers)
 
         # update own key event verifier state
-        self.psr.processOne(ims=bytearray(msg))  # make copy as kvy deletes
+        self.psr.parseOne(ims=bytearray(msg))  # make copy as kvy deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre))
@@ -342,7 +342,7 @@ class Habitat:
                                    indexed=False)
             msg = eventing.messagize(reserder, cigars=cigars)
 
-        self.psr.processOne(ims=bytearray(msg))  # process local copy into db
+        self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
     def witness(self, serder):
@@ -376,7 +376,7 @@ class Habitat:
                                indices=[index])
 
         msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
-        self.psr.processOne(ims=bytearray(msg))  # process local copy into db
+        self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
     def endorse(self, serder):

@@ -2171,7 +2171,7 @@ def test_kevery():
         # kevery.process(ims=kes[:20])
         # assert pre not in kevery.kevers  # shortage so gives up
 
-        parsing.Parser().process(ims=msgs, kvy=kevery)
+        parsing.Parser().parse(ims=msgs, kvy=kevery)
         # kevery.process(ims=msgs)
 
         assert pre in kevery.kevers
@@ -2333,7 +2333,7 @@ def test_multisig_digprefix():
         assert len(msgs) == 2699
 
         kevery = Kevery(db=vallgr)
-        parsing.Parser().process(ims=msgs, kvy=kevery)
+        parsing.Parser().parse(ims=msgs, kvy=kevery)
         # kevery.process(ims=msgs)
 
         pre = kever.prefixer.qb64
@@ -2574,7 +2574,7 @@ def test_recovery():
         assert db_est_digs[5:7] ==  event_digs[7:9]
 
         kevery = Kevery(db=vallgr)
-        parsing.Parser().process(ims=kes, kvy=kevery)
+        parsing.Parser().parse(ims=kes, kvy=kevery)
         # kevery.process(ims=kes)
 
         assert pre in kevery.kevers
@@ -2672,13 +2672,13 @@ def test_receipt():
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
         # make copy of kes so can use again for valKevery
-        parsing.Parser().process(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # create Kever using Kevery
         coeKever = coeKevery.kevers[coepre]
         assert coeKever.prefixer.qb64 == coepre
         assert coeKever.serder.raw == serder.raw
 
-        parsing.Parser().process(ims=kes, kvy=valKevery)
+        parsing.Parser().parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)  # process by Val
         assert coepre in valKevery.kevers
         valKever = valKevery.kevers[coepre]
@@ -2704,7 +2704,7 @@ def test_receipt():
                                 b'c0Bs2d05m7zpn6C9IJhb_GspbllxJwwxdrBg9bcbCjR5B8lrXJlglmiitpq3lEus'
                                 b'EWdmmHSY4C_fxElKfF8mySfDQ')
 
-        parsing.Parser().process(ims=res, kvy=coeKevery)
+        parsing.Parser().parse(ims=res, kvy=coeKevery)
         # coeKevery.process(ims=res)  #  coe process the receipt from val
         #  check if in receipt database
         result = coeKevery.db.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
@@ -2727,7 +2727,7 @@ def test_receipt():
         res.extend(valPrefixer.qb64b)
         res.extend(valCigar.qb64b)
 
-        parsing.Parser().process(ims=res, kvy=coeKevery)
+        parsing.Parser().parse(ims=res, kvy=coeKevery)
         # coeKevery.process(ims=res)  #  coe process the escrow receipt from val
         #  check if in escrow database
         result = coeKevery.db.getUres(key=snKey(pre=coeKever.prefixer.qb64,
@@ -2749,7 +2749,7 @@ def test_receipt():
         res.extend(valPrefixer.qb64b)
         res.extend(valCigar.qb64b)
 
-        parsing.Parser().processOne(ims=res, kvy=coeKevery)
+        parsing.Parser().parseOne(ims=res, kvy=coeKevery)
         # coeKevery.processOne(ims=res)  #  coe process the escrow receipt from val
         # no new receipt at valid dig
         result = coeKevery.db.getRcts(key=dgKey(pre=coeKever.prefixer.qb64,
@@ -2779,9 +2779,9 @@ def test_receipt():
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().process(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().process(ims=kes, kvy=valKevery)
+        parsing.Parser().parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         # Next Event Interaction
@@ -2801,9 +2801,9 @@ def test_receipt():
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().process(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().process(ims=kes, kvy=valKevery)
+        parsing.Parser().parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         # Next Event Rotation Transferable
@@ -2826,9 +2826,9 @@ def test_receipt():
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().process(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().process(ims=kes, kvy=valKevery)
+        parsing.Parser().parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         # Next Event Interaction
@@ -2848,9 +2848,9 @@ def test_receipt():
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().process(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().process(ims=kes, kvy=valKevery)
+        parsing.Parser().parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         # Next Event Interaction
@@ -2870,9 +2870,9 @@ def test_receipt():
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().process(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().process(ims=kes, kvy=valKevery)
+        parsing.Parser().parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         # Next Event Interaction
@@ -2892,9 +2892,9 @@ def test_receipt():
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
         kes.extend(siger.qb64b)
-        parsing.Parser().process(ims=bytearray(kes), kvy=coeKevery)
+        parsing.Parser().parse(ims=bytearray(kes), kvy=coeKevery)
         # coeKevery.process(ims=bytearray(kes))  # update key event verifier state
-        parsing.Parser().process(ims=kes, kvy=valKevery)
+        parsing.Parser().parse(ims=kes, kvy=valKevery)
         # valKevery.process(ims=kes)
 
         assert coeKever.verfers[0].qb64 == coeSigners[esn].verfer.qb64
@@ -2994,7 +2994,7 @@ def test_direct_mode():
                                  b'WkVv_dtBA')
 
         # create own Coe Kever in  Coe's Kevery
-        parsing.Parser().processOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # send copy of cmsg
         coeKever = coeKevery.kevers[coepre]
         assert coeKever.prefixer.qb64 == coepre
@@ -3026,13 +3026,13 @@ def test_direct_mode():
                                  b'C2neaxuDg')
 
         # create own Val Kever in  Val's Kevery
-        parsing.Parser().processOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # send copy of vmsg
         valKever = valKevery.kevers[valpre]
         assert valKever.prefixer.qb64 == valpre
 
         # simulate sending of coe's inception message to val
-        parsing.Parser().process(ims=bytearray(cmsg), kvy=valKevery)
+        parsing.Parser().parse(ims=bytearray(cmsg), kvy=valKevery)
         # valKevery.process(ims=bytearray(cmsg))  # make copy of msg
         assert coepre in valKevery.kevers  # creates Kever for coe in val's .kevers
 
@@ -3066,13 +3066,13 @@ def test_direct_mode():
                         b'GmiGO4QdrQ1lSntqUAUMkcGAzB0Q6SsAA')
 
         # process own Val receipt in Val's Kevery so have copy in own log
-        parsing.Parser().processOne(ims=bytearray(rmsg), kvy=valKevery)
+        parsing.Parser().parseOne(ims=bytearray(rmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach reciept message to existing message with val's incept message
         vmsg.extend(rmsg)
         # Simulate send to coe of val's incept and val's receipt of coe's inception message
-        parsing.Parser().process(ims=vmsg, kvy=coeKevery)
+        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         # check if val Kever in coe's .kevers
@@ -3105,7 +3105,7 @@ def test_direct_mode():
                         b'M0AAAAAAAAAAAAAAAAAAAAAAAEeGqW24EnxUgO_wfuFo6GR_vii-RNv5iGo8ibUr'
                         b'he6Z0-AABAAocy9m9ToxeeZk-FkgjFh1x839Ims4peTy2C5MdawIwoa9wlIDbD-w'
                         b'GmiGO4QdrQ1lSntqUAUMkcGAzB0Q6SsAA')
-        parsing.Parser().process(ims=vmsg, kvy=coeKevery)
+        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if receipt quadruple in escrow database
         result = coeKevery.db.getVres(key=snKey(pre=coeKever.prefixer.qb64,
@@ -3150,11 +3150,11 @@ def test_direct_mode():
                         b'nwgm8nRV57M8dtRUG62DrNVtE7t8onjAA')
 
         # coe process own receipt in own Kevery so have copy in own log
-        parsing.Parser().processOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
 
         # Simulate send to val of coe's receipt of val's inception message
-        parsing.Parser().process(ims=cmsg, kvy=valKevery)
+        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)  #  coe process val's incept and receipt
 
         #  check if receipt quadruple from coe in val's receipt database
@@ -3195,14 +3195,14 @@ def test_direct_mode():
                                  b'LFkFK_T1epqHvOy3EkDVmk5g3sFps_ahsqXh7Ahitcbi-dWzRjh2ZsfzsB4OBw')
 
         # update coe's key event verifier state
-        parsing.Parser().processOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.serder.diger.qb64 == coeSerder.dig
 
         # simulate send message from coe to val
-        parsing.Parser().process(ims=cmsg, kvy=valKevery)
+        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)
         # verify val's copy of coe's event stream is updated
         assert coeK.sn == csn
@@ -3239,11 +3239,11 @@ def test_direct_mode():
                         b'7S_j7AnCOdBaGf9WQMwwfHkeQpayCCyAA')
 
         # val process own receipt in own kevery so have copy in own log
-        parsing.Parser().processOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
-        parsing.Parser().process(ims=vmsg, kvy=coeKevery)
+        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt quadruple from val in receipt database
@@ -3281,14 +3281,14 @@ def test_direct_mode():
                                  b'6ThfyBvUJQ8e6OsjvuV7wmmsa817kHYUjXsLx0OjKuCWV_VivMBg')
 
         # update coe's key event verifier state
-        parsing.Parser().processOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.serder.diger.qb64 == coeSerder.dig
 
         # simulate send message from coe to val
-        parsing.Parser().process(ims=cmsg, kvy=valKevery)
+        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)
         # verify val's copy of coe's event stream is updated
         assert coeK.sn == csn
@@ -3323,11 +3323,11 @@ def test_direct_mode():
                         b'eLXvsCAVXOqrj7GMW9t3tpxL7Xtfsc5Bw')
 
         # val process own receipt in own kevery so have copy in own log
-        parsing.Parser().processOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
-        parsing.Parser().process(ims=vmsg, kvy=coeKevery)
+        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt quadruple from val in receipt database
@@ -3460,7 +3460,7 @@ def test_direct_mode_cbor_mgpk():
                                   b'q-WL3uimpNHMdGoSRVmXCotuCfDGTx3h0Gk5tz2jFBA')
 
         # create own Coe Kever in  Coe's Kevery
-        parsing.Parser().processOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # send copy of cmsg
         coeKever = coeKevery.kevers[coepre]
         assert coeKever.prefixer.qb64 == coepre
@@ -3492,13 +3492,13 @@ def test_direct_mode_cbor_mgpk():
                                  b'd8Oam6ZuDV3IPHoy1FAXJrxouHuiAKKmRCg')
 
         # create own Val Kever in  Val's Kevery
-        parsing.Parser().processOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # send copy of vmsg
         valKever = valKevery.kevers[valpre]
         assert valKever.prefixer.qb64 == valpre
 
         # simulate sending of coe's inception message to val
-        parsing.Parser().process(ims=bytearray(cmsg), kvy=valKevery)
+        parsing.Parser().parse(ims=bytearray(cmsg), kvy=valKevery)
         # valKevery.process(ims=bytearray(cmsg))  # make copy of msg
         assert coepre in valKevery.kevers  # creates Kever for coe in val's .kevers
 
@@ -3532,14 +3532,14 @@ def test_direct_mode_cbor_mgpk():
                         b'-SSywAKr5PZV-0k-AABAA-ul0YeOLwffGCc5GUnAvgzwITCF2KXLfAzSbCANOkbr'
                         b'apY5w0Ybyeyiy1jTB_3OPEWa0_3tEMt6wZpb2zqICCw')
 
-        parsing.Parser().processOne(ims=bytearray(rmsg), kvy=valKevery)
+        parsing.Parser().parseOne(ims=bytearray(rmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
 
         # attach reciept message to existing message with val's incept message
         vmsg.extend(rmsg)
 
         # Simulate send to coe of val's receipt of coe's inception message
-        parsing.Parser().process(ims=bytearray(vmsg), kvy=coeKevery)
+        parsing.Parser().parse(ims=bytearray(vmsg), kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         # check if val Kever in coe's .kevers
@@ -3573,7 +3573,7 @@ def test_direct_mode_cbor_mgpk():
                         b'-SSywAKr5PZV-0k-AABAA-ul0YeOLwffGCc5GUnAvgzwITCF2KXLfAzSbCANOkbr'
                         b'apY5w0Ybyeyiy1jTB_3OPEWa0_3tEMt6wZpb2zqICCw')
 
-        parsing.Parser().process(ims=vmsg, kvy=coeKevery)
+        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if in escrow database
         result = coeKevery.db.getVres(key=snKey(pre=coeKever.prefixer.qb64,
@@ -3618,11 +3618,11 @@ def test_direct_mode_cbor_mgpk():
                         b'KRBLMqtjeJjcSCA')
 
         # coe process own receipt in own Kevery so have copy in own log
-        parsing.Parser().processOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
 
         # Simulate send to val of coe's receipt of val's inception message
-        parsing.Parser().process(ims=cmsg, kvy=valKevery)
+        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from coe in val's receipt database
@@ -3664,14 +3664,14 @@ def test_direct_mode_cbor_mgpk():
                                  b'3W6hcXlNr4-1_m7qh4HEbCoCw')
 
         # update coe's key event verifier state
-        parsing.Parser().processOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.serder.diger.qb64 == coeSerder.dig
 
         # simulate send message from coe to val
-        parsing.Parser().process(ims=cmsg, kvy=valKevery)
+        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)
         # verify val's copy of coe's event stream is updated
         assert coeK.sn == csn
@@ -3709,11 +3709,11 @@ def test_direct_mode_cbor_mgpk():
 
 
         # val process own receipt in own kevery so have copy in own log
-        parsing.Parser().processOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
-        parsing.Parser().process(ims=vmsg, kvy=coeKevery)
+        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from val in receipt database
@@ -3752,14 +3752,14 @@ def test_direct_mode_cbor_mgpk():
                                  b'8zMmtirALCQSXfMXoODdLuclkJElBQ')
 
         # update coe's key event verifier state
-        parsing.Parser().processOne(ims=bytearray(cmsg), kvy=coeKevery)
+        parsing.Parser().parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify coe's copy of coe's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.serder.diger.qb64 == coeSerder.dig
 
         # simulate send message from coe to val
-        parsing.Parser().process(ims=cmsg, kvy=valKevery)
+        parsing.Parser().parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)
         # verify val's copy of coe's event stream is updated
         assert coeK.sn == csn
@@ -3796,11 +3796,11 @@ def test_direct_mode_cbor_mgpk():
 
 
         # val process own receipt in own kevery so have copy in own log
-        parsing.Parser().processOne(ims=bytearray(vmsg), kvy=valKevery)
+        parsing.Parser().parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to coe of val's receipt of coe's rotation message
-        parsing.Parser().process(ims=vmsg, kvy=coeKevery)
+        parsing.Parser().parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process val's incept and receipt
 
         #  check if receipt from val in receipt database
@@ -4362,7 +4362,7 @@ def test_parser():
 
         parser = parsing.Parser(kvy=kevery)
 
-        parser.process(ims=bytearray(msgs))  # make copy
+        parser.parse(ims=bytearray(msgs))  # make copy
         assert parser.ims == bytearray(b'')  # emptied
         assert pre in kevery.kevers
         vkever = kevery.kevers[pre]
@@ -4374,7 +4374,7 @@ def test_parser():
         assert db_digs == event_digs
 
         parser = parsing.Parser()  # no kevery
-        parser.process(ims=msgs)
+        parser.parse(ims=msgs)
         assert parser.ims == bytearray(b'')
 
 

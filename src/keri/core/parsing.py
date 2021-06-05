@@ -5,10 +5,8 @@ keri.core.parsing module
 message stream parsing support
 """
 
-import datetime
-import json
 import logging
-from collections import namedtuple, deque
+from collections import namedtuple
 from dataclasses import dataclass, astuple
 
 from .. import kering
@@ -195,7 +193,7 @@ class Parser:
                 yield
 
 
-    def process(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
+    def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
         """
         Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
@@ -220,7 +218,7 @@ class Parser:
             Attachments must all have counters so know if txt or bny format for
             attachments. So even when framed==True must still have counters.
         """
-        processor = self.allProcessor(ims=ims,
+        processor = self.allParsator(ims=ims,
                                        framed=framed,
                                        pipeline=pipeline,
                                        kvy=kvy,
@@ -233,7 +231,7 @@ class Parser:
                 break
 
 
-    def processOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
+    def parseOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
         """
         Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
@@ -258,7 +256,7 @@ class Parser:
             Attachments must all have counters so know if txt or bny format for
             attachments. So even when framed==True must still have counters.
         """
-        processor = self.onceProcessor(ims=ims,
+        processor = self.onceParsator(ims=ims,
                                         framed=framed,
                                         pipeline=pipeline,
                                         kvy=kvy,
@@ -270,11 +268,11 @@ class Parser:
                 break
 
 
-    def allProcessor(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
+    def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
         """
-        Returns generator to process all messages from incoming message stream,
+        Returns generator to parse all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
-        If ims not provided then process messages from .ims
+        If ims not provided then parse messages from .ims
         Must be framed.
 
         Parameters:
@@ -308,7 +306,7 @@ class Parser:
 
         while ims:  # only process until ims empty
             try:
-                done = yield from self.msgProcessor(ims=ims,
+                done = yield from self.msgParsator(ims=ims,
                                                     framed=framed,
                                                     pipeline=pipeline,
                                                     kvy=kvy,
@@ -340,10 +338,10 @@ class Parser:
         return True
 
 
-    def onceProcessor(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
+    def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
         """
-        Returns generator to process one message from incoming message stream, ims.
-        If ims not provided process messages from .ims
+        Returns generator to parse one message from incoming message stream, ims.
+        If ims not provided parse messages from .ims
 
         Parameters:
             ims is bytearray of incoming message stream. May contain one or more
@@ -378,7 +376,7 @@ class Parser:
         done = False
         while not done:
             try:
-                done = yield from self.msgProcessor(ims=ims,
+                done = yield from self.msgParsator(ims=ims,
                                                     framed=framed,
                                                     pipeline=pipeline,
                                                     kvy=kvy,
@@ -411,11 +409,12 @@ class Parser:
         return done
 
 
-    def processor(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
+    def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
         """
-        Returns generator to continually process messages from incoming message
-        stream, ims. Yields waits whenever ims empty.
-        If ims not provided then process messages from .ims
+        Returns generator to continually parse messages from incoming message
+        stream, ims. One yield from per each messages. Continually yields
+        to wait while ims is empty.
+        If ims not provided then parse messages from .ims
 
         Parameters:
             ims is bytearray of incoming message stream. May contain one or more
@@ -448,7 +447,7 @@ class Parser:
 
         while True:  # continuous stream processing never stop
             try:
-                done = yield from self.msgProcessor(ims=ims,
+                done = yield from self.msgParsator(ims=ims,
                                                     framed=framed,
                                                     pipeline=pipeline,
                                                     kvy=kvy,
@@ -480,11 +479,11 @@ class Parser:
         return True
 
 
-    def msgProcessor(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
+    def msgParsator(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
         """
-        Returns generator that extracts one msg with attached crypto material
-        (signature etc) from incoming message stream, ims, and dispatches
-        processing of message with attachments.
+        Returns generator that upton each iterations extracts and parses msg
+        with attached crypto material (signature etc) from incoming message
+        stream, ims, and dispatches processing of message with attachments.
 
         Uses .ims when ims is not provided.
 

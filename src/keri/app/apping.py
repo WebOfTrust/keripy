@@ -75,7 +75,7 @@ def clean(orig, kvy=None):
             # process event doesn't capture exceptions so we can more easily
             # detect in the cloning that some events did not make it through
             for msg in orig.cloneAllPreIter():  # clone orig into copy
-                psr.processOne(ims=msg)
+                psr.parseOne(ims=msg)
 
             # clone habitat name prefix Komer subdb
             copy.habs = koming.Komer(db=copy, schema=basing.HabitatRecord, subdb='habs.')  # copy
