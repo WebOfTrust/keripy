@@ -34,6 +34,35 @@ def test_deck():
     assert repr(deck) == "Deck(['A', 'B', 'C'])"
     assert str(deck) == "Deck(['A', 'B', 'C'])"
 
+    deck.clear()
+    assert not deck
+    deck.extend(["A", "B", "C"])
+    assert len(deck) == 3
+
+    stuff = []
+    while deck:
+        stuff.append(deck.pull())
+    assert stuff == ["A", "B", "C"]
+    assert not deck
+    deck.extend(stuff)
+    assert len(deck) == 3
+
+    stuff = []
+    for x in deck:
+        stuff.append(x)
+    assert deck == Deck(['A', 'B', 'C'])
+    assert stuff == ['A', 'B', 'C']
+
+    stuff = [x for x in deck]
+    assert stuff == ["A", "B", "C"]
+
+    stuff = []
+    while x := deck.pull(emptive=True):
+        stuff.append(x)
+    assert stuff == ["A", "B", "C"]
+    assert not deck
+
+
     """End Test"""
 
 

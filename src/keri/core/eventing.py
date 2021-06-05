@@ -14,7 +14,7 @@ from orderedset import OrderedSet as oset
 
 from .. import help
 from ..help import helping
-
+from ..help import decking
 from .coring import MtrDex, NonTransDex, CtrDex, Counter
 from .coring import Seqner, Siger, Cigar, Dater
 from .coring import Verfer, Diger, Nexter, Prefixer, Serder, Tholder
@@ -2128,7 +2128,7 @@ class Kevery:
             direct is Boolean, True means direct mode so cue receipts
                                False means indirect mode so don't cue receipts
         """
-        self.cues = cues if cues is not None else deque()
+        self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
         self.kevers = kevers if kevers is not None else dict()
         if db is None:
             db = basing.Baser()  # default name = "main"
@@ -2221,7 +2221,7 @@ class Kevery:
                 if self.direct or not self.opre or self.opre != pre:  # not own event when owned
                     # create cue for receipt   direct mode for now
                     #  receipt of actual type is dependent on own type of identifier
-                    self.cues.append(dict(kin="receipt", serder=serder))
+                    self.cues.push(dict(kin="receipt", serder=serder))
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
@@ -2280,7 +2280,7 @@ class Kevery:
                     if self.direct or not self.opre or self.opre != pre:  # not own event when owned
                         # create cue for receipt   direct mode for now
                         #  receipt of actual type is dependent on own type of identifier
-                        self.cues.append(dict(kin="receipt", serder=serder))
+                        self.cues.push(dict(kin="receipt", serder=serder))
 
                 else:  # maybe duplicitous
                     # check if duplicate of existing valid accepted event
@@ -2894,7 +2894,7 @@ class Kevery:
             for msg in cloner:
                 msgs.extend(msg)
 
-            self.cues.append(dict(kin="replay", msgs=msgs))
+            self.cues.push(dict(kin="replay", msgs=msgs))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
 
