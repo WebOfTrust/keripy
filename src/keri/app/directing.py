@@ -216,6 +216,7 @@ class Reactor(doing.DoDoer):
         self.kevery = eventing.Kevery(kevers=self.hab.kevers,
                                       db=self.hab.db,
                                       opre=self.hab.pre,
+                                      prefixes=[self.hab.pre],
                                       local=False,
                                       direct=self.direct)
 
@@ -560,6 +561,7 @@ class Reactant(doing.DoDoer):
         self.kevery = eventing.Kevery(kevers=self.hab.kevers,
                                       db=self.hab.db,
                                       opre=self.hab.pre,
+                                      prefixes=[self.hab.pre],
                                       local=False)
 
         if self.verifier is not None:

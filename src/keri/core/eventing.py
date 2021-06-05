@@ -1261,7 +1261,8 @@ class Kever:
 
     def __init__(self, serder, sigers, wigers=None, baser=None, estOnly=None,
                  seqner=None, diger=None, firner=None, dater=None,
-                 kevers=None, cues=None, opre=None, local=False, check=False):
+                 kevers=None, cues=None, opre=None, prefixes=None, local=False,
+                 check=False):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -1306,6 +1307,7 @@ class Kever:
         self.kevers = kevers
         self.cues = cues
         self.opre = opre
+        self.prefixes = prefixes if prefixes is not None else []
         self.local = True if local else False
 
         # may update state as we go because if invalid we fail to finish init
@@ -2111,8 +2113,8 @@ class Kevery:
     TimeoutVRE = 3600  # seconds to timeout unverified transferable receipt escrows
 
 
-    def __init__(self, cues=None, kevers=None, db=None, opre=None, local=False,
-                 cloned=False, direct=True):
+    def __init__(self, cues=None, kevers=None, db=None,
+                 opre=None, prefixes=None, local=False, cloned=False, direct=True):
         """
         Initialize instance:
 
@@ -2134,17 +2136,10 @@ class Kevery:
             db = basing.Baser()  # default name = "main"
         self.db = db
         self.opre = opre  # local prefix for restrictions on local events
+        self.prefixes = prefixes if prefixes is not None else []  # local prefixes
         self.local = True if local else False  # local vs nonlocal restrictions
         self.cloned = True if cloned else False  # process as cloned
-        self.direct = True if direct else False
-
-
-    @property
-    def kever(self):
-        """
-        Returns kever for its own pre .opre
-        """
-        return self.kevers[self.opre] if self.opre else None
+        self.direct = True if direct else False  # process as direct mode
 
 
     def processEvent(self, serder, sigers, wigers=None,
@@ -2192,7 +2187,7 @@ class Kevery:
                     raise ValueError("Nonlocal event pre={} when local mode for pre={}."
                                                       "".format(pre, self.opre))
             else:
-                if self.opre == pre:  # local event when not in local mode
+                if self.opre == pre:  # local event when in nonlocal mode
                     raise ValueError("Local event pre={} when nonlocal mode."
                                                       "".format(pre))
 
@@ -2214,6 +2209,7 @@ class Kevery:
                               kevers=self.kevers,
                               cues=self.cues,
                               opre=self.opre,
+                              prefixes=self.prefixes,
                               local=self.local,
                               check=check)
                 self.kevers[pre] = kever  # not exception so add to kevers

@@ -53,6 +53,7 @@ def test_witness():
         wesKvy = eventing.Kevery(kevers=wesHab.kevers,
                                     db=wesHab.db,
                                     opre=wesHab.pre,
+                                    prefixes=[wesHab.pre],
                                     local=False)
 
         # setup Wok's habitat nontrans
@@ -67,6 +68,7 @@ def test_witness():
         wokKvy = eventing.Kevery(kevers=wokHab.kevers,
                                     db=wokHab.db,
                                     opre=wokHab.pre,
+                                    prefixes=[wokHab.pre],
                                     local=False)
 
         # setup Wam's habitat nontrans
@@ -81,6 +83,7 @@ def test_witness():
         wamKvy = eventing.Kevery(kevers=wamHab.kevers,
                                     db=wamHab.db,
                                     opre=wamHab.pre,
+                                    prefixes=[wamHab.pre],
                                     local=False)
 
         # setup Wil's habitat nontrans
@@ -95,6 +98,7 @@ def test_witness():
         wilKvy = eventing.Kevery(kevers=wilHab.kevers,
                                     db=wilHab.db,
                                     opre=wilHab.pre,
+                                    prefixes=[wilHab.pre],
                                     local=False)
 
         # setup Cam's habitat trans multisig
@@ -117,6 +121,7 @@ def test_witness():
         camKvy = eventing.Kevery(kevers=camHab.kevers,
                                     db=camHab.db,
                                     opre=camHab.pre,
+                                    prefixes=[camHab.pre],
                                     local=False)
 
         # setup Van's habitat trans multisig
@@ -131,6 +136,7 @@ def test_witness():
         vanKvy = eventing.Kevery(kevers=vanHab.kevers,
                                     db=vanHab.db,
                                     opre=vanHab.pre,
+                                    prefixes=[vanHab.pre],
                                     local=False)
 
         # make list so easier to batch

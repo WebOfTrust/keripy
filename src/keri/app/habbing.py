@@ -166,7 +166,11 @@ class Habitat:
             sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
             msg = eventing.messagize(self.iserder, sigers=sigers)
 
-            self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, opre=self.pre, local=True)
+            self.kvy = eventing.Kevery(kevers=self.kevers,
+                                       db=self.db,
+                                       opre=self.pre,
+                                       prefixes=[self.pre],
+                                       local=True)
             self.psr = parsing.Parser(framed=True, kvy=self.kvy)
 
             self.psr.parseOne(ims=msg)
@@ -184,7 +188,11 @@ class Habitat:
         if self.pre is None:
             raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
 
-        self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, opre=self.pre, local=True)
+        self.kvy = eventing.Kevery(kevers=self.kevers,
+                                   db=self.db,
+                                   opre=self.pre,
+                                   prefixes=[self.pre],
+                                   local=True)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy)
 
         msgs = self.replay()
