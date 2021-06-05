@@ -1,9 +1,19 @@
-from keri import kering
-from keri.core.coring import Counter, Seqner, CtrDex, MtrDex, Diger
-from keri.core.eventing import SealEvent, SealSource, TraitDex, Parser
-from keri.db.dbing import snKey
-from keri.vdr import eventing
-from keri.vdr.viring import Registry, nsKey
+# -*- encoding: utf-8 -*-
+"""
+KERI
+keri.vdr.issuing module
+
+VC issuer support
+"""
+
+
+from .. import kering
+from ..core.coring import Counter, Seqner, CtrDex, MtrDex, Diger
+from ..core.eventing import SealEvent, SealSource, TraitDex
+from ..core import parsing
+from ..db.dbing import snKey
+from ..vdr import eventing
+from ..vdr.viring import Registry, nsKey
 
 
 class Issuer:
@@ -58,7 +68,7 @@ class Issuer:
             self.regk = self.regser.pre
             self.tvy = eventing.Tevery(tevers=self.tevers, reger=self.reger, db=self.hab.db,
                                        regk=self.regk, local=True)
-            self.psr = Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
+            self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
             rseal = SealEvent(self.regk, self.regser.ked["s"], self.regser.diger.qb64)
 
@@ -80,7 +90,7 @@ class Issuer:
         else:
             self.tvy = eventing.Tevery(tevers=self.tevers, reger=self.reger, db=self.hab.db,
                                        regk=self.regk, local=True)
-            self.psr = Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
+            self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
             clone = self.reger.clonePreIter(self.regk)
             for msg in clone:

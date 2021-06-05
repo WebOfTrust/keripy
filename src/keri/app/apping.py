@@ -6,6 +6,15 @@ keri.app.apping module
 """
 import os
 import shutil
+# -*- encoding: utf-8 -*-
+"""
+KERI
+keri.app.apping module
+
+application utility support
+"""
+
+
 import json
 from dataclasses import dataclass, asdict
 from typing import Type
@@ -22,7 +31,7 @@ from .. import help
 from ..help import helping
 from ..db import dbing, basing, koming
 from . import keeping
-from ..core import coring, eventing
+from ..core import coring, eventing, parsing
 from . import habbing
 
 
@@ -58,7 +67,7 @@ def clean(orig, kvy=None):
             if not kvy:  # new kvy for clone
                 kvy = eventing.Kevery()  # promiscuous mode
             kvy.db = copy
-            psr = eventing.Parser(kvy=kvy)
+            psr = parsing.Parser(kvy=kvy)
 
             # Revise in future to NOT parse msgs but to extract the processed
             # objects so can pass directly to kvy.processEvent()

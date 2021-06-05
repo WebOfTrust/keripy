@@ -1,17 +1,26 @@
+# -*- encoding: utf-8 -*-
+"""
+KERI
+keri.vdr.eventing module
+
+VC TEL  support
+"""
+
+
 import json
 from collections import deque, namedtuple
 
 from orderedset import OrderedSet as oset
 
-from keri.core.coring import (MtrDex, Serder, Serials, Versify, Prefixer,
+from ..core.coring import (MtrDex, Serder, Serials, Versify, Prefixer,
                               Ilks, Seqner, Verfer)
-from keri.core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
-from keri.db import basing
-from keri.db.dbing import dgKey, snKey
-from keri.help import helping
-from keri.kering import (MissingWitnessSignatureError, Version,
+from ..core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
+from ..db import basing
+from ..db.dbing import dgKey, snKey
+from ..help import helping
+from ..kering import (MissingWitnessSignatureError, Version,
                          MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
-from keri.vdr.viring import Registry, nsKey
+from ..vdr.viring import Registry, nsKey
 from .. import help
 
 logger = help.ogler.getLogger()

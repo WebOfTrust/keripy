@@ -1,9 +1,17 @@
-from keri.core.coring import Verfer, Cigar
-from keri.core.eventing import Parser
-from keri.vdr import eventing
-from keri.core import eventing as ceventing
-from keri.vdr.eventing import VcStates
-from keri.vdr.viring import Registry
+# -*- encoding: utf-8 -*-
+"""
+KERI
+keri.vdr.verifying module
+
+VC verifier support
+"""
+
+from ..core import parsing
+from ..core import eventing as ceventing
+from ..core.coring import Verfer, Cigar
+from ..vdr import eventing
+from ..vdr.eventing import VcStates
+from ..vdr.viring import Registry
 
 from .. import help
 
@@ -32,7 +40,7 @@ class Verifier:
 
         self.tvy = eventing.Tevery(tevers=self.tevers, reger=self.reger, db=self.hab.db,
                                    regk=None, local=False)
-        self.psr = Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
+        self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
 
     def verify(self, pre, sidx, regk, vcid, vcdata, vcsig):

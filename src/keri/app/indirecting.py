@@ -11,7 +11,7 @@ from hio.core.tcp import serving
 
 from .. import help
 from ..db import dbing, basing
-from ..core import  coring, eventing
+from ..core import  coring, eventing, parsing
 from . import habbing, keeping, directing
 from ..vdr import verifying
 
@@ -125,7 +125,7 @@ class Indirector(doing.DoDoer):
                                       local=False,
                                       cloned=not self.direct,
                                       direct=self.direct)
-        self.parser = eventing.Parser(ims=self.client.rxbs,
+        self.parser = parsing.Parser(ims=self.client.rxbs,
                                       framed=True,
                                       kvy=self.kevery)
         doers = doers if doers is not None else []

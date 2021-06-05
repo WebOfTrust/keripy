@@ -12,8 +12,7 @@ from keri import help
 from keri.help import helping
 from keri.db import dbing, basing
 from keri.app import keeping
-from keri.core import coring
-from keri.core import eventing
+from keri.core import coring, eventing, parsing
 
 logger = help.ogler.getLogger()
 
@@ -24,7 +23,7 @@ def test_partial_signed_escrow():
 
     """
     salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
-    psr = eventing.Parser()
+    psr = parsing.Parser()
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
@@ -358,7 +357,7 @@ def test_missing_delegator_escrow():
     bobSalt = coring.Salter(raw=b'0123456789abcdef').qb64
     delSalt = coring.Salter(raw=b'abcdef0123456789').qb64
 
-    psr = eventing.Parser()
+    psr = parsing.Parser()
 
     with basing.openDB(name="bob") as bobDB, \
           keeping.openKS(name="bob") as bobKS, \
@@ -604,7 +603,7 @@ def test_out_of_order_escrow():
 
     """
     salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
-    psr = eventing.Parser()
+    psr = parsing.Parser()
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
@@ -806,7 +805,7 @@ def test_unverified_receipt_escrow():
 
     """
     salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init Salter
-    psr = eventing.Parser()
+    psr = parsing.Parser()
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
@@ -1094,7 +1093,7 @@ def test_unverified_trans_receipt_escrow():
 
     """
     salt = coring.Salter(raw=b'0123456789abcdef').qb64  # init Salter
-    psr = eventing.Parser()
+    psr = parsing.Parser()
 
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:

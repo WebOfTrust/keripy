@@ -22,7 +22,7 @@ from .. import help
 from ..help import helping
 from ..db import dbing, basing, koming
 from . import keeping
-from ..core import coring, eventing
+from ..core import coring, eventing, parsing
 from . import apping
 
 
@@ -47,7 +47,7 @@ class Habitat:
         kevers (dict): of eventing.Kever(s) keyed by qb64 prefix
         db (basing.Baser): lmdb data base for KEL etc
         kvy (eventing.Kevery): instance for local processing of local msgs
-        parser (eventing.Parser):  parses local messages for .kvy
+        parser (parsing.Parser):  parses local messages for .kvy
         iserder (coring.Serder): own inception event
         pre (str): qb64 prefix of own local controller
 
@@ -167,7 +167,7 @@ class Habitat:
             msg = eventing.messagize(self.iserder, sigers=sigers)
 
             self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, opre=self.pre, local=True)
-            self.psr = eventing.Parser(framed=True, kvy=self.kvy)
+            self.psr = parsing.Parser(framed=True, kvy=self.kvy)
 
             self.psr.processOne(ims=msg)
             if self.pre not in self.kevers:
@@ -185,7 +185,7 @@ class Habitat:
             raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
 
         self.kvy = eventing.Kevery(kevers=self.kevers, db=self.db, opre=self.pre, local=True)
-        self.psr = eventing.Parser(framed=True, kvy=self.kvy)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy)
 
         msgs = self.replay()
         self.psr.process(ims=bytearray(msgs), kvy=self.kvy)

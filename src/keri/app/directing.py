@@ -13,7 +13,7 @@ from hio.core.tcp import clienting, serving
 
 from .. import kering
 from ..db import dbing, basing
-from ..core import coring, eventing
+from ..core import coring, eventing, parsing
 from ..vdr.eventing import Tevery
 from . import keeping
 from . import habbing
@@ -227,7 +227,7 @@ class Reactor(doing.DoDoer):
         else:
             self.tvy = None
 
-        self.parser = eventing.Parser(ims=self.client.rxbs,
+        self.parser = parsing.Parser(ims=self.client.rxbs,
                                       framed=True,
                                       kvy=self.kevery,
                                       tvy=self.tvy)
@@ -571,7 +571,7 @@ class Reactant(doing.DoDoer):
         else:
             self.tevery = None
 
-        self.parser = eventing.Parser(ims=self.remoter.rxbs,
+        self.parser = parsing.Parser(ims=self.remoter.rxbs,
                                       framed=True,
                                       kvy=self.kevery,
                                       tvy=self.tevery)
