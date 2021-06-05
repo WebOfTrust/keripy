@@ -52,7 +52,6 @@ def test_witness():
         # create non-local kevery for Wes to process nonlocal msgs
         wesKvy = eventing.Kevery(kevers=wesHab.kevers,
                                     db=wesHab.db,
-                                    opre=wesHab.pre,
                                     prefixes=[wesHab.pre],
                                     local=False)
 
@@ -67,7 +66,6 @@ def test_witness():
         # create non-local kevery for Wok to process nonlocal msgs
         wokKvy = eventing.Kevery(kevers=wokHab.kevers,
                                     db=wokHab.db,
-                                    opre=wokHab.pre,
                                     prefixes=[wokHab.pre],
                                     local=False)
 
@@ -82,7 +80,6 @@ def test_witness():
         # create non-local kevery for Wam to process nonlocal msgs
         wamKvy = eventing.Kevery(kevers=wamHab.kevers,
                                     db=wamHab.db,
-                                    opre=wamHab.pre,
                                     prefixes=[wamHab.pre],
                                     local=False)
 
@@ -97,7 +94,6 @@ def test_witness():
         # create non-local kevery for Wam to process nonlocal msgs
         wilKvy = eventing.Kevery(kevers=wilHab.kevers,
                                     db=wilHab.db,
-                                    opre=wilHab.pre,
                                     prefixes=[wilHab.pre],
                                     local=False)
 
@@ -120,7 +116,6 @@ def test_witness():
         # create non-local kevery for Cam to process onlocal msgs
         camKvy = eventing.Kevery(kevers=camHab.kevers,
                                     db=camHab.db,
-                                    opre=camHab.pre,
                                     prefixes=[camHab.pre],
                                     local=False)
 
@@ -135,7 +130,6 @@ def test_witness():
         # create non-local kevery for Van to process nonlocal msgs
         vanKvy = eventing.Kevery(kevers=vanHab.kevers,
                                     db=vanHab.db,
-                                    opre=vanHab.pre,
                                     prefixes=[vanHab.pre],
                                     local=False)
 

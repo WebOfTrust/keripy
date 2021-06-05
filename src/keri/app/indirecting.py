@@ -121,7 +121,6 @@ class Indirector(doing.DoDoer):
         self.direct = True if direct else False
         self.kevery = eventing.Kevery(kevers=self.hab.kevers,
                                       db=self.hab.db,
-                                      opre=self.hab.pre,
                                       prefixes=[self.hab.pre],
                                       local=False,
                                       cloned=not self.direct,

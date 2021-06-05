@@ -168,7 +168,6 @@ class Habitat:
 
             self.kvy = eventing.Kevery(kevers=self.kevers,
                                        db=self.db,
-                                       opre=self.pre,
                                        prefixes=[self.pre],
                                        local=True)
             self.psr = parsing.Parser(framed=True, kvy=self.kvy)
@@ -190,7 +189,6 @@ class Habitat:
 
         self.kvy = eventing.Kevery(kevers=self.kevers,
                                    db=self.db,
-                                   opre=self.pre,
                                    prefixes=[self.pre],
                                    local=True)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy)
@@ -199,7 +197,10 @@ class Habitat:
         self.psr.parse(ims=bytearray(msgs), kvy=self.kvy)
 
         msgs = self.replayAll()
-        tkvy = eventing.Kevery(kevers=self.kevers, db=self.db, opre=self.pre, local=False)
+        tkvy = eventing.Kevery(kevers=self.kevers,
+                               db=self.db,
+                               prefixes=[self.pre],
+                               local=False)
         self.psr.parse(ims=bytearray(msgs), kvy=tkvy)
 
         # ridx for replay may be an issue when loading from existing

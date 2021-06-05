@@ -1227,11 +1227,12 @@ class Kever:
         .baser is reference to Baser instance that managers the LMDB database
         .kevers is reference to Kevery.kevers when provided
         .cues is reference to Kevery.cues deque when provided
-        .opre is fully qualified base64 identifier prefix of own identifier if any
-            from Kevery when provided
+        .prefixes is list of fully qualified base64 identifier prefixes of own
+            habitat identifiers if any from Kevery when provided. If empty then
+            operate in promiscuous mode
         .local is Boolean (from kevery when provided)
-            True means only process msgs for own events if .opre
-            False means only process msgs for not own events if .opre
+            True means only process msgs for own events if .prefixes is not empty
+            False means only process msgs for not own events if .prefixes is not empty
         .version is version of current event state
         .prefixer is prefixer instance for current event state
         .sn is sequence number int
@@ -1261,7 +1262,7 @@ class Kever:
 
     def __init__(self, serder, sigers, wigers=None, baser=None, estOnly=None,
                  seqner=None, diger=None, firner=None, dater=None,
-                 kevers=None, cues=None, opre=None, prefixes=None, local=False,
+                 kevers=None, cues=None, prefixes=None, local=False,
                  check=False):
         """
         Create incepting kever and state from inception serder
@@ -1290,11 +1291,12 @@ class Kever:
                 validation of delegation seal .doNotDelegate of delegator
             cues is reference to Kevery.cues deque when provided i.e. notices of
                 events or requests to respond to
-            opre is identifier prefix of own or local controller. May not be the
+            prefixes is list of own prefixes for own local habitats. May not be the
                 prefix of this Kever's event. Some restrictions if present
+                If empty then promiscuous mode
             local is Boolean, True means only process msgs for own controller's
-                events if .opre. False means only process msgs for not own events
-                if .opre
+                events if .prefixes is not empty. False means only process msgs
+                for not own events if .prefixes is not empty
             check (Boolean): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
@@ -1306,7 +1308,6 @@ class Kever:
         self.baser = baser
         self.kevers = kevers
         self.cues = cues
-        self.opre = opre
         self.prefixes = prefixes if prefixes is not None else []
         self.local = True if local else False
 
@@ -1755,7 +1756,7 @@ class Kever:
             validating threshold sith.
         Validate witness receipts by validating indexes, verifying
             witness signatures and validating toad.
-        Witness validation is a function of .opre and .local
+        Witness validation is a function of wits .prefixes and .local
 
         Parameters:
             serder is Serder instance of event
@@ -1812,8 +1813,9 @@ class Kever:
 
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
-        if ((wits and not self.opre) or  # in promiscuous mode so assume must verify toad
-            (wits and not self.local and self.opre and self.opre not in wits)):
+        if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
+            (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
+                not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness
             # validate that event is fully witnessed
             if isinstance(toad, str):
                 toad = int(toad, 16)
@@ -2090,16 +2092,15 @@ class Kevery:
         .framed is Boolean stream is packet framed If True Else not framed
         .pipeline is Boolean, True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-        .opre is fully qualified base64 identifier prefix of own identifier if any
-        .local is Boolean, True means only process msgs for own events if .opre
-                           False means only process msgs for not own events if .opre
+        .prefixes is list of fully qualified base64 identifier prefixes of own
+            habitats if any. If .prefies is empty then operate in promiscuous mode
+        .local is Boolean, True means only process msgs for own events if .prefixes
+                           False means only process msgs for not own events if .prefixes
         cloned (Boolen): True means cloned message stream so use attached
                 datetimes from clone source not own
         direct is Boolean, True means direct mode so cue receipts
                                False means indirect mode so don't cue receipts
 
-    Properties:
-        .kever own Kever if self.pre else None
 
     Properties:
 
@@ -2114,7 +2115,7 @@ class Kevery:
 
 
     def __init__(self, cues=None, kevers=None, db=None,
-                 opre=None, prefixes=None, local=False, cloned=False, direct=True):
+                 prefixes=None, local=False, cloned=False, direct=True):
         """
         Initialize instance:
 
@@ -2122,7 +2123,8 @@ class Kevery:
             cues is deque if cues to create responses to messages
             kevers is dict of Kever instances of key state in db
             db is Baser instance
-            opre is local or own identifier prefix. Some restriction if present
+            prefixes is list of own prefixes for own habitats. If empty then operates
+                in promiscuous mode
             local is Boolean, True means only process msgs for own events if .pre
                         False means only process msgs for not own events if .pre
             cloned (Boolen): True means cloned message stream so use attached
@@ -2135,7 +2137,6 @@ class Kevery:
         if db is None:
             db = basing.Baser()  # default name = "main"
         self.db = db
-        self.opre = opre  # local prefix for restrictions on local events
         self.prefixes = prefixes if prefixes is not None else []  # local prefixes
         self.local = True if local else False  # local vs nonlocal restrictions
         self.cloned = True if cloned else False  # process as cloned
@@ -2181,15 +2182,15 @@ class Kevery:
         ilk = ked["t"]
         dig = serder.dig
 
-        if self.opre:
+        if self.prefixes:  # otherwise in promiscuous mode
             if self.local:
-                if self.opre != pre:  # nonlocal event when in local mode
-                    raise ValueError("Nonlocal event pre={} when local mode for pre={}."
-                                                      "".format(pre, self.opre))
+                if pre not in self.prefixes:  # nonlocal event when in local mode
+                    raise ValueError("Nonlocal event pre={} not in prefixes={}."
+                                "when local mode.".format(pre, self.prefixes))
             else:
-                if self.opre == pre:  # local event when in nonlocal mode
-                    raise ValueError("Local event pre={} when nonlocal mode."
-                                                      "".format(pre))
+                if pre in self.prefixes:  # local event when in nonlocal mode
+                    raise ValueError("Local event pre={} in prefixes when "
+                                     "nonlocal mode.".format(pre, self.prefixes))
 
 
         if pre not in self.kevers:  #  first seen event for pre
@@ -2208,13 +2209,12 @@ class Kevery:
                               dater=dater if self.cloned else None,
                               kevers=self.kevers,
                               cues=self.cues,
-                              opre=self.opre,
                               prefixes=self.prefixes,
                               local=self.local,
                               check=check)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
-                if self.direct or not self.opre or self.opre != pre:  # not own event when owned
+                if self.direct or not self.prefixes or pre not in self.prefixes:  # not own event when owned
                     # create cue for receipt   direct mode for now
                     #  receipt of actual type is dependent on own type of identifier
                     self.cues.push(dict(kin="receipt", serder=serder))
@@ -2273,7 +2273,7 @@ class Kevery:
                                  dater=dater if self.cloned else None,
                                  check=check)
 
-                    if self.direct or not self.opre or self.opre != pre:  # not own event when owned
+                    if self.direct or not self.prefixes or pre not in self.prefixes:  # not own event when owned
                         # create cue for receipt   direct mode for now
                         #  receipt of actual type is dependent on own type of identifier
                         self.cues.push(dict(kin="receipt", serder=serder))
@@ -2359,17 +2359,16 @@ class Kevery:
                 wiger.verfer = Verfer(qb64=kever.wits[wiger.index])  # assign verfer
                 if wiger.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid witness prefix
-                if self.opre and self.opre == wiger.verfer.qb64:  # own is receiptor
-                    if self.opre == pre:  # skip own receiptor of own event
+
+                if self.prefixes and wiger.verfer.qb64 in self.prefixes:  # own is receiptor
+                    if pre in self.prefixes:  # skip own receiptor of own event
                         # sign own events not receipt them
                         logger.info("Kevery process: skipped own receipt attachment"
-                                    " on own event receipt=\n%s\n",
-                                               json.dumps(serder.ked, indent=1))
+                                    " on own event receipt=\n%s\n",serder.pretty)
                         continue  # skip own receipt attachment on own event
                     if not self.local:  # own receipt on other event when not local
                         logger.info("Kevery process: skipped own receipt attachment"
-                                    " on nonlocal event receipt=\n%s\n",
-                                               json.dumps(serder.ked, indent=1))
+                                " on nonlocal event receipt=\n%s\n", serder.pretty)
                         continue  # skip own receipt attachment on non-local event
 
                 if wiger.verfer.verify(wiger.raw, lserder.raw):
@@ -2424,17 +2423,16 @@ class Kevery:
             for cigar in cigars:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
-                if self.opre and self.opre == cigar.verfer.qb64: # own is receiptor
-                    if self.opre == pre:  # skip own receipter of own event
+
+                if self.prefixes and cigar.verfer.qb64 in self.prefixes: # own is receiptor
+                    if pre in self.prefixes:  # skip own receipter of own event
                         # sign own events not receipt them
                         logger.info("Kevery process: skipped own receipt attachment"
-                                    " on own event receipt=\n%s\n",
-                                               json.dumps(serder.ked, indent=1))
+                                    " on own event receipt=\n%s\n", serder.pretty)
                         continue  # skip own receipt attachment on own event
                     if not self.local:  # own receipt on other event when not local
                         logger.info("Kevery process: skipped own receipt attachment"
-                                    " on nonlocal event receipt=\n%s\n",
-                                               json.dumps(serder.ked, indent=1))
+                                " on nonlocal event receipt=\n%s\n", serder.pretty)
                         continue  # skip own receipt attachment on non-local event
 
                 if cigar.verfer.verify(cigar.raw, lserder.raw):
@@ -2495,17 +2493,15 @@ class Kevery:
         for cigar in cigars:
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid couplets
-            if self.opre and self.opre == cigar.verfer.qb64:  # own is receiptor
-                if self.opre == pre:  # skip own receipter on own event
+            if self.prefixes and cigar.verfer.qb64 in self.prefixes:  # own is receiptor
+                if pre in self.prefixes:  # skip own receipter on own event
                     # sign own events not receipt them
                     logger.info("Kevery process: skipped own receipt attachment"
-                                " on own event receipt=\n%s\n",
-                                           json.dumps(serder.ked, indent=1))
+                                " on own event receipt=\n%s\n", serder.pretty)
                     continue  # skip own receipt attachment on own event
                 if not self.local:  # own receipt on other event when not local
                     logger.info("Kevery process: skipped own receipt attachment"
-                                " on nonlocal event receipt=\n%s\n",
-                                           json.dumps(serder.ked, indent=1))
+                            " on nonlocal event receipt=\n%s\n", serder.pretty)
                     continue  # skip own receipt attachment on non-local event
 
             if cigar.verfer.verify(cigar.raw, serder.raw):
@@ -2561,14 +2557,14 @@ class Kevery:
                                   "".format(sn))
 
         for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
-            if self.opre and self.opre == sprefixer.qb64:  # own is receipter
-                if self.opre == pre:  # skip own receipter of own event
+            if self.prefixes and sprefixer.qb64 in self.prefixes:  # own is receipter
+                if pre in self.prefixes:  # skip own receipter of own event
                     # sign own events not receipt them
                     raise ValidationError("Own pre={} receipter of own event"
-                                          " {}.".format(self.opre, ked))
+                                          " {}.".format(self.prefixes, serder.pretty))
                 if not self.local:  # skip own receipts of nonlocal events
                     raise ValidationError("Own pre={} receipter of nonlocal event "
-                                          "{}.".format(self.opre, ked))
+                                          "{}.".format(self.prefixes, serder.pretty))
 
             if sprefixer.qb64 in self.kevers:
                 # receipted event and receipter in database so get receipter est evt
@@ -2642,15 +2638,15 @@ class Kevery:
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
 
         for sprefixer, sseqner, sdiger, siger in trqs:  # iterate over each trq
-            if self.opre and self.opre == sprefixer.qb64:  # own trans receipt quadruple (chit)
-                if self.opre == pre:  # skip own trans receipts of own events
+            if self.prefixes and sprefixer.qb64 in self.prefixes:  # own trans receipt quadruple (chit)
+                if pre in self.prefixes:  # skip own trans receipts of own events
                     raise ValidationError("Own pre={} replay attached transferable "
                                           "receipt quadruple of own event {}."
-                                      "".format(self.opre, ked))
+                                      "".format(self.prefixes, serder.pretty))
                 if not self.local:  # skip own trans receipt quadruples of nonlocal events
                     raise ValidationError("Own pre={} seal in replay attached "
                                           "transferable receipt quadruples of nonlocal"
-                                          " event {}.".format(self.opre, ked))
+                                          " event {}.".format(self.prefixes, serder.pretty))
 
             if ldig is not None and sprefixer.qb64 in self.kevers:
                 # both receipted event and receipter in database so retreive
@@ -2771,16 +2767,14 @@ class Kevery:
         for cigar in cigars:
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid couplets
-            if self.opre and self.opre == cigar.verfer.qb64:  # own receipt when own nontrans
-                if self.opre == pre:  # own receipt attachment on own event
+            if self.prefixes and cigar.verfer.qb64 in self.prefixes:  # own receipt when own nontrans
+                if pre in self.prefixes:  # own receipt attachment on own event
                     logger.info("Kevery process: skipped own receipt attachment"
-                                " on own event receipt=\n%s\n",
-                                           json.dumps(serder.ked, indent=1))
+                                " on own event receipt=\n%s\n", serder.pretty)
                     continue  # skip own receipt attachment on own event
                 if not self.local:  # own receipt on other event when not local
                     logger.info("Kevery process: skipped own receipt attachment"
-                                " on nonlocal event receipt=\n%s\n",
-                                           json.dumps(serder.ked, indent=1))
+                            " on nonlocal event receipt=\n%s\n", serder.pretty)
                     continue  # skip own receipt attachment on non-local event
 
             if cigar.verfer.verify(cigar.raw, serder.raw):
@@ -2788,17 +2782,15 @@ class Kevery:
                 couple = cigar.verfer.qb64b + cigar.qb64b
                 self.db.addRct(key=dgKey(pre=pre, dig=ldig), val=couple)
 
-
-
         for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
-            if self.opre and self.opre == sprefixer.qb64:  # own endorsed ksn
-                if self.opre == pre:  # skip own endorsed ksn
+            if self.prefixes and sprefixer.qb64 in self.prefixes:  # own endorsed ksn
+                if pre in self.prefixes:  # skip own endorsed ksn
                     raise ValidationError("Own endorsement pre={} of own key"
-                                " state notifiction {}.".format(self.opre, ked))
+                        " state notifiction {}.".format(self.prefixes, serder.pretty))
                 if not self.local:  # skip own nonlocal ksn
                     raise ValidationError("Own endorsement pre={}  "
                                           "of nonlocal key state notification "
-                                          "{}.".format(self.opre, ked))
+                                    "{}.".format(self.prefixes, serder.pretty))
 
             if ldig is not None and sprefixer.qb64 in self.kevers:
                 # both key state event and endorser in database so retreive

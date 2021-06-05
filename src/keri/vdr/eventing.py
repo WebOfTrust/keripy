@@ -1001,6 +1001,9 @@ class Tevery:
     Tevery (Transaction Event Message Processing Facility)
 
     Currently placeholder
+
+    Attributes:
+
     """
 
     def __init__(self, tevers=None, reger=None, db=None, regk=None, local=False):
@@ -1008,23 +1011,19 @@ class Tevery:
         Initialize instance:
 
         Parameters:
-            kevers is dict of Kever instances of key state in db
+            tevers is dict of Kever instances of key state in db
+            reger is Registry instance
             db is Baser instance
-            opre is local or own identifier prefix. Some restriction if present
+            regk is local or own identifier prefix. Some restriction if present
             local is Boolean, True means only process msgs for own events if .pre
                         False means only process msgs for not own events if .pre
         """
         self.tevers = tevers if tevers is not None else dict()
-        self.cues = deque()
-
-        if db is None:
-            db = basing.Baser()  # default name = "main"
-        self.db = db
-        if reger is None:
-            reger = Registry()
-        self.reger = reger
+        self.db = db if db is not None else basing.Baser()  # default name = "main"
+        self.reger = reger if reger is not None else Registry()
         self.regk = regk  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions
+        self.cues = deque()
 
     def processEvent(self, serder, seqner, diger, wigers=None):
         """
