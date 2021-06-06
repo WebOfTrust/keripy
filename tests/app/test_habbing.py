@@ -46,7 +46,7 @@ def test_habitat_reinitialization():
          keeping.openKS(name=name, clear=True, temp=False) as ks:
 
         hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
-
+        oidig = hab.iserder.dig
         opre = hab.pre
         opub = hab.kever.verfers[0].qb64
         odig = hab.kever.serder.dig
@@ -54,6 +54,10 @@ def test_habitat_reinitialization():
 
     with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
         hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
+        assert hab.pre in hab.prefixes
+        assert hab.pre in hab.kevers
+        assert hab.iserder.dig == oidig
+
         hab.rotate()
 
         assert hab.ridx == 1

@@ -90,12 +90,13 @@ def test_direct_mode_bob_eve_demo():
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
-        bobKevers = dict()
-        eveKevers = dict()
 
         # setup bob
-        bobHab = habbing.Habitat(name='Bob', ks=bobKS, db=bobDB, kevers=bobKevers,
-                                   secrecies=bobSecrecies, temp=True)
+        bobHab = habbing.Habitat(name='Bob',
+                                 ks=bobKS,
+                                 db=bobDB,
+                                secrecies=bobSecrecies,
+                                temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
         assert bobHab.iserder.dig == bobSerder.dig
@@ -107,14 +108,14 @@ def test_direct_mode_bob_eve_demo():
         bobDirector = demoing.BobDirector(hab=bobHab, client=bobClient, tock=0.125)
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
-        assert bobDirector.hab.kvy.kevers == bobKevers
+        assert id(bobDirector.hab.kvy.kevers) == id(bobHab.kevers)
         assert bobDirector.hab.kvy.db == bobDB
         assert bobDirector.tock == 0.125
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
-        assert bobReactor.hab.kvy.kevers == bobKevers
+        assert id(bobReactor.hab.kvy.kevers) == id(bobHab.kevers)
         assert bobReactor.hab.kvy.db == bobDB
         assert bobReactor.hab.psr.ims == bobReactor.client.rxbs
 
@@ -127,8 +128,11 @@ def test_direct_mode_bob_eve_demo():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = habbing.Habitat(name='Eve', ks=eveKS,  db=eveDB, kevers=eveKevers,
-                                   secrecies=eveSecrecies, temp=True)
+        eveHab = habbing.Habitat(name='Eve',
+                                 ks=eveKS,
+                                 db=eveDB,
+                                secrecies=eveSecrecies,
+                                temp=True)
 
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
@@ -141,13 +145,13 @@ def test_direct_mode_bob_eve_demo():
         eveDirector = demoing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
-        assert eveDirector.hab.kvy.kevers == eveKevers
+        assert id(eveDirector.hab.kvy.kevers) == id(eveHab.kevers)
         assert eveDirector.hab.kvy.db == eveDB
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
-        assert eveReactor.hab.kvy.kevers == eveKevers
+        assert id(eveReactor.hab.kvy.kevers) == id(eveHab.kevers)
         assert eveReactor.hab.kvy.db == eveDB
         assert eveReactor.hab.psr.ims == eveReactor.client.rxbs
 
@@ -258,12 +262,13 @@ def test_direct_mode_sam_eve_demo():
 
         samPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
-        samKevers = dict()
-        eveKevers = dict()
 
         # setup Sam
-        samHab = habbing.Habitat(name='Sam', ks=samKS,  db=samDB, kevers=samKevers,
-                                   secrecies=samSecrecies, temp=True)
+        samHab = habbing.Habitat(name='Sam',
+                                 ks=samKS,
+                                 db=samDB,
+                                 secrecies=samSecrecies,
+                                 temp=True)
 
         assert samHab.ks == samKS
         assert samHab.db == samDB
@@ -276,14 +281,14 @@ def test_direct_mode_sam_eve_demo():
         samDirector = demoing.SamDirector(hab=samHab, client=samClient, tock=0.125)
         assert samDirector.hab == samHab
         assert samDirector.client == samClient
-        assert samDirector.hab.kvy.kevers == samKevers
+        assert id(samDirector.hab.kvy.kevers) == id(samHab.kevers)
         assert samDirector.hab.kvy.db == samDB
         assert samDirector.tock == 0.125
 
         samReactor = directing.Reactor(hab=samHab, client=samClient)
         assert samReactor.hab == samHab
         assert samReactor.client == samClient
-        assert samReactor.hab.kvy.kevers == samKevers
+        assert id(samReactor.hab.kvy.kevers) == id(samHab.kevers)
         assert samReactor.hab.kvy.db == samDB
         assert samReactor.hab.psr.ims == samReactor.client.rxbs
 
@@ -296,8 +301,10 @@ def test_direct_mode_sam_eve_demo():
         # Sam's Reactants created on demand
 
         # setup eve
-        eveHab = habbing.Habitat(name='Eve', ks=eveKS,  db=eveDB, kevers=eveKevers,
-                                   secrecies=eveSecrecies, temp=True)
+        eveHab = habbing.Habitat(name='Eve',
+                                 ks=eveKS,
+                                 db=eveDB,
+                                 secrecies=eveSecrecies, temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
         assert eveHab.iserder.dig == eveSerder.dig
@@ -309,13 +316,13 @@ def test_direct_mode_sam_eve_demo():
         eveDirector = demoing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
-        assert eveDirector.hab.kvy.kevers == eveKevers
+        assert id(eveDirector.hab.kvy.kevers) == id(eveHab.kevers)
         assert eveDirector.hab.kvy.db == eveDB
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
-        assert eveReactor.hab.kvy.kevers == eveKevers
+        assert id(eveReactor.hab.kvy.kevers) == id(eveHab.kevers)
         assert eveReactor.hab.kvy.db == eveDB
         assert eveReactor.hab.psr.ims == eveReactor.client.rxbs
 
@@ -527,16 +534,17 @@ def test_indirect_mode_sam_cam_wit_demo():
          basing.openDB(name="sam") as samDB, keeping.openKS(name="sam") as samKS, \
          basing.openDB(name="wit") as witDB, keeping.openKS(name="wit") as witKS:
 
-
         samPort = 5620  # sam's TCP listening port for server
         witPort = 5621  # wit' TCP listneing port for server
-        samKevers = dict()
-        camKevers = dict()
-        witKevers = dict()
 
         # setup the witness
-        witHab = habbing.Habitat(name='Wit', ks=witKS, db=witDB, kevers=witKevers, isith=1, icount=1,
-                                   temp=True, transferable=False)
+        witHab = habbing.Habitat(name='Wit',
+                                 ks=witKS,
+                                 db=witDB,
+                                 isith=1,
+                                 icount=1,
+                                 temp=True,
+                                 transferable=False)
         wit = witHab.pre
         assert witHab.ks == witKS
         assert witHab.db == witDB
@@ -565,8 +573,12 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert sam == 'EhnaYUqhHoo8kZaXJuTDCZ-h5ZDx3st4NemgqSITWp48'
 
 
-        samHab = habbing.Habitat(name='Sam', ks=samKS, db=samDB, kevers=samKevers, wits=[wit],
-                                   secrecies=samSecrecies, temp=True)
+        samHab = habbing.Habitat(name='Sam',
+                                 ks=samKS,
+                                 db=samDB,
+                                 wits=[wit],
+                                 secrecies=samSecrecies,
+                                 temp=True)
         assert samHab.ks == samKS
         assert samHab.db == samDB
         assert samHab.iserder.dig == samSerder.dig
@@ -578,14 +590,14 @@ def test_indirect_mode_sam_cam_wit_demo():
         samDirector = demoing.SamDirector(hab=samHab, client=samClient, tock=0.125)
         assert samDirector.hab == samHab
         assert samDirector.client == samClient
-        assert samDirector.hab.kvy.kevers == samKevers
+        assert id(samDirector.hab.kvy.kevers) == id(samHab.kevers)
         assert samDirector.hab.kvy.db == samDB
         assert samDirector.tock == 0.125
 
         samReactor = directing.Reactor(hab=samHab, client=samClient)
         assert samReactor.hab == samHab
         assert samReactor.client == samClient
-        assert samReactor.hab.kvy.kevers == samKevers
+        assert id(samReactor.hab.kvy.kevers) == id(samHab.kevers)
         assert samReactor.hab.kvy.db == samDB
         assert samReactor.hab.psr.ims == samReactor.client.rxbs
 
@@ -600,8 +612,11 @@ def test_indirect_mode_sam_cam_wit_demo():
         samDoers = [samClientDoer, samDirector, samReactor, samServerDoer, samDirectant]
 
         # setup cam
-        camHab = habbing.Habitat(name='Cam', ks=camKS,  db=camDB, kevers=camKevers,
-                                   secrecies=camSecrecies, temp=True)
+        camHab = habbing.Habitat(name='Cam',
+                                 ks=camKS,
+                                 db=camDB,
+                                 secrecies=camSecrecies,
+                                 temp=True)
 
         assert camHab.ks == camKS
         assert camHab.db == camDB
@@ -614,14 +629,14 @@ def test_indirect_mode_sam_cam_wit_demo():
         camDirector = demoing.CamDirector(hab=camHab, remotePre=sam, client=camClient, tock=0.125)
         assert camDirector.hab == camHab
         assert camDirector.client == camClient
-        assert camDirector.hab.kvy.kevers == camKevers
+        assert id(camDirector.hab.kvy.kevers) == id(camHab.kevers)
         assert camDirector.hab.kvy.db == camDB
         assert camDirector.tock == 0.125
 
         camReactor = directing.Reactor(hab=camHab, client=camClient, indirect=True)
         assert camReactor.hab == camHab
         assert camReactor.client == camClient
-        assert camReactor.hab.kvy.kevers == camKevers
+        assert id(camReactor.hab.kvy.kevers) == id(camHab.kevers)
         assert camReactor.hab.kvy.db == camDB
         assert camReactor.hab.psr.ims == camReactor.client.rxbs
 

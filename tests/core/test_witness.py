@@ -50,10 +50,7 @@ def test_witness():
         assert wesHab.db == wesDB
         assert not wesHab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
-        wesKvy = eventing.Kevery(kevers=wesHab.kevers,
-                                    db=wesHab.db,
-                                    prefixes=[wesHab.pre],
-                                    local=False)
+        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
 
         # setup Wok's habitat nontrans
         # Wok's receipts will be rcts with a receipt couple attached
@@ -64,10 +61,7 @@ def test_witness():
         assert wokHab.db == wokDB
         assert not wokHab.kever.prefixer.transferable
         # create non-local kevery for Wok to process nonlocal msgs
-        wokKvy = eventing.Kevery(kevers=wokHab.kevers,
-                                    db=wokHab.db,
-                                    prefixes=[wokHab.pre],
-                                    local=False)
+        wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
 
         # setup Wam's habitat nontrans
         # Wams's receipts will be rcts with a receipt couple attached
@@ -78,10 +72,7 @@ def test_witness():
         assert wamHab.db == wamDB
         assert not wamHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
-        wamKvy = eventing.Kevery(kevers=wamHab.kevers,
-                                    db=wamHab.db,
-                                    prefixes=[wamHab.pre],
-                                    local=False)
+        wamKvy = eventing.Kevery(db=wamHab.db, lax=False, local=False)
 
         # setup Wil's habitat nontrans
         # Wil's receipts will be rcts with a receipt couple attached
@@ -92,10 +83,7 @@ def test_witness():
         assert wilHab.db == wilDB
         assert not wilHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
-        wilKvy = eventing.Kevery(kevers=wilHab.kevers,
-                                    db=wilHab.db,
-                                    prefixes=[wilHab.pre],
-                                    local=False)
+        wilKvy = eventing.Kevery(db=wilHab.db, lax=False, local=False)
 
         # setup Cam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
@@ -114,10 +102,7 @@ def test_witness():
         assert camHab.kever.sn == 0
 
         # create non-local kevery for Cam to process onlocal msgs
-        camKvy = eventing.Kevery(kevers=camHab.kevers,
-                                    db=camHab.db,
-                                    prefixes=[camHab.pre],
-                                    local=False)
+        camKvy = eventing.Kevery(db=camHab.db, lax=False, local=False)
 
         # setup Van's habitat trans multisig
         vsith = 2  # two of three signing threshold
@@ -128,10 +113,7 @@ def test_witness():
         assert vanHab.db == vanDB
         assert vanHab.kever.prefixer.transferable
         # create non-local kevery for Van to process nonlocal msgs
-        vanKvy = eventing.Kevery(kevers=vanHab.kevers,
-                                    db=vanHab.db,
-                                    prefixes=[vanHab.pre],
-                                    local=False)
+        vanKvy = eventing.Kevery(db=vanHab.db, lax=False, local=False)
 
         # make list so easier to batch
         camWitKvys = [wesKvy, wokKvy, wamKvy]

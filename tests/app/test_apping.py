@@ -87,11 +87,9 @@ def test_clean():
             assert copy.path.endswith("/keri/clean/db/nat")
             assert copy.env.stat()['entries'] >= 18
 
+        assert len(natHab.kevers) == 1
         # now clean it
-        natHab.kevers.clear()  # clear kevers dict in place
-        assert not natHab.kevers
-        kvy = eventing.Kevery(kevers=natHab.kevers)  # use inplace kevers & promiscuous mode
-        apping.clean(orig=natHab.db, kvy=kvy)
+        apping.clean(orig=natHab.db)
 
         # see if kevers dict is back to what it was before
         assert natHab.kever.sn == 6

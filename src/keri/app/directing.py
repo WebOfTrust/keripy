@@ -213,9 +213,8 @@ class Reactor(doing.DoDoer):
         self.client = client  # use client for both rx and tx
         self.verifier = verifier
         self.direct = True if direct else False
-        self.kevery = eventing.Kevery(kevers=self.hab.kevers,
-                                      db=self.hab.db,
-                                      prefixes=[self.hab.pre],
+        self.kevery = eventing.Kevery(db=self.hab.db,
+                                      lax=False,
                                       local=False,
                                       direct=self.direct)
 
@@ -557,9 +556,8 @@ class Reactant(doing.DoDoer):
         doers.extend([self.msgDo, self.cueDo, self.escrowDo])
 
         #  neeeds unique kevery with ims per remoter connnection
-        self.kevery = eventing.Kevery(kevers=self.hab.kevers,
-                                      db=self.hab.db,
-                                      prefixes=[self.hab.pre],
+        self.kevery = eventing.Kevery(db=self.hab.db,
+                                      lax=False,
                                       local=False)
 
         if self.verifier is not None:

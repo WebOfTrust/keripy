@@ -1352,9 +1352,11 @@ class Kever:
 
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
         # all validated above so may add to KEL and FEL logs as first seen
-        self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+        fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                 first=True if not check else False, seqner=seqner, diger=diger,
                                 firner=firner, dater=dater)
+        if fn is not None:  # first is non-idempotent for fn check mode fn is None
+            self.fn = fn
 
 
     @property
@@ -1521,6 +1523,11 @@ class Kever:
                                       " with evt = {}."
                                   "".format(delegator, ked["i"], ked))
 
+            # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
+            # all validated above so may add to KEL and FEL logs as first seen
+            fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                    first=True if not check else False, seqner=seqner, diger=diger,
+                                    firner=firner, dater=dater)
 
             # nxt and signatures verify so update state
             self.sn = sn
@@ -1539,12 +1546,8 @@ class Kever:
 
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(s=self.sn, d=self.serder.diger.qb64)
-
-            # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
-            # all validated above so may add to KEL and FEL logs as first seen
-            self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                    first=True if not check else False, seqner=seqner, diger=diger,
-                                    firner=firner, dater=dater)
+            if fn is not None:  # first is non-idempotent for fn check mode fn is None
+                self.fn = fn
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -1579,15 +1582,17 @@ class Kever:
                                                                 toad=self.toad,
                                                                 wits=self.wits)
 
+            # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
+            # all validated above so may add to KEL and FEL logs as first seen
+            fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                    first=True if not check else False)  # First seen accepted
+
             # update state
             self.sn = sn
             self.serder = serder  # need for digest agility includes .serder.diger
             self.ilk = ilk
-
-            # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
-            # all validated above so may add to KEL and FEL logs as first seen
-            self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                    first=True if not check else False)  # First seen accepted
+            if fn is not None: # first is non-idempotent for fn check mode fn is None
+                self.fn = fn
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -2085,24 +2090,36 @@ class Kevery:
     Has the following public attributes and properties:
 
     Attributes:
-        .ims is bytearray incoming message stream
-        .cues is deque of Cues i.e. notices of events or requests to respond to
-        .kevers is dict of existing kevers indexed by pre (qb64) of each Kever
+        evts (Deck): of Events i.e. events to process
+        cues (Deck):  of Cues i.e. notices of events needing receipt or
+                      requests needing response
+
         .db is instance of LMDB Baser object
         .framed is Boolean stream is packet framed If True Else not framed
         .pipeline is Boolean, True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-        .prefixes is list of fully qualified base64 identifier prefixes of own
-            habitats if any. If .prefies is empty then operate in promiscuous mode
-        .local is Boolean, True means only process msgs for own events if .prefixes
-                           False means only process msgs for not own events if .prefixes
+        lax (Boolean): True means operate in promiscuous (unrestricted) mode,
+                           False means operate in nonpromiscuous (restricted) mode
+                              as determined by local and prefixes
+
+        local (Boolean): True means only process msgs for own events if not lax
+                         False means only process msgs for not own events if not lax
         cloned (Boolen): True means cloned message stream so use attached
-                datetimes from clone source not own
-        direct is Boolean, True means direct mode so cue receipts
-                               False means indirect mode so don't cue receipts
+                         datetimes from clone source not own.
+                         False means use current datetime
+        direct (Boolean): True means direct mode so cue notices for receipts etc
+                          False means indirect mode so don't cue notices
+        check (Boolean): True means do not update the database in any
+                non-idempotent way. Useful for reinitializing the Kevers from
+                a persisted KEL without updating non-idempotent first seen .fels
+                and timestamps.
 
 
     Properties:
+        .kevers is dict of db kevers indexed by pre (qb64) of each Kever
+        .prefixes is list of fully qualified base64 identifier prefixes of db
+            local habitats if any.
+
 
     """
     TimeoutOOE = 1200  # seconds to timeout out of order escrows
@@ -2114,38 +2131,62 @@ class Kevery:
     TimeoutVRE = 3600  # seconds to timeout unverified transferable receipt escrows
 
 
-    def __init__(self, cues=None, kevers=None, db=None,
-                 prefixes=None, local=False, cloned=False, direct=True):
+    def __init__(self, *, evts=None, cues=None, db=None,
+                 lax=True, local=False, cloned=False, direct=True, check=False):
         """
         Initialize instance:
 
         Parameters:
-            cues is deque if cues to create responses to messages
+            evts (Deck): derived from various messages to be processes
+            cues (Deck)  notices to create responses to evts
             kevers is dict of Kever instances of key state in db
-            db is Baser instance
-            prefixes is list of own prefixes for own habitats. If empty then operates
-                in promiscuous mode
-            local is Boolean, True means only process msgs for own events if .pre
-                        False means only process msgs for not own events if .pre
+            db (Baser): instance of database
+            lax (Boolean): True means operate in promiscuous (unrestricted) mode,
+                           False means operate in nonpromiscuous (restricted) mode
+                              as determined by local and prefixes
+            local (Boolean): True means only process msgs for own events if not lax
+                         False means only process msgs for not own events if not lax
             cloned (Boolen): True means cloned message stream so use attached
-                datetimes from clone source not own
-            direct is Boolean, True means direct mode so cue receipts
-                               False means indirect mode so don't cue receipts
+                         datetimes from clone source not own.
+                         False means use current datetime
+            direct (Boolean): True means direct mode so cue notices for receipts etc
+                          False means indirect mode so don't cue notices
+            check (Boolean): True means do not update the database in any
+                non-idempotent way. Useful for reinitializing the Kevers from
+                a persisted KEL without updating non-idempotent first seen .fels
+                and timestamps.
         """
+        self.evts = evts if evts is not None else decking.Deck()  # subclass of deque
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
-        self.kevers = kevers if kevers is not None else dict()
         if db is None:
             db = basing.Baser()  # default name = "main"
         self.db = db
-        self.prefixes = prefixes if prefixes is not None else []  # local prefixes
+        self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal restrictions
         self.cloned = True if cloned else False  # process as cloned
         self.direct = True if direct else False  # process as direct mode
+        self.check = True if check else False  # process as check mode
 
 
-    def processEvent(self, serder, sigers, wigers=None,
+    @property
+    def kevers(self):
+        """
+        Returns .db.kevers
+        """
+        return self.db.kevers
+
+
+    @property
+    def prefixes(self):
+        """
+        Returns .db.prefixes
+        """
+        return self.db.prefixes
+
+
+    def processEvent(self, serder, sigers, *, wigers=None,
                      seqner=None, diger=None,
-                     firner=None, dater=None, check=False):
+                     firner=None, dater=None):
         """
         Process one event serder with attached indexd signatures sigers
 
@@ -2164,10 +2205,6 @@ class Kevery:
             dater is optional Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
-            check (Boolean): True means do not update the database in any
-                non-idempotent way. Useful for reinitializing the Kevers from
-                a persisted KEL without updating non-idempotent first seen .fels
-                and timestamps.
         """
         # fetch ked ilk  pre, sn, dig to see how to process
         ked = serder.ked
@@ -2182,7 +2219,7 @@ class Kevery:
         ilk = ked["t"]
         dig = serder.dig
 
-        if self.prefixes:  # otherwise in promiscuous mode
+        if not self.lax:  # otherwise in promiscuous mode
             if self.local:
                 if pre not in self.prefixes:  # nonlocal event when in local mode
                     raise ValueError("Nonlocal event pre={} not in prefixes={}."
@@ -2211,10 +2248,10 @@ class Kevery:
                               cues=self.cues,
                               prefixes=self.prefixes,
                               local=self.local,
-                              check=check)
+                              check=self.check)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
-                if self.direct or not self.prefixes or pre not in self.prefixes:  # not own event when owned
+                if self.direct or self.lax or pre not in self.prefixes:  # not own event when owned
                     # create cue for receipt   direct mode for now
                     #  receipt of actual type is dependent on own type of identifier
                     self.cues.push(dict(kin="receipt", serder=serder))
@@ -2271,9 +2308,9 @@ class Kevery:
                                  seqner=seqner, diger=diger,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
-                                 check=check)
+                                 check=self.check)
 
-                    if self.direct or not self.prefixes or pre not in self.prefixes:  # not own event when owned
+                    if self.direct or self.lax or pre not in self.prefixes:  # not own event when owned
                         # create cue for receipt   direct mode for now
                         #  receipt of actual type is dependent on own type of identifier
                         self.cues.push(dict(kin="receipt", serder=serder))
@@ -2360,7 +2397,7 @@ class Kevery:
                 if wiger.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid witness prefix
 
-                if self.prefixes and wiger.verfer.qb64 in self.prefixes:  # own is receiptor
+                if not self.lax and wiger.verfer.qb64 in self.prefixes:  # own is receiptor
                     if pre in self.prefixes:  # skip own receiptor of own event
                         # sign own events not receipt them
                         logger.info("Kevery process: skipped own receipt attachment"
@@ -2424,7 +2461,7 @@ class Kevery:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
 
-                if self.prefixes and cigar.verfer.qb64 in self.prefixes: # own is receiptor
+                if not self.lax and cigar.verfer.qb64 in self.prefixes: # own is receiptor
                     if pre in self.prefixes:  # skip own receipter of own event
                         # sign own events not receipt them
                         logger.info("Kevery process: skipped own receipt attachment"
@@ -2493,7 +2530,7 @@ class Kevery:
         for cigar in cigars:
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid couplets
-            if self.prefixes and cigar.verfer.qb64 in self.prefixes:  # own is receiptor
+            if not self.lax and cigar.verfer.qb64 in self.prefixes:  # own is receiptor
                 if pre in self.prefixes:  # skip own receipter on own event
                     # sign own events not receipt them
                     logger.info("Kevery process: skipped own receipt attachment"
@@ -2557,7 +2594,7 @@ class Kevery:
                                   "".format(sn))
 
         for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
-            if self.prefixes and sprefixer.qb64 in self.prefixes:  # own is receipter
+            if not self.lax and sprefixer.qb64 in self.prefixes:  # own is receipter
                 if pre in self.prefixes:  # skip own receipter of own event
                     # sign own events not receipt them
                     raise ValidationError("Own pre={} receipter of own event"
@@ -2638,7 +2675,7 @@ class Kevery:
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
 
         for sprefixer, sseqner, sdiger, siger in trqs:  # iterate over each trq
-            if self.prefixes and sprefixer.qb64 in self.prefixes:  # own trans receipt quadruple (chit)
+            if not self.lax and sprefixer.qb64 in self.prefixes:  # own trans receipt quadruple (chit)
                 if pre in self.prefixes:  # skip own trans receipts of own events
                     raise ValidationError("Own pre={} replay attached transferable "
                                           "receipt quadruple of own event {}."
@@ -2767,7 +2804,7 @@ class Kevery:
         for cigar in cigars:
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid couplets
-            if self.prefixes and cigar.verfer.qb64 in self.prefixes:  # own receipt when own nontrans
+            if not self.lax and cigar.verfer.qb64 in self.prefixes:  # own receipt when own nontrans
                 if pre in self.prefixes:  # own receipt attachment on own event
                     logger.info("Kevery process: skipped own receipt attachment"
                                 " on own event receipt=\n%s\n", serder.pretty)
@@ -2783,7 +2820,7 @@ class Kevery:
                 self.db.addRct(key=dgKey(pre=pre, dig=ldig), val=couple)
 
         for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
-            if self.prefixes and sprefixer.qb64 in self.prefixes:  # own endorsed ksn
+            if not self.lax and sprefixer.qb64 in self.prefixes:  # own endorsed ksn
                 if pre in self.prefixes:  # skip own endorsed ksn
                     raise ValidationError("Own endorsement pre={} of own key"
                         " state notifiction {}.".format(self.prefixes, serder.pretty))

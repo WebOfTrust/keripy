@@ -82,6 +82,9 @@ class Baser(dbing.LMDBer):
     Attributes:
         see superclass LMDBer for inherited attributes
 
+        kevers (dict): Kever instances indexed by identifier prefix qb64
+        prefixes (list): local prefixes corresponding to habitats for this db
+
         .evts is named sub DB whose values are serialized events
             dgKey
             DB is keyed by identifer prefix plus digest of serialized event
@@ -270,6 +273,9 @@ class Baser(dbing.LMDBer):
         Duplicates are inserted in lexocographic order by value, insertion order.
 
         """
+        self.kevers = dict()
+        self.prefixes = list()
+
         super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
 

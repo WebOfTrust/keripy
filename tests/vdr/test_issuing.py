@@ -293,7 +293,7 @@ def test_issuer(mockHelpingNowUTC):
 
 
 def buildHab(db, kpr):
-    kevers = dict()
+
     secrets = [
         'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
         'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
@@ -308,7 +308,7 @@ def buildHab(db, kpr):
     for secret in secrets:  # convert secrets to secrecies
         secrecies.append([secret])
     # setup hab
-    hab = habbing.Habitat(ks=kpr, db=db, kevers=kevers, secrecies=secrecies, temp=True)
+    hab = habbing.Habitat(ks=kpr, db=db, secrecies=secrecies, temp=True)
     return hab
 
 

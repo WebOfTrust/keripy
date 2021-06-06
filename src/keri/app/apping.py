@@ -38,7 +38,7 @@ from . import habbing
 logger = help.ogler.getLogger()
 
 
-def clean(orig, kvy=None):
+def clean(orig):
     """
     Clean orig (original) database by creating re-verified cleaned cloned copy
     and then replacing original with cleaned cloned controller
@@ -64,20 +64,18 @@ def clean(orig, kvy=None):
                 raise ValueError("Error cloning, no orig at {}."
                                  "".format(orig.path))
 
-            if not kvy:  # new kvy for clone
-                kvy = eventing.Kevery()  # promiscuous mode
-            kvy.db = copy
-            psr = parsing.Parser(kvy=kvy)
+            kvy = eventing.Kevery(db=copy)  # promiscuous mode
 
             # Revise in future to NOT parse msgs but to extract the processed
             # objects so can pass directly to kvy.processEvent()
             # need new method cloneObjAllPreIter()
             # process event doesn't capture exceptions so we can more easily
             # detect in the cloning that some events did not make it through
+            psr = parsing.Parser(kvy=kvy)
             for msg in orig.cloneAllPreIter():  # clone orig into copy
                 psr.parseOne(ims=msg)
 
-            # clone habitat name prefix Komer subdb
+            # clone .habs  habitat name prefix Komer subdb
             copy.habs = koming.Komer(db=copy, schema=basing.HabitatRecord, subdb='habs.')  # copy
             for keys, data in orig.habs.getItemIter():
                 copy.habs.put(keys=keys, data=data)
@@ -94,6 +92,12 @@ def clean(orig, kvy=None):
         if not dst:  #  move failed leave new in place so can manually fix
             raise ValueError("Error cloning, unable to move {} to {}."
                              "".format(copy.path, orig.path))
+
+        # replace orig kevers with copy kevers by clear and copy
+        # future do this by loading kever from .kyss  key state subdb
+        orig.kevers.clear()
+        for pre, kever in copy.kevers.items():
+            orig.kevers[pre] = kever
 
         with basing.reopenDB(db=orig, reuse=True):  # make sure can reopen
             if not isinstance(orig.env, lmdb.Environment):

@@ -56,7 +56,7 @@ class Habitat:
 
     """
 
-    def __init__(self, name='test', ks=None, db=None, kevers=None,
+    def __init__(self, name='test', ks=None, db=None,
                  code=coring.MtrDex.Blake3_256, secrecies=None,
                  isith=None, icount=1, nsith=None, ncount=None,
                  toad=None, wits=None,
@@ -125,7 +125,7 @@ class Habitat:
 
         self.mgr = keeping.Manager(keeper=self.ks, pidx=pidx, salt=salt, tier=tier)
         self.ridx = 0  # rotation index of latest establishment event
-        self.kevers = kevers if kevers is not None else dict()
+        # self.kevers = kevers if kevers is not None else dict()
 
         if existing:
             self.reinitialize()
@@ -166,10 +166,13 @@ class Habitat:
             sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
             msg = eventing.messagize(self.iserder, sigers=sigers)
 
-            self.kvy = eventing.Kevery(kevers=self.kevers,
-                                       db=self.db,
-                                       prefixes=[self.pre],
-                                       local=True)
+            # may want db method that updates .habs. and .prefixes together
+            self.db.habs.put(keys=self.name,
+                             data=basing.HabitatRecord(name=self.name,
+                                                       prefix=self.pre))
+            self.prefixes.append(self.pre)  # may want to have db method
+
+            self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
             self.psr = parsing.Parser(framed=True, kvy=self.kvy)
 
             self.psr.parseOne(ims=msg)
@@ -177,39 +180,14 @@ class Habitat:
                 raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
 
-            self.db.habs.put(keys=self.name,
-                             data=basing.HabitatRecord(name=self.name,
-                                                       prefix=self.pre))
 
+    @property
+    def kevers(self):
+        """
+        Returns .db.kevers
+        """
+        return self.db.kevers
 
-
-    def reinitialize(self):
-        if self.pre is None:
-            raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
-
-        self.kvy = eventing.Kevery(kevers=self.kevers,
-                                   db=self.db,
-                                   prefixes=[self.pre],
-                                   local=True)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy)
-
-        msgs = self.replay()
-        self.psr.parse(ims=bytearray(msgs), kvy=self.kvy)
-
-        msgs = self.replayAll()
-        tkvy = eventing.Kevery(kevers=self.kevers,
-                               db=self.db,
-                               prefixes=[self.pre],
-                               local=False)
-        self.psr.parse(ims=bytearray(msgs), kvy=tkvy)
-
-        # ridx for replay may be an issue when loading from existing
-        sit = json.loads(bytes(self.ks.getSit(key=self.pre)).decode("utf-8"))
-        self.ridx = helping.datify(keeping.PubLot, sit['new']).ridx
-
-        if self.pre not in self.kevers:
-            raise kering.ConfigurationError("Improper Habitat inception for "
-                                            "pre={}.".format(self.pre))
 
     @property
     def kever(self):
@@ -218,11 +196,57 @@ class Habitat:
         """
         return self.kevers[self.pre]
 
+
+    @property
+    def prefixes(self):
+        """
+        Returns .db.prefixes
+        """
+        return self.db.prefixes
+
+
+    def reinitialize(self):
+        if self.pre is None:
+            raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
+
+        kvy = eventing.Kevery(db=self.db, lax=True, check=True)  # promiscuous check mode
+        psr = parsing.Parser(framed=True, kvy=kvy)
+        msgs = self.replayAll()
+        psr.parse(ims=msgs)
+
+        if self.pre not in self.kevers:
+            raise kering.ConfigurationError("Improper Habitat inception for "
+                                            "pre={}.".format(self.pre))
+
+        self.prefixes.append(self.pre)  # may want to have db method
+        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy)
+
+        # ridx for replay may be an issue when loading from existing
+        sit = json.loads(bytes(self.ks.getSit(key=self.pre)).decode("utf-8"))
+        self.ridx = helping.datify(keeping.PubLot, sit['new']).ridx
+
+        # Need to reinitialize .iserder here by loading from db since kever
+        # may be later event than inception
+        dig = self.db.getKeLast(eventing.snKey(pre=self.pre, sn=0))
+        if dig is None:
+            raise kering.ConfigurationError("Missing inception event in KEL for "
+                                            "Habitat pre={}.".format(self.pre))
+        raw = self.db.getEvt(eventing.dgKey(pre=self.pre, dig=bytes(dig)))
+        if raw is None:
+            raise kering.ConfigurationError("Missing inception event for "
+                                            "Habitat pre={}.".format(self.pre))
+        self.iserder = coring.Serder(raw=bytes(raw))
+
+
+
     def incept(self):
         """
         Perform inception operation. Register inception in database.
         Returns: bytearray inception message with attached signatures.
         """
+        pass  # placeholder
+
 
     def rotate(self, sith=None, count=None, erase=None,
                toad=None, cuts=None, adds=None, data=None):

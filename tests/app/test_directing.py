@@ -86,12 +86,11 @@ def test_directing_basic():
 
         bobPort = 5620  # bob's TCP listening port for server
         evePort = 5621  # eve's TCP listneing port for server
-        bobKevers = dict()
         eveKevers = dict()
 
         # setup bob
-        bobHab = habbing.Habitat(ks=bobKS, db=bobDB, kevers=bobKevers,
-                                secrecies=bobSecrecies, temp=True)
+        bobHab = habbing.Habitat(ks=bobKS, db=bobDB, secrecies=bobSecrecies,
+                                 temp=True)
         assert bobHab.ks == bobKS
         assert bobHab.db == bobDB
         assert bobHab.iserder.dig == bobSerder.dig
@@ -103,13 +102,13 @@ def test_directing_basic():
         bobDirector = directing.Director(hab=bobHab, client=bobClient)
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
-        assert id(bobDirector.hab.kvy.kevers) == id(bobKevers)
+        assert id(bobDirector.hab.kvy.kevers) == id(bobHab.kevers)
         assert bobDirector.hab.kvy.db == bobDB
 
         bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
-        assert id(bobReactor.hab.kvy.kevers) == id(bobKevers)
+        assert id(bobReactor.hab.kvy.kevers) == id(bobHab.kevers)
         assert bobReactor.hab.kvy.db == bobDB
         assert id(bobReactor.parser.ims) == id(bobReactor.client.rxbs)
         assert id(bobReactor.client.rxbs) == id(bobDirector.client.rxbs)
@@ -123,8 +122,8 @@ def test_directing_basic():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = habbing.Habitat(ks=eveKS, db=eveDB, kevers=eveKevers,
-                                secrecies=eveSecrecies, temp=True)
+        eveHab = habbing.Habitat(ks=eveKS, db=eveDB, secrecies=eveSecrecies,
+                                 temp=True)
         assert eveHab.ks == eveKS
         assert eveHab.db == eveDB
         assert eveHab.iserder.dig == eveSerder.dig
@@ -136,13 +135,13 @@ def test_directing_basic():
         eveDirector = directing.Director(hab=eveHab, client=eveClient)
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
-        assert id(eveDirector.hab.kvy.kevers) == id(eveKevers)
+        assert id(eveDirector.hab.kvy.kevers) == id(eveHab.kevers)
         assert eveDirector.hab.kvy.db == eveDB
 
         eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
-        assert id(eveReactor.hab.kvy.kevers) == id(eveKevers)
+        assert id(eveReactor.hab.kvy.kevers) == id(eveHab.kevers)
         assert eveReactor.hab.kvy.db == eveDB
         assert id(eveReactor.parser.ims) == id(eveReactor.client.rxbs)
         assert id(eveReactor.client.rxbs) == id(eveDirector.client.rxbs)

@@ -119,9 +119,8 @@ class Indirector(doing.DoDoer):
         self.hab = hab
         self.client = client  # use client for both rx and tx
         self.direct = True if direct else False
-        self.kevery = eventing.Kevery(kevers=self.hab.kevers,
-                                      db=self.hab.db,
-                                      prefixes=[self.hab.pre],
+        self.kevery = eventing.Kevery(db=self.hab.db,
+                                      lax=False,
                                       local=False,
                                       cloned=not self.direct,
                                       direct=self.direct)
