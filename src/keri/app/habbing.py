@@ -304,9 +304,9 @@ class Habitat:
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
         # update own key event verifier state
-        self.kvy.processEvent(serder=serder, sigers=sigers)
+        # self.kvy.processEvent(serder=serder, sigers=sigers)
         msg = eventing.messagize(serder, sigers=sigers)
-        # self.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
+        self.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
@@ -327,9 +327,9 @@ class Habitat:
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
         # update own key event verifier state
-        self.kvy.processEvent(serder=serder, sigers=sigers)
+        # self.kvy.processEvent(serder=serder, sigers=sigers)
         msg = eventing.messagize(serder, sigers=sigers)
-        # self.psr.parseOne(ims=bytearray(msg))  # make copy as kvy deletes
+        self.psr.parseOne(ims=bytearray(msg))  # make copy as kvy deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre))
