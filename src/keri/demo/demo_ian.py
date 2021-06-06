@@ -15,7 +15,7 @@ from hio.core.tcp import clienting
 
 from keri import __version__
 from keri import help  # logger support
-from keri.app import habbing, keeping, directing,
+from keri.app import habbing, keeping, directing
 from keri.db import dbing, basing
 from keri.demo.demoing import IanDirector
 from keri.vdr import issuing
