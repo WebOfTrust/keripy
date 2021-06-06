@@ -218,7 +218,7 @@ class Parser:
             Attachments must all have counters so know if txt or bny format for
             attachments. So even when framed==True must still have counters.
         """
-        processor = self.allParsator(ims=ims,
+        parsator = self.allParsator(ims=ims,
                                        framed=framed,
                                        pipeline=pipeline,
                                        kvy=kvy,
@@ -226,7 +226,7 @@ class Parser:
 
         while True:
             try:
-                next(processor)
+                next(parsator)
             except StopIteration:
                 break
 
@@ -256,14 +256,14 @@ class Parser:
             Attachments must all have counters so know if txt or bny format for
             attachments. So even when framed==True must still have counters.
         """
-        processor = self.onceParsator(ims=ims,
+        parsator = self.onceParsator(ims=ims,
                                         framed=framed,
                                         pipeline=pipeline,
                                         kvy=kvy,
                                         tvy=tvy)
         while True:
             try:
-                next(processor)
+                next(parsator)
             except StopIteration:
                 break
 
