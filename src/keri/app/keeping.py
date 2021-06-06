@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.base.keeping module
+keri.app.keeping module
 
 Terminology:
     salt is 128 bit 16 char random bytes used as root entropy to derive seed or secret

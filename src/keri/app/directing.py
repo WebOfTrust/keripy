@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.base.directing module
+keri.app.directing module
 
 simple direct mode demo support classes
 """
@@ -12,11 +12,11 @@ from hio.core import wiring
 from hio.core.tcp import clienting, serving
 
 from .. import kering
-from ..db import dbing
-from ..core import coring, eventing
+from ..db import dbing, basing
+from ..core import coring, eventing, parsing
 from ..vdr.eventing import Tevery
 from . import keeping
-from . import basing
+from . import habbing
 from . import keeping
 from .. import help
 from ..core import eventing
@@ -31,13 +31,13 @@ def setupController(name="who", sith=None, count=1, temp=False,
     Setup and return doers list to run controller
     """
     # setup habitat
-    hab = basing.Habitat(name=name, isith=sith, icount=count, temp=temp)
+    hab = habbing.Habitat(name=name, isith=sith, icount=count, temp=temp)
     logger.info("\nDirect Mode controller %s:\nNamed %s on TCP port %s to port %s.\n\n",
                 hab.pre, hab.name, localPort, remotePort)
 
     # setup doers
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = dbing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)
@@ -213,9 +213,8 @@ class Reactor(doing.DoDoer):
         self.client = client  # use client for both rx and tx
         self.verifier = verifier
         self.direct = True if direct else False
-        self.kevery = eventing.Kevery(kevers=self.hab.kevers,
-                                      db=self.hab.db,
-                                      opre=self.hab.pre,
+        self.kevery = eventing.Kevery(db=self.hab.db,
+                                      lax=False,
                                       local=False,
                                       direct=self.direct)
 
@@ -227,7 +226,7 @@ class Reactor(doing.DoDoer):
         else:
             self.tvy = None
 
-        self.parser = eventing.Parser(ims=self.client.rxbs,
+        self.parser = parsing.Parser(ims=self.client.rxbs,
                                       framed=True,
                                       kvy=self.kevery,
                                       tvy=self.tvy)
@@ -270,7 +269,7 @@ class Reactor(doing.DoDoer):
         """
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
-        done = yield from self.parser.processor()  # process messages continuously
+        done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
     @doing.doize()
@@ -557,9 +556,8 @@ class Reactant(doing.DoDoer):
         doers.extend([self.msgDo, self.cueDo, self.escrowDo])
 
         #  neeeds unique kevery with ims per remoter connnection
-        self.kevery = eventing.Kevery(kevers=self.hab.kevers,
-                                      db=self.hab.db,
-                                      opre=self.hab.pre,
+        self.kevery = eventing.Kevery(db=self.hab.db,
+                                      lax=False,
                                       local=False)
 
         if self.verifier is not None:
@@ -571,7 +569,7 @@ class Reactant(doing.DoDoer):
         else:
             self.tevery = None
 
-        self.parser = eventing.Parser(ims=self.remoter.rxbs,
+        self.parser = parsing.Parser(ims=self.remoter.rxbs,
                                       framed=True,
                                       kvy=self.kevery,
                                       tvy=self.tevery)
@@ -612,7 +610,7 @@ class Reactant(doing.DoDoer):
         if self.parser.ims:
             logger.info("Server %s: %s received:\n%s\n...\n", self.hab.name,
                         self.hab.pre, self.parser.ims[:1024])
-        done = yield from self.parser.processor()  # process messages continuously
+        done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
     @doing.doize()

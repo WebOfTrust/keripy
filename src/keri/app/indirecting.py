@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.base.indirecting module
+keri.app.indirecting module
 
 simple indirect mode demo support classes
 """
@@ -10,9 +10,9 @@ from hio.base import doing
 from hio.core.tcp import serving
 
 from .. import help
-from ..db import dbing
-from ..core import  coring, eventing
-from . import basing, keeping, directing
+from ..db import dbing, basing
+from ..core import  coring, eventing, parsing
+from . import habbing, keeping, directing
 from ..vdr import verifying
 
 logger = help.ogler.getLogger()
@@ -22,7 +22,7 @@ def setupWitness(name="witness", localPort=5620):
 
     wsith = 1
 
-    hab = basing.Habitat(name=name, temp=False, transferable=False,
+    hab = habbing.Habitat(name=name, temp=False, transferable=False,
                          isith=wsith, icount=1,)
     verf = verifying.Verifier(name=name, hab=hab)
 
@@ -31,8 +31,8 @@ def setupWitness(name="witness", localPort=5620):
 
     # setup doers
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = dbing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
-    regDoer = dbing.BaserDoer(baser=verf.reger)
+    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+    regDoer = basing.BaserDoer(baser=verf.reger)
 
     server = serving.Server(host="", port=localPort)
     serverDoer = doing.ServerDoer(server=server)
@@ -119,13 +119,12 @@ class Indirector(doing.DoDoer):
         self.hab = hab
         self.client = client  # use client for both rx and tx
         self.direct = True if direct else False
-        self.kevery = eventing.Kevery(kevers=self.hab.kevers,
-                                      db=self.hab.db,
-                                      opre=self.hab.pre,
+        self.kevery = eventing.Kevery(db=self.hab.db,
+                                      lax=False,
                                       local=False,
                                       cloned=not self.direct,
                                       direct=self.direct)
-        self.parser = eventing.Parser(ims=self.client.rxbs,
+        self.parser = parsing.Parser(ims=self.client.rxbs,
                                       framed=True,
                                       kvy=self.kevery)
         doers = doers if doers is not None else []
@@ -170,7 +169,7 @@ class Indirector(doing.DoDoer):
         """
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
-        done = yield from self.parser.processor()  # process messages continuously
+        done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
 

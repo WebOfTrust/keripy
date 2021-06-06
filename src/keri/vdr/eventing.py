@@ -1,16 +1,26 @@
+# -*- encoding: utf-8 -*-
+"""
+KERI
+keri.vdr.eventing module
+
+VC TEL  support
+"""
+
+
 import json
 from collections import deque, namedtuple
 
 from orderedset import OrderedSet as oset
 
-from keri.core.coring import (MtrDex, Serder, Serials, Versify, Prefixer,
+from ..core.coring import (MtrDex, Serder, Serials, Versify, Prefixer,
                               Ilks, Seqner, Verfer)
-from keri.core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
-from keri.db.dbing import Baser, dgKey, snKey
-from keri.help import helping
-from keri.kering import (MissingWitnessSignatureError, Version,
+from ..core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
+from ..db import basing
+from ..db.dbing import dgKey, snKey
+from ..help import helping
+from ..kering import (MissingWitnessSignatureError, Version,
                          MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
-from keri.vdr.viring import Registry, nsKey
+from ..vdr.viring import Registry, nsKey
 from .. import help
 
 logger = help.ogler.getLogger()
@@ -440,7 +450,7 @@ class Tever:
                 if .regk
         """
         self.reger = reger if reger is not None else Registry()
-        self.db = db if db is not None else Baser()
+        self.db = db if db is not None else basing.Baser()
         self.version = serder.version
         self.regk = regk
         self.local = True if local else False
@@ -991,6 +1001,9 @@ class Tevery:
     Tevery (Transaction Event Message Processing Facility)
 
     Currently placeholder
+
+    Attributes:
+
     """
 
     def __init__(self, tevers=None, reger=None, db=None, regk=None, local=False):
@@ -998,23 +1011,19 @@ class Tevery:
         Initialize instance:
 
         Parameters:
-            kevers is dict of Kever instances of key state in db
+            tevers is dict of Kever instances of key state in db
+            reger is Registry instance
             db is Baser instance
-            opre is local or own identifier prefix. Some restriction if present
+            regk is local or own identifier prefix. Some restriction if present
             local is Boolean, True means only process msgs for own events if .pre
                         False means only process msgs for not own events if .pre
         """
         self.tevers = tevers if tevers is not None else dict()
-        self.cues = deque()
-
-        if db is None:
-            db = Baser()  # default name = "main"
-        self.db = db
-        if reger is None:
-            reger = Registry()
-        self.reger = reger
+        self.db = db if db is not None else basing.Baser()  # default name = "main"
+        self.reger = reger if reger is not None else Registry()
         self.regk = regk  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions
+        self.cues = deque()
 
     def processEvent(self, serder, seqner, diger, wigers=None):
         """

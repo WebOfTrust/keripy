@@ -2,10 +2,10 @@ from unittest import mock
 
 import pytest
 
-from keri.base import basing, keeping
+from keri.app import habbing, keeping
 from keri.core.coring import Versify, Serials, Ilks, MtrDex, Prefixer, Serder, Signer, Seqner
 from keri.core.eventing import TraitDex, SealEvent
-from keri.db import dbing
+from keri.db import dbing, basing
 from keri.db.dbing import snKey, dgKey
 from keri.kering import Version, EmptyMaterialError, DerivationError, MissingAnchorError, ValidationError, \
     MissingWitnessSignatureError, LikelyDuplicitousError
@@ -386,7 +386,7 @@ def test_tever_escrow():
         Tever()
 
     # registry with no backers, invalid anchor
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=[],
@@ -406,7 +406,7 @@ def test_tever_escrow():
             Tever(serder=vcp, seqner=seqner, diger=None, db=db, reger=reg)
 
     # registry with no backers
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=[],
@@ -428,7 +428,7 @@ def test_tever_escrow():
         assert reg.getTae(snKey(pre=regk, sn=0)) == b'EvpB-_BWD7tOhLI0cDyEQbziBt6IMyQnkrh0booR4vhg'
 
     # registry with backers, no signatures.  should escrow
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
         vcp = eventing.incept(hab.pre,
                               baks=["BoOcciw30IVQsaenKXpiyMVrjtPDW3KeD_6KFnSfoaqI"],
@@ -464,7 +464,7 @@ def test_tever_escrow():
 def test_tever_no_backers(mockHelpingNowUTC):
     # registry with no backers
     # registry with backer and receipt
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
 
         vcp = eventing.incept(hab.pre,
@@ -554,7 +554,7 @@ def test_tever_no_backers(mockHelpingNowUTC):
 
 def test_tever_backers(mockHelpingNowUTC):
     # registry with backer and receipt
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         valSecret = 'AgjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw'
 
         # create receipt signer prefixer default code is non-transferable
@@ -644,7 +644,7 @@ def test_tever_backers(mockHelpingNowUTC):
 
 
 def test_tevery():
-    with dbing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
+    with basing.openDB() as db, keeping.openKS() as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
 
         vcp = eventing.incept(hab.pre,
@@ -708,7 +708,7 @@ def test_tevery():
 
 
 def buildHab(db, kpr):
-    kevers = dict()
+
     secrets = [
         'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
         'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
@@ -723,7 +723,7 @@ def buildHab(db, kpr):
     for secret in secrets:  # convert secrets to secrecies
         secrecies.append([secret])
     # setup hab
-    hab = basing.Habitat(ks=kpr, db=db, kevers=kevers, secrecies=secrecies, temp=True)
+    hab = habbing.Habitat(ks=kpr, db=db,  secrecies=secrecies, temp=True)
     return hab
 
 

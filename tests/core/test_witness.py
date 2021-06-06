@@ -10,9 +10,9 @@ import pytest
 
 from keri import help
 from keri.help import helping
-from keri.db import dbing
-from keri.base import basing, keeping, directing
-from keri.core import coring, eventing
+from keri.db import dbing, basing
+from keri.app import habbing, keeping, directing
+from keri.core import coring, eventing, parsing
 
 
 logger = help.ogler.getLogger()
@@ -31,76 +31,64 @@ def test_witness():
     """
     salt = coring.Salter(raw=b'abcdef0123456789').qb64
 
-    with dbing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
-         dbing.openDB(name="van") as vanDB, keeping.openKS(name="van") as vanKS, \
-         dbing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
-         dbing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
-         dbing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
-         dbing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS:
+    with basing.openDB(name="cam") as camDB, keeping.openKS(name="cam") as camKS, \
+         basing.openDB(name="van") as vanDB, keeping.openKS(name="van") as vanKS, \
+         basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
+         basing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
+         basing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
+         basing.openDB(name="wil") as wilDB, keeping.openKS(name="wil") as wilKS:
 
         # witnesses first so can setup inception event for cam
         wsith = 1
         # setup Wes's habitat nontrans
         # Wes's receipts will be rcts with a receipt couple attached
 
-        wesHab = basing.Habitat(name='wes', ks=wesKS, db=wesDB,
+        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
                                    isith=wsith, icount=1,
                                    salt=salt, transferable=False, temp=True)  # stem is .name
         assert wesHab.ks == wesKS
         assert wesHab.db == wesDB
         assert not wesHab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
-        wesKvy = eventing.Kevery(kevers=wesHab.kevers,
-                                    db=wesHab.db,
-                                    opre=wesHab.pre,
-                                    local=False)
+        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
 
         # setup Wok's habitat nontrans
         # Wok's receipts will be rcts with a receipt couple attached
-        wokHab = basing.Habitat(name='wok',ks=wokKS, db=wokDB,
+        wokHab = habbing.Habitat(name='wok',ks=wokKS, db=wokDB,
                                    isith=wsith, icount=1,
                                    salt=salt, transferable=False, temp=True)  # stem is .name
         assert wokHab.ks == wokKS
         assert wokHab.db == wokDB
         assert not wokHab.kever.prefixer.transferable
         # create non-local kevery for Wok to process nonlocal msgs
-        wokKvy = eventing.Kevery(kevers=wokHab.kevers,
-                                    db=wokHab.db,
-                                    opre=wokHab.pre,
-                                    local=False)
+        wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
 
         # setup Wam's habitat nontrans
         # Wams's receipts will be rcts with a receipt couple attached
-        wamHab = basing.Habitat(name='wam', ks=wamKS, db=wamDB,
+        wamHab = habbing.Habitat(name='wam', ks=wamKS, db=wamDB,
                                    isith=wsith, icount=1,
                                    salt=salt, transferable=False, temp=True)  # stem is .name
         assert wamHab.ks == wamKS
         assert wamHab.db == wamDB
         assert not wamHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
-        wamKvy = eventing.Kevery(kevers=wamHab.kevers,
-                                    db=wamHab.db,
-                                    opre=wamHab.pre,
-                                    local=False)
+        wamKvy = eventing.Kevery(db=wamHab.db, lax=False, local=False)
 
         # setup Wil's habitat nontrans
         # Wil's receipts will be rcts with a receipt couple attached
-        wilHab = basing.Habitat(name='wil', ks=wilKS, db=wilDB,
+        wilHab = habbing.Habitat(name='wil', ks=wilKS, db=wilDB,
                                    isith=wsith, icount=1,
                                    salt=salt, transferable=False, temp=True)  # stem is .name
         assert wilHab.ks == wilKS
         assert wilHab.db == wilDB
         assert not wilHab.kever.prefixer.transferable
         # create non-local kevery for Wam to process nonlocal msgs
-        wilKvy = eventing.Kevery(kevers=wilHab.kevers,
-                                    db=wilHab.db,
-                                    opre=wilHab.pre,
-                                    local=False)
+        wilKvy = eventing.Kevery(db=wilHab.db, lax=False, local=False)
 
         # setup Cam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
         csith = 2  # hex str of threshold int
-        camHab = basing.Habitat(name='cam', ks=camKS, db=camDB,
+        camHab = habbing.Habitat(name='cam', ks=camKS, db=camDB,
                                    isith=csith, icount=3,
                                    toad=2, wits=wits,
                                    salt=salt, temp=True)  # stem is .name
@@ -114,24 +102,18 @@ def test_witness():
         assert camHab.kever.sn == 0
 
         # create non-local kevery for Cam to process onlocal msgs
-        camKvy = eventing.Kevery(kevers=camHab.kevers,
-                                    db=camHab.db,
-                                    opre=camHab.pre,
-                                    local=False)
+        camKvy = eventing.Kevery(db=camHab.db, lax=False, local=False)
 
         # setup Van's habitat trans multisig
         vsith = 2  # two of three signing threshold
-        vanHab = basing.Habitat(name='van', ks=vanKS, db=vanDB,
+        vanHab = habbing.Habitat(name='van', ks=vanKS, db=vanDB,
                                    isith=vsith, icount=3,
                                    salt=salt, temp=True)  # stem is .name
         assert vanHab.ks == vanKS
         assert vanHab.db == vanDB
         assert vanHab.kever.prefixer.transferable
         # create non-local kevery for Van to process nonlocal msgs
-        vanKvy = eventing.Kevery(kevers=vanHab.kevers,
-                                    db=vanHab.db,
-                                    opre=vanHab.pre,
-                                    local=False)
+        vanKvy = eventing.Kevery(db=vanHab.db, lax=False, local=False)
 
         # make list so easier to batch
         camWitKvys = [wesKvy, wokKvy, wamKvy]
@@ -142,7 +124,7 @@ def test_witness():
         rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            eventing.Parser().process(ims=bytearray(camIcpMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=kvy)
             # kvy.process(ims=bytearray(camIcpMsg))  # send copy of cam icp msg to witness
             assert kvy.kevers[camHab.pre].sn == 0  # accepted event
             assert len(kvy.cues) == 1  # queued receipt cue
@@ -152,7 +134,7 @@ def test_witness():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:# process rct msgs from all witnesses
-            eventing.Parser().process(ims=bytearray(msg), kvy=camKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
             # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
@@ -172,16 +154,16 @@ def test_witness():
         assert len(camIcpWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            eventing.Parser().process(ims=bytearray(camIcpWitRctMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=kvy)
             # kvy.process(ims=bytearray(camIcpWitRctMsg))  # send copy of witness rcts
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam icp and witness rcts to Van
-        eventing.Parser().process(ims=bytearray(camIcpMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camIcpMsg), kvy=vanKvy)
         # vanKvy.process(ims=bytearray(camIcpMsg))  # should escrow since not witnesses
         assert camHab.pre not in vanKvy.kevers
-        eventing.Parser().process(ims=bytearray(camIcpWitRctMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camIcpWitRctMsg), kvy=vanKvy)
         # vanKvy.process(ims=bytearray(camIcpWitRctMsg))
         vanKvy.processEscrows()
         assert camHab.pre in vanKvy.kevers
@@ -194,7 +176,7 @@ def test_witness():
         rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            eventing.Parser().process(ims=bytearray(camIxnMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=kvy)
             # kvy.process(ims=bytearray(camIxnMsg))  # send copy of cam icp msg to witness
             assert kvy.kevers[camHab.pre].sn == 1  # accepted event
             assert len(kvy.cues) == 1  # queued receipt cue
@@ -204,7 +186,7 @@ def test_witness():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:# process rct msgs from all witnesses
-            eventing.Parser().process(ims=bytearray(msg), kvy=camKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
             # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
@@ -224,17 +206,17 @@ def test_witness():
         assert len(camIxnWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            eventing.Parser().process(ims=bytearray(camIxnWitRctMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camIxnWitRctMsg), kvy=kvy)
             # kvy.process(ims=bytearray(camIxnWitRctMsg))  # send copy of witness rcts
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam ixn's witness rcts to Van first then send Cam ixn
-        eventing.Parser().process(ims=bytearray(camIxnWitRctMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camIxnWitRctMsg), kvy=vanKvy)
         # vanKvy.process(ims=bytearray(camIxnWitRctMsg))
         vanKvy.processEscrows()
         assert vcKvr.sn == 0
-        eventing.Parser().process(ims=bytearray(camIxnMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camIxnMsg), kvy=vanKvy)
         # vanKvy.process(ims=bytearray(camIxnMsg))  # should escrow since not witnesses
         assert vcKvr.sn == 0
         vanKvy.processEscrows()
@@ -245,14 +227,14 @@ def test_witness():
         # Cam update itself with Wil receipts including Wils inception
         camReplayMsg = camHab.replay()
         assert len(camReplayMsg) == 1831
-        eventing.Parser().process(ims=bytearray(camReplayMsg), kvy=wilKvy)
+        parsing.Parser().parse(ims=bytearray(camReplayMsg), kvy=wilKvy)
         # wilKvy.process(ims=bytearray(camReplayMsg))
         assert camHab.pre in wilKvy.kevers
         assert wilKvy.kevers[camHab.pre].sn == 1  # asscepted both events
         assert len(wilKvy.cues) == 2
         wilRctMsg = wilHab.processCues(wilKvy.cues)  # process cue returns rct msg
         assert len(wilKvy.cues) == 0
-        eventing.Parser().process(ims=bytearray(wilRctMsg), kvy=camKvy)
+        parsing.Parser().parse(ims=bytearray(wilRctMsg), kvy=camKvy)
         # camKvy.process(ims=bytearray(wilRctMsg))  # make copy
         assert wilHab.pre in camKvy.kevers
 
@@ -269,7 +251,7 @@ def test_witness():
         rctMsgs = []  # list of receipt msgs from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            eventing.Parser().process(ims=bytearray(camRotMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=kvy)
             # kvy.process(ims=bytearray(camRotMsg))  # send copy of cam msg to witness
             assert kvy.kevers[camHab.pre].sn == 2  # accepted event
             assert len(kvy.cues) == 1  # queued receipt cue
@@ -279,7 +261,7 @@ def test_witness():
             rctMsgs.append(rctMsg)
 
         for msg in rctMsgs:# process rct msgs from all witnesses
-            eventing.Parser().process(ims=bytearray(msg), kvy=camKvy)
+            parsing.Parser().parse(ims=bytearray(msg), kvy=camKvy)
             # camKvy.process(ims=bytearray(msg))  # make copy
         for hab in camWitHabs:
             assert hab.pre in camKvy.kevers
@@ -299,7 +281,7 @@ def test_witness():
         assert len(camRotWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
-            eventing.Parser().process(ims=bytearray(camRotWitRctMsg), kvy=kvy)
+            parsing.Parser().parse(ims=bytearray(camRotWitRctMsg), kvy=kvy)
             # kvy.process(ims=bytearray(camRotWitRctMsg))  # send copy of witness rcts
             assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
@@ -313,11 +295,11 @@ def test_witness():
 
 
         # send Cam rot's witness rcts to Van first then send Cam rot
-        eventing.Parser().process(ims=bytearray(camRotWitRctMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camRotWitRctMsg), kvy=vanKvy)
         # vanKvy.process(ims=bytearray(camRotWitRctMsg))
         vanKvy.processEscrows()
         assert vcKvr.sn == 1
-        eventing.Parser().process(ims=bytearray(camRotMsg), kvy=vanKvy)
+        parsing.Parser().parse(ims=bytearray(camRotMsg), kvy=vanKvy)
         # vanKvy.process(ims=bytearray(camRotMsg))  # should escrow since not witnesses
         assert vcKvr.sn == 1
         vanKvy.processEscrows()

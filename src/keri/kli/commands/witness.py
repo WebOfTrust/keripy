@@ -10,7 +10,7 @@ import logging
 
 from keri import __version__
 from keri import help  # logger support
-from keri.base import directing, indirecting
+from keri.app import directing, indirecting
 
 d = "Runs KERI witness controller.\n"
 d += "Example:\nwitness -l 5621 --e 10.0\n"

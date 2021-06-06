@@ -10,9 +10,9 @@ A special purpose Verifiable Data Registry (VDR)
 
 import traceback
 
-from keri import kering
-from keri.db import dbing
-from keri.core import coring
+from .. import kering
+from ..db import dbing
+from ..core import coring
 
 
 def openReg(name="test", **kwa):

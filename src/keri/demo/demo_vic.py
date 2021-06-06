@@ -15,8 +15,8 @@ from hio.core.tcp import clienting
 
 from keri import __version__
 from keri import help
-from keri.base import directing, basing, keeping
-from keri.db import dbing
+from keri.app import habbing, keeping, directing
+from keri.db import dbing, basing
 from keri.demo.demoing import VicDirector
 from keri.vdr import verifying
 
@@ -55,15 +55,15 @@ def setupController(secrets, remotePort=5621, indirect=False, vcfile=""):
         secrecies.append([secret])
 
     # setup habitat
-    hab = basing.Habitat(name="vic", secrecies=secrecies, temp=True)
+    hab = habbing.Habitat(name="vic", secrecies=secrecies, temp=True)
     logger.info("\nDirect Mode demo of %s:\nNamed %s to TCP port %s.\n\n",
                 hab.pre, hab.name, remotePort)
 
     verifier = verifying.Verifier(name="vic", hab=hab)
     # setup doers
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = dbing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
-    regDoer = dbing.BaserDoer(baser=verifier.reger)
+    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+    regDoer = basing.BaserDoer(baser=verifier.reger)
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)

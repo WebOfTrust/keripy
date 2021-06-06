@@ -2,6 +2,6 @@
 
 """
 KERI
-keri.base package
+keri.app package
 
 """

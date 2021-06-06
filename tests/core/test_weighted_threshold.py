@@ -8,10 +8,9 @@ import os
 import pytest
 
 from keri import help
-from keri.db import dbing
-from keri.base import keeping
-from keri.core import coring
-from keri.core import eventing
+from keri.db import dbing, basing
+from keri.app import keeping
+from keri.core import coring, eventing, parsing
 
 logger = help.ogler.getLogger()
 
@@ -24,7 +23,7 @@ def test_weighted():
     wesSalt = coring.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
 
     # init event DB and keep DB
-    with dbing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
+    with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
         # Init key pair manager
         wesMgr = keeping.Manager(keeper=wesKS, salt=wesSalt)
 
@@ -71,7 +70,7 @@ def test_weighted():
                                 b'yFauoQECZyNIlUnnxVHuk2_Fqi5xK_Lu9Pt76Aw')
 
         # apply msg to Wes's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         wesK = wesKvy.kevers[wesPre]  # kever created so event was validated
         assert wesK.prefixer.qb64 == wesPre
@@ -101,7 +100,7 @@ def test_weighted():
                                 b'g6hhztstGt8TthRQ0TJn6rkvatkbn6yzRjBw')
 
         # apply msg to wes's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
@@ -142,7 +141,7 @@ def test_weighted():
                          b'KpKITRx3ZTvme7sKbvr_NfR-0ECg')
 
         # apply msg to Wes's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
@@ -187,7 +186,7 @@ def test_weighted():
 
 
         # apply msg to Wes's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 
@@ -235,7 +234,7 @@ def test_weighted():
 
 
         # apply msg to Wes's Kevery
-        eventing.Parser().process(ims=bytearray(msg), kvy=wesKvy)
+        parsing.Parser().parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.diger.qb64 == wesSrdr.dig  # key state updated so event was validated
 

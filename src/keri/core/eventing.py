@@ -14,13 +14,13 @@ from orderedset import OrderedSet as oset
 
 from .. import help
 from ..help import helping
-
+from ..help import decking
 from .coring import MtrDex, NonTransDex, CtrDex, Counter
 from .coring import Seqner, Siger, Cigar, Dater
 from .coring import Verfer, Diger, Nexter, Prefixer, Serder, Tholder
 from .coring import Versify, Serials, Ilks
-
-from ..db.dbing import dgKey, snKey, fnKey, splitKeySN, Baser
+from ..db import basing
+from ..db.dbing import dgKey, snKey, fnKey, splitKeySN
 
 from ..kering import (ExtractionError, ShortageError, ColdStartError,
                       SizedGroupError, UnexpectedCountCodeError,
@@ -1227,11 +1227,12 @@ class Kever:
         .baser is reference to Baser instance that managers the LMDB database
         .kevers is reference to Kevery.kevers when provided
         .cues is reference to Kevery.cues deque when provided
-        .opre is fully qualified base64 identifier prefix of own identifier if any
-            from Kevery when provided
+        .prefixes is list of fully qualified base64 identifier prefixes of own
+            habitat identifiers if any from Kevery when provided. If empty then
+            operate in promiscuous mode
         .local is Boolean (from kevery when provided)
-            True means only process msgs for own events if .opre
-            False means only process msgs for not own events if .opre
+            True means only process msgs for own events if .prefixes is not empty
+            False means only process msgs for not own events if .prefixes is not empty
         .version is version of current event state
         .prefixer is prefixer instance for current event state
         .sn is sequence number int
@@ -1261,7 +1262,8 @@ class Kever:
 
     def __init__(self, serder, sigers, wigers=None, baser=None, estOnly=None,
                  seqner=None, diger=None, firner=None, dater=None,
-                 kevers=None, cues=None, opre=None, local=False, check=False):
+                 kevers=None, cues=None, prefixes=None, local=False,
+                 check=False):
         """
         Create incepting kever and state from inception serder
         Verify incepting serder against sigers raises ValidationError if not
@@ -1289,11 +1291,12 @@ class Kever:
                 validation of delegation seal .doNotDelegate of delegator
             cues is reference to Kevery.cues deque when provided i.e. notices of
                 events or requests to respond to
-            opre is identifier prefix of own or local controller. May not be the
+            prefixes is list of own prefixes for own local habitats. May not be the
                 prefix of this Kever's event. Some restrictions if present
+                If empty then promiscuous mode
             local is Boolean, True means only process msgs for own controller's
-                events if .opre. False means only process msgs for not own events
-                if .opre
+                events if .prefixes is not empty. False means only process msgs
+                for not own events if .prefixes is not empty
             check (Boolean): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
@@ -1301,11 +1304,11 @@ class Kever:
         """
 
         if baser is None:
-            baser = Baser()  # default name = "main"
+            baser = basing.Baser()  # default name = "main"
         self.baser = baser
         self.kevers = kevers
         self.cues = cues
-        self.opre = opre
+        self.prefixes = prefixes if prefixes is not None else []
         self.local = True if local else False
 
         # may update state as we go because if invalid we fail to finish init
@@ -1349,9 +1352,11 @@ class Kever:
 
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
         # all validated above so may add to KEL and FEL logs as first seen
-        self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+        fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                 first=True if not check else False, seqner=seqner, diger=diger,
                                 firner=firner, dater=dater)
+        if fn is not None:  # first is non-idempotent for fn check mode fn is None
+            self.fn = fn
 
 
     @property
@@ -1518,6 +1523,11 @@ class Kever:
                                       " with evt = {}."
                                   "".format(delegator, ked["i"], ked))
 
+            # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
+            # all validated above so may add to KEL and FEL logs as first seen
+            fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                    first=True if not check else False, seqner=seqner, diger=diger,
+                                    firner=firner, dater=dater)
 
             # nxt and signatures verify so update state
             self.sn = sn
@@ -1536,12 +1546,8 @@ class Kever:
 
             # last establishment event location need this to recognize recovery events
             self.lastEst = LastEstLoc(s=self.sn, d=self.serder.diger.qb64)
-
-            # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
-            # all validated above so may add to KEL and FEL logs as first seen
-            self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                    first=True if not check else False, seqner=seqner, diger=diger,
-                                    firner=firner, dater=dater)
+            if fn is not None:  # first is non-idempotent for fn check mode fn is None
+                self.fn = fn
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -1576,15 +1582,17 @@ class Kever:
                                                                 toad=self.toad,
                                                                 wits=self.wits)
 
+            # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
+            # all validated above so may add to KEL and FEL logs as first seen
+            fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+                                    first=True if not check else False)  # First seen accepted
+
             # update state
             self.sn = sn
             self.serder = serder  # need for digest agility includes .serder.diger
             self.ilk = ilk
-
-            # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
-            # all validated above so may add to KEL and FEL logs as first seen
-            self.fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                    first=True if not check else False)  # First seen accepted
+            if fn is not None: # first is non-idempotent for fn check mode fn is None
+                self.fn = fn
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -1753,7 +1761,7 @@ class Kever:
             validating threshold sith.
         Validate witness receipts by validating indexes, verifying
             witness signatures and validating toad.
-        Witness validation is a function of .opre and .local
+        Witness validation is a function of wits .prefixes and .local
 
         Parameters:
             serder is Serder instance of event
@@ -1810,8 +1818,9 @@ class Kever:
 
         # Kevery .process event logic prevents this from seeing event when
         # not local and event pre is own pre
-        if ((wits and not self.opre) or  # in promiscuous mode so assume must verify toad
-            (wits and not self.local and self.opre and self.opre not in wits)):
+        if ((wits and not self.prefixes) or  # in promiscuous mode so assume must verify toad
+            (wits and self.prefixes and not self.local and  # not promiscuous nonlocal
+                not (oset(self.prefixes) & oset(wits)))):  # own prefix is not a witness
             # validate that event is fully witnessed
             if isinstance(toad, str):
                 toad = int(toad, 16)
@@ -2081,25 +2090,36 @@ class Kevery:
     Has the following public attributes and properties:
 
     Attributes:
-        .ims is bytearray incoming message stream
-        .cues is deque of Cues i.e. notices of events or requests to respond to
-        .kevers is dict of existing kevers indexed by pre (qb64) of each Kever
+        evts (Deck): of Events i.e. events to process
+        cues (Deck):  of Cues i.e. notices of events needing receipt or
+                      requests needing response
+
         .db is instance of LMDB Baser object
         .framed is Boolean stream is packet framed If True Else not framed
         .pipeline is Boolean, True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-        .opre is fully qualified base64 identifier prefix of own identifier if any
-        .local is Boolean, True means only process msgs for own events if .opre
-                           False means only process msgs for not own events if .opre
+        lax (Boolean): True means operate in promiscuous (unrestricted) mode,
+                           False means operate in nonpromiscuous (restricted) mode
+                              as determined by local and prefixes
+
+        local (Boolean): True means only process msgs for own events if not lax
+                         False means only process msgs for not own events if not lax
         cloned (Boolen): True means cloned message stream so use attached
-                datetimes from clone source not own
-        direct is Boolean, True means direct mode so cue receipts
-                               False means indirect mode so don't cue receipts
+                         datetimes from clone source not own.
+                         False means use current datetime
+        direct (Boolean): True means direct mode so cue notices for receipts etc
+                          False means indirect mode so don't cue notices
+        check (Boolean): True means do not update the database in any
+                non-idempotent way. Useful for reinitializing the Kevers from
+                a persisted KEL without updating non-idempotent first seen .fels
+                and timestamps.
+
 
     Properties:
-        .kever own Kever if self.pre else None
+        .kevers is dict of db kevers indexed by pre (qb64) of each Kever
+        .prefixes is list of fully qualified base64 identifier prefixes of db
+            local habitats if any.
 
-    Properties:
 
     """
     TimeoutOOE = 1200  # seconds to timeout out of order escrows
@@ -2111,45 +2131,77 @@ class Kevery:
     TimeoutVRE = 3600  # seconds to timeout unverified transferable receipt escrows
 
 
-    def __init__(self, cues=None, kevers=None, db=None, opre=None, local=False,
-                 cloned=False, direct=True):
+    def __init__(self, *, evts=None, cues=None, db=None,
+                 lax=True, local=False, cloned=False, direct=True, check=False):
         """
         Initialize instance:
 
         Parameters:
-            cues is deque if cues to create responses to messages
+            evts (Deck): derived from various messages to be processes
+            cues (Deck)  notices to create responses to evts
             kevers is dict of Kever instances of key state in db
-            db is Baser instance
-            opre is local or own identifier prefix. Some restriction if present
-            local is Boolean, True means only process msgs for own events if .pre
-                        False means only process msgs for not own events if .pre
+            db (Baser): instance of database
+            lax (Boolean): True means operate in promiscuous (unrestricted) mode,
+                           False means operate in nonpromiscuous (restricted) mode
+                              as determined by local and prefixes
+            local (Boolean): True means only process msgs for own events if not lax
+                         False means only process msgs for not own events if not lax
             cloned (Boolen): True means cloned message stream so use attached
-                datetimes from clone source not own
-            direct is Boolean, True means direct mode so cue receipts
-                               False means indirect mode so don't cue receipts
+                         datetimes from clone source not own.
+                         False means use current datetime
+            direct (Boolean): True means direct mode so cue notices for receipts etc
+                          False means indirect mode so don't cue notices
+            check (Boolean): True means do not update the database in any
+                non-idempotent way. Useful for reinitializing the Kevers from
+                a persisted KEL without updating non-idempotent first seen .fels
+                and timestamps.
         """
-        self.cues = cues if cues is not None else deque()
-        self.kevers = kevers if kevers is not None else dict()
+        self.evts = evts if evts is not None else decking.Deck()  # subclass of deque
+        self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
         if db is None:
-            db = Baser()  # default name = "main"
+            db = basing.Baser()  # default name = "main"
         self.db = db
-        self.opre = opre  # local prefix for restrictions on local events
+        self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal restrictions
         self.cloned = True if cloned else False  # process as cloned
-        self.direct = True if direct else False
+        self.direct = True if direct else False  # process as direct mode
+        self.check = True if check else False  # process as check mode
 
 
     @property
-    def kever(self):
+    def kevers(self):
         """
-        Returns kever for its own pre .opre
+        Returns .db.kevers
         """
-        return self.kevers[self.opre] if self.opre else None
+        return self.db.kevers
 
 
-    def processEvent(self, serder, sigers, wigers=None,
+    @property
+    def prefixes(self):
+        """
+        Returns .db.prefixes
+        """
+        return self.db.prefixes
+
+
+    def processEvents(self, evts=None):
+        """
+        Process event dicts in evts or if evts is None in .evts
+        Parameters:
+            evts (Deck): each entry is dict that matches call signature of
+                .processEvent
+        """
+        if evts is  None:
+            evts = self.evts
+
+        while evts:
+            evt = evts.pull()
+            self.processEvent(**evt)
+
+
+    def processEvent(self, serder, sigers, *, wigers=None,
                      seqner=None, diger=None,
-                     firner=None, dater=None, check=False):
+                     firner=None, dater=None):
         """
         Process one event serder with attached indexd signatures sigers
 
@@ -2168,10 +2220,6 @@ class Kevery:
             dater is optional Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
-            check (Boolean): True means do not update the database in any
-                non-idempotent way. Useful for reinitializing the Kevers from
-                a persisted KEL without updating non-idempotent first seen .fels
-                and timestamps.
         """
         # fetch ked ilk  pre, sn, dig to see how to process
         ked = serder.ked
@@ -2186,15 +2234,15 @@ class Kevery:
         ilk = ked["t"]
         dig = serder.dig
 
-        if self.opre:
+        if not self.lax:  # otherwise in promiscuous mode
             if self.local:
-                if self.opre != pre:  # nonlocal event when in local mode
-                    raise ValueError("Nonlocal event pre={} when local mode for pre={}."
-                                                      "".format(pre, self.opre))
+                if pre not in self.prefixes:  # nonlocal event when in local mode
+                    raise ValueError("Nonlocal event pre={} not in prefixes={}."
+                                "when local mode.".format(pre, self.prefixes))
             else:
-                if self.opre == pre:  # local event when not in local mode
-                    raise ValueError("Local event pre={} when nonlocal mode."
-                                                      "".format(pre))
+                if pre in self.prefixes:  # local event when in nonlocal mode
+                    raise ValueError("Local event pre={} in prefixes when "
+                                     "nonlocal mode.".format(pre, self.prefixes))
 
 
         if pre not in self.kevers:  #  first seen event for pre
@@ -2213,15 +2261,15 @@ class Kevery:
                               dater=dater if self.cloned else None,
                               kevers=self.kevers,
                               cues=self.cues,
-                              opre=self.opre,
+                              prefixes=self.prefixes,
                               local=self.local,
-                              check=check)
+                              check=self.check)
                 self.kevers[pre] = kever  # not exception so add to kevers
 
-                if self.direct or not self.opre or self.opre != pre:  # not own event when owned
+                if self.direct or self.lax or pre not in self.prefixes:  # not own event when owned
                     # create cue for receipt   direct mode for now
                     #  receipt of actual type is dependent on own type of identifier
-                    self.cues.append(dict(kin="receipt", serder=serder))
+                    self.cues.push(dict(kin="receipt", serder=serder))
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
@@ -2275,12 +2323,12 @@ class Kevery:
                                  seqner=seqner, diger=diger,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
-                                 check=check)
+                                 check=self.check)
 
-                    if self.direct or not self.opre or self.opre != pre:  # not own event when owned
+                    if self.direct or self.lax or pre not in self.prefixes:  # not own event when owned
                         # create cue for receipt   direct mode for now
                         #  receipt of actual type is dependent on own type of identifier
-                        self.cues.append(dict(kin="receipt", serder=serder))
+                        self.cues.push(dict(kin="receipt", serder=serder))
 
                 else:  # maybe duplicitous
                     # check if duplicate of existing valid accepted event
@@ -2363,17 +2411,16 @@ class Kevery:
                 wiger.verfer = Verfer(qb64=kever.wits[wiger.index])  # assign verfer
                 if wiger.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid witness prefix
-                if self.opre and self.opre == wiger.verfer.qb64:  # own is receiptor
-                    if self.opre == pre:  # skip own receiptor of own event
+
+                if not self.lax and wiger.verfer.qb64 in self.prefixes:  # own is receiptor
+                    if pre in self.prefixes:  # skip own receiptor of own event
                         # sign own events not receipt them
                         logger.info("Kevery process: skipped own receipt attachment"
-                                    " on own event receipt=\n%s\n",
-                                               json.dumps(serder.ked, indent=1))
+                                    " on own event receipt=\n%s\n",serder.pretty)
                         continue  # skip own receipt attachment on own event
                     if not self.local:  # own receipt on other event when not local
                         logger.info("Kevery process: skipped own receipt attachment"
-                                    " on nonlocal event receipt=\n%s\n",
-                                               json.dumps(serder.ked, indent=1))
+                                " on nonlocal event receipt=\n%s\n", serder.pretty)
                         continue  # skip own receipt attachment on non-local event
 
                 if wiger.verfer.verify(wiger.raw, lserder.raw):
@@ -2428,17 +2475,16 @@ class Kevery:
             for cigar in cigars:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
-                if self.opre and self.opre == cigar.verfer.qb64: # own is receiptor
-                    if self.opre == pre:  # skip own receipter of own event
+
+                if not self.lax and cigar.verfer.qb64 in self.prefixes: # own is receiptor
+                    if pre in self.prefixes:  # skip own receipter of own event
                         # sign own events not receipt them
                         logger.info("Kevery process: skipped own receipt attachment"
-                                    " on own event receipt=\n%s\n",
-                                               json.dumps(serder.ked, indent=1))
+                                    " on own event receipt=\n%s\n", serder.pretty)
                         continue  # skip own receipt attachment on own event
                     if not self.local:  # own receipt on other event when not local
                         logger.info("Kevery process: skipped own receipt attachment"
-                                    " on nonlocal event receipt=\n%s\n",
-                                               json.dumps(serder.ked, indent=1))
+                                " on nonlocal event receipt=\n%s\n", serder.pretty)
                         continue  # skip own receipt attachment on non-local event
 
                 if cigar.verfer.verify(cigar.raw, lserder.raw):
@@ -2499,17 +2545,15 @@ class Kevery:
         for cigar in cigars:
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid couplets
-            if self.opre and self.opre == cigar.verfer.qb64:  # own is receiptor
-                if self.opre == pre:  # skip own receipter on own event
+            if not self.lax and cigar.verfer.qb64 in self.prefixes:  # own is receiptor
+                if pre in self.prefixes:  # skip own receipter on own event
                     # sign own events not receipt them
                     logger.info("Kevery process: skipped own receipt attachment"
-                                " on own event receipt=\n%s\n",
-                                           json.dumps(serder.ked, indent=1))
+                                " on own event receipt=\n%s\n", serder.pretty)
                     continue  # skip own receipt attachment on own event
                 if not self.local:  # own receipt on other event when not local
                     logger.info("Kevery process: skipped own receipt attachment"
-                                " on nonlocal event receipt=\n%s\n",
-                                           json.dumps(serder.ked, indent=1))
+                            " on nonlocal event receipt=\n%s\n", serder.pretty)
                     continue  # skip own receipt attachment on non-local event
 
             if cigar.verfer.verify(cigar.raw, serder.raw):
@@ -2565,14 +2609,14 @@ class Kevery:
                                   "".format(sn))
 
         for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
-            if self.opre and self.opre == sprefixer.qb64:  # own is receipter
-                if self.opre == pre:  # skip own receipter of own event
+            if not self.lax and sprefixer.qb64 in self.prefixes:  # own is receipter
+                if pre in self.prefixes:  # skip own receipter of own event
                     # sign own events not receipt them
                     raise ValidationError("Own pre={} receipter of own event"
-                                          " {}.".format(self.opre, ked))
+                                          " {}.".format(self.prefixes, serder.pretty))
                 if not self.local:  # skip own receipts of nonlocal events
                     raise ValidationError("Own pre={} receipter of nonlocal event "
-                                          "{}.".format(self.opre, ked))
+                                          "{}.".format(self.prefixes, serder.pretty))
 
             if sprefixer.qb64 in self.kevers:
                 # receipted event and receipter in database so get receipter est evt
@@ -2646,15 +2690,15 @@ class Kevery:
             ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
 
         for sprefixer, sseqner, sdiger, siger in trqs:  # iterate over each trq
-            if self.opre and self.opre == sprefixer.qb64:  # own trans receipt quadruple (chit)
-                if self.opre == pre:  # skip own trans receipts of own events
+            if not self.lax and sprefixer.qb64 in self.prefixes:  # own trans receipt quadruple (chit)
+                if pre in self.prefixes:  # skip own trans receipts of own events
                     raise ValidationError("Own pre={} replay attached transferable "
                                           "receipt quadruple of own event {}."
-                                      "".format(self.opre, ked))
+                                      "".format(self.prefixes, serder.pretty))
                 if not self.local:  # skip own trans receipt quadruples of nonlocal events
                     raise ValidationError("Own pre={} seal in replay attached "
                                           "transferable receipt quadruples of nonlocal"
-                                          " event {}.".format(self.opre, ked))
+                                          " event {}.".format(self.prefixes, serder.pretty))
 
             if ldig is not None and sprefixer.qb64 in self.kevers:
                 # both receipted event and receipter in database so retreive
@@ -2775,16 +2819,14 @@ class Kevery:
         for cigar in cigars:
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid couplets
-            if self.opre and self.opre == cigar.verfer.qb64:  # own receipt when own nontrans
-                if self.opre == pre:  # own receipt attachment on own event
+            if not self.lax and cigar.verfer.qb64 in self.prefixes:  # own receipt when own nontrans
+                if pre in self.prefixes:  # own receipt attachment on own event
                     logger.info("Kevery process: skipped own receipt attachment"
-                                " on own event receipt=\n%s\n",
-                                           json.dumps(serder.ked, indent=1))
+                                " on own event receipt=\n%s\n", serder.pretty)
                     continue  # skip own receipt attachment on own event
                 if not self.local:  # own receipt on other event when not local
                     logger.info("Kevery process: skipped own receipt attachment"
-                                " on nonlocal event receipt=\n%s\n",
-                                           json.dumps(serder.ked, indent=1))
+                            " on nonlocal event receipt=\n%s\n", serder.pretty)
                     continue  # skip own receipt attachment on non-local event
 
             if cigar.verfer.verify(cigar.raw, serder.raw):
@@ -2792,17 +2834,15 @@ class Kevery:
                 couple = cigar.verfer.qb64b + cigar.qb64b
                 self.db.addRct(key=dgKey(pre=pre, dig=ldig), val=couple)
 
-
-
         for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
-            if self.opre and self.opre == sprefixer.qb64:  # own endorsed ksn
-                if self.opre == pre:  # skip own endorsed ksn
+            if not self.lax and sprefixer.qb64 in self.prefixes:  # own endorsed ksn
+                if pre in self.prefixes:  # skip own endorsed ksn
                     raise ValidationError("Own endorsement pre={} of own key"
-                                " state notifiction {}.".format(self.opre, ked))
+                        " state notifiction {}.".format(self.prefixes, serder.pretty))
                 if not self.local:  # skip own nonlocal ksn
                     raise ValidationError("Own endorsement pre={}  "
                                           "of nonlocal key state notification "
-                                          "{}.".format(self.opre, ked))
+                                    "{}.".format(self.prefixes, serder.pretty))
 
             if ldig is not None and sprefixer.qb64 in self.kevers:
                 # both key state event and endorser in database so retreive
@@ -2894,7 +2934,7 @@ class Kevery:
             for msg in cloner:
                 msgs.extend(msg)
 
-            self.cues.append(dict(kin="replay", msgs=msgs))
+            self.cues.push(dict(kin="replay", msgs=msgs))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
 
@@ -4303,778 +4343,3 @@ class Kevery:
         """
         pass
 
-
-class Parser:
-    """
-    Parser is stream parser that processes an incoming message stream.
-    Each message in the stream is composed of a message body with a message foot
-    The message body includes a version string. The message foot is composed of
-    composable concatenated attachments encoded in CESR (Composable Event
-    Streaming Representation)  CESR supports both binary and text formats where
-    text is Base64 URL/Filesafe. The attachements in a CESR foot may be converted
-    and round tripped en-masse between binary and text (Base64 URL/File).
-    CESR encoding ensures alignment on 24 bit boundaries.
-
-    Only supports current version VERSION
-
-    Has the following public attributes and properties:
-
-    Attributes:
-        ims (bytearray): incoming message stream
-        framed (Boolean): True means stream is packet framed
-        pipeline (Boolean): True means use pipeline processor to process
-                whenever stream includes pipelined count codes.
-        kvy (Kevery): route KEL message types to this instance
-        tvy (Tevery): route TEL message types to this instance
-
-    """
-
-    def __init__(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
-        """
-        Initialize instance:
-
-        Parameters:
-            ims (bytearray): incoming message stream
-            framed (Boolean): True means ims contains only one msg body plus
-                its foot of attachments, not multiple sets of msg body plus foot
-            pipeline (Boolean): True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-            kvy (Kevery): route KEL message types to this instance
-            tvy (Tevery): route TEL message types to this instance
-        """
-        self.ims = ims if ims is not None else bytearray()
-        self.framed = True if framed else False  # extract until end-of-stream
-        self.pipeline = True if pipeline else False  # process as pipelined
-        self.kvy = kvy
-        self.tvy = tvy
-
-    @staticmethod
-    def _sniff(ims):
-        """
-        Returns status string of cold start of stream ims bytearray by looking
-        at first triplet of first byte to determin if message or counter code
-        and if counter code whether Base64 or Base2 representation
-
-        First three bits:
-        0o0 = 000 free
-        0o1 = 001 cntcode B64
-        0o2 = 010 opcode B64
-        0o3 = 011 json
-        0o4 = 100 mgpk
-        0o5 = 101 cbor
-        0o6 = 110 mgpk
-        007 = 111 cntcode or opcode B2
-
-        counter B64 in (0o1, 0o2) return 'txt'
-        counter B2 in (0o7)  return 'bny'
-        event in (0o3, 0o4, 0o5, 0o6)  return 'evt'
-        unexpected in (0o0)  raise ColdStartError
-        Colds = Coldage(msg='msg', txt='txt', bny='bny')
-
-        'msg' if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2)
-        'txt' if tritet in (ColdDex.CtB64, ColdDex.OpB64)
-        'bny' if tritet in (ColdDex.CtOpB2,)
-        """
-        if not ims:
-            raise ShortageError("Need more bytes.")
-
-        tritet = ims[0] >> 5
-        if tritet in (ColdDex.JSON, ColdDex.MGPK1, ColdDex.CBOR, ColdDex.MGPK2):
-            return Colds.msg
-        if tritet in (ColdDex.CtB64, ColdDex.OpB64):
-            return Colds.txt
-        if tritet in (ColdDex.CtOpB2,):
-            return Colds.bny
-
-        raise ColdStartError("Unexpected tritet={} at stream start.".format(tritet))
-
-
-    @staticmethod
-    def _extract(ims, klas, cold=Colds.txt):
-        """
-        Extract and return instance of klas from input message stream, ims, given
-        stream state, cold, is txt or bny. Inits klas from ims using qb64b or
-        qb2 parameter based on cold.
-        """
-        if cold == Colds.txt:
-            return klas(qb64b=ims, strip=True)
-        elif cold == Colds.bny:
-            return klas(qb2=ims, strip=True)
-        else:
-            raise ColdStartError("Invalid stream state cold={}.".format(cold))
-
-
-    @staticmethod
-    def _extractor(ims, klas, cold=Colds.txt, abort=False):
-        """
-        Returns generator to extract and return instance of klas from input
-        message stream, ims, given stream state, cold, is txt or bny.
-        If wait is True then yield when not enough bytes in stream otherwise
-        raise ShortageError
-        Inits klas from ims using qb64b or qb2 parameter based on cold.
-        Yields if not enough bytes in ims to fill out klas instance.
-
-        Usage:
-
-        instance = self._extractGen
-        """
-        while True:
-            try:
-                if cold == Colds.txt:
-                    return klas(qb64b=ims, strip=True)
-                elif cold == Colds.bny:
-                    return klas(qb2=ims, strip=True)
-                else:
-                    raise ColdStartError("Invalid stream state cold={}.".format(cold))
-            except ShortageError as ex:
-                if abort:  # pipelined pre-collects full frame before extracting
-                    raise  # bad pipelined frame so abort by raising error
-                yield
-
-
-    def process(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
-        """
-        Processes all messages from incoming message stream, ims,
-        when provided. Otherwise process messages from .ims
-        Returns when ims is empty.
-        Convenience executor for .processAllGen when ims is not live, i.e. fixed
-
-        Parameters:
-            ims is bytearray of incoming message stream. May contain one or more
-                sets each of a serialized message with attached cryptographic
-                material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
-                counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-
-            kvy (Kevery): route KERI KEL message types to this instance
-            tvy (Tevery): route TEL message types to this instance
-
-        New Logic:
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counters.
-        """
-        processor = self.allProcessor(ims=ims,
-                                       framed=framed,
-                                       pipeline=pipeline,
-                                       kvy=kvy,
-                                       tvy=tvy)
-
-        while True:
-            try:
-                next(processor)
-            except StopIteration:
-                break
-
-
-    def processOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
-        """
-        Processes one messages from incoming message stream, ims,
-        when provided. Otherwise process message from .ims
-        Returns once one message is processed.
-        Convenience executor for .processOneGen when ims is not live, i.e. fixed
-
-        Parameters:
-            ims is bytearray of serialized incoming message stream.
-                May contain one or more sets each of a serialized message with
-                attached cryptographic material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
-                counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-
-            kvy (Kevery): route KERI KEL message types to this instance
-            tvy (Tevery): route TEL message types to this instance
-
-        New Logic:
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counters.
-        """
-        processor = self.onceProcessor(ims=ims,
-                                        framed=framed,
-                                        pipeline=pipeline,
-                                        kvy=kvy,
-                                        tvy=tvy)
-        while True:
-            try:
-                next(processor)
-            except StopIteration:
-                break
-
-
-    def allProcessor(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
-        """
-        Returns generator to process all messages from incoming message stream,
-        ims until ims is exhausted (empty) then returns.
-        If ims not provided then process messages from .ims
-        Must be framed.
-
-        Parameters:
-            ims is bytearray of incoming message stream. May contain one or more
-                sets each of a serialized message with attached cryptographic
-                material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
-                counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-
-            kvy (Kevery): route KERI KEL message types to this instance
-            tvy (Tevery): route TEL message types to this instance
-
-        New Logic:
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counters.
-        """
-        if ims is not None:  # needs bytearray not bytes since deletes as processes
-            if not isinstance(ims, bytearray):
-                ims = bytearray(ims)  # so make bytearray copy
-        else:
-            ims = self.ims  # use instance attribute by default
-
-        framed = framed if framed is not None else self.framed
-        pipeline = pipeline if pipeline is not None else self.pipeline
-        kvy = kvy if kvy is not None else self.kvy
-        tvy = tvy if tvy is not None else self.tvy
-
-        while ims:  # only process until ims empty
-            try:
-                done = yield from self.msgProcessor(ims=ims,
-                                                    framed=framed,
-                                                    pipeline=pipeline,
-                                                    kvy=kvy,
-                                                    tvy=tvy)
-
-            except SizedGroupError as ex:  # error inside sized group
-                # processOneIter already flushed group so do not flush stream
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
-                else:
-                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
-
-            except (ColdStartError, ExtractionError) as ex:  # some extraction error
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
-                else:
-                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
-                del ims[:]  # delete rest of stream to force cold restart
-
-            except (ValidationError, Exception) as ex:  # non Extraction Error
-                # Non extraction errors happen after successfully extracted from stream
-                # so we don't flush rest of stream just resume
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Parser msg non-extraction error: %s\n", ex.args[0])
-                else:
-                    logger.error("Parser msg non-extraction error: %s\n", ex.args[0])
-            yield
-
-        return True
-
-
-    def onceProcessor(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
-        """
-        Returns generator to process one message from incoming message stream, ims.
-        If ims not provided process messages from .ims
-
-        Parameters:
-            ims is bytearray of incoming message stream. May contain one or more
-                sets each of a serialized message with attached cryptographic
-                material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
-                counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-
-            kvy (Kevery): route KERI KEL message types to this instance
-            tvy (Tevery): route TEL message types to this instance
-
-        New Logic:
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counters.
-        """
-        if ims is not None:  # needs bytearray not bytes since deletes as processes
-            if not isinstance(ims, bytearray):
-                ims = bytearray(ims)  # so make bytearray copy
-        else:
-            ims = self.ims  # use instance attribute by default
-
-        framed = framed if framed is not None else self.framed
-        pipeline = pipeline if pipeline is not None else self.pipeline
-        kvy = kvy if kvy is not None else self.kvy
-        tvy = tvy if tvy is not None else self.tvy
-
-
-        done = False
-        while not done:
-            try:
-                done = yield from self.msgProcessor(ims=ims,
-                                                    framed=framed,
-                                                    pipeline=pipeline,
-                                                    kvy=kvy,
-                                                    tvy=tvy)
-
-            except SizedGroupError as ex:  # error inside sized group
-                # processOneIter already flushed group so do not flush stream
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
-                else:
-                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
-
-            except (ColdStartError, ExtractionError) as ex:  # some extraction error
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg extraction error: %s\n", ex.args[0])
-                else:
-                    logger.error("Kevery msg extraction error: %s\n", ex.args[0])
-                del ims[:]  # delete rest of stream to force cold restart
-
-            except (ValidationError, Exception) as ex:  # non Extraction Error
-                # Non extraction errors happen after successfully extracted from stream
-                # so we don't flush rest of stream just resume
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery msg non-extraction error: %s\n", ex.args[0])
-                else:
-                    logger.error("Kevery msg non-extraction error: %s\n", ex.args[0])
-            finally:
-                done = True
-
-        return done
-
-
-    def processor(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
-        """
-        Returns generator to continually process messages from incoming message
-        stream, ims. Yields waits whenever ims empty.
-        If ims not provided then process messages from .ims
-
-        Parameters:
-            ims is bytearray of incoming message stream. May contain one or more
-                sets each of a serialized message with attached cryptographic
-                material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
-                counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-
-            kvy (Kevery): route KERI KEL message types to this instance
-            tvy (Tevery): route TEL message types to this instance
-
-        New Logic:
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counters.
-        """
-        if ims is not None:  # needs bytearray not bytes since deletes as processes
-            if not isinstance(ims, bytearray):
-                ims = bytearray(ims)  # so make bytearray copy
-        else:
-            ims = self.ims  # use instance attribute by default
-
-        framed = framed if framed is not None else self.framed
-        pipeline = pipeline if pipeline is not None else self.pipeline
-        kvy = kvy if kvy is not None else self.kvy
-        tvy = tvy if tvy is not None else self.tvy
-
-        while True:  # continuous stream processing never stop
-            try:
-                done = yield from self.msgProcessor(ims=ims,
-                                                    framed=framed,
-                                                    pipeline=pipeline,
-                                                    kvy=kvy,
-                                                    tvy=tvy)
-
-            except SizedGroupError as ex:  # error inside sized group
-                # processOneIter already flushed group so do not flush stream
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
-                else:
-                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
-
-            except (ColdStartError, ExtractionError) as ex:  # some extraction error
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
-                else:
-                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
-                del ims[:]  # delete rest of stream to force cold restart
-
-            except (ValidationError, Exception) as ex:  # non Extraction Error
-                # Non extraction errors happen after successfully extracted from stream
-                # so we don't flush rest of stream just resume
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Parser msg non-extraction error: %s\n", ex.args[0])
-                else:
-                    logger.error("Parser msg non-extraction error: %s\n", ex.args[0])
-            yield
-
-        return True
-
-
-    def msgProcessor(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
-        """
-        Returns generator that extracts one msg with attached crypto material
-        (signature etc) from incoming message stream, ims, and dispatches
-        processing of message with attachments.
-
-        Uses .ims when ims is not provided.
-
-        Iterator yields when not enough bytes in ims to finish one msg plus
-        attachments. Returns (which raises StopIteration) when finished.
-
-        Parameters:
-            ims is bytearray of serialized incoming message stream.
-                May contain one or more sets each of a serialized message with
-                attached cryptographic material such as signatures or receipts.
-
-            framed is Boolean, True means ims contains only one frame of msg plus
-                counted attachments instead of stream with multiple messages
-
-            pipeline is Boolean, True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
-
-            kevery (Kevery): route KERI KEL message types to this instance
-            tevery (Tevery): route TEL message types to this instance
-
-        Logic:
-            Currently only support couters on attachments not on combined or
-            on message
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counter.
-            Do While loop
-               sniff to set up first extraction
-                  raise exception and flush full tream if stream start is counter
-                  must be message
-               extract message
-               sniff for counter
-               if group counter extract and discard but keep track of count
-               so if error while processing attachments then only need to flush
-               attachment count not full stream.
-
-
-        """
-        if ims is None:
-            ims = self.ims
-
-        while not ims:
-            yield
-
-        cold = self._sniff(ims)  # check for spurious counters at front of stream
-        if cold in (Colds.txt, Colds.bny):  # not message error out to flush stream
-            # replace with pipelining here once CESR message format supported.
-            raise ColdStartError("Expecting message counter tritet={}"
-                                 "".format(cold))
-        # Otherwise its a message cold start
-        while True:# extract and deserialize message from ims
-            try:
-                serder = Serder(raw=ims)
-            except ShortageError as ex:  # need more bytes
-                yield
-            else:  # extracted successfully
-                del ims[:serder.size]  # strip off event from front of ims
-                break
-
-        sigers = []  # list of Siger instances of attached indexed controller signatures
-        wigers = []  # list of Siger instance of attached indexed witness signatures
-        cigars = []  # List of cigars to hold nontrans rct couplets
-        # List of tuples from extracted transferable receipt (vrc) quadruples
-        trqs = []  # each converted quadruple is (prefixer, seqner, diger, siger)
-        # List of tuples from extracted transferable indexed sig groups
-        tsgs = []  # each converted group is tuple of (i,s,d) triple plus list of sigs
-        # List of tuples from extracted first seen replay couples
-        frcs = []  # each converted couple is (seqner, dater)
-        # List of tuples from extracted source seal couples (delegator or issuer)
-        sscs = []  # each converted couple is (seqner, diger) for delegating/issuing event
-        pipelined = False  # all attachments in one big pipeline counted group
-        # extract and deserialize attachments
-        try:  # catch errors here to flush only counted part of stream
-            # extract attachments must start with counter so know if txt or bny.
-            while not ims:
-                yield
-            cold = self._sniff(ims)  # expect counter at front of attachments
-            if cold != Colds.msg:  # not new message so process attachments
-                ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
-                if ctr.code == CtrDex.AttachedMaterialQuadlets:  # pipeline ctr?
-                    pipelined = True
-                    # compute pipelined attached group size based on txt or bny
-                    pags = ctr.count * 4 if cold == Colds.txt else ctr.count * 3
-                    while len(ims) < pags:  # wait until rx full pipelned group
-                        yield
-
-                    pims = ims[:pags]  # copy out substream pipeline group
-                    del ims[:pags]  # strip off from ims
-                    ims = pims  # now just process substream as one counted frame
-
-                    if pipeline:
-                        pass  #  pass extracted ims to pipeline processor
-                        return
-
-                    ctr = yield from self._extractor(ims=ims,
-                                                     klas=Counter,
-                                                     cold=cold,
-                                                     abort=pipelined)
-
-                # iteratively process attachment counters (all non pipelined)
-                while True:  # do while already extracted first counter is ctr
-                    if ctr.code == CtrDex.ControllerIdxSigs:
-                        for i in range(ctr.count): # extract each attached signature
-                            siger = yield from self._extractor(ims=ims,
-                                                               klas=Siger,
-                                                               cold=cold,
-                                                               abort=pipelined)
-                            sigers.append(siger)
-
-                    elif ctr.code == CtrDex.WitnessIdxSigs:
-                        for i in range(ctr.count): # extract each attached signature
-                            wiger = yield from self._extractor(ims=ims,
-                                                               klas=Siger,
-                                                               cold=cold,
-                                                               abort=pipelined)
-                            wigers.append(wiger)
-
-                    elif ctr.code == CtrDex.NonTransReceiptCouples:
-                        # extract attached rct couplets into list of sigvers
-                        # verfer property of cigar is the identifier prefix
-                        # cigar itself has the attached signature
-
-                        for i in range(ctr.count): # extract each attached couple
-                            verfer = yield from self._extractor(ims=ims,
-                                                                klas=Verfer,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            cigar = yield from self._extractor(ims=ims,
-                                                               klas=Cigar,
-                                                               cold=cold,
-                                                               abort=pipelined)
-                            cigar.verfer = verfer
-                            cigars.append(cigar)
-
-                    elif ctr.code == CtrDex.TransReceiptQuadruples:
-                        # extract attaced trans receipt vrc quadruple
-                        # spre+ssnu+sdig+sig
-                        # spre is pre of signer of vrc
-                        # ssnu is sn of signer's est evt when signed
-                        # sdig is dig of signer's est event when signed
-                        # sig is indexed signature of signer on this event msg
-                        for i in range(ctr.count): # extract each attached quadruple
-                            prefixer = yield from  self._extractor(ims,
-                                                                   klas=Prefixer,
-                                                                   cold=cold,
-                                                                   abort=pipelined)
-                            seqner = yield from  self._extractor(ims,
-                                                                 klas=Seqner,
-                                                                 cold=cold,
-                                                                 abort=pipelined)
-                            diger = yield from  self._extractor(ims,
-                                                                klas=Diger,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            siger = yield from self._extractor(ims=ims,
-                                                               klas=Siger,
-                                                               cold=cold,
-                                                               abort=pipelined)
-                            trqs.append((prefixer, seqner, diger, siger))
-
-                    elif ctr.code == CtrDex.TransIndexedSigGroups:
-                        # extract attaced trans indexed sig groups each made of
-                        # triple pre+snu+dig plus indexed sig group
-                        # pre is pre of signer (endorser) of msg
-                        # snu is sn of signer's est evt when signed
-                        # dig is dig of signer's est event when signed
-                        # followed by counter for ControllerIdxSigs with attached
-                        # indexed sigs from trans signer (endorser).
-                        for i in range(ctr.count): # extract each attached groups
-                            prefixer = yield from  self._extractor(ims,
-                                                                   klas=Prefixer,
-                                                                   cold=cold,
-                                                                   abort=pipelined)
-                            seqner = yield from  self._extractor(ims,
-                                                                 klas=Seqner,
-                                                                 cold=cold,
-                                                                 abort=pipelined)
-                            diger = yield from  self._extractor(ims,
-                                                                klas=Diger,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            ictr = ctr = yield from self._extractor(ims=ims,
-                                                                    klas=Counter,
-                                                                    cold=cold,
-                                                                    abort=pipelined)
-                            if ctr.code != CtrDex.ControllerIdxSigs:
-                                raise UnexpectedCountCodeError("Wrong count code={}."
-                                           "Expected code={}.".format(ictr.code,
-                                                     CtrDex.ControllerIdxSigs))
-                            isigers = []
-                            for i in range(ictr.count): # extract each attached signature
-                                isiger = yield from self._extractor(ims=ims,
-                                                                    klas=Siger,
-                                                                    cold=cold,
-                                                                    abort=pipelined)
-                                isigers.append(isiger)
-                            tsgs.append((prefixer, seqner, diger, isigers))
-
-                    elif ctr.code == CtrDex.FirstSeenReplayCouples:
-                        # extract attached first seen replay couples
-                        # snu+dtm
-                        # snu is fn (first seen ordinal) of event
-                        # dtm is dt of event
-                        for i in range(ctr.count): # extract each attached quadruple
-                            firner = yield from  self._extractor(ims,
-                                                                 klas=Seqner,
-                                                                 cold=cold,
-                                                                 abort=pipelined)
-                            dater = yield from  self._extractor(ims,
-                                                                klas=Dater,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            frcs.append((firner, dater))
-
-                    elif ctr.code == CtrDex.SealSourceCouples:
-                        # extract attached first seen replay couples
-                        # snu+dig
-                        # snu is sequence number  of event
-                        # dig is digest of event
-                        for i in range(ctr.count): # extract each attached quadruple
-                            seqner = yield from  self._extractor(ims,
-                                                                klas=Seqner,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            diger = yield from  self._extractor(ims,
-                                                                klas=Diger,
-                                                                cold=cold,
-                                                                abort=pipelined)
-                            sscs.append((seqner, diger))
-
-                    else:
-                        raise UnexpectedCountCodeError("Unsupported count code={}."
-                                                  "".format(ctr.code))
-
-                    if pipelined:  # process to end of stream (group)
-                        if not ims:  # end of pipelined group frame
-                            break
-                    elif framed:
-                        # because not all in one pipeline group, each attachment
-                        # group may switch stream state txt or bny
-                        if not ims:  # end of frame
-                            break
-                        cold = self._sniff(ims)
-                        if cold == Colds.msg:  # new message so attachments done
-                            break  # finished attachments since new message
-                    else:  # process until next message
-                        # because not all in one pipeline group, each attachment
-                        # group may switch stream state txt or bny
-                        while not ims:
-                            yield  # no frame so must wait for next message
-                        cold = self._sniff(ims)  # ctr or msg
-                        if cold == Colds.msg:  # new message
-                            break  # finished attachments since new message
-
-                    ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
-
-        except ExtractionError as ex:
-            if pipelined:  # extracted pipelined group is preflushed
-                raise SizedGroupError("Error processing pipelined size"
-                                "attachment group of size={}.".format(pags))
-            raise  # no pipeline group so can't preflush, must flush stream
-
-        ilk = serder.ked["t"]  # dispatch abased on ilk
-        if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
-            firner, dater = frcs[-1] if frcs else (None, None)  # use last one if more than one
-            seqner, diger = sscs[-1] if sscs else (None, None)  # use last one if more than one
-            if not sigers:
-                raise ValidationError("Missing attached signature(s) for evt "
-                                      "= {}.".format(serder.ked))
-            try:
-                kvy.processEvent(serder=serder,
-                                        sigers=sigers,
-                                        wigers=wigers,
-                                        seqner=seqner,
-                                        diger=diger,
-                                        firner=firner,
-                                        dater=dater)
-
-                if cigars:
-                    kvy.processReceiptCouples(serder, cigars, firner=firner)
-                if trqs:
-                    kvy.processReceiptQuadruples(serder, trqs, firner=firner)
-
-            except AttributeError:
-                raise ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty))
-
-        elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
-            if not (cigars or wigers or tsgs):
-                raise ValidationError("Missing attached signatures on receipt"
-                                      "msg = {}.".format(serder.ked))
-            try:
-                if cigars:
-                    kvy.processReceipt(serder=serder, cigars=cigars)
-
-                if wigers:
-                    kvy.processReceiptWitness(serder=serder, wigers=wigers )
-
-                if tsgs:
-                    kvy.processReceiptTrans(serder=serder, tsgs=tsgs)
-
-            except AttributeError:
-                raise ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty))
-
-        elif ilk in (Ilks.ksn,):  # key state notification msg
-            if not (cigars or tsgs):
-                raise ValidationError("Missing attached endorser signature(s) "
-                       "to key state notification msg = {}.".format(serder.ked))
-
-            try:
-                if cigars:  # process separately so do not clash on errors
-                    # may want two different functions One for processKeyStateNoticeNonTrans
-                    # and one for processKeyStateNoticeTrans
-                    kvy.processKeyStateNotice(serder, cigars=cigars)  # nontrans
-
-                if tsgs:  # process separately so do not clash on errors
-                    kvy.processKeyStateNotice(serder, tsgs=tsgs)  #  trans
-
-            except AttributeError:
-                raise ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty))
-        elif ilk in [Ilks.req]:
-            res = serder.ked["r"]
-            if res in ["logs"]:
-                try:
-                    kvy.processQuery(serder=serder)
-                except AttributeError:
-                    raise ValidationError("No kevery to process so dropped msg"
-                                          "= {}.".format(serder.pretty))
-
-            elif res in ["tels"]:
-                try:
-                    tvy.processQuery(serder=serder)
-                except AttributeError as e:
-                    raise ValidationError("No kevery to process so dropped msg"
-                                      "= {} from {}.".format(serder.pretty, e))
-
-            else:
-                raise ValidationError("Invalid resource type {} so dropped msg"
-                                      "= {}.".format(res, serder.pretty))
-
-        elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
-            # TEL msg
-            seqner, diger = sscs[-1] if sscs else (None, None)  # use last one if more than one
-            try:
-                tvy.processEvent(serder, seqner=seqner, diger=diger, wigers=wigers)
-
-            except AttributeError:
-                raise ValidationError("No tevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty))
-
-        else:
-            raise ValidationError("Unexpected message ilk = {} for evt ="
-                                  " {}.".format(ilk, serder.ked))
-
-        return True  # done state
