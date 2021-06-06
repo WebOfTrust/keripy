@@ -15,111 +15,11 @@ from keri.core import coring, eventing
 from keri.core.coring import Serials
 from keri.db import dbing, basing, koming
 
-
-def test_clean():
+def test_app():
     """
-    Test Baser db clean clone function
     """
-    with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
-        # setup Nat's habitat using default salt multisig already incepts
-        natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
-                                isith=2, icount=3, temp=True)
-        assert natHab.name == 'nat'
-        assert natHab.ks == natKS
-        assert natHab.db == natDB
-        assert natHab.kever.prefixer.transferable
-        assert natHab.db.opened
-        assert natHab.pre in natHab.kevers
-        assert natHab.db.path.endswith("/keri/db/nat")
-        path = natHab.db.path  # save for later
-
-        # Create series of events for Nat
-        natHab.interact()
-        natHab.rotate()
-        natHab.interact()
-        natHab.interact()
-        natHab.interact()
-        natHab.interact()
-
-        assert natHab.kever.sn == 6
-        assert natHab.kever.fn == 6
-        assert natHab.kever.serder.dig == 'En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI'
-        ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
-        assert ldig == natHab.kever.serder.digb
-        serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
-        assert serder.dig == natHab.kever.serder.dig
-        assert natHab.db.env.stat()['entries'] == 19
-
-        # test reopenDB with reuse  (because temp)
-        with basing.reopenDB(db=natHab.db, reuse=True):
-            assert natHab.db.path == path
-            ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
-            assert ldig == natHab.kever.serder.digb
-            serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
-            assert serder.dig == natHab.kever.serder.dig
-            assert natHab.db.env.stat()['entries'] == 19
-
-            # verify name pre kom in db
-            data = natHab.db.habs.get(keys=natHab.name)
-            assert data.prefix == natHab.pre
-            assert data.name == natHab.name
-
-            # add garbage event to corrupt database
-            badsrdr = eventing.rotate(pre=natHab.pre,
-                                       keys=[verfer.qb64 for verfer in natHab.kever.verfers],
-                                       dig=natHab.kever.serder.dig,
-                                       sn=natHab.kever.sn+1,
-                                       sith=2,
-                                       nxt=natHab.kever.nexter.qb64)
-            fn = natHab.kever.logEvent(serder=badsrdr, first=True)
-            assert fn == 7
-            # verify garbage event in database
-            assert natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
-            assert natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
-
-
-        # test openDB copy db with clean
-        with basing.openDB(name=natHab.db.name,
-                          temp=natHab.db.temp,
-                          headDirPath=natHab.db.headDirPath,
-                          dirMode=natHab.db.dirMode,
-                          clean=True) as copy:
-            assert copy.path.endswith("/keri/clean/db/nat")
-            assert copy.env.stat()['entries'] >= 18
-
-        assert len(natHab.kevers) == 1
-        # now clean it
-        apping.clean(orig=natHab.db)
-
-        # see if kevers dict is back to what it was before
-        assert natHab.kever.sn == 6
-        assert natHab.kever.fn == 6
-        assert natHab.kever.serder.dig == 'En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI'
-
-        # see if database is back where it belongs
-        with basing.reopenDB(db=natHab.db, reuse=True):
-            assert natHab.db.path == path
-            ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
-            assert ldig == natHab.kever.serder.digb
-            serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
-            assert serder.dig == natHab.kever.serder.dig
-            assert natHab.db.env.stat()['entries'] >= 18
-
-            # confirm bad event missing from database
-            assert not natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
-            assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
-
-            # verify name pre kom in db
-            data = natHab.db.habs.get(keys=natHab.name)
-            assert data.prefix == natHab.pre
-            assert data.name == natHab.name
-
-
-    assert not os.path.exists(natKS.path)
-    assert not os.path.exists(natDB.path)
-
     """End Test"""
 
-
 if __name__ == "__main__":
-    test_clean()
+    test_app()
+
