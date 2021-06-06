@@ -2184,6 +2184,21 @@ class Kevery:
         return self.db.prefixes
 
 
+    def processEvents(self, evts=None):
+        """
+        Process event dicts in evts or if evts is None in .evts
+        Parameters:
+            evts (Deck): each entry is dict that matches call signature of
+                .processEvent
+        """
+        if evts is  None:
+            evts = self.evts
+
+        while evts:
+            evt = evts.pull()
+            self.processEvent(**evt)
+
+
     def processEvent(self, serder, sigers, *, wigers=None,
                      seqner=None, diger=None,
                      firner=None, dater=None):

@@ -32,7 +32,7 @@ from hio.base import doing
 
 from  .. import kering
 from  ..help import helping
-from  ..core import coring
+from  ..core import coring, eventing, parsing
 from . import dbing, koming
 
 
@@ -313,6 +313,82 @@ class Baser(dbing.LMDBer):
                                  subdb='habs.')
 
         return self.env
+
+
+    def clean(self):
+        """
+        Clean database by creating re-verified cleaned cloned copy
+        and then replacing original with cleaned cloned copy
+
+        Database usage should be offline during cleaning as it will be cloned in
+        readonly mode
+
+        """
+        # create copy to clone into
+        with openDB(name=self.name,
+                          temp=self.temp,
+                          headDirPath=self.headDirPath,
+                          dirMode=self.dirMode,
+                          clean=True) as copy:
+
+            with reopenDB(db=self, reuse=True, readonly=True):  # reopen as readonly
+                if not os.path.exists(self.path):
+                    raise ValueError("Error while cleaning, no orig at {}."
+                                     "".format(self.path))
+
+                kvy = eventing.Kevery(db=copy)  # promiscuous mode
+
+                # Revise in future to NOT parse msgs but to extract the processed
+                # objects so can pass directly to kvy.processEvent()
+                # need new method cloneObjAllPreIter()
+                # process event doesn't capture exceptions so we can more easily
+                # detect in the cloning that some events did not make it through
+                psr = parsing.Parser(kvy=kvy)
+                for msg in self.cloneAllPreIter():  # clone into copy
+                    psr.parseOne(ims=msg)
+
+                # clone .habs  habitat name prefix Komer subdb
+                copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subdb='habs.')  # copy
+                for keys, data in self.habs.getItemIter():
+                    if data.prefix in copy.kevers:  # only copy habs that verified
+                        copy.habs.put(keys=keys, data=data)
+                        copy.prefixes.append(data.prefix)
+
+                if not copy.habs.get(keys=(self.name, )):
+                    raise ValueError("Error cloning, missing orig name={} subdb."
+                                     "".format(self.name))
+
+            # remove own db directory replace with clean clone copy
+            if os.path.exists(self.path):
+                shutil.rmtree(self.path)
+
+            dst = shutil.move(copy.path, self.path)  # move copy back to orig
+            if not dst:  #  move failed leave new in place so can manually fix
+                raise ValueError("Error cloning, unable to move {} to {}."
+                                 "".format(copy.path, self.path))
+
+            # replace own kevers with copy kevers by clear and copy
+            # future do this by loading kever from .kyss  key state subdb
+            self.kevers.clear()
+            for pre, kever in copy.kevers.items():
+                self.kevers[pre] = kever
+
+            # replace prefixes with cloned copy prefixes
+
+
+            # clear and clone .prefixes
+            self.prefixes.clear()
+            self.prefixes.extend(copy.prefixes)
+
+            with reopenDB(db=self, reuse=True):  # make sure can reopen
+                if not isinstance(self.env, lmdb.Environment):
+                    raise ValueError("Error cloning, unable to reopen."
+                                     "".format(self.path))
+
+        # clone success so remove if still there
+        if os.path.exists(copy.path):
+            shutil.rmtree(copy.path)
+
 
 
     def clonePreIter(self, pre, fn=0):

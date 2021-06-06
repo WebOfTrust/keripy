@@ -163,9 +163,6 @@ class Habitat:
             self.pre = self.iserder.ked["i"]  # new pre
             self.mgr.move(old=opre, new=self.pre)
 
-            sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
-            msg = eventing.messagize(self.iserder, sigers=sigers)
-
             # may want db method that updates .habs. and .prefixes together
             self.db.habs.put(keys=self.name,
                              data=basing.HabitatRecord(name=self.name,
@@ -173,9 +170,11 @@ class Habitat:
             self.prefixes.append(self.pre)  # may want to have db method
 
             self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
+            sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
+            self.kvy.processEvent(serder=self.iserder, sigers=sigers)
             self.psr = parsing.Parser(framed=True, kvy=self.kvy)
-
-            self.psr.parseOne(ims=msg)
+            # msg = eventing.messagize(self.iserder, sigers=sigers)
+            #self.psr.parseOne(ims=msg)
             if self.pre not in self.kevers:
                 raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
@@ -304,14 +303,15 @@ class Habitat:
                                  data=data)
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
-        msg = eventing.messagize(serder, sigers=sigers)
-
         # update own key event verifier state
-        self.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
+        self.kvy.processEvent(serder=serder, sigers=sigers)
+        msg = eventing.messagize(serder, sigers=sigers)
+        # self.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat rotation for "
                                          "pre={}.".format(self.pre))
         self.ridx += 1  # successful rotate so increment for next time
+
         return msg
 
     def interact(self, data=None):
@@ -326,10 +326,10 @@ class Habitat:
                                    data=data)
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
-        msg = eventing.messagize(serder, sigers=sigers)
-
         # update own key event verifier state
-        self.psr.parseOne(ims=bytearray(msg))  # make copy as kvy deletes
+        self.kvy.processEvent(serder=serder, sigers=sigers)
+        msg = eventing.messagize(serder, sigers=sigers)
+        # self.psr.parseOne(ims=bytearray(msg))  # make copy as kvy deletes
         if kever.serder.dig != serder.dig:
             raise kering.ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre))
