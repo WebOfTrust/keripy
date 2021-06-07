@@ -243,6 +243,54 @@ def test_matter_suber():
         assert items == [(('a', '1'), val0.qb64),
                          (('a', '2'), val1.qb64)]
 
+        #  Try other classs
+        sdb = subing.MatterSuber(db=db, subkey='pigs.', klas=coring.Diger)
+        assert isinstance(sdb, subing.MatterSuber)
+        assert issubclass(sdb.klas, coring.Diger)
+
+        dig0 = "EQPYGGwTmuupWzwEHHzq7K0gzUhPx5_yZ-Wk1x4ejhcc"
+        val0 = coring.Diger(qb64=dig0)
+
+        keys = ("alpha", "dog")
+        sdb.put(keys=keys, val=val0)
+        actual = sdb.get(keys=keys)
+        assert isinstance(actual, coring.Diger)
+        assert actual.qb64 == val0.qb64
+
+        sdb.rem(keys)
+        actual = sdb.get(keys=keys)
+        assert actual is None
+
+        sdb.put(keys=keys, val=val0)
+        actual = sdb.get(keys=keys)
+        assert isinstance(actual, coring.Diger)
+        assert actual.qb64 == val0.qb64
+
+        pre1 = "EHHzqZWzwE-Wk7K0gzQPYGGwTmuupUhPx5_y1x4ejhcc"
+        val1 = coring.Matter(qb64=pre1)
+        result = sdb.put(keys=keys, val=val1)
+        assert not result
+        assert isinstance(actual, coring.Diger)
+        assert actual.qb64 == val0.qb64
+
+        result = sdb.pin(keys=keys, val=val1)
+        assert result
+        actual = sdb.get(keys=keys)
+        assert isinstance(actual, coring.Diger)
+        assert actual.qb64 == val1.qb64
+
+        # test iteritems
+        sdb = subing.MatterSuber(db=db, subkey='figs.')
+        assert isinstance(sdb, subing.MatterSuber)
+        sdb.put(keys=("a","1"), val=val0)
+        sdb.put(keys=("a","2"), val=val1)
+
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter()]
+        assert items == [(('a', '1'), val0.qb64),
+                         (('a', '2'), val1.qb64)]
+
+
+
     assert not os.path.exists(db.path)
     assert not db.opened
 

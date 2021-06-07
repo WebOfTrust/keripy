@@ -49,6 +49,7 @@ class Consoler(doing.Doer):
         """
         super(Consoler, self).__init__(**kwa)
         self.console = console if console is not None else serialing.Console()
+        self.db
 
 
     def recur(self, tyme):
@@ -78,6 +79,14 @@ class Consoler(doing.Doer):
         if not line:
             return False
         chunks = line.lower().split()
+
+        args = parser.parse_args()
+        if hasattr(args, "handler"):
+            args.handler(args)
+
+
+
+
         if not chunks:  # empty list
             self.console.put("Try one of: l[eft] r[ight] w[alk] s[top]\n")
             return False

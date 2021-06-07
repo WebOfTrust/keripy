@@ -33,7 +33,7 @@ from hio.base import doing
 from  .. import kering
 from  ..help import helping
 from  ..core import coring, eventing, parsing
-from . import dbing, koming
+from . import dbing, koming, subing
 
 
 
@@ -273,10 +273,18 @@ class Baser(dbing.LMDBer):
         Duplicates are inserted in lexocographic order by value, insertion order.
 
         """
-        self.kevers = dict()
         self.prefixes = list()
+        self._kevers = dict()
 
         super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
+
+
+    @property
+    def kevers(self):
+        """
+        Returns .db.kevers
+        """
+        return self._kevers
 
 
     def reopen(self, **kwa):
@@ -311,6 +319,8 @@ class Baser(dbing.LMDBer):
         self.habs = koming.Komer(db=self,
                                  schema=HabitatRecord,
                                  subkey='habs.')
+
+        self.ksts = subing.SerderSuber(db=self, subkey='ksts.')
 
         return self.env
 

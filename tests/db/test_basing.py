@@ -1743,7 +1743,7 @@ def test_clean_baser():
         assert ldig == natHab.kever.serder.digb
         serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
         assert serder.dig == natHab.kever.serder.dig
-        assert natHab.db.env.stat()['entries'] == 19
+        assert natHab.db.env.stat()['entries'] == 20
 
         # test reopenDB with reuse  (because temp)
         with basing.reopenDB(db=natHab.db, reuse=True):
@@ -1752,7 +1752,7 @@ def test_clean_baser():
             assert ldig == natHab.kever.serder.digb
             serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
             assert serder.dig == natHab.kever.serder.dig
-            assert natHab.db.env.stat()['entries'] == 19
+            assert natHab.db.env.stat()['entries'] == 20
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.name)
