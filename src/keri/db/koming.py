@@ -36,7 +36,7 @@ class Komer:
         """
         Parameters:
             db (dbing.LMDBer): base db
-            schema (dataclass):  reference to Class definition for dataclass sub class
+            schema (Type[dataclass]):  reference to Class definition for dataclass sub class
             subdb (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
