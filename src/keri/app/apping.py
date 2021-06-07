@@ -80,9 +80,9 @@ class Consoler(doing.Doer):
             return False
         chunks = line.lower().split()
 
-        args = parser.parse_args()
-        if hasattr(args, "handler"):
-            args.handler(args)
+        #args = parser.parse_args(chunks)
+        #if hasattr(args, "handler"):
+            #args.handler(args)
 
 
 
