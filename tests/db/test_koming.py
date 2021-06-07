@@ -50,7 +50,7 @@ def test_kom_happy_path():
         assert db.name == "test"
         assert db.opened
 
-        mydb = koming.Komer(db=db, schema=Record, subdb='records.')
+        mydb = koming.Komer(db=db, schema=Record, subkey='records.')
         assert isinstance(mydb, koming.Komer)
 
         sue = Record(first="Susan",
@@ -75,6 +75,27 @@ def test_kom_happy_path():
 
         actual = mydb.get(keys=keys)
         assert actual is None
+
+        keys = ("test_key", "0001")
+        mydb.put(keys=keys, data=sue)
+        actual = mydb.get(keys=keys)
+        assert actual == sue
+
+        kip = Record(first="Kip",
+                     last="Thorne",
+                     street="200 Center Street",
+                     city="Bluffdale",
+                     state="UT",
+                     zip=84043)
+        result = mydb.put(keys=keys, data=kip)
+        assert not result
+        actual = mydb.get(keys=keys)
+        assert actual == sue
+
+        result = mydb.pin(keys=keys, data=kip)
+        assert result
+        actual = mydb.get(keys=keys)
+        assert actual == kip
 
         # test with keys as string not tuple
         keys = "keystr"
@@ -130,7 +151,7 @@ def test_kom_get_item_iter():
         assert db.name == "test"
         assert db.opened
 
-        mydb = koming.Komer(db=db, schema=Stuff, subdb='recs.')
+        mydb = koming.Komer(db=db, schema=Stuff, subkey='recs.')
         assert isinstance(mydb, koming.Komer)
 
 
@@ -163,7 +184,7 @@ def test_put_invalid_dataclass():
         age: int
 
     with dbing.openLMDB() as db:
-        mydb = koming.Komer(db=db, schema=AnotherClass, subdb='records.')
+        mydb = koming.Komer(db=db, schema=AnotherClass, subkey='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
 
@@ -184,12 +205,12 @@ def test_get_invalid_dataclass():
         age: int
 
     with dbing.openLMDB() as db:
-        mydb = koming.Komer(db=db, schema=Record, subdb='records.')
+        mydb = koming.Komer(db=db, schema=Record, subkey='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
         mydb.put(keys=keys, data=sue)
 
-        mydb = koming.Komer(db=db, schema=AnotherClass, subdb='records.')
+        mydb = koming.Komer(db=db, schema=AnotherClass, subkey='records.')
         with pytest.raises(ValueError):
             mydb.get(keys)
 
@@ -203,7 +224,7 @@ def test_not_found_entity():
             return iter(asdict(self))
 
     with dbing.openLMDB() as db:
-        mydb = koming.Komer(db=db, schema=Record, subdb='records.')
+        mydb = koming.Komer(db=db, schema=Record, subkey='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
 
@@ -230,7 +251,7 @@ def test_serialization():
                  zip=84058)
 
     with dbing.openLMDB() as db:
-        k = koming.Komer(db=db, schema=Record, subdb='records.')
+        k = koming.Komer(db=db, schema=Record, subkey='records.')
         srl = k._serializer(Serials.mgpk)
 
         expected = b'\x86\xa5first\xa3Jim\xa4last\xa5Black\xa6street\xaf100 Main Street\xa4city\xa8Riverton\xa5state\xa2UT\xa3zip\xce\x00\x01HZ'
@@ -260,7 +281,7 @@ def test_deserialization():
     json = b'{"first": "Jim", "last": "Black", "street": "100 Main Street", "city": "Riverton", "state": "UT", "zip": 84058}'
 
     with dbing.openLMDB() as db:
-        k = koming.Komer(db=db, schema=Record, subdb='records.')
+        k = koming.Komer(db=db, schema=Record, subkey='records.')
 
         desrl = k._deserializer(Serials.mgpk)
         actual = helping.datify(Record, desrl(msgp))
