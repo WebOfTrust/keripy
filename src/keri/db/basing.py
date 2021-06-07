@@ -310,7 +310,7 @@ class Baser(dbing.LMDBer):
 
         self.habs = koming.Komer(db=self,
                                  schema=HabitatRecord,
-                                 subdb='habs.')
+                                 subkey='habs.')
 
         return self.env
 
@@ -348,7 +348,7 @@ class Baser(dbing.LMDBer):
                     psr.parseOne(ims=msg)
 
                 # clone .habs  habitat name prefix Komer subdb
-                copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subdb='habs.')  # copy
+                copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
                 for keys, data in self.habs.getItemIter():
                     if data.prefix in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, data=data)

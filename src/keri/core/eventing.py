@@ -2191,12 +2191,11 @@ class Kevery:
             evts (Deck): each entry is dict that matches call signature of
                 .processEvent
         """
-        if evts is  None:
+        if evts is None:
             evts = self.evts
 
         while evts:
-            evt = evts.pull()
-            self.processEvent(**evt)
+            self.processEvent(**evts.pull())
 
 
     def processEvent(self, serder, sigers, *, wigers=None,

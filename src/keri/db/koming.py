@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.app.apping module
+keri.db.koming module
 
 """
 import json
@@ -31,7 +31,7 @@ class Komer:
     def __init__(self,
                  db: Type[dbing.LMDBer],
                  schema: Type[dataclass],
-                 subdb: str = 'docs.',
+                 subkey: str = 'docs.',
                  kind: str = coring.Serials.json):
         """
         Parameters:
@@ -42,28 +42,67 @@ class Komer:
         """
         self.db = db
         self.schema = schema
-        self.sdb = self.db.env.open_db(key=subdb.encode("utf-8"))
+        self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"))
         self.kind = kind
         self.serializer = self._serializer(kind)
         self.deserializer = self._deserializer(kind)
 
+
     def put(self, keys: Union[str, Iterable], data: dataclass):
         """
+        Puts val at key made from keys. Does not overwrite
+
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
             data (dataclass): instance of dataclass of type self.schema as value
+
+        Returns:
+            result (Boolean): True If successful, False otherwise, such as key
+                              already in database.
         """
         if not isinstance(data, self.schema):
             raise ValueError("Invalid schema type={} of data={}, expected {}."
                              "".format(type(data), data, self.schema))
-        self.db.putVal(db=self.sdb,
-                       key=self._tokey(keys),
-                       val=self.serializer(data))
+        return(self.db.putVal(db=self.sdb,
+                              key=self._tokey(keys),
+                              val=self.serializer(data)))
+
+
+    def pin(self, keys: Union[str, Iterable], data: Union[bytes, str]):
+        """
+        Pins (sets) val at key made from keys. Overwrites.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            data (dataclass): instance of dataclass of type self.schema as value
+
+        Returns:
+            result (Boolean): True If successful. False otherwise.
+        """
+        if not isinstance(data, self.schema):
+            raise ValueError("Invalid schema type={} of data={}, expected {}."
+                             "".format(type(data), data, self.schema))
+        return (self.db.setVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=self.serializer(data)))
+
 
     def get(self, keys: Union[str, Iterable]):
         """
+        Gets val at keys
+
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            data (dataclass):
+            None if no entry at keys
+
+        Usage:
+            Use walrus operator to catch and raise missing entry
+            if (data := mydb.get(keys)) is None:
+                raise ExceptionHere
+            use data here
         """
         data = helping.datify(self.schema,
                               self.deserializer(
@@ -78,10 +117,15 @@ class Komer:
 
     def rem(self, keys: Union[str, Iterable]):
         """
+        Removes entry at keys
+
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+           result (Boolean): True if key exists so delete successful. False otherwise
         """
-        self.db.delVal(db=self.sdb, key=self._tokey(keys))
+        return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
 
     def getItemIter(self):
@@ -117,7 +161,7 @@ class Komer:
            keys (Union[str, Iterable]): str or Iterable of str.
 
         """
-        if isinstance(keys, str):
+        if hasattr(keys, "encode"):  # str
             return keys.encode("utf-8")
         return (self.Sep.join(keys).encode("utf-8"))
 
