@@ -29,9 +29,9 @@ class Komer:
     Sep = '.'  # separator for combining key iterables
 
     def __init__(self,
-                 db: Type[dbing.LMDBer],
-                 schema: Type[dataclass],
+                 db: Type[dbing.LMDBer], *,
                  subkey: str = 'docs.',
+                 schema: Type[dataclass],
                  kind: str = coring.Serials.json):
         """
         Parameters:
@@ -41,8 +41,8 @@ class Komer:
             kind (str): serialization/deserialization type
         """
         self.db = db
-        self.schema = schema
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"))
+        self.schema = schema
         self.kind = kind
         self.serializer = self._serializer(kind)
         self.deserializer = self._deserializer(kind)
