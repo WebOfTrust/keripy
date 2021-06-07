@@ -316,11 +316,13 @@ class Baser(dbing.LMDBer):
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
-        self.habs = koming.Komer(db=self,
-                                 schema=HabitatRecord,
-                                 subkey='habs.')
+        self.stts = subing.SerderSuber(db=self, subkey='stts.')  # key states
 
-        self.ksts = subing.SerderSuber(db=self, subkey='ksts.')
+        self.habs = koming.Komer(db=self,
+                                 subkey='habs.',
+                                 schema=HabitatRecord,)  # habitat names prefixes
+
+
 
         return self.env
 

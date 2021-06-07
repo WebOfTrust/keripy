@@ -29,7 +29,7 @@ class Suber:
     """
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, db: Type[dbing.LMDBer], subkey: str = 'docs.',):
+    def __init__(self, db: Type[dbing.LMDBer], *, subkey: str = 'docs.',):
         """
         Parameters:
             db (dbing.LMDBer): base db
