@@ -43,13 +43,20 @@ class Consoler(doing.Doer):
     Manages command console
     """
 
-    def __init__(self, console=None, **kwa):
+    def __init__(self, db=None, console=None,  **kwa):
         """
 
         """
         super(Consoler, self).__init__(**kwa)
+        self.db = db if db is not None else basing.Baser()
         self.console = console if console is not None else serialing.Console()
-        self.db
+
+
+    def enter(self):
+        """"""
+        if not self.console.reopen():
+            raise IOError("Unable to open serial console.")
+
 
 
     def recur(self, tyme):
@@ -114,3 +121,7 @@ class Consoler(doing.Doer):
 
         return (False)
 
+
+    def exit(self):
+        """"""
+        self.console.close()
