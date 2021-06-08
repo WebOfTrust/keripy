@@ -3136,7 +3136,12 @@ class Serder:
 
     @property
     def version(self):
-        """ version property getter"""
+        """
+        version property getter
+
+        Returns:
+            (Versionage)
+        """
         return self._version
 
 

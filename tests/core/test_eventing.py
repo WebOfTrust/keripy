@@ -1398,7 +1398,7 @@ def test_kever(mockHelpingNowUTC):
     Key Event Verifier
     """
 
-    with pytest.raises(TypeError):  # Missing required positional arguments
+    with pytest.raises(ValueError):  # Missing required arguments
         kever = Kever()
 
     with openDB() as db:  # Transferable case

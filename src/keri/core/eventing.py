@@ -1277,7 +1277,7 @@ class Kever:
     EstOnly = False
     DoNotDelegate = False
 
-    def __init__(self, serder, sigers, wigers=None, baser=None, estOnly=None,
+    def __init__(self, *, state=None, serder=None, sigers=None, wigers=None, baser=None, estOnly=None,
                  seqner=None, diger=None, firner=None, dater=None,
                  kevers=None, cues=None, prefixes=None, local=False,
                  check=False):
@@ -1286,6 +1286,7 @@ class Kever:
         Verify incepting serder against sigers raises ValidationError if not
 
         Parameters:
+            state (Serder): instance of key state
             serder is Serder instance of inception event
             sigers is list of Siger instances of indexed controller signatures
                 of event. Index is offset into keys list of latest est event
@@ -1319,6 +1320,9 @@ class Kever:
                 a persisted KEL without updating non-idempotent first seen .fels
                 and timestamps.
         """
+        if not (state or (serder and sigers)):
+            raise ValueError("Missing required arguments. Need state or serder"
+                             " and sigers")
 
         if baser is None:
             baser = basing.Baser()  # default name = "main"
@@ -1327,6 +1331,10 @@ class Kever:
         self.cues = cues
         self.prefixes = prefixes if prefixes is not None else []
         self.local = True if local else False
+
+        if state:  # preload from state
+            self.preload(state)
+            return
 
         # may update state as we go because if invalid we fail to finish init
         self.version = serder.version  # version dispatch ?
@@ -1387,6 +1395,52 @@ class Kever:
                 False otherwise
         """
         return(self.nexter is not None and self.prefixer.transferable)
+
+
+    def preload(self, state):
+        """
+        Preload attributes from state serder
+
+
+        Parameters:
+            state (Serder): instance of Serder for state message body
+
+
+        .baser is reference to Baser instance that managers the LMDB database
+        .kevers is reference to Kevery.kevers when provided
+        .cues is reference to Kevery.cues deque when provided
+        .prefixes is list of fully qualified base64 identifier prefixes of own
+            habitat identifiers if any from Kevery when provided. If empty then
+            operate in promiscuous mode
+        .local is Boolean (from kevery when provided)
+            True means only process msgs for own events if .prefixes is not empty
+            False means only process msgs for not own events if .prefixes is not empty
+        .version is Versionage of current event state
+        .prefixer is prefixer instance for current event state
+        .sn is sequence number int
+        .fn is first seen ordinal number int
+        .dater is first seen Dater instance (datetime)
+        .serder is Serder instance of current event with .serder.diger for digest
+        .ilk is str of current event type
+        .tholder is Tholder instance for event sith
+        .verfers is list of Verfer instances for current event state set of signing keys
+        .nexter is qualified qb64 of next sith and next signing keys
+        .toad is int threshold of accountable duplicity
+        .wits is list of qualified qb64 aids for witnesses
+        .cuts is list of qualified qb64 aids for witnesses cut from prev wits list
+        .adds is list of qualified qb64 aids for witnesses added to prev wits list
+        .estOnly is boolean trait True means only allow establishment events
+        .doNotDelegate is boolean trait True means do not allow delegation
+        .lastEst is LastEstLoc namedtuple of int sn .s and qb64 digest .d of last est event
+        .delegated is Boolean, True means delegated identifier, False not delegated
+        .delgator is str qb64 of delegator's prefix
+
+        """
+        self.version = state.version
+        self.prefixer = Prefixer(qb64=state.pre)
+        self.sn = state.sn
+        self.fn = int(state.ked["f"], 16)
+        self.dater = Dater(dts=state.ked["dt"])
 
 
     def incept(self, serder, baser=None, estOnly=None):
