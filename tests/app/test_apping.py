@@ -29,6 +29,10 @@ def test_consoler():
     Test Consoler class
 
     Must run in WindIDE with Debug I/O configured as external console
+    This test really is only meant for manual testing.
+    For automated unit tests we will have to mock the serial port interface
+    with a string or file of command lines for the input.
+
     """
     tock = 0.03125
     ticks = 8
