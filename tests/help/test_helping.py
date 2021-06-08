@@ -214,6 +214,13 @@ def test_iso8601():
     dt4 = helping.fromIso8601(dts4)
     assert (dt4 - dt).seconds == 25.0
 
+    # test for microseconds zero
+    dts = "2021-01-01T00:00:00.000000+00:00"
+    dt = helping.fromIso8601(dts)
+    dts1 = helping.toIso8601(dt)
+    assert dts1 == dts
+
+
 
     """ End Test """
 

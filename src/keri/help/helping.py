@@ -287,7 +287,7 @@ def nowIso8601():
     Assumes TZ aware
     For nanosecond use instead attotime or datatime64 in pandas or numpy
     """
-    return (nowUTC().isoformat())
+    return (nowUTC().isoformat(timespec='microseconds'))
 
 
 def toIso8601(dt=None):
@@ -305,7 +305,7 @@ def toIso8601(dt=None):
     if dt is None:
         dt = nowUTC()  # make it aware
 
-    return (dt.isoformat())
+    return (dt.isoformat(timespec='microseconds'))  # force include microseconds
 
 
 def fromIso8601(dts):

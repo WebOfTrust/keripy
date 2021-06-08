@@ -1249,6 +1249,7 @@ class Kever:
         .prefixer is prefixer instance for current event state
         .sn is sequence number int
         .fn is first seen ordinal number int
+        .dater is first seen Dater instance (datetime)
         .serder is Serder instance of current event with .serder.diger for digest
         .ilk is str of current event type
         .tholder is Tholder instance for event sith
@@ -1364,11 +1365,12 @@ class Kever:
 
         # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
         # all validated above so may add to KEL and FEL logs as first seen
-        fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+        fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                 first=True if not check else False, seqner=seqner, diger=diger,
                                 firner=firner, dater=dater)
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fn = fn
+            self.dater = Dater(dts=dts)
 
 
     @property
@@ -1537,7 +1539,7 @@ class Kever:
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
-            fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+            fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                     first=True if not check else False, seqner=seqner, diger=diger,
                                     firner=firner, dater=dater)
 
@@ -1560,6 +1562,7 @@ class Kever:
             self.lastEst = LastEstLoc(s=self.sn, d=self.serder.diger.qb64)
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
                 self.fn = fn
+                self.dater = Dater(dts=dts)
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -1596,7 +1599,7 @@ class Kever:
 
             # .validateSigsDelWigs above ensures thresholds met otherwise raises exception
             # all validated above so may add to KEL and FEL logs as first seen
-            fn = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
+            fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                     first=True if not check else False)  # First seen accepted
 
             # update state
@@ -1605,6 +1608,7 @@ class Kever:
             self.ilk = ilk
             if fn is not None: # first is non-idempotent for fn check mode fn is None
                 self.fn = fn
+                self.dater = Dater(dts=dts)
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -1966,7 +1970,6 @@ class Kever:
                 When dater provided then use dater for first seen datetime
         """
         fn = None
-
         dgkey = dgKey(serder.preb, serder.digb)
         dtsb = helping.nowIso8601().encode("utf-8")
         self.baser.putDts(dgkey, dtsb)  #  idempotent do not change dts if already
@@ -1995,7 +1998,7 @@ class Kever:
         self.baser.addKe(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Kever state: %s Added to KEL valid event=\n%s\n",
                                                serder.preb, serder.pretty)
-        return fn  # will be fn int if first else None
+        return (fn, dtsb.decode("utf-8"))  #  (fn int, dts str) if first else (None, dts str)
 
 
     def escrowPSEvent(self, serder, sigers, wigers=None):
@@ -2078,7 +2081,7 @@ class Kever:
                       pig=(self.serder.ked["p"] if "p" in self.serder.ked else ""),
                       dig=self.serder.dig,
                       fn=self.fn,
-                      dts="",   # need to add dater object for first seen dts
+                      dts=self.dater.dts,   # need to add dater object for first seen dts
                       eilk=self.ilk,
                       keys=[verfer.qb64 for verfer in self.verfers],
                       eevt=eevt,

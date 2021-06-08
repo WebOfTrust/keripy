@@ -1766,7 +1766,7 @@ def test_clean_baser():
                                        sn=natHab.kever.sn+1,
                                        sith=2,
                                        nxt=natHab.kever.nexter.qb64)
-            fn = natHab.kever.logEvent(serder=badsrdr, first=True)
+            fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
             assert fn == 7
             # verify garbage event in database
             assert natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
