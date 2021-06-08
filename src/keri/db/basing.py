@@ -237,6 +237,13 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
 
+        .fons is named subDB (states) instance of MatterSuber that maps
+            (prefix, digest) e.g. dgKey to fn (first seen ordinal number) of
+            the associated event with digest
+
+        .stts is named subDB (states) instance of SerderSuber that maps prefix
+            to latest keystate for that prefix
+
         .habs is named subDB instance of Komer that maps habitat names to prefixes
             key is habitate name str
             value is serialized HabitatRecord dataclass
@@ -316,6 +323,7 @@ class Baser(dbing.LMDBer):
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
+        self.fons = subing.MatterSuber(db=self, subkey='fons.', klas=coring.Seqner)
         self.stts = subing.SerderSuber(db=self, subkey='stts.')  # key states
 
         self.habs = koming.Komer(db=self,

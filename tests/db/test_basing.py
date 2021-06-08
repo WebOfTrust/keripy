@@ -1743,7 +1743,10 @@ def test_clean_baser():
         assert ldig == natHab.kever.serder.digb
         serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
         assert serder.dig == natHab.kever.serder.dig
-        assert natHab.db.env.stat()['entries'] == 20
+        state = natHab.db.stts.get(keys=natHab.pre)  # Serder instance
+        assert state.sn == 6
+        assert state.ked["f"] == '6'
+        assert natHab.db.env.stat()['entries'] == 21
 
         # test reopenDB with reuse  (because temp)
         with basing.reopenDB(db=natHab.db, reuse=True):
@@ -1752,7 +1755,7 @@ def test_clean_baser():
             assert ldig == natHab.kever.serder.digb
             serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
             assert serder.dig == natHab.kever.serder.dig
-            assert natHab.db.env.stat()['entries'] == 20
+            assert natHab.db.env.stat()['entries'] == 21
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.name)
@@ -1767,6 +1770,8 @@ def test_clean_baser():
                                        sith=2,
                                        nxt=natHab.kever.nexter.qb64)
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
+            natHab.db.stts.pin(keys=natHab.pre, srdr=natHab.kever.state())
+
             assert fn == 7
             # verify garbage event in database
             assert natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
@@ -1805,6 +1810,9 @@ def test_clean_baser():
             # confirm bad event missing from database
             assert not natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
             assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
+            state = natHab.db.stts.get(keys=natHab.pre)  # Serder instance
+            assert state.sn == 6
+            assert state.ked["f"] == '6'
 
             # verify name pre kom in db
             data = natHab.db.habs.get(keys=natHab.name)
