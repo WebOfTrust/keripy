@@ -1025,7 +1025,7 @@ class Dater(Matter):
             index is int of count of attached receipts for CryCntDex codes
 
         Parameters:
-            dt the ISO-8601 datetime as str or bytes
+            dts is the ISO-8601 datetime as str or bytes
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if dts is None:  # defaults to now
