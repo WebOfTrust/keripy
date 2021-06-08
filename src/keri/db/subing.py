@@ -137,6 +137,8 @@ class Suber:
         """
         if hasattr(keys, "encode"):  # str
             return keys.encode("utf-8")
+        elif hasattr(keys, "decode"): # bytes
+            return keys
         return (self.Sep.join(keys).encode("utf-8"))
 
 
@@ -149,13 +151,13 @@ class SerderSuber(Suber):
     """
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, **kwa):
+    def __init__(self, *pa, **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
         """
-        super(SerderSuber, self).__init__(**kwa)
+        super(SerderSuber, self).__init__(*pa, **kwa)
 
 
     def put(self, keys: Union[str, Iterable], srdr: coring.Serder):
@@ -252,14 +254,14 @@ class MatterSuber(Suber):
     """
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, klas: Type[coring.Matter] = coring.Matter, **kwa):
+    def __init__(self, *pa, klas: Type[coring.Matter] = coring.Matter, **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
             klas (Type[coring.Matter]): Class reference to subclass of Matter
         """
-        super(MatterSuber, self).__init__(**kwa)
+        super(MatterSuber, self).__init__(*pa, **kwa)
         self.klas = klas
 
 

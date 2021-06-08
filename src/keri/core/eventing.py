@@ -172,14 +172,19 @@ def validateSN(sn, inceptive=False):
     except Exception as ex:
         raise ValueError("Invalid sn = {}.".format(sn))
 
-    if inceptive:
-        if sn != 0:
-            raise ValidationError("Nonzero sn = {} for inception evt."
-                                  "".format(sn))
+    if inceptive is not None:
+        if inceptive:
+            if sn != 0:
+                raise ValidationError("Nonzero sn = {} for inception evt."
+                                      "".format(sn))
+        else:
+            if sn < 1:
+                raise ValidationError("Zero or less sn = {} for non-inception evt."
+                                      "".format(sn))
     else:
-        if sn < 1:
-            raise ValidationError("Zero or less sn = {} for non-inception evt."
-                                  "".format(sn))
+        if sn < 0:
+            raise ValidationError("Negative sn = {} for event.".format(sn))
+
     return sn
 
 
@@ -1038,7 +1043,7 @@ def state(pre,
         raise ValueError("Negative sn = {} in key state.".format(sn))
 
     if eilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
-        raise ValueError("Invalid te = {} in key state.".format(eilk))
+        raise ValueError("Invalid evernt type et=  in key state.".format(eilk))
 
     if dts is None:
         dts = helping.nowIso8601()
@@ -1076,8 +1081,7 @@ def state(pre,
         raise ValueError("Missing or invalid latest est event = {} for key "
                          "state.".format(eevt))
 
-    incpt = eilk in (Ilks.icp, Ilks.dip)
-    validateSN(eevt.s, inceptive=incpt)
+    validateSN(eevt.s, inceptive=None)  # both incept and rotate
 
     if len(oset(eevt.br)) != len(eevt.br):  # duplicates in cuts
         raise ValueError("Invalid cuts = {} in latest est event, has duplicates"
@@ -1371,6 +1375,7 @@ class Kever:
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fn = fn
             self.dater = Dater(dts=dts)
+            self.baser.stts.pin(keys=self.prefixer.qb64, srdr=self.state())
 
 
     @property
@@ -1563,6 +1568,7 @@ class Kever:
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
                 self.fn = fn
                 self.dater = Dater(dts=dts)
+                self.baser.stts.pin(keys=self.prefixer.qb64, srdr=self.state())
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -1609,6 +1615,7 @@ class Kever:
             if fn is not None: # first is non-idempotent for fn check mode fn is None
                 self.fn = fn
                 self.dater = Dater(dts=dts)
+                self.baser.stts.pin(keys=self.prefixer.qb64, srdr=self.state())
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -1993,6 +2000,7 @@ class Kever:
             if dater:  # cloned replay use original's dts from dater
                 dtsb = dater.dtsb
             self.baser.setDts(dgkey, dtsb)  # first seen so set dts to now
+            self.baser.fons.pin(keys=dgkey, val=Seqner(sn=fn))
             logger.info("Kever state: %s First seen ordinal %s at %s\nEvent=\n%s\n",
                          serder.preb, fn, dtsb.decode("utf-8"), serder.pretty)
         self.baser.addKe(snKey(serder.preb, serder.sn), serder.digb)
@@ -2086,7 +2094,7 @@ class Kever:
                       keys=[verfer.qb64 for verfer in self.verfers],
                       eevt=eevt,
                       sith=self.tholder.sith,
-                      nxt=self.nexter.qb64,
+                      nxt=self.nexter.qb64 if self.nexter else "",
                       toad=self.toad,
                       wits=self.wits,
                       cnfg = cnfg,

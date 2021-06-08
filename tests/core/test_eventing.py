@@ -1465,8 +1465,13 @@ def test_kever(mockHelpingNowUTC):
         assert kever.sn == 0
         assert [verfer.qb64 for verfer in kever.verfers] == [skp0.verfer.qb64]
         assert kever.nexter.qb64 == nexter.qb64
+        state = kever.baser.stts.get(keys=kever.prefixer.qb64)
+        assert state.sn == kever.sn == 0
+        feqner = kever.baser.fons.get(keys=(kever.prefixer.qb64, kever.serder.dig))
+        assert feqner.sn == kever.sn
 
         serderK = kever.state()
+        assert serderK.ked == state.ked
         assert serderK.pre == kever.prefixer.qb64
         assert serderK.sn == kever.sn
         assert ([verfer.qb64 for verfer in serderK.verfers] ==

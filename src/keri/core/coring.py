@@ -912,7 +912,7 @@ class Seqner(Matter):
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.Salt_128, sn=None, snh=None, **kwa):
         """
-        Inhereited Parameters:  (see Matter)
+        Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
@@ -922,7 +922,7 @@ class Seqner(Matter):
 
 
         Parameters:
-            sn is int sequence number
+            sn is int sequence number or some form of ordinal number
             snh is hex string of sequence number
 
         """
