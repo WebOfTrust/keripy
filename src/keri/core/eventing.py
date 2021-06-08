@@ -960,10 +960,13 @@ def receipt(pre,
 
 def state(pre,
           sn,
+          pig,
           dig,
+          fn,
           eilk,
           keys,
           eevt,
+          dts=None,  # default current datetime
           sith=None, # default based on keys
           nxt="",
           toad=None, # default based on wits
@@ -1004,8 +1007,11 @@ def state(pre,
         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
         "s": "2":,
         "t": "ksn",
+        "p": "EYAfSVPzhzZ-i0d8JZS6b5CMAoTNZH3ULvaU6JR2nmwy",
         "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
-        "te": "rot",
+        "f": "3",
+        "dt": "2020-08-22T20:35:06.687702+00:00",
+        "et": "rot",
         "kt": "1",
         "k": ["DaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],
         "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
@@ -1033,6 +1039,9 @@ def state(pre,
 
     if eilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
         raise ValueError("Invalid te = {} in key state.".format(eilk))
+
+    if dts is None:
+        dts = helping.nowIso8601()
 
     if sith is None:
         sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
@@ -1083,8 +1092,11 @@ def state(pre,
                i=pre,  # qb64 prefix
                s="{:x}".format(sn), # lowercase hex string no leading zeros
                t=ilk,
+               p=pig,
                d=dig,
-               te=eilk,
+               f="{:x}".format(fn), # lowercase hex string no leading zeros
+               dt=dts,
+               et=eilk,
                kt=sith, # hex string no leading zeros lowercase
                k=keys,  # list of qb64
                n=nxt,  # hash qual Base64
@@ -2063,7 +2075,10 @@ class Kever:
 
         return (state(pre=self.prefixer.qb64,
                       sn=self.sn,
+                      pig=(self.serder.ked["p"] if "p" in self.serder.ked else ""),
                       dig=self.serder.dig,
+                      fn=self.fn,
+                      dts="",   # need to add dater object for first seen dts
                       eilk=self.ilk,
                       keys=[verfer.qb64 for verfer in self.verfers],
                       eevt=eevt,
