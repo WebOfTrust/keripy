@@ -8,7 +8,7 @@ VC issuer support
 
 
 from .. import kering
-from ..core.coring import Counter, Seqner, CtrDex, MtrDex, Diger
+from ..core.coring import Counter, Seqner, CtrDex, MtrDex, Diger, Serder
 from ..core.eventing import SealEvent, SealSource, TraitDex
 from ..core import parsing
 from ..db.dbing import snKey
@@ -177,19 +177,17 @@ class Issuer:
         if vcser is None:
             raise kering.ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vcdig, self.regk))
-        pdig = Diger(raw=bytes(vcser))
 
         if self.noBackers:
-            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=pdig.qb64)
+            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=bytes(vcser).decode('utf-8'))
         else:
             serder = eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
-                                           dig=pdig.qb64)
+                                           dig=bytes(vcser).decode('utf-8'))
 
         rseal = SealEvent(vcdig, serder.ked["s"], serder.diger.qb64)
 
         msg, kevt = self.anchorMsg(serder, rseal._asdict())
 
-        # Process message in local Tevery when ready
         # Process message in local Tevery when ready
         self.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
 

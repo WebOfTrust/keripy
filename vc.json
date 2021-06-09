@@ -1,0 +1,22 @@
+{
+    "type": [
+        "VerifiableCredential",
+        "vLEIGLEIFCredential"
+    ],
+    "id": "did:keri:EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI",
+    "issuer": "did:keri:EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq93bjPu5wuqA",
+    "issuanceDate": "2021-06-09T00:42:28.482312+00:00",
+    "credentialSubject": {
+        "id": "did:keri:ERVZTggTUOPmLcWBESrxcI-VsB48FerF6sz2boziikcY",
+        "lei": "506700GE1G29325QX363"
+    },
+    "proof": {
+        "type": [
+            "KERISignature2021"
+        ],
+        "created": "2021-06-09T00:42:28.482312+00:00",
+        "jws": "0BclVUprFMx5JcsOhkJ5FgdM5f0R4rQHmi9NXY4PFx-3g8Ml5DMu0yURPpX9r68p6CTKod-roDV2861GC2oIrJAg",
+        "verificationMethod": "did:keri:EQf1hzB6s5saaQPdDAsEzSMEFoQx_WLsq93bjPu5wuqA/Es34H0HfRYPXLyFASh0VxCem2cls0yrx8mwRBJLHtOKQ#0",
+        "proofPurpose": "assertionMethod"
+    }
+}

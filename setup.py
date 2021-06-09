@@ -91,6 +91,8 @@ setup(
             'keri_bob = keri.demo.demo_bob:main',
             'keri_eve = keri.demo.demo_eve:main',
             'keri_sam = keri.demo.demo_sam:main',
+            'keri_ian = keri.demo.demo_ian:main',
+            'keri_vic = keri.demo.demo_vic:main',
             'kli = keri.kli.kli:main',
         ]
     },
