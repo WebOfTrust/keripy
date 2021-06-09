@@ -11,7 +11,7 @@ from .. import kering
 from ..core.coring import Counter, Seqner, CtrDex, MtrDex, Diger, Serder
 from ..core.eventing import SealEvent, SealSource, TraitDex
 from ..core import parsing
-from ..db.dbing import snKey
+from ..db.dbing import snKey, dgKey
 from ..vdr import eventing
 from ..vdr.viring import Registry, nsKey
 
@@ -177,12 +177,14 @@ class Issuer:
         if vcser is None:
             raise kering.ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vcdig, self.regk))
+        ievt = self.reger.getTvt(dgKey(pre=vckey, dig=vcser))
+        iserder = Serder(raw=bytes(ievt))
 
         if self.noBackers:
-            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=bytes(vcser).decode('utf-8'))
+            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=iserder.dig)
         else:
             serder = eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
-                                           dig=bytes(vcser).decode('utf-8'))
+                                           dig=iserder.dig)
 
         rseal = SealEvent(vcdig, serder.ked["s"], serder.diger.qb64)
 
