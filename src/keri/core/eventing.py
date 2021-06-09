@@ -1406,35 +1406,6 @@ class Kever:
             state (Serder): instance of Serder for state message body
 
 
-        .baser is reference to Baser instance that managers the LMDB database
-        .kevers is reference to Kevery.kevers when provided
-        .cues is reference to Kevery.cues deque when provided
-        .prefixes is list of fully qualified base64 identifier prefixes of own
-            habitat identifiers if any from Kevery when provided. If empty then
-            operate in promiscuous mode
-        .local is Boolean (from kevery when provided)
-            True means only process msgs for own events if .prefixes is not empty
-            False means only process msgs for not own events if .prefixes is not empty
-        .version is Versionage of current event state
-        .prefixer is prefixer instance for current event state
-        .sn is sequence number int
-        .fn is first seen ordinal number int
-        .dater is first seen Dater instance (datetime)
-        .serder is Serder instance of current event with .serder.diger for digest
-        .ilk is str of current event type
-        .tholder is Tholder instance for event sith
-        .verfers is list of Verfer instances for current event state set of signing keys
-        .nexter is qualified qb64 of next sith and next signing keys
-        .toad is int threshold of accountable duplicity
-        .wits is list of qualified qb64 aids for witnesses
-        .cuts is list of qualified qb64 aids for witnesses cut from prev wits list
-        .adds is list of qualified qb64 aids for witnesses added to prev wits list
-        .estOnly is boolean trait True means only allow establishment events
-        .doNotDelegate is boolean trait True means do not allow delegation
-        .lastEst is LastEstLoc namedtuple of int sn .s and qb64 digest .d of last est event
-        .delegated is Boolean, True means delegated identifier, False not delegated
-        .delegator is str qb64 of delegator's prefix
-
         """
         self.version = state.version
         self.prefixer = Prefixer(qb64=state.pre)
