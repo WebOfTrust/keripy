@@ -243,7 +243,6 @@ class SamDirector(directing.Director):
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-
         except GeneratorExit:  # close context, forced exit due to .close
             pass
 
@@ -256,7 +255,7 @@ class SamDirector(directing.Director):
         return True  # return value of yield from, or yield ex.value of StopIteration
 
 
-class IanDirectorIssue(directing.Director):
+class IanDirector(directing.Director):
     """
     Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
     Generator logic is to iterate through initiation of events for demo
@@ -394,20 +393,20 @@ class IanDirectorIssue(directing.Director):
                         self.hab.pre, self.lei, self.vcfile)
 
             input("wait for verification")
-            tyme = (yield (self.tock))
+            (yield self.tock)
 
             tevt, kevt = self.issuer.revoke(vcdig=vcdig.qb64)
             logger.info("%s:\n\n\n Revoked Verifiable Credential for LEI: %s to file %s.\n\n",
                         self.hab.pre, self.lei, self.vcfile)
-            tyme = (yield (self.tock))
+            (yield self.tock)
 
             self.client.tx(kevt)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(kevt))
-            tyme = (yield (self.tock))
+            (yield self.tock)
 
             self.client.tx(tevt)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(tevt))
-            tyme = (yield (self.tock))
+            (yield self.tock)
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -540,10 +539,6 @@ class VicDirector(directing.Director):
                 else:
                     logger.error("%s:\n\n\n Invalid vLEI credential.\n\n",
                                  self.hab.pre)
-
-
-
-
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass

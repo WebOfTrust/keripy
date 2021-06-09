@@ -17,7 +17,7 @@ from keri import __version__
 from keri import help  # logger support
 from keri.app import habbing, keeping, directing
 from keri.db import dbing, basing
-from keri.demo.demoing import IanDirectorIssue
+from keri.demo.demoing import IanDirector
 from keri.vdr import issuing
 
 logger = help.ogler.getLogger()
@@ -77,13 +77,13 @@ def setupController(secrets, vcfile, did, lei, remotePort=5621, indirect=False):
     client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
     clientDoer = doing.ClientDoer(client=client)
 
-    director = IanDirectorIssue(hab=hab,
-                                issuer=iss,
-                                client=client,
-                                tock=0.125,
-                                vcfile=vcfile,
-                                recipientIdentifier=did,
-                                lei=lei)
+    director = IanDirector(hab=hab,
+                           issuer=iss,
+                           client=client,
+                           tock=0.125,
+                           vcfile=vcfile,
+                           recipientIdentifier=did,
+                           lei=lei)
 
     reactor = directing.Reactor(hab=hab, client=client, indirect=indirect)
 
