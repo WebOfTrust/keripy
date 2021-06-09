@@ -1433,7 +1433,7 @@ class Kever:
         .doNotDelegate is boolean trait True means do not allow delegation
         .lastEst is LastEstLoc namedtuple of int sn .s and qb64 digest .d of last est event
         .delegated is Boolean, True means delegated identifier, False not delegated
-        .delgator is str qb64 of delegator's prefix
+        .delegator is str qb64 of delegator's prefix
 
         """
         self.version = state.version
@@ -1441,6 +1441,28 @@ class Kever:
         self.sn = state.sn
         self.fn = int(state.ked["f"], 16)
         self.dater = Dater(dts=state.ked["dt"])
+        self.ilk = state.ked["et"]
+        self.tholder = Tholder(sith=state.ked["kt"])
+        self.verfers = [Verfer(qb64=key) for key in state.ked["k"]]
+        self.nexter = Nexter(qb64=nxt) if state.ked["n"] else None
+        self.toad = int(state.ked["bt"], 16)
+        self.wits = state.ked["b"]
+        self.cuts = state.ked["ee"]["br"]
+        self.adds = state.ked["ee"]["ba"]
+        self.estOnly = False
+        self.doNotDelegate = True if "DND" in state.ked["c"] else False
+        self.estOnly = True if "EO" in state.ked["c"] else False
+        self.lasEst = LastEstLoc(s=int(state.ked['ee']['s'], 16),
+                                 d=state.ked['ee']['d'])
+        self.delegator = state.ked['di'] if state.ked['di'] else None
+        self.delegated = True if state.delegator else False
+
+        if (serder := self.baser.getEvt(key=dgKey(pre=self.prefixer.qb64,
+                                                  dig=state.ked['d']))) is None:
+            raise ValueError("Corresponding event for state={} not found."
+                             "".format(state.pretty))
+        self.serder = serder
+        # May want to do additional checks here
 
 
     def incept(self, serder, baser=None, estOnly=None):
