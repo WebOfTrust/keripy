@@ -63,7 +63,7 @@ class dbdict(dict):
             if (state := self.db.stts.get(keys=k)) is None:
                 raise ex  # reraise KeyError
             try:
-                kever = eventing.Kever(state=state, baser=self.db)
+                kever = eventing.Kever(state=state, db=self.db)
             except kering.MissingEntryError:  # no kel event for keystate
                 raise ex  # reraise KeyError
             self.__setitem__(k, kever)
@@ -400,7 +400,7 @@ class Baser(dbing.LMDBer):
         for keys, data in self.habs.getItemIter():
             if (state := self.stts.get(keys=data.prefix)) is not None:
                 try:
-                    kever = coring.Kever(state=state, baser=self)
+                    kever = coring.Kever(state=state, db=self)
                 except kering.MissingEntryError as ex:  # no kel event for keystate
                     removes.append(keys)  # remove from .habs
                     continue

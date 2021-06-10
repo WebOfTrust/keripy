@@ -80,7 +80,7 @@ def test_parser():
         # sign serialization
         siger = signers[0].sign(serder.raw, index=0)  # return siger
         # create key event verifier state
-        kever = Kever(serder=serder, sigers=[siger], baser=conDB)
+        kever = Kever(serder=serder, sigers=[siger], db=conDB)
         #extend key event stream
         msgs.extend(serder.raw)
         msgs.extend(counter.qb64b)
@@ -252,7 +252,7 @@ def test_parser():
 
         pre = kever.prefixer.qb64
 
-        db_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelIter(pre)]
+        db_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelIter(pre)]
         assert db_digs == event_digs
 
         kevery = Kevery(db=valDB)
@@ -276,7 +276,7 @@ def test_parser():
 
 
     assert not os.path.exists(kevery.db.path)
-    assert not os.path.exists(kever.baser.path)
+    assert not os.path.exists(kever.db.path)
 
     """ Done Test """
 

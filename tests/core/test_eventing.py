@@ -1460,16 +1460,16 @@ def test_kever(mockHelpingNowUTC):
         # verify signature
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
-        kever = Kever(serder=tser0, sigers=[tsig0], baser=db)  # no error
-        assert kever.baser == db
+        kever = Kever(serder=tser0, sigers=[tsig0], db=db)  # no error
+        assert kever.db == db
         assert kever.cues == None
         assert kever.prefixer.qb64 == aid0.qb64
         assert kever.sn == 0
         assert [verfer.qb64 for verfer in kever.verfers] == [skp0.verfer.qb64]
         assert kever.nexter.qb64 == nexter.qb64
-        state = kever.baser.stts.get(keys=kever.prefixer.qb64)
+        state = kever.db.stts.get(keys=kever.prefixer.qb64)
         assert state.sn == kever.sn == 0
-        feqner = kever.baser.fons.get(keys=(kever.prefixer.qb64, kever.serder.dig))
+        feqner = kever.db.fons.get(keys=(kever.prefixer.qb64, kever.serder.dig))
         assert feqner.sn == kever.sn
 
         serderK = kever.state()
@@ -1541,7 +1541,7 @@ def test_kever(mockHelpingNowUTC):
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
         with pytest.raises(ValidationError):
-            kever = Kever(serder=tser0, sigers=[tsig0], baser=db)
+            kever = Kever(serder=tser0, sigers=[tsig0], db=db)
 
         #retry with valid empty nxt
         nxt = ""  # nxt is empty so no error
@@ -1581,7 +1581,7 @@ def test_kever(mockHelpingNowUTC):
         # verify signature
         assert skp0.verfer.verify(tsig0.raw, tser0.raw)
 
-        kever = Kever(serder=tser0, sigers=[tsig0], baser=db)  # valid so no error
+        kever = Kever(serder=tser0, sigers=[tsig0], db=db)  # valid so no error
 
 
     """ Done Test """
@@ -1656,7 +1656,7 @@ def test_keyeventsequence_0():
         sig0 = signers[0].sign(serder0.raw, index=0)
         assert signers[0].verfer.verify(sig0.raw, serder0.raw)
         # create key event verifier state
-        kever = Kever(serder=serder0, sigers=[sig0], baser=conlgr)
+        kever = Kever(serder=serder0, sigers=[sig0], db=conlgr)
         assert kever.prefixer.qb64 == pre
         assert kever.sn == 0
         assert kever.serder.diger.qb64 == serder0.dig
@@ -1853,7 +1853,7 @@ def test_keyeventsequence_0():
         with pytest.raises(ValidationError):  # nontransferable so reject update
             kever.update(serder=serder8, sigers=[sig8])
 
-        db_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelIter(pre)]
+        db_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelIter(pre)]
         assert db_digs == event_digs
 
     """ Done Test """
@@ -1916,7 +1916,7 @@ def test_keyeventsequence_1():
         sig0 = signers[0].sign(serder0.raw, index=0)
         assert signers[0].verfer.verify(sig0.raw, serder0.raw)
         # create key event verifier state
-        kever = Kever(serder=serder0, sigers=[sig0], baser=conlgr)
+        kever = Kever(serder=serder0, sigers=[sig0], db=conlgr)
         assert kever.prefixer.qb64 == pre
         assert kever.sn == 0
         assert kever.serder.diger.qb64 == serder0.dig
@@ -1966,7 +1966,7 @@ def test_keyeventsequence_1():
         assert [verfer.qb64 for verfer in kever.verfers] == keys1
         assert kever.nexter.qb64 == nxt2
 
-        db_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelIter(pre)]
+        db_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelIter(pre)]
         assert db_digs == event_digs
 
     """ Done Test """
@@ -2009,7 +2009,7 @@ def test_kevery():
         # sign serialization
         siger = signers[0].sign(serder.raw, index=0)  # return siger
         # create key event verifier state
-        kever = Kever(serder=serder, sigers=[siger], baser=conlgr)
+        kever = Kever(serder=serder, sigers=[siger], db=conlgr)
         #extend key event stream
         msgs.extend(serder.raw)
         msgs.extend(counter.qb64b)
@@ -2181,7 +2181,7 @@ def test_kevery():
 
         pre = kever.prefixer.qb64
 
-        db_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelIter(pre)]
+        db_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelIter(pre)]
         assert db_digs == event_digs
 
         kevery = Kevery(db=vallgr)
@@ -2204,7 +2204,7 @@ def test_kevery():
 
 
     assert not os.path.exists(kevery.db.path)
-    assert not os.path.exists(kever.baser.path)
+    assert not os.path.exists(kever.db.path)
 
     """ Done Test """
 
@@ -2254,7 +2254,7 @@ def test_multisig_digprefix():
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i) for i in range(count)]
         # create key event verifier state
-        kever = Kever(serder=serder, sigers=sigers, baser=conlgr)
+        kever = Kever(serder=serder, sigers=sigers, db=conlgr)
         #extend key event stream
         msgs.extend(serder.raw)
         msgs.extend(counter.qb64b)
@@ -2406,7 +2406,7 @@ def test_recovery():
         # sign serialization
         siger = signers[esn].sign(serder.raw, index=0)  # return siger
         # create key event verifier state
-        kever = Kever(serder=serder, sigers=[siger], baser=conlgr)
+        kever = Kever(serder=serder, sigers=[siger], db=conlgr)
         #extend key event stream
         kes.extend(serder.raw)
         kes.extend(counter.qb64b)
@@ -2580,14 +2580,14 @@ def test_recovery():
 
         pre = kever.prefixer.qb64
 
-        db_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelIter(pre)]
+        db_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelIter(pre)]
         assert len(db_digs) == len(event_digs) == 9
         assert db_digs[0:6] ==  event_digs[0:6]
         assert db_digs[-1] == event_digs[-1]
         assert db_digs[7] ==  event_digs[6]
         assert db_digs[6] ==  event_digs[7]
 
-        db_est_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelEstIter(pre)]
+        db_est_digs = [bytes(val).decode("utf-8") for val in kever.db.getKelEstIter(pre)]
         assert len(db_est_digs) == 7
         assert db_est_digs[0:5] ==  event_digs[0:5]
         assert db_est_digs[5:7] ==  event_digs[7:9]
@@ -2608,7 +2608,7 @@ def test_recovery():
         assert db_est_digs == y_db_est_digs
 
     assert not os.path.exists(kevery.db.path)
-    assert not os.path.exists(kever.baser.path)
+    assert not os.path.exists(kever.db.path)
 
     """ Done Test """
 
@@ -2918,7 +2918,7 @@ def test_receipt():
 
         assert coeKever.verfers[0].qb64 == coeSigners[esn].verfer.qb64
 
-        db_digs = [bytes(val).decode("utf-8") for val in coeKever.baser.getKelIter(coepre)]
+        db_digs = [bytes(val).decode("utf-8") for val in coeKever.db.getKelIter(coepre)]
         assert len(db_digs) == len(event_digs) == 7
 
 
@@ -2926,7 +2926,7 @@ def test_receipt():
         assert valKever.verfers[0].qb64 == coeKever.verfers[0].qb64 == coeSigners[esn].verfer.qb64
 
     assert not os.path.exists(valKevery.db.path)
-    assert not os.path.exists(coeKever.baser.path)
+    assert not os.path.exists(coeKever.db.path)
 
     """ Done Test """
 
@@ -3366,14 +3366,14 @@ def test_direct_mode():
         assert coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
         assert coeKever.sn == coeK.sn == csn
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(coepre)]
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.db.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
         assert db_digs == coe_event_digs == ['EXeKMHPw0ql8vHiBOpo72AOrOsWZ3bRDL-DKkYHo4v6w',
                                              'EQK8BvEIsvM9r3VGd1Qi10Gzzllodv0Vmnl7nl_a05eY',
                                              'EaQ7xvXmDpg7twdzEUEJGokBS6S_TXzmlY1a93ZQkx84']
 
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(coepre)]
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.db.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
         assert db_digs == coe_event_digs
 
@@ -3382,16 +3382,16 @@ def test_direct_mode():
         assert valKever.verfers[0].qb64 == valSigners[vesn].verfer.qb64
         assert valKever.sn == valK.sn == vsn
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(valpre)]
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.db.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
         assert db_digs == val_event_digs == ['EeGqW24EnxUgO_wfuFo6GR_vii-RNv5iGo8ibUrhe6Z0']
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(valpre)]
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.db.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
         assert db_digs == val_event_digs
 
     assert not os.path.exists(valKevery.db.path)
-    assert not os.path.exists(coeKever.baser.path)
+    assert not os.path.exists(coeKever.db.path)
 
     """ Done Test """
 
@@ -3839,13 +3839,13 @@ def test_direct_mode_cbor_mgpk():
         assert coeKever.verfers[0].qb64 == coeSigners[cesn].verfer.qb64
         assert coeKever.sn == coeK.sn == csn
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(coepre)]
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.db.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
         assert db_digs == coe_event_digs == ['ETtM9-qTtHK-KKnFerFmtFQAaw70dGBFOQwz7tp85w6E',
                                              'EPHvonlASEhFuMiLwzbNp9cB9t2DJrcnvVvrK_P4G4Ss',
                                              'EOMlWNCvqWStLVUUBlhwEbo3slpOD6-iVCtPBEsW9ofQ']
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(coepre)]
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.db.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn+1
         assert db_digs == coe_event_digs
 
@@ -3853,16 +3853,16 @@ def test_direct_mode_cbor_mgpk():
         assert valKever.verfers[0].qb64 == valSigners[vesn].verfer.qb64
         assert valKever.sn == valK.sn == vsn
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(valpre)]
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.db.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
         assert db_digs == val_event_digs == ['EER-hNqduuxWenrs4SlX0RFV-VmcU-SSywAKr5PZV-0k']
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(valpre)]
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.db.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn+1
         assert db_digs == val_event_digs
 
     assert not os.path.exists(valKevery.db.path)
-    assert not os.path.exists(coeKever.baser.path)
+    assert not os.path.exists(coeKever.db.path)
 
     """ Done Test """
 
@@ -4236,7 +4236,7 @@ def test_reload_kever(mockHelpingNowUTC):
         assert state.ked == nstate.ked
 
         # now create new Kever with state
-        kever = eventing.Kever(state=state, baser=natDB)
+        kever = eventing.Kever(state=state, db=natDB)
         assert kever.sn == 6
         assert kever.fn == 6
         assert kever.serder.ked == natHab.kever.serder.ked

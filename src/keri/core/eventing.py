@@ -1242,7 +1242,7 @@ class Kever:
                 False means allow delegation of delegated identifiers
 
     Attributes:
-        .baser is reference to Baser instance that managers the LMDB database
+        .db is reference to Baser instance that manages the LMDB database
         .cues is reference to Kevery.cues deque when provided
         .prefixes is list of fully qualified base64 identifier prefixes of own
             habitat identifiers if any from Kevery when provided. If empty then
@@ -1272,7 +1272,7 @@ class Kever:
 
 
     Properties:
-        .kevers (dict): reference to self.baser.kevers
+        .kevers (dict): reference to self.db.kevers
         .transferable (Boolean): True if nexter is not none and pre is transferable
 
     """
@@ -1280,7 +1280,7 @@ class Kever:
     DoNotDelegate = False
 
     def __init__(self, *, state=None, serder=None, sigers=None, wigers=None,
-                 baser=None, estOnly=None,
+                 db=None, estOnly=None,
                  seqner=None, diger=None, firner=None, dater=None,
                  cues=None, prefixes=None, local=False,
                  check=False):
@@ -1295,7 +1295,7 @@ class Kever:
                 of event. Index is offset into keys list of latest est event
             wigers is list of Siger instances of indexed witness signatures of
                 event. Index is offset into wits list of latest est event
-            baser is Baser instance of lmdb database
+            db is Baser instance of lmdb database
             estOnly is boolean trait to indicate establish only event
             seqner is Seqner instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
@@ -1327,9 +1327,9 @@ class Kever:
             raise ValueError("Missing required arguments. Need state or serder"
                              " and sigers")
 
-        if baser is None:
-            baser = basing.Baser()  # default name = "main"
-        self.baser = baser
+        if db is None:
+            db = basing.Baser()  # default name = "main"
+        self.db = db
         self.cues = cues
         self.prefixes = prefixes if prefixes is not None else oset()
         self.local = True if local else False
@@ -1385,7 +1385,7 @@ class Kever:
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fn = fn
             self.dater = Dater(dts=dts)
-            self.baser.stts.pin(keys=self.prefixer.qb64, val=self.state())
+            self.db.stts.pin(keys=self.prefixer.qb64, val=self.state())
 
 
     @property
@@ -1393,7 +1393,7 @@ class Kever:
         """
         Returns .baser.kevers
         """
-        return self.baser.kevers
+        return self.db.kevers
 
 
     @property
@@ -1436,7 +1436,7 @@ class Kever:
         self.delegator = state.ked['di'] if state.ked['di'] else None
         self.delegated = True if self.delegator else False
 
-        if (raw := self.baser.getEvt(key=dgKey(pre=self.prefixer.qb64,
+        if (raw := self.db.getEvt(key=dgKey(pre=self.prefixer.qb64,
                                                   dig=state.ked['d']))) is None:
             raise MissingEntryError("Corresponding event for state={} not found."
                              "".format(state.pretty))
@@ -1623,7 +1623,7 @@ class Kever:
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
                 self.fn = fn
                 self.dater = Dater(dts=dts)
-                self.baser.stts.pin(keys=self.prefixer.qb64, val=self.state())
+                self.db.stts.pin(keys=self.prefixer.qb64, val=self.state())
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -1670,7 +1670,7 @@ class Kever:
             if fn is not None: # first is non-idempotent for fn check mode fn is None
                 self.fn = fn
                 self.dater = Dater(dts=dts)
-                self.baser.stts.pin(keys=self.prefixer.qb64, val=self.state())
+                self.db.stts.pin(keys=self.prefixer.qb64, val=self.state())
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -1717,12 +1717,12 @@ class Kever:
 
                 psn = sn - 1 # sn of prior event
                 # fetch raw serialization of last inserted  event at psn
-                pdig = self.baser.getKeLast(key=snKey(pre=pre, sn=psn))
+                pdig = self.db.getKeLast(key=snKey(pre=pre, sn=psn))
                 if pdig is None:
                     raise ValidationError("Invalid recovery attempt: "
                                           "Bad sn = {} for event = {}."
                                           "".format(psn, ked))
-                praw = self.baser.getEvt(key=dgKey(pre=pre, dig=pdig))
+                praw = self.db.getEvt(key=dgKey(pre=pre, dig=pdig))
                 if praw is None:
                     raise ValidationError("Invalid recovery attempt: "
                                           " Bad dig = {}.".format(pdig))
@@ -1948,7 +1948,7 @@ class Kever:
 
         # get the dig of the delegating event
         key = snKey(pre=delegator, sn=ssn)
-        raw = self.baser.getKeLast(key)  # get dig of delegating event
+        raw = self.db.getKeLast(key)  # get dig of delegating event
         if raw is None:  # no delegating event at key pre, sn
             #  escrow event here
             inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
@@ -1963,7 +1963,7 @@ class Kever:
         # get the delegating event from dig
         ddig = bytes(raw)
         key = dgKey(pre=delegator, dig=ddig)
-        raw = self.baser.getEvt(key)
+        raw = self.db.getEvt(key)
         if raw is None:
             raise ValidationError("Missing delegation from {} at event dig = {} for evt = {}."
                                   "".format(delegator, ddig, serder.ked))
@@ -2034,17 +2034,17 @@ class Kever:
         fn = None
         dgkey = dgKey(serder.preb, serder.digb)
         dtsb = helping.nowIso8601().encode("utf-8")
-        self.baser.putDts(dgkey, dtsb)  #  idempotent do not change dts if already
+        self.db.putDts(dgkey, dtsb)  #  idempotent do not change dts if already
         if sigers:
-            self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])  # idempotent
+            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])  # idempotent
         if wigers:
-            self.baser.putWigs(dgkey, [siger.qb64b for siger in wigers])
-        self.baser.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
+            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
         if first:  # append event dig to first seen database in order
             if seqner and diger: # authorized delegated or issued event
                 couple = seqner.qb64b + diger.qb64b
-                self.baser.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-            fn = self.baser.appendFe(serder.preb, serder.digb)
+                self.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+            fn = self.db.appendFe(serder.preb, serder.digb)
             if firner and fn != firner.sn:  # cloned replay but replay fn not match
                 if self.cues is not None:
                     self.cues.append(dict(kin="noticeBadCloneFN", serder=serder,
@@ -2054,11 +2054,11 @@ class Kever:
                              serder.preb, fn, firner.sn, serder.pretty)
             if dater:  # cloned replay use original's dts from dater
                 dtsb = dater.dtsb
-            self.baser.setDts(dgkey, dtsb)  # first seen so set dts to now
-            self.baser.fons.pin(keys=dgkey, val=Seqner(sn=fn))
+            self.db.setDts(dgkey, dtsb)  # first seen so set dts to now
+            self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
             logger.info("Kever state: %s First seen ordinal %s at %s\nEvent=\n%s\n",
                          serder.preb, fn, dtsb.decode("utf-8"), serder.pretty)
-        self.baser.addKe(snKey(serder.preb, serder.sn), serder.digb)
+        self.db.addKe(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Kever state: %s Added to KEL valid event=\n%s\n",
                                                serder.preb, serder.pretty)
         return (fn, dtsb.decode("utf-8"))  #  (fn int, dts str) if first else (None, dts str)
@@ -2075,12 +2075,12 @@ class Kever:
             wigers is optional list of Siger instance of indexed witness sigs
         """
         dgkey = dgKey(serder.preb, serder.digb)
-        self.baser.putDts(dgkey, helping.nowIso8601().encode("utf-8"))   # idempotent
-        self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))   # idempotent
+        self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
         if wigers:
-            self.baser.putWigs(dgkey, [siger.qb64b for siger in wigers])
-        self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addPse(snKey(serder.preb, serder.sn), serder.digb)
+            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        self.db.putEvt(dgkey, serder.raw)
+        self.db.addPse(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Kever state: Escrowed partially signed "
                      "event = %s\n", serder.ked)
 
@@ -2096,7 +2096,7 @@ class Kever:
         """
         dgkey = dgKey(serder.preb, serder.digb)
         couple = seqner.qb64b + diger.qb64b
-        self.baser.putPde(dgkey, couple)   # idempotent
+        self.db.putPde(dgkey, couple)   # idempotent
         logger.info("Kever state: Escrowed partially delegated "
                      "event = %s\n", serder.ked)
 
@@ -2111,12 +2111,12 @@ class Kever:
             sigers is optional list of Siger instances of indexed controller sigs
         """
         dgkey = dgKey(serder.preb, serder.digb)
-        self.baser.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
-        self.baser.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        self.db.putDts(dgkey, helping.nowIso8601().encode("utf-8"))  # idempotent
+        self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         if sigers:
-            self.baser.putSigs(dgkey, [siger.qb64b for siger in sigers])
-        self.baser.putEvt(dgkey, serder.raw)
-        self.baser.addPwe(snKey(serder.preb, serder.sn), serder.digb)
+            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])
+        self.db.putEvt(dgkey, serder.raw)
+        self.db.addPwe(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Kever state: Escrowed partially witnessed "
                      "event = %s\n", serder.ked)
 
@@ -2334,7 +2334,7 @@ class Kevery:
                 kever = Kever(serder=serder,
                               sigers=sigers,
                               wigers=wigers,
-                              baser=self.db,
+                              db=self.db,
                               seqner=seqner,
                               diger=diger,
                               firner=firner if self.cloned else None,

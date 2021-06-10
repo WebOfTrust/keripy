@@ -341,27 +341,27 @@ def test_direct_mode_with_manager():
         #  verify final controller event state
         assert coeKever.sn == coeK.sn == csn
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(coepre)]
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.db.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn + 1
         assert db_digs == coe_event_digs
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(coepre)]
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.db.getKelIter(coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn + 1
         assert db_digs == coe_event_digs
 
         #  verify final validator event state
         assert valKever.sn == valK.sn == vsn
 
-        db_digs = [bytes(v).decode("utf-8") for v in valKever.baser.getKelIter(valpre)]
+        db_digs = [bytes(v).decode("utf-8") for v in valKever.db.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn + 1
         assert db_digs == val_event_digs
 
-        db_digs = [bytes(v).decode("utf-8") for v in coeKever.baser.getKelIter(valpre)]
+        db_digs = [bytes(v).decode("utf-8") for v in coeKever.db.getKelIter(valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn + 1
         assert db_digs == val_event_digs
 
     assert not os.path.exists(valKevery.db.path)
-    assert not os.path.exists(coeKever.baser.path)
+    assert not os.path.exists(coeKever.db.path)
 
 
 if __name__ == "__main__":

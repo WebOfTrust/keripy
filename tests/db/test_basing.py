@@ -1974,7 +1974,7 @@ def test_usebaser():
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i) for i in range(count)]
         # create key event verifier state
-        kever = Kever(serder=serder, sigers=sigers, baser=db)
+        kever = Kever(serder=serder, sigers=sigers, db=db)
 
         # Event 1 Rotation Transferable
         keys = nxtkeys
@@ -2074,7 +2074,7 @@ def test_dbdict():
         db.stts.pin(keys=pre, val=state)  # put state in database
         assert db.stts.get(keys=pre) is not None
 
-        kever = eventing.Kever(state=state, baser=db)
+        kever = eventing.Kever(state=state, db=db)
         assert kever.state().ked == state.ked
 
         dkever = dbd[pre]  # read through cache works here
