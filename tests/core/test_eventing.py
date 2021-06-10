@@ -15,7 +15,7 @@ from keri.kering import Version
 from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
                          ShortageError)
 
-from keri.core import parsing
+from keri.core import coring, eventing, parsing
 from keri.core.coring import MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
 from keri.core.coring import Seqner, Verfer, Signer, Diger, Nexter, Prefixer
 from keri.core.coring import Salter, Serder, Siger, Cigar
@@ -32,9 +32,11 @@ from keri.core.eventing import (incept, rotate, interact, receipt,
                                 delcept, deltate, state, messagize)
 from keri.core.eventing import Kever, Kevery
 
+from keri.db import dbing, basing
 from keri.db.dbing import dgKey, snKey
-from keri.db import basing
 from keri.db.basing import openDB
+
+from keri.app import habbing, keeping
 from keri.app.keeping import openKS, Manager
 
 from keri import help
@@ -4163,244 +4165,123 @@ def test_process_manual():
     """ Done Test """
 
 
-def test_parser():
+
+def test_preload_kever(mockHelpingNowUTC):
     """
-    Test the support functionality for Parser stream processor
+    Test preload Kever from keystate state message
     """
-    logger.setLevel("ERROR")
 
-    # Test sequence of events given set of secrets
-    secrets = [
-                'ArwXoACJgOleVZ2PY7kXn7rA0II0mHYDhc6WrBH8fDAc',
-                'A6zz7M08-HQSFq92sJ8KJOT2cZ47x7pXFQLPB0pckB3Q',
-                'AcwFTk-wgk3ZT2buPRIbK-zxgPx-TKbaegQvPEivN90Y',
-                'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
-                'A1-QxDkso9-MR1A8rZz_Naw6fgaAtayda8hrbkRVVu1E',
-                'AKuYMe09COczwf2nIoD5AE119n7GLFOVFlNLxZcKuswc',
-                'AxFfJTcSuEE11FINfXMqWttkZGnUZ8KaREhrnyAXTsjw',
-                'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
-                ]
+    with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
+        # setup Nat's habitat using default salt multisig already incepts
+        natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
+                                isith=2, icount=3, temp=True)
+        assert natHab.name == 'nat'
+        assert natHab.ks == natKS
+        assert natHab.db == natDB
+        assert natHab.kever.prefixer.transferable
+        assert natHab.db.opened
+        assert natHab.pre in natHab.kevers
+        assert natHab.pre in natHab.prefixes
+        assert natHab.db.path.endswith("/keri/db/nat")
+        path = natHab.db.path  # save for later
 
-    with openDB("controller") as conDB, openDB("validator") as valDB:
-        event_digs = [] # list of event digs in sequence
+        # Create series of events for Nat
+        natHab.interact()
+        natHab.rotate()
+        natHab.interact()
+        natHab.interact()
+        natHab.interact()
+        natHab.interact()
 
-        # create event stream
-        msgs = bytearray()
-        #  create signers
-        signers = [Signer(qb64=secret) for secret in secrets]  # faster
-        assert [signer.qb64 for signer in signers] == secrets
+        assert natHab.kever.sn == 6
+        assert natHab.kever.fn == 6
+        assert natHab.kever.serder.dig == 'En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI'
+        ldig = bytes(natHab.db.getKeLast(dbing.snKey(natHab.pre, natHab.kever.sn)))
+        assert ldig == natHab.kever.serder.digb
+        serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
+        assert serder.dig == natHab.kever.serder.dig
+        nstate = natHab.kever.state()
 
+        state = natHab.db.stts.get(keys=natHab.pre)  # Serder instance
+        assert state.pretty() == ('{\n'
+                            ' "v": "KERI10JSON00023f_",\n'
+                            ' "i": "E5lskf_uSh7ymhplif9nKREEsuwbBfHbHTJuMZyV6Fls",\n'
+                            ' "s": "6",\n'
+                            ' "t": "ksn",\n'
+                            ' "p": "E4T5Gk5v7cv9x5oxT34zwBrTQ7K-x_Atw_kFFBNs_Mgw",\n'
+                            ' "d": "En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI",\n'
+                            ' "f": "6",\n'
+                            ' "dt": "2021-01-01T00:00:00.000000+00:00",\n'
+                            ' "et": "ixn",\n'
+                            ' "kt": "2",\n'
+                            ' "k": [\n'
+                            '  "DI5E8Zqgy0j9HIkVRMjOTTF3Nr_PqwFDZ7bDNi0QCzew",\n'
+                            '  "D2NIcFtglppQom493fiftJFiJkeKvC9b5CIdG19G8GHg",\n'
+                            '  "D36Ev0IqfpZ2wg0QbbTtPilJ2NowjFT1IqF954cLB-9M"\n'
+                            ' ],\n'
+                            ' "n": "EyIxjAmcXOeiFzlIlRpRa7byustaKPabVGDXIIQHvBHg",\n'
+                            ' "bt": "0",\n'
+                            ' "b": [],\n'
+                            ' "c": [],\n'
+                            ' "ee": {\n'
+                            '  "s": "2",\n'
+                            '  "d": "EVqqrPEkZ08J82HsZss8FUWyzUrDM3mavPTPb0meWr1s",\n'
+                            '  "br": [],\n'
+                            '  "ba": []\n'
+                            ' },\n'
+                            ' "di": ""\n'
+                            '}')
+        assert state.sn == 6
+        assert state.ked["f"] == '6'
+        assert state.ked == nstate.ked
 
-        # Event 0  Inception Transferable (nxt digest not empty)
-        serder = incept(keys=[signers[0].verfer.qb64],
-                        nxt=Nexter(keys=[signers[1].verfer.qb64]).qb64)
-        event_digs.append(serder.dig)
-        # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization
-        siger = signers[0].sign(serder.raw, index=0)  # return siger
-        # create key event verifier state
-        kever = Kever(serder=serder, sigers=[siger], baser=conDB)
-        #extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+        # now create new Kever with state
+        kever = eventing.Kever(state=state, baser=natDB)
+        assert kever.sn == 6
+        assert kever.fn == 6
+        assert kever.serder.ked == natHab.kever.serder.ked
+        assert kever.serder.dig == natHab.kever.serder.dig
 
-        assert msgs == bytearray(b'{"v":"KERI10JSON0000ed_","i":"DSuhyBcPZEZLK-fcw5tzHn2N46wRCG_ZOo'
-                                 b'eKtWTOunRA","s":"0","t":"icp","kt":"1","k":["DSuhyBcPZEZLK-fcw5t'
-                                 b'zHn2N46wRCG_ZOoeKtWTOunRA"],"n":"EPYuj8mq_PYYsoBKkzX1kxSPGYBWaIy'
-                                 b'a3slgCOyOtlqU","bt":"0","b":[],"c":[],"a":[]}-AABAAmagesCSY8QhYY'
-                                 b'HCJXEWpsGD62qoLt2uyT0_Mq5lZPR88JyS5UrwFKFdcjPqyKc_SKaKDJhkGWCk07'
-                                 b'k_kVkjyCA')
+        kstate = kever.state()
+        assert kstate.ked == state.ked
+        assert state.pretty() == ('{\n'
+                                    ' "v": "KERI10JSON00023f_",\n'
+                                    ' "i": "E5lskf_uSh7ymhplif9nKREEsuwbBfHbHTJuMZyV6Fls",\n'
+                                    ' "s": "6",\n'
+                                    ' "t": "ksn",\n'
+                                    ' "p": "E4T5Gk5v7cv9x5oxT34zwBrTQ7K-x_Atw_kFFBNs_Mgw",\n'
+                                    ' "d": "En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI",\n'
+                                    ' "f": "6",\n'
+                                    ' "dt": "2021-01-01T00:00:00.000000+00:00",\n'
+                                    ' "et": "ixn",\n'
+                                    ' "kt": "2",\n'
+                                    ' "k": [\n'
+                                    '  "DI5E8Zqgy0j9HIkVRMjOTTF3Nr_PqwFDZ7bDNi0QCzew",\n'
+                                    '  "D2NIcFtglppQom493fiftJFiJkeKvC9b5CIdG19G8GHg",\n'
+                                    '  "D36Ev0IqfpZ2wg0QbbTtPilJ2NowjFT1IqF954cLB-9M"\n'
+                                    ' ],\n'
+                                    ' "n": "EyIxjAmcXOeiFzlIlRpRa7byustaKPabVGDXIIQHvBHg",\n'
+                                    ' "bt": "0",\n'
+                                    ' "b": [],\n'
+                                    ' "c": [],\n'
+                                    ' "ee": {\n'
+                                    '  "s": "2",\n'
+                                    '  "d": "EVqqrPEkZ08J82HsZss8FUWyzUrDM3mavPTPb0meWr1s",\n'
+                                    '  "br": [],\n'
+                                    '  "ba": []\n'
+                                    ' },\n'
+                                    ' "di": ""\n'
+                                    '}')
 
-        # Event 1 Rotation Transferable
-        serder = rotate(pre=kever.prefixer.qb64,
-                        keys=[signers[1].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
-                        nxt=Nexter(keys=[signers[2].verfer.qb64]).qb64,
-                        sn=1)
-        event_digs.append(serder.dig)
-        # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization
-        siger = signers[1].sign(serder.raw, index=0)  # returns siger
-        # update key event verifier state
-        kever.update(serder=serder, sigers=[siger])
-        #extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+    assert not os.path.exists(natKS.path)
+    assert not os.path.exists(natDB.path)
 
-        # Event 2 Rotation Transferable
-        serder = rotate(pre=kever.prefixer.qb64,
-                        keys=[signers[2].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
-                        nxt=Nexter(keys=[signers[3].verfer.qb64]).qb64,
-                        sn=2)
-        event_digs.append(serder.dig)
-        # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization
-        siger = signers[2].sign(serder.raw, index=0)
-        # update key event verifier state
-        kever.update(serder=serder, sigers=[siger])
-        #extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
+    """End Test"""
 
-        # Event 3 Interaction
-        serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
-                          sn=3)
-        event_digs.append(serder.dig)
-        # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization
-        siger = signers[2].sign(serder.raw, index=0)
-        # update key event verifier state
-        kever.update(serder=serder, sigers=[siger])
-        #extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
-
-        # Event 4 Interaction
-        serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
-                          sn=4)
-        event_digs.append(serder.dig)
-        # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization
-        siger = signers[2].sign(serder.raw, index=0)
-        # update key event verifier state
-        kever.update(serder=serder, sigers=[siger])
-        #extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
-
-        # Event 5 Rotation Transferable
-        serder = rotate(pre=kever.prefixer.qb64,
-                        keys=[signers[3].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
-                        nxt=Nexter(keys=[signers[4].verfer.qb64]).qb64,
-                        sn=5)
-        event_digs.append(serder.dig)
-        # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization
-        siger = signers[3].sign(serder.raw, index=0)
-        # update key event verifier state
-        kever.update(serder=serder, sigers=[siger])
-        #extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
-
-        # Event 6 Interaction
-        serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
-                          sn=6)
-        event_digs.append(serder.dig)
-        # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization
-        siger = signers[3].sign(serder.raw, index=0)
-        # update key event verifier state
-        kever.update(serder=serder, sigers=[siger])
-        #extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
-
-        # Event 7 Rotation to null NonTransferable Abandon
-        # nxt digest is empty
-        serder = rotate(pre=kever.prefixer.qb64,
-                    keys=[signers[4].verfer.qb64],
-                    dig=kever.serder.diger.qb64,
-                    nxt="",
-                    sn=7)
-        event_digs.append(serder.dig)
-        # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization
-        siger = signers[4].sign(serder.raw, index=0)
-        # update key event verifier state
-        kever.update(serder=serder, sigers=[siger])
-        #extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
-
-        # Event 8 Interaction
-        serder = interact(pre=kever.prefixer.qb64,
-                          dig=kever.serder.diger.qb64,
-                          sn=8)
-        # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization
-        siger = signers[4].sign(serder.raw, index=0)
-        # update key event verifier state
-        with pytest.raises(ValidationError):  # nulled so reject any more events
-            kever.update(serder=serder, sigers=[siger])
-        #extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
-
-        # Event 8 Rotation
-        serder = rotate(pre=kever.prefixer.qb64,
-                        keys=[signers[4].verfer.qb64],
-                        dig=kever.serder.diger.qb64,
-                        nxt=Nexter(keys=[signers[5].verfer.qb64]).qb64,
-                        sn=8)
-        # create sig counter
-        counter = Counter(CtrDex.ControllerIdxSigs)  # default is count = 1
-        # sign serialization
-        siger = signers[4].sign(serder.raw, index=0)
-        # update key event verifier state
-        with pytest.raises(ValidationError):  # nontransferable so reject update
-            kever.update(serder=serder, sigers=[siger])
-        #extend key event stream
-        msgs.extend(serder.raw)
-        msgs.extend(counter.qb64b)
-        msgs.extend(siger.qb64b)
-
-        assert len(msgs) == 3171
-
-        pre = kever.prefixer.qb64
-
-        db_digs = [bytes(val).decode("utf-8") for val in kever.baser.getKelIter(pre)]
-        assert db_digs == event_digs
-
-        kevery = Kevery(db=valDB)
-
-        parser = parsing.Parser(kvy=kevery)
-
-        parser.parse(ims=bytearray(msgs))  # make copy
-        assert parser.ims == bytearray(b'')  # emptied
-        assert pre in kevery.kevers
-        vkever = kevery.kevers[pre]
-        assert vkever.sn == kever.sn
-        assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
-        assert vkever.verfers[0].qb64 == signers[4].verfer.qb64
-
-        db_digs = [bytes(val).decode("utf-8") for val in kevery.db.getKelIter(pre)]
-        assert db_digs == event_digs
-
-        parser = parsing.Parser()  # no kevery
-        parser.parse(ims=msgs)
-        assert parser.ims == bytearray(b'')
-
-
-    assert not os.path.exists(kevery.db.path)
-    assert not os.path.exists(kever.baser.path)
-
-    """ Done Test """
 
 
 
 if __name__ == "__main__":
-    test_receipt()
+    # pytest.main(['-vv', 'test_eventing.py::test_preload_kever'])
+    test_process_manual()
+

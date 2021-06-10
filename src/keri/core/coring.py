@@ -332,7 +332,7 @@ class MatterCodex:
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
     Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
-    GPG:                  str = '9A'    # Legacy GPG variable length material
+    GPG:                  str = '9A'    # Legacy GPG variable length padded material
 
 
     def __iter__(self):

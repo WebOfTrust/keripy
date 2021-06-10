@@ -1415,7 +1415,7 @@ class Kever:
         self.ilk = state.ked["et"]
         self.tholder = Tholder(sith=state.ked["kt"])
         self.verfers = [Verfer(qb64=key) for key in state.ked["k"]]
-        self.nexter = Nexter(qb64=nxt) if state.ked["n"] else None
+        self.nexter = Nexter(qb64=state.ked["n"]) if state.ked["n"] else None
         self.toad = int(state.ked["bt"], 16)
         self.wits = state.ked["b"]
         self.cuts = state.ked["ee"]["br"]
@@ -1423,16 +1423,16 @@ class Kever:
         self.estOnly = False
         self.doNotDelegate = True if "DND" in state.ked["c"] else False
         self.estOnly = True if "EO" in state.ked["c"] else False
-        self.lasEst = LastEstLoc(s=int(state.ked['ee']['s'], 16),
+        self.lastEst = LastEstLoc(s=int(state.ked['ee']['s'], 16),
                                  d=state.ked['ee']['d'])
         self.delegator = state.ked['di'] if state.ked['di'] else None
-        self.delegated = True if state.delegator else False
+        self.delegated = True if self.delegator else False
 
-        if (serder := self.baser.getEvt(key=dgKey(pre=self.prefixer.qb64,
+        if (raw := self.baser.getEvt(key=dgKey(pre=self.prefixer.qb64,
                                                   dig=state.ked['d']))) is None:
             raise ValueError("Corresponding event for state={} not found."
                              "".format(state.pretty))
-        self.serder = serder
+        self.serder = Serder(raw=bytes(raw))
         # May want to do additional checks here
 
 
