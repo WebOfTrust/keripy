@@ -292,7 +292,8 @@ class Baser(dbing.LMDBer):
             the associated event with digest
 
         .stts is named subDB (states) instance of SerderSuber that maps prefix
-            to latest keystate for that prefix
+            to latest keystate for that prefix. Used by ._kevers.db for read
+            through cache of key state to reload kevers in memory
 
         .habs is named subDB instance of Komer that maps habitat names to prefixes
             key is habitate name str
@@ -333,7 +334,8 @@ class Baser(dbing.LMDBer):
 
         """
         self.prefixes = oset()
-        self._kevers = dict()
+        self._kevers = dbdict()
+        self._kevers.db = self  # assign db for read thorugh cache of kevers
 
         if reload:  # reload requires reopen first
             reopen = True
