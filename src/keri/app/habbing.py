@@ -208,10 +208,10 @@ class Habitat:
         if self.pre is None:
             raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
 
-        kvy = eventing.Kevery(db=self.db, lax=True, check=True)  # promiscuous check mode
-        psr = parsing.Parser(framed=True, kvy=kvy)
-        msgs = self.replayAll()
-        psr.parse(ims=msgs)
+        #kvy = eventing.Kevery(db=self.db, lax=True, check=True)  # promiscuous check mode
+        #psr = parsing.Parser(framed=True, kvy=kvy)
+        #msgs = self.replayAll()
+        #psr.parse(ims=msgs)
 
         if self.pre not in self.kevers:
             raise kering.ConfigurationError("Improper Habitat inception for "
@@ -227,6 +227,7 @@ class Habitat:
 
         # Need to reinitialize .iserder here by loading from db since kever
         # may be later event than inception
+        # change iserder. property of Habitat
         dig = self.db.getKeLast(eventing.snKey(pre=self.pre, sn=0))
         if dig is None:
             raise kering.ConfigurationError("Missing inception event in KEL for "
