@@ -1444,7 +1444,7 @@ class Kever:
         # May want to do additional checks here
 
 
-    def incept(self, serder, baser=None, estOnly=None):
+    def incept(self, serder, estOnly=None):
         """
         Verify incept key event message from serder
 
@@ -1452,8 +1452,6 @@ class Kever:
         Parameters:
             serder is Serder instance of inception event
             estOnly is boolean  to indicate establish only events allowed
-            baser is LMDB Baser instance
-
         """
         ked = serder.ked
 
