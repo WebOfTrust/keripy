@@ -1279,7 +1279,8 @@ class Kever:
     EstOnly = False
     DoNotDelegate = False
 
-    def __init__(self, *, state=None, serder=None, sigers=None, wigers=None, baser=None, estOnly=None,
+    def __init__(self, *, state=None, serder=None, sigers=None, wigers=None,
+                 baser=None, estOnly=None,
                  seqner=None, diger=None, firner=None, dater=None,
                  cues=None, prefixes=None, local=False,
                  check=False):
