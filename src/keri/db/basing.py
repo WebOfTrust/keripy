@@ -335,6 +335,9 @@ class Baser(dbing.LMDBer):
         self.prefixes = oset()
         self._kevers = dict()
 
+        if reload:  # reload requires reopen first
+            reopen = True
+
         super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
         if reload:
