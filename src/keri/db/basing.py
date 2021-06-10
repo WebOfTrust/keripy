@@ -25,8 +25,11 @@ import shutil
 import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass, asdict
+import typing
+import functools
 
 import lmdb
+from orderedset import OrderedSet as oset
 
 from hio.base import doing
 
@@ -34,6 +37,53 @@ from  .. import kering
 from  ..help import helping
 from  ..core import coring, eventing, parsing
 from . import dbing, koming, subing
+
+
+
+
+
+class dbdict(dict):
+    """
+    Subclass of dict that has db as attribute and employs read through cash
+    from db Baser.stts of kever states to reload kever from state in database
+    if not in memory as dict item
+    """
+    __slots__ = ('db')  # no .__dict__ just for db reference
+
+    def __init__(self, *pa, **kwa):
+        super(dbdict, self).__init__(*pa, **kwa)
+        self.db = None
+
+    def __getitem__(self, k):
+        try:
+            return super(dbdict, self).__getitem__(k)
+        except KeyError as ex:
+            if not self.db:
+                raise ex  # reraise KeyError
+            if (state := self.db.stts.get(keys=k)) is None:
+                raise ex  # reraise KeyError
+            try:
+                kever = eventing.Kever(state=state, baser=self.db)
+            except kering.MissingEntryError:  # no kel event for keystate
+                raise ex  # reraise KeyError
+            self.__setitem__(k, kever)
+            return kever
+
+    def __contains__(self, k):
+        if not super(dbdict, self).__contains__(k):
+            try:
+                self.__getitem__(k)
+                return True
+            except KeyError:
+                return False
+        else:
+            return True
+
+    def get(self, k, default=None):
+        if not super(dbdict, self).__contains__(k):
+            return default
+        else:
+            return self.__getitem__(k)
 
 
 
@@ -83,7 +133,7 @@ class Baser(dbing.LMDBer):
         see superclass LMDBer for inherited attributes
 
         kevers (dict): Kever instances indexed by identifier prefix qb64
-        prefixes (list): local prefixes corresponding to habitats for this db
+        prefixes (OrderedSet): local prefixes corresponding to habitats for this db
 
         .evts is named sub DB whose values are serialized events
             dgKey
@@ -252,11 +302,11 @@ class Baser(dbing.LMDBer):
 
 
     """
-    def __init__(self, headDirPath=None, reopen=True, **kwa):
+    def __init__(self, headDirPath=None, reopen=True, reload=False, **kwa):
         """
         Setup named sub databases.
 
-        Inherited Parameters:
+        Parameters:
             name is str directory path name differentiator for main database
                 When system employs more than one keri database, name allows
                 differentiating each instance by name
@@ -267,6 +317,8 @@ class Baser(dbing.LMDBer):
                 If not provided use default .HeadDirpath
             mode is int numeric os dir permissions for database directory
             reopen is boolean, IF True then database will be reopened by this init
+
+            reload (Boolean): True means load habitat prefixes and kevers from .habs
 
         Notes:
 
@@ -280,10 +332,13 @@ class Baser(dbing.LMDBer):
         Duplicates are inserted in lexocographic order by value, insertion order.
 
         """
-        self.prefixes = list()
+        self.prefixes = oset()
         self._kevers = dict()
 
         super(Baser, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
+
+        if reload:
+            self.reload()
 
 
     @property
@@ -329,10 +384,30 @@ class Baser(dbing.LMDBer):
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
                                  schema=HabitatRecord,)  # habitat names prefixes
-
-
-
         return self.env
+
+
+    def reload(self):
+        """
+        Load stored prefixes and Kevers from .habs
+
+        make .kevers a read through cache
+        """
+        removes = []
+        for keys, data in self.habs.getItemIter():
+            if (state := self.stts.get(keys=data.prefix)) is not None:
+                try:
+                    kever = coring.Kever(state=state, baser=self)
+                except kering.MissingEntryError as ex:  # no kel event for keystate
+                    removes.append(keys)  # remove from .habs
+                    continue
+                self.kevers[kever.prefixer.qb64] = kever
+                self.prefixes.add(kever.prefixer.qb64)
+            else:  # in .habs but no corresponding key state so remove
+                removes.append(keys)  # removes
+
+        for keys in removes:  # remove bare .habs without key state or KEL event
+            self.habs.rem(keys=keys)
 
 
     def clean(self):
@@ -372,7 +447,7 @@ class Baser(dbing.LMDBer):
                 for keys, data in self.habs.getItemIter():
                     if data.prefix in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, data=data)
-                        copy.prefixes.append(data.prefix)
+                        copy.prefixes.add(data.prefix)
 
                 if not copy.habs.get(keys=(self.name, )):
                     raise ValueError("Error cloning, missing orig name={} subdb."
@@ -398,7 +473,7 @@ class Baser(dbing.LMDBer):
 
             # clear and clone .prefixes
             self.prefixes.clear()
-            self.prefixes.extend(copy.prefixes)
+            self.prefixes.update(copy.prefixes)
 
             with reopenDB(db=self, reuse=True):  # make sure can reopen
                 if not isinstance(self.env, lmdb.Environment):

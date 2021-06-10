@@ -167,7 +167,7 @@ class Habitat:
             self.db.habs.put(keys=self.name,
                              data=basing.HabitatRecord(name=self.name,
                                                        prefix=self.pre))
-            self.prefixes.append(self.pre)  # may want to have db method
+            self.prefixes.add(self.pre)  # may want to have db method
 
             self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
             sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
@@ -217,7 +217,7 @@ class Habitat:
             raise kering.ConfigurationError("Improper Habitat inception for "
                                             "pre={}.".format(self.pre))
 
-        self.prefixes.append(self.pre)  # may want to have db method
+        self.prefixes.add(self.pre)  # may want to have db method
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy)
 

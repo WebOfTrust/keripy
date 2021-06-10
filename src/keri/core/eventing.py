@@ -22,7 +22,8 @@ from .coring import Versify, Serials, Ilks
 from ..db import basing
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN
 
-from ..kering import (ExtractionError, ShortageError, ColdStartError,
+from ..kering import (MissingEntryError,
+                      ExtractionError, ShortageError, ColdStartError,
                       SizedGroupError, UnexpectedCountCodeError,
                       ValidationError, MissingSignatureError,
                       MissingWitnessSignatureError,
@@ -1224,6 +1225,7 @@ def messagize(serder, sigers=None, seal=None, wigers=None, cigars=None, pipeline
     msg.extend(atc)
     return msg
 
+
 class Kever:
     """
     Kever is KERI key event verifier class
@@ -1241,7 +1243,6 @@ class Kever:
 
     Attributes:
         .baser is reference to Baser instance that managers the LMDB database
-        .kevers is reference to Kevery.kevers when provided
         .cues is reference to Kevery.cues deque when provided
         .prefixes is list of fully qualified base64 identifier prefixes of own
             habitat identifiers if any from Kevery when provided. If empty then
@@ -1271,7 +1272,8 @@ class Kever:
 
 
     Properties:
-        .transferable Boolean True if nexter is not none and pre is transferable
+        .kevers (dict): reference to self.baser.kevers
+        .transferable (Boolean): True if nexter is not none and pre is transferable
 
     """
     EstOnly = False
@@ -1279,7 +1281,7 @@ class Kever:
 
     def __init__(self, *, state=None, serder=None, sigers=None, wigers=None, baser=None, estOnly=None,
                  seqner=None, diger=None, firner=None, dater=None,
-                 kevers=None, cues=None, prefixes=None, local=False,
+                 cues=None, prefixes=None, local=False,
                  check=False):
         """
         Create incepting kever and state from inception serder
@@ -1327,13 +1329,12 @@ class Kever:
         if baser is None:
             baser = basing.Baser()  # default name = "main"
         self.baser = baser
-        self.kevers = kevers
         self.cues = cues
-        self.prefixes = prefixes if prefixes is not None else []
+        self.prefixes = prefixes if prefixes is not None else oset()
         self.local = True if local else False
 
         if state:  # preload from state
-            self.preload(state)
+            self.reload(state)
             return
 
         # may update state as we go because if invalid we fail to finish init
@@ -1387,6 +1388,14 @@ class Kever:
 
 
     @property
+    def kevers(self):
+        """
+        Returns .baser.kevers
+        """
+        return self.baser.kevers
+
+
+    @property
     def transferable(self):
         """
         Property transferable:
@@ -1397,14 +1406,12 @@ class Kever:
         return(self.nexter is not None and self.prefixer.transferable)
 
 
-    def preload(self, state):
+    def reload(self, state):
         """
-        Preload attributes from state serder
-
+        Reload Kever attributes (aka its state) from state serder
 
         Parameters:
-            state (Serder): instance of Serder for state message body
-
+            state (Serder): instance of key stat notice 'ksn' message body
 
         """
         self.version = state.version
@@ -1430,7 +1437,7 @@ class Kever:
 
         if (raw := self.baser.getEvt(key=dgKey(pre=self.prefixer.qb64,
                                                   dig=state.ked['d']))) is None:
-            raise ValueError("Corresponding event for state={} not found."
+            raise MissingEntryError("Corresponding event for state={} not found."
                              "".format(state.pretty))
         self.serder = Serder(raw=bytes(raw))
         # May want to do additional checks here
@@ -2190,7 +2197,7 @@ class Kevery:
 
     Properties:
         .kevers is dict of db kevers indexed by pre (qb64) of each Kever
-        .prefixes is list of fully qualified base64 identifier prefixes of db
+        .prefixes is OrderedSet of fully qualified base64 identifier prefixes of db
             local habitats if any.
 
 
@@ -2331,7 +2338,6 @@ class Kevery:
                               diger=diger,
                               firner=firner if self.cloned else None,
                               dater=dater if self.cloned else None,
-                              kevers=self.kevers,
                               cues=self.cues,
                               prefixes=self.prefixes,
                               local=self.local,

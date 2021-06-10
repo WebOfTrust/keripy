@@ -2007,6 +2007,99 @@ def test_usebaser():
     """ End Test """
 
 
+def test_dbdict():
+    """
+    Test custom dbdict subclass of dict
+    """
+    dbd = basing.dbdict(a=1, b=2, c=3)
+    assert dbd.db == None
+    assert 'a' in dbd
+    assert 'b' in dbd
+    assert 'c' in dbd
+    assert [(k, v) for k, v in dbd.items()] == [('a', 1), ('b', 2), ('c', 3)]
+
+    assert dbd.get('a') == 1
+    assert dbd['a'] == 1
+
+    dbd.clear()
+    assert not dbd
+
+    with basing.openDB(name="nat") as db:
+        dbd.db = db
+        assert dbd.db == db
+        assert not dbd
+
+        dbd['a'] = 1
+        dbd['b'] = 2
+        dbd['c'] = 3
+        assert dbd
+        assert dbd.get('a') == 1
+        assert dbd['a'] == 1
+
+        assert [(k, v) for k, v in dbd.items()] == [('a', 1), ('b', 2), ('c', 3)]
+
+        assert 'd' not in dbd
+        assert dbd.get('d') is None
+
+        with pytest.raises(KeyError):
+            x = dbd['d']
+
+        dbd.clear()
+        pre = 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+
+        assert pre not in dbd
+
+        serder = eventing.interact(pre=pre,
+                                   dig='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                                   sn=4)
+
+        eevt = eventing.StateEstEvent(s='3',
+                                      d='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                                      br=[],
+                                      ba=[])
+
+        state = eventing.state(pre=pre,
+                                 sn=4,
+                                 pig='EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30',
+                                 dig=serder.dig,
+                                 fn=4,
+                                 eilk=coring.Ilks.ixn,
+                                 keys=[pre],
+                                 eevt=eevt,
+                                 )
+
+        dgkey = eventing.dgKey(pre=pre, dig=serder.dig)
+        db.putEvt(key=dgkey, val=serder.raw)
+        assert db.getEvt(key=dgkey) is not None
+        db.stts.pin(keys=pre, srdr=state)  # put state in database
+        assert db.stts.get(keys=pre) is not None
+
+        kever = eventing.Kever(state=state, baser=db)
+        assert kever.state().ked == state.ked
+
+        dkever = dbd[pre]  # read through cache works here
+        dstate = dkever.state()
+        assert  dstate.ked == state.ked
+
+        del dbd[pre]  # not in dbd memory
+        assert pre in dbd  #  read through cache works
+        dkever = dbd[pre]
+        dstate = dkever.state()
+        assert  dstate.ked == state.ked
+
+        db.stts.rem(keys=pre)
+        assert pre in dbd  # still in memory
+        del dbd[pre]
+        assert pre not in dbd  # not in memory or db so read through cache misses
+
+
+    assert not os.path.exists(db.path)
+
+
+
+    """End Test"""
+
+
 def test_baserdoer():
     """
     Test BaserDoer
@@ -2072,4 +2165,4 @@ def test_baserdoer():
 
 
 if __name__ == "__main__":
-    test_clean_baser()
+    test_dbdict()

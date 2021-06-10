@@ -4166,9 +4166,9 @@ def test_process_manual():
 
 
 
-def test_preload_kever(mockHelpingNowUTC):
+def test_reload_kever(mockHelpingNowUTC):
     """
-    Test preload Kever from keystate state message
+    Test reload Kever from keystate state message
     """
 
     with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
@@ -4282,6 +4282,6 @@ def test_preload_kever(mockHelpingNowUTC):
 
 
 if __name__ == "__main__":
-    # pytest.main(['-vv', 'test_eventing.py::test_preload_kever'])
-    test_process_manual()
+    pytest.main(['-vv', 'test_eventing.py::test_reload_kever'])
+    # test_process_manual()
 
