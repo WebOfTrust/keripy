@@ -1770,7 +1770,7 @@ def test_clean_baser():
                                        sith=2,
                                        nxt=natHab.kever.nexter.qb64)
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
-            natHab.db.stts.pin(keys=natHab.pre, srdr=natHab.kever.state())
+            natHab.db.stts.pin(keys=natHab.pre, val=natHab.kever.state())
 
             assert fn == 7
             # verify garbage event in database
@@ -2071,7 +2071,7 @@ def test_dbdict():
         dgkey = eventing.dgKey(pre=pre, dig=serder.dig)
         db.putEvt(key=dgkey, val=serder.raw)
         assert db.getEvt(key=dgkey) is not None
-        db.stts.pin(keys=pre, srdr=state)  # put state in database
+        db.stts.pin(keys=pre, val=state)  # put state in database
         assert db.stts.get(keys=pre) is not None
 
         kever = eventing.Kever(state=state, baser=db)

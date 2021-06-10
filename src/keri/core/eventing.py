@@ -1384,7 +1384,7 @@ class Kever:
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fn = fn
             self.dater = Dater(dts=dts)
-            self.baser.stts.pin(keys=self.prefixer.qb64, srdr=self.state())
+            self.baser.stts.pin(keys=self.prefixer.qb64, val=self.state())
 
 
     @property
@@ -1622,7 +1622,7 @@ class Kever:
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
                 self.fn = fn
                 self.dater = Dater(dts=dts)
-                self.baser.stts.pin(keys=self.prefixer.qb64, srdr=self.state())
+                self.baser.stts.pin(keys=self.prefixer.qb64, val=self.state())
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -1669,7 +1669,7 @@ class Kever:
             if fn is not None: # first is non-idempotent for fn check mode fn is None
                 self.fn = fn
                 self.dater = Dater(dts=dts)
-                self.baser.stts.pin(keys=self.prefixer.qb64, srdr=self.state())
+                self.baser.stts.pin(keys=self.prefixer.qb64, val=self.state())
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))

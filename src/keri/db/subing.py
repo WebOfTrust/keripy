@@ -160,13 +160,13 @@ class SerderSuber(Suber):
         super(SerderSuber, self).__init__(*pa, **kwa)
 
 
-    def put(self, keys: Union[str, Iterable], srdr: coring.Serder):
+    def put(self, keys: Union[str, Iterable], val: coring.Serder):
         """
         Puts val at key made from keys. Does not overwrite
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
-            srdr (Serder): instance
+            val (Serder): instance
 
         Returns:
             result (Boolean): True If successful, False otherwise, such as key
@@ -174,23 +174,23 @@ class SerderSuber(Suber):
         """
         return (self.db.putVal(db=self.sdb,
                                key=self._tokey(keys),
-                               val=srdr.raw))
+                               val=val.raw))
 
 
-    def pin(self, keys: Union[str, Iterable], srdr: coring.Serder):
+    def pin(self, keys: Union[str, Iterable], val: coring.Serder):
         """
         Pins (sets) val at key made from keys. Overwrites.
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
-            srdr (Serder): instance
+            val (Serder): instance
 
         Returns:
             result (Boolean): True If successful. False otherwise.
         """
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
-                               val=srdr.raw))
+                               val=val.raw))
 
 
     def get(self, keys: Union[str, Iterable]):
@@ -201,8 +201,8 @@ class SerderSuber(Suber):
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-            srdr (Serder):
-            None if no entry at keys
+            Serder:
+            None: if no entry at keys
 
         Usage:
             Use walrus operator to catch and raise missing entry

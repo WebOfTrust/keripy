@@ -113,7 +113,7 @@ def test_serder_suber():
         srdr0 = eventing.incept(keys=[pre])
 
         keys = (pre, srdr0.dig)
-        sdb.put(keys=keys, srdr=srdr0)
+        sdb.put(keys=keys, val=srdr0)
         actual = sdb.get(keys=keys)
         assert isinstance(actual, coring.Serder)
         assert actual.dig == srdr0.dig
@@ -122,18 +122,18 @@ def test_serder_suber():
         actual = sdb.get(keys=keys)
         assert actual is None
 
-        sdb.put(keys=keys, srdr=srdr0)
+        sdb.put(keys=keys, val=srdr0)
         actual = sdb.get(keys=keys)
         assert isinstance(actual, coring.Serder)
         assert actual.dig == srdr0.dig
 
         srdr1 = eventing.rotate(pre=pre, keys=[pre], dig=srdr0.dig)
-        result = sdb.put(keys=keys, srdr=srdr1)
+        result = sdb.put(keys=keys, val=srdr1)
         assert not result
         assert isinstance(actual, coring.Serder)
         assert actual.dig == srdr0.dig
 
-        result = sdb.pin(keys=keys, srdr=srdr1)
+        result = sdb.pin(keys=keys, val=srdr1)
         assert result
         actual = sdb.get(keys=keys)
         assert isinstance(actual, coring.Serder)
@@ -142,7 +142,7 @@ def test_serder_suber():
         # test with keys as string not tuple
         keys = "{}.{}".format(pre, srdr1.dig)
 
-        sdb.put(keys=keys, srdr=srdr1)
+        sdb.put(keys=keys, val=srdr1)
         actual = sdb.get(keys=keys)
         assert isinstance(actual, coring.Serder)
         assert actual.dig == srdr1.dig
@@ -159,8 +159,8 @@ def test_serder_suber():
         # test iteritems
         sdb = subing.SerderSuber(db=db, subkey='pugs.')
         assert isinstance(sdb, subing.SerderSuber)
-        sdb.put(keys=("a","1"), srdr=srdr0)
-        sdb.put(keys=("a","2"), srdr=srdr1)
+        sdb.put(keys=("a","1"), val=srdr0)
+        sdb.put(keys=("a","2"), val=srdr1)
 
         items = [(keys, srdr.dig) for keys, srdr in sdb.getItemIter()]
         assert items == [(('a', '1'), srdr0.dig),
