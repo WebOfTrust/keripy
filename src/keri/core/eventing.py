@@ -1439,7 +1439,7 @@ class Kever:
         if (raw := self.db.getEvt(key=dgKey(pre=self.prefixer.qb64,
                                                   dig=state.ked['d']))) is None:
             raise MissingEntryError("Corresponding event for state={} not found."
-                             "".format(state.pretty))
+                             "".format(state.pretty()))
         self.serder = Serder(raw=bytes(raw))
         # May want to do additional checks here
 
@@ -2049,16 +2049,16 @@ class Kever:
                                 fn=fn, firner=firner, dater=dater))
                 logger.info("Kever Mismatch Cloned Replay FN: %s First seen "
                             "ordinal fn %s and clone fn %s \nEvent=\n%s\n",
-                             serder.preb, fn, firner.sn, serder.pretty)
+                             serder.preb, fn, firner.sn, serder.pretty())
             if dater:  # cloned replay use original's dts from dater
                 dtsb = dater.dtsb
             self.db.setDts(dgkey, dtsb)  # first seen so set dts to now
             self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
             logger.info("Kever state: %s First seen ordinal %s at %s\nEvent=\n%s\n",
-                         serder.preb, fn, dtsb.decode("utf-8"), serder.pretty)
+                         serder.preb, fn, dtsb.decode("utf-8"), serder.pretty())
         self.db.addKe(snKey(serder.preb, serder.sn), serder.digb)
         logger.info("Kever state: %s Added to KEL valid event=\n%s\n",
-                                               serder.preb, serder.pretty)
+                                               serder.preb, serder.pretty())
         return (fn, dtsb.decode("utf-8"))  #  (fn int, dts str) if first else (None, dts str)
 
 
@@ -2493,11 +2493,11 @@ class Kevery:
                     if pre in self.prefixes:  # skip own receiptor of own event
                         # sign own events not receipt them
                         logger.info("Kevery process: skipped own receipt attachment"
-                                    " on own event receipt=\n%s\n",serder.pretty)
+                                    " on own event receipt=\n%s\n",serder.pretty())
                         continue  # skip own receipt attachment on own event
                     if not self.local:  # own receipt on other event when not local
                         logger.info("Kevery process: skipped own receipt attachment"
-                                " on nonlocal event receipt=\n%s\n", serder.pretty)
+                                " on nonlocal event receipt=\n%s\n", serder.pretty())
                         continue  # skip own receipt attachment on non-local event
 
                 if wiger.verfer.verify(wiger.raw, lserder.raw):
@@ -2557,11 +2557,11 @@ class Kevery:
                     if pre in self.prefixes:  # skip own receipter of own event
                         # sign own events not receipt them
                         logger.info("Kevery process: skipped own receipt attachment"
-                                    " on own event receipt=\n%s\n", serder.pretty)
+                                    " on own event receipt=\n%s\n", serder.pretty())
                         continue  # skip own receipt attachment on own event
                     if not self.local:  # own receipt on other event when not local
                         logger.info("Kevery process: skipped own receipt attachment"
-                                " on nonlocal event receipt=\n%s\n", serder.pretty)
+                                " on nonlocal event receipt=\n%s\n", serder.pretty())
                         continue  # skip own receipt attachment on non-local event
 
                 if cigar.verfer.verify(cigar.raw, lserder.raw):
@@ -2626,11 +2626,11 @@ class Kevery:
                 if pre in self.prefixes:  # skip own receipter on own event
                     # sign own events not receipt them
                     logger.info("Kevery process: skipped own receipt attachment"
-                                " on own event receipt=\n%s\n", serder.pretty)
+                                " on own event receipt=\n%s\n", serder.pretty())
                     continue  # skip own receipt attachment on own event
                 if not self.local:  # own receipt on other event when not local
                     logger.info("Kevery process: skipped own receipt attachment"
-                            " on nonlocal event receipt=\n%s\n", serder.pretty)
+                            " on nonlocal event receipt=\n%s\n", serder.pretty())
                     continue  # skip own receipt attachment on non-local event
 
             if cigar.verfer.verify(cigar.raw, serder.raw):
@@ -2690,10 +2690,10 @@ class Kevery:
                 if pre in self.prefixes:  # skip own receipter of own event
                     # sign own events not receipt them
                     raise ValidationError("Own pre={} receipter of own event"
-                                          " {}.".format(self.prefixes, serder.pretty))
+                                          " {}.".format(self.prefixes, serder.pretty()))
                 if not self.local:  # skip own receipts of nonlocal events
                     raise ValidationError("Own pre={} receipter of nonlocal event "
-                                          "{}.".format(self.prefixes, serder.pretty))
+                                          "{}.".format(self.prefixes, serder.pretty()))
 
             if sprefixer.qb64 in self.kevers:
                 # receipted event and receipter in database so get receipter est evt
@@ -2771,11 +2771,11 @@ class Kevery:
                 if pre in self.prefixes:  # skip own trans receipts of own events
                     raise ValidationError("Own pre={} replay attached transferable "
                                           "receipt quadruple of own event {}."
-                                      "".format(self.prefixes, serder.pretty))
+                                      "".format(self.prefixes, serder.pretty()))
                 if not self.local:  # skip own trans receipt quadruples of nonlocal events
                     raise ValidationError("Own pre={} seal in replay attached "
                                           "transferable receipt quadruples of nonlocal"
-                                          " event {}.".format(self.prefixes, serder.pretty))
+                                          " event {}.".format(self.prefixes, serder.pretty()))
 
             if ldig is not None and sprefixer.qb64 in self.kevers:
                 # both receipted event and receipter in database so retreive
@@ -2899,11 +2899,11 @@ class Kevery:
             if not self.lax and cigar.verfer.qb64 in self.prefixes:  # own receipt when own nontrans
                 if pre in self.prefixes:  # own receipt attachment on own event
                     logger.info("Kevery process: skipped own receipt attachment"
-                                " on own event receipt=\n%s\n", serder.pretty)
+                                " on own event receipt=\n%s\n", serder.pretty())
                     continue  # skip own receipt attachment on own event
                 if not self.local:  # own receipt on other event when not local
                     logger.info("Kevery process: skipped own receipt attachment"
-                            " on nonlocal event receipt=\n%s\n", serder.pretty)
+                            " on nonlocal event receipt=\n%s\n", serder.pretty())
                     continue  # skip own receipt attachment on non-local event
 
             if cigar.verfer.verify(cigar.raw, serder.raw):
@@ -2915,11 +2915,11 @@ class Kevery:
             if not self.lax and sprefixer.qb64 in self.prefixes:  # own endorsed ksn
                 if pre in self.prefixes:  # skip own endorsed ksn
                     raise ValidationError("Own endorsement pre={} of own key"
-                        " state notifiction {}.".format(self.prefixes, serder.pretty))
+                        " state notifiction {}.".format(self.prefixes, serder.pretty()))
                 if not self.local:  # skip own nonlocal ksn
                     raise ValidationError("Own endorsement pre={}  "
                                           "of nonlocal key state notification "
-                                    "{}.".format(self.prefixes, serder.pretty))
+                                    "{}.".format(self.prefixes, serder.pretty()))
 
             if ldig is not None and sprefixer.qb64 in self.kevers:
                 # both key state event and endorser in database so retreive

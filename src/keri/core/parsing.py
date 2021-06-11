@@ -786,12 +786,12 @@ class Parser:
 
             except AttributeError:
                 raise kering.ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty))
+                                      "= {}.".format(serder.pretty()))
 
         elif ilk in (Ilks.ksn,):  # key state notification msg
             if not (cigars or tsgs):
                 raise kering.ValidationError("Missing attached endorser signature(s) "
-                       "to key state notification msg = {}.".format(serder.ked))
+                       "to key state notification msg = {}.".format(serder.pretty()))
 
             try:
                 if cigars:  # process separately so do not clash on errors
@@ -804,7 +804,7 @@ class Parser:
 
             except AttributeError:
                 raise kering.ValidationError("No kevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty))
+                                      "= {}.".format(serder.pretty()))
         elif ilk in [Ilks.req]:
             res = serder.ked["r"]
             if res in ["logs"]:
@@ -812,18 +812,18 @@ class Parser:
                     kvy.processQuery(serder=serder)
                 except AttributeError:
                     raise kering.ValidationError("No kevery to process so dropped msg"
-                                          "= {}.".format(serder.pretty))
+                                          "= {}.".format(serder.pretty()))
 
             elif res in ["tels"]:
                 try:
                     tvy.processQuery(serder=serder)
                 except AttributeError as e:
                     raise kering.ValidationError("No kevery to process so dropped msg"
-                                      "= {} from {}.".format(serder.pretty, e))
+                                      "= {} from {}.".format(serder.pretty(), e))
 
             else:
                 raise kering.ValidationError("Invalid resource type {} so dropped msg"
-                                      "= {}.".format(res, serder.pretty))
+                                      "= {}.".format(res, serder.pretty()))
 
         elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
             # TEL msg
@@ -833,10 +833,10 @@ class Parser:
 
             except AttributeError:
                 raise kering.ValidationError("No tevery to process so dropped msg"
-                                      "= {}.".format(serder.pretty))
+                                      "= {}.".format(serder.pretty()))
 
         else:
             raise kering.ValidationError("Unexpected message ilk = {} for evt ="
-                                  " {}.".format(ilk, serder.ked))
+                                  " {}.".format(ilk, serder.pretty()))
 
         return True  # done state
