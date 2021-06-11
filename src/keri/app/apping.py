@@ -3,37 +3,20 @@
 KERI
 keri.app.apping module
 
-"""
-import os
-import shutil
-# -*- encoding: utf-8 -*-
-"""
-KERI
-keri.app.apping module
-
 application utility support
 """
-
-
-import json
-from dataclasses import dataclass, asdict
-from typing import Type
-
-import cbor2
-import msgpack
-import lmdb
 
 from hio.base import doing
 from hio.core import wiring
 from hio.core.serial import serialing
 from hio.core.tcp import clienting, serving
 
-from .. import kering
 from .. import help
 from ..help import helping
 from ..db import dbing, basing, koming
 from ..core import coring, eventing, parsing
 from . import keeping, habbing, directing
+from ..db import basing
 
 logger = help.ogler.getLogger()
 
@@ -85,7 +68,7 @@ class Consoler(doing.Doer):
     Manages command console
     """
 
-    def __init__(self, db=None, console=None,  **kwa):
+    def __init__(self, db=None, console=None, **kwa):
         """
 
         """
@@ -93,13 +76,10 @@ class Consoler(doing.Doer):
         self.db = db if db is not None else basing.Baser()
         self.console = console if console is not None else serialing.Console()
 
-
     def enter(self):
         """"""
         if not self.console.reopen():
             raise IOError("Unable to open serial console.")
-
-
 
     def recur(self, tyme):
         """
@@ -125,15 +105,16 @@ class Consoler(doing.Doer):
 
         """
         line = self.console.get()  # process one line of input
+        print("line ", line)
         if not line:
+            print("false")
             return False
         chunks = line.lower().split()
 
-        #args = parser.parse_args(chunks)
-        #if hasattr(args, "handler"):
-            #args.handler(args)
-
-
+        # args = parser.parse_args(chunks)
+        # if hasattr(args, "handler"):
+        # args.handler(args)
+        print(chunks)
         if not chunks:  # empty list
             self.console.put("Try one of: l[eft] r[ight] w[alk] s[top]\n")
             return False
@@ -159,8 +140,7 @@ class Consoler(doing.Doer):
 
         self.console.put("Did: {} {}\n".format(command[0], command[1]))
 
-        return (False)
-
+        return False
 
     def exit(self):
         """"""
