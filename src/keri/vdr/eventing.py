@@ -742,7 +742,7 @@ class Tever:
                                                                self.serder.diger.qb64,
                                                                ked))
 
-        if ilk is Ilks.rev:  # simple revoke
+        if ilk in (Ilks.rev,):  # simple revoke
             if self.noBackers is False:
                 raise ValidationError("invalid simple issue evt {} against backer based registry {}".
                                       format(ked, self.regk))
@@ -756,7 +756,7 @@ class Tever:
 
             self.logEvent(pre=vci, sn=sn, serder=serder, seqner=seqner, diger=diger)
 
-        elif ilk is Ilks.brv:  # backer revoke
+        elif ilk in (Ilks.brv,):  # backer revoke
             if self.noBackers is True:
                 raise ValidationError("invalid backer issue evt {} against backerless registry {}".
                                       format(ked, self.regk))
