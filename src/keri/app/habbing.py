@@ -154,13 +154,13 @@ class Habitat:
             else:
                 nxt = ""
 
-            self.iserder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+            serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
                                            sith=cst,
                                            nxt=nxt,
                                            toad=toad,
                                            wits=wits,
                                            code=code)
-            self.pre = self.iserder.ked["i"]  # new pre
+            self.pre = serder.ked["i"]  # new pre
             self.mgr.move(old=opre, new=self.pre)
 
             # may want db method that updates .habs. and .prefixes together
@@ -170,14 +170,25 @@ class Habitat:
             self.prefixes.add(self.pre)  # may want to have db method
 
             self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
-            sigers = self.mgr.sign(ser=self.iserder.raw, verfers=verfers)
-            self.kvy.processEvent(serder=self.iserder, sigers=sigers)
+            sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
+            self.kvy.processEvent(serder=serder, sigers=sigers)
             self.psr = parsing.Parser(framed=True, kvy=self.kvy)
-            # msg = eventing.messagize(self.iserder, sigers=sigers)
-            #self.psr.parseOne(ims=msg)
             if self.pre not in self.kevers:
                 raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
+
+    @property
+    def iserder(self):
+        """
+        Return serder of inception event
+        """
+        if (dig := self.db.getKeLast(eventing.snKey(pre=self.pre, sn=0))) is None:
+            raise kering.ConfigurationError("Missing inception event in KEL for "
+                                            "Habitat pre={}.".format(self.pre))
+        if (raw := self.db.getEvt(eventing.dgKey(pre=self.pre, dig=bytes(dig)))) is None:
+            raise kering.ConfigurationError("Missing inception event for "
+                                            "Habitat pre={}.".format(self.pre))
+        return coring.Serder(raw=bytes(raw))
 
 
     @property
@@ -208,44 +219,17 @@ class Habitat:
         if self.pre is None:
             raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
 
-        #kvy = eventing.Kevery(db=self.db, lax=True, check=True)  # promiscuous check mode
-        #psr = parsing.Parser(framed=True, kvy=kvy)
-        #msgs = self.replayAll()
-        #psr.parse(ims=msgs)
-
         if self.pre not in self.kevers:
-            raise kering.ConfigurationError("Improper Habitat inception for "
+            raise kering.ConfigurationError("Missing Habitat KEL for "
                                             "pre={}.".format(self.pre))
 
-        self.prefixes.add(self.pre)  # may want to have db method
+        self.prefixes.add(self.pre)  # .prefixes is set so idempotent add
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy)
 
         # ridx for replay may be an issue when loading from existing
         sit = json.loads(bytes(self.ks.getSit(key=self.pre)).decode("utf-8"))
         self.ridx = helping.datify(keeping.PubLot, sit['new']).ridx
-
-        # Need to reinitialize .iserder here by loading from db since kever
-        # may be later event than inception
-        # change iserder. property of Habitat
-        dig = self.db.getKeLast(eventing.snKey(pre=self.pre, sn=0))
-        if dig is None:
-            raise kering.ConfigurationError("Missing inception event in KEL for "
-                                            "Habitat pre={}.".format(self.pre))
-        raw = self.db.getEvt(eventing.dgKey(pre=self.pre, dig=bytes(dig)))
-        if raw is None:
-            raise kering.ConfigurationError("Missing inception event for "
-                                            "Habitat pre={}.".format(self.pre))
-        self.iserder = coring.Serder(raw=bytes(raw))
-
-
-
-    def incept(self):
-        """
-        Perform inception operation. Register inception in database.
-        Returns: bytearray inception message with attached signatures.
-        """
-        pass  # placeholder
 
 
     def rotate(self, sith=None, count=None, erase=None,
@@ -315,6 +299,7 @@ class Habitat:
 
         return msg
 
+
     def interact(self, data=None):
         """
         Perform interaction operation. Register interaction in database.
@@ -336,6 +321,7 @@ class Habitat:
                                          "pre={}.".format(self.pre))
 
         return msg
+
 
     def query(self, pre, res, dt=None, dta=None, dtb=None):
         """
@@ -379,6 +365,7 @@ class Habitat:
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
+
     def witness(self, serder):
         """
         Returns own receipt, rct, message of serder with count code and witness
@@ -412,6 +399,7 @@ class Habitat:
         msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
+
 
     def endorse(self, serder):
         """
@@ -447,6 +435,7 @@ class Habitat:
 
         return msg
 
+
     def replay(self, pre=None, fn=0):
         """
         Returns replay of FEL first seen event log for pre starting from fn
@@ -479,6 +468,7 @@ class Habitat:
             msgs.extend(msg)
         return msgs
 
+
     def makeOwnEvent(self, sn):
         """
         Returns: messagized bytearray message with attached signatures of
@@ -502,6 +492,7 @@ class Habitat:
             msg.extend(sig)  # attach sig
         return (msg)
 
+
     def makeOwnInception(self):
         """
         Returns: messagized bytearray message with attached signatures of
@@ -509,6 +500,7 @@ class Habitat:
                  from database.
         """
         return self.makeOwnEvent(sn=0)
+
 
     def processCues(self, cues):
         """
@@ -521,6 +513,7 @@ class Habitat:
         for msg in self.processCuesIter(cues):
             msgs.extend(msg)
         return msgs
+
 
     def processCuesIter(self, cues):
         """
