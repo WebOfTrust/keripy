@@ -243,7 +243,6 @@ class SamDirector(directing.Director):
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-
         except GeneratorExit:  # close context, forced exit due to .close
             pass
 
@@ -295,7 +294,6 @@ class IanDirector(directing.Director):
         self.vcfile=vcfile
         self.recipientIdentifier = recipientIdentifier
         self.lei = lei
-
 
     def do(self, tymth=None, tock=0.0, **opts):
         """
@@ -391,10 +389,24 @@ class IanDirector(directing.Director):
             with open(self.vcfile, "w") as f:
                 f.write(json.dumps(cred, indent=4))
 
-
             logger.info("%s:\n\n\n Wrote Verifiable Credential for LEI: %s to file %s.\n\n",
                         self.hab.pre, self.lei, self.vcfile)
 
+            input("wait for verification")
+            (yield self.tock)
+
+            tevt, kevt = self.issuer.revoke(vcdig=vcdig.qb64)
+            logger.info("%s:\n\n\n Revoked Verifiable Credential for LEI: %s to file %s.\n\n",
+                        self.hab.pre, self.lei, self.vcfile)
+            (yield self.tock)
+
+            self.client.tx(kevt)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(kevt))
+            (yield self.tock)
+
+            self.client.tx(tevt)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(tevt))
+            (yield self.tock)
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -450,7 +462,6 @@ class VicDirector(directing.Director):
         super().__init__(hab, client, **kwa)
         self.vcfile=vcfile
         self.verifier = verifier
-
 
     def do(self, tymth=None, tock=0.0, **opts):
         """
@@ -511,7 +522,7 @@ class VicDirector(directing.Director):
                                 self.hab.pre, regk)
                     tyme = (yield (self.tock))
 
-
+                tyme = (yield (self.tock))
                 sidx = int(url.fragment)
 
                 valid = self.verifier.verify(pre=pre,
@@ -528,10 +539,6 @@ class VicDirector(directing.Director):
                 else:
                     logger.error("%s:\n\n\n Invalid vLEI credential.\n\n",
                                  self.hab.pre)
-
-
-
-
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass

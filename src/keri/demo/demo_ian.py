@@ -138,7 +138,7 @@ def main():
             remote=args.remote,
             expire=args.expire)
 
-    logger.info("\n******* Ended Demo for Ian lconnecting to "
+    logger.info("\n******* Ended Demo for Ian connecting to "
                 "%s.******\n\n", args.remote)
 
 
