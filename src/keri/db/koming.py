@@ -11,13 +11,10 @@ from typing import Type, Union, Iterable
 import cbor2
 import msgpack
 
-from .. import help
-from ..help import helping
-from ..core import coring
-from ..app  import keeping
 from . import dbing
-
-
+from .. import help
+from ..core import coring
+from ..help import helping
 
 logger = help.ogler.getLogger()
 
@@ -47,7 +44,6 @@ class Komer:
         self.serializer = self._serializer(kind)
         self.deserializer = self._deserializer(kind)
 
-
     def put(self, keys: Union[str, Iterable], data: dataclass):
         """
         Puts val at key made from keys. Does not overwrite
@@ -63,10 +59,9 @@ class Komer:
         if not isinstance(data, self.schema):
             raise ValueError("Invalid schema type={} of data={}, expected {}."
                              "".format(type(data), data, self.schema))
-        return(self.db.putVal(db=self.sdb,
-                              key=self._tokey(keys),
-                              val=self.serializer(data)))
-
+        return (self.db.putVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=self.serializer(data)))
 
     def pin(self, keys: Union[str, Iterable], data: dataclass):
         """
@@ -85,7 +80,6 @@ class Komer:
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
                                val=self.serializer(data)))
-
 
     def get(self, keys: Union[str, Iterable]):
         """
@@ -114,7 +108,6 @@ class Komer:
                              "".format(type(data), data, self.schema))
         return data
 
-
     def rem(self, keys: Union[str, Iterable]):
         """
         Removes entry at keys
@@ -125,8 +118,7 @@ class Komer:
         Returns:
            result (Boolean): True if key exists so delete successful. False otherwise
         """
-        return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
-
+        return (self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
     def getItemIter(self):
         """
@@ -150,7 +142,6 @@ class Komer:
             keys = tuple(key.decode("utf-8").split('.'))  # tuple
             yield (keys, data)
 
-
     def _tokey(self, keys: Union[str, bytes, Iterable]):
         """
         Converts key to key str with proper separators and returns key bytes.
@@ -166,7 +157,6 @@ class Komer:
         elif hasattr(keys, "decode"): # bytes
             return keys
         return (self.Sep.join(keys).encode("utf-8"))  # iterable
-
 
     def _serializer(self, kind):
         """
@@ -227,4 +217,3 @@ class Komer:
         if val is None:
             return
         return cbor2.dumps(helping.dictify(val))
-

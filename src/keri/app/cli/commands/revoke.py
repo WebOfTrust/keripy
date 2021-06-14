@@ -5,10 +5,10 @@ keri.kli.commands module
 """
 import argparse
 
-from ...app import keeping
-from ...app.habbing import Habitat
-from ...db import basing
-from ...vdr.issuing import Issuer
+from keri.app import keeping
+from keri.app.habbing import Habitat
+from keri.db import basing
+from keri.vdr.issuing import Issuer
 
 parser = argparse.ArgumentParser(description='Revoke a verifiable credential')
 parser.set_defaults(handler=lambda args: issue(args.name, args.vcdig))

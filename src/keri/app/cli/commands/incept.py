@@ -14,7 +14,7 @@ from hio.core.tcp import clienting
 from ... import keeping, directing
 from ...habbing import Habitat
 from ....db import basing, dbing
-from ....kli.common.config import loadConfig
+from keri.app.cli.common import loadConfig
 
 logger = help.ogler.getLogger()
 

@@ -5,12 +5,15 @@ keri.app.apping module
 
 application utility support
 """
+import os
+
 import multicommand
 from hio.base import doing
 from hio.core import wiring
 from hio.core.serial import serialing
 from hio.core.tcp import clienting, serving
 
+from . import keeping
 from .cli import commands
 from .. import help
 from ..help import helping
@@ -76,6 +79,13 @@ class Consoler(doing.Doer):
         super(Consoler, self).__init__(**kwa)
         self.name = name
         self.console = console if console is not None else serialing.Console()
+
+        self.db = basing.openDB(name=name, temp=False)
+        self.ks = keeping.openKS(name=name, temp=False)
+
+
+        doers.append(keeping.KeeperDoer(keeper=hab.ks))
+        doers.append(dbing.BaserDoer(baser=hab.db))
 
     def enter(self):
         """"""
