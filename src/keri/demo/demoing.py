@@ -11,6 +11,7 @@ import os
 from urllib import parse
 
 from hio.core import wiring
+from hio.core.serial import serialing
 from hio.core.tcp import clienting, serving
 
 from .. import help
@@ -463,8 +464,10 @@ class IanDirector(directing.Director):
             logger.info("%s:\n\n\n Sent Verifiable Credential for LEI: %s to %s.\n\n",
                         self.hab.pre, self.lei, self.recipientIdentifier)
 
-            input("wait for verification")
-            (yield self.tock)
+            console = serialing.Console()
+            console.reopen()
+            while console.get().decode('utf-8') != "r":
+                (yield self.tock)
 
             tevt, kevt = self.issuer.revoke(vcdig=creder.said)
             logger.info("%s:\n\n\n Revoked Verifiable Credential for LEI: %s.\n\n",

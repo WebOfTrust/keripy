@@ -98,8 +98,7 @@ setup(
             'keri_sam = keri.demo.demo_sam:main',
             'keri_ian = keri.demo.demo_ian:main',
             'keri_vic = keri.demo.demo_vic:main',
-            'keri_kev = keri.demo.demo_kev:main',
-            'kli = keri.kli.kli:main',
+            'kli = keri.app.cli.kli:main',
         ]
     },
 )

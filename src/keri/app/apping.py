@@ -5,12 +5,13 @@ keri.app.apping module
 
 application utility support
 """
-
+import multicommand
 from hio.base import doing
 from hio.core import wiring
 from hio.core.serial import serialing
 from hio.core.tcp import clienting, serving
 
+from .cli import commands
 from .. import help
 from ..help import helping
 from ..db import dbing, basing, koming
@@ -68,18 +69,21 @@ class Consoler(doing.Doer):
     Manages command console
     """
 
-    def __init__(self, db=None, console=None, **kwa):
+    def __init__(self, name=None, console=None, **kwa):
         """
 
         """
         super(Consoler, self).__init__(**kwa)
-        self.db = db if db is not None else basing.Baser()
+        self.name = name
         self.console = console if console is not None else serialing.Console()
 
     def enter(self):
         """"""
         if not self.console.reopen():
             raise IOError("Unable to open serial console.")
+
+        print("Interactive KERI Console (KLI)")
+        self.displayPrompt()
 
     def recur(self, tyme):
         """
@@ -104,43 +108,30 @@ class Consoler(doing.Doer):
                 returns (see ReDoer for example of generator .recur)
 
         """
-        line = self.console.get()  # process one line of input
-        print("line ", line)
+        line = self.console.get().decode('utf-8')  # process one line of input
         if not line:
-            print("false")
             return False
+
         chunks = line.lower().split()
+        self.displayPrompt()
 
-        # args = parser.parse_args(chunks)
-        # if hasattr(args, "handler"):
-        # args.handler(args)
-        print(chunks)
         if not chunks:  # empty list
-            self.console.put("Try one of: l[eft] r[ight] w[alk] s[top]\n")
-            return False
-        command = None
-        verb = chunks[0]
-
-        if verb.startswith('r'):
-            command = ('turn', 'right')
-
-        elif verb.startswith('l'):
-            command = ('turn', 'left')
-
-        elif verb.startswith('w'):
-            command = ('walk', 1)
-
-        elif verb.startswith('s'):
-            command = ('stop', '')
-
-        else:
-            self.console.put("Invalid command: {0}\n".format(verb))
-            self.console.put("Try one of: t[urn] s[top] w[alk]\n")
+            self.send("Try one of: l[eft] r[ight] w[alk] s[top]\n")
             return False
 
-        self.console.put("Did: {} {}\n".format(command[0], command[1]))
+        parser = multicommand.create_parser(commands)
+        args = parser.parse_args(chunks)
+        if hasattr(args, "handler"):
+            args.handler(args)
 
         return False
+
+    def displayPrompt(self):
+        self.console.put(f'{self.name}: '.encode('utf-8'))
+
+    def send(self, s):
+        self.console.put(s.encode('-utf-8'))
+        self.displayPrompt()
 
     def exit(self):
         """"""
