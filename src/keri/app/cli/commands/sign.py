@@ -5,18 +5,26 @@ keri.kli.commands module
 """
 import argparse
 
-from keri.app import keeping
-from keri.app.habbing import Habitat
-from keri.db import basing
+from hio.base import doing
+
+from keri.app import habbing
 
 parser = argparse.ArgumentParser(description='Sign an arbitrary string')
-parser.set_defaults(handler=lambda args: sign(args.name, args.text))
-parser.add_argument('--name', '-n', help='Humane reference')
+parser.set_defaults(handler=lambda args: SignDoer(text=args.text, hab=args.hab))
 parser.add_argument('--text', '-t', help='An arbitrary string')
 
 
-def sign(name, text):
-    with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
-        hab = Habitat(name=name, ks=ks, db=db, isith=1, icount=1, ncount=1, temp=False)
+class SignDoer(doing.Doer):
 
-        print(hab.mgr.sign(ser=text.encode("utf-8"), verfers=hab.kever.verfers, indexed=False)[0].qb64)
+    def __init__(self, text, tock=0.0, hab: habbing.Habitat = None, **kwa):
+        self.hab = hab
+        self.text = text
+
+        super(SignDoer, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        print(self.hab.mgr.sign(ser=self.text.encode("utf-8"),
+                                verfers=self.hab.kever.verfers,
+                                indexed=False)[0].qb64)
+
+        return super().do(tymth, tock, **opts)

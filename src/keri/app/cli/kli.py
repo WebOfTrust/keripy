@@ -11,11 +11,13 @@ logger = help.ogler.getLogger()
 
 class KLI(doing.Doist):
 
-    def __init__(self, name: str, **kwa):
-        super().__init__(**kwa)
+    def __init__(self, name: str, doers: [doing.Doer] = None, **kwa):
         self.name = name
 
-        self.doers.extend(Consoling(self.name))
+        doers = doers if doers is not None else []
+        doers.extend([Consoling(self.name)])
+
+        super(KLI, self).__init__(doers=doers, **kwa)
 
 
 def parseArgs():
@@ -25,7 +27,7 @@ def parseArgs():
                    required=True,
                    action='store',
                    default='',
-                   help="A human friendly name for the 'environment'")
+                   help="A human friendly name")
 
     args = p.parse_args()
 

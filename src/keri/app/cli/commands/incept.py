@@ -11,10 +11,10 @@ from hio.base import doing
 from hio.core import wiring
 from hio.core.tcp import clienting
 
+from ..common.config import loadConfig
 from ... import keeping, directing
 from ...habbing import Habitat
 from ....db import basing, dbing
-from keri.app.cli.common import loadConfig
 
 logger = help.ogler.getLogger()
 
@@ -51,26 +51,23 @@ def incept(name, file):
 
     name = cfg.name
 
-    with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
-        hab = Habitat(name=name, ks=ks, db=db, isith=1, icount=1, ncount=1, temp=False)
+    # with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
+    #     hab = Habitat(name=name, ks=ks, db=db, isith=1, icount=1, ncount=1, temp=False)
+    #
+    #     doers.append(keeping.KeeperDoer(keeper=hab.ks))
+    #     doers.append(dbing.BaserDoer(baser=hab.db))
+    #
+    #     director = InceptDirector(name=name,
+    #                               pre=hab.kever.prefixer.qb64,
+    #                               pub=hab.kever.verfers[0].qb64,
+    #                               hab=hab,
+    #                               client=client)
+    #     doers.append(director)
+    #
+    #     directing.runController(doers=doers)
 
-        doers.append(keeping.KeeperDoer(keeper=hab.ks))
-        doers.append(dbing.BaserDoer(baser=hab.db))
 
-        director = InceptDirector(name=name,
-                                  pre=hab.kever.prefixer.qb64,
-                                  pub=hab.kever.verfers[0].qb64,
-                                  hab=hab,
-                                  client=client)
-        doers.append(director)
-
-        directing.runController(doers=doers)
-
-
-class InceptDirector(directing.Director):
-    """
-    See directing.Director for inherited attributes, parameters and methods
-    """
+class InceptDoer(doing.Doer):
 
     def __init__(self, name, pre, pub, hab, client=None, **kwa):
         super().__init__(hab, client, **kwa)
@@ -107,7 +104,6 @@ class InceptDirector(directing.Director):
             print(f'Issue a verifiable credential:')
             print(f'kli issue -n {self.name} -dsi {self.pre} --lei 506700GE1G29325QX363')
             print()
-            os._exit(os.EX_OK)
 
         except Exception as e:
             logger.info(e)

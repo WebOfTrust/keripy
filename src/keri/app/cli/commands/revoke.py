@@ -5,20 +5,30 @@ keri.kli.commands module
 """
 import argparse
 
-from keri.app import keeping
-from keri.app.habbing import Habitat
-from keri.db import basing
+from hio.base import doing
+
+from keri.app import habbing
 from keri.vdr.issuing import Issuer
 
 parser = argparse.ArgumentParser(description='Revoke a verifiable credential')
-parser.set_defaults(handler=lambda args: issue(args.name, args.vcdig))
-parser.add_argument('--name', '-n', help='Humane reference')
+parser.set_defaults(handler=lambda args: RevokeDoer(vcdig=args.vcdig, hab=args.hab))
 parser.add_argument('--vcdig', help='vcdig is hash digest of vc content qb64')
 
 
-def issue(name, vcdig):
-    with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
-        hab = Habitat(name=name, ks=ks, db=db, temp=False)
-        iss = Issuer(hab=hab, name=name)
+class RevokeDoer(doing.Doer):
 
-        iss.revoke(vcdig=vcdig)
+    def __init__(self, vcdig, tock=0.0, hab: habbing.Habitat = None, **kwa):
+        self.hab = hab
+        self.vcdig = vcdig
+        super(RevokeDoer, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        iss = Issuer(hab=self.hab, name=self.hab.name)
+
+        iss.revoke(vcdig=self.vcdig)
+
+        print(f"Rotated keys for {self.hab.name}")
+        print(f"New public key {self.hab.kever.verfers[0].qb64}")
+
+        return super().do(tymth, tock, **opts)
+

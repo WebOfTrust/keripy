@@ -5,19 +5,23 @@ keri.kli.commands module
 """
 import argparse
 
-from keri.app import keeping
-from keri.app.habbing import Habitat
-from keri.db import basing
+from hio.base import doing
+
+from keri.app import habbing
 
 parser = argparse.ArgumentParser(description='view info')
-parser.set_defaults(handler=lambda args: info(args.name))
-parser.add_argument('--name', '-n', help='Humane reference')
+parser.set_defaults(handler=lambda args: InfoDoer(hab=args.hab))
 
 
-def info(name):
-    with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
-        hab = Habitat(name=name, ks=ks, db=db, temp=False)
+class InfoDoer(doing.Doer):
 
-        print(f'Prefix {hab.pre}')
-        print(f'Public Key {hab.kever.verfers[0].qb64}')
-        print(f'Current rotation index {hab.ridx}')
+    def __init__(self, tock=0.0, hab: habbing.Habitat = None, **kwa):
+        self.hab = hab
+        super(InfoDoer, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        print(f'Prefix {self.hab.pre}')
+        print(f'Public Key {self.hab.kever.verfers[0].qb64}')
+        print(f'Current rotation index {self.hab.ridx}')
+
+        return super().do(tymth, tock, **opts)

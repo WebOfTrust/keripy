@@ -5,20 +5,24 @@ keri.kli.commands module
 """
 import argparse
 
-from keri.app import keeping
-from keri.app.habbing import Habitat
-from keri.db import basing
+from hio.base import doing
+
+from ... import habbing
 
 parser = argparse.ArgumentParser(description='Rotate keys')
-parser.set_defaults(handler=lambda args: rotate(args.name))
-parser.add_argument('--name', '-n', help="Humane reference")
+parser.set_defaults(handler=lambda args: RotateDoer(hab=args.hab))
 
 
-def rotate(name):
-    with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
-        hab = Habitat(name=name, ks=ks, db=db, temp=False)
-        hab.rotate()
+class RotateDoer(doing.Doer):
 
-        print(f"Rotated keys for {name}")
-        print(f"New public key {hab.kever.verfers[0].qb64}")
+    def __init__(self, tock=0.0, hab: habbing.Habitat = None, **kwa):
+        self.hab = hab
+        super(RotateDoer, self).__init__(**kwa)
 
+    def do(self, tymth, tock=0.0, **opts):
+        self.hab.rotate()
+
+        print(f"Rotated keys for {self.hab.name}")
+        print(f"New public key {self.hab.kever.verfers[0].qb64}")
+
+        return super().do(tymth, tock, **opts)
