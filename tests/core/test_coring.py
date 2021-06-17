@@ -41,7 +41,7 @@ def test_ilks():
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
                           rct='rct', ksn='ksn', vcp='vcp', vrt='vrt',
-                          iss='iss', rev='rev', bis='bis', brv='brv', req="req")
+                          iss='iss', rev='rev', bis='bis', brv='brv', req="req", exn="exn")
 
     assert isinstance(Ilks, Ilkage)
 
@@ -1042,6 +1042,7 @@ def test_counter():
                                             'FirstSeenReplayCouples': '-E',
                                             'TransIndexedSigGroups': '-F',
                                             'SealSourceCouples':  '-G',
+                                            'SignerSealCouples': '-H',
                                             'MessageDataGroups': '-U',
                                             'AttachedMaterialQuadlets': '-V',
                                             'MessageDataMaterialQuadlets': '-W',
@@ -1089,6 +1090,7 @@ def test_counter():
                                 '-E': Sizage(hs=2, ss=2, fs=4),
                                 '-F': Sizage(hs=2, ss=2, fs=4),
                                 '-G': Sizage(hs=2, ss=2, fs=4),
+                                '-H': Sizage(hs=2, ss=2, fs=4),
                                 '-U': Sizage(hs=2, ss=2, fs=4),
                                 '-V': Sizage(hs=2, ss=2, fs=4),
                                 '-W': Sizage(hs=2, ss=2, fs=4),

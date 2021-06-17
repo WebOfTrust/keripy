@@ -284,3 +284,9 @@ class MissingAnchorError(ValidationError):
     Usage:
         raise MissingAnchorError("error message")
     """
+
+
+class ExchangeError(KeriError):
+    """
+
+    """
