@@ -95,11 +95,11 @@ def Deversify(vs):
 
 # ilk (message type )
 Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct ksn '
-                                  'vcp vrt iss rev bis brv req')
+                                  'vcp vrt iss rev bis brv req exn')
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
               ksn='ksn', vcp='vcp', vrt='vrt', iss='iss', rev='rev',
-              bis='bis', brv='brv', req="req")
+              bis='bis', brv='brv', req="req", exn="exn")
 
 
 # Base64 utilities
@@ -2516,6 +2516,7 @@ class CounterCodex:
     FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fnu + dts.
     TransIndexedSigGroups:          str =  '-F'  # Composed Base64 Triple, pre+snu+dig+ControllerIdxSigs group.
     SealSourceCouples:              str =  '-G'  # Composed Base64 couple, snu+dig of given delegator's or issuer's event
+    SignerSealCouples:              str =  '-H'  # Composed Base64 couple, pre+ControllerIdxSigs group.
     MessageDataGroups:              str =  '-U'  # Composed Message Data Group or Primitive
     AttachedMaterialQuadlets:       str =  '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     MessageDataMaterialQuadlets:    str =  '-W'  # Composed Grouped Message Data Quadlet (4 char each)
@@ -2591,6 +2592,7 @@ class Counter:
                 '-E': Sizage(hs=2, ss=2, fs=4),
                 '-F': Sizage(hs=2, ss=2, fs=4),
                 '-G': Sizage(hs=2, ss=2, fs=4),
+                '-H': Sizage(hs=2, ss=2, fs=4),
                 '-U': Sizage(hs=2, ss=2, fs=4),
                 '-V': Sizage(hs=2, ss=2, fs=4),
                 '-W': Sizage(hs=2, ss=2, fs=4),
