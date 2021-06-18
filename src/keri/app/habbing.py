@@ -331,7 +331,16 @@ class Habitat:
         serder = eventing.query(pre=pre,res=res, dt=dt, dta=dta, dtb=dtb)
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
-        msg = eventing.messagize(serder, sigers=sigers)
+        msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
+
+        msg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
+        msg.extend(pre.encode("utf-8"))
+
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
 
         return msg
 

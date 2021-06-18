@@ -2990,13 +2990,16 @@ class Kevery:
                                       #"validator receipt quadruple for event={}."
                                       #"".format(ked))
 
-    def processQuery(self, serder):
+    def processQuery(self, serder, pre=None, sigers=None):
         """
         Process query mode replay message for collective or single element query.
         Assume promiscuous mode for now.
 
         Parameters:
-            serder is query message serder
+            serder (Serder) is query message serder
+            pre (qb64) identifier prefix of event sender
+            sigers (list) of Siger instances of attached controller indexed sigs
+
         """
         ked = serder.ked
 

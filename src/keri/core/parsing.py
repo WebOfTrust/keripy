@@ -193,7 +193,7 @@ class Parser:
                 yield
 
 
-    def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
+    def parse(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None):
         """
         Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
@@ -213,16 +213,18 @@ class Parser:
 
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger) route EXN message types to this instance
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
             attachments. So even when framed==True must still have counters.
         """
         parsator = self.allParsator(ims=ims,
-                                       framed=framed,
-                                       pipeline=pipeline,
-                                       kvy=kvy,
-                                       tvy=tvy)
+                                    framed=framed,
+                                    pipeline=pipeline,
+                                    kvy=kvy,
+                                    tvy=tvy,
+                                    exc=exc)
 
         while True:
             try:
@@ -231,7 +233,7 @@ class Parser:
                 break
 
 
-    def parseOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
+    def parseOne(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None):
         """
         Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
@@ -251,16 +253,18 @@ class Parser:
 
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger) route EXN message types to this instance
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
             attachments. So even when framed==True must still have counters.
         """
         parsator = self.onceParsator(ims=ims,
-                                        framed=framed,
-                                        pipeline=pipeline,
-                                        kvy=kvy,
-                                        tvy=tvy)
+                                     framed=framed,
+                                     pipeline=pipeline,
+                                     kvy=kvy,
+                                     tvy=tvy,
+                                     exc=exc)
         while True:
             try:
                 next(parsator)
@@ -268,7 +272,7 @@ class Parser:
                 break
 
 
-    def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
+    def allParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None):
         """
         Returns generator to parse all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
@@ -288,6 +292,7 @@ class Parser:
 
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger) route EXN message types to this instance
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -307,10 +312,11 @@ class Parser:
         while ims:  # only process until ims empty
             try:
                 done = yield from self.msgParsator(ims=ims,
-                                                    framed=framed,
-                                                    pipeline=pipeline,
-                                                    kvy=kvy,
-                                                    tvy=tvy)
+                                                   framed=framed,
+                                                   pipeline=pipeline,
+                                                   kvy=kvy,
+                                                   tvy=tvy,
+                                                   exc=exc)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -338,7 +344,7 @@ class Parser:
         return True
 
 
-    def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
+    def onceParsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None):
         """
         Returns generator to parse one message from incoming message stream, ims.
         If ims not provided parse messages from .ims
@@ -356,6 +362,7 @@ class Parser:
 
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger) route EXN message types to this instance
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -377,10 +384,11 @@ class Parser:
         while not done:
             try:
                 done = yield from self.msgParsator(ims=ims,
-                                                    framed=framed,
-                                                    pipeline=pipeline,
-                                                    kvy=kvy,
-                                                    tvy=tvy)
+                                                   framed=framed,
+                                                   pipeline=pipeline,
+                                                   kvy=kvy,
+                                                   tvy=tvy,
+                                                   exc=exc)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -409,7 +417,7 @@ class Parser:
         return done
 
 
-    def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None):
+    def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None):
         """
         Returns generator to continually parse messages from incoming message
         stream, ims. One yield from per each messages. Continually yields
@@ -429,6 +437,7 @@ class Parser:
 
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger) route EXN message types to this instance
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -448,10 +457,11 @@ class Parser:
         while True:  # continuous stream processing never stop
             try:
                 done = yield from self.msgParsator(ims=ims,
-                                                    framed=framed,
-                                                    pipeline=pipeline,
-                                                    kvy=kvy,
-                                                    tvy=tvy)
+                                                   framed=framed,
+                                                   pipeline=pipeline,
+                                                   kvy=kvy,
+                                                   tvy=tvy,
+                                                   exc=exc)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -479,7 +489,7 @@ class Parser:
         return True
 
 
-    def msgParsator(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
+    def msgParsator(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None):
         """
         Returns generator that upton each iterations extracts and parses msg
         with attached crypto material (signature etc) from incoming message
@@ -491,18 +501,19 @@ class Parser:
         attachments. Returns (which raises StopIteration) when finished.
 
         Parameters:
-            ims is bytearray of serialized incoming message stream.
+            ims (bytearray) of serialized incoming message stream.
                 May contain one or more sets each of a serialized message with
                 attached cryptographic material such as signatures or receipts.
 
-            framed is Boolean, True means ims contains only one frame of msg plus
+            framed (Boolean) True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
 
-            pipeline is Boolean, True means use pipeline processor to process
+            pipeline (Boolean) True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
 
-            kevery (Kevery): route KERI KEL message types to this instance
-            tevery (Tevery): route TEL message types to this instance
+            kvy (Kevery) route KERI KEL message types to this instance
+            tvy (Tevery) route TEL message types to this instance
+            exc (Exchanger) route EXN message types to this instance
 
         Logic:
             Currently only support couters on attachments not on combined or
@@ -549,6 +560,8 @@ class Parser:
         trqs = []  # each converted quadruple is (prefixer, seqner, diger, siger)
         # List of tuples from extracted transferable indexed sig groups
         tsgs = []  # each converted group is tuple of (i,s,d) triple plus list of sigs
+        # List of tuples from extracted signer seals sig groups
+        ssgs = []  # each converted group is the identifier prefix plus list of sigs
         # List of tuples from extracted first seen replay couples
         frcs = []  # each converted couple is (seqner, dater)
         # List of tuples from extracted source seal couples (delegator or issuer)
@@ -681,6 +694,34 @@ class Parser:
                                 isigers.append(isiger)
                             tsgs.append((prefixer, seqner, diger, isigers))
 
+                    elif ctr.code == CtrDex.SignerSealCouples:
+                        # extract attaced signer seal indexed sig groups each made of
+                        # identifier pre plus indexed sig group
+                        # pre is pre of signer (endorser) of msg
+                        # followed by counter for ControllerIdxSigs with attached
+                        # indexed sigs from trans signer (endorser).
+                        for i in range(ctr.count): # extract each attached groups
+                            prefixer = yield from  self._extractor(ims,
+                                                                   klas=Prefixer,
+                                                                   cold=cold,
+                                                                   abort=pipelined)
+                            ictr = ctr = yield from self._extractor(ims=ims,
+                                                                    klas=Counter,
+                                                                    cold=cold,
+                                                                    abort=pipelined)
+                            if ctr.code != CtrDex.ControllerIdxSigs:
+                                raise kering.UnexpectedCountCodeError("Wrong "
+                                    "count code={}.Expected code={}."
+                                    "".format(ictr.code, CtrDex.ControllerIdxSigs))
+                            isigers = []
+                            for i in range(ictr.count): # extract each attached signature
+                                isiger = yield from self._extractor(ims=ims,
+                                                                    klas=Siger,
+                                                                    cold=cold,
+                                                                    abort=pipelined)
+                                isigers.append(isiger)
+                            ssgs.append((prefixer, isigers))
+
                     elif ctr.code == CtrDex.FirstSeenReplayCouples:
                         # extract attached first seen replay couples
                         # snu+dtm
@@ -754,12 +795,12 @@ class Parser:
                                       "= {}.".format(serder.ked))
             try:
                 kvy.processEvent(serder=serder,
-                                        sigers=sigers,
-                                        wigers=wigers,
-                                        seqner=seqner,
-                                        diger=diger,
-                                        firner=firner,
-                                        dater=dater)
+                                 sigers=sigers,
+                                 wigers=wigers,
+                                 seqner=seqner,
+                                 diger=diger,
+                                 firner=firner,
+                                 dater=dater)
 
                 if cigars:
                     kvy.processReceiptCouples(serder, cigars, firner=firner)
@@ -805,31 +846,66 @@ class Parser:
             except AttributeError:
                 raise kering.ValidationError("No kevery to process so dropped msg"
                                       "= {}.".format(serder.pretty()))
-        elif ilk in [Ilks.req]:
+        elif ilk in (Ilks.req, ):
+            args = dict(serder=serder)
+            if ssgs:
+                pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
+                args["pre"] = pre
+                args["sigers"] = sigers
+
+            elif cigars:
+                args["cigars"] = cigars
+
+            else:
+                raise kering.ValidationError("Missing attached requester signature(s) "
+                                             "to key log query msg = {}.".format(serder.pretty()))
+
             res = serder.ked["r"]
             if res in ["logs"]:
                 try:
-                    kvy.processQuery(serder=serder)
+                    kvy.processQuery(**args)
                 except AttributeError:
                     raise kering.ValidationError("No kevery to process so dropped msg"
-                                          "= {}.".format(serder.pretty()))
+                                                 "= {}.".format(serder.pretty()))
 
             elif res in ["tels"]:
                 try:
-                    tvy.processQuery(serder=serder)
+                    tvy.processQuery(**args)
                 except AttributeError as e:
-                    raise kering.ValidationError("No kevery to process so dropped msg"
-                                      "= {} from {}.".format(serder.pretty(), e))
+                    raise kering.ValidationError("No tevery to process so dropped msg"
+                                                 "= {} from {}.".format(serder.pretty(), e))
 
             else:
                 raise kering.ValidationError("Invalid resource type {} so dropped msg"
-                                      "= {}.".format(res, serder.pretty()))
+                                             "= {}.".format(res, serder.pretty()))
+
+        elif ilk in (Ilks.exn, ):
+            args = dict(serder=serder)
+            if ssgs:
+                pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
+                args["pre"] = pre
+                args["sigers"] = sigers
+
+            elif cigars:
+                args["cigars"] = cigars
+
+            else:
+                raise kering.ValidationError("Missing attached exchanger signature(s) "
+                                             "to peer exchange msg = {}.".format(serder.pretty()))
+
+            try:
+                exc.processEvent(**args)
+
+            except AttributeError:
+                raise kering.ValidationError("No Exchange to process so dropped msg"
+                                             "= {}.".format(serder.pretty()))
+
 
         elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
             # TEL msg
             seqner, diger = sscs[-1] if sscs else (None, None)  # use last one if more than one
             try:
-                tvy.processEvent(serder, seqner=seqner, diger=diger, wigers=wigers)
+                tvy.processEvent(serder=serder, seqner=seqner, diger=diger, wigers=wigers)
 
             except AttributeError:
                 raise kering.ValidationError("No tevery to process so dropped msg"
