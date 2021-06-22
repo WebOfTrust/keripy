@@ -97,7 +97,7 @@ def test_directing_basic():
         assert bobHab.pre == bob
 
         bobClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
-        bobClientDoer = doing.ClientDoer(tymth=doist.tymen(), client=bobClient)
+        bobClientDoer = clienting.ClientDoer(tymth=doist.tymen(), client=bobClient)
 
         bobDirector = directing.Director(hab=bobHab, client=bobClient)
         assert bobDirector.hab == bobHab
@@ -114,7 +114,7 @@ def test_directing_basic():
         assert id(bobReactor.client.rxbs) == id(bobDirector.client.rxbs)
 
         bobServer = serving.Server(host="", port=bobPort)
-        bobServerDoer = doing.ServerDoer(server=bobServer)
+        bobServerDoer = serving.ServerDoer(server=bobServer)
 
         bobDirectant = directing.Directant(hab=bobHab, server=bobServer)
         assert bobDirectant.hab == bobHab
@@ -130,7 +130,7 @@ def test_directing_basic():
         assert eveHab.pre == eve
 
         eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=bobPort)
-        eveClientDoer = doing.ClientDoer(tymth=doist.tymen(), client=eveClient)
+        eveClientDoer = clienting.ClientDoer(tymth=doist.tymen(), client=eveClient)
 
         eveDirector = directing.Director(hab=eveHab, client=eveClient)
         assert eveDirector.hab == eveHab
@@ -147,7 +147,7 @@ def test_directing_basic():
         assert id(eveReactor.client.rxbs) == id(eveDirector.client.rxbs)
 
         eveServer = serving.Server(host="", port=evePort)
-        eveServerDoer = doing.ServerDoer(server=eveServer)
+        eveServerDoer = serving.ServerDoer(server=eveServer)
 
         eveDirectant = directing.Directant(hab=eveHab, server=eveServer)
         assert eveDirectant.hab == eveHab

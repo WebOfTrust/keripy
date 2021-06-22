@@ -103,7 +103,7 @@ def test_direct_mode_bob_eve_demo():
         assert bobHab.pre == bob
 
         bobClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
-        bobClientDoer = doing.ClientDoer(client=bobClient)
+        bobClientDoer = clienting.ClientDoer(client=bobClient)
 
         bobDirector = demoing.BobDirector(hab=bobHab, client=bobClient, tock=0.125)
         assert bobDirector.hab == bobHab
@@ -120,7 +120,7 @@ def test_direct_mode_bob_eve_demo():
         assert bobReactor.hab.psr.ims == bobReactor.client.rxbs
 
         bobServer = serving.Server(host="", port=bobPort)
-        bobServerDoer = doing.ServerDoer(server=bobServer)
+        bobServerDoer = serving.ServerDoer(server=bobServer)
 
         bobDirectant = directing.Directant(hab=bobHab, server=bobServer)
         assert bobDirectant.hab == bobHab
@@ -140,7 +140,7 @@ def test_direct_mode_bob_eve_demo():
         assert eveHab.pre == eve
 
         eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=bobPort)
-        eveClientDoer = doing.ClientDoer(client=eveClient)
+        eveClientDoer = clienting.ClientDoer(client=eveClient)
 
         eveDirector = demoing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
         assert eveDirector.hab == eveHab
@@ -156,7 +156,7 @@ def test_direct_mode_bob_eve_demo():
         assert eveReactor.hab.psr.ims == eveReactor.client.rxbs
 
         eveServer = serving.Server(host="", port=evePort)
-        eveServerDoer = doing.ServerDoer(server=eveServer)
+        eveServerDoer = serving.ServerDoer(server=eveServer)
 
         eveDirectant = directing.Directant(hab=eveHab, server=eveServer)
         assert eveDirectant.hab == eveHab
@@ -276,7 +276,7 @@ def test_direct_mode_sam_eve_demo():
         assert samHab.pre == sam
 
         samClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
-        samClientDoer = doing.ClientDoer(client=samClient)
+        samClientDoer = clienting.ClientDoer(client=samClient)
 
         samDirector = demoing.SamDirector(hab=samHab, client=samClient, tock=0.125)
         assert samDirector.hab == samHab
@@ -293,7 +293,7 @@ def test_direct_mode_sam_eve_demo():
         assert samReactor.hab.psr.ims == samReactor.client.rxbs
 
         samServer = serving.Server(host="", port=samPort)
-        samServerDoer = doing.ServerDoer(server=samServer)
+        samServerDoer = serving.ServerDoer(server=samServer)
 
         samDirectant = directing.Directant(hab=samHab, server=samServer)
         assert samDirectant.hab == samHab
@@ -311,7 +311,7 @@ def test_direct_mode_sam_eve_demo():
         assert eveHab.pre == eve
 
         eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=samPort)
-        eveClientDoer = doing.ClientDoer(client=eveClient)
+        eveClientDoer = clienting.ClientDoer(client=eveClient)
 
         eveDirector = demoing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
         assert eveDirector.hab == eveHab
@@ -327,7 +327,7 @@ def test_direct_mode_sam_eve_demo():
         assert eveReactor.hab.psr.ims == eveReactor.client.rxbs
 
         eveServer = serving.Server(host="", port=evePort)
-        eveServerDoer = doing.ServerDoer(server=eveServer)
+        eveServerDoer = serving.ServerDoer(server=eveServer)
 
         eveDirectant = directing.Directant(hab=eveHab, server=eveServer)
         assert eveDirectant.hab == eveHab
@@ -549,7 +549,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert witHab.ks == witKS
         assert witHab.db == witDB
         witServer = serving.Server(host="", port=witPort)
-        witServerDoer = doing.ServerDoer(server=witServer)
+        witServerDoer = serving.ServerDoer(server=witServer)
         witDirectant = directing.Directant(hab=witHab, server=witServer)
 
         witDoers = [witServerDoer, witDirectant]
@@ -585,7 +585,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert samHab.pre == sam
 
         samClient = clienting.Client(host='127.0.0.1', port=witPort)
-        samClientDoer = doing.ClientDoer(client=samClient)
+        samClientDoer = clienting.ClientDoer(client=samClient)
 
         samDirector = demoing.SamDirector(hab=samHab, client=samClient, tock=0.125)
         assert samDirector.hab == samHab
@@ -602,7 +602,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert samReactor.hab.psr.ims == samReactor.client.rxbs
 
         samServer = serving.Server(host="", port=samPort)
-        samServerDoer = doing.ServerDoer(server=samServer)
+        samServerDoer = serving.ServerDoer(server=samServer)
 
         samDirectant = directing.Directant(hab=samHab, server=samServer)
         assert samDirectant.hab == samHab
@@ -624,7 +624,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert camHab.pre == cam
 
         camClient = clienting.Client(host='127.0.0.1', port=witPort)
-        camClientDoer = doing.ClientDoer(client=camClient)
+        camClientDoer = clienting.ClientDoer(client=camClient)
 
         camDirector = demoing.CamDirector(hab=camHab, remotePre=sam, client=camClient, tock=0.125)
         assert camDirector.hab == camHab

@@ -725,7 +725,7 @@ def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620, in
     wireDoer = wiring.WireLogDoer(wl=wl)
 
     client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
-    clientDoer = doing.ClientDoer(client=client)
+    clientDoer = clienting.ClientDoer(client=client)
 
     if name == 'bob':
         director = BobDirector(hab=hab, client=client, tock=0.125)
@@ -739,7 +739,7 @@ def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620, in
     reactor = directing.Reactor(hab=hab, client=client, indirect=indirect)
 
     server = serving.Server(host="", port=localPort, wl=wl)
-    serverDoer = doing.ServerDoer(server=server)
+    serverDoer = serving.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server)
     # Reactants created on demand by directant
 
