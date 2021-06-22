@@ -457,7 +457,7 @@ class Directant(doing.DoDoer):
                     # add Reactant (rant) doer to running doers
                     self.extend(doers=[rant])  # open and run rant as doer
 
-                if ix.timeout > 0.0 and ix.tymer.expired:
+                if ix.tymeout > 0.0 and ix.tymer.expired:
                     self.closeConnection(ca)  # also removes rant
 
             yield

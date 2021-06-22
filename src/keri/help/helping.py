@@ -105,7 +105,7 @@ class mdict(MultiDict):
 
         m["key"] = value replaces the valuelist at key with [value]
 
-        m["key] treturns the first added element of the valuelist at key
+        m["key"] returns the first added element of the valuelist at key
 
     MultiDict methods access values in FIFO order
     mdict adds method to access values in LIFO order
@@ -158,7 +158,7 @@ class mdict(MultiDict):
         Usage:
             .nabone(key [, default])
 
-        returns list of value at key if key in dict else default
+        returns list of values at key if key in dict else default
         raises KeyError if key not in dict and default not provided.
         """
         try:
