@@ -5,6 +5,7 @@ from hio import help
 from hio.base import doing
 
 from keri.app.cli.consoling import Consoling
+from keri.app.cli.dispatching import Dispatching
 
 logger = help.ogler.getLogger()
 
@@ -15,7 +16,10 @@ class KLI(doing.Doist):
         self.name = name
 
         doers = doers if doers is not None else []
-        doers.extend([Consoling(self.name)])
+        consoleDoer = Consoling(name=self.name)
+
+        dispatchDoer = Dispatching(inq=consoleDoer.oqu)
+        doers.extend([consoleDoer, dispatchDoer])
 
         super(KLI, self).__init__(doers=doers, **kwa)
 

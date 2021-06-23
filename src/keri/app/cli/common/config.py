@@ -1,4 +1,8 @@
 # -*- encoding: utf-8 -*-
+"""
+keri.kli.common.config
+
+"""
 import json
 from dataclasses import dataclass, asdict
 from typing import Optional, List

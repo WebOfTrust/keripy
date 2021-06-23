@@ -4,106 +4,97 @@ keri.kli.commands module
 
 """
 import argparse
-import os
+from dataclasses import dataclass
 
 from hio import help
 from hio.base import doing
-from hio.core import wiring
-from hio.core.tcp import clienting
+from hio.core.tcp import serving, clienting
 
-from ..common.config import loadConfig
-from ... import keeping, directing
-from ...habbing import Habitat
-from ....db import basing, dbing
+from keri.app import habbing
+from keri.app.cli.common.command import Command
+from keri.help import decking
 
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a prefix')
-parser.set_defaults(handler=lambda args: incept(args.name, args.file))  # , args.file, args.with_tel
-parser.add_argument('--name', '-n', help='Humane reference')
-parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="")
+parser.set_defaults(handler=lambda opts: InceptDoer(opts=opts),
+                    transferable=True,
+                    parser=lambda args: parseOptions(args))
+parser.add_argument('--transferable', '-t', dest='transferable', action='store_true')
+parser.add_argument('--non-transferable', '-nt', dest='transferable', action='store_false')
+parser.add_argument('--witness', '-w', dest='witness', action='store', default='')
 
 
-def incept(name, file):
-    cfg = loadConfig(file=file)
+@dataclass
+class InceptOptions:
+    name: str
+    transferable: bool
+    witness: str
 
-    print(cfg, cfg.witnesses)
 
-    doers = []
-    client = None
-    if cfg is not None and cfg.witnesses is not None:
-        if len(cfg.witnesses) > 0:
-            parts = cfg.witnesses[0].split(":")
-
-            if len(parts) != 2:
-                raise Exception("bad config")
-
-            path = os.path.dirname(__file__)
-            path = os.path.join(path, 'logs')
-            wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='demo', reopen=True,
-                                headDirPath=path)
-            wireDoer = wiring.WireLogDoer(wl=wl)
-            doers.append(wireDoer)
-
-            client = clienting.Client(host=parts[0], port=int(parts[1]), wl=wl)
-            clientDoer = doing.ClientDoer(client=client)
-            doers.append(clientDoer)
-
-    name = cfg.name
-
-    # with basing.openDB(name=name, temp=False) as db, keeping.openKS(name=name, temp=False) as ks:
-    #     hab = Habitat(name=name, ks=ks, db=db, isith=1, icount=1, ncount=1, temp=False)
-    #
-    #     doers.append(keeping.KeeperDoer(keeper=hab.ks))
-    #     doers.append(dbing.BaserDoer(baser=hab.db))
-    #
-    #     director = InceptDirector(name=name,
-    #                               pre=hab.kever.prefixer.qb64,
-    #                               pub=hab.kever.verfers[0].qb64,
-    #                               hab=hab,
-    #                               client=client)
-    #     doers.append(director)
-    #
-    #     directing.runController(doers=doers)
+def parseOptions(args) -> Command:
+    return Command(
+        name=args.name,
+        handler=args.handler,
+        opts=InceptOptions(
+            name=args.name,
+            transferable=args.transferable,
+            witness=args.witness
+        )
+    )
 
 
 class InceptDoer(doing.Doer):
 
-    def __init__(self, name, pre, pub, hab, client=None, **kwa):
-        super().__init__(hab, client, **kwa)
-        self.name = name
-        self.pre = pre
-        self.pub = pub
-        self.tock = 0.0
-        self.client = client
+    def __init__(self, inq: decking.Deck = None, oqu: decking.Deck = None, tock=0.0, **kwa):
+        """
+         Input: args
+         Output: name
+        """
+        self.inq = inq if inq is not None else decking.Deck()
+        self.oqu = oqu if oqu is not None else decking.Deck()
+        super(InceptDoer, self).__init__(tock, **kwa)
 
     def do(self, tymth=None, tock=0.0, **opts):
-        """
-        Generator method to run this doer
-        Calling this method returns generator
-        """
-        try:
-            self.tock = tock
-            (yield self.tock)
-            print(self.client, "client")
-            if self.client is not None:
-                while not self.client.connected:
-                    logger.info("%s:\n waiting for connection to remote %s.\n\n",
-                                self.hab.pre, self.client.ha)
-                    (yield self.tock)
+        print("hihihi", self.inq)
+        if self.inq:
+            for opts in self.inq:
+                print(opts.name, opts.transferable)
+                yield self.tock
 
-                logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
+                if not self.opts.transferable:
+                    # start for witness mode
+                    server = serving.Server(host="", port="")
+                    serverDoer = doing.ServerDoer(server=server)
+                    self.oqu.push(serverDoer)
 
-            print(f'{self.name} created')
-            print(f'Prefix\t\t{self.pre}')
-            print(f'Public key\t{self.pub}')
-            print()
-            print(f'Rotate keys:')
-            print(f'kli rotate -n {self.name}')
-            print()
-            print(f'Issue a verifiable credential:')
-            print(f'kli issue -n {self.name} -dsi {self.pre} --lei 506700GE1G29325QX363')
-            print()
+                if self.opts.witness is not None:
+                    # create a direct mode client for now
+                    parts = self.opts.witness.split(":")
 
-        except Exception as e:
-            logger.info(e)
+                    if len(parts) != 2:
+                        raise Exception("bad config")
+
+                    client = clienting.Client(host=parts[0], port=int(parts[1]))
+                    clientDoer = doing.ClientDoer(client=client)
+                    if client is not None:
+                        while not client.connected:
+                            logger.info("%s:\n waiting for connection to remote %s.\n\n",
+                                        self.opts.name, client.ha)
+                            yield self.tock
+
+                        logger.info("%s:\n connected to %s.\n\n", self.opts.name, client.ha)
+                    self.oqu.push(clientDoer)
+
+                hab = habbing.Habitat(name=self.opts.name,
+                                      transferable=self.opts.transferable,
+                                      temp=False)
+
+                print(f'Prefix\t\t{hab.pre}')
+                print(f'Public key\t{hab.kever.verfers[0].qb64}')
+                print()
+            yield self.tock
+
+        print("returning")
+
+        return super().do(tymth, tock, **opts)
