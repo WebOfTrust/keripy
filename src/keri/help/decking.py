@@ -13,17 +13,18 @@ class Deck(deque):
     Extends deque to support deque access convenience methods .push and .pull
     to remove confusion  about which side of the deque to use (left or right).
 
-    Extends deque to support deque a different pattern for access.
-    .push does not allow  a value of None to be added to the Deck so retrieval
-    with .pull(emptive=True) returns None when empty instead of raising IndexError
+    Extends deque with .push an .pull methods to support a different pattern for
+    access. .push does not allow  a value of None to be added to the Deck. This
+    enables retrieval  with .pull(emptive=True) which returns None when empty
+    instead of raising IndexError. This allows use of the walrus operator on
+    a pull to both assign and check for empty. For example:
+
+    while x := deck.pull(emptive=True):
+        stuff.append(x)
 
     Local methods:
-    .push(x)   = add x to the right side of deque (alias of append)
-    .pull(x)   = remove and return element from left side of deque (alias of popleft)
-
-
-    To determine if deck or deque is empty use
-       if d:
+    .push(x) = add x if x is not None to the right side of deque (like append)
+    .pull(x) = remove and return element from left side of deque (like popleft)
 
 
     Inherited methods from deque:

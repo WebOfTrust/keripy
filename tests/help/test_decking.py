@@ -26,6 +26,9 @@ def test_deck():
     assert deck.pull(emptive=True) == "B"
     assert not deck
 
+    deck.push(None)
+    assert not deck
+
     deck = Deck(["A", "B", "C"])
     assert "A" in  deck
     assert "B" in  deck
@@ -60,6 +63,20 @@ def test_deck():
     while x := deck.pull(emptive=True):
         stuff.append(x)
     assert stuff == ["A", "B", "C"]
+    assert not deck
+
+    deck.extend(stuff)
+    stuff = []
+    while (x := deck.pull(emptive=True)) is not None:
+        stuff.append(x)
+    assert stuff == ["A", "B", "C"]
+    assert not deck
+
+    deck.extend([False, "", []])  # falsy elements but not None
+    stuff = []
+    while (x := deck.pull(emptive=True)) is not None:
+        stuff.append(x)
+    assert stuff == [False, "", []]
     assert not deck
 
 
