@@ -52,7 +52,6 @@ KERI Message: `exn` for peer to peer exchanges.
    "dt": "2020-08-22T17:50:12.988921+00:00"
    "r": "/credential/offer"                                // resource with nested namespace
    "q": {
-      "x": "EMbzB4tnrjBUdhcMadmXq2F2adYdW42iw2NPJz8kUo_c",
       "issuer": "did:keri:EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
       "output_descriptors: [
          "EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA"
@@ -115,10 +114,8 @@ KERI Message: `exn` for peer to peer exchanges.
    "v": "KERI10JSON00011c_",                               // KERI Version String
    "t": "exn",                                             // peer to peer message ilk
    "dt": "2020-08-22T17:50:12.988921+00:00"
-   "x": "Ei98Pf-7LCJk8qaqSIyJMfXcZMIz0R7ZBVA411-Mb2wU",    // SAI of exn meta-data schema
    "r": "/credential/apply"
    "q" {
-      "x": "E7NDc95Rgl959Wh1r3dzCAGaQ6zGduFaJrD-ORbEXr_U",
       "issuer": "did:keri:EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
       "input_descriptors": [
          "EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA"
@@ -180,14 +177,11 @@ KERI Message: `exn` for peer to peer exchanges.
    "v": "KERI10JSON00011c_",                               // KERI Version String
    "t": "exn",                                             // peer to peer message ilk
    "dt": "2020-08-22T17:50:12.988921+00:00"
-   "x": "Ei98Pf-7LCJk8qaqSIyJMfXcZMIz0R7ZBVA411-Mb2wU",    // SAI of exn meta-data schema
    "r": "/credential/issue"
    "q" {
-      "x": "",
       "vc" [
         {
            "v": "KERI10JSON00011c_", //KERI Version String
-           "x": "",
            "i": "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI", // Identifier prefix of the VC
            "ri":"Es34H0HfRYPXLyFASh0VxCem2cls0yrx8mwRBJLHtOKQ"  // Iss/Rev Registry identifier
            "t": "vc"
@@ -202,6 +196,14 @@ KERI Message: `exn` for peer to peer exchanges.
                 "credentialSubject": {
                     "id": "did:keri:did:keri:Efaavv0oadfghasdfn443fhbyyr4v",
                     "lei": "254900OPPU84GM83MG36"
+                },
+                "credentialSchema": {
+                    "id": ""
+                    "type": ""
+                },
+                "credentialStatus": {
+                   "id": "",
+                   "type": ""
                 }
             } // embedded verifiable credential
         }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA-GAB0AAAAAAAAAAAAAAAAAAAAABQEchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA
@@ -212,7 +214,7 @@ KERI Message: `exn` for peer to peer exchanges.
 ```
 
 
-### JSON Schema for vLEI
+### JSON Schema for VC Template
 ```
 {
   "$id":"EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA",
@@ -233,41 +235,59 @@ KERI Message: `exn` for peer to peer exchanges.
       "format":"date-time"
     },
     "credentialSubject":{
-      "type":"object",
-      "properties":{
-        "id":{
-          "type":"string"
-        },
-        "lei":{
-          "type":"string",
-          "format":"lei"
-        }
-      }
-    },
-    "proof":{
-      "type":"object",
-      "properties":{
-        "type":{
-          "type":"array"
-        },
-        "created":{
-          "type":"string",
-          "format":"date-time"
-        },
-        "proofPurpose":{
-          "type":"string"
-        },
-        "verificationMethod":{
-          "type":"string"
-        },
-        "jws":{
-          "type":"string"
-        }
-      }
+      "type":"object"
     }
   }
 }
 ```
+
+### JSON Schema for vLEI
+```
+{
+  "$id":"EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA",
+  "$schema":"http://json-schema.org/draft-07/schema#",
+  "type":"object",
+  "properties":{
+    "id":{
+      "type":"string"
+    },
+    "lei":{
+      "type":"string",
+      "format":"lei"
+    }
+  }
+}
+```
+
+### JSON Schema for Nested vLEI Verifiable Credential
+```
+{
+  "$id":"",
+  "$schema":"http://json-schema.org/draft-07/schema#",
+  "$template: "EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA",
+  "type":"object",
+  "properties":{
+    "id":{
+      "type":"string"
+    },
+    "type":{
+      "type":"array"
+    },
+    "issuer":{
+      "type":"string"
+    },
+    "issuanceDate":{
+      "type":"string",
+      "format":"date-time"
+    },
+    "credentialSubject":{
+      "type":"object"
+      "ref": "EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA"
+    }
+  }
+}
+```
+
 
 
 ## Presentation Exchange
@@ -278,10 +298,8 @@ KERI Message: `exn` for peer to peer exchanges.
    "v": "KERI10JSON00011c_",                               // KERI Version String
    "t": "exn",                                             // peer to peer message ilk
    "dt": "2020-08-22T17:50:12.988921+00:00"
-   "x": "Ei98Pf-7LCJk8qaqSIyJMfXcZMIz0R7ZBVA411-Mb2wU",    // SAI of exn meta-data schema
    "r": "/presentation/request"
    "q" {
-      "x": "E7NDc95Rgl959Wh1r3dzCAGaQ6zGduFaJrD-ORbEXr_U",
       "submission_requirements": [{
          "name": "Proof of LEI",
          "rule": "pick",
@@ -299,7 +317,7 @@ KERI Message: `exn` for peer to peer exchanges.
            "proof_type": ["Ed25519Signature2018"]
          }
       }
-   } //embedded credential_submission, may contain credential_fullfilment responding to presentation_def above
+   } //embedded credential_submission
 }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA
 // Count code for a couple: Senders FQ Identifier and signature or signatures
 ```
@@ -312,10 +330,8 @@ KERI Message: `exn` for peer to peer exchanges.
    "v": "KERI10JSON00011c_",                               // KERI Version String
    "t": "exn",                                             // peer to peer message ilk
    "dt": "2020-08-22T17:50:12.988921+00:00"
-   "x": "Ei98Pf-7LCJk8qaqSIyJMfXcZMIz0R7ZBVA411-Mb2wU",    // SAI of exn meta-data schema
    "r": "/presentation/proof"
    "q" {
-      "x": "E7NDc95Rgl959Wh1r3dzCAGaQ6zGduFaJrD-ORbEXr_U",
       "presentation_submission": {
           "id": "a30e3b91-fb77-4d22-95fa-871689c322e2",
           "definition_id": "32f54163-7166-48f1-93d8-ff217bdb0653",
@@ -359,29 +375,28 @@ KERI Message: `exn` for peer to peer exchanges.
 
 ## CESR Proof Format for W3C Verifiable Credentials
 
-Domain and Challege to avoid impersonation and replay attacks
+
 
 ### Verifiable Credential with CESR Proof Format
 
-```
+```json=
 {
-   "v": "KERI10JSON00011c_", //KERI Version String
-   "i": "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI", // Identifier prefix of the VC, SAI
-   "ri":"Es34H0HfRYPXLyFASh0VxCem2cls0yrx8mwRBJLHtOKQ"  // Iss/Rev Registry identifier
-   "t": "vc"
-   "vc": {
-        "x": "Ei98Pf-7LCJk8qaqSIyJMfXcZMIz0R7ZBVA411-Mb2wU",
+   "x": "EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
+   "d": {
         "type": [
-            "VerifiableCredential",
-            "vLEIGLEIFCredential"
+            "did:keri:EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q", // MUST be URI w/ machine readable type (SAID)
         ],
         "id": "did:keri:EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI",
         "issuer": "did:keri:EchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA",  //Identifier prefix of the issuer
         "issuanceDate": "2021-06-09T17:35:54.169967+00:00",
+        "expirationDate": "2022-06-09T17:35:54.169967+00:00"
         "credentialSubject": {
-            "x": "E7NDc95Rgl959Wh1r3dzCAGaQ6zGduFaJrD-ORbEXr_U",
-            "id": "did:keri:did:keri:Efaavv0oadfghasdfn443fhbyyr4v",
+            "id": "did:keri:Efaavv0oadfghasdfn443fhbyyr4v",
             "lei": "254900OPPU84GM83MG36"
+        },
+        "credentialStatus": {
+           "id": "did:keri:Es34H0HfRYPXLyFASh0VxCem2cls0yrx8mwRBJLHtOKQ", //  Identifier of the TEL Registry
+           "type": "KERICredentialRegistry"
         }
     } // embedded verifiable credential
 }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA-GAB0AAAAAAAAAAAAAAAAAAAAABQEchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA
@@ -389,46 +404,48 @@ Domain and Challege to avoid impersonation and replay attacks
 
 Questions:
 1.  Where does the registry identifier belong...  It is part of the Verification method and thus part of the proof, 
-    so likely as an attachment
-2.  Where does the Source Seal pointing to the keys used?  It is part of Verification method and thus part of the 
-    proof, so likely as an attachment
-3.  Issuer is DID located inside the `issuer` field in the VC
-4.  Do we need to replicate the VC ID in the `i` field of the outer envelope
-5.  Should the VC have an `t` field?
+    or can we leverage the `credentialStatus` field as defined in the VC spec?
+2.  Proof is the Signature and Source Seal triple attachment.  This works if the `i` field is the issuer prefix 
+    otherwise we need a full event Seal attachment with the Controller's identifier prefix
+3.  Issuer is DID located inside the `issuer` field in the VC and also either the `i` or the `ii`
+4.  Attachment contains pre+sn+dig+ControllerIdxSigs
+
+
    
 
 ### Verifiable Presentation with CESR Proof Format
 
+Domain and Challege to avoid impersonation and replay attacks
+
 ```
 {
-   "v": "KERI10JSON00011c_", //KERI Version String
-   "i": "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI",  // Identifier prefix of the VC
-   "ri":"Es34H0HfRYPXLyFASh0VxCem2cls0yrx8mwRBJLHtOKQ"
-   "vp": {
+   "x": "EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
+   "d": {
        "id": "did:keri:EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI",
        "type": ["VerifiablePresentation", "vLEIGLEIFCredential"],
        "holder": "did:keri:did:keri:Efaavv0oadfghasdfn443fhbyyr4v"
        "vc": [
             {
-               "v": "KERI10JSON00011c_", //KERI Version String
-               "i": "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI", // Identifier prefix of the VC
-               "ri":"Es34H0HfRYPXLyFASh0VxCem2cls0yrx8mwRBJLHtOKQ"  // Iss/Rev Registry identifier
-               "t": "vc"
-               "vc": {
+               "x": "EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
+               "d": {
                     "type": [
-                        "VerifiableCredential",
-                        "vLEIGLEIFCredential"
+                        "did:keri:EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q", // MUST be URI w/ machine readable type (SAID)
                     ],
                     "id": "did:keri:EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI",
                     "issuer": "did:keri:EchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA",  //Identifier prefix of the issuer
                     "issuanceDate": "2021-06-09T17:35:54.169967+00:00",
+                    "expirationDate": "2022-06-09T17:35:54.169967+00:00"
                     "credentialSubject": {
                         "id": "did:keri:did:keri:Efaavv0oadfghasdfn443fhbyyr4v",
                         "lei": "254900OPPU84GM83MG36"
+                    },
+                    "credentialStatus": {
+                       "id": "did:keri:Es34H0HfRYPXLyFASh0VxCem2cls0yrx8mwRBJLHtOKQ", //  Identifier of the TEL Registry
+                       "type": "KERICredentialRegistry"
                     }
                 } // embedded verifiable credential
             }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA-GAB0AAAAAAAAAAAAAAAAAAAAABQEchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA
-    ]
+         ]
    } // embedded verifiable presentation
 }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA-GAB0AAAAAAAAAAAAAAAAAAAAABQEchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA
 ```

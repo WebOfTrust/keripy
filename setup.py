@@ -80,6 +80,7 @@ setup(
         'orderedset>=2.0.3',
         'hio>=0.4.0',
         'multicommand>=0.0.8',
+        'jsonschema>=3.2.0',
     ],
     extras_require={
     },
