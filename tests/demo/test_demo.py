@@ -649,10 +649,10 @@ def test_indirect_mode_sam_cam_wit_demo():
 
         # manually prep doers
         doist.done = False
-        doist.ready()  # injects doist.tymth() dependency to all doers
+        doist.enter()  # injects doist.tymth() dependency to all doers
         assert len(doist.deeds) == len(samDoers + witDoers)
         while doist.tyme < doist.tock *  16:
-            doist.once()  # iterate 16 times
+            doist.recur()  # iterate 16 times
             time.sleep(doist.tock)
 
         assert len(doist.deeds) == len(samDoers + witDoers)
@@ -665,7 +665,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert len(doist.deeds) == len(samDoers + witDoers + camDoers)
 
         while doist.tyme < doist.tock * 32:
-            doist.once()  # iterate 16 times
+            doist.recur()  # iterate 16 times
             time.sleep(doist.tock)
 
         assert len(doist.deeds) == len(samDoers + witDoers + camDoers) - 1

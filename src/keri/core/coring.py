@@ -3427,7 +3427,7 @@ class Tholder:
             indices = sorted(set(indices))
             sats = [False] * self.size  # default all satifactions to False
             for idx in indices:
-                sats[idx] = True  # set aat atverified signature index to True
+                sats[idx] = True  # set verified signature index to True
 
             wio = 0  # weight index offset
             for clause in self.thold:

@@ -10,7 +10,6 @@ import os
 import json
 from urllib import parse
 
-from hio.base import doing
 from hio.core import wiring
 from hio.core.tcp import clienting, serving
 
