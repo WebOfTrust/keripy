@@ -2131,14 +2131,14 @@ def test_baserdoer():
     doers = [dbDoer0, dbDoer1]
 
     doist.doers = doers
-    doist.ready()
+    doist.enter()
     assert len(doist.deeds) == 2
     assert [val[1] for val in doist.deeds] == [0.0, 0.0]  #  retymes
     for doer in doers:
         assert doer.baser.opened
         assert "_test/keri/db/test" in doer.baser.path
 
-    doist.once()
+    doist.recur()
     assert doist.tyme == 0.03125  # on next cycle
     assert len(doist.deeds) == 2
     for doer in doers:
