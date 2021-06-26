@@ -81,7 +81,7 @@ setup(
         'hio>=0.4.1',
         'multicommand>=0.1.1',
         'jsonschema>=3.2.0',
-        'falcon=>3.0.1',
+        'falcon>=3.0.1',
         'pytest>=6.2.4',
         'pytest-falcon>=0.4.2',
     ],
