@@ -6,6 +6,7 @@ Includes Falcon ReST endpoints for testing purposes
 
 """
 import falcon
+from falcon import testing
 
 import pytest
 
@@ -20,20 +21,28 @@ from keri.end import ending
 
 logger = help.ogler.getLogger()
 
-# must do it here to inject into Falcon endpoint resource instances
-tymist = tyming.Tymist(tyme=0.0)
+## must do it here to inject into Falcon endpoint resource instances
+#tymist = tyming.Tymist(tyme=0.0)
 
-myapp = falcon.App() # falcon.App instances are callable WSGI apps
-ending.loadEnds(myapp, tymth=tymist.tymen())
+#myapp = falcon.App() # falcon.App instances are callable WSGI apps
+#ending.loadEnds(myapp, tymth=tymist.tymen())
 
-@pytest.fixture
-def app():  # pytest_falcon client fixture assumes there is a fixture named "app"
-    return myapp
+#@pytest.fixture
+#def app():  # pytest_falcon client fixture assumes there is a fixture named "app"
+    #return myapp
 
-def test_get_static_sink(client):  # client is a fixture in pytest_falcon
+def test_get_static_sink():
     """
     Test GET to static files
     """
+    # must do it here to inject into Falcon endpoint resource instances
+    tymist = tyming.Tymist(tyme=0.0)
+
+    myapp = falcon.App() # falcon.App instances are callable WSGI apps
+    ending.loadEnds(myapp, tymth=tymist.tymen())
+
+    client = testing.TestClient(app=myapp)
+
     index = ('<html>\n'
             '    <head>\n'
             '        <title>Demo</title>\n'
@@ -54,42 +63,42 @@ def test_get_static_sink(client):  # client is a fixture in pytest_falcon
             '</html>\n')
 
     # get default at  /  which is index.html
-    rep = client.get('/')
+    rep = client.simulate_get('/')
     assert rep.status == falcon.HTTP_OK
     assert rep.headers['content-type'] == 'text/html; charset=UTF-8'
-    assert len(rep.body) > 0
-    assert rep.body == index
+    assert len(rep.text) > 0
+    assert rep.text == index
 
     # get default at /static  which is index.html
-    rep = client.get('/static')
+    rep = client.simulate_get('/static')
     assert rep.status == falcon.HTTP_OK
     assert rep.headers['content-type'] == 'text/html; charset=UTF-8'
-    assert len(rep.body) > 0
-    assert rep.body == index
+    assert len(rep.text) > 0
+    assert rep.text == index
 
     # get default at /static/  e.g. trailing / which is index.html
-    rep = client.get('/static/')
+    rep = client.simulate_get('/static/')
     assert rep.status == falcon.HTTP_OK
     assert rep.headers['content-type'] == 'text/html; charset=UTF-8'
-    assert len(rep.body) > 0
-    assert rep.body == index
+    assert len(rep.text) > 0
+    assert rep.text == index
 
     # get index.html
-    rep = client.get('/index.html')
+    rep = client.simulate_get('/index.html')
     assert rep.status == falcon.HTTP_OK
     assert rep.headers['content-type'] == 'text/html; charset=UTF-8'
-    assert len(rep.body) > 0
-    assert rep.body == index
+    assert len(rep.text) > 0
+    assert rep.text == index
 
     # get /static/index.html
-    rep = client.get('/static/index.html')
+    rep = client.simulate_get('/static/index.html')
     assert rep.status == falcon.HTTP_OK
     assert rep.headers['content-type'] == 'text/html; charset=UTF-8'
-    assert len(rep.body) > 0
-    assert rep.body == index
+    assert len(rep.text) > 0
+    assert rep.text == index
 
     # attempt missing file
-    rep = client.get('/static/missing.txt')
+    rep = client.simulate_get('/static/missing.txt')
     assert rep.status == falcon.HTTP_NOT_FOUND
     assert rep.headers['content-type'] == 'application/json'
     assert rep.json == {'title': 'Missing Resource',
@@ -98,20 +107,20 @@ def test_get_static_sink(client):  # client is a fixture in pytest_falcon
                                        'not found or forbidden'}
 
     # get robots.txt
-    rep = client.get('/static/robots.txt')
+    rep = client.simulate_get('/static/robots.txt')
     assert rep.status == falcon.HTTP_OK
     assert rep.headers['content-type'] == 'text/plain; charset=UTF-8'
-    assert rep.body == '# robotstxt.org\n\nUser-agent: *\n'
+    assert rep.text == '# robotstxt.org\n\nUser-agent: *\n'
 
     # get trial.js
-    rep = client.get('/static/index.js')
+    rep = client.simulate_get('/static/index.js')
     assert rep.status == falcon.HTTP_OK
     assert rep.headers['content-type'] == 'application/javascript; charset=UTF-8'
-    assert len(rep.body) > 0
-    assert rep.body == '// vanilla index.js\n\nm.render(document.body, "Hello world")\n'
+    assert len(rep.text) > 0
+    assert rep.text == '// vanilla index.js\n\nm.render(document.body, "Hello world")\n'
 
 
-def test_get_admin(client):  # client is a fixture in pytest_falcon
+def test_get_admin():  # client is a fixture in pytest_falcon
     """
     PyTest fixtures are registered globally in the pytest package
     So any test function can accept a fixture as a parameter supplied by
@@ -119,11 +128,19 @@ def test_get_admin(client):  # client is a fixture in pytest_falcon
 
     pytest_falcon assumes there is a fixture named "app"
     """
-    rep = client.get('/admin')
+    # must do it here to inject into Falcon endpoint resource instances
+    tymist = tyming.Tymist(tyme=0.0)
+
+    myapp = falcon.App() # falcon.App instances are callable WSGI apps
+    ending.loadEnds(myapp, tymth=tymist.tymen())
+
+    client = testing.TestClient(app=myapp)
+
+    rep = client.simulate_get('/admin')
     assert rep.status == falcon.HTTP_OK
-    assert rep.body == '\nKERI Admin\n\n'
+    assert rep.text == '\nKERI Admin\n\n'
 
 
 
 if __name__ == '__main__':
-    pass
+    test_get_admin()
