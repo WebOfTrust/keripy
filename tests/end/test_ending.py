@@ -23,14 +23,14 @@ logger = help.ogler.getLogger()
 # must do it here to inject into Falcon endpoint resource instances
 tymist = tyming.Tymist(tyme=0.0)
 
-testApp = falcon.App() # falcon.App instances are callable WSGI apps
-ending.loadEnds(testApp, tymth=tymist.tymen())
+myapp = falcon.App() # falcon.App instances are callable WSGI apps
+ending.loadEnds(myapp, tymth=tymist.tymen())
 
 @pytest.fixture
 def app():  # pytest_falcon client fixture assumes there is a fixture named "app"
-    return testApp
+    return myapp
 
-def test_get_StaticSink(client):  # client is a fixture in pytest_falcon
+def test_get_static_sink(client):  # client is a fixture in pytest_falcon
     """
     Test GET to static files
     """
