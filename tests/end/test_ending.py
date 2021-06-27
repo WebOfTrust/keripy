@@ -5,21 +5,9 @@ Test Falcon Module
 Includes Falcon ReST endpoints for testing purposes
 
 """
-import sys
-import os
-import mimetypes
-
-import time
-import json
-
-
-from collections import OrderedDict as ODict
-import time
-
 import falcon
-import pytest
-import pytest_falcon  # provides pytest falcon client fixture
 
+import pytest
 
 from hio import help
 from hio.help import helping
