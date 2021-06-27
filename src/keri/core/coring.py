@@ -5,7 +5,6 @@ keri.core.coring module
 """
 import re
 import json
-import copy
 
 from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
@@ -13,7 +12,6 @@ from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 from math import ceil
 from fractions import Fraction
-from orderedset import OrderedSet
 
 import cbor2 as cbor
 import msgpack
@@ -46,6 +44,7 @@ VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 VERFMT = "KERI{:x}{:x}{}{:0{}x}_"  #  version format string
 VERFULLSIZE = 17  # number of characters in full versions string
 
+
 def Versify(version=None, kind=Serials.json, size=0):
     """
     Return version string
@@ -55,6 +54,7 @@ def Versify(version=None, kind=Serials.json, size=0):
     version = version if version else Version
     return VERFMT.format(version[0], version[1], kind, size, VERRAWSIZE)
 
+
 Vstrings = Serialage(json=Versify(kind=Serials.json, size=0),
                      mgpk=Versify(kind=Serials.mgpk, size=0),
                      cbor=Versify(kind=Serials.cbor, size=0))
@@ -63,6 +63,7 @@ Vstrings = Serialage(json=Versify(kind=Serials.json, size=0),
 VEREX = b'KERI(?P<major>[0-9a-f])(?P<minor>[0-9a-f])(?P<kind>[A-Z]{4})(?P<size>[0-9a-f]{6})_'
 Rever = re.compile(VEREX) #compile is faster
 MINSNIFFSIZE = 12 + VERFULLSIZE  # min bytes in buffer to sniff else need more
+
 
 def Deversify(vs):
     """
@@ -205,6 +206,31 @@ def nabSextets(b, l):
     i >>= p  #  strip of last bits
     i <<= p  #  pad with empty bits
     return (i.to_bytes(n, 'big'))
+
+
+def sniff(raw):
+    """
+    Returns serialization kind, version and size from serialized event raw
+    by investigating leading bytes that contain version string
+
+    Parameters:
+      raw is bytes of serialized event
+
+    """
+    if len(raw) < MINSNIFFSIZE:
+        raise ShortageError("Need more bytes.")
+
+    match = Rever.search(raw)  #  Rever's regex takes bytes
+    if not match or match.start() > 12:
+        raise VersionError("Invalid version string in raw = {}".format(raw))
+
+    major, minor, kind, size = match.group("major", "minor", "kind", "size")
+    version = Versionage(major=int(major, 16), minor=int(minor, 16))
+    kind = kind.decode("utf-8")
+    if kind not in Serials:
+        raise DeserializationError("Invalid serialization kind = {}".format(kind))
+    size = int(size, 16)
+    return(kind, version, size)
 
 
 def generateSigners(salt=None, count=8, transferable=True):
@@ -2924,32 +2950,6 @@ class Serder:
             raise ValueError("Improper initialization need raw or ked.")
 
 
-    @staticmethod
-    def _sniff(raw):
-        """
-        Returns serialization kind, version and size from serialized event raw
-        by investigating leading bytes that contain version string
-
-        Parameters:
-          raw is bytes of serialized event
-
-        """
-        if len(raw) < MINSNIFFSIZE:
-            raise ShortageError("Need more bytes.")
-
-        match = Rever.search(raw)  #  Rever's regex takes bytes
-        if not match or match.start() > 12:
-            raise VersionError("Invalid version string in raw = {}".format(raw))
-
-        major, minor, kind, size = match.group("major", "minor", "kind", "size")
-        version = Versionage(major=int(major, 16), minor=int(minor, 16))
-        kind = kind.decode("utf-8")
-        if kind not in Serials:
-            raise DeserializationError("Invalid serialization kind = {}".format(kind))
-        size = int(size, 16)
-        return(kind, version, size)
-
-
     def _inhale(self, raw):
         """
         Parses serilized event ser of serialization kind and assigns to
@@ -2964,7 +2964,7 @@ class Serder:
           loads and jumps of json use str whereas cbor and msgpack use bytes
 
         """
-        kind, version, size = self._sniff(raw)
+        kind, version, size = sniff(raw)
         if version != Version:
             raise VersionError("Unsupported version = {}.{}, expected {}."
                                "".format(version.major, version.minor, Version))

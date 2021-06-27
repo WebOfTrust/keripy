@@ -23,7 +23,7 @@ from keri.kering import (EmptyMaterialError,  RawMaterialError, DerivationError,
                          ValidationError, ShortageError)
 from keri.help.helping import sceil
 
-from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
+from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter, sniff
 from keri.core.coring import (Verfer, Cigar, Signer, Salter,
                               Diger, Nexter, Prefixer)
 from keri.core.coring import generateSigners,  generateSecrets
@@ -2586,13 +2586,13 @@ def test_serder():
 
     e1s = json.dumps(e1, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     with pytest.raises(ShortageError):  # test too short
-        kind1, vers1, size1 = serder._sniff(e1s[:VERFULLSIZE])
+        kind1, vers1, size1 = sniff(e1s[:VERFULLSIZE])
 
-    kind1, vers1, size1 = serder._sniff(e1s[:MINSNIFFSIZE])
+    kind1, vers1, size1 = sniff(e1s[:MINSNIFFSIZE])
     assert kind1 == Serials.json
     assert size1 == 60
 
-    kind1, vers1, size1 = serder._sniff(e1s)
+    kind1, vers1, size1 = sniff(e1s)
     assert kind1 == Serials.json
     assert size1 == 60
     e1ss = e1s + b'extra attached at the end.'
@@ -2621,13 +2621,13 @@ def test_serder():
     e2s = msgpack.dumps(e2)
 
     with pytest.raises(ShortageError):  # test too short
-        kind2, vers2, size2 = serder._sniff(e2s[:VERFULLSIZE])
+        kind2, vers2, size2 = sniff(e2s[:VERFULLSIZE])
 
-    kind2, vers2, size2 = serder._sniff(e2s[:MINSNIFFSIZE])
+    kind2, vers2, size2 = sniff(e2s[:MINSNIFFSIZE])
     assert kind2 == Serials.mgpk
     assert size2 == 44
 
-    kind2, vers2, size2 = serder._sniff(e2s)
+    kind2, vers2, size2 = sniff(e2s)
     assert kind2 == Serials.mgpk
     assert size2 == 44
     e2ss = e2s + b'extra attached  at the end.'
@@ -2656,13 +2656,13 @@ def test_serder():
     e3s = cbor.dumps(e3)
 
     with pytest.raises(ShortageError):  # test too short
-        kind3, vers3, size3 = serder._sniff(e3s[:VERFULLSIZE])
+        kind3, vers3, size3 = sniff(e3s[:VERFULLSIZE])
 
-    kind3, vers3, size3 = serder._sniff(e3s[:MINSNIFFSIZE])
+    kind3, vers3, size3 = sniff(e3s[:MINSNIFFSIZE])
     assert kind3 == Serials.cbor
     assert size3 == 44
 
-    kind3, vers3, size3 = serder._sniff(e3s)
+    kind3, vers3, size3 = sniff(e3s)
     assert kind3 == Serials.cbor
     assert size3 == 44
     e3ss = e3s + b'extra attached  at the end.'

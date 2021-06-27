@@ -422,8 +422,8 @@ class Habitat:
         if self.kever.prefixer.transferable:
             # create SealEvent for endorsers est evt whose keys use to sign
             seal = eventing.SealEvent(i=self.kever.prefixer.qb64,
-                                      s=self.kever.lastEst.sn,
-                                      d=self.kever.lastEst.dig)
+                                      s=hex(self.kever.lastEst.s),
+                                      d=self.kever.lastEst.d)
             # sign serder event
             sigers = self.mgr.sign(ser=serder.raw,
                                    verfers=self.kever.verfers,
