@@ -47,12 +47,23 @@ Algos = Algoage(randy='randy', salty='salty')  # randy is rerandomize, salty is 
 class PubLot:
     """
     Public key list with indexes and datetime created
+    Attributes:
+        pubs (list): list of fully qualified Base64 public keys. Defaults to empty.
+        ridx (int): rotation index of  set of public keys at establishment event.
+                    Includes of key set at inception event is 0.
+        kidx (int): key index of starting key in key set in sequence wrt to all
+                    public keys. Example if each set has 3 keys then ridx 2 has
+                    kidx of 2*3 = 6.
+        st (Union[str, int, list]): signing theshold for key set at ridx. May be
+                    int, str, or list based on threshold expression type.
+        dt (str): datetime in ISO8601 format of when key set was first created
+
+
     """
-    pubs: list = field(default_factory=list)  # list of fully qualified Base64 public keys. defaults to empty .
+    pubs: list = field(default_factory=list)  # list qb64 public keys.
     ridx: int = 0  # index of rotation (est event) that uses public key set
     kidx: int = 0  # index of key in sequence of public keys
-    st:   Union[str, int, list] = '0' # signing threshold as either:
-                    # int or str hex of int such as '2' or list of weights
+    st: Union[str, int, list] = '0' # signing threshold
     dt:   str = ""  # datetime ISO8601 when key set created
 
     def __iter__(self):
@@ -872,33 +883,49 @@ class Manager:
     Class for managing key pair creation, storage, retrieval, and message signing.
 
     Attributes:
-        .keeper is Keeper instance (LMDB)
+        keeper (Keeper): is Keeper instance (LMDB)
+
+    Attributes (Hidden):
+       _aeid (str): authentication and encryption fully qualified qb64
+            non-transferable identifier prefix for authentication via signing
+            and asymmetric encryption of secrets using the associated
+            (public, private) key pair. Secrets include both salts and private
+            keys for all key sets in keeper. Defaults to empty which means no
+            authentication or encryption of key sets. Use initial attribute because
+            keeper may not be open on init.
+       _pidx (int): initial pidx prefix index. Use initial attribute because keeper
+            may not be open on init.
+       _salt (str): initial salt. Use inital attribute because keeper may not be
+             open on init.
+       _tier (str): initial security tier as value of Tierage. Use initial attribute
+            because keeper may not be open on init
 
     Properties:
 
     Methods:
 
-    Hidden:
-       ._pidx is initial pidx prefix index use attribute because keeper may not be open on init
-       ._salt is initial salt use attribute because keeper may not be open on init
-       ._tier is initial security tier use attribute because keeper may not be open on init
     """
 
-    def __init__(self, keeper=None, pidx=None, salt=None, tier=None):
+    def __init__(self, keeper=None,  aeid=None, pidx=None, salt=None, tier=None):
         """
         Setup Manager.
 
         Parameters:
-            keeper is Keeper instance (LMDB)
-            pidx is int prefix index of next new created key pair sequence
-            salt is qb64 of root salt. Makes random root salt if not provided
-            tier is default SecTier for root salt
+            keeper (Keeper): Keeper instance (LMDB)
+            aeid (str): qb64 of non-transferable identifier prefix for
+                authentication and encryption of secrets in keeper
+            pidx (int): index of next new created key pair sequence for given
+                identifier prefix
+            salt (str):  qb64 of root salt. Makes random root salt if not provided
+            tier (str): default security tier (Tierage) for root salt
+
 
         """
         if keeper is None:
             keeper = Keeper()
 
         self.keeper = keeper
+        self._aeid = aeid if aeid is not None else ""
         self._pidx = pidx if pidx is not None else 0
         self._salt = salt if salt is not None else coring.Salter().qb64
         self._tier = tier if tier is not None else coring.Tiers.low
@@ -909,26 +936,34 @@ class Manager:
 
     def setup(self):
         """
-        Return triple (pidx, salt, tier) from .keeper.gbls. Assumes that db is open.
+        Return tuple (aeid, pidx, salt, tier) from .keeper.gbls.
+        Assumes that db is open.
         If .keeper.gbls in database has not been initialized for the first time
-        then initializes them from ._pidx, ._salt, and ._tier
-        then assigns the default .gbls values for prefix id, salt and tier.
+        then initializes them from ._aeid, ._pidx, ._salt, and ._tier
+        then assigns the default .gbls values for aeid, prefix id, salt and tier.
         The initialization here enables asynchronous opening of keeper db after keeper
-        is instantiated and first call to retrieve setup will initial if it was
-        not before.
+        is instantiated and first call to retrieve setup will initialize it if
+        it was not already initialized.
         """
         if not self.keeper.opened:
             raise kering.ClosedError("Attempt to setup closed Manager.keeper.")
 
+        raw = self.keeper.getGbl('aeid')  # qb64 of auth encrypt id
+        if raw is None:  # no entry in database so never before inited
+            aeid = self._aeid
+            self.keeper.putGbl('aeid', aeid)
+        else:
+            aeid = bytes(raw).decode("utf-8")
+
         raw = self.keeper.getGbl('pidx')  # prefix id of next prefix
-        if raw is None:
+        if raw is None:  # no entry in database so never before inited
             pidx = self._pidx
             self.keeper.putGbl('pidx', b'%x' % pidx)
         else:
             pidx = int(bytes(raw), 16)
 
         raw = self.keeper.getGbl('salt')  # default salt
-        if raw is None:
+        if raw is None:  # no entry in database so never before inited
             salt = self._salt
             self.keeper.putGbl('salt', salt)
             self._salt = ''  # don't keep around
@@ -936,26 +971,43 @@ class Manager:
             salt = bytes(raw).decode("utf-8")
 
         raw = self.keeper.getGbl('tier')  # default tier
-        if raw is None:
+        if raw is None:  # no entry in database so never before inited
             tier = self._tier
             self.keeper.putGbl('tier', tier)
         else:
             tier = bytes(raw).decode("utf-8")
 
-        return (pidx, salt, tier)
+        return (aeid, pidx, salt, tier)
+
+    def getAeid(self):
+        """
+        Returns: adid from .keeper. Assumes db initialized.
+        aeid is qb64 auth encrypt id prefix
+        """
+        return int(bytes(self.keeper.getGbl(b"pidx")), 16)
+
+
+    def setAeid(self, aeid):
+        """
+        Save aeid to .keeper
+        aeid is qb64 auth encrypt id prefix
+        Need to reencrypt all secrets when change aeid
+        """
+        self.keeper.setGbl(b"pidx", b"%x" % pidx)
 
 
     def getPidx(self):
         """
-        return pidx from .keeper. Assumes db initialized.
+        Returns: pidx from .keeper. Assumes db initialized.
         pidx is prefix index for next new key sequence
+        need to update
         """
         return int(bytes(self.keeper.getGbl(b"pidx")), 16)
 
 
     def setPidx(self, pidx):
         """
-        Save .pidx to .keeper
+        Save pidx to .keeper
         pidx is prefix index for next new key sequence
         """
         self.keeper.setGbl(b"pidx", b"%x" % pidx)
@@ -1017,7 +1069,7 @@ class Manager:
             even when the identifer prefix is transferable.
 
         """
-        pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for new sequence
+        aeid, pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for new sequence
         ridx = 0  # rotation index
         kidx = 0  # key pair index
 
@@ -1404,7 +1456,7 @@ class Manager:
             temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
 
         """
-        pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for ingested sequence
+        aeid, pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for ingested sequence
 
         # configure parameters for creating new keys after ingested sequence
         if rooted and salt is None:  # use root salt instead of random salt
