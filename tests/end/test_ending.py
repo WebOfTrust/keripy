@@ -101,10 +101,7 @@ def test_get_static_sink():
     rep = client.simulate_get('/static/missing.txt')
     assert rep.status == falcon.HTTP_NOT_FOUND
     assert rep.headers['content-type'] == 'application/json'
-    assert rep.json == {'title': 'Missing Resource',
-                        'description': 'File '
-                                       '"/Users/Load/Data/Code/public/keripy/src/keri/end/static/missing.txt" '
-                                       'not found or forbidden'}
+    assert rep.json['title'] == 'Missing Resource'
 
     # get robots.txt
     rep = client.simulate_get('/static/robots.txt')
