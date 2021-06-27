@@ -88,7 +88,6 @@ setup(
     tests_require=[
                     'coverage>=5.5',
                     'pytest>=6.2.4',
-                    'pytest-falcon>=0.4.2',
                   ],
     setup_requires=[
     ],
