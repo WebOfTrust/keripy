@@ -21,11 +21,15 @@ Schemage = namedtuple("Schemage", 'json')
 
 Schemas = Schemage(json="json")
 
+Idage = namedtuple("Idage", "dollar at id")
+
+Ids = Idage(dollar="$id", at="@id", id="id")
+
 
 class Schema:
     def __init__(self, kind):
         if kind is Schemas.json:
-            self.id = "$id"
+            self.id = Ids.dollar
             self._load = self._json_schema_load
             self._dump = self._json_schema_dump
             self._detect = self._detect_json_schema
@@ -129,7 +133,7 @@ class Schema:
 
 
 @dataclass
-class SchemaType:
+class SchemaTypes:
     """
     Schema is list of Schema that can be used for validation
     Only provide defined schema types.
@@ -141,7 +145,7 @@ class SchemaType:
         return iter(astuple(self))  # enables inclusion test with "in"
 
 
-SchemaTypes = SchemaType()
+SchemaTyps = SchemaTypes()
 
 
 class Schemer:
@@ -180,6 +184,7 @@ class Schemer:
           raw is bytes of serialized schema
           sed is JSON dict or None
             if None its deserialized from raw
+          schemaType is the type of schema
           kind is serialization kind string value or None (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
             if kind is None then its extracted from ked or raw
@@ -211,7 +216,7 @@ class Schemer:
 
         """
         kind = None
-        for knd in SchemaTypes:
+        for knd in SchemaTyps:
             if knd.detect(raw):
                 kind = knd
                 break
@@ -349,7 +354,7 @@ class Saider(Matter):
 
     Dummy = "#"  # dummy spaceholder char for pre. Must not be a valid Base64 char
 
-    def __init__(self, raw=None, code=None, sed=None, kind=SchemaTypes.JSONSchema, **kwa):
+    def __init__(self, raw=None, code=None, sed=None, kind=Ids.dollar, **kwa):
         """
 
         Inherited Parameters:
@@ -371,11 +376,11 @@ class Saider(Matter):
         except EmptyMaterialError as ex:
             # No raw, try and calculate code and said
 
-            if not sed or (not code and self.kind.id not in sed):  # No sed or no code and no id in sed, no luck
+            if not sed or (not code and self.kind not in sed):  # No sed or no code and no id in sed, no luck
                 raise ex
 
             if not code:
-                super(Saider, self).__init__(qb64=sed[kind.id], code=code, **kwa)
+                super(Saider, self).__init__(qb64=sed[kind], code=code, **kwa)
                 code = self.code
 
             if code == MtrDex.Blake3_256:
@@ -446,7 +451,7 @@ class Saider(Matter):
             if crymat.qb64 != said:
                 return False
 
-            idf = self.kind.id
+            idf = self.kind
             if prefixed and sed[idf] != said:
                 return False
 
@@ -463,7 +468,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake3_256].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -490,7 +495,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA3_256].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -517,7 +522,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA3_512].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -544,7 +549,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA2_256].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -571,7 +576,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA2_512].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -599,7 +604,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake2b_256].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -626,7 +631,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake2s_256].fs)
         raw = json.dumps(sed).encode("utf-8")
