@@ -34,7 +34,7 @@ def test_proving():
             )
         ))
 
-        schemer = scheming.Schemer(sed=sed, kind=scheming.SchemaTyps.JSONSchema, code=coring.MtrDex.Blake3_256)
+        schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
         credSubject = dict(
             id="did:keri:did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
             lei="254900OPPU84GM83MG36"
