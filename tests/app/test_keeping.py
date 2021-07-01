@@ -1001,7 +1001,8 @@ def test_manager():
                         ['ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
                     ]
 
-        pidx, rsalt, rtier = manager.setup()   #  verify current state
+        aeid, pidx, rsalt, rtier = manager.setup()   #  verify current state
+        assert aeid == ''
         assert pidx == 6
         assert rsalt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
         assert rtier == coring.Tiers.low
@@ -1084,7 +1085,8 @@ def test_manager():
                         ]
                     ]
 
-        pidx, rsalt, rtier = manager.setup()   #  verify current state
+        aeid, pidx, rsalt, rtier = manager.setup()   #  verify current state
+        assert aeid == ''
         assert pidx == 7
         assert rsalt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
         assert rtier == coring.Tiers.low
@@ -1165,4 +1167,4 @@ def test_manager():
 
 
 if __name__ == "__main__":
-    test_publot_pubsit()
+    test_manager()
