@@ -325,47 +325,64 @@ def test_keeper():
         puba = b'DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
         pubb = b'DoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-QiVgbRbyAIZG'
         pubc = b'DAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4G'
+        pubd = b'BzE2yPgBXiP6h_J2cZeCy4MaOa6eOCJQcgEozYb1GgV9'
+        pube = b'BJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4MaOa6eOC'
         prea = b'EWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
         preb = b'EQPYGGwTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gz'
 
+
         #  test .gbls sub db methods
+        key = b'aeid'
+
+        assert keeper.getGbl(key) == None
+        assert keeper.delGbl(key) == False
+        assert keeper.putGbl(key, val=pubd) == True
+        assert keeper.getGbl(key) == pubd
+        assert keeper.putGbl(key, val=pube) == False
+        assert keeper.getGbl(key) == pubd
+        assert keeper.setGbl(key, val=pube) == True
+        assert keeper.getGbl(key) == pube
+        assert keeper.delGbl(key) == True
+        assert keeper.getGbl(key) == None
+
+
         key = b'pidx'
         pidxa = b'%x' % 0  # "{:x}".format(pidx).encode("utf-8")
         pidxb = b'%x' % 1  # "{:x}".format(pidx).encode("utf-8"
-        assert keeper.getPri(key) == None
-        assert keeper.delPri(key) == False
-        assert keeper.putPri(key, val=pidxa) == True
-        assert keeper.getPri(key) == pidxa
-        assert keeper.putPri(key, val=pidxb) == False
-        assert keeper.getPri(key) == pidxa
-        assert keeper.setPri(key, val=pidxb) == True
-        assert keeper.getPri(key) == pidxb
-        assert keeper.delPri(key) == True
-        assert keeper.getPri(key) == None
+        assert keeper.getGbl(key) == None
+        assert keeper.delGbl(key) == False
+        assert keeper.putGbl(key, val=pidxa) == True
+        assert keeper.getGbl(key) == pidxa
+        assert keeper.putGbl(key, val=pidxb) == False
+        assert keeper.getGbl(key) == pidxa
+        assert keeper.setGbl(key, val=pidxb) == True
+        assert keeper.getGbl(key) == pidxb
+        assert keeper.delGbl(key) == True
+        assert keeper.getGbl(key) == None
 
         key = b'salt'
-        assert keeper.getPri(key) == None
-        assert keeper.delPri(key) == False
-        assert keeper.putPri(key, val=salta) == True
-        assert keeper.getPri(key) == salta
-        assert keeper.putPri(key, val=saltb) == False
-        assert keeper.getPri(key) == salta
-        assert keeper.setPri(key, val=saltb) == True
-        assert keeper.getPri(key) == saltb
-        assert keeper.delPri(key) == True
-        assert keeper.getPri(key) == None
+        assert keeper.getGbl(key) == None
+        assert keeper.delGbl(key) == False
+        assert keeper.putGbl(key, val=salta) == True
+        assert keeper.getGbl(key) == salta
+        assert keeper.putGbl(key, val=saltb) == False
+        assert keeper.getGbl(key) == salta
+        assert keeper.setGbl(key, val=saltb) == True
+        assert keeper.getGbl(key) == saltb
+        assert keeper.delGbl(key) == True
+        assert keeper.getGbl(key) == None
 
         key = b'tier'
-        assert keeper.getPri(key) == None
-        assert keeper.delPri(key) == False
-        assert keeper.putPri(key, val=coring.Tiers.low) == True
-        assert keeper.getPri(key) == coring.Tiers.low.encode("utf-8")
-        assert keeper.putPri(key, val=coring.Tiers.med) == False
-        assert keeper.getPri(key) == coring.Tiers.low.encode("utf-8")
-        assert keeper.setPri(key, val=coring.Tiers.med) == True
-        assert keeper.getPri(key) == coring.Tiers.med.encode("utf-8")
-        assert keeper.delPri(key) == True
-        assert keeper.getPri(key) == None
+        assert keeper.getGbl(key) == None
+        assert keeper.delGbl(key) == False
+        assert keeper.putGbl(key, val=coring.Tiers.low) == True
+        assert keeper.getGbl(key) == coring.Tiers.low.encode("utf-8")
+        assert keeper.putGbl(key, val=coring.Tiers.med) == False
+        assert keeper.getGbl(key) == coring.Tiers.low.encode("utf-8")
+        assert keeper.setGbl(key, val=coring.Tiers.med) == True
+        assert keeper.getGbl(key) == coring.Tiers.med.encode("utf-8")
+        assert keeper.delGbl(key) == True
+        assert keeper.getGbl(key) == None
 
 
         #  test .pris sub db methods
@@ -1167,4 +1184,4 @@ def test_manager():
 
 
 if __name__ == "__main__":
-    test_manager()
+    test_keeper()
