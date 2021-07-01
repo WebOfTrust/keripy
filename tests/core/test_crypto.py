@@ -207,7 +207,7 @@ def test_pysodium():
 
     pubkey, prikey = pysodium.crypto_box_keypair()
     assert len(pubkey) == 32 == pysodium.crypto_box_PUBLICKEYBYTES
-    assert len(prikey) == 32 ==  pysodium.crypto_box_SECRETKEYBYTES
+    assert len(prikey) == 32 == pysodium.crypto_box_SECRETKEYBYTES
 
     assert 48 == pysodium.crypto_box_SEALBYTES
 
@@ -235,6 +235,26 @@ def test_pysodium():
     assert repubkey == pubkey
 
     msg_txb = "Encoded using X25519 key converted from Ed25519 key".encode("utf-8")
+    cipher = pysodium.crypto_box_seal(msg_txb, pubkey)
+    assert len(cipher) == 48 + len(msg_txb)
+
+    msg_rxb = pysodium.crypto_box_seal_open(cipher, pubkey, prikey)
+    assert msg_rxb == msg_txb
+
+    # generate X25519 box seal (asymmetric encryption) from random seed
+
+    boxsealseed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
+    assert  len(boxsealseed) == pysodium.crypto_box_SEEDBYTES == 32
+
+    bspubkey, bsprikey = pysodium.crypto_box_seed_keypair(boxsealseed)
+    assert len(bpubkey) == pysodium.crypto_box_PUBLICKEYBYTES == 32
+    assert len(bprikey) == pysodium.crypto_box_SECRETKEYBYTES == 32
+
+    # unlike Ed25519, private key is not seed or does not contain seed but is
+    # derived or changed from seed
+    assert not bprikey == boxseed
+
+    msg_txb = "Encoded using X25519 key generated from random seed".encode("utf-8")
     cipher = pysodium.crypto_box_seal(msg_txb, pubkey)
     assert len(cipher) == 48 + len(msg_txb)
 
@@ -398,4 +418,4 @@ def test_sha3():
 
 
 if __name__ == "__main__":
-    test_blake2s()
+    test_pysodium()
