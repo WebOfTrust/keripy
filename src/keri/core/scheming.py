@@ -5,52 +5,56 @@ keri.core.scheming module
 self-addressing and schema support
 """
 
-import json
 import blake3
 import hashlib
 import jsonschema
 
 from collections import namedtuple
-from dataclasses import dataclass, astuple
 
-from .coring import Matter, MtrDex
+import json
+import cbor2 as cbor
+import msgpack
+
+from .coring import Matter, MtrDex, Serials
 from ..kering import ValidationError, DeserializationError, EmptyMaterialError
 
+Idage = namedtuple("Idage", "dollar at id")
 
-Schemage = namedtuple("Schemage", 'json')
-
-Schemas = Schemage(json="json")
+Ids = Idage(dollar="$id", at="@id", id="id")
 
 
-class Schema:
-    def __init__(self, kind):
-        if kind is Schemas.json:
-            self.id = "$id"
-            self._load = self._json_schema_load
-            self._dump = self._json_schema_dump
-            self._detect = self._detect_json_schema
-            self._verify_schema = self._json_schema_verify_schema
-            self._verify_json = self._json_schema_verify_json
+class JSONSchema:
+
+    id = Ids.dollar
+
+    def __init__(self, resolver=None):
+        self.resolver = resolver
+
+    def load(self, raw=b'', kind=Serials.json):
+        if kind == Serials.json:
+            try:
+                sed = json.loads(raw.decode("utf-8"))
+            except Exception as ex:
+                raise DeserializationError("Error deserializing JSON: {}"
+                      "".format(raw.decode("utf-8")))
+
+        elif kind == Serials.mgpk:
+            try:
+                sed = msgpack.loads(raw)
+            except Exception as ex:
+                raise DeserializationError("Error deserializing MGPK: {}"
+                      "".format(raw))
+
+        elif kind == Serials.cbor:
+            try:
+                sed = cbor.loads(raw)
+            except Exception as ex:
+                raise DeserializationError("Error deserializing CBOR: {}"
+                      "".format(raw))
         else:
-            raise ValueError("unsupported schema type {}".format(kind))
+            raise ValueError("Invalid serialization kind = {}".format(kind))
 
-    def load(self, raw=b''):
-        return self._load(raw)
 
-    def dump(self, sed):
-        return self._dump(sed)
-
-    def detect(self, raw=b''):
-        return self._detect(raw)
-
-    def verify_schema(self, schema):
-        return self._verify_schema(schema)
-
-    def verify_json(self, schema=b'', raw=b''):
-        return self._verify_json(schema, raw)
-
-    def _json_schema_load(self, raw=b''):
-        sed = json.loads(raw)
         if self.id in sed:
             saider = Saider(qb64=sed[self.id])
             said = sed[self.id]
@@ -61,16 +65,28 @@ class Schema:
             raise ValidationError("missing ID field {} in schema = {}"
                                   "".format(self.id, sed))
 
-        return sed, saider
+        return sed, kind, saider
 
     @staticmethod
-    def _json_schema_dump(sed):
-        raw = json.dumps(sed, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    def dump(sed, kind=Serials.json):
+
+        if kind == Serials.json:
+            raw = json.dumps(sed, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+        elif kind == Serials.mgpk:
+            raw = msgpack.dumps(sed)
+
+        elif kind == Serials.cbor:
+            raw = cbor.dumps(sed)
+        else:
+            raise ValueError("Invalid serialization kind = {}".format(kind))
+
+
         return raw
 
 
     @staticmethod
-    def _detect_json_schema(raw=b''):
+    def detect(raw=b''):
         """
         Returns True if content represents JSON Schema by checking
             for $schema;  False otherwise
@@ -85,7 +101,7 @@ class Schema:
 
 
     @staticmethod
-    def _json_schema_verify_schema(schema):
+    def verify_schema(schema):
         """
         Returns True if the provided schema validates successfully
           as complaint Draft 7 JSON Schema False otherwise
@@ -101,8 +117,7 @@ class Schema:
         return True
 
 
-    @staticmethod
-    def _json_schema_verify_json(schema=b'', raw=b''):
+    def verify_json(self, schema=b'', raw=b''):
         """
         Returns True if the JSON passes validation against the
            provided complaint Draft 7 JSON Schema.  Returns False
@@ -115,7 +130,7 @@ class Schema:
         """
         try:
             d = json.loads(raw)
-            jsonschema.validate(instance=d, schema=schema)
+            jsonschema.validate(instance=d, schema=schema, resolver=self.resolver)
         except jsonschema.exceptions.ValidationError:
             return False
         except jsonschema.exceptions.SchemaError:
@@ -126,22 +141,6 @@ class Schema:
         return True
 
 
-
-
-@dataclass
-class SchemaType:
-    """
-    Schema is list of Schema that can be used for validation
-    Only provide defined schema types.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    JSONSchema:  Schema = Schema(kind=Schemas.json)
-
-    def __iter__(self):
-        return iter(astuple(self))  # enables inclusion test with "in"
-
-
-SchemaTypes = SchemaType()
 
 
 class Schemer:
@@ -170,7 +169,7 @@ class Schemer:
 
     """
 
-    def __init__(self, raw=b'', sed=None, kind=None, code=MtrDex.Blake3_256):
+    def __init__(self, raw=b'', sed=None, kind=None, typ=JSONSchema(), code=MtrDex.Blake3_256):
         """
         Deserialize if raw provided
         Serialize if sed provided but not raw
@@ -180,6 +179,7 @@ class Schemer:
           raw is bytes of serialized schema
           sed is JSON dict or None
             if None its deserialized from raw
+          schemaType is the type of schema
           kind is serialization kind string value or None (see namedtuple coring.Serials)
             supported kinds are 'json', 'cbor', 'msgpack', 'binary'
             if kind is None then its extracted from ked or raw
@@ -188,6 +188,7 @@ class Schemer:
         """
 
         self._code = code
+        self.typ = typ
         if raw:
             self.raw = raw
         elif sed:
@@ -201,27 +202,6 @@ class Schemer:
                                   "".format(self.kind, self.sed))
 
 
-    @staticmethod
-    def _sniff(raw):
-        """
-        Detects Schema type
-
-        Parameters:
-            raw: JSON to sniff
-
-        """
-        kind = None
-        for knd in SchemaTypes:
-            if knd.detect(raw):
-                kind = knd
-                break
-
-        if kind is None:
-            raise DeserializationError("schema format not detected")
-
-        return kind
-
-
     def _inhale(self, raw):
         """
         Loads type specific Schema ked and verifies the self-addressing identifier
@@ -232,14 +212,12 @@ class Schemer:
 
         """
 
-        kind = self._sniff(raw)
-        sed, saider = kind.load(raw)
+        sed, kind, saider = self.typ.load(raw=raw)
 
         return sed, kind, saider
 
 
-    @staticmethod
-    def _exhale(sed, kind=None):
+    def _exhale(self, sed, kind=None):
         """
         Dumps type specific Schema JSON and returns the raw bytes, sed
            and schema kind
@@ -250,10 +228,7 @@ class Schemer:
 
         """
 
-        if kind is None:
-            raise ValueError("Schema required")
-
-        raw = kind.dump(sed)
+        raw = self.typ.dump(sed)
 
         return raw, sed, kind
 
@@ -328,7 +303,7 @@ class Schemer:
             raw (bytes): is serialised JSON content to verify against schema
         """
 
-        return self.kind.verify_json(schema=self.sed, raw=raw)
+        return self.typ.verify_json(schema=self.sed, raw=raw)
 
     def _verify_schema(self):
         """
@@ -338,7 +313,7 @@ class Schemer:
 
         """
 
-        return self.kind.verify_schema(schema=self.sed)
+        return self.typ.verify_schema(schema=self.sed)
 
 
 class Saider(Matter):
@@ -349,7 +324,7 @@ class Saider(Matter):
 
     Dummy = "#"  # dummy spaceholder char for pre. Must not be a valid Base64 char
 
-    def __init__(self, raw=None, code=None, sed=None, kind=SchemaTypes.JSONSchema, **kwa):
+    def __init__(self, raw=None, code=None, sed=None, kind=Ids.dollar, **kwa):
         """
 
         Inherited Parameters:
@@ -371,11 +346,11 @@ class Saider(Matter):
         except EmptyMaterialError as ex:
             # No raw, try and calculate code and said
 
-            if not sed or (not code and self.kind.id not in sed):  # No sed or no code and no id in sed, no luck
+            if not sed or (not code and self.kind not in sed):  # No sed or no code and no id in sed, no luck
                 raise ex
 
             if not code:
-                super(Saider, self).__init__(qb64=sed[kind.id], code=code, **kwa)
+                super(Saider, self).__init__(qb64=sed[kind], code=code, **kwa)
                 code = self.code
 
             if code == MtrDex.Blake3_256:
@@ -446,7 +421,7 @@ class Saider(Matter):
             if crymat.qb64 != said:
                 return False
 
-            idf = self.kind.id
+            idf = self.kind
             if prefixed and sed[idf] != said:
                 return False
 
@@ -463,7 +438,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake3_256].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -490,7 +465,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA3_256].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -517,7 +492,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA3_512].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -544,7 +519,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA2_256].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -571,7 +546,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA2_512].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -599,7 +574,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake2b_256].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -626,7 +601,7 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind.id
+        idf = self.kind
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake2s_256].fs)
         raw = json.dumps(sed).encode("utf-8")
@@ -645,3 +620,53 @@ class Saider(Matter):
         raw, code = self._derive_blake2s_256(sed=sed)
         return Matter(raw=raw, code=MtrDex.Blake2s_256)
 
+
+class CacheResolver:
+    """
+    Sample jsonschema resolver for loading schema $ref references from a local hash.
+
+    """
+
+    def __init__(self, cache=None):
+        """
+        Create a jsonschema resolver that can be used for loading references to schema remotely.
+
+        Parameters:
+            cache (dict) is an optional pre-loaded cache of schema
+        """
+        self.cache = cache if cache is not None else dict()
+
+    def add(self, key, schema):
+        """
+        Add schema to cache for resolution
+
+        Parameters:
+            key (str) URI to resolve to the schema
+            schema (bytes) is bytes of the schema for the URI
+        """
+        self.cache[key] = schema
+
+    def handler(self, uri):
+        """
+        Handler provided to jsonschema for cache resolution
+
+        Parameters:
+            uri (str) the URI to resolve
+        """
+        if uri not in self.cache:
+            raise ValueError("{} ref not found".format(uri))
+
+        ref = self.cache[uri]
+        schemr = Schemer(raw=ref)
+        return schemr.sed
+
+    def resolver(self, scer=b''):
+        """
+        Returns a jsonschema resolver for returning locally cached schema based on self-addressing
+        identifier URIs.
+
+        Parameters:
+            scer (bytes) is the source document that is being processed for reference resolution
+
+        """
+        return jsonschema.RefResolver("", scer, handlers={"did": self.handler})

@@ -362,8 +362,7 @@ KERI Message: `exn` for peer to peer exchanges.
                       "lei": "254900OPPU84GM83MG36"
                   }
               } // embedded verifiable credential
-          }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA
-          -GAB0AAAAAAAAAAAAAAAAAAAAABQEchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA
+          }-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAALK_6pkUjCx76CTE7pNrKlhC84ewgZbs-4ciTvLcxkwUaWX7ukpr55P9RtJhlHxdtz3kN0zfM0HrtFitKuPy3BA')
         }
       ]
      }  //embedded verifiable_presentation - DOES HE NEED HIS OWN PROOF???
@@ -423,7 +422,7 @@ Domain and Challege to avoid impersonation and replay attacks
    "d": {
        "id": "did:keri:EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI",
        "type": ["VerifiablePresentation", "vLEIGLEIFCredential"],
-       "holder": "did:keri:did:keri:Efaavv0oadfghasdfn443fhbyyr4v"
+       "holder": "did:keri:Efaavv0oadfghasdfn443fhbyyr4v"
        "vc": [
             {
                "x": "EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
@@ -436,7 +435,7 @@ Domain and Challege to avoid impersonation and replay attacks
                     "issuanceDate": "2021-06-09T17:35:54.169967+00:00",
                     "expirationDate": "2022-06-09T17:35:54.169967+00:00"
                     "credentialSubject": {
-                        "id": "did:keri:did:keri:Efaavv0oadfghasdfn443fhbyyr4v",
+                        "id": "did:keri:Efaavv0oadfghasdfn443fhbyyr4v",
                         "lei": "254900OPPU84GM83MG36"
                     },
                     "credentialStatus": {
