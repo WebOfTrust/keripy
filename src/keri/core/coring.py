@@ -316,7 +316,9 @@ class MatterCodex:
     ECDSA_256k1_Seed:     str = 'J'  # ECDSA secp256k1 256 bit random Seed for private key
     Ed448_Seed:           str = 'K'  # Ed448 448 bit random Seed for private key
     X448:                 str = 'L'  # X448 public encryption key, converted from Ed448
-    Short:                str = 'M'  # Short 2 byte number
+    Short:                str = 'M'  # Short 2 byte b2 number or 3 char b64 str
+    Big:                  str = 'N'  # Big 8 byte b2 number or 11 char b64 str
+    X25519_Seed:          str = 'O'  # X25519 256 bit random seed for private key
     Salt_128:             str = '0A'  # 128 bit random seed or 128 bit number
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -324,7 +326,8 @@ class MatterCodex:
     Blake2b_512:          str = '0E'  # Blake2b 512 bit digest self-addressing derivation.
     SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
     SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
-    Long:                 str = '0H'  # Long 4 byte number
+    Long:                 str = '0H'  # Long 4 byte b2 number or 6 char b54 str
+    X25519_Cipher_Seed:   str = '0I'  # X15519 Cipher of Private Key Seed 120 b64 chars
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
@@ -332,7 +335,9 @@ class MatterCodex:
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
     Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
-    GPG:                  str = '9A'    # Legacy GPG variable length padded material
+    GPG:                  str = '9A'    # Legacy gpg tool variable length padded material
+    GPGSM:                str = '9B'    # Legacy gpgsm tool variable length padded material
+    OpenSSL:              str = '9C'    # Legacy openssl tool variable length padded material
 
 
     def __iter__(self):
@@ -442,6 +447,8 @@ class Matter:
                 'K': Sizage(hs=1, ss=0, fs=76),
                 'L': Sizage(hs=1, ss=0, fs=76),
                 'M': Sizage(hs=1, ss=0, fs=4),
+                'N': Sizage(hs=1, ss=0, fs=12),
+                'O': Sizage(hs=1, ss=0, fs=44),
                 '0A': Sizage(hs=2, ss=0, fs=24),
                 '0B': Sizage(hs=2, ss=0, fs=88),
                 '0C': Sizage(hs=2, ss=0, fs=88),
@@ -450,6 +457,7 @@ class Matter:
                 '0F': Sizage(hs=2, ss=0, fs=88),
                 '0G': Sizage(hs=2, ss=0, fs=88),
                 '0H': Sizage(hs=2, ss=0, fs=8),
+                '0I': Sizage(hs=2, ss=0, fs=120),
                 '1AAA': Sizage(hs=4, ss=0, fs=48),
                 '1AAB': Sizage(hs=4, ss=0, fs=48),
                 '1AAC': Sizage(hs=4, ss=0, fs=80),
@@ -458,6 +466,8 @@ class Matter:
                 '1AAF': Sizage(hs=4, ss=0, fs=8),
                 '1AAG': Sizage(hs=4, ss=0, fs=36),
                 '9A': Sizage(hs=2, ss=2, fs=None),
+                '9B': Sizage(hs=2, ss=2, fs=None),
+                '9C': Sizage(hs=2, ss=2, fs=None),
             }
     # Bizes table maps to hard size, hs, of code from bytes holding sextets
     # converted from first code char. Used for ._bexfil.

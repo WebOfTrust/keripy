@@ -221,6 +221,8 @@ def test_matter():
                                             'Ed448_Seed': 'K',
                                             'X448': 'L',
                                             'Short': 'M',
+                                            'Big': 'N',
+                                            'X25519_Seed': 'O',
                                             'Salt_128': '0A',
                                             'Ed25519_Sig': '0B',
                                             'ECDSA_256k1_Sig': '0C',
@@ -229,6 +231,7 @@ def test_matter():
                                             'SHA3_512': '0F',
                                             'SHA2_512': '0G',
                                             'Long': '0H',
+                                            'X25519_Cipher_Seed': '0I',
                                             'ECDSA_256k1N': '1AAA',
                                             'ECDSA_256k1': '1AAB',
                                             'Ed448N': '1AAC',
@@ -237,6 +240,8 @@ def test_matter():
                                             'Tag': '1AAF',
                                             'DateTime': '1AAG',
                                             'GPG': '9A',
+                                            'GPGSM': '9B',
+                                            'OpenSSL': '9C',
                                          }
 
     assert Matter.Codex == MtrDex
@@ -267,6 +272,8 @@ def test_matter():
                             'K': Sizage(hs=1, ss=0, fs=76),
                             'L': Sizage(hs=1, ss=0, fs=76),
                             'M': Sizage(hs=1, ss=0, fs=4),
+                            'N': Sizage(hs=1, ss=0, fs=12),
+                            'O': Sizage(hs=1, ss=0, fs=44),
                             '0A': Sizage(hs=2, ss=0, fs=24),
                             '0B': Sizage(hs=2, ss=0, fs=88),
                             '0C': Sizage(hs=2, ss=0, fs=88),
@@ -275,6 +282,7 @@ def test_matter():
                             '0F': Sizage(hs=2, ss=0, fs=88),
                             '0G': Sizage(hs=2, ss=0, fs=88),
                             '0H': Sizage(hs=2, ss=0, fs=8),
+                            '0I': Sizage(hs=2, ss=0, fs=120),
                             '1AAA': Sizage(hs=4, ss=0, fs=48),
                             '1AAB': Sizage(hs=4, ss=0, fs=48),
                             '1AAC': Sizage(hs=4, ss=0, fs=80),
@@ -283,6 +291,8 @@ def test_matter():
                             '1AAF': Sizage(hs=4, ss=0, fs=8),
                             '1AAG': Sizage(hs=4, ss=0, fs=36),
                             '9A': Sizage(hs=2, ss=2, fs=None),
+                            '9B': Sizage(hs=2, ss=2, fs=None),
+                            '9C': Sizage(hs=2, ss=2, fs=None),
                         }
 
     assert Matter.Codes['A'].hs == 1  # hard size
@@ -2966,4 +2976,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_ilks()
+    test_matter()
