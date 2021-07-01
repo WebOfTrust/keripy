@@ -984,7 +984,7 @@ class Manager:
         Returns: adid from .keeper. Assumes db initialized.
         aeid is qb64 auth encrypt id prefix
         """
-        return int(bytes(self.keeper.getGbl(b"pidx")), 16)
+        return int(bytes(self.keeper.getGbl(b"aeid")), 16)
 
 
     def setAeid(self, aeid):
@@ -993,7 +993,7 @@ class Manager:
         aeid is qb64 auth encrypt id prefix
         Need to reencrypt all secrets when change aeid
         """
-        self.keeper.setGbl(b"pidx", b"%x" % pidx)
+        self.keeper.setGbl(b"aeid", b"%x" % aeid)
 
 
     def getPidx(self):
