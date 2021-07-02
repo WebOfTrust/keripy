@@ -222,8 +222,19 @@ def test_pysodium():
     #  convert Ed25519 key pair to X25519 key pair
     #  https://blog.filippo.io/using-ed25519-keys-for-encryption/
     #  https://libsodium.gitbook.io/doc/advanced/ed25519-curve25519
+    #  https://libsodium.gitbook.io/doc/quickstart#how-can-i-sign-and-encrypt-using-the-same-key-pair
     #  crypto_sign_ed25519_pk_to_curve25519
+    #  pysodium.crypto_sign_pk_to_box_pk
     #  crypto_sign_ed25519_sk_to_curve25519
+    #  pysodium.crypto_sign_sk_to_box_sk
+    #  pysodium.crypto_scalarmult_curve25519_base
+    #  crypto_scalarmult_curve25519_base
+
+    #  see also  crypto_scalarmult_ed25519_base()
+    #  crypto_scalarmult_base
+    #  pysodium.crypto_scalarmult_base
+
+    # As X25519 encodes a field element that is always smaller than 2^255, the top bit is not used.
 
     pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
     assert len(pubkey) == pysodium.crypto_box_PUBLICKEYBYTES
@@ -233,6 +244,9 @@ def test_pysodium():
 
     repubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)
     assert repubkey == pubkey
+
+    gepubkey = pysodium.crypto_scalarmult_base(prikey)
+    assert gepubkey == repubkey == pubkey
 
     msg_txb = "Encoded using X25519 key converted from Ed25519 key".encode("utf-8")
     cipher = pysodium.crypto_box_seal(msg_txb, pubkey)
@@ -247,21 +261,56 @@ def test_pysodium():
     assert  len(boxsealseed) == pysodium.crypto_box_SEEDBYTES == 32
 
     bspubkey, bsprikey = pysodium.crypto_box_seed_keypair(boxsealseed)
-    assert len(bpubkey) == pysodium.crypto_box_PUBLICKEYBYTES == 32
-    assert len(bprikey) == pysodium.crypto_box_SECRETKEYBYTES == 32
+    assert len(bspubkey) == pysodium.crypto_box_PUBLICKEYBYTES == 32
+    assert len(bsprikey) == pysodium.crypto_box_SECRETKEYBYTES == 32
 
     # unlike Ed25519, private key is not seed or does not contain seed but is
     # derived or changed from seed
-    assert not bprikey == boxseed
+    assert bsprikey != boxsealseed
 
     msg_txb = "Encoded using X25519 key generated from random seed".encode("utf-8")
-    cipher = pysodium.crypto_box_seal(msg_txb, pubkey)
+    cipher = pysodium.crypto_box_seal(msg_txb, bspubkey)
     assert len(cipher) == 48 + len(msg_txb)
 
-    msg_rxb = pysodium.crypto_box_seal_open(cipher, pubkey, prikey)
+    msg_rxb = pysodium.crypto_box_seal_open(cipher, bspubkey, bsprikey)
     assert msg_rxb == msg_txb
 
 
+    #  use same seed for both Ed25519 key pair and X25519 key pair
+    assert pysodium.crypto_box_SEEDBYTES == pysodium.crypto_sign_SEEDBYTES == 32
+    dualseed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
+
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(dualseed)
+    pubkey, prikey = pysodium.crypto_box_seed_keypair(dualseed)
+
+    copubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
+    coprikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)
+
+    # same public asymmetric encryption key from same seed using
+    #  either crypto_sign_xx_to_box_xx or crypto_box_seed_keypair but not
+    # always the same private key.  Apparently (guessing) multiple private keys may
+    # result in the same public key but both still work? The privatekeys, when
+    #  they differ, only differ in the second byte and the second from last byte
+    #  so those bytes or (bits in those bytes are not unique to the public key)
+    assert copubkey == pubkey
+
+    cipher = pysodium.crypto_box_seal(msg_txb, pubkey)
+    cocipher = pysodium.crypto_box_seal(msg_txb, copubkey)
+
+    if coprikey != prikey:  # sometimes rarely these match but usually not
+        assert cocipher != cipher
+    else:
+        assert cocipher == cipher
+
+    msg_rxb = pysodium.crypto_box_seal_open(cipher, pubkey, prikey)
+    co_msg_rxb = pysodium.crypto_box_seal_open(cocipher, copubkey, coprikey)
+    alt_msg_rxb = pysodium.crypto_box_seal_open(cipher, pubkey, coprikey)
+    co_alt_msg_rxb = pysodium.crypto_box_seal_open(cocipher, copubkey, prikey)
+    assert msg_rxb == co_msg_rxb == alt_msg_rxb == co_alt_msg_rxb == msg_txb
+
+    # conclusion never use box_seed_keypair always use sign_seed_keypair and
+    # then use crypto_sign_xk_to_box_xk to generate x25519 keys so the prikey
+    # is always the same.
 
     """
     Done Test
