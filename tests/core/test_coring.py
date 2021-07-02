@@ -1888,6 +1888,12 @@ def test_encrypter():
     uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
     assert uncb == saltqb64b
 
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
+    encrypter = Encrypter(verfer=verfer)
+    assert encrypter.code == MtrDex.X25519
+    assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
+    assert encrypter.raw == pubkey
+
     """ Done Test """
 
 
@@ -3077,4 +3083,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_cipher()
+    test_encrypter()

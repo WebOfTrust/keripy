@@ -5,6 +5,7 @@ keri.core.coring module
 """
 import re
 import json
+from typing import Union
 
 from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
@@ -1370,19 +1371,24 @@ class Encrypter(Matter):
         encrypt: create cipher text
 
     """
-    def __init__(self, raw=None, code=MtrDex.X25519, **kwa):
+    def __init__(self, raw=None, code=MtrDex.X25519, verfer=None, **kwa):
         """
         Assign encrypting cipher suite function to ._encrypt
 
         Parameters:  See Matter for inherted parameters
             raw (bytes): public encryption key
             code (str): derivation code for public encryption key
+            verfer (Verfer): use verfer.raw as verkey to derive raw
         """
+        if not raw and verfer:
+            if verfer.code not in (MtrDex.Ed25519N, MtrDex.Ed25519):
+                raise ValueError("Unsupported verifier code = {}.".format(verfer.code))
+            raw = pysodium.crypto_sign_pk_to_box_pk(verfer.raw)
+
         super(Encrypter, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code == MtrDex.X25519:
             self._encrypt = self._x25519
-
         else:
             raise ValueError("Unsupported encrypter code = {}.".format(self.code))
 
