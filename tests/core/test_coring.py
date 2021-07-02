@@ -25,7 +25,7 @@ from keri.help.helping import sceil
 
 from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter, sniff
 from keri.core.coring import (Verfer, Cigar, Signer, Salter,
-                              Diger, Nexter, Prefixer)
+                              Diger, Nexter, Prefixer, Cipher, Encrypter)
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64, nabSextets
 from keri.core.coring import Seqner, Siger, Dater
@@ -222,7 +222,8 @@ def test_matter():
                                             'X448': 'L',
                                             'Short': 'M',
                                             'Big': 'N',
-                                            'X25519_Seed': 'O',
+                                            'X25519_Private': 'O',
+                                            'X25519_Cipher_Seed': 'P',
                                             'Salt_128': '0A',
                                             'Ed25519_Sig': '0B',
                                             'ECDSA_256k1_Sig': '0C',
@@ -231,7 +232,6 @@ def test_matter():
                                             'SHA3_512': '0F',
                                             'SHA2_512': '0G',
                                             'Long': '0H',
-                                            'X25519_Cipher_Seed': '0I',
                                             'ECDSA_256k1N': '1AAA',
                                             'ECDSA_256k1': '1AAB',
                                             'Ed448N': '1AAC',
@@ -239,6 +239,7 @@ def test_matter():
                                             'Ed448_Sig': '1AAE',
                                             'Tag': '1AAF',
                                             'DateTime': '1AAG',
+                                            'X25519_Cipher_Salt': '1AAH',
                                             'GPG': '9A',
                                             'GPGSM': '9B',
                                             'OpenSSL': '9C',
@@ -274,6 +275,7 @@ def test_matter():
                             'M': Sizage(hs=1, ss=0, fs=4),
                             'N': Sizage(hs=1, ss=0, fs=12),
                             'O': Sizage(hs=1, ss=0, fs=44),
+                            'P': Sizage(hs=1, ss=0, fs=124),
                             '0A': Sizage(hs=2, ss=0, fs=24),
                             '0B': Sizage(hs=2, ss=0, fs=88),
                             '0C': Sizage(hs=2, ss=0, fs=88),
@@ -282,7 +284,6 @@ def test_matter():
                             '0F': Sizage(hs=2, ss=0, fs=88),
                             '0G': Sizage(hs=2, ss=0, fs=88),
                             '0H': Sizage(hs=2, ss=0, fs=8),
-                            '0I': Sizage(hs=2, ss=0, fs=120),
                             '1AAA': Sizage(hs=4, ss=0, fs=48),
                             '1AAB': Sizage(hs=4, ss=0, fs=48),
                             '1AAC': Sizage(hs=4, ss=0, fs=80),
@@ -290,6 +291,7 @@ def test_matter():
                             '1AAE': Sizage(hs=4, ss=0, fs=56),
                             '1AAF': Sizage(hs=4, ss=0, fs=8),
                             '1AAG': Sizage(hs=4, ss=0, fs=36),
+                            '1AAH': Sizage(hs=4, ss=0, fs=100),
                             '9A': Sizage(hs=2, ss=2, fs=None),
                             '9B': Sizage(hs=2, ss=2, fs=None),
                             '9C': Sizage(hs=2, ss=2, fs=None),
@@ -1679,6 +1681,8 @@ def test_verfer():
         verfer = Verfer(raw=verkey, code=MtrDex.Blake3_256)
     """ Done Test """
 
+
+
 def test_cigar():
     """
     Test Cigar subclass of CryMat
@@ -1787,6 +1791,109 @@ def test_signer():
 
     with pytest.raises(ValueError):  #  use invalid code not SEED
         signer = Signer(code=MtrDex.Ed25519N)
+    """ Done Test """
+
+
+
+def test_cipher():
+    """
+    Test Cipher subclass of Matter
+    """
+    # conclusion never use box_seed_keypair always use sign_seed_keypair and
+    # then use crypto_sign_xk_to_box_xk to generate x25519 keys so the prikey
+    # is always the same.
+
+    assert pysodium.crypto_box_SEEDBYTES == pysodium.crypto_sign_SEEDBYTES == 32
+
+    # preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed = (b'\x18;0\xc4\x0f*vF\xfa\xe3\xa2Eee\x1f\x96o\xce)G\x85\xe3X\x86\xda\x04\xf0\xdc'
+                       b'\xde\x06\xc0+')
+    seedqb64b = Matter(raw=seed, code=MtrDex.Ed25519_Seed).qb64b
+    assert seedqb64b == b'AGDswxA8qdkb646JFZWUflm_OKUeF41iG2gTw3N4GwCs'
+
+    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    salt= b'6\x08d\r\xa1\xbb9\x8dp\x8d\xa0\xc0\x13J\x87r'
+    saltqb64b = Matter(raw=salt, code=MtrDex.Salt_128).qb64b
+    assert saltqb64b == b'0ANghkDaG7OY1wjaDAE0qHcg'
+
+    # seed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
+    cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(cryptseed)
+    pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
+    prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)
+
+    with pytest.raises(EmptyMaterialError):
+        cipher = Cipher()
+
+    raw = pysodium.crypto_box_seal(seedqb64b, pubkey)  # uses nonce so different everytime
+    cipher = Cipher(raw=raw)
+    assert cipher.code == MtrDex.X25519_Cipher_Seed
+    uncb = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
+    assert uncb == seedqb64b
+
+    raw = pysodium.crypto_box_seal(saltqb64b, pubkey)  # uses nonce so different everytime
+    cipher = Cipher(raw=raw)
+    assert cipher.code == MtrDex.X25519_Cipher_Salt
+    uncb = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
+    assert uncb == saltqb64b
+
+    with pytest.raises(ValueError):
+        cipher = Cipher(raw=raw, code=MtrDex.Ed25519N)
+
+    """ Done Test """
+
+
+def test_encrypter():
+    """
+    Test Encrypter subclass of Matter
+    """
+    # conclusion never use box_seed_keypair always use sign_seed_keypair and
+    # then use crypto_sign_xk_to_box_xk to generate x25519 keys so the prikey
+    # is always the same.
+
+    assert pysodium.crypto_box_SEEDBYTES == pysodium.crypto_sign_SEEDBYTES == 32
+
+    # preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed = (b'\x18;0\xc4\x0f*vF\xfa\xe3\xa2Eee\x1f\x96o\xce)G\x85\xe3X\x86\xda\x04\xf0\xdc'
+                       b'\xde\x06\xc0+')
+    seedqb64b = Matter(raw=seed, code=MtrDex.Ed25519_Seed).qb64b
+    assert seedqb64b == b'AGDswxA8qdkb646JFZWUflm_OKUeF41iG2gTw3N4GwCs'
+
+    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    salt= b'6\x08d\r\xa1\xbb9\x8dp\x8d\xa0\xc0\x13J\x87r'
+    saltqb64b = Matter(raw=salt, code=MtrDex.Salt_128).qb64b
+    assert saltqb64b == b'0ANghkDaG7OY1wjaDAE0qHcg'
+
+    # seed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
+    cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(cryptseed)
+    pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
+    prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)
+
+    with pytest.raises(EmptyMaterialError):
+        encrypter = Encrypter()
+
+    encrypter = Encrypter(raw=pubkey)
+    assert encrypter.code == MtrDex.X25519
+    assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
+    assert encrypter.raw == pubkey
+
+    cipher = encrypter.encrypt(ser=seedqb64b)
+    assert cipher.code == MtrDex.X25519_Cipher_Seed
+    uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
+    assert uncb == seedqb64b
+
+    cipher = encrypter.encrypt(ser=saltqb64b)
+    assert cipher.code == MtrDex.X25519_Cipher_Salt
+    uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
+    assert uncb == saltqb64b
+
+    verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
+    encrypter = Encrypter(verfer=verfer)
+    assert encrypter.code == MtrDex.X25519
+    assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
+    assert encrypter.raw == pubkey
+
     """ Done Test """
 
 
@@ -2976,4 +3083,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_matter()
+    test_encrypter()

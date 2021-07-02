@@ -5,6 +5,7 @@ keri.core.coring module
 """
 import re
 import json
+from typing import Union
 
 from dataclasses import dataclass, astuple
 from collections import namedtuple, deque
@@ -344,7 +345,8 @@ class MatterCodex:
     X448:                 str = 'L'  # X448 public encryption key, converted from Ed448
     Short:                str = 'M'  # Short 2 byte b2 number or 3 char b64 str
     Big:                  str = 'N'  # Big 8 byte b2 number or 11 char b64 str
-    X25519_Seed:          str = 'O'  # X25519 256 bit random seed for private key
+    X25519_Private:       str = 'O'  # X25519 private decryption key converted from Ed25519
+    X25519_Cipher_Seed:   str = 'P'  # X15519 124 char b64 Cipher of 44 char qb64 Seed
     Salt_128:             str = '0A'  # 128 bit random seed or 128 bit number
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -353,7 +355,6 @@ class MatterCodex:
     SHA3_512:             str = '0F'  # SHA3 512 bit digest self-addressing derivation.
     SHA2_512:             str = '0G'  # SHA2 512 bit digest self-addressing derivation.
     Long:                 str = '0H'  # Long 4 byte b2 number or 6 char b54 str
-    X25519_Cipher_Seed:   str = '0I'  # X15519 Cipher of Private Key Seed 120 b64 chars
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # Ed25519 public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
@@ -361,6 +362,7 @@ class MatterCodex:
     Ed448_Sig:            str = '1AAE'  # Ed448 signature. Self-signing derivation.
     Tag:                  str = '1AAF'  # Base64 4 char tag or 3 byte number.
     DateTime:             str = '1AAG'  # Base64 custom encoded 32 char ISO-8601 DateTime
+    X25519_Cipher_Salt:   str = '1AAH'  # X15519 100 char b64 Cipher of 24 char qb64 Salt
     GPG:                  str = '9A'    # Legacy gpg tool variable length padded material
     GPGSM:                str = '9B'    # Legacy gpgsm tool variable length padded material
     OpenSSL:              str = '9C'    # Legacy openssl tool variable length padded material
@@ -475,6 +477,7 @@ class Matter:
                 'M': Sizage(hs=1, ss=0, fs=4),
                 'N': Sizage(hs=1, ss=0, fs=12),
                 'O': Sizage(hs=1, ss=0, fs=44),
+                'P': Sizage(hs=1, ss=0, fs=124),
                 '0A': Sizage(hs=2, ss=0, fs=24),
                 '0B': Sizage(hs=2, ss=0, fs=88),
                 '0C': Sizage(hs=2, ss=0, fs=88),
@@ -483,7 +486,6 @@ class Matter:
                 '0F': Sizage(hs=2, ss=0, fs=88),
                 '0G': Sizage(hs=2, ss=0, fs=88),
                 '0H': Sizage(hs=2, ss=0, fs=8),
-                '0I': Sizage(hs=2, ss=0, fs=120),
                 '1AAA': Sizage(hs=4, ss=0, fs=48),
                 '1AAB': Sizage(hs=4, ss=0, fs=48),
                 '1AAC': Sizage(hs=4, ss=0, fs=80),
@@ -491,6 +493,7 @@ class Matter:
                 '1AAE': Sizage(hs=4, ss=0, fs=56),
                 '1AAF': Sizage(hs=4, ss=0, fs=8),
                 '1AAG': Sizage(hs=4, ss=0, fs=36),
+                '1AAH': Sizage(hs=4, ss=0, fs=100),
                 '9A': Sizage(hs=2, ss=2, fs=None),
                 '9B': Sizage(hs=2, ss=2, fs=None),
                 '9C': Sizage(hs=2, ss=2, fs=None),
@@ -1317,6 +1320,217 @@ class Signer(Matter):
                           verfer=verfer)
 
 
+class Cipher(Matter):
+    """
+    Cipher is Matter subclass holding a cipher text of an encrypted private
+    seed (key) or salt where that encryption was asymmetric using a private
+    encryption key.
+        From Matter .raw is cipher text and .code indicates the encryption/decryption
+        cipher suite
+
+    See Matter for inherited attributes and properties
+
+    """
+    def __init__(self, raw=None, code=None, **kwa):
+        """
+        Initialize
+        """
+        if raw is not None and code is None:
+            if len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Salt):
+                code = MtrDex.X25519_Cipher_Salt
+            elif len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Seed):
+                code = MtrDex.X25519_Cipher_Seed
+
+        super(Cipher, self).__init__(raw=raw, code=code, **kwa)
+
+        if self.code not in (MtrDex.X25519_Cipher_Salt, MtrDex.X25519_Cipher_Seed):
+            raise ValueError("Unsupported cipher code = {}.".format(self.code))
+
+
+
+class Encrypter(Matter):
+    """
+    Encrypter is Matter subclass with method to create a cipher text of a
+    fully qualified (qb64) private key/seed where private key/seed is the plain
+    text. Encrypter uses assymetric (public, private) key encryption of a
+    serialization (plain text) using the .raw as the encrypting (public) key and
+    .code to indicate the cipher suite for the encryption operation as well as
+    the size of the allowed plain text.
+
+    For example .code == MtrDex.X25519 indicates that the private key plain text
+    is qb64 of an Ed25519 or X25519 private key or 44 chars.
+
+    See Matter for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+
+
+    Methods:
+        encrypt: create cipher text
+
+    """
+    def __init__(self, raw=None, code=MtrDex.X25519, verfer=None, **kwa):
+        """
+        Assign encrypting cipher suite function to ._encrypt
+
+        Parameters:  See Matter for inherted parameters
+            raw (bytes): public encryption key
+            code (str): derivation code for public encryption key
+            verfer (Verfer): use verfer.raw as verkey to derive raw
+        """
+        if not raw and verfer:
+            if verfer.code not in (MtrDex.Ed25519N, MtrDex.Ed25519):
+                raise ValueError("Unsupported verifier code = {}.".format(verfer.code))
+            raw = pysodium.crypto_sign_pk_to_box_pk(verfer.raw)
+
+        super(Encrypter, self).__init__(raw=raw, code=code, **kwa)
+
+        if self.code == MtrDex.X25519:
+            self._encrypt = self._x25519
+        else:
+            raise ValueError("Unsupported encrypter code = {}.".format(self.code))
+
+
+    def encrypt(self, ser):
+        """
+        Returns Cipher instance of cryptographic
+        cipher text material on bytes serialization ser or plain text
+
+        Parameters:
+            ser (bytes): qb64 serialization of plain text
+
+        """
+        return (self._encrypt(ser=ser, key=self.raw))
+
+
+    @staticmethod
+    def _x25519(ser, key):
+        """
+        Returns cipher text as Cipher instance
+
+
+        Parameters:
+            ser is bytes serialization qb64 or seed or salt
+            key is raw binary bytes of encryption public key
+
+        """
+        plain = Matter(qb64b=ser)
+        if plain.code == MtrDex.Salt_128:
+            code = MtrDex.X25519_Cipher_Salt
+        elif plain.code in (MtrDex.Ed25519_Seed, MtrDex.X25519_Private,
+                            MtrDex.ECDSA_256k1_Seed):
+            code = MtrDex.X25519_Cipher_Seed
+        else:
+            raise ValueError("Unsupported plain text code = {}.".format(plain.code))
+        cip = pysodium.crypto_box_seal(ser, key)
+        return Cipher(raw=cip, code=code)
+
+
+
+class Signer(Matter):
+    """
+    Signer is Matter subclass with method to create signature of serialization
+    using the .raw as signing (private) key seed, .code as cipher suite for
+    signing and new property .verfer whose property .raw is public key for signing.
+    If not provided .verfer is generated from private key seed using .code
+    as cipher suite for creating key-pair.
+
+
+    See Matter for inherited attributes and properties:
+
+    Attributes:
+
+    Properties:
+        .verfer is Verfer object instance
+
+    Methods:
+        sign: create signature
+
+    """
+    def __init__(self,raw=None, code=MtrDex.Ed25519_Seed, transferable=True, **kwa):
+        """
+        Assign signing cipher suite function to ._sign
+
+        Parameters:  See Matter for inherted parameters
+            raw is bytes crypto material seed or private key
+            code is derivation code
+            transferable is Boolean True means verifier code is transferable
+                                    False othersize non-transerable
+
+        """
+        try:
+            super(Signer, self).__init__(raw=raw, code=code, **kwa)
+        except EmptyMaterialError as ex:
+            if code == MtrDex.Ed25519_Seed:
+                raw = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+                super(Signer, self).__init__(raw=raw, code=code, **kwa)
+            else:
+                raise ValueError("Unsupported signer code = {}.".format(code))
+
+        if self.code == MtrDex.Ed25519_Seed:
+            self._sign = self._ed25519
+            verkey, sigkey = pysodium.crypto_sign_seed_keypair(self.raw)
+            verfer = Verfer(raw=verkey,
+                                code=MtrDex.Ed25519 if transferable
+                                                    else MtrDex.Ed25519N )
+        else:
+            raise ValueError("Unsupported signer code = {}.".format(self.code))
+
+        self._verfer = verfer
+
+    @property
+    def verfer(self):
+        """
+        Property verfer:
+        Returns Verfer instance
+        Assumes ._verfer is correctly assigned
+        """
+        return self._verfer
+
+    def sign(self, ser, index=None):
+        """
+        Returns either Cigar or Siger (indexed) instance of cryptographic
+        signature material on bytes serialization ser
+
+        If index is None
+            return Cigar instance
+        Else
+            return Siger instance
+
+        Parameters:
+            ser is bytes serialization
+            index is int index of associated verifier key in event keys
+        """
+        return (self._sign(ser=ser,
+                           seed=self.raw,
+                           verfer=self.verfer,
+                           index=index))
+
+    @staticmethod
+    def _ed25519(ser, seed, verfer, index):
+        """
+        Returns signature
+
+
+        Parameters:
+            ser is bytes serialization
+            seed is bytes seed (private key)
+            verfer is Verfer instance. verfer.raw is public key
+            index is index of offset into signers list or None
+
+        """
+        sig = pysodium.crypto_sign_detached(ser, seed + verfer.raw)
+        if index is None:
+            return Cigar(raw=sig, code=MtrDex.Ed25519_Sig, verfer=verfer)
+        else:
+            return Siger(raw=sig,
+                          code=IdrDex.Ed25519_Sig,
+                          index=index,
+                          verfer=verfer)
+
+
 class Salter(Matter):
     """
     Salter is Matter subclass to maintain random salt for secrets (private keys)
@@ -1380,17 +1594,15 @@ class Salter(Matter):
         self.tier = tier if tier is not None else self.Tier
 
 
-    def signer(self, path="", tier=None, code=MtrDex.Ed25519_Seed,
-               transferable=True, temp=False):
+    def stretch(self, *, size=32, path="", tier=None, temp=False):
         """
-        Returns Signer instance whose .raw secret is derived from path and
-        salter's .raw and stretched to size given by code. The signers public key
-        for its .verfer is derived from code and transferable.
+        Returns (bytes): raw binary seed (secret) derived from path and .raw
+        and stretched to size given by code using argon2d stretching algorithm.
 
         Parameters:
-            path is str of unique chars used in derivation of secret seed for signer
-            code is str code of secret crypto suite
-            transferable is Boolean, True means use transferace code for public key
+            size (int): number of bytes in stretched seed
+            path (str): unique chars used in derivation of seed (secret)
+            tier (str): value from Tierage for security level of stretch
             temp is Boolean, True means use quick method to stretch salt
                     for testing only, Otherwise use more time to stretch
         """
@@ -1413,12 +1625,32 @@ class Salter(Matter):
                 raise ValueError("Unsupported security tier = {}.".format(tier))
 
          # stretch algorithm is argon2id
-        seed = pysodium.crypto_pwhash(outlen=Matter._rawSize(code),
+        seed = pysodium.crypto_pwhash(outlen=size,
                                       passwd=path,
                                       salt=self.raw,
                                       opslimit=opslimit,
                                       memlimit=memlimit,
                                       alg=pysodium.crypto_pwhash_ALG_DEFAULT)
+        return (seed)
+
+
+    def signer(self, *, code=MtrDex.Ed25519_Seed, transferable=True, path="",
+               tier=None, temp=False):
+        """
+        Returns Signer instance whose .raw secret is derived from path and
+        salter's .raw and stretched to size given by code. The signers public key
+        for its .verfer is derived from code and transferable.
+
+        Parameters:
+            code is str code of secret crypto suite
+            transferable is Boolean, True means use transferace code for public key
+            path is str of unique chars used in derivation of secret seed for signer
+            tier is str Tierage security level
+            temp is Boolean, True means use quick method to stretch salt
+                    for testing only, Otherwise use more time to stretch
+        """
+        seed = self.stretch(size=Matter._rawSize(code), path=path, tier=tier,
+                            temp=temp)
 
         return (Signer(raw=seed, code=code, transferable=transferable))
 
