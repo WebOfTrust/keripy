@@ -1831,15 +1831,28 @@ def test_cipher():
     uncb = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
     assert uncb == seedqb64b
 
+    # test .decrypt method needs qb64
+    priker = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
+    assert cipher.decrypt(priker=priker).qb64b == seedqb64b
+
+    seeder = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
+    assert  cipher.decrypt(seeder=seeder).qb64b == seedqb64b
+
     raw = pysodium.crypto_box_seal(saltqb64b, pubkey)  # uses nonce so different everytime
     cipher = Cipher(raw=raw)
     assert cipher.code == MtrDex.X25519_Cipher_Salt
     uncb = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
     assert uncb == saltqb64b
 
-    with pytest.raises(ValueError):
-        cipher = Cipher(raw=raw, code=MtrDex.Ed25519N)
+    # test .decrypt method needs qb64
+    priker = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
+    assert  cipher.decrypt(priker=priker).qb64b == saltqb64b
 
+    seeder = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
+    assert  cipher.decrypt(seeder=seeder).qb64b == saltqb64b
+
+    with pytest.raises(ValueError):  # bad code
+        cipher = Cipher(raw=raw, code=MtrDex.Ed25519N)
     """ Done Test """
 
 
@@ -1880,9 +1893,6 @@ def test_encrypter():
 
     cipher = encrypter.encrypt(ser=seedqb64b)
     assert cipher.code == MtrDex.X25519_Cipher_Seed
-    assert cipher.qb64 == ('PC7FCjWA7qqZXd0geqikz5Cuoqfkp_ZqclSSNBV-xtiY5KCHSZp'
-                           'AtIJRI00Ld3o1bjUsM_qSPrS3pNBkhHlLbj7CPGRWsXYxAr7iAc'
-                           'o4YMEzCrGi9TS5gty8bH2g')
     uncb = pysodium.crypto_box_seal_open(cipher.raw, encrypter.raw, prikey)
     assert uncb == seedqb64b
 
@@ -1935,6 +1945,7 @@ def test_decrypter():
 
     # seed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
     cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
+    signer = Signer(raw=cryptseed, code=MtrDex.Ed25519_Seed)
     verkey, sigkey = pysodium.crypto_sign_seed_keypair(cryptseed)  # raw
     pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
     prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)
@@ -1983,6 +1994,17 @@ def test_decrypter():
     plain = decrypter.decrypt(ser=ciphersalt)
     assert plain.code == MtrDex.Salt_128
     assert plain.qb64b == saltqb64b
+
+    # use signer with seed to init prikey
+    decrypter = Decrypter(seeder=signer.qb64b)
+    assert decrypter.code == MtrDex.X25519_Private
+    assert decrypter.qb64 == 'OsIXGozPXPVRRLRMQme9k__Ncdy5h1CxIYFZ05l5jlVA'
+    assert decrypter.raw == prikey
+
+    plain = decrypter.decrypt(ser=cipher.qb64b)
+    assert plain.code == MtrDex.Salt_128
+    assert plain.qb64b == saltqb64b
+
 
     """ Done Test """
 
@@ -3173,4 +3195,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_decrypter()
+    test_encrypter()
