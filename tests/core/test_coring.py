@@ -25,7 +25,7 @@ from keri.help.helping import sceil
 
 from keri.core.coring import Sizage, MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter, sniff
 from keri.core.coring import (Verfer, Cigar, Signer, Salter,
-                              Diger, Nexter, Prefixer, Cipher, Encrypter)
+                              Diger, Nexter, Prefixer, Cipher, Encrypter, Decrypter)
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64, nabSextets
 from keri.core.coring import Seqner, Siger, Dater
@@ -1831,15 +1831,28 @@ def test_cipher():
     uncb = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
     assert uncb == seedqb64b
 
+    # test .decrypt method needs qb64
+    priker = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
+    assert cipher.decrypt(priker=priker).qb64b == seedqb64b
+
+    seeder = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
+    assert  cipher.decrypt(seeder=seeder).qb64b == seedqb64b
+
     raw = pysodium.crypto_box_seal(saltqb64b, pubkey)  # uses nonce so different everytime
     cipher = Cipher(raw=raw)
     assert cipher.code == MtrDex.X25519_Cipher_Salt
     uncb = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
     assert uncb == saltqb64b
 
-    with pytest.raises(ValueError):
-        cipher = Cipher(raw=raw, code=MtrDex.Ed25519N)
+    # test .decrypt method needs qb64
+    priker = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
+    assert  cipher.decrypt(priker=priker).qb64b == saltqb64b
 
+    seeder = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
+    assert  cipher.decrypt(seeder=seeder).qb64b == saltqb64b
+
+    with pytest.raises(ValueError):  # bad code
+        cipher = Cipher(raw=raw, code=MtrDex.Ed25519N)
     """ Done Test """
 
 
@@ -1866,7 +1879,7 @@ def test_encrypter():
 
     # seed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
     cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
-    verkey, sigkey = pysodium.crypto_sign_seed_keypair(cryptseed)
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(cryptseed)  # raw
     pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
     prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)
 
@@ -1889,10 +1902,109 @@ def test_encrypter():
     assert uncb == saltqb64b
 
     verfer = Verfer(raw=verkey, code=MtrDex.Ed25519)
-    encrypter = Encrypter(verfer=verfer)
+
+    encrypter = Encrypter(verkey=verfer.qb64)
     assert encrypter.code == MtrDex.X25519
     assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
     assert encrypter.raw == pubkey
+
+    encrypter = Encrypter(verkey=verfer.qb64b)
+    assert encrypter.code == MtrDex.X25519
+    assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
+    assert encrypter.raw == pubkey
+
+    # user Prefixer to generate original verkey
+    prefixer = Prefixer(qb64=verfer.qb64)
+    encrypter = Encrypter(verkey=prefixer.qb64b)
+    assert encrypter.code == MtrDex.X25519
+    assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
+    assert encrypter.raw == pubkey
+    """ Done Test """
+
+
+def test_decrypter():
+    """
+    Test Decrypter subclass of Matter
+    """
+    # conclusion never use box_seed_keypair always use sign_seed_keypair and
+    # then use crypto_sign_xk_to_box_xk to generate x25519 keys so the prikey
+    # is always the same.
+
+    assert pysodium.crypto_box_SEEDBYTES == pysodium.crypto_sign_SEEDBYTES == 32
+
+    # preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed = (b'\x18;0\xc4\x0f*vF\xfa\xe3\xa2Eee\x1f\x96o\xce)G\x85\xe3X\x86\xda\x04\xf0\xdc'
+                       b'\xde\x06\xc0+')
+    seedqb64b = Matter(raw=seed, code=MtrDex.Ed25519_Seed).qb64b
+    assert seedqb64b == b'AGDswxA8qdkb646JFZWUflm_OKUeF41iG2gTw3N4GwCs'
+
+    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    salt= b'6\x08d\r\xa1\xbb9\x8dp\x8d\xa0\xc0\x13J\x87r'
+    saltqb64b = Matter(raw=salt, code=MtrDex.Salt_128).qb64b
+    assert saltqb64b == b'0ANghkDaG7OY1wjaDAE0qHcg'
+
+    # seed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
+    cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
+    signer = Signer(raw=cryptseed, code=MtrDex.Ed25519_Seed)
+    verkey, sigkey = pysodium.crypto_sign_seed_keypair(cryptseed)  # raw
+    pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
+    prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)
+
+    # create encrypter
+    encrypter = Encrypter(raw=pubkey)
+    assert encrypter.code == MtrDex.X25519
+    assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
+    assert encrypter.raw == pubkey
+
+    # cipher of seed
+    cipher = encrypter.encrypt(ser=seedqb64b)
+    assert cipher.code == MtrDex.X25519_Cipher_Seed
+    # each encryption uses a nonce so not a stable representation for testing
+
+    with pytest.raises(EmptyMaterialError):
+        decrypter = Decrypter()
+
+    decrypter = Decrypter(raw=prikey)
+    assert decrypter.code == MtrDex.X25519_Private
+    assert decrypter.qb64 == 'OsIXGozPXPVRRLRMQme9k__Ncdy5h1CxIYFZ05l5jlVA'
+    assert decrypter.raw == prikey
+
+    plain = decrypter.decrypt(ser=cipher.qb64b)
+    assert plain.code == MtrDex.Ed25519_Seed
+    assert plain.qb64b == seedqb64b
+
+    # cipher of salt
+    cipher = encrypter.encrypt(ser=saltqb64b)
+    assert cipher.code == MtrDex.X25519_Cipher_Salt
+    # each encryption uses a nonce so not a stable representation for testing
+
+    plain = decrypter.decrypt(ser=cipher.qb64b)
+    assert plain.code == MtrDex.Salt_128
+    assert plain.qb64b == saltqb64b
+
+    # use  cipher
+    cipherseed = (b'PfOkgdZ9HWVOMBAA40yt3aAdOfz6Je7UGyBhglvBvogZu7kkmvEX6VeIPbLm'
+                  b'hB2WoFdubO145uCyK2nUj1UI6HSZPq47iQUayS9snsTOy-Pzk1E7818lNpBeoV0g')
+    plain = decrypter.decrypt(ser=cipherseed)
+    assert plain.code == MtrDex.Ed25519_Seed
+    assert plain.qb64b == seedqb64b
+
+    ciphersalt = (b'1AAHMehug8lCovEq5MCKoCyt-ECyAv4mgakKZzKPPZRxtx81UftRWvUNhK3'
+                  b'22qYi7vGpma9u6aZhO9D75xcKtLmiwhZqM7E35vbT')
+    plain = decrypter.decrypt(ser=ciphersalt)
+    assert plain.code == MtrDex.Salt_128
+    assert plain.qb64b == saltqb64b
+
+    # use signer with seed to init prikey
+    decrypter = Decrypter(seeder=signer.qb64b)
+    assert decrypter.code == MtrDex.X25519_Private
+    assert decrypter.qb64 == 'OsIXGozPXPVRRLRMQme9k__Ncdy5h1CxIYFZ05l5jlVA'
+    assert decrypter.raw == prikey
+
+    plain = decrypter.decrypt(ser=cipher.qb64b)
+    assert plain.code == MtrDex.Salt_128
+    assert plain.qb64b == saltqb64b
+
 
     """ Done Test """
 

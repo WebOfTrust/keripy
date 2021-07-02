@@ -300,7 +300,9 @@ def test_pysodium():
     if coprikey != prikey:  # sometimes rarely these match but usually not
         assert cocipher != cipher
     else:
-        assert cocipher == cipher
+        pass
+        # sometimes even when prikeys match ciphers don't match
+        #  assert cocipher == cipher
 
     msg_rxb = pysodium.crypto_box_seal_open(cipher, pubkey, prikey)
     co_msg_rxb = pysodium.crypto_box_seal_open(cocipher, copubkey, coprikey)
