@@ -252,7 +252,7 @@ def test_keeper():
     assert keeper.DirMode == dirMode
 
     assert isinstance(keeper.gbls, lmdb._Database)
-    assert isinstance(keeper.pris, lmdb._Database)
+    assert isinstance(keeper.pris.sdb, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
 
@@ -272,7 +272,7 @@ def test_keeper():
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "0775"
 
     assert isinstance(keeper.gbls, lmdb._Database)
-    assert isinstance(keeper.pris, lmdb._Database)
+    assert isinstance(keeper.pris.sdb, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
     keeper.close(clear=True)
@@ -296,7 +296,7 @@ def test_keeper():
     assert os.path.exists(keeper.path)
 
     assert isinstance(keeper.gbls, lmdb._Database)
-    assert isinstance(keeper.pris, lmdb._Database)
+    assert isinstance(keeper.pris.sdb, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
     keeper.close(clear=True)
@@ -315,13 +315,13 @@ def test_keeper():
         assert os.path.exists(keeper.path)
 
         assert isinstance(keeper.gbls, lmdb._Database)
-        assert isinstance(keeper.pris, lmdb._Database)
+        assert isinstance(keeper.pris.sdb, lmdb._Database)
         assert isinstance(keeper.sits, lmdb._Database)
 
         salta = b'0AZxWJGkCkpDcHuVG4GM1KVw'
         saltb = b'0AHuVG4GM1KVwZxWJGkCkpDc'
         pria = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
-        prib = b'AE2yPgBXiP6h_J2cZeCy4MaOa6eOCJQcgEozYb1GgV9z'
+        prib = b'AJ2cZeCy4MaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6hA'
         puba = b'DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
         pubb = b'DoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-QiVgbRbyAIZG'
         pubc = b'DAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4G'
@@ -387,16 +387,30 @@ def test_keeper():
 
         #  test .pris sub db methods
         key = puba
-        assert keeper.getPri(key) == None
-        assert keeper.delPri(key) == False
-        assert keeper.putPri(key, val=pria) == True
-        assert keeper.getPri(key) == pria
-        assert keeper.putPri(key, val=prib) == False
-        assert keeper.getPri(key) == pria
-        assert keeper.setPri(key, val=prib) == True
-        assert keeper.getPri(key) == prib
-        assert keeper.delPri(key) == True
-        assert keeper.getPri(key) == None
+        signera = coring.Signer(qb64b=pria)
+        assert signera.qb64b == pria
+        signerb = coring.Signer(qb64b=prib)
+        assert signerb.qb64b == prib
+        # assert keeper.getPri(key) == None
+        assert keeper.pris.get(key) == None
+        # assert keeper.delPri(key) == False
+        assert keeper.pris.rem(key) == False
+        # assert keeper.putPri(key, val=pria) == True
+        assert keeper.pris.put(key, val=signera) == True
+        # assert keeper.getPri(key) == pria
+        assert keeper.pris.get(key).qb64b == pria
+        # assert keeper.putPri(key, val=prib) == False
+        assert keeper.pris.put(key, val=signerb) == False
+        # assert keeper.getPri(key) == pria
+        assert keeper.pris.get(key).qb64b == pria
+        # assert keeper.setPri(key, val=prib) == True
+        assert keeper.pris.pin(key, val=signerb) == True
+        # assert keeper.getPri(key) == prib
+        assert keeper.pris.get(key).qb64b == prib
+        # assert keeper.delPri(key) == True
+        assert keeper.pris.rem(key) == True
+        # assert keeper.getPri(key) == None
+        assert keeper.pris.get(key) == None
 
         #  test .pres sub db methods
         key = puba
@@ -829,7 +843,8 @@ def test_manager():
         assert oldpubs == ps.old.pubs
 
         for pub in deadpubs:
-            assert not manager.keeper.getPri(key=pub.encode("utf-8"))
+            # assert not manager.keeper.getPri(key=pub.encode("utf-8"))
+            assert not manager.keeper.pris.get(pub.encode("utf-8"))
 
         # test .pubs db
         pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
@@ -887,7 +902,8 @@ def test_manager():
 
         keys = [verfer.qb64 for verfer in verfers]
         for key in keys:
-            val = bytes(manager.keeper.getPri(key.encode("utf-8")))
+            # assert manager.keeper.getPri(key.encode("utf-8")) is not None
+            assert manager.keeper.pris.get(key.encode("utf-8")) is not None
 
         digs = [diger.qb64 for diger in  digers]
         assert len(digs) == 1
@@ -1042,11 +1058,12 @@ def test_manager():
 
         # test .pris db
         for i, pubs in enumerate(publicies):
-            pri0 = bytes(manager.keeper.getPri(key=pubs[0]))
+            # pri0 = bytes(manager.keeper.getPri(key=pubs[0]))
+            pri0 = manager.keeper.pris.get(pubs[0]).qb64b
             assert pri0.decode("utf-8") == secrecies[i][0]
             for pub in pubs:
-                pri = bytes(manager.keeper.getPri(key=pub))
-                assert pri
+                # assert manager.keeper.getPri(key=pub) is not None
+                assert manager.keeper.pris.get(pub) is not None
 
         pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
         pp = helping.datify(keeping.PrePrm, pp)
@@ -1134,11 +1151,13 @@ def test_manager():
 
         # test .pris db
         for i, pubs in enumerate(publicies):
-            pri0 = bytes(manager.keeper.getPri(key=pubs[0]))
+            # pri0 = bytes(manager.keeper.getPri(key=pubs[0]))
+            pri0 = manager.keeper.pris.get(pubs[0]).qb64b
             assert pri0.decode("utf-8") == secrecies[i][0]
             for pub in pubs:
-                pri = bytes(manager.keeper.getPri(key=pub))
-                assert pri
+                # assert manager.keeper.getPri(key=pub) is not None
+                assert manager.keeper.pris.get(pub) is not None
+
 
         pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
         pp = helping.datify(keeping.PrePrm, pp)
@@ -1184,4 +1203,4 @@ def test_manager():
 
 
 if __name__ == "__main__":
-    test_keeper()
+    test_manager()

@@ -36,7 +36,7 @@ from hio.base import doing
 from .. import kering
 from ..help import helping
 from ..core import coring
-from ..db import dbing
+from ..db import dbing, subing
 
 
 Algoage = namedtuple("Algoage", 'randy salty')
@@ -145,10 +145,17 @@ class Keeper(dbing.LMDBer):
             Key is parameter labels
             Value is parameter
                parameters:
-                   pidx is bytes hex index of next prefix key-pair sequence to be incepted
-                   salt is bytes root salt for generating key pairs
-                   tier is bytes default root security tier for root salt
-        .pris is named sub DB whose values are private keys
+                   aeid (bytes): fully qualified qb64 non-transferable identifier
+                       prefix for authentication via signing and asymmetric encryption
+                       of secrets using the associated (public, private) key pair.
+                       Secrets include both salts and private keys for all key sets
+                       in keeper. Defaults to empty which means no authentication
+                       or encryption of key sets.
+                   pidx (bytes): hex index of next prefix key-pair sequence to be incepted
+                   salt (bytes): root salt for generating key pairs
+                   tier (bytes): default root security tier for root salt
+        .pris is named sub DB whose keys are public key from key pair and values
+            are private keys from key pair
             Key is public key (fully qualified qb64)
             Value is private key (fully qualified qb64)
         .pres is named sub DB whose values are prefixes or first public keys
@@ -176,7 +183,7 @@ class Keeper(dbing.LMDBer):
             Enables lookup of private key from public key for replay
             Key is prefix.ridx (rotation index as 32 char hex string)
                 use riKey(pre, ri)
-            Value is serialed list of fully qualified public keys that are the
+            Value is serialized list of fully qualified public keys that are the
                 current signing keys after the rotation given by rotation index
 
     Properties:
@@ -249,12 +256,20 @@ class Keeper(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
+        # self.gbdb = subing.Suber(db=self, subkey='gbdb.')
+
         self.gbls = self.env.open_db(key=b'gbls.')
-        self.pris = self.env.open_db(key=b'pris.')
+        self.pris = subing.SignerSuber(db=self,
+                                       subkey='pris.',
+                                       klas=coring.Signer)
+
         self.pres = self.env.open_db(key=b'pres.')
         self.prms = self.env.open_db(key=b'prms.')
         self.sits = self.env.open_db(key=b'sits.')
         self.pubs = self.env.open_db(key=b'pubs.')
+
+        #
+        # self.pubs = subing.Suber(db=self, subkey='gbdb.')
 
         return self.env
 
@@ -313,59 +328,6 @@ class Keeper(dbing.LMDBer):
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
         return self.delVal(self.gbls, key)
-
-
-    # .pris methods
-    def putPri(self, key, val):
-        """
-        Write fully qualified private key as val to key
-        key is fully qualified public key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.pris, key, val)
-
-
-    def setPri(self, key, val):
-        """
-        Write fully qualified private key as val to key
-        key is fully qualified public key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.pris, key, val)
-
-
-    def getPri(self, key):
-        """
-        Return private key val at key
-        key is fully qualified public key
-        Returns None if no entry at key
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.pris, key)
-
-
-    def delPri(self, key):
-        """
-        Deletes value at key.
-        val is fully qualified private key
-        key is fully qualified public key
-        Returns True If key exists in database Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.pris, key)
 
 
     # .pres methods
@@ -1139,13 +1101,13 @@ class Manager:
             raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
 
         for signer in isigners:  # store secrets (private key val keyed by public key)
-            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         self.keeper.putPubs(key=riKey(pre, ri=ridx),
                             val=json.dumps(ps.new.pubs).encode("utf-8"))
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
-            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         # store publics keys for lookup of private key for replay
         self.keeper.putPubs(key=riKey(pre, ri=ridx+1),
@@ -1277,13 +1239,8 @@ class Manager:
 
         verfers = []  # assign verfers from old nxt now new.
         for pub in ps.new.pubs:
-            verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
-            raw = self.keeper.getPri(key=pub.encode("utf-8"))
-            if raw is None:
+            if (signer := self.keeper.pris.get(pub.encode("utf-8"))) is None:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
-            pri = bytes(raw)
-            signer = coring.Signer(qb64b=pri,
-                                   transferable=verfer.transferable)
             verfers.append(signer.verfer)
 
         cst = ps.new.st  # get new current signing threshold
@@ -1319,7 +1276,7 @@ class Manager:
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
         for signer in signers:  # store secrets (private key val keyed by public key)
-            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         # store public keys for lookup of private keys by public key for replay
         self.keeper.putPubs(key=riKey(pre, ri=ps.nxt.ridx),
@@ -1327,7 +1284,7 @@ class Manager:
 
         if erase:
             for pub in old.pubs:  # remove old prikeys
-                self.keeper.delPri(key=pub.encode("utf-8"))
+                self.keeper.pris.rem(pub)
 
         return (verfers, digers, cst, nst)
 
@@ -1369,22 +1326,14 @@ class Manager:
 
         if pubs:
             for pub in pubs:
-                verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
-                raw = self.keeper.getPri(key=pub)
-                if raw is None:
+                if (signer := self.keeper.pris.get(pub)) is None:
                     raise ValueError("Missing prikey in db for pubkey={}".format(pub))
-                signer = coring.Signer(qb64b=bytes(raw),
-                                       transferable=verfer.transferable)
                 signers.append(signer)
 
         else:
             for verfer in verfers:
-                pub = verfer.qb64
-                raw = self.keeper.getPri(key=pub)
-                if raw is None:
-                    raise ValueError("Missing prikey in db for pubkey={}".format(pub))
-                signer = coring.Signer(qb64b=bytes(raw),
-                                       transferable=verfer.transferable)
+                if (signer := self.keeper.pris.get(verfer.qb64)) is None:
+                    raise ValueError("Missing prikey in db for pubkey={}".format(verfer.qb64))
                 signers.append(signer)
 
         if indices and len(indices) != len(signers):
@@ -1504,7 +1453,7 @@ class Manager:
                 first = False
 
             for signer in csigners:  # store secrets (private key val keyed by public key)
-                self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+                self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
             self.keeper.putPubs(key=riKey(pre, ri=ridx),
                                 val=json.dumps([signer.verfer.qb64 for signer in csigners]).encode("utf-8"))
@@ -1529,7 +1478,7 @@ class Manager:
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
-            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         self.keeper.putPubs(key=riKey(pre, ri=ridx),
                             val=json.dumps([signer.verfer.qb64 for signer in nsigners]).encode("utf-8"))
@@ -1607,7 +1556,7 @@ class Manager:
 
         if erase and oldpubs:
             for pub in oldpubs:  # remove old prikeys
-                self.keeper.delPri(key=pub.encode("utf-8"))
+                self.keeper.pris.rem(pub)
 
         verfers = [coring.Verfer(qb64=pub) for pub in newpubs]
         digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtpubs]

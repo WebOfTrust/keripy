@@ -929,7 +929,7 @@ class Seqner(Matter):
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
         .qb2  is bytes in binary with derivation code + crypto material
-        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Properties:
         .sn is int sequence number
@@ -1033,7 +1033,7 @@ class Dater(Matter):
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
         .qb2  is bytes in binary with derivation code + crypto material
-        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Properties:
         .dts is the ISO-8601 datetime string
@@ -1176,7 +1176,7 @@ class Cigar(Matter):
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
         .qb2  is bytes in binary with derivation code + crypto material
-        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Properties:
         .verfer is verfer of public key used to verify signature
@@ -1245,8 +1245,8 @@ class Signer(Matter):
         Parameters:  See Matter for inherted parameters
             raw is bytes crypto material seed or private key
             code is derivation code
-            transferable is Boolean True means verifier code is transferable
-                                    False othersize non-transerable
+            transferable is Boolean True means make verifier code transferable
+                                    False make non-transferable
 
         """
         try:
@@ -1336,7 +1336,7 @@ class Salter(Matter):
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
         .qb2  is bytes in binary with derivation code + crypto material
-        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Properties:
 
@@ -1681,7 +1681,7 @@ class Diger(Matter):
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
         .qb2  is bytes in binary with derivation code + crypto material
-        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Methods:
         verify: verifies digest given ser
@@ -1885,7 +1885,7 @@ class Nexter(Matter):
         .qb64 str in Base64 fully qualified with derivation code + crypto mat
         .qb64b bytes in Base64 fully qualified with derivation code + crypto mat
         .qb2  bytes in binary with derivation code + crypto material
-        .nontrans True when non-transferable derivation code False otherwise
+        .transferable True when transferable derivation code False otherwise
 
     Properties:
 
@@ -2052,7 +2052,7 @@ class Prefixer(Matter):
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
         .qb2  is bytes in binary with derivation code + crypto material
-        .nontrans is Boolean, True when non-transferable derivation code False otherwise
+        .transferable is Boolean, True when transferable derivation code False otherwise
 
     Properties:
 
