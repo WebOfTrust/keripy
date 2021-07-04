@@ -415,31 +415,28 @@ def test_keeper():
 
         #  test .prms sub db methods
         key = prea
-        prma = json.dumps(
-                    dict(pidx=0,
-                         algo='salty',
-                         salt=salta,
-                         stem='',
-                         tier='low',
-                    )).encode("utf-8")
-        prmb = json.dumps(
-                    dict(pidx=1,
-                         algo='randy',
-                         salt='',
-                         stem='',
-                         level='',
-                    )).encode("utf-8")
-        assert keeper.getPrm(key) == None
-        assert keeper.delPrm(key) == False
-        assert keeper.putPrm(key, val=prma) == True
-        assert keeper.getPrm(key) == prma
-        assert keeper.putPrm(key, val=prmb) == False
-        assert keeper.getPrm(key) == prma
-        assert keeper.setPrm(key, val=prmb) == True
-        assert keeper.getPrm(key) == prmb
-        assert keeper.delPrm(key) == True
-        assert keeper.getPrm(key) == None
+        prma = keeping.PrePrm(pidx=0,
+                              algo='salty',
+                              salt=salta,
+                              stem='',
+                              tier='low')
 
+        prmb = keeping.PrePrm(pidx=1,
+                              algo='randy',
+                              salt='',
+                              stem='',
+                              tier='')
+
+        assert keeper.prms.get(key) == None
+        assert keeper.prms.rem(key) == False
+        assert keeper.prms.put(key, data=prma) == True
+        assert keeper.prms.get(key) == prma
+        assert keeper.prms.put(key, data=prmb) == False
+        assert keeper.prms.get(key) == prma
+        assert keeper.prms.pin(key, data=prmb) == True
+        assert keeper.prms.get(key) == prmb
+        assert keeper.prms.rem(key) == True
+        assert keeper.prms.get(key) == None
 
         #  test .sits sub db methods with pubs
         key = prea
@@ -697,8 +694,10 @@ def test_manager():
         spre = verfers[0].qb64b
         assert spre == b'DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
 
-        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
-        pp = helping.datify(keeping.PrePrm, pp)
+        #pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        #pp = helping.datify(keeping.PrePrm, pp)
+
+        pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 0
         assert pp.algo == keeping.Algos.salty
         assert pp.salt == salt
@@ -786,8 +785,9 @@ def test_manager():
         assert cst == '1'
         assert nst == '1'
 
-        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
-        pp = helping.datify(keeping.PrePrm, pp)
+        #pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        #pp = helping.datify(keeping.PrePrm, pp)
+        pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 0
         assert pp.algo == keeping.Algos.salty
         assert pp.salt == salt
@@ -821,8 +821,9 @@ def test_manager():
         verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"))
         assert cst == '1'
         assert nst == '1'
-        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
-        pp = helping.datify(keeping.PrePrm, pp)
+        #pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        #pp = helping.datify(keeping.PrePrm, pp)
+        pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 0
 
         ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
@@ -846,8 +847,9 @@ def test_manager():
         assert cst == '1'
         assert nst == '0'
 
-        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
-        pp = helping.datify(keeping.PrePrm, pp)
+        #pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        #pp = helping.datify(keeping.PrePrm, pp)
+        pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 0
 
         ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
@@ -870,8 +872,9 @@ def test_manager():
         assert manager.getPidx() == 2
         rpre = verfers[0].qb64b
 
-        pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
-        pp = helping.datify(keeping.PrePrm, pp)
+        #pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
+        #pp = helping.datify(keeping.PrePrm, pp)
+        pp = manager.keeper.prms.get(rpre)
         assert pp.pidx == 1
         assert pp.algo == keeping.Algos.randy
         assert pp.salt == ''
@@ -907,8 +910,9 @@ def test_manager():
         assert cst == '1'
         assert nst == '1'
 
-        pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
-        pp = helping.datify(keeping.PrePrm, pp)
+        #pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
+        #pp = helping.datify(keeping.PrePrm, pp)
+        pp = manager.keeper.prms.get(rpre)
         assert pp.pidx == 1
 
         ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
@@ -923,8 +927,9 @@ def test_manager():
         assert cst == '1'
         assert nst == '0'
 
-        pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
-        pp = helping.datify(keeping.PrePrm, pp)
+        #pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
+        #pp = helping.datify(keeping.PrePrm, pp)
+        pp = manager.keeper.prms.get(rpre)
         assert pp.pidx == 2
 
         ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
@@ -948,8 +953,9 @@ def test_manager():
         spre = verfers[0].qb64b
         assert spre == b'D627iBfehzh966wPzBYjKQuGOSmIkdcR7b14nZv_ULIw'
 
-        pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
-        pp = helping.datify(keeping.PrePrm, pp)
+        #pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
+        #pp = helping.datify(keeping.PrePrm, pp)
+        pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 3
         assert pp.algo == keeping.Algos.salty
         assert pp.salt == salt
@@ -1053,8 +1059,9 @@ def test_manager():
                 # assert manager.keeper.getPri(key=pub) is not None
                 assert manager.keeper.pris.get(pub) is not None
 
-        pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
-        pp = helping.datify(keeping.PrePrm, pp)
+        #pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
+        #pp = helping.datify(keeping.PrePrm, pp)
+        pp = manager.keeper.prms.get(ipre)
         assert pp.pidx == 6
 
         assert manager.getPidx() == 7
@@ -1147,8 +1154,9 @@ def test_manager():
                 assert manager.keeper.pris.get(pub) is not None
 
 
-        pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
-        pp = helping.datify(keeping.PrePrm, pp)
+        #pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
+        #pp = helping.datify(keeping.PrePrm, pp)
+        pp = manager.keeper.prms.get(ipre)
         assert pp.pidx == 7
 
         assert manager.getPidx() == 8

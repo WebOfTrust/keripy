@@ -113,10 +113,12 @@ class Habitat:
             ex = self.db.habs.get(keys=self.name)
             # found existing habitat, otherwise leave __init__ to incept a new one.
             if ex is not None:
-                prms = json.loads(bytes(ks.getPrm(key=ex.prefix)).decode("utf-8"))
-                salt = prms['salt']
-                tier = prms['tier']
-                pidx = prms['pidx']
+                # prms = json.loads(bytes(ks.getPrm(key=ex.prefix)).decode("utf-8"))
+                prms = ks.prms.get(ex.prefix)
+                salt = prms.salt  # prms['salt']
+                tier = prms.tier  # prms['tier']
+                pidx = prms.pidx  # prms['pidx']
+                #  need to add support for algo
                 self.pre = ex.prefix
                 existing = True
 

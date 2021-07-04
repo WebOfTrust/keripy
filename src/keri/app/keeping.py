@@ -36,7 +36,7 @@ from hio.base import doing
 from .. import kering
 from ..help import helping
 from ..core import coring
-from ..db import dbing, subing
+from ..db import dbing, subing, koming
 
 
 Algoage = namedtuple("Algoage", 'randy salty')
@@ -256,79 +256,20 @@ class Keeper(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        # self.gbdb = subing.Suber(db=self, subkey='gbdb.')
-
-        # self.gbls = self.env.open_db(key=b'gbls.')
         self.gbls = subing.Suber(db=self, subkey='gbls.')
         self.pris = subing.SignerSuber(db=self,
                                        subkey='pris.',
                                        klas=coring.Signer)
 
         self.pres = self.env.open_db(key=b'pres.')
-        self.prms = self.env.open_db(key=b'prms.')
+        # self.prms = self.env.open_db(key=b'prms.')
+        self.prms = koming.Komer(db=self,
+                                 subkey='prms.',
+                                 schema=PrePrm,)  # New Prefix Parameters
         self.sits = self.env.open_db(key=b'sits.')
         self.pubs = self.env.open_db(key=b'pubs.')
 
-        #
-
-
         return self.env
-
-
-    # .gbls methods
-    def putGbl(self, key, val):
-        """
-        Write parameter as val to key
-        key is parameter label
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-
-        b'%x' % pidx
-        "{:x}".format(pidx).encode("utf-8")
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.gbls, key, val)
-
-
-    def setGbl(self, key, val):
-        """
-        Write parameter as val to key
-        key is parameter label
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.gbls, key, val)
-
-
-    def getGbl(self, key):
-        """
-        Return parameter val at key label
-        key is fully qualified public key
-        Returns None if no entry at key
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.gbls, key)
-
-
-    def delGbl(self, key):
-        """
-        Deletes value at key.
-        val is fully qualified private key
-        key is fully qualified public key
-        Returns True If key exists in database Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.gbls, key)
 
 
     # .pres methods
@@ -932,6 +873,7 @@ class Manager:
 
         return (aeid, pidx, salt, tier)
 
+
     def getAeid(self):
         """
         Returns: adid from .keeper. Assumes db initialized.
@@ -1081,8 +1023,11 @@ class Manager:
         if not result:
             raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-        result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
-        if not result:
+        #result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
+        #if not result:
+            #raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
+
+        if not self.keeper.prms.put(pre, data=pp):
             raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
         self.setPidx(pidx + 1)  # increment for next inception
@@ -1130,13 +1075,17 @@ class Manager:
         if rawnewpre is not None:
             raise ValueError("Preexistent new pre={} may not clobber.".format(new))
 
-        rawoldprm = self.keeper.getPrm(key=old)
-        if rawoldprm is None:
+        if (oldprm := self.keeper.prms.get(old)) is None:
             raise ValueError("Nonexistent old prm for pre={}, nothing to move.".format(old))
+        #rawoldprm = self.keeper.getPrm(key=old)
+        #if rawoldprm is None:
+            #raise ValueError("Nonexistent old prm for pre={}, nothing to move.".format(old))
 
-        rawnewprm = self.keeper.getPrm(key=new)
-        if rawnewprm is not None:
+        if self.keeper.prms.get(new) is not None:
             raise ValueError("Preexistent new prm for pre={} may not clobber.".format(new))
+        # rawnewprm = self.keeper.getPrm(key=new)
+        #if rawnewprm is not None:
+            #raise ValueError("Preexistent new prm for pre={} may not clobber.".format(new))
 
         rawoldsit = self.keeper.getSit(key=old)
         if rawoldsit is None:
@@ -1146,10 +1095,15 @@ class Manager:
         if rawnewsit is not None:
             raise ValueError("Preexistent new sit for pre={} may not clobber.".format(new))
 
-        if not self.keeper.putPrm(key=new, val=bytes(rawoldprm)):
+        #if not self.keeper.putPrm(key=new, val=bytes(rawoldprm)):
+            #raise ValueError("Failed moving prm from old pre={} to new pre={}.".format(old, new))
+        #else:
+            #self.keeper.delPrm(key=old)
+
+        if not self.keeper.prms.put(new, data=oldprm):
             raise ValueError("Failed moving prm from old pre={} to new pre={}.".format(old, new))
         else:
-            self.keeper.delPrm(key=old)
+            self.keeper.prms.rem(old)
 
         if not self.keeper.putSit(key=new, val=bytes(rawoldsit)):
             raise ValueError("Failed moving sit from old pre={} to new pre={}.".format(old, new))
@@ -1211,10 +1165,13 @@ class Manager:
             even when the identifer prefix is transferable.
 
         """
-        rawprm = self.keeper.getPrm(key=pre)
-        if rawprm is None:
+        #rawprm = self.keeper.getPrm(key=pre)
+        #if rawprm is None:
+            #raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
+        #pp = helping.datify(PrePrm, json.loads(bytes(rawprm).decode("utf-8")))
+
+        if (pp := self.keeper.prms.get(pre)) is None:
             raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
-        pp = helping.datify(PrePrm, json.loads(bytes(rawprm).decode("utf-8")))
 
         rawsit = self.keeper.getSit(key=pre)
         if rawsit is None:
@@ -1436,8 +1393,11 @@ class Manager:
                 if not result:
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-                result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
-                if not result:
+                #result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
+                #if not result:
+                    #raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
+
+                if not self.keeper.prms.put(pre, data=pp):
                     raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
                 self.setPidx(pidx + 1)  # increment for next inception
