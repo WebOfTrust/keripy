@@ -230,8 +230,10 @@ class Habitat:
         self.psr = parsing.Parser(framed=True, kvy=self.kvy)
 
         # ridx for replay may be an issue when loading from existing
-        sit = json.loads(bytes(self.ks.getSit(key=self.pre)).decode("utf-8"))
-        self.ridx = helping.datify(keeping.PubLot, sit['new']).ridx
+        # sit = json.loads(bytes(self.ks.getSit(key=self.pre)).decode("utf-8"))
+        sit = self.ks.sits.get(self.pre)
+        # self.ridx = helping.datify(keeping.PubLot, sit['new']).ridx
+        self.ridx =sit.new.ridx
 
 
     def rotate(self, sith=None, count=None, erase=None,

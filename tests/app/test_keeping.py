@@ -253,7 +253,7 @@ def test_keeper():
 
     assert isinstance(keeper.gbls.sdb, lmdb._Database)
     assert isinstance(keeper.pris.sdb, lmdb._Database)
-    assert isinstance(keeper.sits, lmdb._Database)
+    assert isinstance(keeper.sits.sdb, lmdb._Database)
 
 
     keeper.close(clear=True)
@@ -273,7 +273,7 @@ def test_keeper():
 
     assert isinstance(keeper.gbls.sdb, lmdb._Database)
     assert isinstance(keeper.pris.sdb, lmdb._Database)
-    assert isinstance(keeper.sits, lmdb._Database)
+    assert isinstance(keeper.sits.sdb, lmdb._Database)
 
     keeper.close(clear=True)
     assert not os.path.exists(keeper.path)
@@ -297,7 +297,7 @@ def test_keeper():
 
     assert isinstance(keeper.gbls.sdb, lmdb._Database)
     assert isinstance(keeper.pris.sdb, lmdb._Database)
-    assert isinstance(keeper.sits, lmdb._Database)
+    assert isinstance(keeper.sits.sdb, lmdb._Database)
 
     keeper.close(clear=True)
     assert not os.path.exists(keeper.path)
@@ -316,7 +316,7 @@ def test_keeper():
 
         assert isinstance(keeper.gbls.sdb, lmdb._Database)
         assert isinstance(keeper.pris.sdb, lmdb._Database)
-        assert isinstance(keeper.sits, lmdb._Database)
+        assert isinstance(keeper.sits.sdb, lmdb._Database)
 
         salta = '0AZxWJGkCkpDcHuVG4GM1KVw'
         saltb = '0AHuVG4GM1KVwZxWJGkCkpDc'
@@ -440,33 +440,52 @@ def test_keeper():
 
         #  test .sits sub db methods with pubs
         key = prea
-        sita = json.dumps(
-                    dict(
-                         old=dict(pubs=[], ridx=0, kidx=0, st='0', dt=''),
-                         new=dict(pubs=[puba.decode("utf-8")], ridx=1, kidx=1,
-                                  st='1', dt=helping.nowIso8601()),
-                         nxt=dict(pubs=[pubb.decode("utf-8")], ridx=2, kidx=2,
-                                  st='1', dt=helping.nowIso8601())
-                    )).encode("utf-8")
-        sitb = json.dumps(
-                    dict(
-                         old=dict(pubs=[puba.decode("utf-8")], ridx=0, kidx=0,
-                                  st='1', dt=helping.nowIso8601()),
-                         new=dict(pubs=[pubb.decode("utf-8")], ridx=1, kidx=1,
-                                  st='1',dt=helping.nowIso8601()),
-                         nxt=dict(pubs=[pubc.decode("utf-8")], ridx=2, kidx=2,
-                                  st='1',dt=helping.nowIso8601())
-                    )).encode("utf-8")
-        assert keeper.getSit(key) == None
-        assert keeper.delSit(key) == False
-        assert keeper.putSit(key, val=sita) == True
-        assert keeper.getSit(key) == sita
-        assert keeper.putSit(key, val=sitb) == False
-        assert keeper.getSit(key) == sita
-        assert keeper.setSit(key, val=sitb) == True
-        assert keeper.getSit(key) == sitb
-        assert keeper.delSit(key) == True
-        assert keeper.getSit(key) == None
+        sita = keeping.PreSit(
+                               old=keeping.PubLot(pubs=[],
+                                                  ridx=0,
+                                                  kidx=0,
+                                                  st='0',
+                                                  dt=''),
+                               new=keeping.PubLot(pubs=[puba.decode("utf-8")],
+                                                  ridx=1,
+                                                  kidx=1,
+                                                  st='1',
+                                                  dt=helping.nowIso8601()),
+                               nxt=keeping.PubLot(pubs=[pubb.decode("utf-8")],
+                                                  ridx=2,
+                                                  kidx=2,
+                                                  st='1',
+                                                  dt=helping.nowIso8601()),
+                             )
+
+        sitb = keeping.PreSit(
+                               old=keeping.PubLot(pubs=[puba.decode("utf-8")],
+                                                  ridx=0,
+                                                  kidx=0,
+                                                  st='1',
+                                                  dt=helping.nowIso8601()),
+                               new=keeping.PubLot(pubs=[puba.decode("utf-8")],
+                                                  ridx=1,
+                                                  kidx=1,
+                                                  st='1',
+                                                  dt=helping.nowIso8601()),
+                               nxt=keeping.PubLot(pubs=[pubb.decode("utf-8")],
+                                                  ridx=2,
+                                                  kidx=2,
+                                                  st='1',
+                                                  dt=helping.nowIso8601()),
+                             )
+
+        assert keeper.sits.get(key) == None
+        assert keeper.sits.rem(key) == False
+        assert keeper.sits.put(key, data=sita) == True
+        assert keeper.sits.get(key) == sita
+        assert keeper.sits.put(key, data=sitb) == False
+        assert keeper.sits.get(key) == sita
+        assert keeper.sits.pin(key, data=sitb) == True
+        assert keeper.sits.get(key) == sitb
+        assert keeper.sits.rem(key) == True
+        assert keeper.sits.get(key) == None
 
         #  test .pubs sub db methods
         key0 = keeping.riKey(prea, 0)
@@ -704,8 +723,9 @@ def test_manager():
         assert pp.stem == ''
         assert pp.tier == coring.Tiers.low
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
-        ps = helping.datify(keeping.PreSit, ps)
+        #ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        #ps = helping.datify(keeping.PreSit, ps)
+        ps = manager.keeper.sits.get(spre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
         assert ps.new.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
@@ -794,8 +814,9 @@ def test_manager():
         assert pp.stem == ''
         assert pp.tier == coring.Tiers.low
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
-        ps = helping.datify(keeping.PreSit, ps)
+        #ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        #ps = helping.datify(keeping.PreSit, ps)
+        ps = manager.keeper.sits.get(spre)
         assert ps.old.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
         assert len(ps.new.pubs) == 1
         assert ps.new.pubs == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
@@ -826,9 +847,9 @@ def test_manager():
         pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 0
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
-        ps = helping.datify(keeping.PreSit, ps)
-
+        #ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        #ps = helping.datify(keeping.PreSit, ps)
+        ps = manager.keeper.sits.get(spre)
         assert oldpubs == ps.old.pubs
 
         for pub in deadpubs:
@@ -852,8 +873,9 @@ def test_manager():
         pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 0
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
-        ps = helping.datify(keeping.PreSit, ps)
+        #ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        #ps = helping.datify(keeping.PreSit, ps)
+        ps = manager.keeper.sits.get(spre)
 
         assert digers == []
         assert ps.nxt.pubs == []
@@ -881,8 +903,9 @@ def test_manager():
         assert pp.stem == ''
         assert pp.tier == ''
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
-        ps = helping.datify(keeping.PreSit, ps)
+        #ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
+        #ps = helping.datify(keeping.PreSit, ps)
+        ps = manager.keeper.sits.get(rpre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
         assert ps.new.ridx == 0
@@ -915,8 +938,9 @@ def test_manager():
         pp = manager.keeper.prms.get(rpre)
         assert pp.pidx == 1
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
-        ps = helping.datify(keeping.PreSit, ps)
+        #ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
+        #ps = helping.datify(keeping.PreSit, ps)
+        ps = manager.keeper.sits.get(rpre)
 
         assert oldpubs == ps.old.pubs
 
@@ -932,8 +956,9 @@ def test_manager():
         pp = manager.keeper.prms.get(rpre)
         assert pp.pidx == 2
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
-        ps = helping.datify(keeping.PreSit, ps)
+        #ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
+        #ps = helping.datify(keeping.PreSit, ps)
+        ps = manager.keeper.sits.get(rpre)
 
         assert digers == []
         assert ps.nxt.pubs == []
@@ -962,8 +987,9 @@ def test_manager():
         assert pp.stem == stem == 'red'
         assert pp.tier == coring.Tiers.low
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
-        ps = helping.datify(keeping.PreSit, ps)
+        #ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
+        #ps = helping.datify(keeping.PreSit, ps)
+        ps = manager.keeper.sits.get(spre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
         assert ps.new.pubs == ['D627iBfehzh966wPzBYjKQuGOSmIkdcR7b14nZv_ULIw']
@@ -1066,8 +1092,9 @@ def test_manager():
 
         assert manager.getPidx() == 7
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=ipre)).decode("utf-8"))
-        ps = helping.datify(keeping.PreSit, ps)
+        #ps = json.loads(bytes(manager.keeper.getSit(key=ipre)).decode("utf-8"))
+        #ps = helping.datify(keeping.PreSit, ps)
+        ps = manager.keeper.sits.get(ipre)
         assert ps.new.ridx == 7
         assert ps.new.pubs == publicies[ps.new.ridx]
 
@@ -1161,8 +1188,9 @@ def test_manager():
 
         assert manager.getPidx() == 8
 
-        ps = json.loads(bytes(manager.keeper.getSit(key=ipre)).decode("utf-8"))
-        ps = helping.datify(keeping.PreSit, ps)
+        #ps = json.loads(bytes(manager.keeper.getSit(key=ipre)).decode("utf-8"))
+        #ps = helping.datify(keeping.PreSit, ps)
+        ps = manager.keeper.sits.get(ipre)
         assert ps.new.ridx == 3
         assert ps.new.kidx == 7
         assert ps.new.pubs == publicies[ps.new.ridx]
@@ -1199,4 +1227,4 @@ def test_manager():
 
 
 if __name__ == "__main__":
-    test_manager()
+    test_keeper()
