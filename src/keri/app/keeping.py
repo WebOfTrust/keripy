@@ -258,11 +258,13 @@ class Keeper(dbing.LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.gbls = subing.Suber(db=self, subkey='gbls.')
-        self.pris = subing.SignerSuber(db=self,
-                                       subkey='pris.',
-                                       klas=coring.Signer)
+        self.pris = subing.SignerSuber(db=self, subkey='pris.')
 
-        self.pres = self.env.open_db(key=b'pres.')
+        # self.pres = self.env.open_db(key=b'pres.')
+        self.pres = subing.MatterSuber(db=self,
+                                       subkey='pres.',
+                                       klas=coring.Prefixer)
+
         self.prms = koming.Komer(db=self,
                                  subkey='prms.',
                                  schema=PrePrm,)  # New Prefix Parameters
@@ -916,8 +918,11 @@ class Manager:
                                    ridx=ridx+1, kidx=kidx+len(icodes), st=nst, dt=dt))
 
         pre = verfers[0].qb64b
-        result = self.keeper.putPre(key=pre, val=pre)
-        if not result:
+        #result = self.keeper.putPre(key=pre, val=pre)
+        #if not result:
+            #raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
+
+        if not self.keeper.pres.put(pre, val=coring.Prefixer(qb64=pre)):
             raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
         if not self.keeper.prms.put(pre, data=pp):
@@ -959,12 +964,18 @@ class Manager:
         if old == new:
             return
 
-        rawoldpre = self.keeper.getPre(key=old)
-        if rawoldpre is None:
+        #rawoldpre = self.keeper.getPre(key=old)
+        #if rawoldpre is None:
+            #raise ValueError("Nonexistent old pre={}, nothing to assign.".format(old))
+
+        if self.keeper.pres.get(old) is None:
             raise ValueError("Nonexistent old pre={}, nothing to assign.".format(old))
 
-        rawnewpre = self.keeper.getPre(key=new)
-        if rawnewpre is not None:
+        #rawnewpre = self.keeper.getPre(key=new)
+        #if rawnewpre is not None:
+            #raise ValueError("Preexistent new pre={} may not clobber.".format(new))
+
+        if self.keeper.pres.get(new) is not None:
             raise ValueError("Preexistent new pre={} may not clobber.".format(new))
 
         if (oldprm := self.keeper.prms.get(old)) is None:
@@ -997,12 +1008,18 @@ class Manager:
             i += 1
 
         # assign old
-        if not self.keeper.setPre(key=old, val=new):
+        if not self.keeper.pres.pin(old, val=coring.Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={} to old pre={}.".format(new, old))
+        #if not self.keeper.setPre(key=old, val=new):
+            #raise ValueError("Failed assiging new pre={} to old pre={}.".format(new, old))
 
         # make new so that if move again we reserve each one
-        if not self.keeper.putPre(key=new, val=new):
+        if not self.keeper.pres.put(new, val=coring.Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={}.".format(new))
+        #if not self.keeper.putPre(key=new, val=new):
+            #raise ValueError("Failed assiging new pre={}.".format(new))
+
+
 
 
     def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
@@ -1259,9 +1276,12 @@ class Manager:
                             stem=creator.stem,
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b
-                result = self.keeper.putPre(key=pre, val=pre)
-                if not result:
+                if not self.keeper.pres.put(pre, val=coring.Prefixer(qb64=pre)):
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
+
+                #result = self.keeper.putPre(key=pre, val=pre)
+                #if not result:
+                    #raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
                 if not self.keeper.prms.put(pre, data=pp):
                     raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))

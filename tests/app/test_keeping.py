@@ -402,16 +402,18 @@ def test_keeper():
 
         #  test .pres sub db methods
         key = puba
-        assert keeper.getPre(key) == None
-        assert keeper.delPre(key) == False
-        assert keeper.putPre(key, val=prea) == True
-        assert keeper.getPre(key) == prea
-        assert keeper.putPre(key, val=preb) == False
-        assert keeper.getPre(key) == prea
-        assert keeper.setPre(key, val=preb) == True
-        assert keeper.getPre(key) == preb
-        assert keeper.delPre(key) == True
-        assert keeper.getPre(key) == None
+        prefixera = coring.Prefixer(qb64=prea)
+        prefixerb = coring.Prefixer(qb64=preb)
+        assert keeper.pres.get(key) == None
+        assert keeper.pres.rem(key) == False
+        assert keeper.pres.put(key, val=prefixera) == True
+        assert keeper.pres.get(key).qb64 == prefixera.qb64
+        assert keeper.pres.put(key, val=prefixera) == False
+        assert keeper.pres.get(key).qb64 == prefixera.qb64
+        assert keeper.pres.pin(key, val=prefixerb) == True
+        assert keeper.pres.get(key).qb64 == prefixerb.qb64
+        assert keeper.pres.rem(key) == True
+        assert keeper.pres.get(key) == None
 
         #  test .prms sub db methods
         key = prea
