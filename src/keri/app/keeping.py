@@ -258,7 +258,8 @@ class Keeper(dbing.LMDBer):
 
         # self.gbdb = subing.Suber(db=self, subkey='gbdb.')
 
-        self.gbls = self.env.open_db(key=b'gbls.')
+        # self.gbls = self.env.open_db(key=b'gbls.')
+        self.gbls = subing.Suber(db=self, subkey='gbls.')
         self.pris = subing.SignerSuber(db=self,
                                        subkey='pris.',
                                        klas=coring.Signer)
@@ -269,7 +270,7 @@ class Keeper(dbing.LMDBer):
         self.pubs = self.env.open_db(key=b'pubs.')
 
         #
-        # self.pubs = subing.Suber(db=self, subkey='gbdb.')
+
 
         return self.env
 
@@ -396,7 +397,7 @@ class Keeper(dbing.LMDBer):
             key = key.encode("utf-8")  # convert str to bytes
         if hasattr(val, "encode"):
             val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.gbls, key, val)
+        return self.putVal(self.prms, key, val)
 
 
     def setPrm(self, key, val):
@@ -410,7 +411,7 @@ class Keeper(dbing.LMDBer):
             key = key.encode("utf-8")  # convert str to bytes
         if hasattr(val, "encode"):
             val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.gbls, key, val)
+        return self.setVal(self.prms, key, val)
 
 
     def getPrm(self, key):
@@ -421,7 +422,7 @@ class Keeper(dbing.LMDBer):
         """
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.gbls, key)
+        return self.getVal(self.prms, key)
 
 
     def delPrm(self, key):
@@ -433,7 +434,7 @@ class Keeper(dbing.LMDBer):
         """
         if hasattr(key, "encode"):
             key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.gbls, key)
+        return self.delVal(self.prms, key)
 
 
     # .sits methods
@@ -910,34 +911,24 @@ class Manager:
         if not self.keeper.opened:
             raise kering.ClosedError("Attempt to setup closed Manager.keeper.")
 
-        raw = self.keeper.getGbl('aeid')  # qb64 of auth encrypt id
-        if raw is None:  # no entry in database so never before inited
+        if (aeid := self.keeper.gbls.get('aeid')) is None:
             aeid = self._aeid
-            self.keeper.putGbl('aeid', aeid)
-        else:
-            aeid = bytes(raw).decode("utf-8")
+            self.keeper.gbls.put('aeid', aeid)
 
-        raw = self.keeper.getGbl('pidx')  # prefix id of next prefix
-        if raw is None:  # no entry in database so never before inited
+        if (pidx := self.keeper.gbls.get('pidx')) is None:
             pidx = self._pidx
-            self.keeper.putGbl('pidx', b'%x' % pidx)
+            self.keeper.gbls.put('pidx', '%x' % pidx)  # convert to hex
         else:
-            pidx = int(bytes(raw), 16)
+            pidx = int(pidx, 16)
 
-        raw = self.keeper.getGbl('salt')  # default salt
-        if raw is None:  # no entry in database so never before inited
+        if (salt := self.keeper.gbls.get('salt')) is None:
             salt = self._salt
-            self.keeper.putGbl('salt', salt)
+            self.keeper.gbls.put('salt', salt)
             self._salt = ''  # don't keep around
-        else:
-            salt = bytes(raw).decode("utf-8")
 
-        raw = self.keeper.getGbl('tier')  # default tier
-        if raw is None:  # no entry in database so never before inited
+        if (tier := self.keeper.gbls.get('tier')) is None:
             tier = self._tier
-            self.keeper.putGbl('tier', tier)
-        else:
-            tier = bytes(raw).decode("utf-8")
+            self.keeper.gbls.put('tier', tier)
 
         return (aeid, pidx, salt, tier)
 
@@ -946,7 +937,7 @@ class Manager:
         Returns: adid from .keeper. Assumes db initialized.
         aeid is qb64 auth encrypt id prefix
         """
-        return int(bytes(self.keeper.getGbl(b"aeid")), 16)
+        return self.keeper.gbls.get('aeid')
 
 
     def setAeid(self, aeid):
@@ -955,7 +946,7 @@ class Manager:
         aeid is qb64 auth encrypt id prefix
         Need to reencrypt all secrets when change aeid
         """
-        self.keeper.setGbl(b"aeid", b"%x" % aeid)
+        self.keeper.gbls.pin("aeid", aeid)
 
 
     def getPidx(self):
@@ -964,7 +955,7 @@ class Manager:
         pidx is prefix index for next new key sequence
         need to update
         """
-        return int(bytes(self.keeper.getGbl(b"pidx")), 16)
+        return int(self.keeper.gbls.get("pidx"), 16)
 
 
     def setPidx(self, pidx):
@@ -972,7 +963,7 @@ class Manager:
         Save pidx to .keeper
         pidx is prefix index for next new key sequence
         """
-        self.keeper.setGbl(b"pidx", b"%x" % pidx)
+        self.keeper.gbls.pin("pidx", "%x" % pidx)
 
 
     def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed, isith=None,

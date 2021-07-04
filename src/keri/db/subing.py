@@ -80,7 +80,7 @@ class Suber:
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-            data (bytes):
+            data (str):  decoded as utf-8
             None if no entry at keys
 
         Usage:
@@ -91,7 +91,7 @@ class Suber:
 
         """
         data = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return bytes(data) if data else None
+        return bytes(data).decode("utf=8") if data else None
 
 
     def rem(self, keys: Union[str, Iterable]):
@@ -122,7 +122,7 @@ class Suber:
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
             keys = tuple(key.decode("utf-8").split('.'))
-            yield (keys, bytes(val))
+            yield (keys, bytes(val).decode("utf-8"))
 
 
     def _tokey(self, keys: Union[str, Iterable]):

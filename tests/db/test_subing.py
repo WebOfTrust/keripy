@@ -30,7 +30,7 @@ def test_suber():
         keys = ("test_key", "0001")
         sdb.put(keys=keys, val=sue)
         actual = sdb.get(keys=keys)
-        assert actual == sue.encode("utf-8")
+        assert actual == sue
 
         sdb.rem(keys)
         actual = sdb.get(keys=keys)
@@ -38,18 +38,18 @@ def test_suber():
 
         sdb.put(keys=keys, val=sue)
         actual = sdb.get(keys=keys)
-        assert actual == sue.encode("utf-8")
+        assert actual == sue
 
         kip = "Hey gorgeous!"
         result = sdb.put(keys=keys, val=kip)
         assert not result
         actual = sdb.get(keys=keys)
-        assert actual == sue.encode("utf-8")
+        assert actual == sue
 
         result = sdb.pin(keys=keys, val=kip)
         assert result
         actual = sdb.get(keys=keys)
-        assert actual == kip.encode("utf-8")
+        assert actual == kip
 
         # test with keys as string not tuple
         keys = "keystr"
@@ -58,7 +58,7 @@ def test_suber():
 
         sdb.put(keys=keys, val=bob)
         actual = sdb.get(keys=keys)
-        assert actual == bob.encode("utf-8")
+        assert actual == bob
 
         sdb.rem(keys)
 
@@ -86,7 +86,7 @@ def test_suber():
         sdb.put(keys=("a","3"), val=y)
         sdb.put(keys=("a","4"), val=z)
 
-        items = [(keys, data.decode("utf-8")) for keys, data in sdb.getItemIter()]
+        items = [(keys, data) for keys, data in sdb.getItemIter()]
         assert items == [(('a', '1'), w),
                         (('a', '2'), x),
                         (('a', '3'), y),
@@ -296,4 +296,4 @@ def test_matter_suber():
 
 
 if __name__ == "__main__":
-    test_matter_suber()
+    test_suber()

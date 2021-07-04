@@ -251,7 +251,7 @@ def test_keeper():
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "1700"
     assert keeper.DirMode == dirMode
 
-    assert isinstance(keeper.gbls, lmdb._Database)
+    assert isinstance(keeper.gbls.sdb, lmdb._Database)
     assert isinstance(keeper.pris.sdb, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
@@ -271,7 +271,7 @@ def test_keeper():
     assert os.path.exists(keeper.path)
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "0775"
 
-    assert isinstance(keeper.gbls, lmdb._Database)
+    assert isinstance(keeper.gbls.sdb, lmdb._Database)
     assert isinstance(keeper.pris.sdb, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
@@ -295,7 +295,7 @@ def test_keeper():
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
 
-    assert isinstance(keeper.gbls, lmdb._Database)
+    assert isinstance(keeper.gbls.sdb, lmdb._Database)
     assert isinstance(keeper.pris.sdb, lmdb._Database)
     assert isinstance(keeper.sits, lmdb._Database)
 
@@ -314,76 +314,74 @@ def test_keeper():
         assert keeper.env.path() == keeper.path
         assert os.path.exists(keeper.path)
 
-        assert isinstance(keeper.gbls, lmdb._Database)
+        assert isinstance(keeper.gbls.sdb, lmdb._Database)
         assert isinstance(keeper.pris.sdb, lmdb._Database)
         assert isinstance(keeper.sits, lmdb._Database)
 
-        salta = b'0AZxWJGkCkpDcHuVG4GM1KVw'
-        saltb = b'0AHuVG4GM1KVwZxWJGkCkpDc'
+        salta = '0AZxWJGkCkpDcHuVG4GM1KVw'
+        saltb = '0AHuVG4GM1KVwZxWJGkCkpDc'
         pria = b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
         prib = b'AJ2cZeCy4MaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6hA'
         puba = b'DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
         pubb = b'DoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-QiVgbRbyAIZG'
         pubc = b'DAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4G'
-        pubd = b'BzE2yPgBXiP6h_J2cZeCy4MaOa6eOCJQcgEozYb1GgV9'
-        pube = b'BJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4MaOa6eOC'
+        pubd = 'BzE2yPgBXiP6h_J2cZeCy4MaOa6eOCJQcgEozYb1GgV9'
+        pube = 'BJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4MaOa6eOC'
         prea = b'EWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
         preb = b'EQPYGGwTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gz'
 
 
-        #  test .gbls sub db methods
+        #  test .gbls Suber  methods
         key = b'aeid'
-
-        assert keeper.getGbl(key) == None
-        assert keeper.delGbl(key) == False
-        assert keeper.putGbl(key, val=pubd) == True
-        assert keeper.getGbl(key) == pubd
-        assert keeper.putGbl(key, val=pube) == False
-        assert keeper.getGbl(key) == pubd
-        assert keeper.setGbl(key, val=pube) == True
-        assert keeper.getGbl(key) == pube
-        assert keeper.delGbl(key) == True
-        assert keeper.getGbl(key) == None
+        assert keeper.gbls.get(key) == None
+        assert keeper.gbls.rem(key) == False
+        assert keeper.gbls.put(key, val=pubd) == True
+        assert keeper.gbls.get(key) == pubd
+        assert keeper.gbls.put(key, val=pube) == False
+        assert keeper.gbls.get(key) == pubd
+        assert keeper.gbls.pin(key, val=pube) == True
+        assert keeper.gbls.get(key) == pube
+        assert keeper.gbls.rem(key) == True
+        assert keeper.gbls.get(key) == None
 
 
         key = b'pidx'
-        pidxa = b'%x' % 0  # "{:x}".format(pidx).encode("utf-8")
-        pidxb = b'%x' % 1  # "{:x}".format(pidx).encode("utf-8"
-        assert keeper.getGbl(key) == None
-        assert keeper.delGbl(key) == False
-        assert keeper.putGbl(key, val=pidxa) == True
-        assert keeper.getGbl(key) == pidxa
-        assert keeper.putGbl(key, val=pidxb) == False
-        assert keeper.getGbl(key) == pidxa
-        assert keeper.setGbl(key, val=pidxb) == True
-        assert keeper.getGbl(key) == pidxb
-        assert keeper.delGbl(key) == True
-        assert keeper.getGbl(key) == None
+        pidxa = '%x' % 0  # "{:x}".format(pidx).encode("utf-8")
+        pidxb = '%x' % 1  # "{:x}".format(pidx).encode("utf-8"
+        assert keeper.gbls.get(key) == None
+        assert keeper.gbls.rem(key) == False
+        assert keeper.gbls.put(key, val=pidxa) == True
+        assert keeper.gbls.get(key) == pidxa
+        assert keeper.gbls.put(key, val=pidxb) == False
+        assert keeper.gbls.get(key) == pidxa
+        assert keeper.gbls.pin(key, val=pidxb) == True
+        assert keeper.gbls.get(key) == pidxb
+        assert keeper.gbls.rem(key) == True
+        assert keeper.gbls.get(key) == None
 
         key = b'salt'
-        assert keeper.getGbl(key) == None
-        assert keeper.delGbl(key) == False
-        assert keeper.putGbl(key, val=salta) == True
-        assert keeper.getGbl(key) == salta
-        assert keeper.putGbl(key, val=saltb) == False
-        assert keeper.getGbl(key) == salta
-        assert keeper.setGbl(key, val=saltb) == True
-        assert keeper.getGbl(key) == saltb
-        assert keeper.delGbl(key) == True
-        assert keeper.getGbl(key) == None
+        assert keeper.gbls.get(key) == None
+        assert keeper.gbls.rem(key) == False
+        assert keeper.gbls.put(key, val=salta) == True
+        assert keeper.gbls.get(key) == salta
+        assert keeper.gbls.put(key, val=saltb) == False
+        assert keeper.gbls.get(key) == salta
+        assert keeper.gbls.pin(key, val=saltb) == True
+        assert keeper.gbls.get(key) == saltb
+        assert keeper.gbls.rem(key) == True
+        assert keeper.gbls.get(key) == None
 
         key = b'tier'
-        assert keeper.getGbl(key) == None
-        assert keeper.delGbl(key) == False
-        assert keeper.putGbl(key, val=coring.Tiers.low) == True
-        assert keeper.getGbl(key) == coring.Tiers.low.encode("utf-8")
-        assert keeper.putGbl(key, val=coring.Tiers.med) == False
-        assert keeper.getGbl(key) == coring.Tiers.low.encode("utf-8")
-        assert keeper.setGbl(key, val=coring.Tiers.med) == True
-        assert keeper.getGbl(key) == coring.Tiers.med.encode("utf-8")
-        assert keeper.delGbl(key) == True
-        assert keeper.getGbl(key) == None
-
+        assert keeper.gbls.get(key) == None
+        assert keeper.gbls.rem(key) == False
+        assert keeper.gbls.put(key, val=coring.Tiers.low) == True
+        assert keeper.gbls.get(key) == coring.Tiers.low
+        assert keeper.gbls.put(key, val=coring.Tiers.med) == False
+        assert keeper.gbls.get(key) == coring.Tiers.low
+        assert keeper.gbls.pin(key, val=coring.Tiers.med) == True
+        assert keeper.gbls.get(key) == coring.Tiers.med
+        assert keeper.gbls.rem(key) == True
+        assert keeper.gbls.get(key) == None
 
         #  test .pris sub db methods
         key = puba
@@ -391,25 +389,15 @@ def test_keeper():
         assert signera.qb64b == pria
         signerb = coring.Signer(qb64b=prib)
         assert signerb.qb64b == prib
-        # assert keeper.getPri(key) == None
         assert keeper.pris.get(key) == None
-        # assert keeper.delPri(key) == False
         assert keeper.pris.rem(key) == False
-        # assert keeper.putPri(key, val=pria) == True
         assert keeper.pris.put(key, val=signera) == True
-        # assert keeper.getPri(key) == pria
         assert keeper.pris.get(key).qb64b == pria
-        # assert keeper.putPri(key, val=prib) == False
         assert keeper.pris.put(key, val=signerb) == False
-        # assert keeper.getPri(key) == pria
         assert keeper.pris.get(key).qb64b == pria
-        # assert keeper.setPri(key, val=prib) == True
         assert keeper.pris.pin(key, val=signerb) == True
-        # assert keeper.getPri(key) == prib
         assert keeper.pris.get(key).qb64b == prib
-        # assert keeper.delPri(key) == True
         assert keeper.pris.rem(key) == True
-        # assert keeper.getPri(key) == None
         assert keeper.pris.get(key) == None
 
         #  test .pres sub db methods
@@ -430,7 +418,7 @@ def test_keeper():
         prma = json.dumps(
                     dict(pidx=0,
                          algo='salty',
-                         salt=salta.decode("utf-8"),
+                         salt=salta,
                          stem='',
                          tier='low',
                     )).encode("utf-8")
