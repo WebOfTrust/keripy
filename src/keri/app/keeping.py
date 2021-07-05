@@ -97,6 +97,18 @@ class PrePrm:
     def __iter__(self):
         return iter(asdict(self))
 
+
+@dataclass()
+class PubSet:
+    """
+    Prefix's public key set (list) at rotation index ridx
+    """
+    pubs: list = field(default_factory=list)  # list qb64 public keys.
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
 def riKey(pre, ri):
     """
     Returns bytes DB key from concatenation with '.' of qualified Base64 prefix
@@ -259,133 +271,19 @@ class Keeper(dbing.LMDBer):
 
         self.gbls = subing.Suber(db=self, subkey='gbls.')
         self.pris = subing.SignerSuber(db=self, subkey='pris.')
-
-        # self.pres = self.env.open_db(key=b'pres.')
         self.pres = subing.MatterSuber(db=self,
                                        subkey='pres.',
                                        klas=coring.Prefixer)
-
         self.prms = koming.Komer(db=self,
                                  subkey='prms.',
                                  schema=PrePrm,)  # New Prefix Parameters
-        # self.sits = self.env.open_db(key=b'sits.')
         self.sits = koming.Komer(db=self,
                                  subkey='sits.',
                                  schema=PreSit,)  # Prefix Situation
-        self.pubs = self.env.open_db(key=b'pubs.')
-
+        self.pubs = koming.Komer(db=self,
+                                 subkey='pubs.',
+                                 schema=PubSet,)  # public key set at pre.ridx
         return self.env
-
-
-    # .pres methods
-    def putPre(self, key, val):
-        """
-        Write fully qualified prefix as val to key
-        key is fully qualified first public key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.pres, key, val)
-
-
-    def setPre(self, key, val):
-        """
-        Write fully qualified prefix as val to key
-        key is fully qualified first public key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.pres, key, val)
-
-
-    def getPre(self, key):
-        """
-        Return prefix val at key
-        key is fully qualified first public key
-        Returns None if no entry at key
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.pres, key)
-
-
-    def delPre(self, key):
-        """
-        Deletes value at key.
-        val is fully qualified private key
-        key is fully qualified public key
-        Returns True If key exists in database Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.pres, key)
-
-
-    # .pubs methods
-    def putPubs(self, key, val):
-        """
-        Uses riKey(pre, ri)
-        Write serialized list of public keys as val to key for replay
-        key is fully qualified prefix
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.pubs, key, val)
-
-
-    def setPubs(self, key, val):
-        """
-        Uses riKey(pre, ri)
-        Write serialized serialized list of public keys as val to key for replay
-        key is fully qualified prefix
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.pubs, key, val)
-
-
-    def getPubs(self, key):
-        """
-        Uses riKey(pre, ri)
-        Return serialized list of public keys at key for replay
-        key is fully qualified prefix
-        Returns None if no entry at key
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.pubs, key)
-
-
-    def delPubs(self, key):
-        """
-        Uses riKey(pre, ri)
-        Deletes value at key.
-        key is fully qualified prefix
-        val is serialized parameter dict at key
-        Returns True If key exists in database Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.pubs, key)
-
 
 
 class KeeperDoer(doing.Doer):
@@ -918,10 +816,6 @@ class Manager:
                                    ridx=ridx+1, kidx=kidx+len(icodes), st=nst, dt=dt))
 
         pre = verfers[0].qb64b
-        #result = self.keeper.putPre(key=pre, val=pre)
-        #if not result:
-            #raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
-
         if not self.keeper.pres.put(pre, val=coring.Prefixer(qb64=pre)):
             raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
@@ -936,15 +830,13 @@ class Manager:
         for signer in isigners:  # store secrets (private key val keyed by public key)
             self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-        self.keeper.putPubs(key=riKey(pre, ri=ridx),
-                            val=json.dumps(ps.new.pubs).encode("utf-8"))
+        self.keeper.pubs.put(riKey(pre, ri=ridx), data=PubSet(pubs=ps.new.pubs))
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         # store publics keys for lookup of private key for replay
-        self.keeper.putPubs(key=riKey(pre, ri=ridx+1),
-                            val=json.dumps(ps.nxt.pubs).encode("utf-8"))
+        self.keeper.pubs.put(riKey(pre, ri=ridx+1), data=PubSet(pubs=ps.nxt.pubs))
 
         return (verfers, digers, cst, nst)
 
@@ -964,16 +856,8 @@ class Manager:
         if old == new:
             return
 
-        #rawoldpre = self.keeper.getPre(key=old)
-        #if rawoldpre is None:
-            #raise ValueError("Nonexistent old pre={}, nothing to assign.".format(old))
-
         if self.keeper.pres.get(old) is None:
             raise ValueError("Nonexistent old pre={}, nothing to assign.".format(old))
-
-        #rawnewpre = self.keeper.getPre(key=new)
-        #if rawnewpre is not None:
-            #raise ValueError("Preexistent new pre={} may not clobber.".format(new))
 
         if self.keeper.pres.get(new) is not None:
             raise ValueError("Preexistent new pre={} may not clobber.".format(new))
@@ -1002,24 +886,19 @@ class Manager:
 
         # move .pubs entries if any
         i = 0
-        while (pl := self.keeper.getPubs(key=riKey(old, i))):
-            if not self.keeper.putPubs(key=riKey(new, i), val=pl):
-                raise ValueError("Failed moving pubs at pre={} ri={} to new pre={}".format())
+        while (pl := self.keeper.pubs.get(riKey(old, i))):
+            if not self.keeper.pubs.put(riKey(new, i), data=pl):
+                raise ValueError("Failed moving pubs at pre={} ri={} to new"
+                                 " pre={}".format(old, i, new))
             i += 1
 
         # assign old
         if not self.keeper.pres.pin(old, val=coring.Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={} to old pre={}.".format(new, old))
-        #if not self.keeper.setPre(key=old, val=new):
-            #raise ValueError("Failed assiging new pre={} to old pre={}.".format(new, old))
 
         # make new so that if move again we reserve each one
         if not self.keeper.pres.put(new, val=coring.Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={}.".format(new))
-        #if not self.keeper.putPre(key=new, val=new):
-            #raise ValueError("Failed assiging new pre={}.".format(new))
-
-
 
 
     def rotate(self, pre, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
@@ -1114,8 +993,7 @@ class Manager:
             self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         # store public keys for lookup of private keys by public key for replay
-        self.keeper.putPubs(key=riKey(pre, ri=ps.nxt.ridx),
-                            val=json.dumps(ps.nxt.pubs).encode("utf-8"))
+        self.keeper.pubs.put(riKey(pre, ri=ps.nxt.ridx), data=PubSet(pubs=ps.nxt.pubs))
 
         if erase:
             for pub in old.pubs:  # remove old prikeys
@@ -1279,10 +1157,6 @@ class Manager:
                 if not self.keeper.pres.put(pre, val=coring.Prefixer(qb64=pre)):
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-                #result = self.keeper.putPre(key=pre, val=pre)
-                #if not result:
-                    #raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
-
                 if not self.keeper.prms.put(pre, data=pp):
                     raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
@@ -1292,8 +1166,9 @@ class Manager:
             for signer in csigners:  # store secrets (private key val keyed by public key)
                 self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-            self.keeper.putPubs(key=riKey(pre, ri=ridx),
-                                val=json.dumps([signer.verfer.qb64 for signer in csigners]).encode("utf-8"))
+            self.keeper.pubs.put(riKey(pre, ri=ridx),
+                                data=PubSet(pubs=[signer.verfer.qb64
+                                        for signer in csigners]))
 
             odt = dt
             dt = helping.nowIso8601()
@@ -1317,8 +1192,9 @@ class Manager:
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-        self.keeper.putPubs(key=riKey(pre, ri=ridx),
-                            val=json.dumps([signer.verfer.qb64 for signer in nsigners]).encode("utf-8"))
+        self.keeper.pubs.put(riKey(pre, ri=ridx),
+                             data=PubSet(pubs=[signer.verfer.qb64
+                                               for signer in nsigners]))
 
         csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
         cst = coring.Tholder(sith=csith).sith
@@ -1362,39 +1238,33 @@ class Manager:
             code is str derivation code for digers. Default is MtrDex.Blake3_256
 
         """
-        if ridx - 1 >= 0:  # get old pubs if any
-            oldpubs = self.keeper.getPubs(key=riKey(pre, ridx-1))
-            if oldpubs is not None:
-                oldpubs = json.loads(bytes(oldpubs).decode("utf-8"))
-        else:
-            oldpubs = None
+        oldps = None
+        if ridx - 1 >= 0:
+            oldps = self.keeper.pubs.get(riKey(pre, ridx-1))
 
-        newpubs = self.keeper.getPubs(key=riKey(pre, ridx))
-        if newpubs is not None:
-            newpubs = json.loads(bytes(newpubs).decode("utf-8"))
+        newps = self.keeper.pubs.get(riKey(pre, ridx))
+        nxtps = self.keeper.pubs.get(riKey(pre, ridx+1))
 
-        nxtpubs = self.keeper.getPubs(key=riKey(pre, ridx+1))
-        if nxtpubs is not None:
-            nxtpubs = json.loads(bytes(nxtpubs).decode("utf-8"))
-
-        if not (newpubs and nxtpubs):  # replay finished
-            # raises IndexError to indicate replay at ridx past end but valid
-            # next keys at ridx
-            # raise ValueError to indicate replay at ridx is past end of replay
-            # and no valid next keys at ridx
-            if self.keeper.getPubs(key=riKey(pre, ridx)):  # past replay but next pubs
+        if not (newps and nxtps):  # replay finished  #not (newpubs and nxtpubs)
+            if self.keeper.pubs.get(riKey(pre, ridx)):  # past replay but next pubs
+                # raises IndexError to indicate replay at ridx past end but valid
+                # next keys at ridx
                 raise IndexError("Invalid replay attempt at ridx={} for pubs of "
                                  "pre={}.".format(ridx, pre))
             else:  # past replay at ridx and no next keys at ridx
+                # raise ValueError to indicate replay at ridx is past end of replay
+                # and no valid next keys at ridx
                 raise ValueError("Invalid replay at ridx={} missing pubs for "
                                  "pre={}.".format(ridx, pre))
 
-        if erase and oldpubs:
-            for pub in oldpubs:  # remove old prikeys
+        if erase and oldps:
+            for pub in oldps.pubs:  # remove old prikeys
                 self.keeper.pris.rem(pub)
 
-        verfers = [coring.Verfer(qb64=pub) for pub in newpubs]
-        digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtpubs]
+        # verfers = [coring.Verfer(qb64=pub) for pub in newpubs]
+        verfers = [coring.Verfer(qb64=pub) for pub in newps.pubs]
+        # digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtpubs]
+        digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtps.pubs]
 
         csith = "{:x}".format(max(1, math.ceil(len(verfers) / 2)))
         cst = coring.Tholder(sith=csith).sith

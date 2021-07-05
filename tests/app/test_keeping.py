@@ -19,9 +19,9 @@ from keri.core import coring
 from keri.app import keeping
 
 
-def test_publot_pubsit():
+def test_dataclasses():
     """
-    test key set tracking and creation parameters
+    test key set tracking and creation dataclasses
     """
     pre = b'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
     pub = b'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'
@@ -148,6 +148,13 @@ def test_publot_pubsit():
     assert ps.new.kidx == 3
     assert ps.nxt.ridx == 2
     assert ps.nxt.kidx == 6
+
+    pt = keeping.PubSet(pubs=[pre, pub])
+    assert pt.pubs == [pre, pub]
+    assert asdict(pt) == {"pubs": [pre, pub],}
+    ptd = helping.datify(keeping.PubSet, {"pubs": [pre, pub],})
+    assert isinstance(ptd, keeping.PubSet)
+
 
     """End Test"""
 
@@ -493,22 +500,19 @@ def test_keeper():
         key0 = keeping.riKey(prea, 0)
         pubs1 = [puba.decode("utf-8"), pubb.decode("utf-8")]
         pubs2 = [pubc.decode("utf-8")]
-        spubs1 = json.dumps(pubs1).encode("utf-8")
-        assert spubs1 == (b'["DGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4", '
-                          b'"DoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-QiVgbRbyAIZG"]')
-        spubs2 = json.dumps(pubs2).encode("utf-8")
-        assert spubs2 == b'["DAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4G"]'
-        assert keeper.getPubs(key0) == None
-        assert keeper.delPubs(key0) == False
-        assert keeper.putPubs(key0, val=spubs1) == True
-        assert keeper.getPubs(key0) == spubs1
-        assert keeper.putPubs(key0, val=spubs2) == False
-        assert keeper.getPubs(key0) == spubs1
-        assert keeper.setPubs(key0, val=spubs2) == True
-        assert keeper.getPubs(key0) == spubs2
-        assert keeper.delPubs(key0) == True
-        assert keeper.getPubs(key0) == None
+        pt1 = keeping.PubSet(pubs=pubs1)
+        pt2 = keeping.PubSet(pubs=pubs2)
 
+        assert keeper.pubs.get(key0) == None
+        assert keeper.pubs.rem(key0) == False
+        assert keeper.pubs.put(key0, data=pt1) == True
+        assert keeper.pubs.get(key0) == pt1
+        assert keeper.pubs.put(key0, data=pt2) == False
+        assert keeper.pubs.get(key0) == pt1
+        assert keeper.pubs.pin(key0, data=pt2) == True
+        assert keeper.pubs.get(key0) == pt2
+        assert keeper.pubs.rem(key0) == True
+        assert keeper.pubs.get(key0) == None
 
     assert not os.path.exists(keeper.path)
 
@@ -742,11 +746,13 @@ def test_manager():
         assert keys == ps.new.pubs
 
         # test .pubs db
-        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
-        assert pl == ps.new.pubs
+        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
+        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        assert pl.pubs == ps.new.pubs
 
-        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
-        assert pl == ps.nxt.pubs
+        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
+        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        assert pl.pubs == ps.nxt.pubs
 
         digs = [diger.qb64 for diger in  digers]
         assert digs == ['E8UYvbKn7KYw9e4F2DR-iduGtdA1o16ePAYjpyCYSeYo']
@@ -756,11 +762,13 @@ def test_manager():
         manager.move(old=oldspre, new=spre)
 
         # test .pubs db after move
-        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
-        assert pl == ps.new.pubs
+        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
+        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        assert pl.pubs == ps.new.pubs
 
-        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
-        assert pl == ps.nxt.pubs
+        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
+        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        assert pl.pubs == ps.nxt.pubs
 
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs)
         for siger in psigers:
@@ -859,11 +867,13 @@ def test_manager():
             assert not manager.keeper.pris.get(pub.encode("utf-8"))
 
         # test .pubs db
-        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
-        assert pl == ps.new.pubs
+        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
+        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        assert pl.pubs == ps.new.pubs
 
-        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
-        assert pl == ps.nxt.pubs
+        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
+        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        assert pl.pubs == ps.nxt.pubs
 
         # salty algorithm rotate to null
         verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"), count=0)
@@ -1102,11 +1112,13 @@ def test_manager():
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i))).decode("utf-8"))
-            assert pl == pubs
+            # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i))).decode("utf-8"))
+            pl = manager.keeper.pubs.get(keeping.riKey(ipre, i))
+            assert pl.pubs == pubs
 
         #  nxt pubs
-        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i+1))).decode("utf-8"))
+        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i+1))).decode("utf-8"))
+        pl = manager.keeper.pubs.get(keeping.riKey(ipre, i+1))
         assert pl
 
         assert [diger.qb64 for diger in digers] == ['Ewt_7B0gfSE7DnMtmNEHiy8BGPVw5at2-e_JgJ1jAfEc']
@@ -1201,11 +1213,13 @@ def test_manager():
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i))).decode("utf-8"))
-            assert pl == pubs
+            # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i))).decode("utf-8"))
+            pl = manager.keeper.pubs.get(keeping.riKey(ipre, i))
+            assert pl.pubs == pubs
 
         #  nxt pubs
-        pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i+1))).decode("utf-8"))
+        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i+1))).decode("utf-8"))
+        pl = manager.keeper.pubs.get(keeping.riKey(ipre, i+1))
         assert pl
 
         assert [diger.qb64 for diger in digers] == ['E7Ch-T3dCZZ_i0u1ACi_Yv1lyyAMoQCT5ar81eUGoPYY',
