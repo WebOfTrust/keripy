@@ -29,7 +29,7 @@ class Komer:
     Sep = '.'  # separator for combining key iterables
 
     def __init__(self,
-                 db: Type[dbing.LMDBer], *,
+                 db: dbing.LMDBer, *,
                  subkey: str = 'docs.',
                  schema: Type[dataclass],
                  kind: str = coring.Serials.json):
@@ -68,7 +68,7 @@ class Komer:
                               val=self.serializer(data)))
 
 
-    def pin(self, keys: Union[str, Iterable], data: Union[bytes, str]):
+    def pin(self, keys: Union[str, Iterable], data: dataclass):
         """
         Pins (sets) val at key made from keys. Overwrites.
 
@@ -214,17 +214,17 @@ class Komer:
     def __serializeJSON(val):
         if val is None:
             return
-        return json.dumps(asdict(val), separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        return json.dumps(helping.dictify(val), separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
     @staticmethod
     def __serializeMGPK(val):
         if val is None:
             return
-        return msgpack.dumps(asdict(val))
+        return msgpack.dumps(helping.dictify(val))
 
     @staticmethod
     def __serializeCBOR(val):
         if val is None:
             return
-        return cbor2.dumps(asdict(val))
+        return cbor2.dumps(helping.dictify(val))
 

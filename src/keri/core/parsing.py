@@ -110,7 +110,7 @@ class Parser:
         self.tvy = tvy
 
     @staticmethod
-    def _sniff(ims):
+    def sniff(ims):
         """
         Returns status string of cold start of stream ims bytearray by looking
         at first triplet of first byte to determin if message or counter code
@@ -151,7 +151,7 @@ class Parser:
 
 
     @staticmethod
-    def _extract(ims, klas, cold=Colds.txt):
+    def extract(ims, klas, cold=Colds.txt):
         """
         Extract and return instance of klas from input message stream, ims, given
         stream state, cold, is txt or bny. Inits klas from ims using qb64b or
@@ -538,7 +538,7 @@ class Parser:
         while not ims:
             yield
 
-        cold = self._sniff(ims)  # check for spurious counters at front of stream
+        cold = self.sniff(ims)  # check for spurious counters at front of stream
         if cold in (Colds.txt, Colds.bny):  # not message error out to flush stream
             # replace with pipelining here once CESR message format supported.
             raise kering.ColdStartError("Expecting message counter tritet={}"
@@ -572,7 +572,7 @@ class Parser:
             # extract attachments must start with counter so know if txt or bny.
             while not ims:
                 yield
-            cold = self._sniff(ims)  # expect counter at front of attachments
+            cold = self.sniff(ims)  # expect counter at front of attachments
             if cold != Colds.msg:  # not new message so process attachments
                 ctr = yield from self._extractor(ims=ims, klas=Counter, cold=cold)
                 if ctr.code == CtrDex.AttachedMaterialQuadlets:  # pipeline ctr?
@@ -766,7 +766,7 @@ class Parser:
                         # group may switch stream state txt or bny
                         if not ims:  # end of frame
                             break
-                        cold = self._sniff(ims)
+                        cold = self.sniff(ims)
                         if cold == Colds.msg:  # new message so attachments done
                             break  # finished attachments since new message
                     else:  # process until next message
@@ -774,7 +774,7 @@ class Parser:
                         # group may switch stream state txt or bny
                         while not ims:
                             yield  # no frame so must wait for next message
-                        cold = self._sniff(ims)  # ctr or msg
+                        cold = self.sniff(ims)  # ctr or msg
                         if cold == Colds.msg:  # new message
                             break  # finished attachments since new message
 
