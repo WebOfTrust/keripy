@@ -1261,9 +1261,7 @@ class Manager:
             for pub in oldps.pubs:  # remove old prikeys
                 self.keeper.pris.rem(pub)
 
-        # verfers = [coring.Verfer(qb64=pub) for pub in newpubs]
         verfers = [coring.Verfer(qb64=pub) for pub in newps.pubs]
-        # digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtpubs]
         digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtps.pubs]
 
         csith = "{:x}".format(max(1, math.ceil(len(verfers) / 2)))
