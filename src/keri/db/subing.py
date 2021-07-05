@@ -80,7 +80,7 @@ class Suber:
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-            data (bytes):
+            data (str):  decoded as utf-8
             None if no entry at keys
 
         Usage:
@@ -91,7 +91,7 @@ class Suber:
 
         """
         data = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return bytes(data) if data else None
+        return bytes(data).decode("utf=8") if data else None
 
 
     def rem(self, keys: Union[str, Iterable]):
@@ -122,7 +122,7 @@ class Suber:
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
             keys = tuple(key.decode("utf-8").split('.'))
-            yield (keys, bytes(val))
+            yield (keys, bytes(val).decode("utf-8"))
 
 
     def _tokey(self, keys: Union[str, Iterable]):
@@ -248,8 +248,9 @@ class SerderSuber(Suber):
 
 class MatterSuber(Suber):
     """
-    Sub class of Suber where data is serialized Matter subclass instance
-    Automatically serializes and deserializes using Matter methods
+    Sub class of Suber where data is Matter subclass instance .qb64b property
+    which is a fully qualified serialization
+    Automatically serializes and deserializes from qb64b to/from Matter instances
 
     """
     Sep = '.'  # separator for combining key iterables
@@ -350,3 +351,73 @@ class MatterSuber(Suber):
             keys = tuple(key.decode("utf-8").split('.'))
             yield (keys, self.klas(qb64b=bytes(val)))
 
+
+
+
+class SignerSuber(MatterSuber):
+    """
+    Sub class of MatterSuber where data is Signer subclass instance .qb64b propery
+    which is a fully qualified serialization and uses the key which is the qb64b
+    of the signer.verfer to get the transferable property of the verfer
+    Automatically serializes and deserializes from qb64b to/from Signer instances
+
+    """
+    Sep = '.'  # separator for combining key iterables
+
+    def __init__(self, *pa, klas: Type[coring.Signer] = coring.Signer, **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            klas (Type[coring.Matter]): Class reference to subclass of Matter
+        """
+        if not (issubclass(klas, coring.Signer)):
+            raise ValueError("Invalid klas type={}, expected {}."
+                             "".format(klas, coring.Signer))
+        super(SignerSuber, self).__init__(*pa, **kwa)
+        self.klas = klas
+
+
+    def get(self, keys: Union[str, Iterable]):
+        """
+        Gets Serder at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            val (Matter):
+            None if no entry at keys
+
+        Usage:
+            Use walrus operator to catch and raise missing entry
+            if (srder := mydb.get(keys)) is None:
+                raise ExceptionHere
+            use srdr here
+
+        """
+        key = self._tokey(keys)
+        val = self.db.getVal(db=self.sdb, key=key)
+        verfer = coring.Verfer(qb64b=key)
+        return (self.klas(qb64b=bytes(val), transferable=verfer.transferable)
+                if val else None)
+
+
+    def getItemIter(self):
+        """
+        Return iterator over the all the items in subdb
+
+        Returns:
+            iterator: of tuples of keys tuple and val Serder for
+            each entry in db
+
+        Example:
+            if key in database is "a.b" and val is serialization of dataclass
+               with attributes x and y then returns
+               (("a","b"), dataclass(x=1,y=2))
+        """
+        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            keys = tuple(key.decode("utf-8").split('.'))
+            verfer = coring.Verfer(qb64b=key)
+            yield (keys, self.klas(qb64b=bytes(val),
+                                   transferable=verfer.transferable))

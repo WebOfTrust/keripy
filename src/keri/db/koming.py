@@ -151,7 +151,7 @@ class Komer:
             yield (keys, data)
 
 
-    def _tokey(self, keys: Union[str, Iterable]):
+    def _tokey(self, keys: Union[str, bytes, Iterable]):
         """
         Converts key to key str with proper separators and returns key bytes.
         If key is already str then returns. Else If key is iterable (non-str)
@@ -163,7 +163,9 @@ class Komer:
         """
         if hasattr(keys, "encode"):  # str
             return keys.encode("utf-8")
-        return (self.Sep.join(keys).encode("utf-8"))
+        elif hasattr(keys, "decode"): # bytes
+            return keys
+        return (self.Sep.join(keys).encode("utf-8"))  # iterable
 
 
     def _serializer(self, kind):

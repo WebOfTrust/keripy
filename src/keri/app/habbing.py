@@ -113,10 +113,12 @@ class Habitat:
             ex = self.db.habs.get(keys=self.name)
             # found existing habitat, otherwise leave __init__ to incept a new one.
             if ex is not None:
-                prms = json.loads(bytes(ks.getPrm(key=ex.prefix)).decode("utf-8"))
-                salt = prms['salt']
-                tier = prms['tier']
-                pidx = prms['pidx']
+                # prms = json.loads(bytes(ks.getPrm(key=ex.prefix)).decode("utf-8"))
+                prms = ks.prms.get(ex.prefix)
+                salt = prms.salt  # prms['salt']
+                tier = prms.tier  # prms['tier']
+                pidx = prms.pidx  # prms['pidx']
+                #  need to add support for algo
                 self.pre = ex.prefix
                 existing = True
 
@@ -228,8 +230,10 @@ class Habitat:
         self.psr = parsing.Parser(framed=True, kvy=self.kvy)
 
         # ridx for replay may be an issue when loading from existing
-        sit = json.loads(bytes(self.ks.getSit(key=self.pre)).decode("utf-8"))
-        self.ridx = helping.datify(keeping.PubLot, sit['new']).ridx
+        # sit = json.loads(bytes(self.ks.getSit(key=self.pre)).decode("utf-8"))
+        sit = self.ks.sits.get(self.pre)
+        # self.ridx = helping.datify(keeping.PubLot, sit['new']).ridx
+        self.ridx =sit.new.ridx
 
 
     def rotate(self, sith=None, count=None, erase=None,

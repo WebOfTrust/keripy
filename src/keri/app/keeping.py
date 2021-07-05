@@ -36,7 +36,7 @@ from hio.base import doing
 from .. import kering
 from ..help import helping
 from ..core import coring
-from ..db import dbing
+from ..db import dbing, subing, koming
 
 
 Algoage = namedtuple("Algoage", 'randy salty')
@@ -97,6 +97,18 @@ class PrePrm:
     def __iter__(self):
         return iter(asdict(self))
 
+
+@dataclass()
+class PubSet:
+    """
+    Prefix's public key set (list) at rotation index ridx
+    """
+    pubs: list = field(default_factory=list)  # list qb64 public keys.
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
 def riKey(pre, ri):
     """
     Returns bytes DB key from concatenation with '.' of qualified Base64 prefix
@@ -145,10 +157,17 @@ class Keeper(dbing.LMDBer):
             Key is parameter labels
             Value is parameter
                parameters:
-                   pidx is bytes hex index of next prefix key-pair sequence to be incepted
-                   salt is bytes root salt for generating key pairs
-                   tier is bytes default root security tier for root salt
-        .pris is named sub DB whose values are private keys
+                   aeid (bytes): fully qualified qb64 non-transferable identifier
+                       prefix for authentication via signing and asymmetric encryption
+                       of secrets using the associated (public, private) key pair.
+                       Secrets include both salts and private keys for all key sets
+                       in keeper. Defaults to empty which means no authentication
+                       or encryption of key sets.
+                   pidx (bytes): hex index of next prefix key-pair sequence to be incepted
+                   salt (bytes): root salt for generating key pairs
+                   tier (bytes): default root security tier for root salt
+        .pris is named sub DB whose keys are public key from key pair and values
+            are private keys from key pair
             Key is public key (fully qualified qb64)
             Value is private key (fully qualified qb64)
         .pres is named sub DB whose values are prefixes or first public keys
@@ -173,10 +192,11 @@ class Keeper(dbing.LMDBer):
                   nxt: { pubs: ridx:, kidx:, dt:}
                 }
         .pubs is named sub DB whose values are serialized lists of public keys
-            Enables lookup of private key from public key for replay
+            Enables lookup of public keys from prefix and ridx for replay of
+            public keys by prefix in establishment event order.
             Key is prefix.ridx (rotation index as 32 char hex string)
                 use riKey(pre, ri)
-            Value is serialed list of fully qualified public keys that are the
+            Value is serialized list of fully qualified public keys that are the
                 current signing keys after the rotation given by rotation index
 
     Properties:
@@ -249,340 +269,21 @@ class Keeper(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.gbls = self.env.open_db(key=b'gbls.')
-        self.pris = self.env.open_db(key=b'pris.')
-        self.pres = self.env.open_db(key=b'pres.')
-        self.prms = self.env.open_db(key=b'prms.')
-        self.sits = self.env.open_db(key=b'sits.')
-        self.pubs = self.env.open_db(key=b'pubs.')
-
+        self.gbls = subing.Suber(db=self, subkey='gbls.')
+        self.pris = subing.SignerSuber(db=self, subkey='pris.')
+        self.pres = subing.MatterSuber(db=self,
+                                       subkey='pres.',
+                                       klas=coring.Prefixer)
+        self.prms = koming.Komer(db=self,
+                                 subkey='prms.',
+                                 schema=PrePrm,)  # New Prefix Parameters
+        self.sits = koming.Komer(db=self,
+                                 subkey='sits.',
+                                 schema=PreSit,)  # Prefix Situation
+        self.pubs = koming.Komer(db=self,
+                                 subkey='pubs.',
+                                 schema=PubSet,)  # public key set at pre.ridx
         return self.env
-
-
-    # .gbls methods
-    def putGbl(self, key, val):
-        """
-        Write parameter as val to key
-        key is parameter label
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-
-        b'%x' % pidx
-        "{:x}".format(pidx).encode("utf-8")
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.gbls, key, val)
-
-
-    def setGbl(self, key, val):
-        """
-        Write parameter as val to key
-        key is parameter label
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.gbls, key, val)
-
-
-    def getGbl(self, key):
-        """
-        Return parameter val at key label
-        key is fully qualified public key
-        Returns None if no entry at key
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.gbls, key)
-
-
-    def delGbl(self, key):
-        """
-        Deletes value at key.
-        val is fully qualified private key
-        key is fully qualified public key
-        Returns True If key exists in database Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.gbls, key)
-
-
-    # .pris methods
-    def putPri(self, key, val):
-        """
-        Write fully qualified private key as val to key
-        key is fully qualified public key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.pris, key, val)
-
-
-    def setPri(self, key, val):
-        """
-        Write fully qualified private key as val to key
-        key is fully qualified public key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.pris, key, val)
-
-
-    def getPri(self, key):
-        """
-        Return private key val at key
-        key is fully qualified public key
-        Returns None if no entry at key
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.pris, key)
-
-
-    def delPri(self, key):
-        """
-        Deletes value at key.
-        val is fully qualified private key
-        key is fully qualified public key
-        Returns True If key exists in database Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.pris, key)
-
-
-    # .pres methods
-    def putPre(self, key, val):
-        """
-        Write fully qualified prefix as val to key
-        key is fully qualified first public key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.pres, key, val)
-
-
-    def setPre(self, key, val):
-        """
-        Write fully qualified prefix as val to key
-        key is fully qualified first public key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.pres, key, val)
-
-
-    def getPre(self, key):
-        """
-        Return prefix val at key
-        key is fully qualified first public key
-        Returns None if no entry at key
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.pres, key)
-
-
-    def delPre(self, key):
-        """
-        Deletes value at key.
-        val is fully qualified private key
-        key is fully qualified public key
-        Returns True If key exists in database Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.pres, key)
-
-
-    # .prms methods
-    def putPrm(self, key, val):
-        """
-        Write serialized dict of PrePrm as val to key
-        key is fully qualified prefix
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.gbls, key, val)
-
-
-    def setPrm(self, key, val):
-        """
-        Write serialized dict of PrePrm as val to key
-        key is fully qualified prefix
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.gbls, key, val)
-
-
-    def getPrm(self, key):
-        """
-        Return serialized parameter dict at key
-        key is fully qualified prefix
-        Returns None if no entry at key
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.gbls, key)
-
-
-    def delPrm(self, key):
-        """
-        Deletes value at key.
-        val is fully qualified private key
-        key is fully qualified public key
-        Returns True If key exists in database Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.gbls, key)
-
-
-    # .sits methods
-    def putSit(self, key, val):
-        """
-        Write serialized dict of PreSit as val to key
-        key is fully qualified prefix
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.sits, key, val)
-
-
-    def setSit(self, key, val):
-        """
-        Write serialized parameter dict as val to key
-        key is fully qualified prefix
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.sits, key, val)
-
-
-    def getSit(self, key):
-        """
-        Return serialized parameter dict at key
-        key is fully qualified prefix
-        Returns None if no entry at key
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.sits, key)
-
-
-    def delSit(self, key):
-        """
-        Deletes value at key.
-        key is fully qualified prefix
-        val is serialized parameter dict at key
-        Returns True If key exists in database Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.sits, key)
-
-
-    # .pubs methods
-    def putPubs(self, key, val):
-        """
-        Uses riKey(pre, ri)
-        Write serialized list of public keys as val to key for replay
-        key is fully qualified prefix
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.putVal(self.pubs, key, val)
-
-
-    def setPubs(self, key, val):
-        """
-        Uses riKey(pre, ri)
-        Write serialized serialized list of public keys as val to key for replay
-        key is fully qualified prefix
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")  # convert str to bytes
-        return self.setVal(self.pubs, key, val)
-
-
-    def getPubs(self, key):
-        """
-        Uses riKey(pre, ri)
-        Return serialized list of public keys at key for replay
-        key is fully qualified prefix
-        Returns None if no entry at key
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.getVal(self.pubs, key)
-
-
-    def delPubs(self, key):
-        """
-        Uses riKey(pre, ri)
-        Deletes value at key.
-        key is fully qualified prefix
-        val is serialized parameter dict at key
-        Returns True If key exists in database Else False
-        """
-        if hasattr(key, "encode"):
-            key = key.encode("utf-8")  # convert str to bytes
-        return self.delVal(self.pubs, key)
-
 
 
 class KeeperDoer(doing.Doer):
@@ -948,43 +649,34 @@ class Manager:
         if not self.keeper.opened:
             raise kering.ClosedError("Attempt to setup closed Manager.keeper.")
 
-        raw = self.keeper.getGbl('aeid')  # qb64 of auth encrypt id
-        if raw is None:  # no entry in database so never before inited
+        if (aeid := self.keeper.gbls.get('aeid')) is None:
             aeid = self._aeid
-            self.keeper.putGbl('aeid', aeid)
-        else:
-            aeid = bytes(raw).decode("utf-8")
+            self.keeper.gbls.put('aeid', aeid)
 
-        raw = self.keeper.getGbl('pidx')  # prefix id of next prefix
-        if raw is None:  # no entry in database so never before inited
+        if (pidx := self.keeper.gbls.get('pidx')) is None:
             pidx = self._pidx
-            self.keeper.putGbl('pidx', b'%x' % pidx)
+            self.keeper.gbls.put('pidx', '%x' % pidx)  # convert to hex
         else:
-            pidx = int(bytes(raw), 16)
+            pidx = int(pidx, 16)
 
-        raw = self.keeper.getGbl('salt')  # default salt
-        if raw is None:  # no entry in database so never before inited
+        if (salt := self.keeper.gbls.get('salt')) is None:
             salt = self._salt
-            self.keeper.putGbl('salt', salt)
+            self.keeper.gbls.put('salt', salt)
             self._salt = ''  # don't keep around
-        else:
-            salt = bytes(raw).decode("utf-8")
 
-        raw = self.keeper.getGbl('tier')  # default tier
-        if raw is None:  # no entry in database so never before inited
+        if (tier := self.keeper.gbls.get('tier')) is None:
             tier = self._tier
-            self.keeper.putGbl('tier', tier)
-        else:
-            tier = bytes(raw).decode("utf-8")
+            self.keeper.gbls.put('tier', tier)
 
         return (aeid, pidx, salt, tier)
+
 
     def getAeid(self):
         """
         Returns: adid from .keeper. Assumes db initialized.
         aeid is qb64 auth encrypt id prefix
         """
-        return int(bytes(self.keeper.getGbl(b"aeid")), 16)
+        return self.keeper.gbls.get('aeid')
 
 
     def setAeid(self, aeid):
@@ -993,7 +685,7 @@ class Manager:
         aeid is qb64 auth encrypt id prefix
         Need to reencrypt all secrets when change aeid
         """
-        self.keeper.setGbl(b"aeid", b"%x" % aeid)
+        self.keeper.gbls.pin("aeid", aeid)
 
 
     def getPidx(self):
@@ -1002,7 +694,7 @@ class Manager:
         pidx is prefix index for next new key sequence
         need to update
         """
-        return int(bytes(self.keeper.getGbl(b"pidx")), 16)
+        return int(self.keeper.gbls.get("pidx"), 16)
 
 
     def setPidx(self, pidx):
@@ -1010,7 +702,7 @@ class Manager:
         Save pidx to .keeper
         pidx is prefix index for next new key sequence
         """
-        self.keeper.setGbl(b"pidx", b"%x" % pidx)
+        self.keeper.gbls.pin("pidx", "%x" % pidx)
 
 
     def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed, isith=None,
@@ -1124,32 +816,27 @@ class Manager:
                                    ridx=ridx+1, kidx=kidx+len(icodes), st=nst, dt=dt))
 
         pre = verfers[0].qb64b
-        result = self.keeper.putPre(key=pre, val=pre)
-        if not result:
+        if not self.keeper.pres.put(pre, val=coring.Prefixer(qb64=pre)):
             raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-        result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
-        if not result:
+        if not self.keeper.prms.put(pre, data=pp):
             raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
         self.setPidx(pidx + 1)  # increment for next inception
 
-        result = self.keeper.putSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
-        if not result:
+        if not self.keeper.sits.put(pre, data=ps):
             raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
 
         for signer in isigners:  # store secrets (private key val keyed by public key)
-            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-        self.keeper.putPubs(key=riKey(pre, ri=ridx),
-                            val=json.dumps(ps.new.pubs).encode("utf-8"))
+        self.keeper.pubs.put(riKey(pre, ri=ridx), data=PubSet(pubs=ps.new.pubs))
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
-            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         # store publics keys for lookup of private key for replay
-        self.keeper.putPubs(key=riKey(pre, ri=ridx+1),
-                            val=json.dumps(ps.nxt.pubs).encode("utf-8"))
+        self.keeper.pubs.put(riKey(pre, ri=ridx+1), data=PubSet(pubs=ps.nxt.pubs))
 
         return (verfers, digers, cst, nst)
 
@@ -1169,53 +856,48 @@ class Manager:
         if old == new:
             return
 
-        rawoldpre = self.keeper.getPre(key=old)
-        if rawoldpre is None:
+        if self.keeper.pres.get(old) is None:
             raise ValueError("Nonexistent old pre={}, nothing to assign.".format(old))
 
-        rawnewpre = self.keeper.getPre(key=new)
-        if rawnewpre is not None:
+        if self.keeper.pres.get(new) is not None:
             raise ValueError("Preexistent new pre={} may not clobber.".format(new))
 
-        rawoldprm = self.keeper.getPrm(key=old)
-        if rawoldprm is None:
+        if (oldprm := self.keeper.prms.get(old)) is None:
             raise ValueError("Nonexistent old prm for pre={}, nothing to move.".format(old))
 
-        rawnewprm = self.keeper.getPrm(key=new)
-        if rawnewprm is not None:
+        if self.keeper.prms.get(new) is not None:
             raise ValueError("Preexistent new prm for pre={} may not clobber.".format(new))
 
-        rawoldsit = self.keeper.getSit(key=old)
-        if rawoldsit is None:
+        if (oldsit := self.keeper.sits.get(old)) is None:
             raise ValueError("Nonexistent old sit for pre={}, nothing to move.".format(old))
 
-        rawnewsit = self.keeper.getSit(key=new)
-        if rawnewsit is not None:
+        if self.keeper.sits.get(new) is not None:
             raise ValueError("Preexistent new sit for pre={} may not clobber.".format(new))
 
-        if not self.keeper.putPrm(key=new, val=bytes(rawoldprm)):
+        if not self.keeper.prms.put(new, data=oldprm):
             raise ValueError("Failed moving prm from old pre={} to new pre={}.".format(old, new))
         else:
-            self.keeper.delPrm(key=old)
+            self.keeper.prms.rem(old)
 
-        if not self.keeper.putSit(key=new, val=bytes(rawoldsit)):
+        if not self.keeper.sits.put(new, data=oldsit):
             raise ValueError("Failed moving sit from old pre={} to new pre={}.".format(old, new))
         else:
-            self.keeper.delSit(key=old)
+            self.keeper.sits.rem(old)
 
         # move .pubs entries if any
         i = 0
-        while (pl := self.keeper.getPubs(key=riKey(old, i))):
-            if not self.keeper.putPubs(key=riKey(new, i), val=pl):
-                raise ValueError("Failed moving pubs at pre={} ri={} to new pre={}".format())
+        while (pl := self.keeper.pubs.get(riKey(old, i))):
+            if not self.keeper.pubs.put(riKey(new, i), data=pl):
+                raise ValueError("Failed moving pubs at pre={} ri={} to new"
+                                 " pre={}".format(old, i, new))
             i += 1
 
         # assign old
-        if not self.keeper.setPre(key=old, val=new):
+        if not self.keeper.pres.pin(old, val=coring.Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={} to old pre={}.".format(new, old))
 
         # make new so that if move again we reserve each one
-        if not self.keeper.putPre(key=new, val=new):
+        if not self.keeper.pres.put(new, val=coring.Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={}.".format(new))
 
 
@@ -1258,15 +940,11 @@ class Manager:
             even when the identifer prefix is transferable.
 
         """
-        rawprm = self.keeper.getPrm(key=pre)
-        if rawprm is None:
+        if (pp := self.keeper.prms.get(pre)) is None:
             raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
-        pp = helping.datify(PrePrm, json.loads(bytes(rawprm).decode("utf-8")))
 
-        rawsit = self.keeper.getSit(key=pre)
-        if rawsit is None:
+        if (ps := self.keeper.sits.get(pre)) is None:
             raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
-        ps = helping.datify(PreSit, json.loads(bytes(rawsit).decode("utf-8")))
 
         if not ps.nxt.pubs:  # empty nxt public keys so non-transferable prefix
             raise ValueError("Attempt to rotate nontransferable pre={}.".format(pre))
@@ -1277,13 +955,8 @@ class Manager:
 
         verfers = []  # assign verfers from old nxt now new.
         for pub in ps.new.pubs:
-            verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
-            raw = self.keeper.getPri(key=pub.encode("utf-8"))
-            if raw is None:
+            if (signer := self.keeper.pris.get(pub.encode("utf-8"))) is None:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
-            pri = bytes(raw)
-            signer = coring.Signer(qb64b=pri,
-                                   transferable=verfer.transferable)
             verfers.append(signer.verfer)
 
         cst = ps.new.st  # get new current signing threshold
@@ -1313,21 +986,18 @@ class Manager:
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
                               ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
-        result = self.keeper.setSit(key=pre.encode("utf-8"),
-                                    val=json.dumps(asdict(ps)).encode("utf-8"))
-        if not result:
+        if not self.keeper.sits.pin(pre, data=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
         for signer in signers:  # store secrets (private key val keyed by public key)
-            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         # store public keys for lookup of private keys by public key for replay
-        self.keeper.putPubs(key=riKey(pre, ri=ps.nxt.ridx),
-                            val=json.dumps(ps.nxt.pubs).encode("utf-8"))
+        self.keeper.pubs.put(riKey(pre, ri=ps.nxt.ridx), data=PubSet(pubs=ps.nxt.pubs))
 
         if erase:
             for pub in old.pubs:  # remove old prikeys
-                self.keeper.delPri(key=pub.encode("utf-8"))
+                self.keeper.pris.rem(pub)
 
         return (verfers, digers, cst, nst)
 
@@ -1369,22 +1039,14 @@ class Manager:
 
         if pubs:
             for pub in pubs:
-                verfer = coring.Verfer(qb64=pub)  # needed to know if nontrans
-                raw = self.keeper.getPri(key=pub)
-                if raw is None:
+                if (signer := self.keeper.pris.get(pub)) is None:
                     raise ValueError("Missing prikey in db for pubkey={}".format(pub))
-                signer = coring.Signer(qb64b=bytes(raw),
-                                       transferable=verfer.transferable)
                 signers.append(signer)
 
         else:
             for verfer in verfers:
-                pub = verfer.qb64
-                raw = self.keeper.getPri(key=pub)
-                if raw is None:
-                    raise ValueError("Missing prikey in db for pubkey={}".format(pub))
-                signer = coring.Signer(qb64b=bytes(raw),
-                                       transferable=verfer.transferable)
+                if (signer := self.keeper.pris.get(verfer.qb64)) is None:
+                    raise ValueError("Missing prikey in db for pubkey={}".format(verfer.qb64))
                 signers.append(signer)
 
         if indices and len(indices) != len(signers):
@@ -1492,22 +1154,21 @@ class Manager:
                             stem=creator.stem,
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b
-                result = self.keeper.putPre(key=pre, val=pre)
-                if not result:
+                if not self.keeper.pres.put(pre, val=coring.Prefixer(qb64=pre)):
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-                result = self.keeper.putPrm(key=pre, val=json.dumps(asdict(pp)).encode("utf-8"))
-                if not result:
+                if not self.keeper.prms.put(pre, data=pp):
                     raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
                 self.setPidx(pidx + 1)  # increment for next inception
                 first = False
 
             for signer in csigners:  # store secrets (private key val keyed by public key)
-                self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+                self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-            self.keeper.putPubs(key=riKey(pre, ri=ridx),
-                                val=json.dumps([signer.verfer.qb64 for signer in csigners]).encode("utf-8"))
+            self.keeper.pubs.put(riKey(pre, ri=ridx),
+                                data=PubSet(pubs=[signer.verfer.qb64
+                                        for signer in csigners]))
 
             odt = dt
             dt = helping.nowIso8601()
@@ -1529,10 +1190,11 @@ class Manager:
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
-            self.keeper.putPri(key=signer.verfer.qb64b, val=signer.qb64b)
+            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-        self.keeper.putPubs(key=riKey(pre, ri=ridx),
-                            val=json.dumps([signer.verfer.qb64 for signer in nsigners]).encode("utf-8"))
+        self.keeper.pubs.put(riKey(pre, ri=ridx),
+                             data=PubSet(pubs=[signer.verfer.qb64
+                                               for signer in nsigners]))
 
         csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
         cst = coring.Tholder(sith=csith).sith
@@ -1548,10 +1210,8 @@ class Manager:
                            ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
         ps = PreSit(old=old, new=new, nxt=nxt)
-        result = self.keeper.setSit(key=pre, val=json.dumps(asdict(ps)).encode("utf-8"))
-        if not result:
+        if not self.keeper.sits.pin(pre, data=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
-
         return (verferies, digers)
 
 
@@ -1578,39 +1238,33 @@ class Manager:
             code is str derivation code for digers. Default is MtrDex.Blake3_256
 
         """
-        if ridx - 1 >= 0:  # get old pubs if any
-            oldpubs = self.keeper.getPubs(key=riKey(pre, ridx-1))
-            if oldpubs is not None:
-                oldpubs = json.loads(bytes(oldpubs).decode("utf-8"))
-        else:
-            oldpubs = None
+        oldps = None
+        if ridx - 1 >= 0:
+            oldps = self.keeper.pubs.get(riKey(pre, ridx-1))
 
-        newpubs = self.keeper.getPubs(key=riKey(pre, ridx))
-        if newpubs is not None:
-            newpubs = json.loads(bytes(newpubs).decode("utf-8"))
+        newps = self.keeper.pubs.get(riKey(pre, ridx))
+        nxtps = self.keeper.pubs.get(riKey(pre, ridx+1))
 
-        nxtpubs = self.keeper.getPubs(key=riKey(pre, ridx+1))
-        if nxtpubs is not None:
-            nxtpubs = json.loads(bytes(nxtpubs).decode("utf-8"))
-
-        if not (newpubs and nxtpubs):  # replay finished
-            # raises IndexError to indicate replay at ridx past end but valid
-            # next keys at ridx
-            # raise ValueError to indicate replay at ridx is past end of replay
-            # and no valid next keys at ridx
-            if self.keeper.getPubs(key=riKey(pre, ridx)):  # past replay but next pubs
+        if not (newps and nxtps):  # replay finished  #not (newpubs and nxtpubs)
+            if self.keeper.pubs.get(riKey(pre, ridx)):  # past replay but next pubs
+                # raises IndexError to indicate replay at ridx past end but valid
+                # next keys at ridx
                 raise IndexError("Invalid replay attempt at ridx={} for pubs of "
                                  "pre={}.".format(ridx, pre))
             else:  # past replay at ridx and no next keys at ridx
+                # raise ValueError to indicate replay at ridx is past end of replay
+                # and no valid next keys at ridx
                 raise ValueError("Invalid replay at ridx={} missing pubs for "
                                  "pre={}.".format(ridx, pre))
 
-        if erase and oldpubs:
-            for pub in oldpubs:  # remove old prikeys
-                self.keeper.delPri(key=pub.encode("utf-8"))
+        if erase and oldps:
+            for pub in oldps.pubs:  # remove old prikeys
+                self.keeper.pris.rem(pub)
 
-        verfers = [coring.Verfer(qb64=pub) for pub in newpubs]
-        digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtpubs]
+        # verfers = [coring.Verfer(qb64=pub) for pub in newpubs]
+        verfers = [coring.Verfer(qb64=pub) for pub in newps.pubs]
+        # digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtpubs]
+        digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtps.pubs]
 
         csith = "{:x}".format(max(1, math.ceil(len(verfers) / 2)))
         cst = coring.Tholder(sith=csith).sith
