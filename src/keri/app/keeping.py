@@ -607,18 +607,33 @@ class Manager:
 
     """
 
-    def __init__(self, keeper=None,  aeid=None, pidx=None, salt=None, tier=None):
+    def __init__(self, keeper=None, pidx=None, salt=None, tier=None,
+                   aeid=None, seed=None):
         """
         Setup Manager.
 
         Parameters:
             keeper (Keeper): Keeper instance (LMDB)
-            aeid (str): qb64 of non-transferable identifier prefix for
-                authentication and encryption of secrets in keeper
             pidx (int): index of next new created key pair sequence for given
                 identifier prefix
             salt (str):  qb64 of root salt. Makes random root salt if not provided
             tier (str): default security tier (Tierage) for root salt
+            aeid (str): qb64 of non-transferable identifier prefix for
+                authentication and encryption of secrets in keeper. If provided
+                aeid (not None) and different from aeid stored in database then
+                all secrets are re-encrypted using new aeid. In this case the
+                provided prikey must not be empty. A change in aeid should require
+                a second authentication mechanism besides the prikey.
+            seed (str): qb64 private-decryption key (seed) derived from private signing
+                          key (seed) for the aeid. If aeid stored in database is not
+                          empty then seed is required to do any operations.
+                          When aeid is not empty. The seed value is memory only
+                          and MUST not be persisted to the database for the manager
+                          with which it is used. It MUST only be loaded once when
+                          the process that runs the Manager is initialized.
+                          Its presence acts as an authentication, authorization,
+                          and decryption secret for the Manager and must be stored
+                          on another device from the device that runs the Manager.
 
 
         """
@@ -626,10 +641,12 @@ class Manager:
             keeper = Keeper()
 
         self.keeper = keeper
-        self._aeid = aeid if aeid is not None else ""
+
         self._pidx = pidx if pidx is not None else 0
         self._salt = salt if salt is not None else coring.Salter().qb64
         self._tier = tier if tier is not None else coring.Tiers.low
+        self._aeid = aeid if aeid is not None else ""
+        self._seed = seed if seed is not None else ""
 
         if self.keeper.opened:  # allows keeper db to opened asynchronously
             self.setup()  # first call to .setup with initialize database

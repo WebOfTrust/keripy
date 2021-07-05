@@ -1832,11 +1832,11 @@ def test_cipher():
     assert uncb == seedqb64b
 
     # test .decrypt method needs qb64
-    priker = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
-    assert cipher.decrypt(priker=priker).qb64b == seedqb64b
+    prikeyqb64 = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
+    assert cipher.decrypt(prikey=prikeyqb64) == seedqb64b
 
-    seeder = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
-    assert  cipher.decrypt(seeder=seeder).qb64b == seedqb64b
+    cryptseedqb64 = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
+    assert  cipher.decrypt(seed=cryptseedqb64) == seedqb64b
 
     raw = pysodium.crypto_box_seal(saltqb64b, pubkey)  # uses nonce so different everytime
     cipher = Cipher(raw=raw)
@@ -1845,11 +1845,11 @@ def test_cipher():
     assert uncb == saltqb64b
 
     # test .decrypt method needs qb64
-    priker = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
-    assert  cipher.decrypt(priker=priker).qb64b == saltqb64b
+    prikeyqb64 = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
+    assert  cipher.decrypt(prikey=prikeyqb64) == saltqb64b
 
-    seeder = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
-    assert  cipher.decrypt(seeder=seeder).qb64b == saltqb64b
+    cryptseedqb64 = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
+    assert  cipher.decrypt(seed=cryptseedqb64) == saltqb64b
 
     with pytest.raises(ValueError):  # bad code
         cipher = Cipher(raw=raw, code=MtrDex.Ed25519N)
@@ -1970,8 +1970,10 @@ def test_decrypter():
     assert decrypter.raw == prikey
 
     plain = decrypter.decrypt(ser=cipher.qb64b)
-    assert plain.code == MtrDex.Ed25519_Seed
-    assert plain.qb64b == seedqb64b
+    assert plain == seedqb64b
+    plainmat = Matter(qb64b=plain)
+    assert plainmat.code == MtrDex.Ed25519_Seed
+    assert plainmat.qb64b == seedqb64b
 
     # cipher of salt
     cipher = encrypter.encrypt(ser=saltqb64b)
@@ -1979,31 +1981,39 @@ def test_decrypter():
     # each encryption uses a nonce so not a stable representation for testing
 
     plain = decrypter.decrypt(ser=cipher.qb64b)
-    assert plain.code == MtrDex.Salt_128
-    assert plain.qb64b == saltqb64b
+    assert plain == saltqb64b
+    plainmat = Matter(qb64b=plain)
+    assert plainmat.code == MtrDex.Salt_128
+    assert plainmat.qb64b == saltqb64b
 
     # use  cipher
     cipherseed = (b'PfOkgdZ9HWVOMBAA40yt3aAdOfz6Je7UGyBhglvBvogZu7kkmvEX6VeIPbLm'
                   b'hB2WoFdubO145uCyK2nUj1UI6HSZPq47iQUayS9snsTOy-Pzk1E7818lNpBeoV0g')
     plain = decrypter.decrypt(ser=cipherseed)
-    assert plain.code == MtrDex.Ed25519_Seed
-    assert plain.qb64b == seedqb64b
+    assert plain == seedqb64b
+    plainmat = Matter(qb64b=plain)
+    assert plainmat.code == MtrDex.Ed25519_Seed
+    assert plainmat.qb64b == seedqb64b
 
     ciphersalt = (b'1AAHMehug8lCovEq5MCKoCyt-ECyAv4mgakKZzKPPZRxtx81UftRWvUNhK3'
                   b'22qYi7vGpma9u6aZhO9D75xcKtLmiwhZqM7E35vbT')
     plain = decrypter.decrypt(ser=ciphersalt)
-    assert plain.code == MtrDex.Salt_128
-    assert plain.qb64b == saltqb64b
+    assert plain == saltqb64b
+    plainmat = Matter(qb64b=plain)
+    assert plainmat.code == MtrDex.Salt_128
+    assert plainmat.qb64b == saltqb64b
 
     # use signer with seed to init prikey
-    decrypter = Decrypter(seeder=signer.qb64b)
+    decrypter = Decrypter(seed=signer.qb64b)
     assert decrypter.code == MtrDex.X25519_Private
     assert decrypter.qb64 == 'OsIXGozPXPVRRLRMQme9k__Ncdy5h1CxIYFZ05l5jlVA'
     assert decrypter.raw == prikey
 
     plain = decrypter.decrypt(ser=cipher.qb64b)
-    assert plain.code == MtrDex.Salt_128
-    assert plain.qb64b == saltqb64b
+    assert plain == saltqb64b
+    plainmat = Matter(qb64b=plain)
+    assert plainmat.code == MtrDex.Salt_128
+    assert plainmat.qb64b == saltqb64b
 
 
     """ Done Test """
@@ -3195,4 +3205,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_encrypter()
+    test_decrypter()
