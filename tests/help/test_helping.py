@@ -12,7 +12,7 @@ import fractions
 from dataclasses import dataclass, asdict
 
 from keri.help import helping
-from keri.help.helping import isign, sceil
+from keri.help.helping import isign, sceil, dictify
 from keri.help.helping import mdict
 from keri.help.helping import extractValues
 from keri.help.helping import datify
@@ -80,7 +80,55 @@ def test_datify():
     pdata = datify(Point, pdict)
     assert isinstance(pdata, Point)
 
+    @dataclass
+    class Circle:
+        radius: float
+
+        @staticmethod
+        def _der(d):
+            p = d["perimeter"]
+            r = p / 2 / 3.14
+
+            return Circle(radius=r)
+
+    d = {'area': 50.24, 'perimeter': 25.12}
+    c = datify(Circle, d)
+    assert c.radius == 4
+
     """End Test"""
+
+
+def test_dictify():
+
+    @dataclass
+    class Point:
+        x: float
+        y: float
+
+    @dataclass
+    class Line:
+        a: Point
+        b: Point
+
+    line = Line(Point(1, 2), Point(3, 4))
+    assert dictify(line) == {'a': {'x': 1, 'y': 2}, 'b': {'x': 3, 'y': 4}}
+
+    @dataclass
+    class Circle:
+        radius: float
+
+        def _ser(self):
+            d = dict(
+                area=self.radius**2*3.14,
+                perimeter=2*self.radius*3.14
+            )
+
+            return d
+
+    c = Circle(radius=4)
+    assert dictify(c) == {'area': 50.24, 'perimeter': 25.12}
+
+
 
 
 def test_mdict():
@@ -226,4 +274,6 @@ def test_iso8601():
 
 
 if __name__ == "__main__":
+    test_datify()
     test_utilities()
+    test_dictify()

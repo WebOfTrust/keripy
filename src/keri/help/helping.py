@@ -35,6 +35,22 @@ def sceil(r):
     return (int(r) + isign(r - int(r)))
 
 
+def dictify(val: dataclasses.dataclass):
+    """
+    Returns a serializable dict represention of a dataclass.  If the dataclass
+    contains a `ser` method, use it instead of `asdict`
+
+    Parameters:
+         val the dataclass instance to turn into a dict.
+    """
+    ser = getattr(val, "_ser", None)
+    if callable(ser):
+        return ser()
+
+    return dataclasses.asdict(val)
+
+
+
 def datify(cls, d):
     """
     Returns instance of dataclass cls converted from dict d
@@ -43,6 +59,10 @@ def datify(cls, d):
     d is dict
     """
     try:
+        der = getattr(cls, "_der", None)
+        if callable(der):
+            return der(d)
+
         fieldtypes = {f.name: f.type for f in dataclasses.fields(cls)}
         return cls(**{f: datify(fieldtypes[f], d[f]) for f in d})  # recursive
     except:

@@ -10,8 +10,6 @@ from dataclasses import dataclass, asdict
 
 import pytest
 
-from keri.app import apping, habbing, keeping
-from keri.core import coring, eventing
 from keri.core.coring import Serials
 from keri.db import dbing, koming
 from keri.help import helping
@@ -266,6 +264,65 @@ def test_serialization():
         assert srl(jim) == expected
 
 
+def test_custom_serialization():
+    @dataclass
+    class Record:
+        first: str  # first name
+        last: str  # last name
+        street: str  # street address
+        city: str  # city name
+        state: str  # state code
+        zip: int  # zip code
+
+        @staticmethod
+        def _der(d):
+            name = d["name"].split()
+            street = d["address1"]
+            city, state, z = d["address2"].split()
+
+            return Record(first=name[0],
+                          last=name[1],
+                          street=street,
+                          city=city,
+                          state=state,
+                          zip=int(z, 10)
+                          )
+
+        def _ser(self):
+            d = dict(
+                name="{} {}".format(self.first, self.last),
+                address1="{}".format(self.street),
+                address2="{} {} {}".format(self.city, self.state, self.zip)
+            )
+
+            return d
+
+
+    jim = Record(first="Jim",
+                 last="Black",
+                 street="100 Main Street",
+                 city="Riverton",
+                 state="UT",
+                 zip=84058)
+
+    with dbing.openLMDB() as db:
+        mydb = koming.Komer(db=db, schema=Record, subkey='records.')
+
+        keys = ("test_key", "0001")
+        mydb.put(keys=keys, data=jim)
+
+        actual = mydb.get(keys=keys)
+        assert actual.first == "Jim"
+        assert actual.last == "Black"
+        assert actual.street == "100 Main Street"
+        assert actual.city == "Riverton"
+        assert actual.state == "UT"
+        assert actual.zip == 84058
+
+        ser = db.getVal(mydb.sdb, mydb._tokey(keys))
+        assert ser == b'{"name":"Jim Black","address1":"100 Main Street","address2":"Riverton UT 84058"}'
+
+
 def test_deserialization():
     @dataclass
     class Record:
@@ -314,3 +371,4 @@ def test_deserialization():
 
 if __name__ == "__main__":
     test_kom_happy_path()
+    test_custom_serialization()

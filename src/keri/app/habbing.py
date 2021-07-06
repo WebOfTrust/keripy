@@ -19,12 +19,14 @@ from hio.core.serial import serialing
 
 from .. import kering
 from .. import help
+from ..core.coring import Serder
+from ..db.dbing import snKey, dgKey
 from ..help import helping
 from ..db import dbing, basing, koming
 from . import keeping
 from ..core import coring, eventing, parsing
 from . import apping
-
+from ..kering import UnverifiedProofError, ValidationError
 
 logger = help.ogler.getLogger()
 
@@ -447,6 +449,46 @@ class Habitat:
                                      pipelined=True)
 
         return msg
+
+    
+    def verify(self, serder, prefixer, seqner, diger, sigers):
+        if prefixer.qb64 in self.kevers:
+            # receipted event and receipter in database so get receipter est evt
+            # retrieve dig of last event at sn of est evt of receipter.
+            sdig = self.db.getKeLast(key=snKey(pre=prefixer.qb64b,
+                                               sn=seqner.sn))
+            if sdig is None:
+                # receipter's est event not yet in receipters's KEL
+                raise UnverifiedProofError("key event sn {} for pre {} is not yet in KEL"
+                                           "".format(seqner.sn, prefixer.qb64))
+
+
+            # retrieve last event itself of receipter est evt from sdig
+            sraw = self.db.getEvt(key=dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
+            # assumes db ensures that sraw must not be none because sdig was in KE
+            sserder = Serder(raw=bytes(sraw))
+            if not sserder.compare(diger=diger):  # endorser's dig not match event
+                raise ValidationError("Bad proof sig group at sn = {}"
+                                      " for ksn = {}."
+                                      "".format(seqner.sn, sserder.ked))
+
+            # verify sigs
+            sverfers = sserder.verfers
+            if not sverfers:
+                raise ValidationError("Invalid key state endorser's est. event"
+                                      " dig = {} for ksn from pre ={}, "
+                                      "no keys."
+                                      "".format(diger.qb64, prefixer.qb64))
+
+            for siger in sigers:
+                if siger.index >= len(sverfers):
+                    raise ValidationError("Index = {} to large for keys."
+                                          "".format(siger.index))
+                siger.verfer = sverfers[siger.index]  # assign verfer
+                if not siger.verfer.verify(siger.raw, serder.raw):  # verify each sig
+                    return False
+
+            return True
 
 
     def replay(self, pre=None, fn=0):

@@ -120,12 +120,12 @@ def test_json_schema_dict():
 
     sce = Schemer(sed=sed, typ=JSONSchema(), code=MtrDex.Blake3_256)
     assert sce.said == "EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndY"
+    assert sce.sed["$id"] == "EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndY"
     assert sce.verify(raw=payload) is True
     assert sce.verify(raw=mismatch) is False
     assert sce.verify(raw=badjson) is False
 
-    sed["$id"] = sce.said
-    raw = json.dumps(sed).encode("utf-8")
+    raw = json.dumps(sce.sed).encode("utf-8")
 
     sce = Schemer(raw=raw)
     assert sce.said == "EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndY"
@@ -233,7 +233,7 @@ def test_resolution():
     cache = CacheResolver()
     cache.add("did:keri:EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndZ", ref)
 
-    schemer = Schemer(raw=scer, typ=JSONSchema(resolver=cache.resolver(scer)))
+    schemer = Schemer(raw=scer, typ=JSONSchema(resolver=cache))
     assert schemer.verify(payload) is True
     assert schemer.verify(badload) is False
 
