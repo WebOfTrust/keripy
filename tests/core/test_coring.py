@@ -1833,10 +1833,10 @@ def test_cipher():
 
     # test .decrypt method needs qb64
     prikeyqb64 = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
-    assert cipher.decrypt(prikey=prikeyqb64) == seedqb64b
+    assert cipher.decrypt(prikey=prikeyqb64).qb64b == seedqb64b
 
     cryptseedqb64 = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
-    assert  cipher.decrypt(seed=cryptseedqb64) == seedqb64b
+    assert  cipher.decrypt(seed=cryptseedqb64).qb64b == seedqb64b
 
     raw = pysodium.crypto_box_seal(saltqb64b, pubkey)  # uses nonce so different everytime
     cipher = Cipher(raw=raw)
@@ -1846,10 +1846,10 @@ def test_cipher():
 
     # test .decrypt method needs qb64
     prikeyqb64 = Matter(raw=prikey, code=MtrDex.X25519_Private).qb64b
-    assert  cipher.decrypt(prikey=prikeyqb64) == saltqb64b
+    assert  cipher.decrypt(prikey=prikeyqb64).qb64b == saltqb64b
 
     cryptseedqb64 = Matter(raw=cryptseed, code=MtrDex.Ed25519_Seed).qb64b
-    assert  cipher.decrypt(seed=cryptseedqb64) == saltqb64b
+    assert  cipher.decrypt(seed=cryptseedqb64).qb64b == saltqb64b
 
     with pytest.raises(ValueError):  # bad code
         cipher = Cipher(raw=raw, code=MtrDex.Ed25519N)
@@ -1935,20 +1935,33 @@ def test_decrypter():
     # preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed = (b'\x18;0\xc4\x0f*vF\xfa\xe3\xa2Eee\x1f\x96o\xce)G\x85\xe3X\x86\xda\x04\xf0\xdc'
                        b'\xde\x06\xc0+')
-    seedqb64b = Matter(raw=seed, code=MtrDex.Ed25519_Seed).qb64b
+    signer = Signer(raw=seed, code=MtrDex.Ed25519_Seed)
+    assert signer.verfer.code == MtrDex.Ed25519
+    assert signer.verfer.transferable  # default
+    seedqb64b = signer.qb64b
     assert seedqb64b == b'AGDswxA8qdkb646JFZWUflm_OKUeF41iG2gTw3N4GwCs'
+     # also works for Matter
+    assert seedqb64b == Matter(raw=seed, code=MtrDex.Ed25519_Seed).qb64b
+
 
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     salt= b'6\x08d\r\xa1\xbb9\x8dp\x8d\xa0\xc0\x13J\x87r'
-    saltqb64b = Matter(raw=salt, code=MtrDex.Salt_128).qb64b
+    salter = Salter(raw=salt, code=MtrDex.Salt_128)
+    assert salter.code == MtrDex.Salt_128
+    saltqb64b = salter.qb64b
     assert saltqb64b == b'0ANghkDaG7OY1wjaDAE0qHcg'
+    # also works for Matter
+    assert saltqb64b == Matter(raw=salt, code=MtrDex.Salt_128).qb64b  #
 
-    # seed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
+    # cryptseed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
     cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
-    signer = Signer(raw=cryptseed, code=MtrDex.Ed25519_Seed)
+    cryptsigner = Signer(raw=cryptseed, code=MtrDex.Ed25519_Seed, transferable=True)
     verkey, sigkey = pysodium.crypto_sign_seed_keypair(cryptseed)  # raw
     pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
     prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)
+
+    with pytest.raises(EmptyMaterialError):
+        decrypter = Decrypter()
 
     # create encrypter
     encrypter = Encrypter(raw=pubkey)
@@ -1956,64 +1969,72 @@ def test_decrypter():
     assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
     assert encrypter.raw == pubkey
 
-    # cipher of seed
-    cipher = encrypter.encrypt(ser=seedqb64b)
-    assert cipher.code == MtrDex.X25519_Cipher_Seed
+    # create cipher of seed
+    seedcipher = encrypter.encrypt(ser=seedqb64b)
+    assert seedcipher.code == MtrDex.X25519_Cipher_Seed
     # each encryption uses a nonce so not a stable representation for testing
 
-    with pytest.raises(EmptyMaterialError):
-        decrypter = Decrypter()
-
+    # create decrypter from prikey
     decrypter = Decrypter(raw=prikey)
     assert decrypter.code == MtrDex.X25519_Private
     assert decrypter.qb64 == 'OsIXGozPXPVRRLRMQme9k__Ncdy5h1CxIYFZ05l5jlVA'
     assert decrypter.raw == prikey
 
-    plain = decrypter.decrypt(ser=cipher.qb64b)
-    assert plain == seedqb64b
-    plainmat = Matter(qb64b=plain)
-    assert plainmat.code == MtrDex.Ed25519_Seed
-    assert plainmat.qb64b == seedqb64b
+    # decrypt seed cipher using ser
+    designer = decrypter.decrypt(ser=seedcipher.qb64b, transferable=signer.verfer.transferable)
+    assert designer.qb64b == seedqb64b
+    assert designer.code == MtrDex.Ed25519_Seed
+    assert designer.verfer.code == MtrDex.Ed25519
+    assert signer.verfer.transferable
 
-    # cipher of salt
-    cipher = encrypter.encrypt(ser=saltqb64b)
-    assert cipher.code == MtrDex.X25519_Cipher_Salt
+    # decrypt seed cipher using cipher
+    designer = decrypter.decrypt(cipher=seedcipher, transferable=signer.verfer.transferable)
+    assert designer.qb64b == seedqb64b
+    assert designer.code == MtrDex.Ed25519_Seed
+    assert designer.verfer.code == MtrDex.Ed25519
+    assert signer.verfer.transferable
+
+    # create cipher of salt
+    saltcipher = encrypter.encrypt(ser=saltqb64b)
+    assert saltcipher.code == MtrDex.X25519_Cipher_Salt
     # each encryption uses a nonce so not a stable representation for testing
 
-    plain = decrypter.decrypt(ser=cipher.qb64b)
-    assert plain == saltqb64b
-    plainmat = Matter(qb64b=plain)
-    assert plainmat.code == MtrDex.Salt_128
-    assert plainmat.qb64b == saltqb64b
+    # decrypt salt cipher using ser
+    desalter = decrypter.decrypt(ser=saltcipher.qb64b)
+    assert desalter.qb64b == saltqb64b
+    assert desalter.code == MtrDex.Salt_128
 
-    # use  cipher
+    # decrypt salt cipher using cipher
+    desalter = decrypter.decrypt(cipher=saltcipher)
+    assert desalter.qb64b == saltqb64b
+    assert desalter.code == MtrDex.Salt_128
+
+
+    # use previously stored fully qualified seed cipher with different nonce
     cipherseed = (b'PfOkgdZ9HWVOMBAA40yt3aAdOfz6Je7UGyBhglvBvogZu7kkmvEX6VeIPbLm'
                   b'hB2WoFdubO145uCyK2nUj1UI6HSZPq47iQUayS9snsTOy-Pzk1E7818lNpBeoV0g')
-    plain = decrypter.decrypt(ser=cipherseed)
-    assert plain == seedqb64b
-    plainmat = Matter(qb64b=plain)
-    assert plainmat.code == MtrDex.Ed25519_Seed
-    assert plainmat.qb64b == seedqb64b
+    designer = decrypter.decrypt(ser=cipherseed, transferable=signer.verfer.transferable)
+    assert designer.qb64b == seedqb64b
+    assert designer.code == MtrDex.Ed25519_Seed
+    assert designer.verfer.code == MtrDex.Ed25519
 
+    # use previously stored fully qualified sa;t cipher with different nonce
     ciphersalt = (b'1AAHMehug8lCovEq5MCKoCyt-ECyAv4mgakKZzKPPZRxtx81UftRWvUNhK3'
                   b'22qYi7vGpma9u6aZhO9D75xcKtLmiwhZqM7E35vbT')
-    plain = decrypter.decrypt(ser=ciphersalt)
-    assert plain == saltqb64b
-    plainmat = Matter(qb64b=plain)
-    assert plainmat.code == MtrDex.Salt_128
-    assert plainmat.qb64b == saltqb64b
+    desalter = decrypter.decrypt(ser=ciphersalt)
+    assert desalter.qb64b == saltqb64b
+    assert desalter.code == MtrDex.Salt_128
 
-    # use signer with seed to init prikey
-    decrypter = Decrypter(seed=signer.qb64b)
+    # Create new decrypter but use seed parameter to init prikey
+    decrypter = Decrypter(seed=cryptsigner.qb64b)
     assert decrypter.code == MtrDex.X25519_Private
     assert decrypter.qb64 == 'OsIXGozPXPVRRLRMQme9k__Ncdy5h1CxIYFZ05l5jlVA'
     assert decrypter.raw == prikey
 
-    plain = decrypter.decrypt(ser=cipher.qb64b)
-    assert plain == saltqb64b
-    plainmat = Matter(qb64b=plain)
-    assert plainmat.code == MtrDex.Salt_128
-    assert plainmat.qb64b == saltqb64b
+    # decrypt ciphersalt
+    desalter = decrypter.decrypt(ser=saltcipher.qb64b)
+    assert desalter.qb64b == saltqb64b
+    assert desalter.code == MtrDex.Salt_128
 
 
     """ Done Test """
@@ -3205,4 +3226,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_decrypter()
+    test_cipher()
