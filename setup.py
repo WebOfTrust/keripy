@@ -82,7 +82,9 @@ setup(
                         'multicommand>=0.1.1',
                         'jsonschema>=3.2.0',
                         'falcon>=3.0.1',
-                    ],
+        'daemonize>=2.5.0',
+        'python-daemon>=2.3..0',
+    ],
     extras_require={
     },
     tests_require=[

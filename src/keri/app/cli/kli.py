@@ -1,37 +1,20 @@
 import argparse
-import logging
 
+import multicommand
 from hio import help
-from hio.base import doing
 
-from keri.app.cli.consoling import Consoling
-from keri.app.cli.dispatching import Dispatching
+from keri.app.cli import commands
 
 logger = help.ogler.getLogger()
-
-
-class KLI(doing.Doist):
-
-    def __init__(self, name: str, doers: [doing.Doer] = None, **kwa):
-        self.name = name
-
-        doers = doers if doers is not None else []
-        consoleDoer = Consoling(name=self.name)
-
-        dispatchDoer = Dispatching(inq=consoleDoer.oqu)
-        doers.extend([consoleDoer, dispatchDoer])
-
-        super(KLI, self).__init__(doers=doers, **kwa)
 
 
 def parseArgs():
     p = argparse.ArgumentParser(description="Interactive command line for KERI")
 
-    p.add_argument('-n', '--name',
-                   required=True,
+    p.add_argument('-p', '--port',
                    action='store',
-                   default='',
-                   help="A human friendly name")
+                   default='5678',
+                   help="port")
 
     args = p.parse_args()
 
@@ -39,13 +22,10 @@ def parseArgs():
 
 
 def main():
-    args = parseArgs()
-
-    help.ogler.level = logging.INFO
-    help.ogler.reopen(name=args.name, temp=True, clear=True)
-
-    kli = KLI(name=args.name)
-    kli.do(limit=0.0, tyme=0.03125)
+    parser = multicommand.create_parser(commands)
+    args = parser.parse_args()
+    if hasattr(args, "handler"):
+        args.handler(args)
 
 
 if __name__ == "__main__":
