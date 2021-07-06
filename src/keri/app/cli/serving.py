@@ -5,17 +5,22 @@ keri.kli.witness module
 
 Witness command line interface
 """
+import logging
 
-from hio import help
 from hio.base import doing
 from hio.core.tcp import serving
 
 from keri.core import parsing
 
-logger = help.ogler.getLogger()
+# logger = help.ogler.getLogger()
+logging.basicConfig(
+    filename='klid.log',
+    level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s',
+)
 
 
 class Serving(doing.Doist):
+
     def __init__(self, doers: [doing.Doer] = None, **kwa):
         doers = doers if doers is not None else []
         self.server = serving.Server(host="", port=5678)
@@ -37,6 +42,8 @@ class Servant(doing.DoDoer):
         if self.tymth:
             self.server.wind(self.tymth)
 
+        logging.info('Daemon is starting')
+
     def wind(self, tymth):
         super(Servant, self).wind(tymth)
         self.server.wind(tymth)
@@ -54,7 +61,7 @@ class Servant(doing.DoDoer):
                     self.cants[ca] = cant
                     self.extend(doers=[cant])
 
-                if ix.timeout > 0.0 and ix.tymer.expired:
+                if ix.tymeout > 0.0 and ix.tymer.expired:
                     self.closeConnection(ca)
 
             yield
@@ -75,14 +82,13 @@ class Commandant(doing.DoDoer):
         self.parser = parsing.Parser(ims=self.remoter.rxbs,
                                      framed=True)
 
-        self.extend([self.msgDo])
+        doers = doers if doers is not None else [self.msgDo]
 
         super(Commandant, self).__init__(doers=doers, **kwa)
-        if self.tymth:
-            self.remoter.wind(self.tymth)
 
     @doing.doize()
     def msgDo(self, tymth=None, tock=0.0, **opts):
-        if self.parser.ims:
-            logger.info("Server received command:\n%s\n...\n", self.parser.ims[:1024])
-        yield from self.parser.parsator()
+        while True:
+            if self.parser.ims:
+                logging.info("Server received command:\n%s\n...\n", self.parser.ims[:1024])
+            yield from self.parser.parsator()

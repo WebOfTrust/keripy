@@ -7,6 +7,7 @@ import argparse
 import os
 import signal
 
+import daemonocle
 from hio import help
 
 from keri.app.cli.commands.init import KLIRecord
@@ -23,10 +24,10 @@ def handle():
     klis = koming.Komer(db=db, schema=KLIRecord, subkey='klis.')
     klis.rem(('kli-serving',))
 
-    with open(db.headDirPath + '/keri/kli.pid') as f:
-        pid = f.read()
-
-    os.kill(int(pid), signal.SIGTERM)
+    daemon = daemonocle.Daemon(
+        pid_file='/tmp/klid.pid',
+    )
+    daemon.do_action('stop')
 
 
 def __bye():
