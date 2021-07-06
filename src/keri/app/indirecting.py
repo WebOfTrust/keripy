@@ -11,7 +11,7 @@ from hio.core.tcp import serving
 
 from .. import help
 from ..db import dbing, basing
-from ..core import  coring, eventing, parsing
+from ..core import coring, eventing, parsing
 from . import habbing, keeping, directing
 from ..vdr import verifying
 
@@ -35,7 +35,7 @@ def setupWitness(name="witness", localPort=5620):
     regDoer = basing.BaserDoer(baser=verf.reger)
 
     server = serving.Server(host="", port=localPort)
-    serverDoer = doing.ServerDoer(server=server)
+    serverDoer = serving.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server, verifier=verf)
 
     return [ksDoer, dbDoer, regDoer, directant, serverDoer]

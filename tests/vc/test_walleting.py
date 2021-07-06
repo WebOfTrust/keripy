@@ -72,12 +72,18 @@ def test_wallet():
             b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00","credentialSubject":{'
             b'"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v",'
             b'"lei":"254900OPPU84GM83MG36"}}}')
-        sig0 = (
+        seal = (
             b'E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw'
-            b'-AxDNI7_ZmaIAAsPhz4tfZGgoV-1gYtvI1QfzSxwItp5JvguLhKnZE27px5q9fcKGPC0GkMlMBaRyfC47Db4zEWG6ceQ98g6dWDA')
+            b'-AxDNI7_ZmaI'
+        )
+
+        sig0 = (
+            b'AAsPhz4tfZGgoV-1gYtvI1QfzSxwItp5JvguLhKnZE27px5q9fcKGPC0GkMlMBaRyfC47Db4zEWG6ceQ98g6dWDA'
+        )
+
         sidWallet = Wallet(hab=sidHab, db=sidPDB)
 
-        parseCredential(ims=msg, wallet=sidWallet, resolver=cache)
+        parseCredential(ims=msg, wallet=sidWallet, typ=JSONSchema(resolver=cache))
 
         # verify we can load serialized VC by SAID
         key = creder.said.encode("utf-8")
@@ -87,6 +93,10 @@ def test_wallet():
         sigs = sidPDB.getSigs(key)
         assert len(sigs) == 1
         assert sigs[0] == sig0
+
+        # verify the seal
+        sl = sidPDB.getSeals(key)
+        assert sl == seal
 
         # verify we can look up credential by Schema SAID
         schema = sidPDB.getSchms(schemer.saider.qb64b)

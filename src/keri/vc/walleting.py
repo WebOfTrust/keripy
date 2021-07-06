@@ -21,23 +21,22 @@ def openPocket(name="test", **kwa):
     return dbing.openLMDB(cls=Pocketer, name=name, **kwa)
 
 
-def parseCredential(ims=b'', wallet=None, resolver=cache):
+def parseCredential(ims=b'', wallet=None, typ=JSONSchema()):
     """
     Parse the ims bytearray as a CESR Proof Format verifiable credential
 
     Parameters:
         ims (bytearray) of serialized incoming verifiable credential in CESR Proof Format.
         wallet (Wallet) storage for the verified credential
-        resolver (Resolver) class for resolving schema references:
+        typ (JSONSchema) class for resolving schema references:
 
     """
     try:
-        creder = Credentialer(raw=ims, typ=JSONSchema(resolver=resolver))
+        creder = Credentialer(raw=ims, typ=typ)
     except ShortageError as e:
         raise e
     else:
         del ims[:creder.size]
-
 
     cold = Parser.sniff(ims)
     if cold is Colds.msg:
@@ -52,6 +51,16 @@ def parseCredential(ims=b'', wallet=None, resolver=cache):
     if len(ims) != pags:
         raise ShortageError("VC proof attachment invalid length {}, expected {}"
                             "".format(len(ims), pags))
+
+    prefixer, seqner, diger, isigers = parseProof(ims)
+
+    wallet.processCredential(creder, prefixer, seqner, diger, isigers)
+
+
+def parseProof(ims=b''):
+    cold = Parser.sniff(ims)
+    if cold is Colds.msg:
+        raise ColdStartError("unable to parse VC, attachments expected")
 
     ctr = Parser.extract(ims=ims, klas=Counter, cold=cold)
     if ctr.code != CtrDex.TransIndexedSigGroups or ctr.count != 1:
@@ -73,9 +82,33 @@ def parseCredential(ims=b'', wallet=None, resolver=cache):
         isiger = Parser.extract(ims=ims, klas=Siger)
         isigers.append(isiger)
 
-    wallet.processCredential(creder, prefixer, seqner, diger, isigers)
+    return prefixer, seqner, diger, isigers
 
 
+def buildProof(prefixer, seqner, diger, sigers):
+    """
+    
+    Parameters:
+        prefixer (Prefixer) Identifier of the issuer of the credential
+        seqner (Seqner) is the sequence number of the event used to sign the credential
+        diger (Diger) is the digest of the event used to sign the credential
+        sigers (list) are the cryptographic signatures on the credential
+    
+    """
+    
+    prf = bytearray()
+    prf.extend(Counter(CtrDex.TransIndexedSigGroups, count=1).qb64b)
+    prf.extend(prefixer.qb64b)
+    prf.extend(seqner.qb64b)
+    prf.extend(diger.qb64b)
+
+    prf.extend(Counter(code=CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+    for siger in sigers:
+        prf.extend(siger.qb64b)
+    
+    return prf
+    
+    
 class Pocketer(dbing.LMDBer):
     """
     Pocketer is the store for the wallet (get it?).
@@ -92,7 +125,11 @@ class Pocketer(dbing.LMDBer):
         .sers is the named subDB of raw serialized bytes of the Credential.  Represents
             what was signed
             key is Credential SAID
-            Only one value per DB key is allowed    
+            Only one value per DB key is allowed
+        .seals is the named subDB of the Event Location Seal triple of pre+snu+dig
+            of the location in the KEL where the VC was signed
+            key is Credential SAID
+            Only one value per DB key is allowed
         .sigs is named sub DB of event proof quadruples from transferable
             signers. Each quadruple is concatenation of  four fully qualified items
             of validator. These are: transferable prefix, plus latest establishment
@@ -137,6 +174,7 @@ class Pocketer(dbing.LMDBer):
         super(Pocketer, self).reopen(**kwa)
 
         self.sers = self.env.open_db(key=b'sers.')
+        self.seals = self.env.open_db(key=b'seals.')
         self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
         self.issus = self.env.open_db(key=b'issus.', dupsort=True)
         self.subjs = self.env.open_db(key=b'subjs.', dupsort=True)
@@ -412,6 +450,45 @@ class Pocketer(dbing.LMDBer):
         return self.delVal(self.sers, key)
 
 
+    def putSeals(self, key, val):
+        """
+        Use dgKey()
+        Write sealialized event bytes val to key
+        Does not overwrite existing val if any
+        Returns True If val successfully written Else False
+        Return False if key already exists
+        """
+        return self.putVal(self.seals, key, val)
+
+
+    def setSeals(self, key, val):
+        """
+        Use dgKey()
+        Write sealialized event bytes val to key
+        Overwrites existing val if any
+        Returns True If val successfully written Else False
+        """
+        return self.setVal(self.seals, key, val)
+
+
+    def getSeals(self, key):
+        """
+        Use dgKey()
+        Return event at key
+        Returns None if no entry at key
+        """
+        return self.getVal(self.seals, key)
+
+
+    def delSeals(self, key):
+        """
+        Use dgKey()
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delVal(self.seals, key)
+
+
 
 class Wallet:
     """
@@ -419,7 +496,7 @@ class Wallet:
 
 
     """
-    def __init__(self, hab, db: Pocketer):
+    def __init__(self, hab, db: Pocketer=None, name="test", temp=False):
         """
         Create a Wallet associated with a Habitat
 
@@ -428,7 +505,10 @@ class Wallet:
 
         """
         self.hab = hab
-        self.db = db
+        self.name = name
+        self.temp = temp
+
+        self.db = db if db is not None else Pocketer(name=self.name, temp=self.temp)
 
     def processCredential(self, creder, prefixer, seqner, diger, sigers):
         """
@@ -466,11 +546,44 @@ class Wallet:
         subject = creder.subject["id"].encode("utf-8")
         raw = creder.raw
         self.db.putSers(key=said, val=raw)
+
+        # Signer KEL Location and signatures
+        triple = prefixer.qb64b + seqner.qb64b + diger.qb64b
+        self.db.putSeals(said, triple)
+        self.db.putSigs(said, [siger.qb64b for siger in sigers])  # idempotent
+
+        # Look up indicies
         self.db.addIssu(key=issuer, val=said)
         self.db.addSubj(key=subject, val=said)
         self.db.addSchm(key=schema, val=said)
 
-        for siger in sigers:
-            quadruple = prefixer.qb64b + seqner.qb64b + diger.qb64b + siger.qb64b
-            self.db.addSig(said, quadruple)
 
+
+    def getCredentials(self, schema=None):
+        """
+        Return list of (creder, prefixer, seqner, diger, sigers) for each credential
+        that matches schema
+
+        Parameters:
+            schema: qb64 SAID of the schema for the credential
+
+        """
+        saids = self.db.getSchms(key=schema.encode("utf-8"))
+
+        creds = []
+        for said in saids:
+            raw = self.db.getSers(key=said)
+            creder = Credentialer(raw=bytes(raw))
+
+            trip = bytearray(self.db.getSeals(said))
+
+            prefixer = Prefixer(qb64b=trip, strip=True)
+            seqner = Seqner(qb64b=trip, strip=True)
+            diger = Diger(qb64b=trip, strip=True)
+
+            sigs = self.db.getSigs(said)
+            sigers = [Siger(qb64b=bytearray(sig)) for sig in sigs]
+
+            creds.append((creder, prefixer, seqner, diger, sigers))
+
+        return creds

@@ -3,13 +3,12 @@
 keri.vc.proving module
 
 """
-from dataclasses import dataclass, field
-from datetime import datetime
 
 import json
 import cbor2 as cbor
 import msgpack
 
+from .. import help
 from ..core import coring
 from ..core.coring import Serials, sniff, Versify, Deversify, Rever
 from ..core.scheming import Saider, Ids, Schemer, JSONSchema
@@ -17,6 +16,8 @@ from ..help import helping
 from ..kering import ValidationError, Version, VersionError, ShortageError, DeserializationError
 
 KERI_REGISTRY_TYPE = "KERICredentialRegistry"
+
+logger = help.ogler.getLogger()
 
 
 def credential(schema,
@@ -80,7 +81,7 @@ class Credentialer:
     proof
 
     """
-    def __init__(self, raw=b'', crd=None, kind=Serials.json, typ=JSONSchema(), code=coring.MtrDex.Blake3_256):
+    def __init__(self, raw=b'', crd=None, kind=None, typ=JSONSchema(), code=coring.MtrDex.Blake3_256):
         """
         Creates a serializer/deserializer for a Verifiable Credential in CESR Proof Format
 
@@ -107,11 +108,16 @@ class Credentialer:
 
         subr = json.dumps(self.crd["d"]["credentialSubject"]).encode("utf-8")
 
-        scer = self._typ.resolve(self.crd["x"])
-        schemer = Schemer(raw=scer, typ=self._typ)
+        # TODO:  decide the proper time / place to load and validate schema
+        #  (hint: probably not here).
+        try:
+            scer = self._typ.resolve(self.crd["x"])
+            schemer = Schemer(raw=scer, typ=self._typ)
 
-        if not schemer.verify(subr):
-            raise ValidationError("subject is not valid against the schema")
+            if not schemer.verify(subr):
+                raise ValidationError("subject is not valid against the schema")
+        except ValueError:
+            logger.info("unable to load / validate schema")
 
 
 
@@ -194,6 +200,11 @@ class Credentialer:
 
         return raw, kind, crd, version
 
+    @property
+    def kind(self):
+        """ kind property getter"""
+        return self._kind
+
 
 
     @property
@@ -267,3 +278,9 @@ class Credentialer:
     def status(self):
         """ status property getter"""
         return self.crd["d"]["credentialStatus"]
+
+    def pretty(self):
+        """
+        Returns str JSON of .ked with pretty formatting
+        """
+        return json.dumps(self.crd, indent=1)
