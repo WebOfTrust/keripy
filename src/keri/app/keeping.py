@@ -584,7 +584,11 @@ class Manager:
     Class for managing key pair creation, storage, retrieval, and message signing.
 
     Attributes:
-        keeper (Keeper): is Keeper instance (LMDB)
+        keeper (Keeper): LMDB database instance for storing public and private keys
+        encrypter (coring.Encrypter): instance for encrypting secrets. Public
+            encryption key is derived from aeid (public signing key)
+        decrypter (coring.Decrypter): instance for decrypting secrets. Private
+            decryption key is derived seed (private signing key seed)
 
     Attributes (Hidden):
        _aeid (str): authentication and encryption fully qualified qb64
@@ -624,16 +628,15 @@ class Manager:
                 all secrets are re-encrypted using new aeid. In this case the
                 provided prikey must not be empty. A change in aeid should require
                 a second authentication mechanism besides the prikey.
-            seed (str): qb64 private-decryption key (seed) derived from private signing
-                          key (seed) for the aeid. If aeid stored in database is not
-                          empty then seed is required to do any operations.
-                          When aeid is not empty. The seed value is memory only
-                          and MUST not be persisted to the database for the manager
-                          with which it is used. It MUST only be loaded once when
-                          the process that runs the Manager is initialized.
-                          Its presence acts as an authentication, authorization,
-                          and decryption secret for the Manager and must be stored
-                          on another device from the device that runs the Manager.
+            seed (str): qb64 private-signing key (seed) for the aeid from which
+                the private decryption key may be derived. If aeid stored in
+                database is not empty then seed may required to do any key
+                management operations. The seed value is memory only and MUST NOT
+                be persisted to the database for the manager with which it is used.
+                It MUST only be loaded once when the process that runs the Manager
+                is initialized. Its presence acts as an authentication, authorization,
+                and decryption secret for the Manager and must be stored on
+                another device from the device that runs the Manager.
 
 
         """
@@ -641,12 +644,25 @@ class Manager:
             keeper = Keeper()
 
         self.keeper = keeper
+        self.encrypter = None
+        self.decrypter = None
 
         self._pidx = pidx if pidx is not None else 0
         self._salt = salt if salt is not None else coring.Salter().qb64
         self._tier = tier if tier is not None else coring.Tiers.low
         self._aeid = aeid if aeid is not None else ""
         self._seed = seed if seed is not None else ""
+
+        if self._aeid:
+            self.encrypter = coring.Encrypter(verkey=self._aeid)
+            if self._seed: # make sure seed belongs to aeid
+                if not self.encrypter.verifySeed(self._seed):
+                    raise kering.AuthError("Provided seed not associated with"
+                                           " aeid={}.".format(self._aeid))
+                self.decrypter = coring.Decrypter(seed=self._seed)
+
+            if self._salt:  # encrypt default salt
+                self._salt = self.encrypter.encrypt(ser=self._salt).qb64b
 
         if self.keeper.opened:  # allows keeper db to opened asynchronously
             self.setup()  # first call to .setup with initialize database

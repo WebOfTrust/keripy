@@ -1546,6 +1546,8 @@ class Encrypter(Matter):
 
         Parameters:  See Matter for inherted parameters such as qb64, qb64b
             raw (bytes): public encryption key
+            qb64b (bytes): fully qualified public encryption key
+            qb64 (str): fully qualified public encryption key
             code (str): derivation code for public encryption key
             verkey (Union[bytes, str]): qb64b or qb64 of verkey used to derive raw
         """
@@ -1554,6 +1556,7 @@ class Encrypter(Matter):
             if verfer.code not in (MtrDex.Ed25519N, MtrDex.Ed25519):
                 raise ValueError("Unsupported verkey derivation code = {}."
                                  "".format(verfer.code))
+            # convert signing public key to encryption public key
             raw = pysodium.crypto_sign_pk_to_box_pk(verfer.raw)
 
         super(Encrypter, self).__init__(raw=raw, code=code, **kwa)
@@ -1562,6 +1565,23 @@ class Encrypter(Matter):
             self._encrypt = self._x25519
         else:
             raise ValueError("Unsupported encrypter code = {}.".format(self.code))
+
+
+    def verifySeed(self, seed):
+        """
+        Returns:
+            Boolean: True means private signing key seed corresponds to public
+                signing key verkey used to derive encrypter's .raw public
+                encryption key.
+
+        Parameters:
+            seed (Union[bytes,str]): qb64b or qb64 serialization of private
+                signing key seed
+        """
+        signer = Signer(qb64b=seed)
+        verkey, sigkey = pysodium.crypto_sign_seed_keypair(signer.raw)
+        pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
+        return (pubkey == self.raw)
 
 
     def encrypt(self, ser=None, matter=None):

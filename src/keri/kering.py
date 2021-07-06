@@ -29,19 +29,42 @@ class ClosedError(KeriError):
         raise ClosedError("error message")
     """
 
-
-class DatabaseError(KeriError):
-    """
-    Error accessing database
-
-    Usage:
-        raise DatabaseError("error message")
-    """
-
-
 class ConfigurationError(KeriError):
     """
     Error configuring or initing KERI component (Controller etc)
+
+    Usage:
+        raise ConfigurationError("error message")
+    """
+
+class AuthError(KeriError):
+    """
+    Error authenticating AuthN or authorizing AuthZ
+
+    Usage:
+        raise AuthError("error message")
+    """
+
+class AuthNError(AuthError):
+    """
+    Error authenticating
+
+    Usage:
+        raise AuthNError("error message")
+    """
+
+class AuthZError(AuthError):
+    """
+    Error authorizing
+
+    Usage:
+        raise AuthZError("error message")
+    """
+
+# errors associated with databases
+class DatabaseError(KeriError):
+    """
+    Error accessing database
 
     Usage:
         raise DatabaseError("error message")

@@ -1879,6 +1879,7 @@ def test_encrypter():
 
     # seed = pysodium.randombytes(pysodium.crypto_box_SEEDBYTES)
     cryptseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
+    cryptsigner = Signer(raw=cryptseed, code=MtrDex.Ed25519_Seed, transferable=True)
     verkey, sigkey = pysodium.crypto_sign_seed_keypair(cryptseed)  # raw
     pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
     prikey = pysodium.crypto_sign_sk_to_box_sk(sigkey)
@@ -1890,6 +1891,7 @@ def test_encrypter():
     assert encrypter.code == MtrDex.X25519
     assert encrypter.qb64 == 'CAXtavdc2rmECtw64EnNpjo13beOC1RUjooN9vdWeCRE'
     assert encrypter.raw == pubkey
+    assert encrypter.verifySeed(seed=cryptsigner.qb64)
 
     cipher = encrypter.encrypt(ser=seedqb64b)
     assert cipher.code == MtrDex.X25519_Cipher_Seed
@@ -3226,4 +3228,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_cipher()
+    test_encrypter()

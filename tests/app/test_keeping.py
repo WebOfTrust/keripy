@@ -705,7 +705,7 @@ def test_manager():
         manager = keeping.Manager(keeper=keeper, salt=salt)
         assert manager.keeper.opened
         assert manager._pidx == 0
-        assert manager._salt == ''  # zeroed out
+        assert manager._salt == ''  # emptied out after inited
         assert manager._tier == coring.Tiers.low
 
         # salty algorithm incept
@@ -1242,5 +1242,47 @@ def test_manager():
     """End Test"""
 
 
+def test_manager_with_aeid():
+    """
+    test Manager class with aeid
+    """
+    # rawsalt =pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    rawsalt = b'0123456789abcdef'
+    salter = coring.Salter(raw=rawsalt)
+    salt = salter.qb64
+    assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+    stem = "blue"
+
+    # rawseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    rawseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
+    signer = coring.Signer(raw=rawseed, code=coring.MtrDex.Ed25519_Seed,
+                           transferable=False)
+    seed = signer.qb64
+    verfer = signer.verfer
+    aeid = signer.verfer.qb64
+    assert aeid == 'BJruYr3oXDGRTRN0XnhiqDeoENdRak6FD8y2vsTvvJkE'
+
+    decrypter = coring.Decrypter(seed=seed)
+    encrypter = coring.Encrypter(verkey=aeid)
+    assert encrypter.verifySeed(seed=seed)
+
+
+
+    with keeping.openKS() as keeper:
+        manager = keeping.Manager(keeper=keeper, salt=salt, aeid=aeid, seed=seed)
+        assert manager.keeper.opened
+        assert manager._pidx == 0
+        assert manager._salt == ''  # emptied out after inited
+        assert manager._tier == coring.Tiers.low
+        assert manager._aeid == aeid
+        assert manager._seed == seed  # should empty out
+
+        assert manager.encrypter.qb64 == encrypter.qb64
+        assert manager.decrypter.qb64 == decrypter.qb64
+
+    """End Test"""
+
+
+
 if __name__ == "__main__":
-    test_keeper()
+    test_manager_with_aeid()
