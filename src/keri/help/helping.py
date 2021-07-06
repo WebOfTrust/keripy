@@ -38,7 +38,7 @@ def sceil(r):
 def dictify(val: dataclasses.dataclass):
     """
     Returns a serializable dict represention of a dataclass.  If the dataclass
-    contains a `ser` method, use it instead of `asdict`
+    contains a `_ser` method, use it instead of `asdict`
 
     Parameters:
          val the dataclass instance to turn into a dict.
@@ -53,7 +53,10 @@ def dictify(val: dataclasses.dataclass):
 
 def datify(cls, d):
     """
-    Returns instance of dataclass cls converted from dict d
+    Returns instance of dataclass cls converted from dict d. If the dataclass
+    cls or any nested dataclasses contains a `_der` method, the use it instead
+    of default fieldtypes conversion.
+
     Parameters:
     cls is dataclass class
     d is dict
