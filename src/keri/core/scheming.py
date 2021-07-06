@@ -15,6 +15,7 @@ import json
 import cbor2 as cbor
 import msgpack
 
+from . import coring
 from .coring import Matter, MtrDex, Serials
 from ..kering import ValidationError, DeserializationError, EmptyMaterialError
 
@@ -23,12 +24,71 @@ Idage = namedtuple("Idage", "dollar at id")
 Ids = Idage(dollar="$id", at="@id", id="id")
 
 
+
+class CacheResolver:
+    """
+    Sample jsonschema resolver for loading schema $ref references from a local hash.
+
+    """
+
+    def __init__(self, cache=None):
+        """
+        Create a jsonschema resolver that can be used for loading references to schema remotely.
+
+        Parameters:
+            cache (dict) is an optional pre-loaded cache of schema
+        """
+        self.cache = cache if cache is not None else dict()
+
+    def add(self, key, schema):
+        """
+        Add schema to cache for resolution
+
+        Parameters:
+            key (str) URI to resolve to the schema
+            schema (bytes) is bytes of the schema for the URI
+        """
+        self.cache[key] = schema
+
+    def resolve(self, uri):
+        if uri not in self.cache:
+            raise ValueError("{} ref not found".format(uri))
+
+        ref = self.cache[uri]
+        return ref
+
+    def handler(self, uri):
+        """
+        Handler provided to jsonschema for cache resolution
+
+        Parameters:
+            uri (str) the URI to resolve
+        """
+        ref = self.resolve(uri)
+        schemr = Schemer(raw=ref)
+        return schemr.sed
+
+    def resolver(self, scer=b''):
+        """
+        Returns a jsonschema resolver for returning locally cached schema based on self-addressing
+        identifier URIs.
+
+        Parameters:
+            scer (bytes) is the source document that is being processed for reference resolution
+
+        """
+        return jsonschema.RefResolver("", scer, handlers={"did": self.handler})
+
+
 class JSONSchema:
 
     id = Ids.dollar
 
-    def __init__(self, resolver=None):
+    def __init__(self, resolver=CacheResolver()):
         self.resolver = resolver
+
+    def resolve(self, uri):
+        return self.resolver.resolve(uri)
 
     def load(self, raw=b'', kind=Serials.json):
         if kind == Serials.json:
@@ -59,8 +119,8 @@ class JSONSchema:
             saider = Saider(qb64=sed[self.id])
             said = sed[self.id]
             if not saider.verify(sed, prefixed=True):
-                raise ValidationError("invalid self-addressing identifier {} in schema = {}"
-                                      "".format(said, sed))
+                raise ValidationError("invalid self-addressing identifier {} instead of {} in schema = {}"
+                                      "".format(said, saider.qb64, sed))
         else:
             raise ValidationError("missing ID field {} in schema = {}"
                                   "".format(self.id, sed))
@@ -69,19 +129,7 @@ class JSONSchema:
 
     @staticmethod
     def dump(sed, kind=Serials.json):
-
-        if kind == Serials.json:
-            raw = json.dumps(sed, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-
-        elif kind == Serials.mgpk:
-            raw = msgpack.dumps(sed)
-
-        elif kind == Serials.cbor:
-            raw = cbor.dumps(sed)
-        else:
-            raise ValueError("Invalid serialization kind = {}".format(kind))
-
-
+        raw = coring.dumps(sed, kind)
         return raw
 
 
@@ -130,7 +178,7 @@ class JSONSchema:
         """
         try:
             d = json.loads(raw)
-            jsonschema.validate(instance=d, schema=schema, resolver=self.resolver)
+            jsonschema.validate(instance=d, schema=schema, resolver=self.resolver.resolver(scer=raw))
         except jsonschema.exceptions.ValidationError:
             return False
         except jsonschema.exceptions.SchemaError:
@@ -227,10 +275,11 @@ class Schemer:
             kind (Schema) tuple of schema type
 
         """
-
+        saider = Saider(sed=sed, code=self._code, kind=self.typ.id)
+        sed[self.typ.id] = saider.qb64
         raw = self.typ.dump(sed)
 
-        return raw, sed, kind
+        return raw, sed, kind, saider
 
 
     @property
@@ -258,11 +307,11 @@ class Schemer:
     @sed.setter
     def sed(self, sed):
         """ ked property setter  assumes ._kind """
-        raw, sed, kind = self._exhale(sed=sed, kind=self._kind)
+        raw, sed, kind, saider = self._exhale(sed=sed, kind=self._kind)
         self._raw = raw
         self._kind = kind
         self._sed = sed
-        self._saider = Saider(sed=self._sed, code=self._code)
+        self._saider = saider
 
 
     @property
@@ -619,54 +668,3 @@ class Saider(Matter):
         """
         raw, code = self._derive_blake2s_256(sed=sed)
         return Matter(raw=raw, code=MtrDex.Blake2s_256)
-
-
-class CacheResolver:
-    """
-    Sample jsonschema resolver for loading schema $ref references from a local hash.
-
-    """
-
-    def __init__(self, cache=None):
-        """
-        Create a jsonschema resolver that can be used for loading references to schema remotely.
-
-        Parameters:
-            cache (dict) is an optional pre-loaded cache of schema
-        """
-        self.cache = cache if cache is not None else dict()
-
-    def add(self, key, schema):
-        """
-        Add schema to cache for resolution
-
-        Parameters:
-            key (str) URI to resolve to the schema
-            schema (bytes) is bytes of the schema for the URI
-        """
-        self.cache[key] = schema
-
-    def handler(self, uri):
-        """
-        Handler provided to jsonschema for cache resolution
-
-        Parameters:
-            uri (str) the URI to resolve
-        """
-        if uri not in self.cache:
-            raise ValueError("{} ref not found".format(uri))
-
-        ref = self.cache[uri]
-        schemr = Schemer(raw=ref)
-        return schemr.sed
-
-    def resolver(self, scer=b''):
-        """
-        Returns a jsonschema resolver for returning locally cached schema based on self-addressing
-        identifier URIs.
-
-        Parameters:
-            scer (bytes) is the source document that is being processed for reference resolution
-
-        """
-        return jsonschema.RefResolver("", scer, handlers={"did": self.handler})

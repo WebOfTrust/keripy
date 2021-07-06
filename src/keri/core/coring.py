@@ -234,6 +234,21 @@ def sniff(raw):
     return(kind, version, size)
 
 
+def dumps(ked, kind=Serials.json):
+    if kind == Serials.json:
+        raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+    elif kind == Serials.mgpk:
+        raw = msgpack.dumps(ked)
+
+    elif kind == Serials.cbor:
+        raw = cbor.dumps(ked)
+    else:
+        raise ValueError("Invalid serialization kind = {}".format(kind))
+
+    return raw
+
+
 def generateSigners(salt=None, count=8, transferable=True):
     """
     Returns list of Signers for Ed25519
@@ -3277,18 +3292,7 @@ class Serder:
         if kind not in Serials:
             raise ValueError("Invalid serialization kind = {}".format(kind))
 
-        if kind == Serials.json:
-            raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-
-        elif kind == Serials.mgpk:
-            raw = msgpack.dumps(ked)
-
-        elif kind == Serials.cbor:
-            raw = cbor.dumps(ked)
-
-        else:
-            raise ValueError("Invalid serialization kind = {}".format(kind))
-
+        raw = dumps(ked, kind)
         size = len(raw)
 
         match = Rever.search(raw)  #  Rever's regex takes bytes

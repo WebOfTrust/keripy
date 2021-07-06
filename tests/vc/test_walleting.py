@@ -1,22 +1,23 @@
 # -*- encoding: utf-8 -*-
 """
-tests.vc.proving module
+tests.vc.walleting module
 
 """
 
 from keri.app import keeping, habbing
 from keri.core import coring, scheming
-from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, Siger
 from keri.core.scheming import CacheResolver, JSONSchema
 from keri.db import basing
-from keri.vc.proving import Credentialer, credential
+from keri.vc.proving import credential
+from keri.vc.walleting import Wallet, parseCredential, openPocket
 
 
-def test_proving():
+def test_wallet():
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
 
     with basing.openDB(name="sid") as sidDB, \
-            keeping.openKS(name="sid") as sidKS:
+            keeping.openKS(name="sid") as sidKS, \
+            openPocket(name="sid") as sidPDB:
         sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
         assert sidHab.pre == "E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E"
         sed = dict()
@@ -49,6 +50,8 @@ def test_proving():
                             issuance="2021-06-27T21:26:21.233257+00:00",
                             typ=JSONSchema(resolver=cache))
 
+        assert creder.said == "EvK-hjgQCltc-jk_FZPOj4f3S6yEuNRpQcrVTfk1UsCQ"
+
         msg = sidHab.endorse(serder=creder)
         assert msg == (
             b'{"v":"KERI10JSON000189_","x":"Et75h-slZaxkez1YDNpOxM6AF2YFMgcFL4C1ziAeFe3o",'
@@ -61,42 +64,35 @@ def test_proving():
             b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAAsPhz4tfZGgoV'
             b'-1gYtvI1QfzSxwItp5JvguLhKnZE27px5q9fcKGPC0GkMlMBaRyfC47Db4zEWG6ceQ98g6dWDA')
 
-        creder = Credentialer(raw=msg, typ=JSONSchema(resolver=cache))
-        proof = msg[creder.size:]
+        ser = (
+            b'{"v":"KERI10JSON000189_","x":"Et75h-slZaxkez1YDNpOxM6AF2YFMgcFL4C1ziAeFe3o",'
+            b'"d":{"id":"EvK-hjgQCltc-jk_FZPOj4f3S6yEuNRpQcrVTfk1UsCQ","type":['
+            b'"Et75h-slZaxkez1YDNpOxM6AF2YFMgcFL4C1ziAeFe3o"],'
+            b'"issuer":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
+            b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00","credentialSubject":{'
+            b'"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v",'
+            b'"lei":"254900OPPU84GM83MG36"}}}')
+        sig0 = (
+            b'E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw'
+            b'-AxDNI7_ZmaIAAsPhz4tfZGgoV-1gYtvI1QfzSxwItp5JvguLhKnZE27px5q9fcKGPC0GkMlMBaRyfC47Db4zEWG6ceQ98g6dWDA')
+        sidWallet = Wallet(hab=sidHab, db=sidPDB)
 
-        ctr = Counter(qb64b=proof, strip=True)
-        assert ctr.code == CtrDex.AttachedMaterialQuadlets
-        assert ctr.count == 52
+        parseCredential(ims=msg, wallet=sidWallet, resolver=cache)
 
-        pags = ctr.count * 4
-        assert len(proof) == pags
+        # verify we can load serialized VC by SAID
+        key = creder.said.encode("utf-8")
+        assert sidPDB.getSers(key) == ser
 
-        ctr = Counter(qb64b=proof, strip=True)
-        assert ctr.code == CtrDex.TransIndexedSigGroups
-        assert ctr.count == 1
+        # verify the signature
+        sigs = sidPDB.getSigs(key)
+        assert len(sigs) == 1
+        assert sigs[0] == sig0
 
-        prefixer = Prefixer(qb64b=proof, strip=True)
-        assert prefixer.qb64 == sidHab.pre
-
-        seqner = Seqner(qb64b=proof, strip=True)
-        assert seqner.sn == sidHab.kever.sn
-
-        diger = Diger(qb64b=proof, strip=True)
-        assert diger.qb64 == sidHab.kever.serder.dig
-
-        ictr = Counter(qb64b=proof, strip=True)
-        assert ictr.code == CtrDex.ControllerIdxSigs
-
-        isigers = []
-        for i in range(ictr.count):
-            isiger = Siger(qb64b=proof, strip=True)
-            isiger.verfer = sidHab.kever.serder.verfers[i]
-            isigers.append(isiger)
-        assert len(isigers) == 1
-
-        siger = isigers[0]
-        assert siger.verfer.verify(siger.raw, creder.raw) is True
+        # verify we can look up credential by Schema SAID
+        schema = sidPDB.getSchms(schemer.saider.qb64b)
+        assert len(schema) == 1
+        assert schema[0] == key
 
 
 if __name__ == '__main__':
-    test_proving()
+    test_wallet()

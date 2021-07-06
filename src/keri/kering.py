@@ -176,6 +176,15 @@ class UnverifiedTransferableReceiptError(ValidationError):
         raise UnverifiedTransferableReceiptError("error message")
     """
 
+
+class UnverifiedProofError(ValidationError):
+    """
+    Error signature from credential CESR proof is unverfied
+    Usage:
+        raise UnverifiedProofError("error message")
+    """
+
+
 class DerivationError(ValidationError):
     """
     Derivation related errors
