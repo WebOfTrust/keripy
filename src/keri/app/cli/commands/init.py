@@ -14,15 +14,14 @@ from keri.db import koming
 
 # logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize the KLI server process')
-parser.set_defaults(handler=lambda args: handle(args=args),
-                    foreground=False)
+parser = argparse.ArgumentParser(description='Initialize the KLI Daemon')
+parser.set_defaults(handler=lambda args: handle(args=args), foreground=False)
 parser.add_argument('--foreground', '-f', dest='foreground', action='store_false')
+parser.add_argument('-p', '--port', action='store', default=5678)
 
 
 @dataclass
 class KLIRecord:
-    publicKey: str
     host: str
     port: int
 
@@ -32,22 +31,17 @@ def handle(args):
 
     hab = habbing.Habitat(name='kli', temp=False)
 
-    pk = hab.kever.verfers[0].qb64
-    serving = Serving(tyme=0.03125, publicKey=pk)
-    pidPath = serving.getPIDPath()
+    serving = Serving(tyme=0.03125, verfers=hab.kever.verfers)
 
     klis = koming.Komer(db=hab.db, schema=KLIRecord, subkey='kli.')
     klis.put((hab.pre,), KLIRecord(
-        publicKey=pk,
         host='127.0.0.1',
-        port=5678,
+        port=args.port,
     ))
-
-    print(pidPath, pk)
 
     daemon = daemonocle.Daemon(
         worker=serving.do,
-        # update to keri path
+        # update to use pidPath serving.getPIDPath()
         pid_file='/tmp/klid.pid',
         # detach=detach,
     )

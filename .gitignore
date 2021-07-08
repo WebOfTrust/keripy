@@ -133,3 +133,5 @@ dmypy.json
 
 # VSCode specific
 .vscode
+
+klid.log

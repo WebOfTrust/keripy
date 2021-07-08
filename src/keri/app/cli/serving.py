@@ -14,7 +14,6 @@ from hio.core.tcp import serving
 
 from keri.app import habbing
 from keri.core import parsing
-
 # logger = help.ogler.getLogger()
 from keri.db import koming
 
@@ -27,19 +26,17 @@ logging.basicConfig(
 @dataclass
 class KLIDRecord:
     started: str
-    publicKey: str
 
 
 class Serving(doing.Doist):
 
-    def __init__(self, publicKey, doers: [doing.Doer] = None, **kwa):
-        self.publicKey = publicKey
-        logging.debug(f'running with key %s', publicKey)
+    def __init__(self, verfers, doers: [doing.Doer] = None, **kwa):
+        self.verfers = verfers
+        logging.debug(f'running with key %s', self.verfers[0].qb64)
         self.hab = habbing.Habitat(name='klid', temp=False)
 
         klid = koming.Komer(db=self.hab.db, schema=KLIDRecord, subkey='klid.')
         klid.put((self.hab.pre,), KLIDRecord(
-            publicKey=publicKey,
             started=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         ))
 
@@ -118,6 +115,3 @@ class Commandant(doing.DoDoer):
             yield from self.parser.parsator()
 
             # verify command message
-            self.hab.verify()
-
-            # process command
