@@ -5,34 +5,59 @@ keri.kli.witness module
 
 Witness command line interface
 """
+import datetime
 import logging
+from dataclasses import dataclass
 
 from hio.base import doing
 from hio.core.tcp import serving
 
+from keri.app import habbing
 from keri.core import parsing
 
 # logger = help.ogler.getLogger()
+from keri.db import koming
+
 logging.basicConfig(
     filename='klid.log',
     level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s',
 )
 
 
+@dataclass
+class KLIDRecord:
+    started: str
+    publicKey: str
+
+
 class Serving(doing.Doist):
 
-    def __init__(self, doers: [doing.Doer] = None, **kwa):
+    def __init__(self, publicKey, doers: [doing.Doer] = None, **kwa):
+        self.publicKey = publicKey
+        logging.debug(f'running with key %s', publicKey)
+        self.hab = habbing.Habitat(name='klid', temp=False)
+
+        klid = koming.Komer(db=self.hab.db, schema=KLIDRecord, subkey='klid.')
+        klid.put((self.hab.pre,), KLIDRecord(
+            publicKey=publicKey,
+            started=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        ))
+
         doers = doers if doers is not None else []
-        self.server = serving.Server(host="", port=5678)
+        self.server = serving.Server(host='127.0.0.1', port=5678)
         serverDoer = serving.ServerDoer(server=self.server)
-        servant = Servant(server=self.server)
+        servant = Servant(server=self.server, hab=self.hab)
         doers.extend([serverDoer, servant])
 
         super(Serving, self).__init__(doers=doers, **kwa)
 
+    def getPIDPath(self):
+        return self.hab.db.headDirPath + '/keri'
+
 
 class Servant(doing.DoDoer):
-    def __init__(self, server, doers=None, **kwa):
+    def __init__(self, server, hab, doers=None, **kwa):
+        self.hab = hab
         self.server = server
         self.cants = dict()
         doers = doers if doers is not None else []
@@ -41,8 +66,6 @@ class Servant(doing.DoDoer):
         super(Servant, self).__init__(doers=doers, **kwa)
         if self.tymth:
             self.server.wind(self.tymth)
-
-        logging.info('Daemon is starting')
 
     def wind(self, tymth):
         super(Servant, self).wind(tymth)
@@ -57,7 +80,7 @@ class Servant(doing.DoDoer):
                     continue
 
                 if ca not in self.cants:
-                    cant = Commandant(remoter=ix)
+                    cant = Commandant(remoter=ix, hab=self.hab)
                     self.cants[ca] = cant
                     self.extend(doers=[cant])
 
@@ -77,7 +100,8 @@ class Servant(doing.DoDoer):
 
 class Commandant(doing.DoDoer):
 
-    def __init__(self, remoter, doers=None, **kwa):
+    def __init__(self, remoter, hab, doers=None, **kwa):
+        self.hab = hab
         self.remoter = remoter
         self.parser = parsing.Parser(ims=self.remoter.rxbs,
                                      framed=True)
@@ -92,3 +116,8 @@ class Commandant(doing.DoDoer):
             if self.parser.ims:
                 logging.info("Server received command:\n%s\n...\n", self.parser.ims[:1024])
             yield from self.parser.parsator()
+
+            # verify command message
+            self.hab.verify()
+
+            # process command

@@ -80,7 +80,7 @@ class InceptDoer(doing.Doer):
                     if client is not None:
                         while not client.connected:
                             logger.info("%s:\n waiting for connection to remote %s.\n\n",
-                                        self.opts.name, client.ha)
+                                            self.opts.name, client.ha)
                             yield self.tock
 
                         logger.info("%s:\n connected to %s.\n\n", self.opts.name, client.ha)

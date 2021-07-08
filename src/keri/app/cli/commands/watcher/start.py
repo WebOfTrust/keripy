@@ -1,10 +1,9 @@
 # -*- encoding: utf-8 -*-
 """
-keri.kli.commands module
+keri.kli.commands.watcher module
 
 """
 import argparse
-import logging
 
 from hio.base import doing
 from hio.core.tcp import clienting
@@ -13,13 +12,8 @@ from keri.app import habbing
 from keri.app.cli.commands.init import KLIRecord
 from keri.db import koming
 
-parser = argparse.ArgumentParser(description='view info')
+parser = argparse.ArgumentParser(description='Start watcher')
 parser.set_defaults(handler=lambda args: handler())
-
-logging.basicConfig(
-    filename='klid.log',
-    level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(message)s',
-)
 
 
 def handler():
@@ -32,7 +26,6 @@ def handler():
 class InfoIst(doing.Doist):
 
     def __init__(self, real=False, limit=None, doers=None, **kwa):
-        # add config
         self.hab = habbing.Habitat(name='kli', temp=False)
         kli = koming.Komer(db=self.hab.db, schema=KLIRecord, subkey='kli.').get((self.hab.pre,))
 
@@ -51,8 +44,8 @@ class InfoIst(doing.Doist):
             (yield self.tock)
 
         msg = dict(
-            cmd='info',
-            args=dict(),
+            cmd='watcher',
+            args=('start',),
         )
 
         self.hab.endorse(msg)
@@ -60,5 +53,3 @@ class InfoIst(doing.Doist):
         self.client.tx(msg)
 
         self.client.close()
-
-        return
