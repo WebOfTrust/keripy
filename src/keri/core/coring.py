@@ -1586,8 +1586,9 @@ class Encrypter(Matter):
 
     def encrypt(self, ser=None, matter=None):
         """
-        Returns cipher text as Cipher instance of encryption of bytes
-        serialization ser or Matter instance mat if provided.
+        Returns:
+            Cipher instance of cipher text encryption of plain text serialization
+            provided by either ser or Matter instance when provided.
 
         Parameters:
             ser (Union[bytes,str]): qb64b or qb64 serialization of plain text
@@ -1690,19 +1691,23 @@ class Decrypter(Matter):
 
     def decrypt(self, ser=None, cipher=None, transferable=False):
         """
-        Returns plain text of cryptographic cipher text material
-        given by ser. Encrypted plain text should be fully qualified (qb64) so
-        that derivaton code of plain text preserved through encryption/decryption
-        round trip.
+        Returns:
+            Salter or Signer instance derived from plain text decrypted from
+            encrypted cipher text material given by ser or cipher. Plain text
+            that is orignally encrypt should always be fully qualified (qb64b)
+            so that derivaton code of plain text is preserved through
+            encryption/decryption round trip.
 
         Parameters:
             ser (Union[bytes,str]): qb64b or qb64 serialization of cipher text
-            cipher (Cipher): optional cipher instance if ser is None
+            cipher (Cipher): optional Cipher instance when ser is None
+            transferable (Boolean): True means associated verfer of returned
+                signer is transferable. False means non-transferable
         """
         if not (ser or cipher):
             raise EmptyMaterialError("Neither ser or cipher are provided.")
 
-        if ser:
+        if ser:  # create cipher to ensure valid derivation code of material in ser
             cipher = Cipher(qb64b=ser)
 
         return (self._decrypt(cipher=cipher,
@@ -1720,7 +1725,8 @@ class Decrypter(Matter):
             cipher (Cipher): instance of encrypted seed or salt
             prikey (bytes): raw binary decryption private key derived from
                 signing seed or sigkey
-            transferable (Boolean):
+            transferable (Boolean): True means associated verfer of returned
+                signer is transferable. False means non-transferable
         """
         pubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)
         plain = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)  # qb64b

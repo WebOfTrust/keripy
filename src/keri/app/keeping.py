@@ -579,6 +579,10 @@ class Creatory:
         return SaltyCreator(**kwa)
 
 
+# default values to init manager's globals database
+Initage = namedtuple("Initage", 'aeid pidx salt tier')
+
+
 class Manager:
     """
     Class for managing key pair creation, storage, retrieval, and message signing.
@@ -591,21 +595,35 @@ class Manager:
             decryption key is derived seed (private signing key seed)
 
     Attributes (Hidden):
-       _aeid (str): authentication and encryption fully qualified qb64
+
+        _seed (str): qb64 private-signing key (seed) for the aeid from which
+                the private decryption key is derived. If aeid stored in
+                database is not empty then seed may required to do any key
+                management operations. The seed value is memory only and MUST NOT
+                be persisted to the database for the manager with which it is used.
+                It MUST only be loaded once when the process that runs the Manager
+                is initialized. Its presence acts as an authentication, authorization,
+                and decryption secret for the Manager and must be stored on
+                another device from the device that runs the Manager.
+
+
+    Properties:
+        aeid (str): authentication and encryption fully qualified qb64
             non-transferable identifier prefix for authentication via signing
             and asymmetric encryption of secrets using the associated
             (public, private) key pair. Secrets include both salts and private
             keys for all key sets in keeper. Defaults to empty which means no
             authentication or encryption of key sets. Use initial attribute because
             keeper may not be open on init.
-       _pidx (int): initial pidx prefix index. Use initial attribute because keeper
-            may not be open on init.
-       _salt (str): initial salt. Use inital attribute because keeper may not be
-             open on init.
-       _tier (str): initial security tier as value of Tierage. Use initial attribute
-            because keeper may not be open on init
 
-    Properties:
+        pidx (int): initial pidx prefix index. Use initial attribute because keeper
+            may not be open on init.
+
+        salt (str): initial salt. Use inital attribute because keeper may not be
+             open on init.
+
+        tier (str): initial security tier as value of Tierage. Use initial attribute
+            because keeper may not be open on init
 
     Methods:
 
@@ -640,29 +658,35 @@ class Manager:
 
 
         """
-        if keeper is None:
-            keeper = Keeper()
-
-        self.keeper = keeper
+        self.keeper = keeper if keeper is not None else Keeper()
         self.encrypter = None
         self.decrypter = None
 
-        self._pidx = pidx if pidx is not None else 0
-        self._salt = salt if salt is not None else coring.Salter().qb64
-        self._tier = tier if tier is not None else coring.Tiers.low
-        self._aeid = aeid if aeid is not None else ""
+        if pidx is None:
+            pidx = 0
+        if tier is None:
+            tier = coring.Tiers.low
+        if salt is None:
+            salt = coring.Salter().qb64
+
+        if aeid:
+            encrypter = coring.Encrypter(verkey=aeid)
+            # make sure seed belongs to aeid
+            if not seed or not encrypter.verifySeed(seed):
+                raise kering.AuthError("Provided seed not associated with"
+                                           " aeid={}.".format(aeid))
+            # self.decrypter = coring.Decrypter(seed=self._seed)
+            # encrypt default salt
+            # salt = encrypter.encrypt(ser=salt).qb64b
+        else:
+            aeid = ""
+
+        self._initage = Initage(aeid=aeid, pidx=pidx, salt=salt, tier=tier)
+        #self._pidx = pidx if pidx is not None else 0
+        #self._salt = salt if salt is not None else coring.Salter().qb64
+        #self._tier = tier if tier is not None else coring.Tiers.low
+        #self._aeid = aeid if aeid is not None else ""
         self._seed = seed if seed is not None else ""
-
-        if self._aeid:
-            self.encrypter = coring.Encrypter(verkey=self._aeid)
-            if self._seed: # make sure seed belongs to aeid
-                if not self.encrypter.verifySeed(self._seed):
-                    raise kering.AuthError("Provided seed not associated with"
-                                           " aeid={}.".format(self._aeid))
-                self.decrypter = coring.Decrypter(seed=self._seed)
-
-            if self._salt:  # encrypt default salt
-                self._salt = self.encrypter.encrypt(ser=self._salt).qb64b
 
         if self.keeper.opened:  # allows keeper db to opened asynchronously
             self.setup()  # first call to .setup with initialize database
@@ -682,26 +706,22 @@ class Manager:
         if not self.keeper.opened:
             raise kering.ClosedError("Attempt to setup closed Manager.keeper.")
 
-        if (aeid := self.keeper.gbls.get('aeid')) is None:
-            aeid = self._aeid
-            self.keeper.gbls.put('aeid', aeid)
+        if self.pidx is None:  # never before inited
+            self.pidx = self._initage.pidx  # init to default
 
-        if (pidx := self.keeper.gbls.get('pidx')) is None:
-            pidx = self._pidx
-            self.keeper.gbls.put('pidx', '%x' % pidx)  # convert to hex
-        else:
-            pidx = int(pidx, 16)
+        if self.tier is None:  # never before inited
+            self.tier = self._initage.tier  # init to default
 
-        if (salt := self.keeper.gbls.get('salt')) is None:
-            salt = self._salt
-            self.keeper.gbls.put('salt', salt)
-            self._salt = ''  # don't keep around
+        if self.salt is None:  # never before inited
+            self.salt = self._initage.salt
 
-        if (tier := self.keeper.gbls.get('tier')) is None:
-            tier = self._tier
-            self.keeper.gbls.put('tier', tier)
+        if self.aeid is None:  # never before inited
+            aeid = self._initage.aeid
+            self.updateAeid(aeid, self.seed)
 
-        return (aeid, pidx, salt, tier)
+        self._initage = None  # init defaults is a one time operation
+
+        return (self.aeid, self.pidx, self.salt, self.tier)
 
 
     @property
@@ -723,28 +743,75 @@ class Manager:
         return self.keeper.gbls.get('aeid')
 
 
-    def updateAeid(self, aeid, seed):
+    def updateAeid(self, aeid, seed, lastSeed=None):
         """
         Given seed belongs to aeid and encrypter, update aeid and re-encrypt all
         secrets
 
         Parameters:
-            aeid (str): qb64 of auth encrypt id  (public signing key)
-            seed (str): qb64 of seed from which aeid is derived (private signing key seed)
+            aeid (str): qb64 of new auth encrypt id  (public signing key)
+            seed (str): qb64 of new seed from which new aeid is derived (private signing
+                        key seed)
+            lastSeed (str): qb64 of last seed from which cuurent aeid was derived
+                        (private signing key seed)
         """
-        encrypter = coring.Encrypter(verkey=aeid)  # derive encrypter from aeid
-        if not seed or not encrypter.verifySeed(seed):  # verifies seed belongs to aeid
-            raise kering.AuthError("Provided seed not associated with"
-                                       " aeid={}.".format(aeid))
+        if self.aeid:  # check that lastSeed matches last current .aeid
+            # verifies seed belongs to aeid
+            if not lastSeed or not self.encrypter.verifySeed(lastSeed):
+                raise kering.AuthError("Last seed missing or provided last seed "
+                                       "not associated with last aeid={}."
+                                       "".format(self.aeid))
+
+        if aeid:  # changing to a new aeid
+            encrypter = coring.Encrypter(verkey=aeid)  # derive encrypter from aeid
+            # verifies new seed belongs to new aeid
+            if not seed or not encrypter.verifySeed(seed):
+                raise kering.AuthError("Seed missing or provided seed not associated"
+                                           "  with provided aeid={}.".format(aeid))
+        else:  # no new aeid so no new encrpter
+            encrypter = None
+
+        # fetch all secrets from db, decrypt all secrets with self.decrypter
+        # unless they decrypt automatically on fetch and then re-encrypt with
+        # encrypter  update db with re-encrypted values
+
+        # root salt secret .salt property is automatically decrypted on fetch
+        if (salt := self.salt) is not None:  # decrypted salt
+            self.salt = encrypter.encrypt(ser=salt).qb64 if encrypter else salt
+
+        # other secrets
+        if self.decrypter:
+            pass
+
+        self.keeper.gbls.pin("aeid", aeid)  # set aeid in db
+        self._seed = seed  # set .seed in memory
+        self.encrypter = encrypter  # update .encrypter
+        # update .decrypter
+        self.decrypter = coring.Decrypter(seed=seed) if seed else None
 
 
-        # decrypt all secrets with self.decrypter
-        # re-encrypt all secrets with encrypter
-        # update database and in memory values
-        self.keeper.gbls.pin("aeid", aeid)  # update aeid
-        self.encrypter = encrypter  # update encrypter
-        self._seed = seed
-        self.decrypter = coring.Decrypter(seed=seed)
+    @property
+    def salt(self):
+        """
+        salt property getter from key store db.
+        Assumes db initialized.
+        salt is default root salt for new key sequence creation
+        """
+        salt = self.keeper.gbls.get('salt')
+        if self.decrypter:  # given .decrypt secret salt must be encrypted in db
+            return self.decrypter.decrypt(ser=salt).qb64
+        return salt
+
+
+    @salt.setter
+    def salt(self, salt):
+        """
+        salt property setter to key store db.
+        Parameters:
+            salt (str): qb64 default root salt for new key sequence creation
+                may be plain text or cipher text handled by updateAeid
+        """
+        self.keeper.gbls.pin('salt', salt)
 
 
     @property
@@ -754,7 +821,9 @@ class Manager:
         Assumes db initialized.
         pidx is prefix index int for next new key sequence
         """
-        return int(self.keeper.gbls.get("pidx"), 16)
+        if (pidx := self.keeper.gbls.get("pidx")) is not None:
+            return int(pidx, 16)
+        return pidx  # None
 
 
     @pidx.setter
@@ -766,21 +835,26 @@ class Manager:
         self.keeper.gbls.pin("pidx", "%x" % pidx)
 
 
-    def getPidx(self):
+    @property
+    def tier(self):
         """
-        Returns: pidx from .keeper. Assumes db initialized.
-        pidx is prefix index for next new key sequence
-        need to update
+        tier property getter from key store db.
+        Assumes db initialized.
+        tier is default root security tier for new key sequence creation
         """
-        return int(self.keeper.gbls.get("pidx"), 16)
+        return self.keeper.gbls.get('tier')
 
 
-    def setPidx(self, pidx):
+    @tier.setter
+    def tier(self, tier):
         """
-        Save pidx to .keeper
-        pidx is prefix index for next new key sequence
+        tier property setter to key store db.
+        tier is default root security tier for new key sequence creation
         """
-        self.keeper.gbls.pin("pidx", "%x" % pidx)
+        self.keeper.gbls.pin('tier', tier)
+
+
+
 
 
     def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed, isith=None,

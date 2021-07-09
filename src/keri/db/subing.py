@@ -91,7 +91,7 @@ class Suber:
 
         """
         data = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return bytes(data).decode("utf=8") if data else None
+        return bytes(data).decode("utf=8") if data is not None else None
 
 
     def rem(self, keys: Union[str, Iterable]):
@@ -212,7 +212,7 @@ class SerderSuber(Suber):
 
         """
         raw = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return coring.Serder(raw=bytes(raw)) if raw else None
+        return coring.Serder(raw=bytes(raw)) if raw is not None else None
 
 
     def rem(self, keys: Union[str, Iterable]):
@@ -318,7 +318,7 @@ class MatterSuber(Suber):
 
         """
         val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return self.klas(qb64b=bytes(val)) if val else None
+        return self.klas(qb64b=bytes(val)) if val is not None else None
 
 
     def rem(self, keys: Union[str, Iterable]):
@@ -400,7 +400,7 @@ class SignerSuber(MatterSuber):
         val = self.db.getVal(db=self.sdb, key=key)
         verfer = coring.Verfer(qb64b=key)
         return (self.klas(qb64b=bytes(val), transferable=verfer.transferable)
-                if val else None)
+                if val is not None else None)
 
 
     def getItemIter(self):

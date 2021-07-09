@@ -705,9 +705,13 @@ def test_manager():
     with keeping.openKS() as keeper:
         manager = keeping.Manager(keeper=keeper, salt=salt)
         assert manager.keeper.opened
-        assert manager._pidx == 0
-        assert manager._salt == ''  # emptied out after inited
-        assert manager._tier == coring.Tiers.low
+        assert manager.pidx == 0
+        assert manager.tier == coring.Tiers.low
+        assert manager.salt == salt
+        assert manager.aeid == ""
+        assert manager.seed == ""
+        assert manager.encrypter == None
+        assert manager.decrypter == None
 
         # salty algorithm incept
         verfers, digers, cst, nst = manager.incept(salt=salt, temp=True)  # algo default salty
@@ -1195,7 +1199,6 @@ def test_manager_with_aeid():
     signer = coring.Signer(raw=rawseed, code=coring.MtrDex.Ed25519_Seed,
                            transferable=False)
     seed = signer.qb64
-    verfer = signer.verfer
     aeid = signer.verfer.qb64
     assert aeid == 'BJruYr3oXDGRTRN0XnhiqDeoENdRak6FD8y2vsTvvJkE'
 
@@ -1203,30 +1206,29 @@ def test_manager_with_aeid():
     encrypter = coring.Encrypter(verkey=aeid)
     assert encrypter.verifySeed(seed=seed)
 
-
-
     with keeping.openKS() as keeper:
         manager = keeping.Manager(keeper=keeper, salt=salt, aeid=aeid, seed=seed)
         assert manager.keeper.opened
-        assert manager._pidx == 0
-        assert manager._salt == ''  # on disk only,emptied out after inited
-        assert manager._tier == coring.Tiers.low
-        assert manager._aeid == aeid  # on disk only
-        assert manager._seed == seed  # in memory only
-
-        assert manager.encrypter.qb64 == encrypter.qb64
-        assert manager.decrypter.qb64 == decrypter.qb64
-
-        assert manager.aeid == aeid
+        assert manager._initage is None  # db open so ._initage consumed
+        assert manager.encrypter.qb64 == encrypter.qb64  #  aeid provided
+        assert manager.decrypter.qb64 == decrypter.qb64  # aeid and seed provided
+        assert manager.seed == seed  # in memory only
+        assert manager.aeid == aeid  # on disk only
+        assert manager.salt == salt  # encrypted on disk but property decrypts if seed
+        assert manager.pidx == 0
+        assert manager.tier == coring.Tiers.low
+        saltCipher = coring.Cipher(qb64=manager.keeper.gbls.get('salt'))
+        assert saltCipher.decrypt(seed=seed).qb64 == salt
 
         # rawseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
         rawseed = (b"\x89\xfe{\xd9'\xa7\xb3\x89#\x19\xbec\xee\xed\xc0\xf9\x97\xd0\x8f9\x1dyNI"
                    b'I\x98\xbd\xa4\xf6\xfe\xbb\x03')
         signer = coring.Signer(raw=rawseed, code=coring.MtrDex.Ed25519_Seed,
                                transferable=False)
-        manager.updateAeid(aeid=signer.verfer.qb64, seed=signer.qb64)
-        assert  manager.aeid == signer.verfer.qb64 == 'BRw6sysb_uv81ZouXqHxQlqnAh9BYiSOsg9eQJmbZ8Uw'
-
+        manager.updateAeid(aeid=signer.verfer.qb64, seed=signer.qb64, lastSeed=seed)
+        assert manager.aeid == signer.verfer.qb64 == 'BRw6sysb_uv81ZouXqHxQlqnAh9BYiSOsg9eQJmbZ8Uw'
+        assert manager.salt == salt
+        assert not saltCipher.qb64 == manager.keeper.gbls.get('salt')
 
     """End Test"""
 
