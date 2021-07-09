@@ -668,24 +668,10 @@ class Manager:
             tier = coring.Tiers.low
         if salt is None:
             salt = coring.Salter().qb64
-
-        if aeid:
-            encrypter = coring.Encrypter(verkey=aeid)
-            # make sure seed belongs to aeid
-            if not seed or not encrypter.verifySeed(seed):
-                raise kering.AuthError("Provided seed not associated with"
-                                           " aeid={}.".format(aeid))
-            # self.decrypter = coring.Decrypter(seed=self._seed)
-            # encrypt default salt
-            # salt = encrypter.encrypt(ser=salt).qb64b
-        else:
-            aeid = ""
+        if aeid is None:
+            aeid = ''
 
         self._initage = Initage(aeid=aeid, pidx=pidx, salt=salt, tier=tier)
-        #self._pidx = pidx if pidx is not None else 0
-        #self._salt = salt if salt is not None else coring.Salter().qb64
-        #self._tier = tier if tier is not None else coring.Tiers.low
-        #self._aeid = aeid if aeid is not None else ""
         self._seed = seed if seed is not None else ""
 
         if self.keeper.opened:  # allows keeper db to opened asynchronously
