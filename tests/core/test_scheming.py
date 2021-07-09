@@ -15,11 +15,11 @@ from keri.kering import ValidationError
 def test_saider():
     # Initialize from JSON Schema JSON
     scer = (
-        b'{"$id": "EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndY", "$schema": '
+        b'{"$id": "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA", "$schema": '
         b'"http://json-schema.org/draft-07/schema#", "type": "object", "properties": {"a": {"type": "string"}, '
         b'"b": {"type": "number"}, "c": {"type": "string", "format": "date-time"}}}')
 
-    sad = Saider(qb64="EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndY")
+    sad = Saider(qb64="ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA")
     assert sad.code == MtrDex.Blake3_256
 
     sed = json.loads(scer)
@@ -49,7 +49,7 @@ def test_saider():
 
     # Initialize from dict
     sad = Saider(sed=sed, code=MtrDex.Blake3_256)
-    assert sad.qb64 == "EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndY"
+    assert sad.qb64 == "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA"
     assert sad.verify(sed, prefixed=False) is True
 
     sed = json.loads(scer)
@@ -58,7 +58,7 @@ def test_saider():
 
 def test_json_schema():
     scer = (
-        b'{"$id": "EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndY", "$schema": '
+        b'{"$id": "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA", "$schema": '
         b'"http://json-schema.org/draft-07/schema#", "type": "object", "properties": {"a": {"type": "string"}, '
         b'"b": {"type": "number"}, "c": {"type": "string", "format": "date-time"}}}')
     payload = b'{"a": "test", "b": 123, "c": "2018-11-13T20:20:39+00:00"}'
@@ -66,7 +66,7 @@ def test_json_schema():
     badjson = b'{"a": "test" "b": 123 "c": "2018-11-13T20:20:39+00:00"}'
 
     sce = Schemer(raw=scer)
-    assert sce.said == "EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndY"
+    assert sce.said == "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA"
     assert sce.verify(raw=payload) is True
     assert sce.verify(raw=mismatch) is False
     assert sce.verify(raw=badjson) is False
@@ -119,8 +119,8 @@ def test_json_schema_dict():
     badjson = b'{"a": "test" "b": 123 "c": "2018-11-13T20:20:39+00:00"}'
 
     sce = Schemer(sed=sed, typ=JSONSchema(), code=MtrDex.Blake3_256)
-    assert sce.said == "EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndY"
-    assert sce.sed["$id"] == "EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndY"
+    assert sce.said == "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA"
+    assert sce.sed["$id"] == "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA"
     assert sce.verify(raw=payload) is True
     assert sce.verify(raw=mismatch) is False
     assert sce.verify(raw=badjson) is False
@@ -128,7 +128,7 @@ def test_json_schema_dict():
     raw = json.dumps(sce.sed).encode("utf-8")
 
     sce = Schemer(raw=raw)
-    assert sce.said == "EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndY"
+    assert sce.said == "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA"
 
     # Invalid JSON Schema
     sed = dict()
@@ -176,28 +176,28 @@ def test_json_schema_dict():
     ))
 
     sce = Schemer(sed=sed, code=MtrDex.Blake3_256)
-    assert sce.said == "E85XpgsvzBLPVHiy0EzFmNCTN13DUK4eITMoY2kmVD8o"
+    assert sce.said == "E1AqXevVnoeItc4P7TnRpW8rOIJYm1daDe9jYVZQZLEY"
     payload = b'{"a": {"b": 123, "c": "2018-11-13T20:20:39+00:00"}}'
     assert sce.verify(payload)
 
     # Additional hash types
     sce = Schemer(sed=sed, code=MtrDex.Blake2b_256)
-    assert sce.said == "FtDGHM1-15UdUiIki8mtKgfpC9CLxuq16wr55nw3htZs"
+    assert sce.said == "FWOS-OuKCWnux0Oka2G5rlQY2I68XBJmZsXDLHbHKu_I"
     sce = Schemer(sed=sed, code=MtrDex.Blake2s_256)
-    assert sce.said == "Ga063NUEvWf4ZNm7qgbAUVhcBMEL8vddQhEauTk2HuKo"
+    assert sce.said == "GRidELCmdk-47s0OI6EAVk1PBolvS1HetzVbxbwBNIbI"
     sce = Schemer(sed=sed, code=MtrDex.SHA3_256)
-    assert sce.said == "HUhsiL9Hl9c6DVZ9YioCKiyLIuJmnEd0ALKNge3bMMn0"
+    assert sce.said == "HmDms9gN0b0Zjmu7HyT2HEDkdnaOYm-1KgxIIhNTQPaI"
     sce = Schemer(sed=sed, code=MtrDex.SHA3_512)
-    assert sce.said == "0FaBVrb4jLlfgSqNaAGf3gFpRJJvZUiyPg-2W240y3IO1SCv2kD3rkowQ9i9yOVYT_K3BZ54eBN1zpqvkoEMk7YQ"
+    assert sce.said == "0FAYWj9GFRxh-YrppcR5lpVM1rm-sez1K6DDTKGfTljfbYPcdpeatBl46G8IXsQUG8ww0AbqDZRzeFuWWar2wAyA"
     sce = Schemer(sed=sed, code=MtrDex.SHA2_256)
-    assert sce.said == "IRgVJumn8RaXh0WJV1QT3zS3rUwhuCJDDhzgFRE-Fdn4"
+    assert sce.said == "IvT1u5jtwcVQl6GlOGyfNeoyJoSmKXnOwJyIZuB2Vsh4"
     sce = Schemer(sed=sed, code=MtrDex.SHA2_512)
-    assert sce.said == "0GiFhrQdu9N7xDkB7IDLVdj13zGydat-oJyYK0pFXaW695YeZZh-KPJJ-8ku47W-XmRqI8TpwV0NVyr0LC6ogGMg"
+    assert sce.said == "0GkKvqMZLvSfsGhYfl8wTZAq7Gv4khAs8v7JmUNBzZ-WOuL21RkJpxaiTXMk4_S8w_y73AnfjQZK06Vr0KMYdxww"
 
 
 def test_resolution():
     ref = (b'{'
-           b'   "$id": "EMZXD1QYBN3PtDq4M2Y_BWiswd3bdraXGoFj_ALcOPjI", '
+           b'   "$id": "Evcu66xr3s_x1k4IjwoQ3ZKEbfkdVLxLr7PW-67nYX4I", '
            b'   "$schema": "http://json-schema.org/draft-07/schema#", '
            b'   "type": "object", '
            b'   "properties": {'
@@ -207,7 +207,7 @@ def test_resolution():
 
     scer = (
         b'{'
-        b'   "$id": "ETZr8wWfVcUm7HdXwNjJaQJpcdlMeY6kR3eA9i9ZItxo", '
+        b'   "$id": "Er21QX8KuraJO-3KYXpcyBN7TFSgrasvJiTbgNLIMbbI", '
         b'   "$schema": "http://json-schema.org/draft-07/schema#", '
         b'   "type": "object", '
         b'   "properties": {'

@@ -52,7 +52,7 @@ def test_issuing():
         ))
 
         schemer = scheming.Schemer(sed=sed, code=coring.MtrDex.Blake3_256)
-        assert schemer.said == "Et75h-slZaxkez1YDNpOxM6AF2YFMgcFL4C1ziAeFe3o"
+        assert schemer.said == "EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY"
 
         cache = scheming.CacheResolver()
         cache.add(schemer.said, schemer.raw)
@@ -77,19 +77,17 @@ def test_issuing():
                             issuance="2021-06-27T21:26:21.233257+00:00",
                             typ=jsonSchema)
 
-        assert creder.said == "EvK-hjgQCltc-jk_FZPOj4f3S6yEuNRpQcrVTfk1UsCQ"
+        assert creder.said == "Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY"
 
         msg = sidHab.endorse(serder=creder)
         assert msg == (
-            b'{"v":"KERI10JSON000189_","x":"Et75h-slZaxkez1YDNpOxM6AF2YFMgcFL4C1ziAeFe3o",'
-            b'"d":{"id":"EvK-hjgQCltc-jk_FZPOj4f3S6yEuNRpQcrVTfk1UsCQ","type":['
-            b'"Et75h-slZaxkez1YDNpOxM6AF2YFMgcFL4C1ziAeFe3o"],'
-            b'"issuer":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00","credentialSubject":{'
-            b'"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v",'
-            b'"lei":"254900OPPU84GM83MG36"}}}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE'
-            b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAAsPhz4tfZGgoV'
-            b'-1gYtvI1QfzSxwItp5JvguLhKnZE27px5q9fcKGPC0GkMlMBaRyfC47Db4zEWG6ceQ98g6dWDA')
+            b'{"v":"KERI10JSON000136_","i":"Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY",'
+            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY",'
+            b'"issuer":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","issuance":"2021-06-27T21:26:21.233257+00:00",'
+            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v",'
+            b'"lei":"254900OPPU84GM83MG36"}}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE'
+            b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAAVgLJOmUNlMZpSGV0hr'
+            b'-KddJmmEByoxfDdvkW161VsZO2_gjYf5OODwjyA3oSThfXGnj5Jhk5iszNuT2ZSsTMBg')
 
         # Create the issue credential payload
         pl = dict(
@@ -106,15 +104,13 @@ def test_issuing():
         assert doist.tyme == limit
 
         ser = (
-            b'{"v":"KERI10JSON000189_","x":"Et75h-slZaxkez1YDNpOxM6AF2YFMgcFL4C1ziAeFe3o",'
-            b'"d":{"id":"EvK-hjgQCltc-jk_FZPOj4f3S6yEuNRpQcrVTfk1UsCQ","type":['
-            b'"Et75h-slZaxkez1YDNpOxM6AF2YFMgcFL4C1ziAeFe3o"],'
-            b'"issuer":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00","credentialSubject":{'
-            b'"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v",'
-            b'"lei":"254900OPPU84GM83MG36"}}}')
+            b'{"v":"KERI10JSON000136_","i":"Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY",'
+            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY",'
+            b'"issuer":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","issuance":"2021-06-27T21:26:21.233257+00:00",'
+            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36"}}'
+        )
         sig0 = (
-            b'AAsPhz4tfZGgoV-1gYtvI1QfzSxwItp5JvguLhKnZE27px5q9fcKGPC0GkMlMBaRyfC47Db4zEWG6ceQ98g6dWDA'
+            b'AAVgLJOmUNlMZpSGV0hr-KddJmmEByoxfDdvkW161VsZO2_gjYf5OODwjyA3oSThfXGnj5Jhk5iszNuT2ZSsTMBg'
         )
 
         # verify we can load serialized VC by SAID
@@ -202,7 +198,7 @@ def test_proving():
                             issuance="2021-06-27T21:26:21.233257+00:00",
                             typ=JSONSchema(resolver=cache))
 
-        assert creder.said == "EvK-hjgQCltc-jk_FZPOj4f3S6yEuNRpQcrVTfk1UsCQ"
+        assert creder.said == "Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY"
 
         msg = sidHab.endorse(serder=creder)
         hanWallet = Wallet(hab=hanHab, db=hanPDB)
@@ -255,9 +251,9 @@ def test_proving():
         vcs = data["verifiableCredential"]
         assert len(vcs) == 1
 
-        proof = "-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE" \
-                "-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAAsPhz4tfZGgoV" \
-                "-1gYtvI1QfzSxwItp5JvguLhKnZE27px5q9fcKGPC0GkMlMBaRyfC47Db4zEWG6ceQ98g6dWDA"
+        proof = (
+            "-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw"
+            "-AxDNI7_ZmaI-AABAAVgLJOmUNlMZpSGV0hr-KddJmmEByoxfDdvkW161VsZO2_gjYf5OODwjyA3oSThfXGnj5Jhk5iszNuT2ZSsTMBg")
         assert vcs[0]["proof"] == proof
 
 

@@ -37,7 +37,6 @@ def parseCredential(ims=b'', wallet=None, typ=JSONSchema()):
         raise e
     else:
         del ims[:creder.size]
-
     cold = Parser.sniff(ims)
     if cold is Colds.msg:
         raise ColdStartError("unable to parse VC, attachments expected")
