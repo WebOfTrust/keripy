@@ -137,7 +137,6 @@ def test_issuer(mockHelpingNowUTC):
         # issuer, allowed backers, initial set of backers
         issuer = Issuer(hab=hab, reger=reg, baks=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
         ser = Serder(raw=issuer.incept)
-        # print(ser.pre)
         assert ser.pre == "EaU321874i434f59ab7cMH6YlN52PJ395nrLS_6tLq6c"
         assert ser.ked["t"] == "vcp"
         assert ser.ked["b"] == ["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"]

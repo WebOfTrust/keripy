@@ -61,7 +61,6 @@ def test_issuer():
         assert issuer.name == "test"
         assert issuer.temp is True
         assert isinstance(issuer.env, lmdb.Environment)
-        print(issuer.path)
         assert issuer.path.startswith("/tmp/keri_reg_")
         assert issuer.path.endswith("_test/keri/reg/test")
         assert issuer.env.path() == issuer.path

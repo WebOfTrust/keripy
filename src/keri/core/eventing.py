@@ -453,7 +453,7 @@ def verifySigs(serder, sigers, verfers):
     # passed in sigers list, but instead depends on caller to use indices to
     # modify its copy to filter out unverifiable or duplicate sigers
     usigs = oset([siger.qb64 for siger in sigers])
-    usigers = [Siger(qb64=sig) for sig in usigs ]
+    usigers = [Siger(qb64=sig) for sig in usigs]
 
     # verify indexes of attached signatures against verifiers and assign
     # verfer to each siger

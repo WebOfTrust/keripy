@@ -192,7 +192,7 @@ class Reactor(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, client, verifier=None, direct=True, doers=None, **kwa):
+    def __init__(self, hab, client, verifier=None, exchanger=None, direct=True, doers=None, **kwa):
         """
         Initialize instance.
 
@@ -212,7 +212,11 @@ class Reactor(doing.DoDoer):
         self.hab = hab
         self.client = client  # use client for both rx and tx
         self.verifier = verifier
+        self.exc = exchanger
         self.direct = True if direct else False
+        doers = doers if doers is not None else []
+        doers.extend([self.msgDo, self.escrowDo, self.cueDo])
+
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       lax=False,
                                       local=False,
@@ -226,13 +230,16 @@ class Reactor(doing.DoDoer):
         else:
             self.tvy = None
 
-        self.parser = parsing.Parser(ims=self.client.rxbs,
-                                      framed=True,
-                                      kvy=self.kevery,
-                                      tvy=self.tvy)
+        if self.exc is not None:
+            doers.extend([self.exchangerDo])
 
-        doers = doers if doers is not None else []
-        doers.extend([self.msgDo, self.escrowDo, self.cueDo])
+
+        self.parser = parsing.Parser(ims=self.client.rxbs,
+                                     framed=True,
+                                     kvy=self.kevery,
+                                     tvy=self.tvy,
+                                     exc=self.exc)
+
 
         super(Reactor, self).__init__(doers=doers, **kwa)
         if self.tymth:
@@ -298,6 +305,37 @@ class Reactor(doing.DoDoer):
                 yield  # throttle just do one cue at a time
             yield
         return False  # should never get here except forced close
+
+
+    @doing.doize()
+    def exchangerDo(self, tymth=None, tock=0.0, **opts):
+        """
+         Returns Doist compatibile generator method (doer dog) to process
+            .tevery.cues deque
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        Usage:
+            add to doers list
+        """
+        while True:
+            for msg in self.exc.processResponseIter():
+                self.sendMessage(msg, label="response")
+                yield  # throttle just do one cue at a time
+            yield
+        return False  # should never get here except forced close
+
+
+
 
     @doing.doize()
     def escrowDo(self, tymth=None, tock=0.0, **opts):
@@ -392,7 +430,7 @@ class Directant(doing.DoDoer):
        ._tock is hidden attribute for .tock property
     """
 
-    def __init__(self, hab, server, verifier=None, doers=None, **kwa):
+    def __init__(self, hab, server, verifier=None, exchanger=None, doers=None, **kwa):
         """
         Initialize instance.
 
@@ -407,6 +445,7 @@ class Directant(doing.DoDoer):
         """
         self.hab = hab
         self.verifier = verifier
+        self.exchanger = exchanger
         self.server = server  # use server for cx
         self.rants = dict()
         doers = doers if doers is not None else []
@@ -452,7 +491,8 @@ class Directant(doing.DoDoer):
                     continue
 
                 if ca not in self.rants:  # create Reactant and extend doers with it
-                    rant = Reactant(tymth=self.tymth, hab=self.hab, verifier=self.verifier, remoter=ix)
+                    rant = Reactant(tymth=self.tymth, hab=self.hab, verifier=self.verifier,
+                                    exchanger=self.exchanger, remoter=ix)
                     self.rants[ca] = rant
                     # add Reactant (rant) doer to running doers
                     self.extend(doers=[rant])  # open and run rant as doer
@@ -532,7 +572,7 @@ class Reactant(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, remoter, verifier=None, doers=None, **kwa):
+    def __init__(self, hab, remoter, verifier=None, exchanger=None, doers=None, **kwa):
         """
         Initialize instance.
 
@@ -550,6 +590,7 @@ class Reactant(doing.DoDoer):
         """
         self.hab = hab
         self.verifier = verifier
+        self.exchanger = exchanger
         self.remoter = remoter  # use remoter for both rx and tx
 
         doers = doers if doers is not None else []
@@ -569,10 +610,15 @@ class Reactant(doing.DoDoer):
         else:
             self.tevery = None
 
+        if self.exchanger is not None:
+            doers.extend([self.exchangerDo])
+
+
         self.parser = parsing.Parser(ims=self.remoter.rxbs,
-                                      framed=True,
-                                      kvy=self.kevery,
-                                      tvy=self.tevery)
+                                     framed=True,
+                                     kvy=self.kevery,
+                                     tvy=self.tevery,
+                                     exc=self.exchanger)
 
         super(Reactant, self).__init__(doers=doers, **kwa)
         if self.tymth:
@@ -640,6 +686,7 @@ class Reactant(doing.DoDoer):
             yield
         return False  # should never get here except forced close
 
+
     @doing.doize()
     def verifierDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -666,6 +713,35 @@ class Reactant(doing.DoDoer):
                 yield  # throttle just do one cue at a time
             yield
         return False  # should never get here except forced close
+
+
+    @doing.doize()
+    def exchangerDo(self, tymth=None, tock=0.0, **opts):
+        """
+         Returns Doist compatibile generator method (doer dog) to process
+            .tevery.cues deque
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        Usage:
+            add to doers list
+        """
+        while True:
+            for msg in self.exchanger.processResponseIter():
+                self.sendMessage(msg, label="response")
+                yield  # throttle just do one cue at a time
+            yield
+        return False  # should never get here except forced close
+
 
     @doing.doize()
     def escrowDo(self, tymth=None, tock=0.0, **opts):

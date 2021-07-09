@@ -90,7 +90,7 @@ class Parser:
 
     """
 
-    def __init__(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None):
+    def __init__(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None):
         """
         Initialize instance:
 
@@ -108,6 +108,7 @@ class Parser:
         self.pipeline = True if pipeline else False  # process as pipelined
         self.kvy = kvy
         self.tvy = tvy
+        self.exc = exc
 
     @staticmethod
     def sniff(ims):
@@ -308,6 +309,7 @@ class Parser:
         pipeline = pipeline if pipeline is not None else self.pipeline
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
+        exc = exc if exc is not None else self.exc
 
         while ims:  # only process until ims empty
             try:
@@ -378,7 +380,7 @@ class Parser:
         pipeline = pipeline if pipeline is not None else self.pipeline
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
-
+        exc = exc if exc is not None else self.exc
 
         done = False
         while not done:
@@ -453,6 +455,8 @@ class Parser:
         pipeline = pipeline if pipeline is not None else self.pipeline
         kvy = kvy if kvy is not None else self.kvy
         tvy = tvy if tvy is not None else self.tvy
+        exc = exc if exc is not None else self.exc
+
 
         while True:  # continuous stream processing never stop
             try:

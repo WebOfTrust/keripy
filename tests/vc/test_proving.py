@@ -3,12 +3,14 @@
 tests.vc.proving module
 
 """
+import pytest
 
 from keri.app import keeping, habbing
 from keri.core import coring, scheming
-from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, Siger
+from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, Siger, Vstrings
 from keri.core.scheming import CacheResolver, JSONSchema
 from keri.db import basing
+from keri.kering import Versionage
 from keri.vc.proving import Credentialer, credential
 
 
@@ -98,5 +100,68 @@ def test_proving():
         assert siger.verfer.verify(siger.raw, creder.raw) is True
 
 
+def test_credentialer():
+    with pytest.raises(ValueError):
+        Credentialer()
+    sub = dict(a=123, b="abc")
+    d = dict(
+        v=Vstrings.json,
+        x="abc",
+        d=dict(
+            id="",
+            type=["abc"],
+            issuer="i",
+            issuanceDate="2021-06-27T21:26:21.233257+00:00",
+            credentialSubject=sub,
+        )
+    )
+
+    creder = Credentialer(crd=d)
+    assert creder.said == "E8TbHTnyuBV3YCoFrjFNi9Ob9kVR6l-iRHfvPcNRijyU"
+    assert creder.kind == Serials.json
+    assert creder.issuer == "i"
+    assert creder.schema == "abc"
+    assert creder.subject == sub
+    assert creder.crd == d
+    assert creder.size == 167
+    assert creder.raw == b'{"v":"KERI10JSON0000a7_","x":"abc","d":{"id":"","type":["abc"],"issuer":"i",' \
+                         b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00","credentialSubject":{"a":123,"b":"abc"}}}'
+
+    raw1, knd1, ked1, ver1 = creder._exhale(crd=d)
+    assert raw1 == creder.raw
+    assert knd1 == Serials.json
+    assert ked1 == d
+    assert ver1 == Versionage(major=1, minor=0)
+
+    creder = Credentialer(raw=raw1)
+    assert creder.kind == Serials.json
+    assert creder.issuer == "i"
+    assert creder.crd == d
+    assert creder.size == 167
+
+
+    d2 = dict(d)
+    d2["v"] = Vstrings.cbor
+    creder = Credentialer(crd=d2)
+    assert creder.said == "E8TbHTnyuBV3YCoFrjFNi9Ob9kVR6l-iRHfvPcNRijyU"
+    assert creder.issuer == "i"
+    assert creder.schema == "abc"
+    assert creder.subject == sub
+    assert creder.size == 129
+    assert creder.crd == d2
+    assert creder.raw == b'\xa3avqKERI10CBOR000081_axcabcad\xa5bid`dtype\x81cabcfissuerailissuanceDatex ' \
+                         b'2021-06-27T21:26:21.233257+00:00qcredentialSubject\xa2aa\x18{abcabc'
+
+    raw2 = bytes(creder.raw)
+    creder = Credentialer(raw=raw2)
+    assert creder.said == "E8TbHTnyuBV3YCoFrjFNi9Ob9kVR6l-iRHfvPcNRijyU"
+    assert creder.issuer == "i"
+    assert creder.schema == "abc"
+    assert creder.subject == sub
+    assert creder.size == 129
+    assert creder.crd == d2
+
+
+
 if __name__ == '__main__':
-    test_proving()
+    test_credentialer()
