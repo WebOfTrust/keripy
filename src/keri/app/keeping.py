@@ -704,21 +704,66 @@ class Manager:
         return (aeid, pidx, salt, tier)
 
 
-    def getAeid(self):
+    @property
+    def seed(self):
         """
-        Returns: adid from .keeper. Assumes db initialized.
+        seed property getter from ._seed.
+        seed (str): qb64 from which aeid is derived
+        """
+        return self._seed
+
+
+    @property
+    def aeid(self):
+        """
+        aeid property getter from key store db.
+        Assumes db initialized.
         aeid is qb64 auth encrypt id prefix
         """
         return self.keeper.gbls.get('aeid')
 
 
-    def setAeid(self, aeid):
+    def updateAeid(self, aeid, seed):
         """
-        Save aeid to .keeper
-        aeid is qb64 auth encrypt id prefix
-        Need to reencrypt all secrets when change aeid
+        Given seed belongs to aeid and encrypter, update aeid and re-encrypt all
+        secrets
+
+        Parameters:
+            aeid (str): qb64 of auth encrypt id  (public signing key)
+            seed (str): qb64 of seed from which aeid is derived (private signing key seed)
         """
-        self.keeper.gbls.pin("aeid", aeid)
+        encrypter = coring.Encrypter(verkey=aeid)  # derive encrypter from aeid
+        if not seed or not encrypter.verifySeed(seed):  # verifies seed belongs to aeid
+            raise kering.AuthError("Provided seed not associated with"
+                                       " aeid={}.".format(aeid))
+
+
+        # decrypt all secrets with self.decrypter
+        # re-encrypt all secrets with encrypter
+        # update database and in memory values
+        self.keeper.gbls.pin("aeid", aeid)  # update aeid
+        self.encrypter = encrypter  # update encrypter
+        self._seed = seed
+        self.decrypter = coring.Decrypter(seed=seed)
+
+
+    @property
+    def pidx(self):
+        """
+        pidx property getter from key store db.
+        Assumes db initialized.
+        pidx is prefix index int for next new key sequence
+        """
+        return int(self.keeper.gbls.get("pidx"), 16)
+
+
+    @pidx.setter
+    def pidx(self, pidx):
+        """
+        pidx property setter to key store db.
+        pidx is prefix index int for next new key sequence
+        """
+        self.keeper.gbls.pin("pidx", "%x" % pidx)
 
 
     def getPidx(self):
@@ -855,7 +900,7 @@ class Manager:
         if not self.keeper.prms.put(pre, data=pp):
             raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
-        self.setPidx(pidx + 1)  # increment for next inception
+        self.pidx = pidx + 1  # increment for next inception
 
         if not self.keeper.sits.put(pre, data=ps):
             raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
@@ -1001,7 +1046,7 @@ class Manager:
                 raise ValueError("Invalid count={} must be >= 0.".format(count))
             codes = [code for i in range(count)]
 
-        pidx = self.getPidx()
+        pidx = pp.pidx  # get pidx for this key sequence, may be used by salty creator
         ridx = ps.new.ridx + 1
         kidx = ps.nxt.kidx + len(ps.new.pubs)
 
@@ -1193,7 +1238,7 @@ class Manager:
                 if not self.keeper.prms.put(pre, data=pp):
                     raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
-                self.setPidx(pidx + 1)  # increment for next inception
+                self.pidx = pidx + 1  # increment for next inception
                 first = False
 
             for signer in csigners:  # store secrets (private key val keyed by public key)

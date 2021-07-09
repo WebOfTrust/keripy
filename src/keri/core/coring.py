@@ -1663,7 +1663,7 @@ class Decrypter(Matter):
             raw (bytes): private decryption key derived from seed (private signing key)
             qb64b (bytes): fully qualified private decryption key
             qb64 (str): fully qualified private decryption key
-            code (str): derivation code for private encryption key
+            code (str): derivation code for private decryption key
             seed (Union[bytes, str]): qb64b or qb64 of signing key seed used to
                 derive raw which is private decryption key
         """

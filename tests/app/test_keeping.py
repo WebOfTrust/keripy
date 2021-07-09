@@ -11,6 +11,7 @@ import json
 from dataclasses import asdict
 
 import lmdb
+import pysodium
 
 from hio.base import doing
 
@@ -714,13 +715,10 @@ def test_manager():
         assert len(digers) == 1
         assert cst == '1'
         assert nst == '1'
-        assert manager.getPidx() == 1
+        assert manager.pidx == 1
 
         spre = verfers[0].qb64b
         assert spre == b'DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
-
-        #pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
-        #pp = helping.datify(keeping.PrePrm, pp)
 
         pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 0
@@ -729,8 +727,6 @@ def test_manager():
         assert pp.stem == ''
         assert pp.tier == coring.Tiers.low
 
-        #ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
-        #ps = helping.datify(keeping.PreSit, ps)
         ps = manager.keeper.sits.get(spre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
@@ -746,11 +742,8 @@ def test_manager():
         assert keys == ps.new.pubs
 
         # test .pubs db
-        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
         pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
-
-        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
         pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
@@ -762,11 +755,8 @@ def test_manager():
         manager.move(old=oldspre, new=spre)
 
         # test .pubs db after move
-        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
         pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
-
-        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
         pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
@@ -815,8 +805,6 @@ def test_manager():
         assert cst == '1'
         assert nst == '1'
 
-        #pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
-        #pp = helping.datify(keeping.PrePrm, pp)
         pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 0
         assert pp.algo == keeping.Algos.salty
@@ -824,8 +812,6 @@ def test_manager():
         assert pp.stem == ''
         assert pp.tier == coring.Tiers.low
 
-        #ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
-        #ps = helping.datify(keeping.PreSit, ps)
         ps = manager.keeper.sits.get(spre)
         assert ps.old.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
         assert len(ps.new.pubs) == 1
@@ -833,7 +819,7 @@ def test_manager():
         assert ps.new.ridx == 1
         assert ps.new.kidx == 1
         assert len(ps.nxt.pubs) == 1
-        assert ps.nxt.pubs == ['DRpGly44ejh01ur4ltL_LVrYcyqVCQyVLJnqWrVa57Yc']
+        assert ps.nxt.pubs == ['DChDVbFPb1e0IW06klnK47arfwEPwpN5-S1_tfRY3hhY']
         assert ps.nxt.ridx == 2
         assert ps.nxt.kidx == 2
 
@@ -841,7 +827,7 @@ def test_manager():
         assert keys == ps.new.pubs
 
         digs = [diger.qb64 for diger in  digers]
-        assert digs == ['EJUzDm_HbdIZDp94OlIoZH1gcaSdWLZhJwqKz2rVJZrc']
+        assert digs == ['E7tSvjXR2dsFq0SptSFYjDpwk52qHaIhbgKd3_7xGwz4']
 
         assert oldpubs == ps.old.pubs
 
@@ -852,13 +838,10 @@ def test_manager():
         verfers, digers, cst, nst = manager.rotate(pre=spre.decode("utf-8"))
         assert cst == '1'
         assert nst == '1'
-        #pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
-        #pp = helping.datify(keeping.PrePrm, pp)
+
         pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 0
 
-        #ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
-        #ps = helping.datify(keeping.PreSit, ps)
         ps = manager.keeper.sits.get(spre)
         assert oldpubs == ps.old.pubs
 
@@ -867,11 +850,9 @@ def test_manager():
             assert not manager.keeper.pris.get(pub.encode("utf-8"))
 
         # test .pubs db
-        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.new.ridx))).decode("utf-8"))
         pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
 
-        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(spre, ps.nxt.ridx))).decode("utf-8"))
         pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
@@ -880,17 +861,11 @@ def test_manager():
         assert cst == '1'
         assert nst == '0'
 
-        #pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
-        #pp = helping.datify(keeping.PrePrm, pp)
         pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 0
-
-        #ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
-        #ps = helping.datify(keeping.PreSit, ps)
         ps = manager.keeper.sits.get(spre)
-
-        assert digers == []
         assert ps.nxt.pubs == []
+        assert digers == []
 
         #  attempt to rotate after null
         with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
@@ -903,11 +878,9 @@ def test_manager():
         assert len(digers) == 1
         assert cst == '1'
         assert nst == '1'
-        assert manager.getPidx() == 2
+        assert manager.pidx == 2
         rpre = verfers[0].qb64b
 
-        #pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
-        #pp = helping.datify(keeping.PrePrm, pp)
         pp = manager.keeper.prms.get(rpre)
         assert pp.pidx == 1
         assert pp.algo == keeping.Algos.randy
@@ -915,8 +888,6 @@ def test_manager():
         assert pp.stem == ''
         assert pp.tier == ''
 
-        #ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
-        #ps = helping.datify(keeping.PreSit, ps)
         ps = manager.keeper.sits.get(rpre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
@@ -928,7 +899,6 @@ def test_manager():
 
         keys = [verfer.qb64 for verfer in verfers]
         for key in keys:
-            # assert manager.keeper.getPri(key.encode("utf-8")) is not None
             assert manager.keeper.pris.get(key.encode("utf-8")) is not None
 
         digs = [diger.qb64 for diger in  digers]
@@ -945,35 +915,25 @@ def test_manager():
         assert cst == '1'
         assert nst == '1'
 
-        #pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
-        #pp = helping.datify(keeping.PrePrm, pp)
         pp = manager.keeper.prms.get(rpre)
         assert pp.pidx == 1
 
-        #ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
-        #ps = helping.datify(keeping.PreSit, ps)
         ps = manager.keeper.sits.get(rpre)
-
         assert oldpubs == ps.old.pubs
 
         # randy algo incept with null nxt
         verfers, digers, cst, nst = manager.incept(algo=keeping.Algos.randy, ncount=0)
-        assert manager.getPidx() == 3
+        assert manager.pidx == 3
         rpre = verfers[0].qb64b
         assert cst == '1'
         assert nst == '0'
 
-        #pp = json.loads(bytes(manager.keeper.getPrm(key=rpre)).decode("utf-8"))
-        #pp = helping.datify(keeping.PrePrm, pp)
         pp = manager.keeper.prms.get(rpre)
         assert pp.pidx == 2
 
-        #ps = json.loads(bytes(manager.keeper.getSit(key=rpre)).decode("utf-8"))
-        #ps = helping.datify(keeping.PreSit, ps)
         ps = manager.keeper.sits.get(rpre)
-
-        assert digers == []
         assert ps.nxt.pubs == []
+        assert digers == []
 
         #  attempt to rotate after null
         with pytest.raises(ValueError) as ex:  # attempt to reincept same pre
@@ -985,13 +945,11 @@ def test_manager():
         assert len(digers) == 1
         assert cst == '1'
         assert nst == '1'
-        assert manager.getPidx() == 4
+        assert manager.pidx == 4
 
         spre = verfers[0].qb64b
         assert spre == b'D627iBfehzh966wPzBYjKQuGOSmIkdcR7b14nZv_ULIw'
 
-        #pp = json.loads(bytes(manager.keeper.getPrm(key=spre)).decode("utf-8"))
-        #pp = helping.datify(keeping.PrePrm, pp)
         pp = manager.keeper.prms.get(spre)
         assert pp.pidx == 3
         assert pp.algo == keeping.Algos.salty
@@ -999,8 +957,6 @@ def test_manager():
         assert pp.stem == stem == 'red'
         assert pp.tier == coring.Tiers.low
 
-        #ps = json.loads(bytes(manager.keeper.getSit(key=spre)).decode("utf-8"))
-        #ps = helping.datify(keeping.PreSit, ps)
         ps = manager.keeper.sits.get(spre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
@@ -1090,34 +1046,25 @@ def test_manager():
 
         # test .pris db
         for i, pubs in enumerate(publicies):
-            # pri0 = bytes(manager.keeper.getPri(key=pubs[0]))
             pri0 = manager.keeper.pris.get(pubs[0]).qb64b
             assert pri0.decode("utf-8") == secrecies[i][0]
             for pub in pubs:
-                # assert manager.keeper.getPri(key=pub) is not None
                 assert manager.keeper.pris.get(pub) is not None
 
-        #pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
-        #pp = helping.datify(keeping.PrePrm, pp)
         pp = manager.keeper.prms.get(ipre)
         assert pp.pidx == 6
+        assert manager.pidx == 7
 
-        assert manager.getPidx() == 7
-
-        #ps = json.loads(bytes(manager.keeper.getSit(key=ipre)).decode("utf-8"))
-        #ps = helping.datify(keeping.PreSit, ps)
         ps = manager.keeper.sits.get(ipre)
         assert ps.new.ridx == 7
         assert ps.new.pubs == publicies[ps.new.ridx]
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i))).decode("utf-8"))
             pl = manager.keeper.pubs.get(keeping.riKey(ipre, i))
             assert pl.pubs == pubs
 
-        #  nxt pubs
-        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i+1))).decode("utf-8"))
+        # nxt pubs
         pl = manager.keeper.pubs.get(keeping.riKey(ipre, i+1))
         assert pl
 
@@ -1187,23 +1134,15 @@ def test_manager():
 
         # test .pris db
         for i, pubs in enumerate(publicies):
-            # pri0 = bytes(manager.keeper.getPri(key=pubs[0]))
             pri0 = manager.keeper.pris.get(pubs[0]).qb64b
             assert pri0.decode("utf-8") == secrecies[i][0]
             for pub in pubs:
-                # assert manager.keeper.getPri(key=pub) is not None
                 assert manager.keeper.pris.get(pub) is not None
 
-
-        #pp = json.loads(bytes(manager.keeper.getPrm(key=ipre)).decode("utf-8"))
-        #pp = helping.datify(keeping.PrePrm, pp)
         pp = manager.keeper.prms.get(ipre)
         assert pp.pidx == 7
+        assert manager.pidx == 8
 
-        assert manager.getPidx() == 8
-
-        #ps = json.loads(bytes(manager.keeper.getSit(key=ipre)).decode("utf-8"))
-        #ps = helping.datify(keeping.PreSit, ps)
         ps = manager.keeper.sits.get(ipre)
         assert ps.new.ridx == 3
         assert ps.new.kidx == 7
@@ -1213,12 +1152,10 @@ def test_manager():
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i))).decode("utf-8"))
             pl = manager.keeper.pubs.get(keeping.riKey(ipre, i))
             assert pl.pubs == pubs
 
         #  nxt pubs
-        # pl = json.loads(bytes(manager.keeper.getPubs(key=keeping.riKey(ipre, i+1))).decode("utf-8"))
         pl = manager.keeper.pubs.get(keeping.riKey(ipre, i+1))
         assert pl
 
@@ -1272,17 +1209,28 @@ def test_manager_with_aeid():
         manager = keeping.Manager(keeper=keeper, salt=salt, aeid=aeid, seed=seed)
         assert manager.keeper.opened
         assert manager._pidx == 0
-        assert manager._salt == ''  # emptied out after inited
+        assert manager._salt == ''  # on disk only,emptied out after inited
         assert manager._tier == coring.Tiers.low
-        assert manager._aeid == aeid
-        assert manager._seed == seed  # should empty out
+        assert manager._aeid == aeid  # on disk only
+        assert manager._seed == seed  # in memory only
 
         assert manager.encrypter.qb64 == encrypter.qb64
         assert manager.decrypter.qb64 == decrypter.qb64
+
+        assert manager.aeid == aeid
+
+        # rawseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+        rawseed = (b"\x89\xfe{\xd9'\xa7\xb3\x89#\x19\xbec\xee\xed\xc0\xf9\x97\xd0\x8f9\x1dyNI"
+                   b'I\x98\xbd\xa4\xf6\xfe\xbb\x03')
+        signer = coring.Signer(raw=rawseed, code=coring.MtrDex.Ed25519_Seed,
+                               transferable=False)
+        manager.updateAeid(aeid=signer.verfer.qb64, seed=signer.qb64)
+        assert  manager.aeid == signer.verfer.qb64 == 'BRw6sysb_uv81ZouXqHxQlqnAh9BYiSOsg9eQJmbZ8Uw'
+
 
     """End Test"""
 
 
 
 if __name__ == "__main__":
-    test_manager_with_aeid()
+    test_manager()
