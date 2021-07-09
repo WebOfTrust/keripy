@@ -44,32 +44,24 @@ def credential(schema,
     """
     vs = Versify(version=version, kind=kind, size=0)
     iss = issuance if issuance is not None else helping.nowIso8601()
-    d = dict(
-        id="",
-        type=[schema],
-        issuer=issuer,
-        issuanceDate=iss,
-        credentialSubject=subject,
-    )
-
-    if regk is not None:
-        d["credentialStatus"] = dict(
-            id=regk,
-            type=KERI_REGISTRY_TYPE
-        )
-
-
-    if expiry is not None:
-        d["expirationDate"] = expiry
 
     vc = dict(
         v=vs,
+        i="",
         x=schema,
-        d=d
+        issuer=issuer,
+        issuance=iss,
+        d=subject
     )
 
-    saider = Saider(sed=d, code=coring.MtrDex.Blake3_256, kind=Ids.id)
-    d[Ids.id] = saider.qb64
+    if expiry is not None:
+        vc["expiry"] = expiry
+
+    if regk is not None:
+        vc["status"] = dict(
+            id=regk,
+            type=KERI_REGISTRY_TYPE
+        )
 
     return Credentialer(crd=vc, typ=typ)
 
@@ -81,6 +73,7 @@ class Credentialer:
     proof
 
     """
+
     def __init__(self, raw=b'', crd=None, kind=None, typ=JSONSchema(), code=coring.MtrDex.Blake3_256):
         """
         Creates a serializer/deserializer for a Verifiable Credential in CESR Proof Format
@@ -106,11 +99,11 @@ class Credentialer:
         else:
             raise ValueError("Improper initialization need raw or ked.")
 
-        subr = json.dumps(self.crd["d"]["credentialSubject"]).encode("utf-8")
 
         # TODO:  decide the proper time / place to load and validate schema
         #  (hint: probably not here).
         try:
+            subr = json.dumps(self.crd["d"]).encode("utf-8")
             scer = self._typ.resolve(self.crd["x"])
             schemer = Schemer(raw=scer, typ=self._typ)
 
@@ -175,6 +168,8 @@ class Credentialer:
             raise ValueError("Unsupported version = {}.{}".format(version.major,
                                                                   version.minor))
 
+        crd["i"] = "{}".format(Saider.Dummy*coring.Matter.Codes[coring.MtrDex.Blake3_256].fs)
+
         if not kind:
             kind = knd
 
@@ -198,7 +193,12 @@ class Credentialer:
             raise ValueError("Malformed version string size = {}".format(vs))
         crd["v"] = vs
 
-        return raw, kind, crd, version
+        saider = Saider(sed=crd, code=coring.MtrDex.Blake3_256, idder=Ids.i)
+        crd["i"] = saider.qb64
+
+        raw = coring.dumps(crd, kind)
+
+        return raw, kind, crd, version, saider
 
     @property
     def kind(self):
@@ -221,7 +221,7 @@ class Credentialer:
         self._kind = kind
         self._version = version
         self._size = size
-        self._saider = Saider(sed=crd["d"], code=coring.MtrDex.Blake3_256, kind=Ids.id)
+        self._saider = Saider(qb64=self._crd[Ids.i], code=coring.MtrDex.Blake3_256, idder=Ids.i)
 
 
     @property
@@ -233,14 +233,14 @@ class Credentialer:
     @crd.setter
     def crd(self, crd):
         """ ked property setter  assumes ._kind """
-        raw, kind, crd, version = self._exhale(crd=crd, kind=self._kind)
+        raw, kind, crd, version, saider = self._exhale(crd=crd, kind=self._kind)
         size = len(raw)
         self._raw = raw[:size]
         self._crd = crd
         self._kind = kind
         self._size = size
         self._version = version
-        self._saider = Saider(sed=crd["d"], code=coring.MtrDex.Blake3_256, kind=Ids.id)
+        self._saider = saider
 
     @property
     def size(self):
@@ -262,7 +262,7 @@ class Credentialer:
     @property
     def issuer(self):
         """ issuer property getter"""
-        return self.crd["d"]["issuer"]
+        return self.crd["issuer"]
 
     @property
     def schema(self):
@@ -272,12 +272,12 @@ class Credentialer:
     @property
     def subject(self):
         """ subject property getter"""
-        return self.crd["d"]["credentialSubject"]
+        return self.crd["d"]
 
     @property
     def status(self):
         """ status property getter"""
-        return self.crd["d"]["credentialStatus"]
+        return self.crd["status"]
 
     def pretty(self):
         """
