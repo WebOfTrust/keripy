@@ -138,6 +138,9 @@ class Habitat:
             salt is qb64 salt for creating key pairs
             tier is security tier for generating keys from salt
         """
+        if not (self.ks.opened and self.db.opened):
+            raise kering.ClosedError("Attempt to setup Habitat with closed "
+                                     "database, .ks or .db.")
         if nsith is None:
             nsith = isith
         if ncount is None:

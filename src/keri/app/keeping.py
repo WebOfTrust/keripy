@@ -698,7 +698,8 @@ class Manager:
 
         """
         if not self.ks.opened:
-            raise kering.ClosedError("Attempt to setup closed Manager.keeper.")
+            raise kering.ClosedError("Attempt to setup Manager closed keystore"
+                                     " database .ks.")
 
         if aeid is None:
             aeid = ''
