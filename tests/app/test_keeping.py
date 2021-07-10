@@ -1225,7 +1225,7 @@ def test_manager_with_aeid():
                    b'I\x98\xbd\xa4\xf6\xfe\xbb\x03')
         signer = coring.Signer(raw=rawseed, code=coring.MtrDex.Ed25519_Seed,
                                transferable=False)
-        manager.updateAeid(aeid=signer.verfer.qb64, seed=signer.qb64, lastSeed=seed)
+        manager.updateAeid(aeid=signer.verfer.qb64, seed=signer.qb64)
         assert manager.aeid == signer.verfer.qb64 == 'BRw6sysb_uv81ZouXqHxQlqnAh9BYiSOsg9eQJmbZ8Uw'
         assert manager.salt == salt
         assert not saltCipher.qb64 == manager.keeper.gbls.get('salt')

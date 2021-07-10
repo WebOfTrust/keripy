@@ -729,7 +729,7 @@ class Manager:
         return self.keeper.gbls.get('aeid')
 
 
-    def updateAeid(self, aeid, seed, lastSeed=None):
+    def updateAeid(self, aeid, seed):
         """
         Given seed belongs to aeid and encrypter, update aeid and re-encrypt all
         secrets
@@ -741,9 +741,9 @@ class Manager:
             lastSeed (str): qb64 of last seed from which cuurent aeid was derived
                         (private signing key seed)
         """
-        if self.aeid:  # check that lastSeed matches last current .aeid
+        if self.aeid:  # check that last current seed matches last current .aeid
             # verifies seed belongs to aeid
-            if not lastSeed or not self.encrypter.verifySeed(lastSeed):
+            if not self.seed or not self.encrypter.verifySeed(self.seed):
                 raise kering.AuthError("Last seed missing or provided last seed "
                                        "not associated with last aeid={}."
                                        "".format(self.aeid))
