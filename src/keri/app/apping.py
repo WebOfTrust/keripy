@@ -39,21 +39,22 @@ logger = help.ogler.getLogger()
 
 
 
-def setupController(name="who", sith=None, count=1, temp=False,
+def setupController(name="who", temp=False, sith=None, count=1,
                     remotePort=5621, localPort=5620):
     """
     Setup and return doers list to run controller
     """
-
-
-    # setup habitat
-    hab = habbing.Habitat(name=name, isith=sith, icount=count, temp=temp)
-    logger.info("\nDirect Mode controller %s:\nNamed %s on TCP port %s to port %s.\n\n",
-                hab.pre, hab.name, localPort, remotePort)
+    # created databases instance references for dependency injection
+    ks = keeping.Keeper(name=name, temp=temp)
+    db = basing.Baser(name=name, temp=temp)
 
     # setup doers
-    ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+
+    # setup habitat
+    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, isith=sith, icount=count, )
+    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)
@@ -61,19 +62,22 @@ def setupController(name="who", sith=None, count=1, temp=False,
 
     wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='keri',
                         reopen=True, headDirPath=path)
-    wireDoer = wiring.WireLogDoer(wl=wl)
+    wireDoer = wiring.WireLogDoer(wl=wl)  # setup doer
 
     client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
-    clientDoer = clienting.ClientDoer(client=client)
+    clientDoer = clienting.ClientDoer(client=client)  # setup doer
     director = directing.Director(hab=hab, client=client, tock=0.125)
     reactor = directing.Reactor(hab=hab, client=client)
 
     server = serving.Server(host="", port=localPort, wl=wl)
-    serverDoer = serving.ServerDoer(server=server)
+    serverDoer = serving.ServerDoer(server=server)  # setup doer
     directant = directing.Directant(hab=hab, server=server)
     # Reactants created on demand by directant
 
-    return [ksDoer, dbDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
+    logger.info("\nDirect Mode controller %s:\nNamed %s on TCP port %s to port %s.\n\n",
+                    hab.pre, hab.name, localPort, remotePort)
+
+    return [ksDoer, dbDoer, habDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
 
 
 

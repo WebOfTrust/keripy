@@ -588,11 +588,13 @@ class Manager:
     Class for managing key pair creation, storage, retrieval, and message signing.
 
     Attributes:
-        keeper (Keeper): LMDB database instance for storing public and private keys
+        ks (Keeper): key store LMDB database instance for storing public and private keys
         encrypter (coring.Encrypter): instance for encrypting secrets. Public
             encryption key is derived from aeid (public signing key)
         decrypter (coring.Decrypter): instance for decrypting secrets. Private
             decryption key is derived seed (private signing key seed)
+        inited (Boolean): True means fully initialized wrt database.
+                          False means not yet fully initialized
 
     Attributes (Hidden):
 
@@ -661,6 +663,7 @@ class Manager:
         self.encrypter = None
         self.decrypter = None
         self._seed = seed if seed is not None else ""
+        self.inited = False
 
         # save keyword arg parameters to init later if db not opened yet
         self._inits = kwa
@@ -719,7 +722,7 @@ class Manager:
         if self.aeid is None:  # never before initialized
             self.updateAeid(aeid, self.seed)
 
-        # self._inits = None  # init defaults is a one time operation
+        self.inited = True
 
 
 
@@ -1418,3 +1421,63 @@ class Manager:
         nst = coring.Tholder(sith=nsith).sith
 
         return (verfers, digers, cst, nst)
+
+
+class ManagerDoer(doing.Doer):
+    """
+    Basic Manager Doer to initialize keystore database .ks
+
+    Inherited Attributes:
+        .done is Boolean completion state:
+            True means completed
+            Otherwise incomplete. Incompletion maybe due to close or abort.
+
+    Attributes:
+        .manager is Manager subclass
+
+    Inherited Properties:
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
+        .tock is float, desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Methods:
+        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+        .__call__ makes instance callable
+            Appears as generator function that returns generator
+        .do is generator method that returns generator
+        .enter is enter context action method
+        .recur is recur context action method or generator method
+        .exit is exit context method
+        .close is close context method
+        .abort is abort context method
+
+    Hidden:
+        ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
+        ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, manager, **kwa):
+        """
+        Parameters:
+           manager (Manager): instance
+        """
+        super(ManagerDoer, self).__init__(**kwa)
+        self.manager = manager
+
+
+    def enter(self):
+        """"""
+        if not self.manager.inited:
+            self.manager.setup(**self.manager._inits)
+
+
+    def exit(self):
+        """"""
+        pass

@@ -680,10 +680,11 @@ def test_manager():
     """
     test Manager class
     """
-    manager = keeping.Manager()
+    manager = keeping.Manager()  # ks not provided so creates and opens ks
     assert isinstance(manager, keeping.Manager)
     assert isinstance(manager.ks, keeping.Keeper)
     assert manager.ks.opened
+    assert manager.inited
 
     manager.ks.close(clear=True)
     assert not os.path.exists(manager.ks.path)
@@ -1209,6 +1210,7 @@ def test_manager_with_aeid():
     with keeping.openKS() as keeper:
         manager = keeping.Manager(ks=keeper, seed=seed, salt=salt, aeid=aeid, )
         assert manager.ks.opened
+        assert manager.inited
         assert manager._inits == {'aeid': 'BJruYr3oXDGRTRN0XnhiqDeoENdRak6FD8y2vsTvvJkE',
                                   'salt': '0AMDEyMzQ1Njc4OWFiY2RlZg'}
         assert manager.encrypter.qb64 == encrypter.qb64  #  aeid provided
