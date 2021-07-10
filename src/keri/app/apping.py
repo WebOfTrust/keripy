@@ -44,7 +44,7 @@ def setupController(name="who", temp=False, sith=None, count=1,
     """
     Setup and return doers list to run controller
     """
-    # created databases instance references for dependency injection
+    # setup databases  for dependency injection
     ks = keeping.Keeper(name=name, temp=temp)
     db = basing.Baser(name=name, temp=temp)
 
@@ -77,7 +77,8 @@ def setupController(name="who", temp=False, sith=None, count=1,
     logger.info("\nDirect Mode controller %s:\nNamed %s on TCP port %s to port %s.\n\n",
                     hab.pre, hab.name, localPort, remotePort)
 
-    return [ksDoer, dbDoer, habDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
+    return [ksDoer, dbDoer, habDoer, wireDoer, clientDoer, director, reactor,
+            serverDoer, directant]
 
 
 

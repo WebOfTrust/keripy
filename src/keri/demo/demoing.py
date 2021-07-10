@@ -26,7 +26,8 @@ from ..vdr.issuing import Issuer
 logger = help.ogler.getLogger()
 
 
-def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620, indirect=False, remotePre=""):
+def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620,
+                        indirect=False, remotePre=""):
     """
     Setup and return doers list to run controller
     """
@@ -34,14 +35,17 @@ def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620, in
     for secret in secrets:  # convert secrets to secrecies
         secrecies.append([secret])
 
-    # setup habitat
-    hab = habbing.Habitat(name=name, secrecies=secrecies, temp=True)
-    logger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
-                 hab.pre, hab.name, localPort, remotePort)
+    # setup databases for dependency injection
+    ks = keeping.Keeper(name=name, temp=True)
+    db = basing.Baser(name=name, temp=True)
 
     # setup doers
-    ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+
+    # setup habitat
+    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=True, secrecies=secrecies)
+    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)
@@ -70,7 +74,11 @@ def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620, in
     directant = directing.Directant(hab=hab, server=server)
     # Reactants created on demand by directant
 
-    return [ksDoer, dbDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
+    logger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
+                 hab.pre, hab.name, localPort, remotePort)
+
+    return [ksDoer, dbDoer, habDoer, wireDoer, clientDoer, director, reactor,
+            serverDoer, directant]
 
 
 
