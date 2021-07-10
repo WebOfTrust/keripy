@@ -658,7 +658,7 @@ class Manager:
 
 
         """
-        self.keeper = keeper if keeper is not None else Keeper()
+        self.keeper = keeper if keeper is not None else Keeper()  # reopens by default
         self.encrypter = None
         self.decrypter = None
 
@@ -680,13 +680,16 @@ class Manager:
 
     def setup(self):
         """
-        Return tuple (aeid, pidx, salt, tier) from .keeper.gbls.
+        Setups manager root or global attributes and properties
         Assumes that db is open.
         If .keeper.gbls in database has not been initialized for the first time
-        then initializes them from ._aeid, ._pidx, ._salt, and ._tier
-        then assigns the default .gbls values for aeid, prefix id, salt and tier.
-        The initialization here enables asynchronous opening of keeper db after keeper
-        is instantiated and first call to retrieve setup will initialize it if
+        then initializes them from ._initage. This allows manager instance to
+        be created before database has been opened to accomodate asynchronous
+        process scheduling.
+
+
+        The initialization here enables asynchronous opening of keeper db after
+        keeper is instantiated and first call to setup will initialize keeper if
         it was not already initialized.
         """
         if not self.keeper.opened:
@@ -707,7 +710,6 @@ class Manager:
 
         self._initage = None  # init defaults is a one time operation
 
-        return (self.aeid, self.pidx, self.salt, self.tier)
 
 
     @property
@@ -838,9 +840,6 @@ class Manager:
         self.keeper.gbls.pin('tier', tier)
 
 
-
-
-
     def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed, isith=None,
                      ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed, nsith=None,
                      dcode=coring.MtrDex.Blake3_256,
@@ -897,15 +896,16 @@ class Manager:
             even when the identifer prefix is transferable.
 
         """
-        aeid, pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for new sequence
-        ridx = 0  # rotation index
-        kidx = 0  # key pair index
-
+        # get root defaults to initialize key sequence
         if rooted and salt is None:  # use root salt instead of random salt
-            salt = rootSalt
+            salt = self.salt
 
         if rooted and tier is None:  # use root tier as default
-            tier = rootTier
+            tier = self.tier
+
+        pidx = self.pidx  # get next pidx
+        ridx = 0  # rotation index
+        kidx = 0  # key pair index
 
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
 
@@ -1254,14 +1254,14 @@ class Manager:
             temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
 
         """
-        aeid, pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for ingested sequence
-
         # configure parameters for creating new keys after ingested sequence
         if rooted and salt is None:  # use root salt instead of random salt
-            salt = rootSalt
+            salt = self.salt
 
         if rooted and tier is None:  # use root tier as default
-            tier = rootTier
+            tier = self.tier
+
+        pidx = self.pidx  # get next pidx
 
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
 

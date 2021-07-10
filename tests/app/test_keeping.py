@@ -1026,11 +1026,11 @@ def test_manager():
                         ['ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'],
                     ]
 
-        aeid, pidx, rsalt, rtier = manager.setup()   #  verify current state
-        assert aeid == ''
-        assert pidx == 6
-        assert rsalt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
-        assert rtier == coring.Tiers.low
+        # verify current state
+        assert manager.aeid == ''
+        assert manager.pidx == 6
+        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.tier == coring.Tiers.low
         verferies, digers = manager.ingest(secrecies=secrecies)
         publicies = []
         for verfers in verferies:
@@ -1106,11 +1106,11 @@ def test_manager():
                         ]
                     ]
 
-        aeid, pidx, rsalt, rtier = manager.setup()   #  verify current state
-        assert aeid == ''
-        assert pidx == 7
-        assert rsalt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
-        assert rtier == coring.Tiers.low
+        #  verify current state
+        assert manager.aeid == ''
+        assert manager.pidx == 7
+        assert manager.salt == salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
+        assert manager.tier == coring.Tiers.low
         verferies, digers = manager.ingest(secrecies=secrecies, ncount=3)
         publicies = []
         for verfers in verferies:

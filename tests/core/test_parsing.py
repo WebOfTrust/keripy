@@ -7,35 +7,12 @@ import os
 
 import pytest
 
-import pysodium
-import blake3
-from math import ceil
-
-from keri.kering import Version
-from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
-                         ShortageError)
-
+from keri.kering import ValidationError
 from keri.core import parsing
-from keri.core.coring import MtrDex, Matter, IdrDex, Indexer, CtrDex, Counter
-from keri.core.coring import Seqner, Verfer, Signer, Diger, Nexter, Prefixer
-from keri.core.coring import Salter, Serder, Siger, Cigar
-from keri.core.coring import Ilks
-
-from keri.core.eventing import (TraitDex, LastEstLoc, Serials, Versify,
-                                simple,  ample)
-from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deSourceCouple,
-                                deReceiptTriple,
-                                deTransReceiptQuadruple, deTransReceiptQuintuple)
-from keri.core.eventing import (SealDigest, SealRoot, SealEvent, SealLocation,
-                                StateEvent, StateEstEvent)
-from keri.core.eventing import (incept, rotate, interact, receipt,
-                                delcept, deltate, state, messagize)
-from keri.core.eventing import Kever, Kevery
-
-from keri.db.dbing import dgKey, snKey
-from keri.db import basing
+from keri.core.coring import (CtrDex, Counter, Signer,  Nexter)
+from keri.core.eventing import (Kever, Kevery, incept, rotate, interact)
 from keri.db.basing import openDB
-from keri.app.keeping import openKS, Manager
+
 
 from keri import help
 
