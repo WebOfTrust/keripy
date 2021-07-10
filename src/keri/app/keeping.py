@@ -769,7 +769,7 @@ class Manager:
             if not seed or not encrypter.verifySeed(seed):
                 raise kering.AuthError("Seed missing or provided seed not associated"
                                            "  with provided aeid={}.".format(aeid))
-        else:  # no new aeid so no new encrpter
+        else:  # no new aeid so no new encrypter
             encrypter = None
 
         # fetch all secrets from db, decrypt all secrets with self.decrypter
@@ -953,6 +953,7 @@ class Manager:
             nsith = "{:x}".format(max(0, math.ceil(len(nsigners) / 2)))
         nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
+        # Secret to encrypt here
         pp = PrePrm(pidx=pidx,
                     algo=algo,
                     salt=creator.salt,
@@ -1091,6 +1092,7 @@ class Manager:
             even when the identifer prefix is transferable.
 
         """
+        # Secret to decrypt here
         if (pp := self.ks.prms.get(pre)) is None:
             raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
 
@@ -1299,6 +1301,7 @@ class Manager:
             verferies.append([signer.verfer for signer in csigners])
 
             if first:
+                # Secret to encrypt here
                 pp = PrePrm(pidx=pidx,
                             algo=algo,
                             salt=creator.salt,
