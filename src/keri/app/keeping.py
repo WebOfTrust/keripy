@@ -738,8 +738,6 @@ class Manager:
             aeid (str): qb64 of new auth encrypt id  (public signing key)
             seed (str): qb64 of new seed from which new aeid is derived (private signing
                         key seed)
-            lastSeed (str): qb64 of last seed from which cuurent aeid was derived
-                        (private signing key seed)
         """
         if self.aeid:  # check that last current seed matches last current .aeid
             # verifies seed belongs to aeid
