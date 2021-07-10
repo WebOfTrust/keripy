@@ -50,37 +50,46 @@ def setupController(secrets, remotePort=5621, indirect=False, vcfile=""):
     """
     Setup and return doers list to run controller
     """
+    name = "vic"
+
     secrecies = []
     for secret in secrets:  # convert secrets to secrecies
         secrecies.append([secret])
 
-    # setup habitat
-    hab = habbing.Habitat(name="vic", secrecies=secrecies, temp=True)
-    logger.info("\nDirect Mode demo of %s:\nNamed %s to TCP port %s.\n\n",
-                hab.pre, hab.name, remotePort)
+    # setup databases for dependency injection
+    ks = keeping.Keeper(name=name, temp=True)
+    db = basing.Baser(name=name, temp=True)
 
-    verifier = verifying.Verifier(name="vic", hab=hab)
     # setup doers
-    ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
+    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+
+    # setup habitat
+    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=True, secrecies=secrecies)
+    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
+
+    verifier = verifying.Verifier(name=name, hab=hab)
     regDoer = basing.BaserDoer(baser=verifier.reger)
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)
     path = os.path.join(path, 'logs')
 
-    wl = wiring.WireLog(samed=True, filed=True, name="vic", prefix='demo', reopen=True,
+    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='demo', reopen=True,
                         headDirPath=path)
     wireDoer = wiring.WireLogDoer(wl=wl)
 
     client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
-    clientDoer = doing.ClientDoer(client=client)
+    clientDoer = clienting.ClientDoer(client=client)
 
     director = VicDirector(vcfile=vcfile, hab=hab, verifier=verifier, client=client, tock=0.125)
 
     reactor = directing.Reactor(hab=hab, client=client, verifier=verifier, indirect=indirect)
 
-    return [ksDoer, dbDoer, regDoer, wireDoer, clientDoer, director, reactor]
+    logger.info("\nDirect Mode demo of %s:\nNamed %s to TCP port %s.\n\n",
+                hab.pre, hab.name, remotePort)
+
+    return [ksDoer, dbDoer, habDoer, regDoer, wireDoer, clientDoer, director, reactor]
 
 
 def parseArgs(version=__version__):

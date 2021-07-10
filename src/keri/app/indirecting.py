@@ -18,27 +18,40 @@ from ..vdr import verifying
 logger = help.ogler.getLogger()
 
 
-def setupWitness(name="witness", localPort=5620):
+def setupWitness(name="witness", temp=False, localPort=5620, ):
+    """
+    """
+    # setup databases  for dependency injection
+    ks = keeping.Keeper(name=name, temp=temp)
+    db = basing.Baser(name=name, temp=temp)
 
+    # setup doers
+    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+
+    # setup habitat
     wsith = 1
+    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, transferable=False,
+                          isith=wsith, icount=1, )
+    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
 
-    hab = habbing.Habitat(name=name, temp=False, transferable=False,
-                         isith=wsith, icount=1,)
-    verf = verifying.Verifier(name=name, hab=hab)
-
-    logger.info("\nWitness- %s:\nNamed %s on TCP port %s.\n\n",
-                hab.pre, hab.name, localPort)
+    verfer = verifying.Verifier(name=name, hab=hab)
 
     # setup doers
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
     dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
-    regDoer = basing.BaserDoer(baser=verf.reger)
+    regDoer = basing.BaserDoer(baser=verfer.reger)
 
     server = serving.Server(host="", port=localPort)
     serverDoer = doing.ServerDoer(server=server)
-    directant = directing.Directant(hab=hab, server=server, verifier=verf)
+    directant = directing.Directant(hab=hab, server=server, verifier=verfer)
 
-    return [ksDoer, dbDoer, regDoer, directant, serverDoer]
+
+    logger.info("\nWitness- %s:\nNamed %s on TCP port %s.\n\n",
+                hab.pre, hab.name, localPort)
+
+
+    return [ksDoer, dbDoer, habDoer, regDoer, directant, serverDoer]
 
 
 class Indirector(doing.DoDoer):
