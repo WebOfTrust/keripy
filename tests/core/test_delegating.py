@@ -32,8 +32,8 @@ def test_delegation():
           keeping.openKS(name="del") as delKS:
 
         # Init key pair managers
-        bobMgr = keeping.Manager(keeper=bobKS, salt=bobSalt)
-        delMgr = keeping.Manager(keeper=delKS, salt=delSalt)
+        bobMgr = keeping.Manager(ks=bobKS, salt=bobSalt)
+        delMgr = keeping.Manager(ks=delKS, salt=delSalt)
 
         # Init Keverys
         bobKvy = eventing.Kevery(db=bobDB)

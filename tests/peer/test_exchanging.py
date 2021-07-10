@@ -25,8 +25,8 @@ def test_exchanger():
         doist = doing.Doist(limit=limit, tock=tock)
 
         # Init key pair managers
-        sidMgr = keeping.Manager(keeper=sidKS, salt=sidSalt)
-        redMgr = keeping.Manager(keeper=redKS, salt=redSalt)
+        sidMgr = keeping.Manager(ks=sidKS, salt=sidSalt)
+        redMgr = keeping.Manager(ks=redKS, salt=redSalt)
 
         # Init Keverys
         sidKvy = eventing.Kevery(db=sidDB)

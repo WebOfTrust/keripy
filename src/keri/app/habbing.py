@@ -162,7 +162,7 @@ class Habitat:
         if salt is None:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
 
-        self.mgr = keeping.Manager(keeper=self.ks, pidx=pidx, salt=salt, tier=tier)
+        self.mgr = keeping.Manager(ks=self.ks, pidx=pidx, salt=salt, tier=tier)
 
         if existing:
             self.reinitialize()

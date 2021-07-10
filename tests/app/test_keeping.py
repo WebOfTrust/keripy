@@ -183,31 +183,31 @@ def test_openkeeper():
     """
     test contextmanager decorator for test Keeper databases
     """
-    with keeping.openKS() as keeper:
-        assert isinstance(keeper, keeping.Keeper)
-        assert keeper.name == "test"
-        assert isinstance(keeper.env, lmdb.Environment)
-        assert keeper.path.startswith("/tmp/keri_keep_")
-        assert keeper.path.endswith("_test/keri/keep/test")
-        assert keeper.env.path() == keeper.path
-        assert os.path.exists(keeper.path)
-        assert keeper.opened
+    with keeping.openKS() as ks:
+        assert isinstance(ks, keeping.Keeper)
+        assert ks.name == "test"
+        assert isinstance(ks.env, lmdb.Environment)
+        assert ks.path.startswith("/tmp/keri_keep_")
+        assert ks.path.endswith("_test/keri/keep/test")
+        assert ks.env.path() == ks.path
+        assert os.path.exists(ks.path)
+        assert ks.opened
 
-    assert not os.path.exists(keeper.path)
-    assert not keeper.opened
+    assert not os.path.exists(ks.path)
+    assert not ks.opened
 
-    with keeping.openKS(name="blue") as keeper:
-        assert isinstance(keeper, keeping.Keeper)
-        assert keeper.name == "blue"
-        assert isinstance(keeper.env, lmdb.Environment)
-        assert keeper.path.startswith("/tmp/keri_keep_")
-        assert keeper.path.endswith("_test/keri/keep/blue")
-        assert keeper.env.path() == keeper.path
-        assert os.path.exists(keeper.path)
-        assert keeper.opened
+    with keeping.openKS(name="blue") as ks:
+        assert isinstance(ks, keeping.Keeper)
+        assert ks.name == "blue"
+        assert isinstance(ks.env, lmdb.Environment)
+        assert ks.path.startswith("/tmp/keri_keep_")
+        assert ks.path.endswith("_test/keri/keep/blue")
+        assert ks.env.path() == ks.path
+        assert os.path.exists(ks.path)
+        assert ks.opened
 
-    assert not os.path.exists(keeper.path)
-    assert not keeper.opened
+    assert not os.path.exists(ks.path)
+    assert not ks.opened
 
     with keeping.openKS(name="red") as red, keeping.openKS(name="tan") as tan:
         assert isinstance(red, keeping.Keeper)
@@ -682,12 +682,12 @@ def test_manager():
     """
     manager = keeping.Manager()
     assert isinstance(manager, keeping.Manager)
-    assert isinstance(manager.keeper, keeping.Keeper)
-    assert manager.keeper.opened
+    assert isinstance(manager.ks, keeping.Keeper)
+    assert manager.ks.opened
 
-    manager.keeper.close(clear=True)
-    assert not os.path.exists(manager.keeper.path)
-    assert not manager.keeper.opened
+    manager.ks.close(clear=True)
+    assert not os.path.exists(manager.ks.path)
+    assert not manager.ks.opened
 
     raw = b'0123456789abcdef'
     salt = coring.Salter(raw=raw).qb64
@@ -703,8 +703,8 @@ def test_manager():
                     b'VjHpdZlty3Hgk6ilF8pVpAQ')
 
     with keeping.openKS() as keeper:
-        manager = keeping.Manager(keeper=keeper, salt=salt)
-        assert manager.keeper.opened
+        manager = keeping.Manager(ks=keeper, salt=salt)
+        assert manager.ks.opened
         assert manager.pidx == 0
         assert manager.tier == coring.Tiers.low
         assert manager.salt == salt
@@ -724,14 +724,14 @@ def test_manager():
         spre = verfers[0].qb64b
         assert spre == b'DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
 
-        pp = manager.keeper.prms.get(spre)
+        pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
         assert pp.algo == keeping.Algos.salty
         assert pp.salt == salt
         assert pp.stem == ''
         assert pp.tier == coring.Tiers.low
 
-        ps = manager.keeper.sits.get(spre)
+        ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
         assert ps.new.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
@@ -746,9 +746,9 @@ def test_manager():
         assert keys == ps.new.pubs
 
         # test .pubs db
-        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
-        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
         digs = [diger.qb64 for diger in  digers]
@@ -759,9 +759,9 @@ def test_manager():
         manager.move(old=oldspre, new=spre)
 
         # test .pubs db after move
-        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
-        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs)
@@ -809,14 +809,14 @@ def test_manager():
         assert cst == '1'
         assert nst == '1'
 
-        pp = manager.keeper.prms.get(spre)
+        pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
         assert pp.algo == keeping.Algos.salty
         assert pp.salt == salt
         assert pp.stem == ''
         assert pp.tier == coring.Tiers.low
 
-        ps = manager.keeper.sits.get(spre)
+        ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == ['DVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM']
         assert len(ps.new.pubs) == 1
         assert ps.new.pubs == ['DcHJWO4GszUP0rvVO4Tl2rUdUM1Ln5osP7BwiUeJWhdc']
@@ -843,21 +843,21 @@ def test_manager():
         assert cst == '1'
         assert nst == '1'
 
-        pp = manager.keeper.prms.get(spre)
+        pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
 
-        ps = manager.keeper.sits.get(spre)
+        ps = manager.ks.sits.get(spre)
         assert oldpubs == ps.old.pubs
 
         for pub in deadpubs:
             # assert not manager.keeper.getPri(key=pub.encode("utf-8"))
-            assert not manager.keeper.pris.get(pub.encode("utf-8"))
+            assert not manager.ks.pris.get(pub.encode("utf-8"))
 
         # test .pubs db
-        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
 
-        pl = manager.keeper.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
         # salty algorithm rotate to null
@@ -865,9 +865,9 @@ def test_manager():
         assert cst == '1'
         assert nst == '0'
 
-        pp = manager.keeper.prms.get(spre)
+        pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
-        ps = manager.keeper.sits.get(spre)
+        ps = manager.ks.sits.get(spre)
         assert ps.nxt.pubs == []
         assert digers == []
 
@@ -885,14 +885,14 @@ def test_manager():
         assert manager.pidx == 2
         rpre = verfers[0].qb64b
 
-        pp = manager.keeper.prms.get(rpre)
+        pp = manager.ks.prms.get(rpre)
         assert pp.pidx == 1
         assert pp.algo == keeping.Algos.randy
         assert pp.salt == ''
         assert pp.stem == ''
         assert pp.tier == ''
 
-        ps = manager.keeper.sits.get(rpre)
+        ps = manager.ks.sits.get(rpre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
         assert ps.new.ridx == 0
@@ -903,7 +903,7 @@ def test_manager():
 
         keys = [verfer.qb64 for verfer in verfers]
         for key in keys:
-            assert manager.keeper.pris.get(key.encode("utf-8")) is not None
+            assert manager.ks.pris.get(key.encode("utf-8")) is not None
 
         digs = [diger.qb64 for diger in  digers]
         assert len(digs) == 1
@@ -919,10 +919,10 @@ def test_manager():
         assert cst == '1'
         assert nst == '1'
 
-        pp = manager.keeper.prms.get(rpre)
+        pp = manager.ks.prms.get(rpre)
         assert pp.pidx == 1
 
-        ps = manager.keeper.sits.get(rpre)
+        ps = manager.ks.sits.get(rpre)
         assert oldpubs == ps.old.pubs
 
         # randy algo incept with null nxt
@@ -932,10 +932,10 @@ def test_manager():
         assert cst == '1'
         assert nst == '0'
 
-        pp = manager.keeper.prms.get(rpre)
+        pp = manager.ks.prms.get(rpre)
         assert pp.pidx == 2
 
-        ps = manager.keeper.sits.get(rpre)
+        ps = manager.ks.sits.get(rpre)
         assert ps.nxt.pubs == []
         assert digers == []
 
@@ -954,14 +954,14 @@ def test_manager():
         spre = verfers[0].qb64b
         assert spre == b'D627iBfehzh966wPzBYjKQuGOSmIkdcR7b14nZv_ULIw'
 
-        pp = manager.keeper.prms.get(spre)
+        pp = manager.ks.prms.get(spre)
         assert pp.pidx == 3
         assert pp.algo == keeping.Algos.salty
         assert pp.salt == salt
         assert pp.stem == stem == 'red'
         assert pp.tier == coring.Tiers.low
 
-        ps = manager.keeper.sits.get(spre)
+        ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == []
         assert len(ps.new.pubs) == 1
         assert ps.new.pubs == ['D627iBfehzh966wPzBYjKQuGOSmIkdcR7b14nZv_ULIw']
@@ -1050,26 +1050,26 @@ def test_manager():
 
         # test .pris db
         for i, pubs in enumerate(publicies):
-            pri0 = manager.keeper.pris.get(pubs[0]).qb64b
+            pri0 = manager.ks.pris.get(pubs[0]).qb64b
             assert pri0.decode("utf-8") == secrecies[i][0]
             for pub in pubs:
-                assert manager.keeper.pris.get(pub) is not None
+                assert manager.ks.pris.get(pub) is not None
 
-        pp = manager.keeper.prms.get(ipre)
+        pp = manager.ks.prms.get(ipre)
         assert pp.pidx == 6
         assert manager.pidx == 7
 
-        ps = manager.keeper.sits.get(ipre)
+        ps = manager.ks.sits.get(ipre)
         assert ps.new.ridx == 7
         assert ps.new.pubs == publicies[ps.new.ridx]
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            pl = manager.keeper.pubs.get(keeping.riKey(ipre, i))
+            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
             assert pl.pubs == pubs
 
         # nxt pubs
-        pl = manager.keeper.pubs.get(keeping.riKey(ipre, i+1))
+        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
         assert pl
 
         assert [diger.qb64 for diger in digers] == ['Ewt_7B0gfSE7DnMtmNEHiy8BGPVw5at2-e_JgJ1jAfEc']
@@ -1138,16 +1138,16 @@ def test_manager():
 
         # test .pris db
         for i, pubs in enumerate(publicies):
-            pri0 = manager.keeper.pris.get(pubs[0]).qb64b
+            pri0 = manager.ks.pris.get(pubs[0]).qb64b
             assert pri0.decode("utf-8") == secrecies[i][0]
             for pub in pubs:
-                assert manager.keeper.pris.get(pub) is not None
+                assert manager.ks.pris.get(pub) is not None
 
-        pp = manager.keeper.prms.get(ipre)
+        pp = manager.ks.prms.get(ipre)
         assert pp.pidx == 7
         assert manager.pidx == 8
 
-        ps = manager.keeper.sits.get(ipre)
+        ps = manager.ks.sits.get(ipre)
         assert ps.new.ridx == 3
         assert ps.new.kidx == 7
         assert ps.new.pubs == publicies[ps.new.ridx]
@@ -1156,11 +1156,11 @@ def test_manager():
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            pl = manager.keeper.pubs.get(keeping.riKey(ipre, i))
+            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
             assert pl.pubs == pubs
 
         #  nxt pubs
-        pl = manager.keeper.pubs.get(keeping.riKey(ipre, i+1))
+        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
         assert pl
 
         assert [diger.qb64 for diger in digers] == ['E7Ch-T3dCZZ_i0u1ACi_Yv1lyyAMoQCT5ar81eUGoPYY',
@@ -1178,8 +1178,8 @@ def test_manager():
         with pytest.raises(ValueError):  # Test past end of replay
             verfers, digers = manager.replay(ipre, i+2)
 
-    assert not os.path.exists(manager.keeper.path)
-    assert not manager.keeper.opened
+    assert not os.path.exists(manager.ks.path)
+    assert not manager.ks.opened
     """End Test"""
 
 
@@ -1207,9 +1207,10 @@ def test_manager_with_aeid():
     assert encrypter.verifySeed(seed=seed)
 
     with keeping.openKS() as keeper:
-        manager = keeping.Manager(keeper=keeper, salt=salt, aeid=aeid, seed=seed)
-        assert manager.keeper.opened
-        assert manager._inits is None  # db open so ._initage consumed
+        manager = keeping.Manager(ks=keeper, seed=seed, salt=salt, aeid=aeid, )
+        assert manager.ks.opened
+        assert manager._inits == {'aeid': 'BJruYr3oXDGRTRN0XnhiqDeoENdRak6FD8y2vsTvvJkE',
+                                  'salt': '0AMDEyMzQ1Njc4OWFiY2RlZg'}
         assert manager.encrypter.qb64 == encrypter.qb64  #  aeid provided
         assert manager.decrypter.qb64 == decrypter.qb64  # aeid and seed provided
         assert manager.seed == seed  # in memory only
@@ -1217,7 +1218,7 @@ def test_manager_with_aeid():
         assert manager.salt == salt  # encrypted on disk but property decrypts if seed
         assert manager.pidx == 0
         assert manager.tier == coring.Tiers.low
-        saltCipher = coring.Cipher(qb64=manager.keeper.gbls.get('salt'))
+        saltCipher = coring.Cipher(qb64=manager.ks.gbls.get('salt'))
         assert saltCipher.decrypt(seed=seed).qb64 == salt
 
         # rawseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
@@ -1228,11 +1229,11 @@ def test_manager_with_aeid():
         manager.updateAeid(aeid=signer.verfer.qb64, seed=signer.qb64)
         assert manager.aeid == signer.verfer.qb64 == 'BRw6sysb_uv81ZouXqHxQlqnAh9BYiSOsg9eQJmbZ8Uw'
         assert manager.salt == salt
-        assert not saltCipher.qb64 == manager.keeper.gbls.get('salt')
+        assert not saltCipher.qb64 == manager.ks.gbls.get('salt')
 
     """End Test"""
 
 
 
 if __name__ == "__main__":
-    test_manager()
+    test_manager_with_aeid()

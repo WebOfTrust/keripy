@@ -629,23 +629,12 @@ class Manager:
 
     """
 
-    def __init__(self, keeper=None, pidx=None, salt=None, tier=None,
-                   aeid=None, seed=None):
+    def __init__(self, ks=None, seed=None, **kwa):
         """
         Setup Manager.
 
         Parameters:
-            keeper (Keeper): Keeper instance (LMDB)
-            pidx (int): index of next new created key pair sequence for given
-                identifier prefix
-            salt (str):  qb64 of root salt. Makes random root salt if not provided
-            tier (str): default security tier (Tierage) for root salt
-            aeid (str): qb64 of non-transferable identifier prefix for
-                authentication and encryption of secrets in keeper. If provided
-                aeid (not None) and different from aeid stored in database then
-                all secrets are re-encrypted using new aeid. In this case the
-                provided prikey must not be empty. A change in aeid should require
-                a second authentication mechanism besides the prikey.
+            ks (Keeper): key store instance (LMDB)
             seed (str): qb64 private-signing key (seed) for the aeid from which
                 the private decryption key may be derived. If aeid stored in
                 database is not empty then seed may required to do any key
@@ -656,29 +645,31 @@ class Manager:
                 and decryption secret for the Manager and must be stored on
                 another device from the device that runs the Manager.
 
-
+        Parameters: Passthrough to .setup for later initialization
+            aeid (str): qb64 of non-transferable identifier prefix for
+                authentication and encryption of secrets in keeper. If provided
+                aeid (not None) and different from aeid stored in database then
+                all secrets are re-encrypted using new aeid. In this case the
+                provided prikey must not be empty. A change in aeid should require
+                a second authentication mechanism besides the prikey.
+            pidx (int): index of next new created key pair sequence for given
+                identifier prefix
+            salt (str): qb64 of root salt. Makes random root salt if not provided
+            tier (str): default security tier (Tierage) for root salt
         """
-        self.keeper = keeper if keeper is not None else Keeper()  # reopens by default
+        self.ks = ks if ks is not None else Keeper()  # reopens by default
         self.encrypter = None
         self.decrypter = None
-
-        if pidx is None:
-            pidx = 0
-        if tier is None:
-            tier = coring.Tiers.low
-        if salt is None:
-            salt = coring.Salter().qb64
-        if aeid is None:
-            aeid = ''
-
-        self._inits = Initage(aeid=aeid, pidx=pidx, salt=salt, tier=tier)
         self._seed = seed if seed is not None else ""
 
-        if self.keeper.opened:  # allows keeper db to opened asynchronously
-            self.setup()  # first call to .setup with initialize database
+        # save keyword arg parameters to init later if db not opened yet
+        self._inits = kwa
+
+        if self.ks.opened:  # allows keeper db to opened asynchronously
+            self.setup(**self._inits)  # first call to .setup with initialize database
 
 
-    def setup(self):
+    def setup(self, aeid=None, pidx=None, salt=None, tier=None):
         """
         Setups manager root or global attributes and properties
         Assumes that .keeper db is open.
@@ -689,24 +680,46 @@ class Manager:
         initialization here enables asynchronous opening of keeper db after
         keeper instance is instantiated. First call to .setup will initialize
         keeper db defaults if never before initialized (vacuous initialization).
+
+        Parameters:
+            aeid (str): qb64 of non-transferable identifier prefix for
+                authentication and encryption of secrets in keeper. If provided
+                aeid (not None) and different from aeid stored in database then
+                all secrets are re-encrypted using new aeid. In this case the
+                provided prikey must not be empty. A change in aeid should require
+                a second authentication mechanism besides the prikey.
+            pidx (int): index of next new created key pair sequence for given
+                identifier prefix
+            salt (str):  qb64 of root salt. Makes random root salt if not provided
+            tier (str): default security tier (Tierage) for root salt
+
         """
-        if not self.keeper.opened:
+        if not self.ks.opened:
             raise kering.ClosedError("Attempt to setup closed Manager.keeper.")
 
-        if self.pidx is None:  # never before inited
-            self.pidx = self._inits.pidx  # init to default
+        if aeid is None:
+            aeid = ''
+        if pidx is None:
+            pidx = 0
+        if salt is None:
+            salt = coring.Salter().qb64
+        if tier is None:
+            tier = coring.Tiers.low
 
-        if self.tier is None:  # never before inited
-            self.tier = self._inits.tier  # init to default
+        # update  database if never before initialized
+        if self.pidx is None:  # never before initialized
+            self.pidx = pidx  # init to default
 
-        if self.salt is None:  # never before inited
-            self.salt = self._inits.salt
+        if self.tier is None:  # never before initialized
+            self.tier = tier  # init to default
 
-        if self.aeid is None:  # never before inited
-            aeid = self._inits.aeid
+        if self.salt is None:  # never before initialized
+            self.salt = salt
+
+        if self.aeid is None:  # never before initialized
             self.updateAeid(aeid, self.seed)
 
-        self._inits = None  # init defaults is a one time operation
+        # self._inits = None  # init defaults is a one time operation
 
 
 
@@ -726,7 +739,7 @@ class Manager:
         Assumes db initialized.
         aeid is qb64 auth encrypt id prefix
         """
-        return self.keeper.gbls.get('aeid')
+        return self.ks.gbls.get('aeid')
 
 
     def updateAeid(self, aeid, seed):
@@ -767,7 +780,7 @@ class Manager:
         if self.decrypter:
             pass
 
-        self.keeper.gbls.pin("aeid", aeid)  # set aeid in db
+        self.ks.gbls.pin("aeid", aeid)  # set aeid in db
         self._seed = seed  # set .seed in memory
         self.encrypter = encrypter  # update .encrypter
         # update .decrypter
@@ -781,7 +794,7 @@ class Manager:
         Assumes db initialized.
         salt is default root salt for new key sequence creation
         """
-        salt = self.keeper.gbls.get('salt')
+        salt = self.ks.gbls.get('salt')
         if self.decrypter:  # given .decrypt secret salt must be encrypted in db
             return self.decrypter.decrypt(ser=salt).qb64
         return salt
@@ -795,7 +808,7 @@ class Manager:
             salt (str): qb64 default root salt for new key sequence creation
                 may be plain text or cipher text handled by updateAeid
         """
-        self.keeper.gbls.pin('salt', salt)
+        self.ks.gbls.pin('salt', salt)
 
 
     @property
@@ -805,7 +818,7 @@ class Manager:
         Assumes db initialized.
         pidx is prefix index int for next new key sequence
         """
-        if (pidx := self.keeper.gbls.get("pidx")) is not None:
+        if (pidx := self.ks.gbls.get("pidx")) is not None:
             return int(pidx, 16)
         return pidx  # None
 
@@ -816,7 +829,7 @@ class Manager:
         pidx property setter to key store db.
         pidx is prefix index int for next new key sequence
         """
-        self.keeper.gbls.pin("pidx", "%x" % pidx)
+        self.ks.gbls.pin("pidx", "%x" % pidx)
 
 
     @property
@@ -826,7 +839,7 @@ class Manager:
         Assumes db initialized.
         tier is default root security tier for new key sequence creation
         """
-        return self.keeper.gbls.get('tier')
+        return self.ks.gbls.get('tier')
 
 
     @tier.setter
@@ -835,7 +848,7 @@ class Manager:
         tier property setter to key store db.
         tier is default root security tier for new key sequence creation
         """
-        self.keeper.gbls.pin('tier', tier)
+        self.ks.gbls.pin('tier', tier)
 
 
     def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed, isith=None,
@@ -950,27 +963,27 @@ class Manager:
                                    ridx=ridx+1, kidx=kidx+len(icodes), st=nst, dt=dt))
 
         pre = verfers[0].qb64b
-        if not self.keeper.pres.put(pre, val=coring.Prefixer(qb64=pre)):
+        if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
             raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-        if not self.keeper.prms.put(pre, data=pp):
+        if not self.ks.prms.put(pre, data=pp):
             raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
         self.pidx = pidx + 1  # increment for next inception
 
-        if not self.keeper.sits.put(pre, data=ps):
+        if not self.ks.sits.put(pre, data=ps):
             raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
 
         for signer in isigners:  # store secrets (private key val keyed by public key)
-            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
+            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-        self.keeper.pubs.put(riKey(pre, ri=ridx), data=PubSet(pubs=ps.new.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ridx), data=PubSet(pubs=ps.new.pubs))
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
-            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
+            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         # store publics keys for lookup of private key for replay
-        self.keeper.pubs.put(riKey(pre, ri=ridx+1), data=PubSet(pubs=ps.nxt.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ridx+1), data=PubSet(pubs=ps.nxt.pubs))
 
         return (verfers, digers, cst, nst)
 
@@ -990,48 +1003,48 @@ class Manager:
         if old == new:
             return
 
-        if self.keeper.pres.get(old) is None:
+        if self.ks.pres.get(old) is None:
             raise ValueError("Nonexistent old pre={}, nothing to assign.".format(old))
 
-        if self.keeper.pres.get(new) is not None:
+        if self.ks.pres.get(new) is not None:
             raise ValueError("Preexistent new pre={} may not clobber.".format(new))
 
-        if (oldprm := self.keeper.prms.get(old)) is None:
+        if (oldprm := self.ks.prms.get(old)) is None:
             raise ValueError("Nonexistent old prm for pre={}, nothing to move.".format(old))
 
-        if self.keeper.prms.get(new) is not None:
+        if self.ks.prms.get(new) is not None:
             raise ValueError("Preexistent new prm for pre={} may not clobber.".format(new))
 
-        if (oldsit := self.keeper.sits.get(old)) is None:
+        if (oldsit := self.ks.sits.get(old)) is None:
             raise ValueError("Nonexistent old sit for pre={}, nothing to move.".format(old))
 
-        if self.keeper.sits.get(new) is not None:
+        if self.ks.sits.get(new) is not None:
             raise ValueError("Preexistent new sit for pre={} may not clobber.".format(new))
 
-        if not self.keeper.prms.put(new, data=oldprm):
+        if not self.ks.prms.put(new, data=oldprm):
             raise ValueError("Failed moving prm from old pre={} to new pre={}.".format(old, new))
         else:
-            self.keeper.prms.rem(old)
+            self.ks.prms.rem(old)
 
-        if not self.keeper.sits.put(new, data=oldsit):
+        if not self.ks.sits.put(new, data=oldsit):
             raise ValueError("Failed moving sit from old pre={} to new pre={}.".format(old, new))
         else:
-            self.keeper.sits.rem(old)
+            self.ks.sits.rem(old)
 
         # move .pubs entries if any
         i = 0
-        while (pl := self.keeper.pubs.get(riKey(old, i))):
-            if not self.keeper.pubs.put(riKey(new, i), data=pl):
+        while (pl := self.ks.pubs.get(riKey(old, i))):
+            if not self.ks.pubs.put(riKey(new, i), data=pl):
                 raise ValueError("Failed moving pubs at pre={} ri={} to new"
                                  " pre={}".format(old, i, new))
             i += 1
 
         # assign old
-        if not self.keeper.pres.pin(old, val=coring.Prefixer(qb64=new)):
+        if not self.ks.pres.pin(old, val=coring.Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={} to old pre={}.".format(new, old))
 
         # make new so that if move again we reserve each one
-        if not self.keeper.pres.put(new, val=coring.Prefixer(qb64=new)):
+        if not self.ks.pres.put(new, val=coring.Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={}.".format(new))
 
 
@@ -1074,10 +1087,10 @@ class Manager:
             even when the identifer prefix is transferable.
 
         """
-        if (pp := self.keeper.prms.get(pre)) is None:
+        if (pp := self.ks.prms.get(pre)) is None:
             raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
 
-        if (ps := self.keeper.sits.get(pre)) is None:
+        if (ps := self.ks.sits.get(pre)) is None:
             raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
 
         if not ps.nxt.pubs:  # empty nxt public keys so non-transferable prefix
@@ -1089,7 +1102,7 @@ class Manager:
 
         verfers = []  # assign verfers from old nxt now new.
         for pub in ps.new.pubs:
-            if (signer := self.keeper.pris.get(pub.encode("utf-8"))) is None:
+            if (signer := self.ks.pris.get(pub.encode("utf-8"))) is None:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
@@ -1120,18 +1133,18 @@ class Manager:
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
                               ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
-        if not self.keeper.sits.pin(pre, data=ps):
+        if not self.ks.sits.pin(pre, data=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
         for signer in signers:  # store secrets (private key val keyed by public key)
-            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
+            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         # store public keys for lookup of private keys by public key for replay
-        self.keeper.pubs.put(riKey(pre, ri=ps.nxt.ridx), data=PubSet(pubs=ps.nxt.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ps.nxt.ridx), data=PubSet(pubs=ps.nxt.pubs))
 
         if erase:
             for pub in old.pubs:  # remove old prikeys
-                self.keeper.pris.rem(pub)
+                self.ks.pris.rem(pub)
 
         return (verfers, digers, cst, nst)
 
@@ -1173,13 +1186,13 @@ class Manager:
 
         if pubs:
             for pub in pubs:
-                if (signer := self.keeper.pris.get(pub)) is None:
+                if (signer := self.ks.pris.get(pub)) is None:
                     raise ValueError("Missing prikey in db for pubkey={}".format(pub))
                 signers.append(signer)
 
         else:
             for verfer in verfers:
-                if (signer := self.keeper.pris.get(verfer.qb64)) is None:
+                if (signer := self.ks.pris.get(verfer.qb64)) is None:
                     raise ValueError("Missing prikey in db for pubkey={}".format(verfer.qb64))
                 signers.append(signer)
 
@@ -1288,19 +1301,19 @@ class Manager:
                             stem=creator.stem,
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b
-                if not self.keeper.pres.put(pre, val=coring.Prefixer(qb64=pre)):
+                if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-                if not self.keeper.prms.put(pre, data=pp):
+                if not self.ks.prms.put(pre, data=pp):
                     raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
                 self.pidx = pidx + 1  # increment for next inception
                 first = False
 
             for signer in csigners:  # store secrets (private key val keyed by public key)
-                self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
+                self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-            self.keeper.pubs.put(riKey(pre, ri=ridx),
+            self.ks.pubs.put(riKey(pre, ri=ridx),
                                 data=PubSet(pubs=[signer.verfer.qb64
                                         for signer in csigners]))
 
@@ -1324,9 +1337,9 @@ class Manager:
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
-            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
+            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-        self.keeper.pubs.put(riKey(pre, ri=ridx),
+        self.ks.pubs.put(riKey(pre, ri=ridx),
                              data=PubSet(pubs=[signer.verfer.qb64
                                                for signer in nsigners]))
 
@@ -1344,7 +1357,7 @@ class Manager:
                            ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
         ps = PreSit(old=old, new=new, nxt=nxt)
-        if not self.keeper.sits.pin(pre, data=ps):
+        if not self.ks.sits.pin(pre, data=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
         return (verferies, digers)
 
@@ -1374,13 +1387,13 @@ class Manager:
         """
         oldps = None
         if ridx - 1 >= 0:
-            oldps = self.keeper.pubs.get(riKey(pre, ridx-1))
+            oldps = self.ks.pubs.get(riKey(pre, ridx-1))
 
-        newps = self.keeper.pubs.get(riKey(pre, ridx))
-        nxtps = self.keeper.pubs.get(riKey(pre, ridx+1))
+        newps = self.ks.pubs.get(riKey(pre, ridx))
+        nxtps = self.ks.pubs.get(riKey(pre, ridx+1))
 
         if not (newps and nxtps):  # replay finished  #not (newpubs and nxtpubs)
-            if self.keeper.pubs.get(riKey(pre, ridx)):  # past replay but next pubs
+            if self.ks.pubs.get(riKey(pre, ridx)):  # past replay but next pubs
                 # raises IndexError to indicate replay at ridx past end but valid
                 # next keys at ridx
                 raise IndexError("Invalid replay attempt at ridx={} for pubs of "
@@ -1393,7 +1406,7 @@ class Manager:
 
         if erase and oldps:
             for pub in oldps.pubs:  # remove old prikeys
-                self.keeper.pris.rem(pub)
+                self.ks.pris.rem(pub)
 
         verfers = [coring.Verfer(qb64=pub) for pub in newps.pubs]
         digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtps.pubs]

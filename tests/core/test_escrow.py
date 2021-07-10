@@ -28,7 +28,7 @@ def test_partial_signed_escrow():
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
-        mgr = keeping.Manager(keeper=ks, salt=salt)
+        mgr = keeping.Manager(ks=ks, salt=salt)
 
         # Init Kevery with event DB
         kvy = eventing.Kevery(db=db)
@@ -365,8 +365,8 @@ def test_missing_delegator_escrow():
           keeping.openKS(name="del") as delKS:
 
         # Init key pair managers
-        bobMgr = keeping.Manager(keeper=bobKS, salt=bobSalt)
-        delMgr = keeping.Manager(keeper=delKS, salt=delSalt)
+        bobMgr = keeping.Manager(ks=bobKS, salt=bobSalt)
+        delMgr = keeping.Manager(ks=delKS, salt=delSalt)
 
         # Init Keverys
         bobKvy = eventing.Kevery(db=bobDB)
@@ -608,7 +608,7 @@ def test_out_of_order_escrow():
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
-        mgr = keeping.Manager(keeper=ks, salt=salt)
+        mgr = keeping.Manager(ks=ks, salt=salt)
 
         # Init Kevery with event DB
         kvy = eventing.Kevery(db=db)
@@ -810,7 +810,7 @@ def test_unverified_receipt_escrow():
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
-        mgr = keeping.Manager(keeper=ks, salt=salt)
+        mgr = keeping.Manager(ks=ks, salt=salt)
 
         # Init Kevery with event DB
         kvy = eventing.Kevery(db=db)
@@ -1098,7 +1098,7 @@ def test_unverified_trans_receipt_escrow():
     # init event DB and keep DB
     with basing.openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         # Init key pair manager
-        mgr = keeping.Manager(keeper=ks, salt=salt)
+        mgr = keeping.Manager(ks=ks, salt=salt)
 
         # Init Kevery with event DB
         kvy = eventing.Kevery(db=db)
