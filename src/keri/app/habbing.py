@@ -43,27 +43,26 @@ class Habitat:
         temp (Boolean): True for testing it modifies tier of salty key
             generation algorithm and persistence of db and ks
         erase (Boolean): If True erase old private keys, Otherwise not.
+        db (basing.Baser): lmdb data base for KEL etc
         ks (keeping.Keeper): lmdb key store
         mgr (keeping.Manager): creates and rotates keys in key store
         ridx (int): rotation index (inception == 0) needed for key replay
-        kevers (dict): of eventing.Kever(s) keyed by qb64 prefix
-        db (basing.Baser): lmdb data base for KEL etc
-        kvy (eventing.Kevery): instance for local processing of local msgs
-        parser (parsing.Parser):  parses local messages for .kvy
-        iserder (coring.Serder): own inception event
         pre (str): qb64 prefix of own local controller
+        kvy (eventing.Kevery): instance for local processing of local msgs
+        psr (parsing.Parser):  parses local messages for .kvy
+
 
     Properties:
-        .kever is Kever instance of key state of local controller
+        kever (Kever): instance of key state of local controller
+        kevers (dict): of eventing.Kever(s) keyed by qb64 prefix
+        iserder (coring.Serder): own inception event
+        prefixes (OrderedSet): local prefixes for .db
 
     """
 
     def __init__(self, name='test', ks=None, db=None,
-                 code=coring.MtrDex.Blake3_256, secrecies=None,
-                 isith=None, icount=1, nsith=None, ncount=None,
-                 toad=None, wits=None,
-                 salt=None, tier=None,
-                 transferable=True, temp=False, erase=True):
+                 transferable=True, temp=False, erase=True,
+                 **kwa):
         """
         Initialize instance.
 
@@ -71,9 +70,15 @@ class Habitat:
             name is str alias name for local controller of habitat
             ks is keystore lmdb Keeper instance
             db is database lmdb Baser instance
-            kevers is dict of Kever instance keyed by qb64 prefix
-            code is prefix derivation code
+            transferable is Boolean True means pre is transferable (default)
+                    False means pre is nontransferable
+            temp is Boolean used for persistence of lmdb ks and db directories
+                and mode for key generation
+            erase is Boolean True means erase private keys once stale
+
+        Parameters: Passed through via kwa
             secrecies is list of list of secrets to preload key pairs if any
+            code is prefix derivation code
             isith is incepting signing threshold as int, str hex, or list
             icount is incepting key count for number of keys
             nsith is next signing threshold as int, str hex or list
@@ -82,17 +87,54 @@ class Habitat:
             wits is list of qb64 prefixes of witnesses
             salt is qb64 salt for creating key pairs
             tier is security tier for generating keys from salt
-            transferable is Boolean True means pre is transferable (default)
-                    False means pre is nontransferable
-            temp is Boolean used for persistence of lmdb ks and db directories
-                and mode for key generation
-            erase is Boolean True means erase private keys once stale
+
         """
         self.name = name
         self.transferable = transferable
         self.temp = temp
         self.erase = erase
+        self.db = db if db is not None else basing.Baser(name=name, temp=self.temp)
+        self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
+        self.ridx = 0  # rotation index of latest establishment event
+        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
+        self.psr = parsing.Parser(framed=True, kvy=self.kvy)
+        self.mgr = None  # wait to setup until after ks is known to be opened
+        self.pre = None  # wait to setup until after db is known to be opened
 
+        # save init kwy word arg parameters as ._inits in order to later finish
+        # init setup elseqhere after databases are opened if not below
+        self._inits = kwa
+
+        if self.db.opened and self.ks.opened:
+            self.setup(**self._inits)  # finish setup later
+
+
+
+
+    def setup(self, secrecies=None, code=coring.MtrDex.Blake3_256,
+                 isith=None, icount=1, nsith=None, ncount=None,
+                 toad=None, wits=None, salt=None, tier=None,):
+        """
+        Setup habitat. Assumes that both .db and .ks have been opened.
+        This allows dependency injection of .db and .ks into habitat instance
+        prior to .db and .kx being opened to accomodate asynchronous process
+        setup of these resources. Putting the .db and .ks associated
+        initialization here enables asynchronous opening .db and .ks after
+        Baser and Keeper instances are instantiated. First call to .setup will
+        initialize databases (vacuous initialization).
+
+        Parameters:
+            secrecies is list of list of secrets to preload key pairs if any
+            code is prefix derivation code
+            isith is incepting signing threshold as int, str hex, or list
+            icount is incepting key count for number of keys
+            nsith is next signing threshold as int, str hex or list
+            ncount is next key count for number of next keys
+            toad is int or str hex of witness threshold
+            wits is list of qb64 prefixes of witnesses
+            salt is qb64 salt for creating key pairs
+            tier is security tier for generating keys from salt
+        """
         if nsith is None:
             nsith = isith
         if ncount is None:
@@ -102,21 +144,14 @@ class Habitat:
             code = coring.MtrDex.Ed25519N
         pidx = None
 
-        self.db = db if db is not None else basing.Baser(name=name, temp=self.temp)
-        self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
-
         # for persisted Habitats, check the KOM first to see if there is an existing
         # one we can restart from otherwise initialize a new one
         existing = False
-        # add .habs attribute to db habitat name Komer subdb
-        # self.db.habs = koming.Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
-        # kom = koming.Komer(db=self.db, schema=HabitatRecord, subdb='habs.')
         if not self.temp:
             ex = self.db.habs.get(keys=self.name)
             # found existing habitat, otherwise leave __init__ to incept a new one.
             if ex is not None:
-                # prms = json.loads(bytes(ks.getPrm(key=ex.prefix)).decode("utf-8"))
-                prms = ks.prms.get(ex.prefix)
+                prms = self.ks.prms.get(ex.prefix)
                 salt = prms.salt  # prms['salt']
                 tier = prms.tier  # prms['tier']
                 pidx = prms.pidx  # prms['pidx']
@@ -128,8 +163,6 @@ class Habitat:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
 
         self.mgr = keeping.Manager(keeper=self.ks, pidx=pidx, salt=salt, tier=tier)
-        self.ridx = 0  # rotation index of latest establishment event
-        # self.kevers = kevers if kevers is not None else dict()
 
         if existing:
             self.reinitialize()
@@ -171,15 +204,32 @@ class Habitat:
             self.db.habs.put(keys=self.name,
                              data=basing.HabitatRecord(name=self.name,
                                                        prefix=self.pre))
-            self.prefixes.add(self.pre)  # may want to have db method
+            self.prefixes.add(self.pre)
 
-            self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
+            # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
+            # create inception event
             sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
             self.kvy.processEvent(serder=serder, sigers=sigers)
-            self.psr = parsing.Parser(framed=True, kvy=self.kvy)
+            # self.psr = parsing.Parser(framed=True, kvy=self.kvy)
             if self.pre not in self.kevers:
                 raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
+
+
+    def reinitialize(self):
+        if self.pre is None:
+            raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
+
+        if self.pre not in self.kevers:
+            raise kering.ConfigurationError("Missing Habitat KEL for "
+                                            "pre={}.".format(self.pre))
+
+        self.prefixes.add(self.pre)  # ordered set so add is idempotent
+
+
+        # ridx for replay may be an issue when loading from existing
+        self.ridx = self.ks.sits.get(self.pre).new.ridx
+
 
     @property
     def iserder(self):
@@ -217,25 +267,6 @@ class Habitat:
         Returns .db.prefixes
         """
         return self.db.prefixes
-
-
-    def reinitialize(self):
-        if self.pre is None:
-            raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
-
-        if self.pre not in self.kevers:
-            raise kering.ConfigurationError("Missing Habitat KEL for "
-                                            "pre={}.".format(self.pre))
-
-        self.prefixes.add(self.pre)  # .prefixes is set so idempotent add
-        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy)
-
-        # ridx for replay may be an issue when loading from existing
-        # sit = json.loads(bytes(self.ks.getSit(key=self.pre)).decode("utf-8"))
-        sit = self.ks.sits.get(self.pre)
-        # self.ridx = helping.datify(keeping.PubLot, sit['new']).ridx
-        self.ridx =sit.new.ridx
 
 
     def rotate(self, sith=None, count=None, erase=None,
@@ -450,7 +481,7 @@ class Habitat:
 
         return msg
 
-    
+
     def verify(self, serder, prefixer, seqner, diger, sigers):
         if prefixer.qb64 in self.kevers:
             # receipted event and receipter in database so get receipter est evt

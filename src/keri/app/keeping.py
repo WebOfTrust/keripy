@@ -671,7 +671,7 @@ class Manager:
         if aeid is None:
             aeid = ''
 
-        self._initage = Initage(aeid=aeid, pidx=pidx, salt=salt, tier=tier)
+        self._inits = Initage(aeid=aeid, pidx=pidx, salt=salt, tier=tier)
         self._seed = seed if seed is not None else ""
 
         if self.keeper.opened:  # allows keeper db to opened asynchronously
@@ -681,34 +681,32 @@ class Manager:
     def setup(self):
         """
         Setups manager root or global attributes and properties
-        Assumes that db is open.
-        If .keeper.gbls in database has not been initialized for the first time
-        then initializes them from ._initage. This allows manager instance to
-        be created before database has been opened to accomodate asynchronous
-        process scheduling.
-
-
-        The initialization here enables asynchronous opening of keeper db after
-        keeper is instantiated and first call to setup will initialize keeper if
-        it was not already initialized.
+        Assumes that .keeper db is open.
+        If .keeper.gbls sub database has not been initialized for the first time
+        then initializes from ._inits. This allows dependency injection of
+        keepr db into manager instance prior to keeper db being opened to
+        accomodate asynchronous process setup of db resources. Putting the db
+        initialization here enables asynchronous opening of keeper db after
+        keeper instance is instantiated. First call to .setup will initialize
+        keeper db defaults if never before initialized (vacuous initialization).
         """
         if not self.keeper.opened:
             raise kering.ClosedError("Attempt to setup closed Manager.keeper.")
 
         if self.pidx is None:  # never before inited
-            self.pidx = self._initage.pidx  # init to default
+            self.pidx = self._inits.pidx  # init to default
 
         if self.tier is None:  # never before inited
-            self.tier = self._initage.tier  # init to default
+            self.tier = self._inits.tier  # init to default
 
         if self.salt is None:  # never before inited
-            self.salt = self._initage.salt
+            self.salt = self._inits.salt
 
         if self.aeid is None:  # never before inited
-            aeid = self._initage.aeid
+            aeid = self._inits.aeid
             self.updateAeid(aeid, self.seed)
 
-        self._initage = None  # init defaults is a one time operation
+        self._inits = None  # init defaults is a one time operation
 
 
 
