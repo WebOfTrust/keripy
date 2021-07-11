@@ -1238,4 +1238,4 @@ def test_manager_with_aeid():
 
 
 if __name__ == "__main__":
-    test_manager_with_aeid()
+    test_manager()

@@ -61,6 +61,14 @@ class AuthZError(AuthError):
         raise AuthZError("error message")
     """
 
+class DecryptError(AuthZError):
+    """
+    Error when attempting decryption
+
+    Usage:
+        raise DecryptError("error message")
+    """
+
 # errors associated with databases
 class DatabaseError(KeriError):
     """

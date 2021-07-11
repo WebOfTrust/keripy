@@ -956,7 +956,8 @@ class Manager:
         # Secret to encrypt here
         pp = PrePrm(pidx=pidx,
                     algo=algo,
-                    salt=creator.salt,
+                    salt=(creator.salt if not self.encrypter
+                          else self.encrypter.encrypt(ser=creator.salt)),
                     stem=creator.stem,
                     tier=creator.tier)
 
@@ -1114,7 +1115,16 @@ class Manager:
 
         cst = ps.new.st  # get new current signing threshold
 
-        creator = Creatory(algo=pp.algo).make(salt=pp.salt, stem=pp.stem, tier=pp.tier)
+        salt = pp.salt
+        if salt:
+            if self.aeid:
+                if not self.decrypter:
+                    raise kering.DecryptError("Unauthorized decryption. Aeid but no decrypter.")
+                salt = self.decrypter.decrypt(ser=salt)
+            else:
+                salt = coring.Salter(qb64=salt).qb64  # ensures salt was unencrypted
+
+        creator = Creatory(algo=pp.algo).make(salt=salt, stem=pp.stem, tier=pp.tier)
 
         if not codes:  # all same code, make list of len count of same code
             if count < 0:  # next may be zero if non-trans
@@ -1304,7 +1314,8 @@ class Manager:
                 # Secret to encrypt here
                 pp = PrePrm(pidx=pidx,
                             algo=algo,
-                            salt=creator.salt,
+                            salt=(creator.salt if not self.encrypter
+                                  else self.encrypter.encrypt(ser=creator.salt)),
                             stem=creator.stem,
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b
