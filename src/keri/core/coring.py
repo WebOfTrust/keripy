@@ -1478,7 +1478,7 @@ class Cipher(Matter):
     def __init__(self, raw=None, code=None, **kwa):
         """
         Parmeters:
-            raw (bytes): cipher text
+            raw (Union[bytes, str]): cipher text
             code (str): cipher suite
         """
         if raw is not None and code is None:
@@ -1487,28 +1487,32 @@ class Cipher(Matter):
             elif len(raw) == Matter._rawSize(MtrDex.X25519_Cipher_Seed):
                 code = MtrDex.X25519_Cipher_Seed
 
+        if hasattr(raw, "encode"):
+            raw = raw.encode("utf-8")  # ensure bytes not str
+
         super(Cipher, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code not in (MtrDex.X25519_Cipher_Salt, MtrDex.X25519_Cipher_Seed):
             raise ValueError("Unsupported cipher code = {}.".format(self.code))
 
 
-    def decrypt(self, priker=None, seeder=None):
+    def decrypt(self, prikey=None, seed=None):
         """
-        Returns plain text as Matter instance of cryptographic cipher text material
-        given by .raw. Encrypted plain text is fully qualified (qb64) so derivaton
-        code of plain text preserved through encryption/decryption round trip.
+        Returns plain text as Matter instance (Signer or Salter) of cryptographic
+        cipher text material given by .raw. Encrypted plain text is fully
+        qualified (qb64) so derivaton code of plain text preserved through
+        encryption/decryption round trip.
 
         Uses either decryption key given by prikey or derives prikey from
-        signing key given by sigkey.
+        signing key derived from private seed.
 
         Parameters:
-            priker (Union[bytes,str]): qb64b or qb64 serialization of private
+            prikey (Union[bytes, str]): qb64b or qb64 serialization of private
                 decryption key
-            seeder (Union[bytes,str]): qb64b or qb64 serialization of private
+            seed (Union[bytes, str]): qb64b or qb64 serialization of private
                 signing key seed used to derive private decryption key
         """
-        decrypter = Decrypter(qb64b=priker, seeder=seeder)
+        decrypter = Decrypter(qb64b=prikey, seed=seed)
         return decrypter.decrypt(ser=self.qb64b)
 
 
@@ -1540,16 +1544,19 @@ class Encrypter(Matter):
         """
         Assign encrypting cipher suite function to ._encrypt
 
-        Parameters:  See Matter for inherted parameters
+        Parameters:  See Matter for inherted parameters such as qb64, qb64b
             raw (bytes): public encryption key
+            qb64b (bytes): fully qualified public encryption key
+            qb64 (str): fully qualified public encryption key
             code (str): derivation code for public encryption key
-            verkey (Union[bytes,str]): qb64b or qb64 of verkey used to derive raw
+            verkey (Union[bytes, str]): qb64b or qb64 of verkey used to derive raw
         """
         if not raw and verkey:
             verfer = Verfer(qb64b=verkey)
             if verfer.code not in (MtrDex.Ed25519N, MtrDex.Ed25519):
                 raise ValueError("Unsupported verkey derivation code = {}."
                                  "".format(verfer.code))
+            # convert signing public key to encryption public key
             raw = pysodium.crypto_sign_pk_to_box_pk(verfer.raw)
 
         super(Encrypter, self).__init__(raw=raw, code=code, **kwa)
@@ -1560,37 +1567,63 @@ class Encrypter(Matter):
             raise ValueError("Unsupported encrypter code = {}.".format(self.code))
 
 
-    def encrypt(self, ser):
+    def verifySeed(self, seed):
         """
-        Returns Cipher instance of cryptographic
-        cipher text material on bytes serialization ser or plain text
+        Returns:
+            Boolean: True means private signing key seed corresponds to public
+                signing key verkey used to derive encrypter's .raw public
+                encryption key.
+
+        Parameters:
+            seed (Union[bytes,str]): qb64b or qb64 serialization of private
+                signing key seed
+        """
+        signer = Signer(qb64b=seed)
+        verkey, sigkey = pysodium.crypto_sign_seed_keypair(signer.raw)
+        pubkey = pysodium.crypto_sign_pk_to_box_pk(verkey)
+        return (pubkey == self.raw)
+
+
+    def encrypt(self, ser=None, matter=None):
+        """
+        Returns:
+            Cipher instance of cipher text encryption of plain text serialization
+            provided by either ser or Matter instance when provided.
 
         Parameters:
             ser (Union[bytes,str]): qb64b or qb64 serialization of plain text
+            matter (Matter): plain text as Matter instance of seed or salt to
+                be encrypted
         """
-        return (self._encrypt(ser=ser, pubkey=self.raw))
+        if not (ser or matter):
+            raise EmptyMaterialError("Neither ser or plain are provided.")
+
+        if ser:
+            matter = Matter(qb64b=ser)
+
+        if matter.code == MtrDex.Salt_128:  # future other salt codes
+            code = MtrDex.X25519_Cipher_Salt
+        elif matter.code == MtrDex.Ed25519_Seed:  # future other seed codes
+            code = MtrDex.X25519_Cipher_Seed
+        else:
+            raise ValueError("Unsupported plain text code = {}.".format(matter.code))
+
+        # encrypting fully qualified qb64 version of plain text ensures its
+        # derivation code round trips through eventual decryption
+        return (self._encrypt(ser=matter.qb64b, pubkey=self.raw, code=code))
 
 
     @staticmethod
-    def _x25519(ser, pubkey):
+    def _x25519(ser, pubkey, code):
         """
         Returns cipher text as Cipher instance
         Parameters:
             ser (Union[bytes, str]): qb64b or qb64 serialization of seed or salt
                 to be encrypted.
             pubkey (bytes): raw binary serialization of encryption public key
+            code (str): derivation code of serialized plain text seed or salt
         """
-        plain = Matter(qb64b=ser)
-        if plain.code == MtrDex.Salt_128:
-            code = MtrDex.X25519_Cipher_Salt
-        elif plain.code in (MtrDex.Ed25519_Seed, MtrDex.X25519_Private,
-                            MtrDex.ECDSA_256k1_Seed):
-            code = MtrDex.X25519_Cipher_Seed
-        else:
-            raise ValueError("Unsupported plain text code = {}.".format(plain.code))
-        # encrypting fully qualified qb64 version of plain text ensures its
-        # derivation code round trips through eventual decryption
-        raw = pysodium.crypto_box_seal(plain.qb64b, pubkey)
+        raw = pysodium.crypto_box_seal(ser, pubkey)
         return Cipher(raw=raw, code=code)
 
 
@@ -1620,29 +1653,35 @@ class Decrypter(Matter):
 
 
     Methods:
-        encrypt: create cipher text
+        decrypt: create cipher text
 
     """
-    def __init__(self, raw=None, code=MtrDex.X25519_Private, seeder=None, **kwa):
+    def __init__(self, code=MtrDex.X25519_Private, seed=None, **kwa):
         """
         Assign decrypting cipher suite function to ._decrypt
 
-        Parameters:  See Matter for inherted parameters
-            raw (bytes): public encryption key
-            code (str): derivation code for private encryption key
-            seeder (Union[bytes,str]): qb64b or qb64 of signing key seed used to
-                derive raw private decryption key
+        Parameters:  See Matter for inheirted parameters
+            raw (bytes): private decryption key derived from seed (private signing key)
+            qb64b (bytes): fully qualified private decryption key
+            qb64 (str): fully qualified private decryption key
+            code (str): derivation code for private decryption key
+            seed (Union[bytes, str]): qb64b or qb64 of signing key seed used to
+                derive raw which is private decryption key
         """
-        if not raw and seeder:
-            signer = Signer(qb64b=seeder)
-            if signer.code not in (MtrDex.Ed25519_Seed,):
-                raise ValueError("Unsupported sigkey derivation code = {}."
-                                 "".format(signer.code))
-            # verkey, sigkey = pysodium.crypto_sign_seed_keypair(signer.raw)
-            sigkey = signer.raw + signer.verfer.raw
-            raw = pysodium.crypto_sign_sk_to_box_sk(sigkey)  # private encrypt key
-
-        super(Decrypter, self).__init__(raw=raw, code=code, **kwa)
+        try:
+            super(Decrypter, self).__init__(code=code, **kwa)
+        except EmptyMaterialError as ex:
+            if seed:
+                signer = Signer(qb64b=seed)
+                if signer.code not in (MtrDex.Ed25519_Seed,):
+                    raise ValueError("Unsupported signing seed derivation code = {}."
+                                     "".format(signer.code))
+                # verkey, sigkey = pysodium.crypto_sign_seed_keypair(signer.raw)
+                sigkey = signer.raw + signer.verfer.raw  # sigkey is raw seed + raw verkey
+                raw = pysodium.crypto_sign_sk_to_box_sk(sigkey)  # raw private encrypt key
+                super(Decrypter, self).__init__(raw=raw, code=code, **kwa)
+            else:
+                raise
 
         if self.code == MtrDex.X25519_Private:
             self._decrypt = self._x25519
@@ -1650,35 +1689,54 @@ class Decrypter(Matter):
             raise ValueError("Unsupported decrypter code = {}.".format(self.code))
 
 
-    def decrypt(self, ser):
+    def decrypt(self, ser=None, cipher=None, transferable=False):
         """
-        Returns plain text as Matter instance of cryptographic cipher text material
-        given by ser. Encrypted plain text is fully qualified (qb64) so derivaton
-        code of plain text preserved through encryption/decryption round trip.
+        Returns:
+            Salter or Signer instance derived from plain text decrypted from
+            encrypted cipher text material given by ser or cipher. Plain text
+            that is orignally encrypt should always be fully qualified (qb64b)
+            so that derivaton code of plain text is preserved through
+            encryption/decryption round trip.
 
         Parameters:
             ser (Union[bytes,str]): qb64b or qb64 serialization of cipher text
+            cipher (Cipher): optional Cipher instance when ser is None
+            transferable (Boolean): True means associated verfer of returned
+                signer is transferable. False means non-transferable
         """
-        return (self._decrypt(ser=ser, prikey=self.raw))
+        if not (ser or cipher):
+            raise EmptyMaterialError("Neither ser or cipher are provided.")
+
+        if ser:  # create cipher to ensure valid derivation code of material in ser
+            cipher = Cipher(qb64b=ser)
+
+        return (self._decrypt(cipher=cipher,
+                              prikey=self.raw,
+                              transferable=transferable))
 
 
     @staticmethod
-    def _x25519(ser, prikey):
+    def _x25519(cipher, prikey, transferable=False):
         """
-        Returns plain text as Matter instance
+        Returns plain text as Salter or Signer instance depending on the cipher
+            code and the embedded encrypted plain text derivation code.
+
         Parameters:
-            ser is bytes serialization qb64 or seed or salt
-            prikey is raw binary bytes of decryption private key
+            cipher (Cipher): instance of encrypted seed or salt
+            prikey (bytes): raw binary decryption private key derived from
+                signing seed or sigkey
+            transferable (Boolean): True means associated verfer of returned
+                signer is transferable. False means non-transferable
         """
         pubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)
-
-        cipher = Cipher(qb64b=ser)
-        if cipher.code not in (MtrDex.X25519_Cipher_Salt,
-                               MtrDex.X25519_Cipher_Seed):
-            ValueError("Unsupported cipher text code = {}.".format(cipher.code))
-
-        qb64b = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)
-        return Matter(qb64b=qb64b)  # since fully qualified it has derivation code
+        plain = pysodium.crypto_box_seal_open(cipher.raw, pubkey, prikey)  # qb64b
+        # ensure raw plain text is qb64b or qb64 so its derivation code is round tripped
+        if cipher.code == MtrDex.X25519_Cipher_Salt:
+            return Salter(qb64b=plain)
+        elif cipher.code == MtrDex.X25519_Cipher_Seed:
+            return Signer(qb64b=plain, transferable=transferable)
+        else:
+            raise ValueError("Unsupported cipher text code = {}.".format(cipher.code))
 
 
 class Diger(Matter):

@@ -25,6 +25,61 @@ from ..vc.handling import RequestHandler
 logger = help.ogler.getLogger()
 
 
+def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620,
+                        indirect=False, remotePre=""):
+    """
+    Setup and return doers list to run controller
+    """
+    secrecies = []
+    for secret in secrets:  # convert secrets to secrecies
+        secrecies.append([secret])
+
+    # setup databases for dependency injection
+    ks = keeping.Keeper(name=name, temp=True)
+    db = basing.Baser(name=name, temp=True)
+
+    # setup doers
+    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+
+    # setup habitat
+    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=True, secrecies=secrecies)
+    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
+
+    # setup wirelog to create test vectors
+    path = os.path.dirname(__file__)
+    path = os.path.join(path, 'logs')
+
+    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='demo', reopen=True,
+                        headDirPath=path)
+    wireDoer = wiring.WireLogDoer(wl=wl)
+
+    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
+    clientDoer = clienting.ClientDoer(client=client)
+
+    if name == 'bob':
+        director = BobDirector(hab=hab, client=client, tock=0.125)
+    elif name == "sam":
+        director = SamDirector(hab=hab, client=client, tock=0.125)
+    elif name == 'eve':
+        director = EveDirector(hab=hab, client=client, tock=0.125)
+    else:
+        raise ValueError("Invalid director name={}.".format(name))
+
+    reactor = directing.Reactor(hab=hab, client=client, indirect=indirect)
+
+    server = serving.Server(host="", port=localPort, wl=wl)
+    serverDoer = serving.ServerDoer(server=server)
+    directant = directing.Directant(hab=hab, server=server)
+    # Reactants created on demand by directant
+
+    logger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
+                 hab.pre, hab.name, localPort, remotePort)
+
+    return [ksDoer, dbDoer, habDoer, wireDoer, clientDoer, director, reactor,
+            serverDoer, directant]
+
+
 class BobDirector(directing.Director):
     """
     Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
@@ -886,53 +941,6 @@ class EveDirector(directing.Director):
         return True  # return value of yield from, or yield ex.value of StopIteration
 
 
-def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620, indirect=False, remotePre=""):
-    """
-    Setup and return doers list to run controller
-    """
-    secrecies = []
-    for secret in secrets:  # convert secrets to secrecies
-        secrecies.append([secret])
-
-    # setup habitat
-    hab = habbing.Habitat(name=name, secrecies=secrecies, temp=True)
-    logger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
-                 hab.pre, hab.name, localPort, remotePort)
-
-    # setup doers
-    ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
-
-    # setup wirelog to create test vectors
-    path = os.path.dirname(__file__)
-    path = os.path.join(path, 'logs')
-
-    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='demo', reopen=True,
-                        headDirPath=path)
-    wireDoer = wiring.WireLogDoer(wl=wl)
-
-    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
-    clientDoer = clienting.ClientDoer(client=client)
-
-    if name == 'bob':
-        director = BobDirector(hab=hab, client=client, tock=0.125)
-    elif name == "sam":
-        director = SamDirector(hab=hab, client=client, tock=0.125)
-    elif name == 'eve':
-        director = EveDirector(hab=hab, client=client, tock=0.125)
-    else:
-        raise ValueError("Invalid director name={}.".format(name))
-
-    reactor = directing.Reactor(hab=hab, client=client, indirect=indirect)
-
-    server = serving.Server(host="", port=localPort, wl=wl)
-    serverDoer = serving.ServerDoer(server=server)
-    directant = directing.Directant(hab=hab, server=server)
-    # Reactants created on demand by directant
-
-    return [ksDoer, dbDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
-
-
 def jsonSchemaCache():
     sed = dict()
     sed["$id"] = ""
@@ -957,3 +965,4 @@ def jsonSchemaCache():
     jsonSchema = scheming.JSONSchema(resolver=cache)
 
     return schemer, jsonSchema
+

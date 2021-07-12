@@ -270,7 +270,7 @@ class Keeper(dbing.LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.gbls = subing.Suber(db=self, subkey='gbls.')
-        self.pris = subing.SignerSuber(db=self, subkey='pris.')
+        self.pris = subing.CryptSignerSuber(db=self, subkey='pris.')
         self.pres = subing.MatterSuber(db=self,
                                        subkey='pres.',
                                        klas=coring.Prefixer)
@@ -579,130 +579,291 @@ class Creatory:
         return SaltyCreator(**kwa)
 
 
+# default values to init manager's globals database
+Initage = namedtuple("Initage", 'aeid pidx salt tier')
+
+
 class Manager:
     """
     Class for managing key pair creation, storage, retrieval, and message signing.
 
     Attributes:
-        keeper (Keeper): is Keeper instance (LMDB)
+        ks (Keeper): key store LMDB database instance for storing public and private keys
+        encrypter (coring.Encrypter): instance for encrypting secrets. Public
+            encryption key is derived from aeid (public signing key)
+        decrypter (coring.Decrypter): instance for decrypting secrets. Private
+            decryption key is derived seed (private signing key seed)
+        inited (Boolean): True means fully initialized wrt database.
+                          False means not yet fully initialized
 
     Attributes (Hidden):
-       _aeid (str): authentication and encryption fully qualified qb64
+
+        _seed (str): qb64 private-signing key (seed) for the aeid from which
+                the private decryption key is derived. If aeid stored in
+                database is not empty then seed may required to do any key
+                management operations. The seed value is memory only and MUST NOT
+                be persisted to the database for the manager with which it is used.
+                It MUST only be loaded once when the process that runs the Manager
+                is initialized. Its presence acts as an authentication, authorization,
+                and decryption secret for the Manager and must be stored on
+                another device from the device that runs the Manager.
+
+
+    Properties:
+        aeid (str): authentication and encryption fully qualified qb64
             non-transferable identifier prefix for authentication via signing
             and asymmetric encryption of secrets using the associated
             (public, private) key pair. Secrets include both salts and private
             keys for all key sets in keeper. Defaults to empty which means no
             authentication or encryption of key sets. Use initial attribute because
             keeper may not be open on init.
-       _pidx (int): initial pidx prefix index. Use initial attribute because keeper
-            may not be open on init.
-       _salt (str): initial salt. Use inital attribute because keeper may not be
-             open on init.
-       _tier (str): initial security tier as value of Tierage. Use initial attribute
-            because keeper may not be open on init
 
-    Properties:
+        pidx (int): initial pidx prefix index. Use initial attribute because keeper
+            may not be open on init.
+
+        salt (str): initial salt. Use inital attribute because keeper may not be
+             open on init.
+
+        tier (str): initial security tier as value of Tierage. Use initial attribute
+            because keeper may not be open on init
 
     Methods:
 
     """
 
-    def __init__(self, keeper=None,  aeid=None, pidx=None, salt=None, tier=None):
+    def __init__(self, *, ks=None, seed=None, **kwa):
         """
         Setup Manager.
 
         Parameters:
-            keeper (Keeper): Keeper instance (LMDB)
+            ks (Keeper): key store instance (LMDB)
+            seed (str): qb64 private-signing key (seed) for the aeid from which
+                the private decryption key may be derived. If aeid stored in
+                database is not empty then seed may required to do any key
+                management operations. The seed value is memory only and MUST NOT
+                be persisted to the database for the manager with which it is used.
+                It MUST only be loaded once when the process that runs the Manager
+                is initialized. Its presence acts as an authentication, authorization,
+                and decryption secret for the Manager and must be stored on
+                another device from the device that runs the Manager.
+
+        Parameters: Passthrough to .setup for later initialization
             aeid (str): qb64 of non-transferable identifier prefix for
-                authentication and encryption of secrets in keeper
+                authentication and encryption of secrets in keeper. If provided
+                aeid (not None) and different from aeid stored in database then
+                all secrets are re-encrypted using new aeid. In this case the
+                provided prikey must not be empty. A change in aeid should require
+                a second authentication mechanism besides the prikey.
+            pidx (int): index of next new created key pair sequence for given
+                identifier prefix
+            salt (str): qb64 of root salt. Makes random root salt if not provided
+            tier (str): default security tier (Tierage) for root salt
+        """
+        self.ks = ks if ks is not None else Keeper()  # reopens by default
+        self.encrypter = None
+        self.decrypter = None
+        self._seed = seed if seed is not None else ""
+        self.inited = False
+
+        # save keyword arg parameters to init later if db not opened yet
+        self._inits = kwa
+
+        if self.ks.opened:  # allows keeper db to opened asynchronously
+            self.setup(**self._inits)  # first call to .setup with initialize database
+
+
+    def setup(self, aeid=None, pidx=None, salt=None, tier=None):
+        """
+        Setups manager root or global attributes and properties
+        Assumes that .keeper db is open.
+        If .keeper.gbls sub database has not been initialized for the first time
+        then initializes from ._inits. This allows dependency injection of
+        keepr db into manager instance prior to keeper db being opened to
+        accomodate asynchronous process setup of db resources. Putting the db
+        initialization here enables asynchronous opening of keeper db after
+        keeper instance is instantiated. First call to .setup will initialize
+        keeper db defaults if never before initialized (vacuous initialization).
+
+        Parameters:
+            aeid (str): qb64 of non-transferable identifier prefix for
+                authentication and encryption of secrets in keeper. If provided
+                aeid (not None) and different from aeid stored in database then
+                all secrets are re-encrypted using new aeid. In this case the
+                provided prikey must not be empty. A change in aeid should require
+                a second authentication mechanism besides the prikey.
             pidx (int): index of next new created key pair sequence for given
                 identifier prefix
             salt (str):  qb64 of root salt. Makes random root salt if not provided
             tier (str): default security tier (Tierage) for root salt
 
-
         """
-        if keeper is None:
-            keeper = Keeper()
+        if not self.ks.opened:
+            raise kering.ClosedError("Attempt to setup Manager closed keystore"
+                                     " database .ks.")
 
-        self.keeper = keeper
-        self._aeid = aeid if aeid is not None else ""
-        self._pidx = pidx if pidx is not None else 0
-        self._salt = salt if salt is not None else coring.Salter().qb64
-        self._tier = tier if tier is not None else coring.Tiers.low
+        if aeid is None:
+            aeid = ''
+        if pidx is None:
+            pidx = 0
+        if salt is None:
+            salt = coring.Salter().qb64
+        if tier is None:
+            tier = coring.Tiers.low
 
-        if self.keeper.opened:  # allows keeper db to opened asynchronously
-            self.setup()  # first call to .setup with initialize database
+        # update  database if never before initialized
+        if self.pidx is None:  # never before initialized
+            self.pidx = pidx  # init to default
+
+        if self.tier is None:  # never before initialized
+            self.tier = tier  # init to default
+
+        if self.salt is None:  # never before initialized
+            self.salt = salt
+
+        if self.aeid is None:  # never before initialized
+            self.updateAeid(aeid, self.seed)
+
+        self.inited = True
 
 
-    def setup(self):
+
+    @property
+    def seed(self):
         """
-        Return tuple (aeid, pidx, salt, tier) from .keeper.gbls.
-        Assumes that db is open.
-        If .keeper.gbls in database has not been initialized for the first time
-        then initializes them from ._aeid, ._pidx, ._salt, and ._tier
-        then assigns the default .gbls values for aeid, prefix id, salt and tier.
-        The initialization here enables asynchronous opening of keeper db after keeper
-        is instantiated and first call to retrieve setup will initialize it if
-        it was not already initialized.
+        seed property getter from ._seed.
+        seed (str): qb64 from which aeid is derived
         """
-        if not self.keeper.opened:
-            raise kering.ClosedError("Attempt to setup closed Manager.keeper.")
-
-        if (aeid := self.keeper.gbls.get('aeid')) is None:
-            aeid = self._aeid
-            self.keeper.gbls.put('aeid', aeid)
-
-        if (pidx := self.keeper.gbls.get('pidx')) is None:
-            pidx = self._pidx
-            self.keeper.gbls.put('pidx', '%x' % pidx)  # convert to hex
-        else:
-            pidx = int(pidx, 16)
-
-        if (salt := self.keeper.gbls.get('salt')) is None:
-            salt = self._salt
-            self.keeper.gbls.put('salt', salt)
-            self._salt = ''  # don't keep around
-
-        if (tier := self.keeper.gbls.get('tier')) is None:
-            tier = self._tier
-            self.keeper.gbls.put('tier', tier)
-
-        return (aeid, pidx, salt, tier)
+        return self._seed
 
 
-    def getAeid(self):
+    @property
+    def aeid(self):
         """
-        Returns: adid from .keeper. Assumes db initialized.
+        aeid property getter from key store db.
+        Assumes db initialized.
         aeid is qb64 auth encrypt id prefix
         """
-        return self.keeper.gbls.get('aeid')
+        return self.ks.gbls.get('aeid')
 
 
-    def setAeid(self, aeid):
+    def updateAeid(self, aeid, seed):
         """
-        Save aeid to .keeper
-        aeid is qb64 auth encrypt id prefix
-        Need to reencrypt all secrets when change aeid
+        Given seed belongs to aeid and encrypter, update aeid and re-encrypt all
+        secrets
+
+        Parameters:
+            aeid (str): qb64 of new auth encrypt id  (public signing key)
+            seed (str): qb64 of new seed from which new aeid is derived (private signing
+                        key seed)
         """
-        self.keeper.gbls.pin("aeid", aeid)
+        if self.aeid:  # check that last current seed matches last current .aeid
+            # verifies seed belongs to aeid
+            if not self.seed or not self.encrypter.verifySeed(self.seed):
+                raise kering.AuthError("Last seed missing or provided last seed "
+                                       "not associated with last aeid={}."
+                                       "".format(self.aeid))
+
+        if aeid:  # changing to a new aeid so update .encrypter
+            self.encrypter = coring.Encrypter(verkey=aeid)  # derive encrypter from aeid
+            # verifies new seed belongs to new aeid
+            if not seed or not self.encrypter.verifySeed(seed):
+                raise kering.AuthError("Seed missing or provided seed not associated"
+                                           "  with provided aeid={}.".format(aeid))
+        else:  # no new aeid so new encrypter is None
+            self.encrypter = None
+
+        # fetch all secrets from db, decrypt all secrets with self.decrypter
+        # unless they decrypt automatically on fetch and then re-encrypt with
+        # encrypter  update db with re-encrypted values
+
+        # re-encypt root salt secret, .salt property is automatically decrypted on fetch
+        if (salt := self.salt) is not None:  # decrypted salt
+            self.salt = self.encrypter.encrypt(ser=salt).qb64 if self.encrypter else salt
+
+        # other secrets
+        if self.decrypter:
+            # re-encrypt root salt secrets by prefix parameters .prms
+            for keys, data in self.ks.prms.getItemIter():  # keys is tuple of pre qb64
+                if data.salt:
+                    salter = self.decrypter.decrypt(ser=data.salt)
+                    data.salt = (self.encrypter.encrypt(matter=salter).qb64
+                                 if self.encrypter else salter.qb64)
+                    self.ks.prms.pin(keys, data=data)
+
+            # private signing key seeds
+            # keys is tuple == (verkey.qb64,) .pris database auto decrypts
+            for keys, signer in self.ks.pris.getItemIter(decrypter=self.decrypter):
+                self.ks.pris.pin(keys, signer, encrypter=self.encrypter)
+
+        self.ks.gbls.pin("aeid", aeid)  # set aeid in db
+        self._seed = seed  # set .seed in memory
+
+        # update .decrypter
+        self.decrypter = coring.Decrypter(seed=seed) if seed else None
 
 
-    def getPidx(self):
+    @property
+    def salt(self):
         """
-        Returns: pidx from .keeper. Assumes db initialized.
-        pidx is prefix index for next new key sequence
-        need to update
+        salt property getter from key store db.
+        Assumes db initialized.
+        salt is default root salt for new key sequence creation
         """
-        return int(self.keeper.gbls.get("pidx"), 16)
+        salt = self.ks.gbls.get('salt')
+        if self.decrypter:  # given .decrypt secret salt must be encrypted in db
+            return self.decrypter.decrypt(ser=salt).qb64
+        return salt
 
 
-    def setPidx(self, pidx):
+    @salt.setter
+    def salt(self, salt):
         """
-        Save pidx to .keeper
-        pidx is prefix index for next new key sequence
+        salt property setter to key store db.
+        Parameters:
+            salt (str): qb64 default root salt for new key sequence creation
+                may be plain text or cipher text handled by updateAeid
         """
-        self.keeper.gbls.pin("pidx", "%x" % pidx)
+        self.ks.gbls.pin('salt', salt)
+
+
+    @property
+    def pidx(self):
+        """
+        pidx property getter from key store db.
+        Assumes db initialized.
+        pidx is prefix index int for next new key sequence
+        """
+        if (pidx := self.ks.gbls.get("pidx")) is not None:
+            return int(pidx, 16)
+        return pidx  # None
+
+
+    @pidx.setter
+    def pidx(self, pidx):
+        """
+        pidx property setter to key store db.
+        pidx is prefix index int for next new key sequence
+        """
+        self.ks.gbls.pin("pidx", "%x" % pidx)
+
+
+    @property
+    def tier(self):
+        """
+        tier property getter from key store db.
+        Assumes db initialized.
+        tier is default root security tier for new key sequence creation
+        """
+        return self.ks.gbls.get('tier')
+
+
+    @tier.setter
+    def tier(self, tier):
+        """
+        tier property setter to key store db.
+        tier is default root security tier for new key sequence creation
+        """
+        self.ks.gbls.pin('tier', tier)
 
 
     def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed, isith=None,
@@ -761,15 +922,16 @@ class Manager:
             even when the identifer prefix is transferable.
 
         """
-        aeid, pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for new sequence
-        ridx = 0  # rotation index
-        kidx = 0  # key pair index
-
+        # get root defaults to initialize key sequence
         if rooted and salt is None:  # use root salt instead of random salt
-            salt = rootSalt
+            salt = self.salt
 
         if rooted and tier is None:  # use root tier as default
-            tier = rootTier
+            tier = self.tier
+
+        pidx = self.pidx  # get next pidx
+        ridx = 0  # rotation index
+        kidx = 0  # key pair index
 
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
 
@@ -802,9 +964,11 @@ class Manager:
             nsith = "{:x}".format(max(0, math.ceil(len(nsigners) / 2)))
         nst = coring.Tholder(sith=nsith).sith  # next signing threshold
 
+        # Secret to encrypt here
         pp = PrePrm(pidx=pidx,
                     algo=algo,
-                    salt=creator.salt,
+                    salt=(creator.salt if not self.encrypter
+                          else self.encrypter.encrypt(ser=creator.salt).qb64),
                     stem=creator.stem,
                     tier=creator.tier)
 
@@ -816,27 +980,29 @@ class Manager:
                                    ridx=ridx+1, kidx=kidx+len(icodes), st=nst, dt=dt))
 
         pre = verfers[0].qb64b
-        if not self.keeper.pres.put(pre, val=coring.Prefixer(qb64=pre)):
+        if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
             raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-        if not self.keeper.prms.put(pre, data=pp):
+        if not self.ks.prms.put(pre, data=pp):
             raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
-        self.setPidx(pidx + 1)  # increment for next inception
+        self.pidx = pidx + 1  # increment for next inception
 
-        if not self.keeper.sits.put(pre, data=ps):
+        if not self.ks.sits.put(pre, data=ps):
             raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
 
         for signer in isigners:  # store secrets (private key val keyed by public key)
-            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
+            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
+                             encrypter=self.encrypter)
 
-        self.keeper.pubs.put(riKey(pre, ri=ridx), data=PubSet(pubs=ps.new.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ridx), data=PubSet(pubs=ps.new.pubs))
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
-            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
+            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
+                             encrypter=self.encrypter)
 
         # store publics keys for lookup of private key for replay
-        self.keeper.pubs.put(riKey(pre, ri=ridx+1), data=PubSet(pubs=ps.nxt.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ridx+1), data=PubSet(pubs=ps.nxt.pubs))
 
         return (verfers, digers, cst, nst)
 
@@ -856,48 +1022,48 @@ class Manager:
         if old == new:
             return
 
-        if self.keeper.pres.get(old) is None:
+        if self.ks.pres.get(old) is None:
             raise ValueError("Nonexistent old pre={}, nothing to assign.".format(old))
 
-        if self.keeper.pres.get(new) is not None:
+        if self.ks.pres.get(new) is not None:
             raise ValueError("Preexistent new pre={} may not clobber.".format(new))
 
-        if (oldprm := self.keeper.prms.get(old)) is None:
+        if (oldprm := self.ks.prms.get(old)) is None:
             raise ValueError("Nonexistent old prm for pre={}, nothing to move.".format(old))
 
-        if self.keeper.prms.get(new) is not None:
+        if self.ks.prms.get(new) is not None:
             raise ValueError("Preexistent new prm for pre={} may not clobber.".format(new))
 
-        if (oldsit := self.keeper.sits.get(old)) is None:
+        if (oldsit := self.ks.sits.get(old)) is None:
             raise ValueError("Nonexistent old sit for pre={}, nothing to move.".format(old))
 
-        if self.keeper.sits.get(new) is not None:
+        if self.ks.sits.get(new) is not None:
             raise ValueError("Preexistent new sit for pre={} may not clobber.".format(new))
 
-        if not self.keeper.prms.put(new, data=oldprm):
+        if not self.ks.prms.put(new, data=oldprm):
             raise ValueError("Failed moving prm from old pre={} to new pre={}.".format(old, new))
         else:
-            self.keeper.prms.rem(old)
+            self.ks.prms.rem(old)
 
-        if not self.keeper.sits.put(new, data=oldsit):
+        if not self.ks.sits.put(new, data=oldsit):
             raise ValueError("Failed moving sit from old pre={} to new pre={}.".format(old, new))
         else:
-            self.keeper.sits.rem(old)
+            self.ks.sits.rem(old)
 
         # move .pubs entries if any
         i = 0
-        while (pl := self.keeper.pubs.get(riKey(old, i))):
-            if not self.keeper.pubs.put(riKey(new, i), data=pl):
+        while (pl := self.ks.pubs.get(riKey(old, i))):
+            if not self.ks.pubs.put(riKey(new, i), data=pl):
                 raise ValueError("Failed moving pubs at pre={} ri={} to new"
                                  " pre={}".format(old, i, new))
             i += 1
 
         # assign old
-        if not self.keeper.pres.pin(old, val=coring.Prefixer(qb64=new)):
+        if not self.ks.pres.pin(old, val=coring.Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={} to old pre={}.".format(new, old))
 
         # make new so that if move again we reserve each one
-        if not self.keeper.pres.put(new, val=coring.Prefixer(qb64=new)):
+        if not self.ks.pres.put(new, val=coring.Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={}.".format(new))
 
 
@@ -940,10 +1106,11 @@ class Manager:
             even when the identifer prefix is transferable.
 
         """
-        if (pp := self.keeper.prms.get(pre)) is None:
+        # Secret to decrypt here
+        if (pp := self.ks.prms.get(pre)) is None:
             raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
 
-        if (ps := self.keeper.sits.get(pre)) is None:
+        if (ps := self.ks.sits.get(pre)) is None:
             raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
 
         if not ps.nxt.pubs:  # empty nxt public keys so non-transferable prefix
@@ -953,22 +1120,36 @@ class Manager:
         ps.old = ps.new  # move new to old
         ps.new = ps.nxt  # move nxt to new
 
-        verfers = []  # assign verfers from old nxt now new.
-        for pub in ps.new.pubs:
-            if (signer := self.keeper.pris.get(pub.encode("utf-8"))) is None:
+        verfers = []  # assign verfers from new nxt was old nxt now new nxt.
+        for pub in ps.new.pubs:  # maybe should rethink this
+            if self.aeid and not self.decrypter:
+                raise kering.DecryptError("Unauthorized decryption attempt. "
+                                          "Aeid but no decrypter.")
+
+            if ((signer := self.ks.pris.get(pub.encode("utf-8"),
+                                           decrypter=self.decrypter)) is None):
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
         cst = ps.new.st  # get new current signing threshold
 
-        creator = Creatory(algo=pp.algo).make(salt=pp.salt, stem=pp.stem, tier=pp.tier)
+        salt = pp.salt
+        if salt:
+            if self.aeid:
+                if not self.decrypter:
+                    raise kering.DecryptError("Unauthorized decryption. Aeid but no decrypter.")
+                salt = self.decrypter.decrypt(ser=salt).qb64
+            else:
+                salt = coring.Salter(qb64=salt).qb64  # ensures salt was unencrypted
+
+        creator = Creatory(algo=pp.algo).make(salt=salt, stem=pp.stem, tier=pp.tier)
 
         if not codes:  # all same code, make list of len count of same code
             if count < 0:  # next may be zero if non-trans
                 raise ValueError("Invalid count={} must be >= 0.".format(count))
             codes = [code for i in range(count)]
 
-        pidx = self.getPidx()
+        pidx = pp.pidx  # get pidx for this key sequence, may be used by salty creator
         ridx = ps.new.ridx + 1
         kidx = ps.nxt.kidx + len(ps.new.pubs)
 
@@ -986,18 +1167,19 @@ class Manager:
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
                               ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
-        if not self.keeper.sits.pin(pre, data=ps):
+        if not self.ks.sits.pin(pre, data=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
         for signer in signers:  # store secrets (private key val keyed by public key)
-            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
+            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
+                             encrypter=self.encrypter)
 
         # store public keys for lookup of private keys by public key for replay
-        self.keeper.pubs.put(riKey(pre, ri=ps.nxt.ridx), data=PubSet(pubs=ps.nxt.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ps.nxt.ridx), data=PubSet(pubs=ps.nxt.pubs))
 
         if erase:
             for pub in old.pubs:  # remove old prikeys
-                self.keeper.pris.rem(pub)
+                self.ks.pris.rem(pub)
 
         return (verfers, digers, cst, nst)
 
@@ -1039,13 +1221,22 @@ class Manager:
 
         if pubs:
             for pub in pubs:
-                if (signer := self.keeper.pris.get(pub)) is None:
+                if self.aeid and not self.decrypter:
+                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                                              "Aeid but no decrypter.")
+                if ((signer := self.ks.pris.get(pub, decrypter=self.decrypter))
+                        is None):
                     raise ValueError("Missing prikey in db for pubkey={}".format(pub))
                 signers.append(signer)
 
         else:
             for verfer in verfers:
-                if (signer := self.keeper.pris.get(verfer.qb64)) is None:
+                if self.aeid and not self.decrypter:
+                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                                              "Aeid but no decrypter.")
+                if ((signer := self.ks.pris.get(verfer.qb64,
+                                                decrypter=self.decrypter))
+                        is None):
                     raise ValueError("Missing prikey in db for pubkey={}".format(verfer.qb64))
                 signers.append(signer)
 
@@ -1118,14 +1309,14 @@ class Manager:
             temp is Boolean. True is temporary for testing. It modifies tier of salty algorithm
 
         """
-        aeid, pidx, rootSalt, rootTier = self.setup()  # pidx, salt, tier for ingested sequence
-
         # configure parameters for creating new keys after ingested sequence
         if rooted and salt is None:  # use root salt instead of random salt
-            salt = rootSalt
+            salt = self.salt
 
         if rooted and tier is None:  # use root tier as default
-            tier = rootTier
+            tier = self.tier
+
+        pidx = self.pidx  # get next pidx
 
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
 
@@ -1148,25 +1339,28 @@ class Manager:
             verferies.append([signer.verfer for signer in csigners])
 
             if first:
+                # Secret to encrypt here
                 pp = PrePrm(pidx=pidx,
                             algo=algo,
-                            salt=creator.salt,
+                            salt=(creator.salt if not self.encrypter
+                                  else self.encrypter.encrypt(ser=creator.salt).qb64),
                             stem=creator.stem,
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b
-                if not self.keeper.pres.put(pre, val=coring.Prefixer(qb64=pre)):
+                if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-                if not self.keeper.prms.put(pre, data=pp):
+                if not self.ks.prms.put(pre, data=pp):
                     raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
-                self.setPidx(pidx + 1)  # increment for next inception
+                self.pidx = pidx + 1  # increment for next inception
                 first = False
 
             for signer in csigners:  # store secrets (private key val keyed by public key)
-                self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
+                self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
+                                 encrypter=self.encrypter)
 
-            self.keeper.pubs.put(riKey(pre, ri=ridx),
+            self.ks.pubs.put(riKey(pre, ri=ridx),
                                 data=PubSet(pubs=[signer.verfer.qb64
                                         for signer in csigners]))
 
@@ -1190,9 +1384,9 @@ class Manager:
         digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
-            self.keeper.pris.put(keys=signer.verfer.qb64b, val=signer)
+            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
 
-        self.keeper.pubs.put(riKey(pre, ri=ridx),
+        self.ks.pubs.put(riKey(pre, ri=ridx),
                              data=PubSet(pubs=[signer.verfer.qb64
                                                for signer in nsigners]))
 
@@ -1210,7 +1404,7 @@ class Manager:
                            ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
         ps = PreSit(old=old, new=new, nxt=nxt)
-        if not self.keeper.sits.pin(pre, data=ps):
+        if not self.ks.sits.pin(pre, data=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
         return (verferies, digers)
 
@@ -1240,13 +1434,13 @@ class Manager:
         """
         oldps = None
         if ridx - 1 >= 0:
-            oldps = self.keeper.pubs.get(riKey(pre, ridx-1))
+            oldps = self.ks.pubs.get(riKey(pre, ridx-1))
 
-        newps = self.keeper.pubs.get(riKey(pre, ridx))
-        nxtps = self.keeper.pubs.get(riKey(pre, ridx+1))
+        newps = self.ks.pubs.get(riKey(pre, ridx))
+        nxtps = self.ks.pubs.get(riKey(pre, ridx+1))
 
         if not (newps and nxtps):  # replay finished  #not (newpubs and nxtpubs)
-            if self.keeper.pubs.get(riKey(pre, ridx)):  # past replay but next pubs
+            if self.ks.pubs.get(riKey(pre, ridx)):  # past replay but next pubs
                 # raises IndexError to indicate replay at ridx past end but valid
                 # next keys at ridx
                 raise IndexError("Invalid replay attempt at ridx={} for pubs of "
@@ -1259,11 +1453,9 @@ class Manager:
 
         if erase and oldps:
             for pub in oldps.pubs:  # remove old prikeys
-                self.keeper.pris.rem(pub)
+                self.ks.pris.rem(pub)
 
-        # verfers = [coring.Verfer(qb64=pub) for pub in newpubs]
         verfers = [coring.Verfer(qb64=pub) for pub in newps.pubs]
-        # digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtpubs]
         digers = [coring.Diger(ser=pub.encode("utf-8"), code=code) for pub in nxtps.pubs]
 
         csith = "{:x}".format(max(1, math.ceil(len(verfers) / 2)))
@@ -1273,3 +1465,63 @@ class Manager:
         nst = coring.Tholder(sith=nsith).sith
 
         return (verfers, digers, cst, nst)
+
+
+class ManagerDoer(doing.Doer):
+    """
+    Basic Manager Doer to initialize keystore database .ks
+
+    Inherited Attributes:
+        .done is Boolean completion state:
+            True means completed
+            Otherwise incomplete. Incompletion maybe due to close or abort.
+
+    Attributes:
+        .manager is Manager subclass
+
+    Inherited Properties:
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
+        .tock is float, desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Methods:
+        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+        .__call__ makes instance callable
+            Appears as generator function that returns generator
+        .do is generator method that returns generator
+        .enter is enter context action method
+        .recur is recur context action method or generator method
+        .exit is exit context method
+        .close is close context method
+        .abort is abort context method
+
+    Hidden:
+        ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
+        ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, manager, **kwa):
+        """
+        Parameters:
+           manager (Manager): instance
+        """
+        super(ManagerDoer, self).__init__(**kwa)
+        self.manager = manager
+
+
+    def enter(self):
+        """"""
+        if not self.manager.inited:
+            self.manager.setup(**self.manager._inits)
+
+
+    def exit(self):
+        """"""
+        pass

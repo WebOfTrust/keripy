@@ -25,7 +25,7 @@ def test_weighted():
     # init event DB and keep DB
     with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
         # Init key pair manager
-        wesMgr = keeping.Manager(keeper=wesKS, salt=wesSalt)
+        wesMgr = keeping.Manager(ks=wesKS, salt=wesSalt)
 
         # Init Kevery with event DB
         wesKvy = eventing.Kevery(db=wesDB)

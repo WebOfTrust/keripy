@@ -147,7 +147,7 @@ class Komer:
             if not isinstance(data, self.schema):
                 raise ValueError("Invalid schema type={} of data={}, expected {}."
                                  "".format(type(data), data, self.schema))
-            keys = tuple(key.decode("utf-8").split('.'))
+            keys = tuple(key.decode("utf-8").split('.'))  # tuple
             yield (keys, data)
 
 

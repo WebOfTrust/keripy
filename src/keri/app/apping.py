@@ -24,18 +24,62 @@ import msgpack
 import lmdb
 
 from hio.base import doing
+from hio.core import wiring
 from hio.core.serial import serialing
+from hio.core.tcp import clienting, serving
 
 from .. import kering
 from .. import help
 from ..help import helping
 from ..db import dbing, basing, koming
-from . import keeping
 from ..core import coring, eventing, parsing
-from . import habbing
-
+from . import keeping, habbing, directing
 
 logger = help.ogler.getLogger()
+
+
+
+def setupController(name="who", temp=False, sith=None, count=1,
+                    remotePort=5621, localPort=5620):
+    """
+    Setup and return doers list to run controller
+    """
+    # setup databases  for dependency injection
+    ks = keeping.Keeper(name=name, temp=temp)
+    db = basing.Baser(name=name, temp=temp)
+
+    # setup doers
+    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+
+    # setup habitat
+    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, isith=sith, icount=count, )
+    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
+
+    # setup wirelog to create test vectors
+    path = os.path.dirname(__file__)
+    path = os.path.join(path, 'logs')
+
+    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='keri',
+                        reopen=True, headDirPath=path)
+    wireDoer = wiring.WireLogDoer(wl=wl)  # setup doer
+
+    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
+    clientDoer = clienting.ClientDoer(client=client)  # setup doer
+    director = directing.Director(hab=hab, client=client, tock=0.125)
+    reactor = directing.Reactor(hab=hab, client=client)
+
+    server = serving.Server(host="", port=localPort, wl=wl)
+    serverDoer = serving.ServerDoer(server=server)  # setup doer
+    directant = directing.Directant(hab=hab, server=server)
+    # Reactants created on demand by directant
+
+    logger.info("\nDirect Mode controller %s:\nNamed %s on TCP port %s to port %s.\n\n",
+                    hab.pre, hab.name, localPort, remotePort)
+
+    return [ksDoer, dbDoer, habDoer, wireDoer, clientDoer, director, reactor,
+            serverDoer, directant]
+
 
 
 class Consoler(doing.Doer):

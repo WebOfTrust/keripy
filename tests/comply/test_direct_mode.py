@@ -33,7 +33,7 @@ def test_direct_mode_with_manager():
     with openDB("controller") as coeLogger, openDB("validator") as valLogger, \
          openKS(name="controller") as coeKpr, openKS(name="validator") as valKpr:
         # Init key pair manager
-        coeMgr = Manager(keeper=coeKpr, salt=coeSalt)
+        coeMgr = Manager(ks=coeKpr, salt=coeSalt)
         coeVerfers, coeDigers, cst, nst = coeMgr.incept(icount=1, ncount=1)
 
         #  init Keverys
@@ -70,7 +70,7 @@ def test_direct_mode_with_manager():
 
         # Validator Event 0  Inception Transferable (nxt digest not empty)
         # Init key pair manager
-        valMgr = Manager(keeper=valKpr, salt=valSalt)
+        valMgr = Manager(ks=valKpr, salt=valSalt)
         valVerfers, valDigers, cst, nst = valMgr.incept(icount=1, ncount=1)
 
         valSerder = incept(keys=[valVerfers[0].qb64],

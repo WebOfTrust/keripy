@@ -51,30 +51,36 @@ def setupController(secrets, did, lei, witnessPort=5621, peerPort=5629, indirect
     """
     Setup and return doers list to run controller
     """
+    name = "ian"
+
     secrecies = []
     for secret in secrets:  # convert secrets to secrecies
         secrecies.append([secret])
 
-    # setup habitat
-    hab = habbing.Habitat(name="ian", secrecies=secrecies, temp=True)
-    logger.info("\nDirect Mode demo of %s:\nNamed %s to TCP port %s.\n\n",
-                hab.pre, hab.name, witnessPort)
+    # setup databases for dependency injection
+    ks = keeping.Keeper(name=name, temp=True)
+    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    db = basing.Baser(name=name, temp=True)
+    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
-    iss = issuing.Issuer(hab=hab, name="ian", noBackers=True)
+    # setup habitat
+    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=True, secrecies=secrecies)
+    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
+
+    iss = issuing.Issuer(hab=hab, name=name, noBackers=True)
+
     # setup doers
-    ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
     regDoer = basing.BaserDoer(baser=iss.reger)
 
     path = os.path.dirname(__file__)
     path = os.path.join(path, 'logs')
 
-    wl = wiring.WireLog(samed=True, filed=True, name="ian", prefix='demo', reopen=True,
+    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='demo', reopen=True,
                         headDirPath=path)
     wireDoer = wiring.WireLogDoer(wl=wl)
 
     witnessClient = clienting.Client(host='127.0.0.1', port=witnessPort, wl=wl)
-    clientDoer = clienting.ClientDoer(client=witnessClient)
+    witnessClientDoer = clienting.ClientDoer(client=witnessClient)
 
     peerClient = clienting.Client(host='127.0.0.1', port=peerPort, wl=wl)
     peerClientDoer = clienting.ClientDoer(client=peerClient)
@@ -90,7 +96,12 @@ def setupController(secrets, did, lei, witnessPort=5621, peerPort=5629, indirect
     reactor = directing.Reactor(hab=hab, client=witnessClient, indirect=indirect)
     peerReactor = directing.Reactor(hab=hab, client=peerClient, indirect=indirect)
 
-    return [ksDoer, dbDoer, regDoer, wireDoer, clientDoer, director, reactor, peerClientDoer, peerReactor]
+    logger.info("\nDirect Mode demo of %s:\nNamed %s to TCP port %s.\n\n",
+                hab.pre, hab.name, witnessPort)
+
+    return [ksDoer, dbDoer, habDoer, regDoer, wireDoer, witnessClientDoer, director,
+            reactor, peerClientDoer, peerReactor]
+
 
 
 def parseArgs(version=__version__):

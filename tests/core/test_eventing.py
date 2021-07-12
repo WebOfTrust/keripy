@@ -1191,7 +1191,7 @@ def test_messagize():
     salter = Salter(raw=b'0123456789abcdef')
     with openDB(name="edy") as db, openKS(name="edy") as ks:
         # Init key pair manager
-        mgr = Manager(keeper=ks, salt=salter.qb64)
+        mgr = Manager(ks=ks, salt=salter.qb64)
         verfers, digers, cst, nst = mgr.incept(icount=1, ncount=0, transferable=True, stem="C")
 
         # Test with inception message
