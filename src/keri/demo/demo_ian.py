@@ -9,21 +9,20 @@ import argparse
 import logging
 import os
 
-from hio.base import doing
 from hio.core import wiring
 from hio.core.tcp import clienting
 
 from keri import __version__
-from keri import help  # logger support
+from keri import help
 from keri.app import habbing, keeping, directing
-from keri.db import dbing, basing
+from keri.db import basing
 from keri.demo.demoing import IanDirector
 from keri.vdr import issuing
 
 logger = help.ogler.getLogger()
 
 
-def runDemo(vcfile, did, lei, remote=5621, expire=0.0):
+def runDemo(did, lei, witness=5621, peer=5629, expire=0.0):
     """
     Setup and run one demo controller for sam, like bob only better
     """
@@ -40,15 +39,15 @@ def runDemo(vcfile, did, lei, remote=5621, expire=0.0):
     ]
 
     doers = setupController(secrets=secrets,
-                            vcfile=vcfile,
                             did=did,
                             lei=lei,
-                            remotePort=remote)
+                            witnessPort=witness,
+                            peerPort=peer)
 
     directing.runController(doers=doers, expire=expire)
 
 
-def setupController(secrets, vcfile, did, lei, remotePort=5621, indirect=False):
+def setupController(secrets, did, lei, witnessPort=5621, peerPort=5629, indirect=False):
     """
     Setup and return doers list to run controller
     """
@@ -60,10 +59,8 @@ def setupController(secrets, vcfile, did, lei, remotePort=5621, indirect=False):
 
     # setup databases for dependency injection
     ks = keeping.Keeper(name=name, temp=True)
-    db = basing.Baser(name=name, temp=True)
-
-    # setup doers
     ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    db = basing.Baser(name=name, temp=True)
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
     # setup habitat
@@ -82,23 +79,29 @@ def setupController(secrets, vcfile, did, lei, remotePort=5621, indirect=False):
                         headDirPath=path)
     wireDoer = wiring.WireLogDoer(wl=wl)
 
-    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
-    clientDoer = clienting.ClientDoer(client=client)
+    witnessClient = clienting.Client(host='127.0.0.1', port=witnessPort, wl=wl)
+    witnessClientDoer = clienting.ClientDoer(client=witnessClient)
+
+    peerClient = clienting.Client(host='127.0.0.1', port=peerPort, wl=wl)
+    peerClientDoer = clienting.ClientDoer(client=peerClient)
 
     director = IanDirector(hab=hab,
                            issuer=iss,
-                           client=client,
+                           witnessClient=witnessClient,
+                           peerClient=peerClient,
                            tock=0.125,
-                           vcfile=vcfile,
                            recipientIdentifier=did,
                            lei=lei)
 
-    reactor = directing.Reactor(hab=hab, client=client, indirect=indirect)
+    reactor = directing.Reactor(hab=hab, client=witnessClient, indirect=indirect)
+    peerReactor = directing.Reactor(hab=hab, client=peerClient, indirect=indirect)
 
     logger.info("\nDirect Mode demo of %s:\nNamed %s to TCP port %s.\n\n",
-                hab.pre, hab.name, remotePort)
+                hab.pre, hab.name, witnessPort)
 
-    return [ksDoer, dbDoer, habDoer, regDoer, wireDoer, clientDoer, director, reactor]
+    return [ksDoer, dbDoer, habDoer, regDoer, wireDoer, witnessClientDoer, director,
+            reactor, peerClientDoer, peerReactor]
+
 
 
 def parseArgs(version=__version__):
@@ -109,17 +112,18 @@ def parseArgs(version=__version__):
                    action='version',
                    version=version,
                    help="Prints out version of script runner.")
-    p.add_argument('-r', '--remote',
+    p.add_argument('-w', '--witness',
                    action='store',
                    default=5621,
-                   help="Remote port number the client connects to. Default is 5621.")
+                   help="Remote witness port number the witness client connects to. Default is 5621.")
+    p.add_argument('-p', '--peer',
+                   action='store',
+                   default=5629,
+                   help="Remote peer port number the peer client connects to. Default is 5629.")
     p.add_argument('-e', '--expire',
                    action='store',
                    default=0.0,
                    help="Expire time for demo. 0.0 means not expire. Default is 0.0.")
-    p.add_argument('-v', '--vc',
-                   action='store',
-                   help="File name of verifiable credential to create on issuance (Required)")
     p.add_argument('-d', '--did',
                    action='store',
                    help="Recipient DID method specific identifier (Required)")
@@ -141,16 +145,16 @@ def main():
     logger = help.ogler.getLogger()
 
     logger.info("\n******* Starting Demo for Ian connecting to "
-                "%s.******\n\n", args.remote)
+                "%s.******\n\n", args.peer)
 
-    runDemo(vcfile=args.vc,
-            did=args.did,
+    runDemo(did=args.did,
             lei=args.lei,
-            remote=args.remote,
+            witness=args.witness,
+            peer=int(args.peer),
             expire=args.expire)
 
     logger.info("\n******* Ended Demo for Ian connecting to "
-                "%s.******\n\n", args.remote)
+                "%s.******\n\n", args.peer)
 
 
 if __name__ == "__main__":

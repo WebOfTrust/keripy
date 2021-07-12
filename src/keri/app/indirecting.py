@@ -11,7 +11,7 @@ from hio.core.tcp import serving
 
 from .. import help
 from ..db import dbing, basing
-from ..core import  coring, eventing, parsing
+from ..core import coring, eventing, parsing
 from . import habbing, keeping, directing
 from ..vdr import verifying
 
@@ -23,10 +23,8 @@ def setupWitness(name="witness", temp=False, localPort=5620, ):
     """
     # setup databases  for dependency injection
     ks = keeping.Keeper(name=name, temp=temp)
-    db = basing.Baser(name=name, temp=temp)
-
-    # setup doers
     ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    db = basing.Baser(name=name, temp=temp)
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
     # setup habitat
@@ -49,7 +47,6 @@ def setupWitness(name="witness", temp=False, localPort=5620, ):
 
     logger.info("\nWitness- %s:\nNamed %s on TCP port %s.\n\n",
                 hab.pre, hab.name, localPort)
-
 
     return [ksDoer, dbDoer, habDoer, regDoer, directant, serverDoer]
 

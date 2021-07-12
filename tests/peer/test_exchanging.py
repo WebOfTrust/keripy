@@ -30,6 +30,7 @@ def test_exchanger():
 
         # Init Keverys
         sidKvy = eventing.Kevery(db=sidDB)
+        redHab = habbing.Habitat(ks=redKS, db=redDB, temp=True)
         redKvy = eventing.Kevery(db=redDB)
 
         # Setup sid by creating inception event
@@ -56,7 +57,7 @@ def test_exchanger():
         parsing.Parser().parse(ims=bytearray(sidIcpMsg), kvy=redKvy)
         assert redKvy.kevers[sidPre].sn == 0  # accepted event
 
-        redExc = exchanging.Exchanger(kevers=redKvy.kevers, tymth=doist.tymen())
+        redExc = exchanging.Exchanger(hab=redHab, tymth=doist.tymen())
 
         behave = exchanging.Behavior(func=echo)
         redExc.registerBehavior(route="/test/message", behave=behave)
@@ -83,7 +84,7 @@ def test_exchanger():
         assert doist.tyme == limit
 
         resp = behave.cues.popleft()
-        respSer = coring.Serder(raw=resp)
+        respSer = coring.Serder(raw=resp.raw)
         assert respSer.ked['t'] == coring.Ilks.exn
         assert respSer.ked['r'] == "/test/messageResp"
         assert respSer.ked['q'] == dict(req=pl)

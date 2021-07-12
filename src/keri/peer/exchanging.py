@@ -21,7 +21,7 @@ class Exchanger(doing.DoDoer):
      Peer to Peer KERI message Exchanger.
     """
 
-    def __init__(self, kevers=None, cues=None, delta=ExchangeMessageTimeWindow, **kwa):
+    def __init__(self, hab, cues=None, delta=ExchangeMessageTimeWindow, **kwa):
         """
         Initialize instance
 
@@ -33,7 +33,8 @@ class Exchanger(doing.DoDoer):
 
         super(Exchanger, self).__init__(doers=[], **kwa)
 
-        self.kevers = kevers
+        self.hab = hab
+        self.kevers = hab.kvy.kevers
         self.delta = delta
         self.routes = dict()
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
@@ -144,6 +145,27 @@ class Exchanger(doing.DoDoer):
             yield payload, pre, sigers, sever.verfers
 
 
+    def processResponseIter(self):
+        """
+        Iterate through cues and yields one or more responses for each cue.
+
+        Parameters:
+            cues is deque of cues
+
+        """
+        responses = []
+        for _, behavior in self.routes.items():  # get responses from all behaviors
+            while behavior.cues:
+                excSrdr = behavior.cues.popleft()
+                msg = self.hab.sanction(excSrdr)
+                responses.append(msg)
+
+
+        while responses:  # iteratively process each response in responses
+            msg = responses.pop(0)
+            yield msg
+
+
     def escrowPSEvent(self, serder, sigers):
         """
         Escrow event that does not have enough signatures.
@@ -236,7 +258,8 @@ class Behavior:
         """
 
         excSrdr = exchange(route=rr, payload=resp)
-        self.cues.append(excSrdr.raw)
+        self.cues.append(excSrdr)
+
 
 
 def exchange(route, payload, version=coring.Version, kind=coring.Serials.json):

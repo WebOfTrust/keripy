@@ -483,6 +483,23 @@ class Habitat:
         return msg
 
 
+    def sanction(self, serder):
+        # Sign and messagize the `exn` message with the current signing keys (should be a Habitat method, what name?)
+        sigers = self.mgr.sign(ser=serder.raw, verfers=self.kever.verfers)
+
+        msg = bytearray(serder.raw)
+        msg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
+        msg.extend(self.pre.encode("utf-8"))
+
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        return msg
+
+
     def endorse(self, serder):
         """
         Returns msg with own endorsement of msg from serder with attached signature
@@ -556,6 +573,8 @@ class Habitat:
                     return False
 
             return True
+        else:
+            return False
 
 
     def replay(self, pre=None, fn=0):

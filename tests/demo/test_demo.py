@@ -569,7 +569,6 @@ def test_indirect_mode_sam_cam_wit_demo():
                                     code=coring.MtrDex.Blake3_256)
 
         sam = samSerder.ked["i"]
-        print(sam)
         assert sam == 'EhnaYUqhHoo8kZaXJuTDCZ-h5ZDx3st4NemgqSITWp48'
 
 

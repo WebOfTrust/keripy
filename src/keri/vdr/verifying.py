@@ -6,7 +6,7 @@ keri.vdr.verifying module
 VC verifier support
 """
 
-from ..core import parsing
+from ..core import parsing, coring
 from ..core import eventing as ceventing
 from ..core.coring import Verfer, Cigar
 from ..vdr import eventing
@@ -91,7 +91,16 @@ class Verifier:
         serder = eventing.query(regk=regk, vcid=vcid, res=res, dt=dt, dta=dta, dtb=dtb)
 
         sigers = self.hab.mgr.sign(ser=serder.raw, verfers=kever.verfers)
-        msg = ceventing.messagize(serder, sigers=sigers)
+        msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
+
+        msg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
+        msg.extend(self.hab.pre.encode("utf-8"))
+
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
 
         return msg
 

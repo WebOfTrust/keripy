@@ -6,22 +6,21 @@ keri.app.directing module
 simple direct mode demo support classes
 """
 
-import os
 import json
+import os
 from urllib import parse
 
 from hio.core import wiring
 from hio.core.tcp import clienting, serving
 
-from .. import kering
-from ..core.coring import Matter, MtrDex, Diger
-from ..db import dbing, basing
-from ..core import coring, eventing
-from ..app import habbing, keeping, directing
-
 from .. import help
+from ..app import habbing, keeping, directing
+from ..core import coring, scheming
+from ..db import basing
 from ..help import helping
-from ..vdr.issuing import Issuer
+from ..peer import exchanging
+from ..vc import proving, handling, walleting
+from ..vc.handling import RequestHandler
 
 logger = help.ogler.getLogger()
 
@@ -79,7 +78,6 @@ def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620,
 
     return [ksDoer, dbDoer, habDoer, wireDoer, clientDoer, director, reactor,
             serverDoer, directant]
-
 
 
 class BobDirector(directing.Director):
@@ -343,12 +341,23 @@ class IanDirector(directing.Director):
             associated Tymist instance that returns Tymist .tyme. when called.
        ._tock is hidden attribute for .tock property
     """
-    def __init__(self, vcfile, recipientIdentifier, lei, hab, issuer, client, **kwa):
-        super().__init__(hab, client, **kwa)
-        self.issuer = issuer
-        self.vcfile=vcfile
+    def __init__(self, recipientIdentifier, lei, hab, issuer, witnessClient, peerClient, **kwa):
+        super().__init__(hab, witnessClient, **kwa)
+        self.peerClient = peerClient
         self.recipientIdentifier = recipientIdentifier
+        self.issuer = issuer
         self.lei = lei
+        if self.tymth:
+            self.peerClient.wind(self.tymth)
+
+    def wind(self, tymth):
+        """
+        Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
+        Updates winds .tymer .tymth
+        """
+        super(IanDirector, self).wind(tymth)
+        self.peerClient.wind(tymth)
+
 
     def do(self, tymth=None, tock=0.0, **opts):
         """
@@ -359,15 +368,19 @@ class IanDirector(directing.Director):
             # enter context
             self.wind(tymth)  # change tymist and dependencies
             self.tock = tock
-            # tyme = self.tyme
 
             # recur context
-            tyme = (yield (self.tock))  # yields tock then waits
+            tyme = (yield self.tock)  # yields tock then waits
 
-            while (not self.client.connected):
+            while not self.client.connected:
                 logger.info("%s:\n waiting for connection to remote %s.\n\n",
                             self.hab.pre, self.client.ha)
-                tyme = (yield (self.tock))
+                tyme = (yield self.tock)
+
+            while not self.peerClient.connected:
+                logger.info("%s:\n waiting for connection to remote %s.\n\n",
+                            self.hab.pre, self.peerClient.ha)
+                tyme = (yield self.tock)
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
@@ -388,71 +401,76 @@ class IanDirector(directing.Director):
             msg = self.hab.interact()  # Interaction Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = (yield self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = (yield self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = (yield self.tock)
+
 
             now = helping.nowIso8601()
-            vlei = dict(
-                type=[
-                    "VerifiableCredential",
-                    "vLEIGLEIFCredential"
-                ],
-            )
-            cred = dict(vlei)
-            cred['id'] = "{}".format("#" * Matter.Codes[MtrDex.Blake3_256].fs)
-            cred['issuer'] = f"did:keri:{self.hab.pre}"
-            cred['issuanceDate'] = now
-            cred['credentialSubject'] = dict(
-                id=f"did:keri:{self.recipientIdentifier}",
+            schemer, jsonSchema = jsonSchemaCache()
+            # Build the credential subject and then the Credentialer for the full credential
+            credSubject = dict(
+                id=self.recipientIdentifier,  # this needs to be generated from a KEL
                 lei=self.lei
             )
 
-            vcdig = Diger(raw=json.dumps(cred).encode("utf-8"))
-            cred['id'] = f"did:keri:{vcdig.qb64}"
-            msg = json.dumps(cred).encode("utf-8")
+            creder = proving.credential(issuer=self.hab.pre,
+                                        schema=schemer.said,
+                                        subject=credSubject,
+                                        issuance=now,
+                                        regk=self.issuer.regk,
+                                        typ=jsonSchema)
 
-            cigers = self.hab.mgr.sign(ser=msg, verfers=self.hab.kever.verfers, indexed=False)
+            msg = self.hab.endorse(serder=creder)
 
-            cred['proof'] = dict(
-                type=[
-                    "KERISignature2021"
-                ],
-                created=now,
-                jws=cigers[0].qb64,
-                verificationMethod=f"did:keri:{self.hab.pre}/{self.issuer.regk}#0",
-                proofPurpose="assertionMethod"
-            )
-
-            tevt, kevt = self.issuer.issue(vcdig=vcdig.qb64)
+            tevt, kevt = self.issuer.issue(vcdig=creder.said)
             self.client.tx(kevt)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(kevt))
-            tyme = (yield (self.tock))
+            tyme = (yield self.tock)
 
             self.client.tx(tevt)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(tevt))
-            tyme = (yield (self.tock))
+            tyme = (yield self.tock)
 
-            with open(self.vcfile, "w") as f:
-                f.write(json.dumps(cred, indent=4))
+            pl = dict(
+                verifiableCredential=[handling.envelope(msg, typ=jsonSchema)]
+            )
 
-            logger.info("%s:\n\n\n Wrote Verifiable Credential for LEI: %s to file %s.\n\n",
-                        self.hab.pre, self.lei, self.vcfile)
+
+            cloner = self.hab.db.clonePreIter(pre=self.hab.pre, fn=0)  # create iterator at 0
+            msgs = bytearray()  # outgoing messages
+            for msg in cloner:
+                msgs.extend(msg)
+
+            # send to connected peer remote
+            self.peerClient.tx(msgs)
+            logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(msgs))
+            tyme = (yield self.tock)
+
+            excSrdr = exchanging.exchange(route="/credential/issue", payload=pl)
+            excMsg = self.hab.sanction(excSrdr)
+
+            self.peerClient.tx(excMsg)
+            logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(excMsg))
+            tyme = (yield self.tock)
+
+            logger.info("%s:\n\n\n Sent Verifiable Credential for LEI: %s to %s.\n\n",
+                        self.hab.pre, self.lei, self.recipientIdentifier)
 
             input("wait for verification")
             (yield self.tock)
 
-            tevt, kevt = self.issuer.revoke(vcdig=vcdig.qb64)
-            logger.info("%s:\n\n\n Revoked Verifiable Credential for LEI: %s to file %s.\n\n",
-                        self.hab.pre, self.lei, self.vcfile)
+            tevt, kevt = self.issuer.revoke(vcdig=creder.said)
+            logger.info("%s:\n\n\n Revoked Verifiable Credential for LEI: %s.\n\n",
+                        self.hab.pre, self.lei)
             (yield self.tock)
 
             self.client.tx(kevt)  # send to connected remote
@@ -462,6 +480,89 @@ class IanDirector(directing.Director):
             self.client.tx(tevt)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(tevt))
             (yield self.tock)
+
+        except GeneratorExit:  # close context, forced exit due to .close
+            pass
+
+        except Exception:  # abort context, forced exit due to uncaught exception
+            raise
+
+        finally:  # exit context,  unforced exit due to normal exit of try
+            pass
+
+        return True  # return value of yield from, or yield ex.value of StopIteration
+
+
+class HanDirector(directing.Director):
+    """
+    Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
+    Generator logic is to iterate through initiation of events for demo
+
+    Inherited Attributes:
+        .hab is Habitat instance of local controller's context
+        .client is TCP client instance. Assumes operated by another doer.
+
+    Attributes:
+
+    Inherited Properties:
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
+        .tock is desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Inherited Methods:
+        .__call__ makes instance callable return generator
+        .do is generator function returns generator
+
+    Methods:
+
+    Hidden:
+       ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
+       ._tock is hidden attribute for .tock property
+    """
+    def __init__(self, wallet, hab, client, exchanger, **kwa):
+        super().__init__(hab, client, **kwa)
+        self.wallet = wallet
+        self.exchanger = exchanger
+
+
+    def do(self, tymth=None, tock=0.0, **opts):
+        """
+        Generator method to run this doer
+        Calling this method returns generator
+        """
+        try:
+            # enter context
+            self.wind(tymth)  # change tymist and dependencies
+            self.tock = tock
+            # tyme = self.tyme
+
+            # Create resource exn message handler and register
+            schemer, jsonSchema = jsonSchemaCache()
+            issueHandler = handling.IssueHandler(wallet=self.wallet, typ=jsonSchema)
+            self.exchanger.registerBehavior(route=issueHandler.resource, behave=issueHandler.behavior)
+            requestHandler = RequestHandler(wallet=self.wallet, typ=jsonSchema)
+            self.exchanger.registerBehavior(route=requestHandler.resource, behave=requestHandler.behavior)
+
+            # recur context
+            tyme = (yield (self.tock))  # yields tock then waits
+
+            while (not self.client.connected):
+                logger.info("%s:\n waiting for connection to remote %s.\n\n",
+                            self.hab.pre, self.client.ha)
+                tyme = (yield (self.tock))
+
+            logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
+
+            self.sendOwnInception()  # Inception Event
+            (yield self.tock)
+
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -509,14 +610,19 @@ class VicDirector(directing.Director):
        ._tock is hidden attribute for .tock property
     """
 
-    def __init__(self, vcfile, hab, client, verifier, **kwa):
+    def __init__(self, hab, witnessClient, peerClient, verifier, exchanger, **kwa):
         """
 
             verifier is Verifier instance of local controller's TEL context
         """
-        super().__init__(hab, client, **kwa)
-        self.vcfile=vcfile
+        super().__init__(hab, witnessClient, **kwa)
+        self.peerClient = peerClient
         self.verifier = verifier
+        self.exchanger = exchanger
+        self.presentations = []
+        if self.tymth:
+            self.peerClient.wind(self.tymth)
+
 
     def do(self, tymth=None, tock=0.0, **opts):
         """
@@ -529,6 +635,10 @@ class VicDirector(directing.Director):
             self.tock = tock
             # tyme = self.tyme
 
+            schemer, jsonSchema = jsonSchemaCache()
+            proofHandler = handling.ProofHandler(typ=jsonSchema, callback=self.verifiyCredential)
+            self.exchanger.registerBehavior(route=proofHandler.resource, behave=proofHandler.behavior)
+
             # recur context
             tyme = (yield (self.tock))  # yields tock then waits
 
@@ -539,61 +649,84 @@ class VicDirector(directing.Director):
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
-            with open(self.vcfile, "r") as f:
-                vc = json.load(fp=f)
-                vcid = vc["id"]
-                vcid = vcid.removeprefix("did:keri:")
+            while not self.peerClient.connected:
+                logger.info("%s:\n waiting for connection to remote %s.\n\n",
+                            self.hab.pre, self.peerClient.ha)
+                tyme = (yield self.tock)
 
-                issuerPre = vc["issuer"]
-                issuerpre = issuerPre.removeprefix("did:keri:")
+            logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.peerClient.ha)
 
-                msg = self.hab.query(issuerpre, res="logs")  # Query for remote pre Event
-                self.client.tx(msg)  # send to connected remote
-                logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            msg = self.hab.makeOwnEvent(sn=0)
+            # send to connected remote
+            self.peerClient.tx(msg)
+            logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(msg))
+            tyme = (yield self.tock)
+
+            pl = dict(
+                input_descriptors=[
+                    dict(x=schemer.said)
+                ]
+            )
+
+            logger.info("%s: \n requesting presentation for schema %s\n\n", self.hab.pre, schemer.said)
+
+            excSrdr = exchanging.exchange(route="/presentation/request", payload=pl)
+            excMsg = self.hab.sanction(excSrdr)
+
+            self.peerClient.tx(excMsg)
+            tyme = (yield self.tock)
+
+            while not self.presentations:
+                logger.info("%s:\n waiting for proof presentation from %s.\n\n",
+                            self.hab.pre, self.peerClient.ha)
+                tyme = (yield self.tock)
+
+            presentation = self.presentations.pop()
+
+            vc = presentation["vc"]
+            body = vc["d"]
+            proof = bytearray(presentation["proof"].encode("utf-8"))
+
+            creder = proving.Credentialer(crd=vc, typ=jsonSchema)
+            prefixer, seqner, diger, isigers = walleting.parseProof(proof)
+
+            vcid = creder.said
+
+            issuerPre = creder.issuer
+            issuerpre = issuerPre.removeprefix("did:keri:")
+
+            regk = creder.status["id"]
+
+            msg = self.hab.query(issuerpre, res="logs")  # Query for remote pre Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+
+            logger.info("Loading Registry and Credential TEL")
+            msg = self.verifier.query(regk,
+                                      vcid,
+                                      res="tels")
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
+            while regk not in self.verifier.tevers:
+                logger.info("%s:\n waiting for retrieval of TEL %s.\n\n",
+                            self.hab.pre, regk)
                 tyme = (yield (self.tock))
 
-                # extract proof from VC
-                proof = vc.pop("proof")
-                vcdata = json.dumps(vc).encode("utf-8")
-                vcsig = proof["jws"]
-                method = proof["verificationMethod"]
-                url = parse.urlsplit(method)
 
-                if url.scheme != "did":
-                    logger.error("%s:\n Invalid verification method scheme %s.\n\n",
-                                 self.hab.pre, url.scheme)
+            valid = self.hab.verify(creder, prefixer, seqner, diger, isigers)
+            if valid is True:
+                sub = creder.subject
+                logger.info("%s:\n\n\n Valid vLEI credential for LEI: %s.\n\n",
+                            self.hab.pre, sub["lei"])
+            else:
+                logger.error("%s:\n\n\n Invalid vLEI credential.\n\n",
+                             self.hab.pre)
 
-                (pre, regk) = url.path.removeprefix("keri:").split("/")
 
-                msg = self.verifier.query(regk,
-                                          vcid,
-                                          res="tels")
-                self.client.tx(msg)  # send to connected remote
-                logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-                tyme = (yield (self.tock))
-
-                while regk not in self.verifier.tevers:
-                    logger.info("%s:\n waiting for retrieval of TEL %s.\n\n",
-                                self.hab.pre, regk)
-                    tyme = (yield (self.tock))
-
-                tyme = (yield (self.tock))
-                sidx = int(url.fragment)
-
-                valid = self.verifier.verify(pre=pre,
-                                             sidx=sidx,
-                                             regk=regk,
-                                             vcid=vcid,
-                                             vcdata=vcdata,
-                                             vcsig=vcsig)
-
-                if valid is True:
-                    sub = vc["credentialSubject"]
-                    logger.info("%s:\n\n\n Valid vLEI credential for LEI: %s.\n\n",
-                                self.hab.pre, sub["lei"])
-                else:
-                    logger.error("%s:\n\n\n Invalid vLEI credential.\n\n",
-                                 self.hab.pre)
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -605,6 +738,60 @@ class VicDirector(directing.Director):
             pass
 
         return True  # return value of yield from, or yield ex.value of StopIteration
+
+
+    def verifiyCredential(self, issuer, presentation):
+        logger.info("%s: \n received presentation from %s\n\n", self.hab.pre, issuer.qb64)
+
+        self.presentations.append(presentation)
+
+        #
+        #
+        # # extract proof from VC
+        # proof = vc.pop("proof")
+        # vcdata = json.dumps(vc).encode("utf-8")
+        # vcsig = proof["jws"]
+        # method = proof["verificationMethod"]
+        # url = parse.urlsplit(method)
+        #
+        # if url.scheme != "did":
+        #     logger.error("%s:\n Invalid verification method scheme %s.\n\n",
+        #                  self.hab.pre, url.scheme)
+        #
+        # (pre, regk) = url.path.removeprefix("keri:").split("/")
+        #
+        # msg = self.verifier.query(regk,
+        #                           vcid,
+        #                           res="tels")
+        # self.client.tx(msg)  # send to connected remote
+        # logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+        # tyme = (yield (self.tock))
+        #
+        # while regk not in self.verifier.tevers:
+        #     logger.info("%s:\n waiting for retrieval of TEL %s.\n\n",
+        #                 self.hab.pre, regk)
+        #     tyme = (yield (self.tock))
+        #
+        # tyme = (yield (self.tock))
+        # sidx = int(url.fragment)
+        #
+        # valid = self.verifier.verify(pre=pre,
+        #                              sidx=sidx,
+        #                              regk=regk,
+        #                              vcid=vcid,
+        #                              vcdata=vcdata,
+        #                              vcsig=vcsig)
+        #
+        # if valid is True:
+        #     sub = vc["credentialSubject"]
+        #     logger.info("%s:\n\n\n Valid vLEI credential for LEI: %s.\n\n",
+        #                 self.hab.pre, sub["lei"])
+        # else:
+        #     logger.error("%s:\n\n\n Invalid vLEI credential.\n\n",
+        #                  self.hab.pre)
+        #
+
+
 
 
 class CamDirector(directing.Director):
@@ -752,3 +939,30 @@ class EveDirector(directing.Director):
             pass
 
         return True  # return value of yield from, or yield ex.value of StopIteration
+
+
+def jsonSchemaCache():
+    sed = dict()
+    sed["$id"] = ""
+    sed["$schema"] = "http://json-schema.org/draft-07/schema#"
+    sed.update(dict(
+        type="object",
+        properties=dict(
+            id=dict(
+                type="string"
+            ),
+            lei=dict(
+                type="string"
+            )
+        )
+    ))
+
+    schemer = scheming.Schemer(sed=sed, code=coring.MtrDex.Blake3_256)
+    assert schemer.said == "Et75h-slZaxkez1YDNpOxM6AF2YFMgcFL4C1ziAeFe3o"
+
+    cache = scheming.CacheResolver()
+    cache.add(schemer.said, schemer.raw)
+    jsonSchema = scheming.JSONSchema(resolver=cache)
+
+    return schemer, jsonSchema
+

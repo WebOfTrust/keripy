@@ -19,9 +19,9 @@ from . import coring
 from .coring import Matter, MtrDex, Serials
 from ..kering import ValidationError, DeserializationError, EmptyMaterialError
 
-Idage = namedtuple("Idage", "dollar at id")
+Idage = namedtuple("Idage", "dollar at id i")
 
-Ids = Idage(dollar="$id", at="@id", id="id")
+Ids = Idage(dollar="$id", at="@id", id="id", i="i")
 
 
 
@@ -116,7 +116,7 @@ class JSONSchema:
 
 
         if self.id in sed:
-            saider = Saider(qb64=sed[self.id])
+            saider = Saider(qb64=sed[self.id], idder=self.id)
             said = sed[self.id]
             if not saider.verify(sed, prefixed=True):
                 raise ValidationError("invalid self-addressing identifier {} instead of {} in schema = {}"
@@ -275,7 +275,7 @@ class Schemer:
             kind (Schema) tuple of schema type
 
         """
-        saider = Saider(sed=sed, code=self._code, kind=self.typ.id)
+        saider = Saider(sed=sed, code=self._code, idder=self.typ.id)
         sed[self.typ.id] = saider.qb64
         raw = self.typ.dump(sed)
 
@@ -373,7 +373,7 @@ class Saider(Matter):
 
     Dummy = "#"  # dummy spaceholder char for pre. Must not be a valid Base64 char
 
-    def __init__(self, raw=None, code=None, sed=None, kind=Ids.dollar, **kwa):
+    def __init__(self, raw=None, code=None, sed=None, kind=Serials.json, idder=Ids.dollar, **kwa):
         """
 
         Inherited Parameters:
@@ -388,18 +388,19 @@ class Saider(Matter):
         """
 
 
-        self.kind = kind
+        self.idder = idder
+        self._kind = kind
         try:
             # raw is populated
             super(Saider, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
             # No raw, try and calculate code and said
 
-            if not sed or (not code and self.kind not in sed):  # No sed or no code and no id in sed, no luck
+            if not sed or (not code and self.idder not in sed):  # No sed or no code and no id in sed, no luck
                 raise ex
 
             if not code:
-                super(Saider, self).__init__(qb64=sed[kind], code=code, **kwa)
+                super(Saider, self).__init__(qb64=sed[self.idder], code=code, **kwa)
                 code = self.code
 
             if code == MtrDex.Blake3_256:
@@ -470,7 +471,7 @@ class Saider(Matter):
             if crymat.qb64 != said:
                 return False
 
-            idf = self.kind
+            idf = self.idder
             if prefixed and sed[idf] != said:
                 return False
 
@@ -480,6 +481,16 @@ class Saider(Matter):
         return True
 
 
+    def rawify(self, sed):
+        if 'v' in sed:
+            kind, _, _ = coring.Deversify(sed['v'])
+        else:
+            kind = self._kind
+
+        raw = coring.dumps(sed, kind)
+        return raw
+
+
     def _derive_blake3_256(self, sed):
         """
         Returns tuple (raw, code) of basic Blake3 digest (qb64)
@@ -487,10 +498,11 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind
+        idf = self.idder
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake3_256].fs)
-        raw = json.dumps(sed).encode("utf-8")
+
+        raw = self.rawify(sed)
 
         dig = blake3.blake3(raw).digest()
         return dig, MtrDex.Blake3_256
@@ -514,10 +526,10 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind
+        idf = self.idder
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA3_256].fs)
-        raw = json.dumps(sed).encode("utf-8")
+        raw = self.rawify(sed)
 
         dig = hashlib.sha3_256(raw).digest()
         return dig, MtrDex.SHA3_256
@@ -541,10 +553,10 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind
+        idf = self.idder
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA3_512].fs)
-        raw = json.dumps(sed).encode("utf-8")
+        raw = self.rawify(sed)
 
         dig = hashlib.sha3_512(raw).digest()
         return dig, MtrDex.SHA3_512
@@ -568,10 +580,10 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind
+        idf = self.idder
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA2_256].fs)
-        raw = json.dumps(sed).encode("utf-8")
+        raw = self.rawify(sed)
 
         dig = hashlib.sha256(raw).digest()
         return dig, MtrDex.SHA2_256
@@ -595,10 +607,10 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind
+        idf = self.idder
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA2_512].fs)
-        raw = json.dumps(sed).encode("utf-8")
+        raw = self.rawify(sed)
 
         dig = hashlib.sha512(raw).digest()
         return dig, MtrDex.SHA2_512
@@ -623,10 +635,10 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind
+        idf = self.idder
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake2b_256].fs)
-        raw = json.dumps(sed).encode("utf-8")
+        raw = self.rawify(sed)
 
         dig = hashlib.blake2b(raw).digest()
         return dig, MtrDex.Blake2b_256
@@ -650,10 +662,10 @@ class Saider(Matter):
         """
         sed = dict(sed)  # make copy so don't clobber original sed
 
-        idf = self.kind
+        idf = self.idder
         # put in dummy pre to get size correct
         sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake2s_256].fs)
-        raw = json.dumps(sed).encode("utf-8")
+        raw = self.rawify(sed)
 
         dig = hashlib.blake2s(raw).digest()
         return dig, MtrDex.Blake2s_256
