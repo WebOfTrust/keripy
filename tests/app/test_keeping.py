@@ -1195,47 +1195,71 @@ def test_manager_with_aeid():
     assert salt == '0AMDEyMzQ1Njc4OWFiY2RlZg'
     stem = "blue"
 
-    # rawseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-    rawseed = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
-    signer = coring.Signer(raw=rawseed, code=coring.MtrDex.Ed25519_Seed,
-                           transferable=False)
-    seed = signer.qb64
-    aeid = signer.verfer.qb64
-    assert aeid == 'BJruYr3oXDGRTRN0XnhiqDeoENdRak6FD8y2vsTvvJkE'
 
-    decrypter = coring.Decrypter(seed=seed)
-    encrypter = coring.Encrypter(verkey=aeid)
-    assert encrypter.verifySeed(seed=seed)
+    # cryptseed0 = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    cryptseed0 = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
+    cryptsigner0 = coring.Signer(raw=cryptseed0, code=coring.MtrDex.Ed25519_Seed,
+                           transferable=False)
+    seed0 = cryptsigner0.qb64
+    aeid0 = cryptsigner0.verfer.qb64
+    assert aeid0 == 'BJruYr3oXDGRTRN0XnhiqDeoENdRak6FD8y2vsTvvJkE'
+    decrypter0 = coring.Decrypter(seed=seed0)
+    encrypter0 = coring.Encrypter(verkey=aeid0)
+    assert encrypter0.verifySeed(seed=seed0)
+
+    # cryptseed1 = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    cryptseed1 = (b"\x89\xfe{\xd9'\xa7\xb3\x89#\x19\xbec\xee\xed\xc0\xf9\x97\xd0\x8f9\x1dyNI"
+               b'I\x98\xbd\xa4\xf6\xfe\xbb\x03')
+    cryptsigner1 = coring.Signer(raw=cryptseed1, code=coring.MtrDex.Ed25519_Seed,
+                           transferable=False)
+    seed1 = cryptsigner1.qb64
+    aeid1 = cryptsigner1.verfer.qb64
+    assert aeid1 == 'BRw6sysb_uv81ZouXqHxQlqnAh9BYiSOsg9eQJmbZ8Uw'
+    decrypter1 = coring.Decrypter(seed=seed1)
+    encrypter1 = coring.Encrypter(verkey=aeid1)
+    assert encrypter1.verifySeed(seed=seed1)
 
     with keeping.openKS() as keeper:
-        manager = keeping.Manager(ks=keeper, seed=seed, salt=salt, aeid=aeid, )
+        # Create manager with encryption decryption due to aeid and seed
+        manager = keeping.Manager(ks=keeper, seed=seed0, salt=salt, aeid=aeid0, )
         assert manager.ks.opened
         assert manager.inited
         assert manager._inits == {'aeid': 'BJruYr3oXDGRTRN0XnhiqDeoENdRak6FD8y2vsTvvJkE',
                                   'salt': '0AMDEyMzQ1Njc4OWFiY2RlZg'}
-        assert manager.encrypter.qb64 == encrypter.qb64  #  aeid provided
-        assert manager.decrypter.qb64 == decrypter.qb64  # aeid and seed provided
-        assert manager.seed == seed  # in memory only
-        assert manager.aeid == aeid  # on disk only
+
+        # Validate encryption decryption inited
+        assert manager.encrypter.qb64 == encrypter0.qb64  #  aeid provided
+        assert manager.decrypter.qb64 == decrypter0.qb64  # aeid and seed provided
+        assert manager.seed == seed0  # in memory only
+        assert manager.aeid == aeid0  # on disk only
+
         assert manager.salt == salt  # encrypted on disk but property decrypts if seed
         assert manager.pidx == 0
         assert manager.tier == coring.Tiers.low
-        saltCipher = coring.Cipher(qb64=manager.ks.gbls.get('salt'))
-        assert saltCipher.decrypt(seed=seed).qb64 == salt
+        saltCipher0 = coring.Cipher(qb64=manager.ks.gbls.get('salt'))
+        assert saltCipher0.decrypt(seed=seed0).qb64 == salt
 
-        # rawseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
-        rawseed = (b"\x89\xfe{\xd9'\xa7\xb3\x89#\x19\xbec\xee\xed\xc0\xf9\x97\xd0\x8f9\x1dyNI"
-                   b'I\x98\xbd\xa4\xf6\xfe\xbb\x03')
-        signer = coring.Signer(raw=rawseed, code=coring.MtrDex.Ed25519_Seed,
-                               transferable=False)
-        manager.updateAeid(aeid=signer.verfer.qb64, seed=signer.qb64)
-        assert manager.aeid == signer.verfer.qb64 == 'BRw6sysb_uv81ZouXqHxQlqnAh9BYiSOsg9eQJmbZ8Uw'
+
+
+        # Update aeid and seed
+        manager.updateAeid(aeid=aeid1, seed=seed1)
+        assert manager.encrypter.qb64 == encrypter1.qb64  #  aeid provided
+        assert manager.decrypter.qb64 == decrypter1.qb64  # aeid and seed provided
+        assert manager.seed == seed1  # in memory only
+        assert manager.aeid == aeid1
+
         assert manager.salt == salt
-        assert not saltCipher.qb64 == manager.ks.gbls.get('salt')
+        assert manager.pidx == 0
+        assert manager.tier == coring.Tiers.low
+        saltCipher1 = coring.Cipher(qb64=manager.ks.gbls.get('salt'))
+        assert saltCipher1.decrypt(seed=seed1).qb64 == salt
+        assert not saltCipher0.qb64 == saltCipher1.qb64  # old cipher different
+
+
 
     """End Test"""
 
 
 
 if __name__ == "__main__":
-    test_manager()
+    test_manager_with_aeid()
