@@ -776,13 +776,25 @@ class Manager:
         # unless they decrypt automatically on fetch and then re-encrypt with
         # encrypter  update db with re-encrypted values
 
-        # root salt secret .salt property is automatically decrypted on fetch
+        # re-encypt root salt secret, .salt property is automatically decrypted on fetch
         if (salt := self.salt) is not None:  # decrypted salt
             self.salt = encrypter.encrypt(ser=salt).qb64 if encrypter else salt
 
         # other secrets
         if self.decrypter:
-            pass
+            # re-encrypt root salt secrets by prefix parameters .prms
+            for keys, data in self.ks.prms.getItemIter():  # keys is tuple of pre qb64
+                if data.salt:
+                    salter = self.decrypter.decrypt(ser=data.salt)
+                    data.salt = self.encrypter.encrypt(matter=salter).qb64
+                    self.ks.prms.pin(keys, data=data)
+
+            # private keys
+            #for keys, signer in self.ks.pris.getItemIter():  # keys is tuple verkey qb64
+
+                #signer = self.decrypter.decrypt(ser=signer.qb64b)
+                #seed = self.encrypter.encrypt(matter=signer).qb64
+                #self.ks.pris.pin(keys, val=seed)
 
         self.ks.gbls.pin("aeid", aeid)  # set aeid in db
         self._seed = seed  # set .seed in memory
@@ -1108,7 +1120,7 @@ class Manager:
         ps.new = ps.nxt  # move nxt to new
 
         verfers = []  # assign verfers from old nxt now new.
-        for pub in ps.new.pubs:
+        for pub in ps.new.pubs:  # maybe should rethink this
             if (signer := self.ks.pris.get(pub.encode("utf-8"))) is None:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)

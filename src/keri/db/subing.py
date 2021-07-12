@@ -272,7 +272,7 @@ class MatterSuber(Suber):
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
-            val (Matter): instance
+            val (Matter): instance of self.klas
 
         Returns:
             result (Boolean): True If successful, False otherwise, such as key
@@ -289,7 +289,7 @@ class MatterSuber(Suber):
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
-            val (Matter): instance
+            val (Matter): instance of self.klas
 
         Returns:
             result (Boolean): True If successful. False otherwise.
@@ -301,20 +301,20 @@ class MatterSuber(Suber):
 
     def get(self, keys: Union[str, Iterable]):
         """
-        Gets Serder at keys
+        Gets Matter instance at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-            val (Matter):
+            val (Matter): instance of self.klas
             None if no entry at keys
 
         Usage:
             Use walrus operator to catch and raise missing entry
-            if (srder := mydb.get(keys)) is None:
+            if (matter := mydb.get(keys)) is None:
                 raise ExceptionHere
-            use srdr here
+            use matter here
 
         """
         val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
@@ -342,15 +342,10 @@ class MatterSuber(Suber):
             iterator: of tuples of keys tuple and val Serder for
             each entry in db
 
-        Example:
-            if key in database is "a.b" and val is serialization of dataclass
-               with attributes x and y then returns
-               (("a","b"), dataclass(x=1,y=2))
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
             keys = tuple(key.decode("utf-8").split('.'))
             yield (keys, self.klas(qb64b=bytes(val)))
-
 
 
 
@@ -361,6 +356,9 @@ class SignerSuber(MatterSuber):
     of the signer.verfer to get the transferable property of the verfer
     Automatically serializes and deserializes from qb64b to/from Signer instances
 
+    Assumes that last or only element of db key from keys for all entries is the qb64
+    of a public key for the associated Verfer instance. This allows returned
+    Signer instance to have its .transferable property set correctly.
     """
     Sep = '.'  # separator for combining key iterables
 
@@ -380,25 +378,28 @@ class SignerSuber(MatterSuber):
 
     def get(self, keys: Union[str, Iterable]):
         """
-        Gets Serder at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+        Gets Signer instance at keys
 
         Returns:
-            val (Matter):
+            val (Signer):  transferable determined by key which is verfer
             None if no entry at keys
+
+        Parameters:
+            keys (Union[str, iterable]): key strs to be combined in order to
+                form key. Last element of keys is verkey used to determin
+                .transferable for Signer
 
         Usage:
             Use walrus operator to catch and raise missing entry
-            if (srder := mydb.get(keys)) is None:
+            if (signer := mydb.get(keys)) is None:
                 raise ExceptionHere
-            use srdr here
+            use signer here
 
         """
-        key = self._tokey(keys)
+        key = self._tokey(keys)  # keys maybe string or tuple
         val = self.db.getVal(db=self.sdb, key=key)
-        verfer = coring.Verfer(qb64b=key)
+        keys = tuple(key.decode("utf-8").split('.'))  # verkey is last split if any
+        verfer = coring.Verfer(qb64b=keys[-1])  # last split
         return (self.klas(qb64b=bytes(val), transferable=verfer.transferable)
                 if val is not None else None)
 
@@ -408,16 +409,11 @@ class SignerSuber(MatterSuber):
         Return iterator over the all the items in subdb
 
         Returns:
-            iterator: of tuples of keys tuple and val Serder for
-            each entry in db
-
-        Example:
-            if key in database is "a.b" and val is serialization of dataclass
-               with attributes x and y then returns
-               (("a","b"), dataclass(x=1,y=2))
+            iterator: of tuples of keys tuple and val Signer for
+                each entry in db
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            keys = tuple(key.decode("utf-8").split('.'))
-            verfer = coring.Verfer(qb64b=key)
+            keys = tuple(key.decode("utf-8").split('.'))  # verkey is last split if any
+            verfer = coring.Verfer(qb64b=keys[-1])   # last split
             yield (keys, self.klas(qb64b=bytes(val),
                                    transferable=verfer.transferable))
