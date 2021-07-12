@@ -78,7 +78,22 @@ class Habitat:
                 and mode for key generation
             erase is Boolean True means erase private keys once stale
 
-        Parameters: Passed through via kwa
+        Parameters: Passed through via kwa to setup for later init
+            seed (str): qb64 private-signing key (seed) for the aeid from which
+                the private decryption key may be derived. If aeid stored in
+                database is not empty then seed may required to do any key
+                management operations. The seed value is memory only and MUST NOT
+                be persisted to the database for the manager with which it is used.
+                It MUST only be loaded once when the process that runs the Manager
+                is initialized. Its presence acts as an authentication, authorization,
+                and decryption secret for the Manager and must be stored on
+                another device from the device that runs the Manager.
+            aeid (str): qb64 of non-transferable identifier prefix for
+                authentication and encryption of secrets in keeper. If provided
+                aeid (not None) and different from aeid stored in database then
+                all secrets are re-encrypted using new aeid. In this case the
+                provided prikey must not be empty. A change in aeid should require
+                a second authentication mechanism besides the prikey.
             secrecies is list of list of secrets to preload key pairs if any
             code is prefix derivation code
             isith is incepting signing threshold as int, str hex, or list
@@ -112,9 +127,7 @@ class Habitat:
             self.setup(**self._inits)  # finish setup later
 
 
-
-
-    def setup(self, secrecies=None, code=coring.MtrDex.Blake3_256,
+    def setup(self, *, seed=None, aeid=None, secrecies=None, code=coring.MtrDex.Blake3_256,
                  isith=None, icount=1, nsith=None, ncount=None,
                  toad=None, wits=None, salt=None, tier=None,):
         """
@@ -127,6 +140,21 @@ class Habitat:
         initialize databases (vacuous initialization).
 
         Parameters:
+            seed (str): qb64 private-signing key (seed) for the aeid from which
+                the private decryption key may be derived. If aeid stored in
+                database is not empty then seed may required to do any key
+                management operations. The seed value is memory only and MUST NOT
+                be persisted to the database for the manager with which it is used.
+                It MUST only be loaded once when the process that runs the Manager
+                is initialized. Its presence acts as an authentication, authorization,
+                and decryption secret for the Manager and must be stored on
+                another device from the device that runs the Manager.
+            aeid (str): qb64 of non-transferable identifier prefix for
+                authentication and encryption of secrets in keeper. If provided
+                aeid (not None) and different from aeid stored in database then
+                all secrets are re-encrypted using new aeid. In this case the
+                provided prikey must not be empty. A change in aeid should require
+                a second authentication mechanism besides the prikey.
             secrecies is list of list of secrets to preload key pairs if any
             code is prefix derivation code
             isith is incepting signing threshold as int, str hex, or list
@@ -168,7 +196,8 @@ class Habitat:
         if salt is None:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
 
-        self.mgr = keeping.Manager(ks=self.ks, pidx=pidx, salt=salt, tier=tier)
+        self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
+                                   salt=salt, tier=tier)
 
         if existing:
             self.reinitialize()
