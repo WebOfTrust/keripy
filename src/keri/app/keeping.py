@@ -631,7 +631,7 @@ class Manager:
 
     """
 
-    def __init__(self, ks=None, seed=None, **kwa):
+    def __init__(self, *, ks=None, seed=None, **kwa):
         """
         Setup Manager.
 

@@ -62,7 +62,7 @@ class Habitat:
 
     """
 
-    def __init__(self, name='test', ks=None, db=None,
+    def __init__(self, *, name='test', ks=None, db=None,
                  transferable=True, temp=False, erase=True,
                  **kwa):
         """
