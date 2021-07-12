@@ -789,12 +789,10 @@ class Manager:
                     data.salt = self.encrypter.encrypt(matter=salter).qb64
                     self.ks.prms.pin(keys, data=data)
 
-            # private keys
-            #for keys, signer in self.ks.pris.getItemIter():  # keys is tuple verkey qb64
-
-                #signer = self.decrypter.decrypt(ser=signer.qb64b)
-                #seed = self.encrypter.encrypt(matter=signer).qb64
-                #self.ks.pris.pin(keys, val=seed)
+            # private signing key seeds
+            # keys is tuple == (verkey.qb64,)
+            for keys, signer in self.ks.pris.getItemIter(decrypter=self.decrypter):
+                self.ks.pris.pin(keys, signer, encrypter=encrypter1)
 
         self.ks.gbls.pin("aeid", aeid)  # set aeid in db
         self._seed = seed  # set .seed in memory
@@ -993,12 +991,14 @@ class Manager:
             raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
 
         for signer in isigners:  # store secrets (private key val keyed by public key)
-            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
+            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
+                             encrypter=self.encrypter)
 
         self.ks.pubs.put(riKey(pre, ri=ridx), data=PubSet(pubs=ps.new.pubs))
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
-            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
+            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
+                             encrypter=self.encrypter)
 
         # store publics keys for lookup of private key for replay
         self.ks.pubs.put(riKey(pre, ri=ridx+1), data=PubSet(pubs=ps.nxt.pubs))
@@ -1119,9 +1119,14 @@ class Manager:
         ps.old = ps.new  # move new to old
         ps.new = ps.nxt  # move nxt to new
 
-        verfers = []  # assign verfers from old nxt now new.
+        verfers = []  # assign verfers from new nxt was old nxt now new nxt.
         for pub in ps.new.pubs:  # maybe should rethink this
-            if (signer := self.ks.pris.get(pub.encode("utf-8"))) is None:
+            if self.aeid and not self.decrypter:
+                raise kering.DecryptError("Unauthorized decryption attempt. "
+                                          "Aeid but no decrypter.")
+
+            if ((signer := self.ks.pris.get(pub.encode("utf-8"),
+                                           decrypter=self.decrypter)) is None):
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
@@ -1165,7 +1170,8 @@ class Manager:
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
         for signer in signers:  # store secrets (private key val keyed by public key)
-            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
+            self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
+                             encrypter=self.encrypter)
 
         # store public keys for lookup of private keys by public key for replay
         self.ks.pubs.put(riKey(pre, ri=ps.nxt.ridx), data=PubSet(pubs=ps.nxt.pubs))
@@ -1214,13 +1220,22 @@ class Manager:
 
         if pubs:
             for pub in pubs:
-                if (signer := self.ks.pris.get(pub)) is None:
+                if self.aeid and not self.decrypter:
+                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                                              "Aeid but no decrypter.")
+                if ((signer := self.ks.pris.get(pub, decrypter=self.decrypter))
+                        is None):
                     raise ValueError("Missing prikey in db for pubkey={}".format(pub))
                 signers.append(signer)
 
         else:
             for verfer in verfers:
-                if (signer := self.ks.pris.get(verfer.qb64)) is None:
+                if self.aeid and not self.decrypter:
+                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                                              "Aeid but no decrypter.")
+                if ((signer := self.ks.pris.get(verfer.qb64,
+                                                decrypter=self.decrypter))
+                        is None):
                     raise ValueError("Missing prikey in db for pubkey={}".format(verfer.qb64))
                 signers.append(signer)
 
@@ -1341,7 +1356,8 @@ class Manager:
                 first = False
 
             for signer in csigners:  # store secrets (private key val keyed by public key)
-                self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
+                self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
+                                 encrypter=self.encrypter)
 
             self.ks.pubs.put(riKey(pre, ri=ridx),
                                 data=PubSet(pubs=[signer.verfer.qb64
