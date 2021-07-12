@@ -763,14 +763,14 @@ class Manager:
                                        "not associated with last aeid={}."
                                        "".format(self.aeid))
 
-        if aeid:  # changing to a new aeid
-            encrypter = coring.Encrypter(verkey=aeid)  # derive encrypter from aeid
+        if aeid:  # changing to a new aeid so update .encrypter
+            self.encrypter = coring.Encrypter(verkey=aeid)  # derive encrypter from aeid
             # verifies new seed belongs to new aeid
-            if not seed or not encrypter.verifySeed(seed):
+            if not seed or not self.encrypter.verifySeed(seed):
                 raise kering.AuthError("Seed missing or provided seed not associated"
                                            "  with provided aeid={}.".format(aeid))
-        else:  # no new aeid so no new encrypter
-            encrypter = None
+        else:  # no new aeid so new encrypter is None
+            self.encrypter = None
 
         # fetch all secrets from db, decrypt all secrets with self.decrypter
         # unless they decrypt automatically on fetch and then re-encrypt with
@@ -778,7 +778,7 @@ class Manager:
 
         # re-encypt root salt secret, .salt property is automatically decrypted on fetch
         if (salt := self.salt) is not None:  # decrypted salt
-            self.salt = encrypter.encrypt(ser=salt).qb64 if encrypter else salt
+            self.salt = self.encrypter.encrypt(ser=salt).qb64 if self.encrypter else salt
 
         # other secrets
         if self.decrypter:
@@ -786,17 +786,18 @@ class Manager:
             for keys, data in self.ks.prms.getItemIter():  # keys is tuple of pre qb64
                 if data.salt:
                     salter = self.decrypter.decrypt(ser=data.salt)
-                    data.salt = self.encrypter.encrypt(matter=salter).qb64
+                    data.salt = (self.encrypter.encrypt(matter=salter).qb64
+                                 if self.encrypter else salter.qb64)
                     self.ks.prms.pin(keys, data=data)
 
             # private signing key seeds
-            # keys is tuple == (verkey.qb64,)
+            # keys is tuple == (verkey.qb64,) .pris database auto decrypts
             for keys, signer in self.ks.pris.getItemIter(decrypter=self.decrypter):
-                self.ks.pris.pin(keys, signer, encrypter=encrypter1)
+                self.ks.pris.pin(keys, signer, encrypter=self.encrypter)
 
         self.ks.gbls.pin("aeid", aeid)  # set aeid in db
         self._seed = seed  # set .seed in memory
-        self.encrypter = encrypter  # update .encrypter
+
         # update .decrypter
         self.decrypter = coring.Decrypter(seed=seed) if seed else None
 
@@ -967,7 +968,7 @@ class Manager:
         pp = PrePrm(pidx=pidx,
                     algo=algo,
                     salt=(creator.salt if not self.encrypter
-                          else self.encrypter.encrypt(ser=creator.salt)),
+                          else self.encrypter.encrypt(ser=creator.salt).qb64),
                     stem=creator.stem,
                     tier=creator.tier)
 
@@ -1137,7 +1138,7 @@ class Manager:
             if self.aeid:
                 if not self.decrypter:
                     raise kering.DecryptError("Unauthorized decryption. Aeid but no decrypter.")
-                salt = self.decrypter.decrypt(ser=salt)
+                salt = self.decrypter.decrypt(ser=salt).qb64
             else:
                 salt = coring.Salter(qb64=salt).qb64  # ensures salt was unencrypted
 
@@ -1342,7 +1343,7 @@ class Manager:
                 pp = PrePrm(pidx=pidx,
                             algo=algo,
                             salt=(creator.salt if not self.encrypter
-                                  else self.encrypter.encrypt(ser=creator.salt)),
+                                  else self.encrypter.encrypt(ser=creator.salt).qb64),
                             stem=creator.stem,
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b
