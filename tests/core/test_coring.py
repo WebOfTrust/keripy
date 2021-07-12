@@ -2020,7 +2020,7 @@ def test_decrypter():
     assert designer.code == MtrDex.Ed25519_Seed
     assert designer.verfer.code == MtrDex.Ed25519
 
-    # use previously stored fully qualified sa;t cipher with different nonce
+    # use previously stored fully qualified salt cipher with different nonce
     ciphersalt = (b'1AAHMehug8lCovEq5MCKoCyt-ECyAv4mgakKZzKPPZRxtx81UftRWvUNhK3'
                   b'22qYi7vGpma9u6aZhO9D75xcKtLmiwhZqM7E35vbT')
     desalter = decrypter.decrypt(ser=ciphersalt)

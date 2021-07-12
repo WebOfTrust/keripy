@@ -149,7 +149,6 @@ class SerderSuber(Suber):
     Automatically serializes and deserializes using Serder methods
 
     """
-    Sep = '.'  # separator for combining key iterables
 
     def __init__(self, *pa, **kwa):
         """
@@ -253,7 +252,6 @@ class MatterSuber(Suber):
     Automatically serializes and deserializes from qb64b to/from Matter instances
 
     """
-    Sep = '.'  # separator for combining key iterables
 
     def __init__(self, *pa, klas: Type[coring.Matter] = coring.Matter, **kwa):
         """
@@ -262,13 +260,16 @@ class MatterSuber(Suber):
             subkey (str):  LMDB sub database key
             klas (Type[coring.Matter]): Class reference to subclass of Matter
         """
+        if not (issubclass(klas, coring.Matter)):
+            raise ValueError("Invalid klas type={}, expected {}."
+                             "".format(klas, coring.Matter))
         super(MatterSuber, self).__init__(*pa, **kwa)
         self.klas = klas
 
 
     def put(self, keys: Union[str, Iterable], val: coring.Matter):
         """
-        Puts val at key made from keys. Does not overwrite
+        Puts qb64 of Matter instance val at key made from keys. Does not overwrite
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -285,7 +286,7 @@ class MatterSuber(Suber):
 
     def pin(self, keys: Union[str, Iterable], val: coring.Matter):
         """
-        Pins (sets) val at key made from keys. Overwrites.
+        Pins (sets) qb64 of Matter instance val at key made from keys. Overwrites.
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -360,7 +361,6 @@ class SignerSuber(MatterSuber):
     of a public key for the associated Verfer instance. This allows returned
     Signer instance to have its .transferable property set correctly.
     """
-    Sep = '.'  # separator for combining key iterables
 
     def __init__(self, *pa, klas: Type[coring.Signer] = coring.Signer, **kwa):
         """
@@ -416,4 +416,121 @@ class SignerSuber(MatterSuber):
             keys = tuple(key.decode("utf-8").split('.'))  # verkey is last split if any
             verfer = coring.Verfer(qb64b=keys[-1])   # last split
             yield (keys, self.klas(qb64b=bytes(val),
+                                   transferable=verfer.transferable))
+
+
+class CryptSignerSuber(SignerSuber):
+    """
+    Sub class of MatterSuber where data is Signer subclass instance .qb64b propery
+    which is a fully qualified serialization and uses the key which is the qb64b
+    of the signer.verfer to get the transferable property of the verfer
+    Automatically serializes and deserializes from qb64b to/from Signer instances
+
+    Assumes that last or only element of db key from keys for all entries is the qb64
+    of a public key for the associated Verfer instance. This allows returned
+    Signer instance to have its .transferable property set correctly.
+    """
+
+    def put(self, keys: Union[str, Iterable], val: coring.Matter,
+            encrypter: coring.Encrypter = None):
+        """
+        Puts qb64 of Matter instance val at key made from keys. Does not overwrite
+        If encrypter provided then encrypts first
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Signer): instance of self.klas
+            encrypter (coring.Encrypter): optional
+
+        Returns:
+            result (Boolean): True If successful, False otherwise, such as key
+                              already in database.
+        """
+        if encrypter:
+            val = encrypter.encrypt(matter=val)  # returns Cipher instance
+        return (self.db.putVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.qb64b))
+
+
+    def pin(self, keys: Union[str, Iterable], val: coring.Matter,
+            encrypter: coring.Encrypter = None):
+        """
+        Pins (sets) qb64 of Matter instance val at key made from keys. Overwrites.
+        If encrypter provided then encrypts first
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Signer): instance of self.klas
+            encrypter (coring.Encrypter): optional
+
+        Returns:
+            result (Boolean): True If successful. False otherwise.
+        """
+        if encrypter:
+            val = encrypter.encrypt(matter=val)  # returns Cipher instance
+        return (self.db.setVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.qb64b))
+
+
+
+    def get(self, keys: Union[str, Iterable], decrypter: coring.Decrypter = None):
+        """
+        Gets Signer instance at keys. If decrypter then assumes value in db was
+        encrypted and so decrypts value in db before converting to Signer.
+
+
+        Returns:
+            val (Signer):  transferable determined by key which is verfer
+            None if no entry at keys
+
+        Parameters:
+            keys (Union[str, iterable]): key strs to be combined in order to
+                form key. Last element of keys is verkey used to determin
+                .transferable for Signer
+            decrypter (coring.Decrypter): optional. If provided assumes value in
+                db was encrypted and so decrypts before converting to Signer.
+
+        Usage:
+            Use walrus operator to catch and raise missing entry
+            if (signer := mydb.get(keys)) is None:
+                raise ExceptionHere
+            use signer here
+
+        """
+        key = self._tokey(keys)  # keys maybe string or tuple
+        val = self.db.getVal(db=self.sdb, key=key)
+        if val is None:
+            return None
+        keys = tuple(key.decode("utf-8").split('.'))  # verkey is last split if any
+        verfer = coring.Verfer(qb64b=keys[-1])  # last split
+        if decrypter:
+            return (decrypter.decrypt(ser=bytes(val),
+                                      transferable=verfer.transferable))
+        return (self.klas(qb64b=bytes(val), transferable=verfer.transferable))
+
+
+    def getItemIter(self, decrypter: coring.Decrypter = None):
+        """
+        Return iterator over the all the items in subdb. If decrypter then
+        assumes values in db were encrypted and so decrypts each before
+        converting to Signer.
+
+        Returns:
+            iterator: of tuples of keys tuple and val Signer for each entry in db
+
+        Parameters:
+            decrypter (coring.Decrypter): optional. If provided assumes value in
+                db was encrypted and so decrypts before converting to Signer.
+
+        """
+        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            keys = tuple(key.decode("utf-8").split('.'))  # verkey is last split if any
+            verfer = coring.Verfer(qb64b=keys[-1])   # last split
+            if decrypter:
+                yield (keys, decrypter.decrypt(ser=bytes(val),
+                                               transferable=verfer.transferable))
+            else:
+                yield (keys, self.klas(qb64b=bytes(val),
                                    transferable=verfer.transferable))

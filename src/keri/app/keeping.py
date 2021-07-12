@@ -270,7 +270,7 @@ class Keeper(dbing.LMDBer):
         # to avoid namespace collisions with Base64 identifier prefixes.
 
         self.gbls = subing.Suber(db=self, subkey='gbls.')
-        self.pris = subing.SignerSuber(db=self, subkey='pris.')
+        self.pris = subing.CryptSignerSuber(db=self, subkey='pris.')
         self.pres = subing.MatterSuber(db=self,
                                        subkey='pres.',
                                        klas=coring.Prefixer)
