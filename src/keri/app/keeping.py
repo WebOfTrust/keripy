@@ -720,6 +720,7 @@ class Manager:
         if self.salt is None:  # never before initialized
             self.salt = salt
 
+        # must do this after salt is initialized so gets re-encrypted correctly
         if self.aeid is None:  # never before initialized
             self.updateAeid(aeid, self.seed)
 
@@ -778,7 +779,8 @@ class Manager:
 
         # re-encypt root salt secret, .salt property is automatically decrypted on fetch
         if (salt := self.salt) is not None:  # decrypted salt
-            self.salt = self.encrypter.encrypt(ser=salt).qb64 if self.encrypter else salt
+            self.salt = salt
+            # self.salt = self.encrypter.encrypt(ser=salt).qb64 if self.encrypter else salt
 
         # other secrets
         if self.decrypter:
@@ -823,6 +825,8 @@ class Manager:
             salt (str): qb64 default root salt for new key sequence creation
                 may be plain text or cipher text handled by updateAeid
         """
+        if self.encrypter:
+            salt = self.encrypter.encrypt(ser=salt).qb64
         self.ks.gbls.pin('salt', salt)
 
 

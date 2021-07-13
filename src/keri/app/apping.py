@@ -134,8 +134,6 @@ class Consoler(doing.Doer):
             #args.handler(args)
 
 
-
-
         if not chunks:  # empty list
             self.console.put("Try one of: l[eft] r[ight] w[alk] s[top]\n")
             return False
