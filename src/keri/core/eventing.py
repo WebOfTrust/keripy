@@ -1328,7 +1328,7 @@ class Kever:
                              " and sigers")
 
         if db is None:
-            db = basing.Baser()  # default name = "main"
+            db = basing.Baser(reopen=True)  # default name = "main"
         self.db = db
         self.cues = cues
         self.prefixes = prefixes if prefixes is not None else oset()
@@ -2238,7 +2238,7 @@ class Kevery:
         self.evts = evts if evts is not None else decking.Deck()  # subclass of deque
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
         if db is None:
-            db = basing.Baser()  # default name = "main"
+            db = basing.Baser(reopen=True)  # default name = "main"
         self.db = db
         self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal restrictions

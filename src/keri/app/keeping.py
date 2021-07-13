@@ -220,7 +220,7 @@ class Keeper(dbing.LMDBer):
     MaxNamedDBs = 8
     DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700 == 960
 
-    def __init__(self, headDirPath=None, dirMode=None, reopen=True, **kwa):
+    def __init__(self, headDirPath=None, dirMode=None, reopen=False, **kwa):
         """
         Setup named sub databases.
 
@@ -659,7 +659,7 @@ class Manager:
             salt (str): qb64 of root salt. Makes random root salt if not provided
             tier (str): default security tier (Tierage) for root salt
         """
-        self.ks = ks if ks is not None else Keeper()  # reopens by default
+        self.ks = ks if ks is not None else Keeper(reopen=True)
         self.encrypter = None
         self.decrypter = None
         self._seed = seed if seed is not None else ""

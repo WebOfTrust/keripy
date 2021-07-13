@@ -248,7 +248,7 @@ def test_keeper():
     assert dirMode == 0o1700
 
     # set mode to sticky bit plus rwx only for owner/user
-    keeper = keeping.Keeper()
+    keeper = keeping.Keeper(reopen=True)
     assert isinstance(keeper, keeping.Keeper)
     assert keeper.name == "main"
     assert keeper.temp == False
@@ -269,7 +269,7 @@ def test_keeper():
     assert not keeper.opened
 
     # set to unrestricted mode
-    keeper = keeping.Keeper(dirMode=0o775)
+    keeper = keeping.Keeper(dirMode=0o775, reopen=True)
     assert isinstance(keeper, keeping.Keeper)
     assert keeper.name == "main"
     assert keeper.temp == False

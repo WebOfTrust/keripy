@@ -36,7 +36,7 @@ def test_baser():
     """
     Test Baser class
     """
-    baser = Baser()
+    baser = Baser(reopen=True)  # default is to not reopen
     assert isinstance(baser, Baser)
     assert baser.name == "main"
     assert baser.temp == False

@@ -35,11 +35,9 @@ def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620,
         secrecies.append([secret])
 
     # setup databases for dependency injection
-    ks = keeping.Keeper(name=name, temp=True)
-    db = basing.Baser(name=name, temp=True)
-
-    # setup doers
+    ks = keeping.Keeper(name=name, temp=True)  # not opened by default, doer opens
     ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    db = basing.Baser(name=name, temp=True)  # not opened by default, doer opens
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
     # setup habitat
