@@ -4,17 +4,15 @@ KERI
 keri.app.apping module
 
 """
+import os
 
 from hio.base import doing
 from hio.core import wiring
 from hio.core.serial import serialing
 from hio.core.tcp import clienting, serving
 
-from .. import help
-from ..help import helping
-from ..db import dbing, basing, koming
-from ..core import coring, eventing, parsing
 from . import keeping, habbing, directing
+from .. import help
 from ..db import basing
 
 logger = help.ogler.getLogger()
