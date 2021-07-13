@@ -4,13 +4,13 @@ keri.kli.commands.watcher module
 
 """
 import argparse
+import sys
 
 from hio.base import doing
 from hio.core.tcp import clienting
 
-from keri.app import habbing, keeping
+from keri.app import habbing
 from keri.app.cli.commands.init import KLIRecord
-from keri.core import eventing, coring
 from keri.db import koming
 from keri.peer import exchanging
 
@@ -33,7 +33,7 @@ class StartIst(doing.Doist):
 
         super().__init__(real, limit, doers, **kwa)
 
-        self.client = clienting.Client(tymth=self.tymen(), host=kli.host, port=kli.port)
+        self.client = clienting.Client(tymth=self.tymen(), host='127.0.0.1', port=5678)
         clientDoer = clienting.ClientDoer(client=self.client)
 
         self.extend([clientDoer, self.infoDoer])
@@ -43,30 +43,17 @@ class StartIst(doing.Doist):
         while not self.client.connected:
             (yield self.tock)
 
-        mgr = keeping.Manager(keeper=self.hab.ks)
-        kvy = eventing.Kevery(db=self.hab.db)
+        print("connected")
         payload = dict(
             cmd='watcher',
             args=('start',),
         )
 
-        exc = exchanging.Exchanger(kevers=kvy.kevers, tymth=self.tymen())
-        behave = exchanging.Behavior(lambda payload, pre, sigers, verfers: None, None)
-        exc.registerBehavior(route="/cmd", behave=behave)
-
         srdr = exchanging.exchange(route="/cmd/", payload=payload)
-        sigers = mgr.sign(ser=srdr.raw, verfers=self.hab.kever.verfers)
-
-        excMsg = bytearray(srdr.raw)
-        excMsg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
-        excMsg.extend(self.hab.pre.encode("utf-8"))
-
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
-        excMsg.extend(counter.qb64b)
-        for siger in sigers:
-            excMsg.extend(siger.qb64b)
+        excMsg = self.hab.sanction(srdr)
 
         self.client.tx(excMsg)
-
         self.client.close()
+
+        print("watcher start command sent")
+        sys.exit(0)

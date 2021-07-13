@@ -100,6 +100,7 @@ setup(
             'keri_ian = keri.demo.demo_ian:main',
             'keri_vic = keri.demo.demo_vic:main',
             'kli = keri.app.cli.kli:main',
+            'klid = keri.app.cli.klid:main',
         ]
     },
 )

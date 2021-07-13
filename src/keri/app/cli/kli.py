@@ -1,3 +1,8 @@
+# -*- encoding: utf-8 -*-
+"""
+keri.kli.commands module
+
+"""
 import multicommand
 from hio import help
 
