@@ -727,26 +727,6 @@ class Manager:
         self.inited = True
 
 
-
-    @property
-    def seed(self):
-        """
-        seed property getter from ._seed.
-        seed (str): qb64 from which aeid is derived
-        """
-        return self._seed
-
-
-    @property
-    def aeid(self):
-        """
-        aeid property getter from key store db.
-        Assumes db initialized.
-        aeid is qb64 auth encrypt id prefix
-        """
-        return self.ks.gbls.get('aeid')
-
-
     def updateAeid(self, aeid, seed):
         """
         Given seed belongs to aeid and encrypter, update aeid and re-encrypt all
@@ -764,13 +744,14 @@ class Manager:
                                        "not associated with last aeid={}."
                                        "".format(self.aeid))
 
-        if aeid:  # changing to a new aeid so update .encrypter
-            self.encrypter = coring.Encrypter(verkey=aeid)  # derive encrypter from aeid
-            # verifies new seed belongs to new aeid
-            if not seed or not self.encrypter.verifySeed(seed):
-                raise kering.AuthError("Seed missing or provided seed not associated"
-                                           "  with provided aeid={}.".format(aeid))
-        else:  # no new aeid so new encrypter is None
+        if aeid:  # aeid provided
+            if aeid != self.aeid:  # changing to a new aeid so update .encrypter
+                self.encrypter = coring.Encrypter(verkey=aeid)  # derive encrypter from aeid
+                # verifies new seed belongs to new aeid
+                if not seed or not self.encrypter.verifySeed(seed):
+                    raise kering.AuthError("Seed missing or provided seed not associated"
+                                               "  with provided aeid={}.".format(aeid))
+        else:  # changing to empty aeid so new encrypter is None
             self.encrypter = None
 
         # fetch all secrets from db, decrypt all secrets with self.decrypter
@@ -802,6 +783,26 @@ class Manager:
 
         # update .decrypter
         self.decrypter = coring.Decrypter(seed=seed) if seed else None
+
+
+    @property
+    def seed(self):
+        """
+        seed property getter from ._seed.
+        seed (str): qb64 from which aeid is derived
+        """
+        return self._seed
+
+
+    @property
+    def aeid(self):
+        """
+        aeid property getter from key store db.
+        Assumes db initialized.
+        aeid is qb64 auth encrypt id prefix
+        """
+        return self.ks.gbls.get('aeid')
+
 
 
     @property
