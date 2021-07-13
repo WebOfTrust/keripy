@@ -9,7 +9,7 @@ import argparse
 import logging
 
 from keri import __version__
-from keri import help  # logger support
+from keri import help
 from keri.app import directing, indirecting
 
 d = "Runs KERI witness controller.\n"
@@ -51,7 +51,6 @@ def launch(args):
                 ".******\n\n", args.name, args.local)
 
 
-
 def runWitness(name="witness", local=5621, expire=0.0):
     """
     Setup and run one witness
@@ -61,4 +60,3 @@ def runWitness(name="witness", local=5621, expire=0.0):
                                      localPort=local)
 
     directing.runController(doers=doers, expire=expire)
-

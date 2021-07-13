@@ -1,11 +1,14 @@
 # -*- encoding: utf-8 -*-
 """
-keri.cli.wallet entry point
+keri.kli.commands module
 
 """
 import multicommand
+from hio import help
 
-from . import commands
+from keri.app.cli import commands
+
+logger = help.ogler.getLogger()
 
 
 def main():
@@ -13,3 +16,7 @@ def main():
     args = parser.parse_args()
     if hasattr(args, "handler"):
         args.handler(args)
+
+
+if __name__ == "__main__":
+    main()

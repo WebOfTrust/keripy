@@ -82,7 +82,8 @@ setup(
                         'multicommand>=0.1.1',
                         'jsonschema>=3.2.0',
                         'falcon>=3.0.1',
-                    ],
+                        'daemonocle>=1.2.3',
+    ],
     extras_require={
     },
     tests_require=[
@@ -98,7 +99,8 @@ setup(
             'keri_sam = keri.demo.demo_sam:main',
             'keri_ian = keri.demo.demo_ian:main',
             'keri_vic = keri.demo.demo_vic:main',
-            'kli = keri.kli.kli:main',
+            'kli = keri.app.cli.kli:main',
+            'klid = keri.app.cli.klid:main',
         ]
     },
 )

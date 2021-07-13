@@ -102,6 +102,7 @@ class Parser:
                 ims msgs when stream includes pipelined count codes.
             kvy (Kevery): route KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger): route EXN message types to this instance
         """
         self.ims = ims if ims is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream

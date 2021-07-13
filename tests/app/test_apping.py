@@ -4,24 +4,15 @@ tests.app.apping module
 
 """
 
-import json
-import os
-from dataclasses import dataclass, asdict
-
-import pytest
-
 from hio.base import doing
 
-from keri.app import apping, habbing, keeping
-from keri.core import coring, eventing
-from keri.core.coring import Serials
-from keri.db import dbing, basing, koming
+from keri.app import apping
+
 
 def test_app():
     """
     """
     """End Test"""
-
 
 
 def test_consoler():
@@ -58,4 +49,3 @@ def test_consoler():
 
 if __name__ == "__main__":
     test_consoler()
-
