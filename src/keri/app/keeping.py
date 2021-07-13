@@ -220,7 +220,7 @@ class Keeper(dbing.LMDBer):
     MaxNamedDBs = 8
     DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700 == 960
 
-    def __init__(self, headDirPath=None, dirMode=None, reopen=True, **kwa):
+    def __init__(self, headDirPath=None, dirMode=None, reopen=False, **kwa):
         """
         Setup named sub databases.
 
@@ -659,7 +659,7 @@ class Manager:
             salt (str): qb64 of root salt. Makes random root salt if not provided
             tier (str): default security tier (Tierage) for root salt
         """
-        self.ks = ks if ks is not None else Keeper()  # reopens by default
+        self.ks = ks if ks is not None else Keeper(reopen=True)
         self.encrypter = None
         self.decrypter = None
         self._seed = seed if seed is not None else ""
@@ -720,30 +720,11 @@ class Manager:
         if self.salt is None:  # never before initialized
             self.salt = salt
 
+        # must do this after salt is initialized so gets re-encrypted correctly
         if self.aeid is None:  # never before initialized
             self.updateAeid(aeid, self.seed)
 
         self.inited = True
-
-
-
-    @property
-    def seed(self):
-        """
-        seed property getter from ._seed.
-        seed (str): qb64 from which aeid is derived
-        """
-        return self._seed
-
-
-    @property
-    def aeid(self):
-        """
-        aeid property getter from key store db.
-        Assumes db initialized.
-        aeid is qb64 auth encrypt id prefix
-        """
-        return self.ks.gbls.get('aeid')
 
 
     def updateAeid(self, aeid, seed):
@@ -763,13 +744,14 @@ class Manager:
                                        "not associated with last aeid={}."
                                        "".format(self.aeid))
 
-        if aeid:  # changing to a new aeid so update .encrypter
-            self.encrypter = coring.Encrypter(verkey=aeid)  # derive encrypter from aeid
-            # verifies new seed belongs to new aeid
-            if not seed or not self.encrypter.verifySeed(seed):
-                raise kering.AuthError("Seed missing or provided seed not associated"
-                                           "  with provided aeid={}.".format(aeid))
-        else:  # no new aeid so new encrypter is None
+        if aeid:  # aeid provided
+            if aeid != self.aeid:  # changing to a new aeid so update .encrypter
+                self.encrypter = coring.Encrypter(verkey=aeid)  # derive encrypter from aeid
+                # verifies new seed belongs to new aeid
+                if not seed or not self.encrypter.verifySeed(seed):
+                    raise kering.AuthError("Seed missing or provided seed not associated"
+                                               "  with provided aeid={}.".format(aeid))
+        else:  # changing to empty aeid so new encrypter is None
             self.encrypter = None
 
         # fetch all secrets from db, decrypt all secrets with self.decrypter
@@ -778,7 +760,8 @@ class Manager:
 
         # re-encypt root salt secret, .salt property is automatically decrypted on fetch
         if (salt := self.salt) is not None:  # decrypted salt
-            self.salt = self.encrypter.encrypt(ser=salt).qb64 if self.encrypter else salt
+            self.salt = salt
+            # self.salt = self.encrypter.encrypt(ser=salt).qb64 if self.encrypter else salt
 
         # other secrets
         if self.decrypter:
@@ -803,6 +786,26 @@ class Manager:
 
 
     @property
+    def seed(self):
+        """
+        seed property getter from ._seed.
+        seed (str): qb64 from which aeid is derived
+        """
+        return self._seed
+
+
+    @property
+    def aeid(self):
+        """
+        aeid property getter from key store db.
+        Assumes db initialized.
+        aeid is qb64 auth encrypt id prefix
+        """
+        return self.ks.gbls.get('aeid')
+
+
+
+    @property
     def salt(self):
         """
         salt property getter from key store db.
@@ -823,6 +826,8 @@ class Manager:
             salt (str): qb64 default root salt for new key sequence creation
                 may be plain text or cipher text handled by updateAeid
         """
+        if self.encrypter:
+            salt = self.encrypter.encrypt(ser=salt).qb64
         self.ks.gbls.pin('salt', salt)
 
 

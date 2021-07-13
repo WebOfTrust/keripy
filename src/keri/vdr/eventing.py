@@ -450,7 +450,7 @@ class Tever:
                 if .regk
         """
         self.reger = reger if reger is not None else Registry()
-        self.db = db if db is not None else basing.Baser()
+        self.db = db if db is not None else basing.Baser(reopen=True)
         self.version = serder.version
         self.regk = regk
         self.local = True if local else False
@@ -1019,7 +1019,7 @@ class Tevery:
                         False means only process msgs for not own events if .pre
         """
         self.tevers = tevers if tevers is not None else dict()
-        self.db = db if db is not None else basing.Baser()  # default name = "main"
+        self.db = db if db is not None else basing.Baser(reopen=True)  # default name = "main"
         self.reger = reger if reger is not None else Registry()
         self.regk = regk  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions

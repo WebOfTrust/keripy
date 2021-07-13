@@ -58,9 +58,9 @@ def setupController(secrets, did, lei, witnessPort=5621, peerPort=5629, indirect
         secrecies.append([secret])
 
     # setup databases for dependency injection
-    ks = keeping.Keeper(name=name, temp=True)
+    ks = keeping.Keeper(name=name, temp=True)  # not opened by default, doer opens
     ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    db = basing.Baser(name=name, temp=True)
+    db = basing.Baser(name=name, temp=True)  # not opened by default, doer opens
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
     # setup habitat

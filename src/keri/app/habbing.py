@@ -110,8 +110,12 @@ class Habitat:
         self.transferable = transferable
         self.temp = temp
         self.erase = erase
-        self.db = db if db is not None else basing.Baser(name=name, temp=self.temp)
-        self.ks = ks if ks is not None else keeping.Keeper(name=name, temp=self.temp)
+        self.db = db if db is not None else basing.Baser(name=name,
+                                                         temp=self.temp,
+                                                         reopen=True)
+        self.ks = ks if ks is not None else keeping.Keeper(name=name,
+                                                           temp=self.temp,
+                                                           reopen=True)
         self.ridx = 0  # rotation index of latest establishment event
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy)

@@ -45,11 +45,9 @@ def setupController(name="who", temp=False, sith=None, count=1,
     Setup and return doers list to run controller
     """
     # setup databases  for dependency injection
-    ks = keeping.Keeper(name=name, temp=temp)
-    db = basing.Baser(name=name, temp=temp)
-
-    # setup doers
+    ks = keeping.Keeper(name=name, temp=temp)  # not opened by default, doer opens
     ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    db = basing.Baser(name=name, temp=temp)  # not opened by default, doer opens
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
     # setup habitat
@@ -134,8 +132,6 @@ class Consoler(doing.Doer):
         #args = parser.parse_args(chunks)
         #if hasattr(args, "handler"):
             #args.handler(args)
-
-
 
 
         if not chunks:  # empty list

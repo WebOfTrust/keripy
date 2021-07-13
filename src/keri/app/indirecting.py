@@ -22,9 +22,9 @@ def setupWitness(name="witness", temp=False, localPort=5620, ):
     """
     """
     # setup databases  for dependency injection
-    ks = keeping.Keeper(name=name, temp=temp)
+    ks = keeping.Keeper(name=name, temp=temp)  # default is to not reopen
     ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    db = basing.Baser(name=name, temp=temp)
+    db = basing.Baser(name=name, temp=temp)  # default is to not reopen
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
     # setup habitat
@@ -41,7 +41,7 @@ def setupWitness(name="witness", temp=False, localPort=5620, ):
     regDoer = basing.BaserDoer(baser=verfer.reger)
 
     server = serving.Server(host="", port=localPort)
-    serverDoer = doing.ServerDoer(server=server)
+    serverDoer = serving.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server, verifier=verfer)
 
 

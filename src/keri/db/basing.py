@@ -303,7 +303,7 @@ class Baser(dbing.LMDBer):
 
 
     """
-    def __init__(self, headDirPath=None, reopen=True, reload=False, **kwa):
+    def __init__(self, headDirPath=None, reopen=False, reload=False, **kwa):
         """
         Setup named sub databases.
 
@@ -317,8 +317,7 @@ class Baser(dbing.LMDBer):
             headDirPath is optional str head directory pathname for main database
                 If not provided use default .HeadDirpath
             mode is int numeric os dir permissions for database directory
-            reopen is boolean, IF True then database will be reopened by this init
-
+            reopen (Boolean): True means database will be reopened by this init
             reload (Boolean): True means load habitat prefixes and kevers from .habs
 
         Notes:
