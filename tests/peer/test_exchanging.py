@@ -21,12 +21,11 @@ def test_exchanger():
             keeping.openKS(name="red") as redKS:
 
         limit = 1.0
-        tock = 0.03125
+        tock = 1.0
         doist = doing.Doist(limit=limit, tock=tock)
 
         # Init key pair managers
         sidMgr = keeping.Manager(ks=sidKS, salt=sidSalt)
-        redMgr = keeping.Manager(ks=redKS, salt=redSalt)
 
         # Init Keverys
         sidKvy = eventing.Kevery(db=sidDB)

@@ -439,7 +439,7 @@ class IanDirector(directing.Director):
             tyme = (yield self.tock)
 
             pl = dict(
-                verifiableCredential=[handling.envelope(msg, typ=jsonSchema)]
+                vc=[handling.envelope(msg, typ=jsonSchema)]
             )
 
 
@@ -956,7 +956,6 @@ def jsonSchemaCache():
     ))
 
     schemer = scheming.Schemer(sed=sed, code=coring.MtrDex.Blake3_256)
-    assert schemer.said == "Et75h-slZaxkez1YDNpOxM6AF2YFMgcFL4C1ziAeFe3o"
 
     cache = scheming.CacheResolver()
     cache.add(schemer.said, schemer.raw)

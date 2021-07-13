@@ -23,7 +23,7 @@ def test_issuing():
             basing.openDB(name="red") as redDB, \
             openPocket(name="red") as redPDB:
         limit = 1.0
-        tock = 0.03125
+        tock = 1.0
         doist = doing.Doist(limit=limit, tock=tock)
 
         sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
@@ -141,7 +141,7 @@ def test_proving():
             keeping.openKS(name="han") as hanKS, \
             openPocket(name="han") as hanPDB:
         limit = 1.0
-        tock = 0.03125
+        tock = 1.0
         doist = doing.Doist(limit=limit, tock=tock)
 
         sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
