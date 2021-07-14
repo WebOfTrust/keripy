@@ -37,12 +37,162 @@ class BaseHandler:
         return self._behavior
 
 
+class OfferHandler(BaseHandler):
+    """
+    Sample handler to a credential offer message from an Issuer to a Holder for a credential based
+    on
+        {
+           "v": "KERI10JSON00011c_",                               // KERI Version String
+           "t": "exn",                                             // peer to peer message ilk
+           "dt": "2020-08-22T17:50:12.988921+00:00"
+           "r": "/credential/offer"                                // resource with nested namespace
+           "q": {
+              "issuer": "did:keri:EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
+              "output_descriptors: [
+                 "EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA"
+              ],
+              "format": {
+                "cesr": {
+                  "proof_type": ["Ed25519Signature2018"]
+                }
+              }
+           } //embedded credential_manifest like structure, may contain presentation_definition of requirements for fullfilment
+        }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA
+
+    """
+
+    def __init__(self, wallet, formats, typ=JSONSchema()):
+        """
+
+        Parameters:
+            wallet (Wallet) credential wallet that will hold the issued credentials
+            formats (list) of format str names accepted for offers
+            typ (JSONSchema) credential type to accept
+        """
+        self.wallet = wallet
+        self.formats = formats
+        self.typ = typ
+
+        super(OfferHandler, self).__init__(resource="/credential/offer", func=self.handleMessage)
+
+
+    def handleMessage(self, payload, pre, sigers, verfers):
+        """
+
+        """
+
+        issuer = payload["issuer"]
+        descriptors = payload["input_descriptors"]
+        formats = payload["format"]
+
+        schema = descriptors[0]
+
+        fmts = []
+        for fmt in self.formats:
+            if fmt in formats:
+                fmts.append(formats[fmt])
+
+        if not fmts:
+            logger.info("No acceptable formats being offered in {}.  Needed one of {}."
+                        "".format(formats, self.formats))
+
+        apply = credential_apply(issuer, schema, format)
+
+        return "/credential/apply", apply
+
+
+
+class ApplyHandler(BaseHandler):
+    """
+        {
+           "v": "KERI10JSON00011c_",                               // KERI Version String
+           "t": "exn",                                             // peer to peer message ilk
+           "dt": "2020-08-22T17:50:12.988921+00:00"
+           "r": "/credential/apply"
+           "q" {
+              "issuer": "did:keri:EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
+              "input_descriptors": [
+                 "EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA"
+              ],
+              "format": {
+                 "cesr": {
+                   "proof_type": ["Ed25519Signature2018"]
+                 }
+              }
+           } //embedded credential_submission, may contain credential_fullfilment responding to presentation_def above
+        }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA
+
+    """
+
+    def __init__(self, hab, typ=JSONSchema()):
+        """
+
+        Parameters:
+            hab (Habitat) credential wallet that will hold the issued credentials
+            typ (JSONSchema) credential type to accept
+        """
+        self.hab = hab
+        self.typ = typ
+
+        super(ApplyHandler, self).__init__(resource="/credential/apply", func=self.handleMessage)
+
+
+    def handleMessage(self, payload, pre, sigers, verfers):
+        """
+
+        """
+        return None, None
+
+
+
 class IssueHandler(BaseHandler):
     """
+    Sample class that handles a credential Issue `exn` message.  By default, this handler
+    stores the credential in the provided wallet.  The incoming message must have the following format:
+
+         {
+       "vc" [
+         {
+           "vc": {
+              "v": "KERI10JSON00011c_", //KERI Version String
+              "x": "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI", // Identifier prefix of the Schema
+              "d": {
+                   "type": [
+                       "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI"
+                   ],
+                   "id": "did:keri:EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI",
+                   "issuer": "did:keri:EchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA",
+                   "issuanceDate": "2021-06-09T17:35:54.169967+00:00",
+                   "credentialSubject": {
+                       "id": "did:keri:did:keri:Efaavv0oadfghasdfn443fhbyyr4v",
+                       "lei": "254900OPPU84GM83MG36"
+                   },
+                   "credentialSchema": {
+                       "id": ""
+                       "type": ""
+                   },
+                   "credentialStatus": {
+                      "id": "",
+                      "type": ""
+                   }
+              }
+           }, // embedded verifiable credential
+           "proof": "-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE
+                 -d_ApsFEgCA-GAB0AAAAAAAAAAAAAAAAAAAAABQEchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA"
+           }
+       ]   //list of verifiable credentials
+    }
+
 
     """
 
     def __init__(self, wallet, typ=JSONSchema()):
+        """
+
+        Parameters:
+            wallet (Wallet) credential wallet that will hold the issued credentials
+            typ (JSONSchema) credential type to accept
+        """
         self.wallet = wallet
         self.typ = typ
 
@@ -50,38 +200,9 @@ class IssueHandler(BaseHandler):
 
     def handleMessage(self, payload, pre, sigers, verfers):
         """
-         {
-           "vc" [
-             {
-               "vc": {
-                  "v": "KERI10JSON00011c_", //KERI Version String
-                  "x": "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI", // Identifier prefix of the Schema
-                  "d": {
-                       "type": [
-                           "EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI"
-                       ],
-                       "id": "did:keri:EeyJ0eXBlIjogWyJWZXJpZmlhYmxlQ3JlZGVudGlhbCI",
-                       "issuer": "did:keri:EchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA",
-                       "issuanceDate": "2021-06-09T17:35:54.169967+00:00",
-                       "credentialSubject": {
-                           "id": "did:keri:did:keri:Efaavv0oadfghasdfn443fhbyyr4v",
-                           "lei": "254900OPPU84GM83MG36"
-                       },
-                       "credentialSchema": {
-                           "id": ""
-                           "type": ""
-                       },
-                       "credentialStatus": {
-                          "id": "",
-                          "type": ""
-                       }
-                  }
-               }, // embedded verifiable credential
-               "proof": "-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE
-                     -d_ApsFEgCA-GAB0AAAAAAAAAAAAAAAAAAAAABQEchZLZUFqtBGRWMh3Ur_iKucjsrFcxU7AjfCPko9CkEA"
-               }
-           ]   //list of verifiable credentials
-        }
+
+        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+
         Parameters:
             payload is dict representing the body of a /credential/issue message
             pre is qb64 identifier prefix of sender
@@ -313,3 +434,64 @@ def presentation_exchange(credentials):
     )
 
     return d
+
+
+def credential_apply(issuer, schema, formats):
+    """
+        {
+           "v": "KERI10JSON00011c_",                               // KERI Version String
+           "t": "exn",                                             // peer to peer message ilk
+           "dt": "2020-08-22T17:50:12.988921+00:00"
+           "r": "/credential/apply"
+           "q" {
+              "issuer": "did:keri:EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
+              "input_descriptors": [
+                 "EckOnHB11J4H9q16I3tN8DdpNXnCiP5QJQ7yvkWqTDdA"
+              ],
+              "format": {
+                 "cesr": {
+                   "proof_type": ["Ed25519Signature2018"]
+                 }
+              }
+           } //embedded credential_submission, may contain credential_fullfilment responding to presentation_def above
+        }
+
+    Parameters:
+        issuer (str) is qb64 identifier prefix of the issuer
+        schema (str) is qb64 SAID of schema being applied for
+        formats (list of CredentialFormat) is list of acceptable credential formats
+
+    """
+
+    d = dict(
+        issuer=issuer,
+        input_descriptors=[schema],
+        format=[]
+    )
+
+    for fmt in formats:
+        d["format"].append(fmt.fmd)
+
+    return d
+
+
+def credential_issue(msgs, typ):
+    """
+    Returns a list of credentials enveloped inside a credential issue message
+
+    Parameters:
+        msgs (list) is list of CESR formatted, endorsed verifiable credentials
+        typ (JSONSchema) type of credentials being issued
+
+    """
+
+    vcs = []
+    for msg in msgs:
+        vc = envelope(msg, typ)
+        vcs.append(vc)
+
+    pl = dict(
+        vc=vcs
+    )
+
+    return pl

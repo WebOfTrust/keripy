@@ -13,7 +13,7 @@ from ..help import decking, helping
 from ..kering import ValidationError, MissingSignatureError
 
 
-ExchangeMessageTimeWindow = timedelta(seconds=10)
+ExchangeMessageTimeWindow = timedelta(seconds=1010)
 
 
 class Exchanger(doing.DoDoer):
@@ -111,7 +111,15 @@ class Exchanger(doing.DoDoer):
 
         behave.exc = self
         self.routes[route] = behave
-        self.extend(doers=[behave.msgDo])
+
+
+    def enter(self, doers=None):
+        doers = list(doers) if doers is not None else []
+        for route, behavior in self.routes.items():
+            doers.extend([behavior.msgDo])
+
+        super(Exchanger, self).enter(doers)
+
 
 
     def processMsgsIter(self, msgs):
@@ -262,22 +270,24 @@ class Behavior:
 
 
 
-def exchange(route, payload, version=coring.Version, kind=coring.Serials.json):
+def exchange(route, payload, date=None, version=coring.Version, kind=coring.Serials.json):
     """
     Create an `exn` message with the specified route and payload
     Parameters:
         route (string) to destination route of the message
         payload (dict) body of message to deliver to route
+        date (str) Iso8601 formatted date string to use for this request
         version (Version) is Version instance
         kind (Serials) is serialization kind
 
     """
     vs = coring.Versify(version=version, kind=kind, size=0)
     ilk = eventing.Ilks.exn
+    dt = date if date is not None else helping.nowIso8601()
 
     ked = dict(v=vs,
                t=ilk,
-               dt=helping.nowIso8601(),
+               dt=dt,
                r=route,
                q=payload
                )

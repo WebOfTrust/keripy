@@ -11,38 +11,6 @@ Format for W3C Verifiable Credentials is defined for encoding and signing VCs.
 ## KERI Peer to Peer Communication
 KERI Message: `exn` for peer to peer exchanges.
 
-### JSON Schema for `exn` Messages
-```
-{
-  "$id":"Ei98Pf-7LCJk8qaqSIyJMfXcZMIz0R7ZBVA411-Mb2wU",
-  "$schema":"http://json-schema.org/draft-07/schema#",
-  "type":"object",
-  "properties":{
-    "v":{
-      "type":"string"
-    },
-    "t":{
-      "type":"string"
-    },
-    "dt":{
-      "type":"string",
-      "format":"date-time"
-    },
-    "x":{
-      "type":"string",
-      "format":"uri"
-    },
-    "r":{
-      "type":"string",
-      "format":"uri"
-    },
-    "q":{
-      "type":"object"
-    }
-  }
-}
-```
-
 
 ### Credential Offer `exn` Message
 ```
@@ -64,48 +32,6 @@ KERI Message: `exn` for peer to peer exchanges.
    } //embedded credential_manifest like structure, may contain presentation_definition of requirements for fullfilment 
 }-AABAA1o61PgMhwhi89FES_vwYeSbbWnVuELV_jv7Yv6f5zNiOLnj1ZZa4MW2c6Z_vZDt55QUnLaiaikE-d_ApsFEgCA
 // Count code for a couple: Senders FQ Identifier and signature or signatures
-```
-
-### JSON Schema for Offer Payload
-```
-{
-  "$id":"EMbzB4tnrjBUdhcMadmXq2F2adYdW42iw2NPJz8kUo_c",
-  "$schema":"http://json-schema.org/draft-07/schema#",
-  "type":"object",
-  "properties":{
-    "x":{
-      "type":"string",
-      "format":"uri"
-    },
-    "issuer":{
-      "type":"string",
-      "format":"uri"
-    },
-    "output_descriptors":{
-      "type":"array",
-      "items":{
-        "type":"string",
-        "format":"uri"
-      }
-    },
-    "format":{
-      "type":"object",
-      "properties":{
-        "cesr":{
-          "type":"object",
-          "properties":{
-            "proof_type":{
-              "type":"array",
-              "items":{
-                "type":"string"
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
 ```
 
 ### Credential Apply as `exn` Message
@@ -131,44 +57,6 @@ KERI Message: `exn` for peer to peer exchanges.
 ```
 
 
-
-### JSON Schema for Accept Payload
-```
-{
-  "$id":"E7NDc95Rgl959Wh1r3dzCAGaQ6zGduFaJrD-ORbEXr_U",
-  "$schema":"http://json-schema.org/draft-07/schema#",
-  "type":"object",
-  "properties":{
-    "x":{
-      "type":"string",
-      "format":"uri"
-    },
-    "input_descriptors":{
-      "type":"array",
-      "items":{
-        "type":"string",
-        "format":"uri"
-      }
-    },
-    "format":{
-      "type":"object",
-      "properties":{
-        "cesr":{
-          "type":"object",
-          "properties":{
-            "proof_type":{
-              "type":"array",
-              "items":{
-                "type":"string"
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-```
 
 
 ### Credential Issue as `exn` Message
