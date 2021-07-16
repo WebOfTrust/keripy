@@ -152,6 +152,14 @@ class MissingSignatureError(ValidationError):
     """
 
 
+class MissingDestinationError(ValidationError):
+    """
+    Destination field ("i") mising from exn message
+    Usage:
+        raise MissingDestinationError("error message")
+    """
+
+
 class MissingWitnessSignatureError(ValidationError):
     """
     Error Missing Enough Witness Signatures for Threshold

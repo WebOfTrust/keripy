@@ -1120,6 +1120,7 @@ def query(pre,
           dt=None,
           dta=None,
           dtb=None,
+          sn=None,
           version=Version,
           kind=Serials.json):
 
@@ -1150,6 +1151,9 @@ def query(pre,
 
     if dtb is not None:
         qry["dtb"] = dt
+
+    if sn is not None:
+        qry["s"] = sn
 
 
     ked = dict(v=vs,  # version string
@@ -2459,6 +2463,7 @@ class Kevery:
             dig  # qb64 digest of receipted event
         """
         # fetch  pre dig to process
+        print("witness receipt for", serder.pre)
         ked = serder.ked
         pre = serder.pre
         sn = self.validateSN(ked)

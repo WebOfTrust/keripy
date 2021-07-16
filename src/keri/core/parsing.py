@@ -888,7 +888,7 @@ class Parser:
             args = dict(serder=serder)
             if ssgs:
                 pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
-                args["pre"] = pre
+                args["source"] = pre
                 args["sigers"] = sigers
 
             elif cigars:
@@ -901,7 +901,8 @@ class Parser:
             try:
                 exc.processEvent(**args)
 
-            except AttributeError:
+            except AttributeError as e:
+                print(e)
                 raise kering.ValidationError("No Exchange to process so dropped msg"
                                              "= {}.".format(serder.pretty()))
 

@@ -68,6 +68,7 @@ def setupController(secrets, did, lei, witnessPort=5621, peerPort=5629, indirect
     habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
 
     iss = issuing.Issuer(hab=hab, name=name, noBackers=True)
+    issDoer = issuing.IssuerDoer(issuer=iss)
 
     # setup doers
     regDoer = basing.BaserDoer(baser=iss.reger)
@@ -99,7 +100,7 @@ def setupController(secrets, did, lei, witnessPort=5621, peerPort=5629, indirect
     logger.info("\nDirect Mode demo of %s:\nNamed %s to TCP port %s.\n\n",
                 hab.pre, hab.name, witnessPort)
 
-    return [ksDoer, dbDoer, habDoer, regDoer, wireDoer, witnessClientDoer, director,
+    return [ksDoer, dbDoer, habDoer, issDoer, regDoer, wireDoer, witnessClientDoer, director,
             reactor, peerClientDoer, peerReactor]
 
 
@@ -149,7 +150,7 @@ def main():
 
     runDemo(did=args.did,
             lei=args.lei,
-            witness=args.witness,
+            witness=int(args.witness),
             peer=int(args.peer),
             expire=args.expire)
 

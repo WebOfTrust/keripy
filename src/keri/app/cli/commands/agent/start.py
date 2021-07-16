@@ -11,14 +11,12 @@ import logging
 from hio.base import doing
 from hio.core.tcp import serving as tcpServing
 
-from keri import __version__
+from keri import __version__, kering
 from keri import help
 from keri.app import directing, habbing, keeping
 from keri.core import eventing
 from keri.db import basing
-from keri.demo import demoing
 from keri.peer import httping, exchanging
-from keri.vc import handling, walleting
 
 d = "Runs KERI Agent controller.\n"
 d += "Example:\nagent -p 5621 --e 10.0\n"
@@ -43,7 +41,11 @@ parser.add_argument('-e', '--expire',
 parser.add_argument('-n', '--name',
                     action='store',
                     default="agent",
-                    help="Name of controller. Default is eve. Choices are bob, sam, or eve.")
+                    help="Name of controller. Default is agent.")
+parser.add_argument('-p', '--pre',
+                    action='store',
+                    default="",
+                    help="Identifier prefix to accept control messages from.")
 
 
 
@@ -72,38 +74,47 @@ def runAgent(name="agent", http=5620, tcp=5621, expire=0.0):
     """
     logger = help.ogler.getLogger()
 
-    wsith = 1
+    ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
+    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+    db = basing.Baser(name=name, temp=False)  # not opened by default, doer opens
+    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
-    hab = habbing.Habitat(name=name, temp=False, transferable=True,
-                          isith=wsith, icount=1,)
+    # setup habitat
+    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
+
+    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
+
     kvy = eventing.Kevery(db=hab.db, local=False)
     logger.info("\nAgent- %s:\nNamed %s on HTTP port %s.\n\n",
                 hab.pre, hab.name, http)
 
     # setup doers
-    ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
-
     server = tcpServing.Server(host="", port=tcp)
     serverDoer = tcpServing.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server)
 
     excDoer = exchanging.Exchanger(hab=hab)
 
-    wallet = walleting.Wallet(hab=hab, name=name)
+    # wallet = walleting.Wallet(hab=hab, name=name)
 
-    jsonSchema = demoing.jsonSchemaCache()
-    issueHandler = handling.IssueHandler(wallet=wallet, typ=jsonSchema)
-    excDoer.registerBehavior(route=issueHandler.resource, behave=issueHandler.behavior)
-    requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
-    excDoer.registerBehavior(route=requestHandler.resource, behave=requestHandler.behavior)
+    # jsonSchema = demoing.jsonSchemaCache()
+    # issueHandler = handling.IssueHandler(wallet=wallet, typ=jsonSchema)
+    # excDoer.registerBehavior(route=issueHandler.resource, behave=issueHandler.behavior)
+    # requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
+    # excDoer.registerBehavior(route=requestHandler.resource, behave=requestHandler.behavior)
+
+
+
 
     httpServer = httping.AgentExnServer(port=http, exc=excDoer)
-    httpKelServer = httping.AgentKelServer(port=5629, kvy=kvy)
+    httpKelServer = httping.AgentKelServer(port=5629, hab=hab)
 
-    doers = [ksDoer, dbDoer, excDoer, directant, serverDoer, httpServer, httpKelServer]
+    doers = [ksDoer, dbDoer, habDoer, excDoer, directant, serverDoer, httpServer, httpKelServer]
 
-    tock = 0.03125
-    doist = doing.Doist(limit=expire, tock=tock, real=True)
-    doist.do(doers=doers)
+    try:
+        tock = 0.03125
+        doist = doing.Doist(limit=expire, tock=tock, real=True)
+        doist.do(doers=doers)
+    except kering.ConfigurationError:
+        print(f"prefix for {name} does not exist, incept must be run first", )
 

@@ -376,10 +376,10 @@ class IanDirector(directing.Director):
                             self.hab.pre, self.client.ha)
                 tyme = (yield self.tock)
 
-            while not self.peerClient.connected:
-                logger.info("%s:\n waiting for connection to remote %s.\n\n",
-                            self.hab.pre, self.peerClient.ha)
-                tyme = (yield self.tock)
+            # while not self.peerClient.connected:
+            #     logger.info("%s:\n waiting for connection to remote %s.\n\n",
+            #                 self.hab.pre, self.peerClient.ha)
+            #     tyme = (yield self.tock)
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
@@ -444,43 +444,43 @@ class IanDirector(directing.Director):
             )
 
 
-            cloner = self.hab.db.clonePreIter(pre=self.hab.pre, fn=0)  # create iterator at 0
-            msgs = bytearray()  # outgoing messages
-            for msg in cloner:
-                msgs.extend(msg)
-
-            # send to connected peer remote
-            self.peerClient.tx(msgs)
-            logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(msgs))
-            tyme = (yield self.tock)
-
-            excSrdr = exchanging.exchange(route="/credential/issue", payload=pl)
+            # cloner = self.hab.db.clonePreIter(pre=self.hab.pre, fn=0)  # create iterator at 0
+            # msgs = bytearray()  # outgoing messages
+            # for msg in cloner:
+            #     msgs.extend(msg)
+            #
+            # # send to connected peer remote
+            # self.peerClient.tx(msgs)
+            # logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(msgs))
+            # tyme = (yield self.tock)
+            #
+            excSrdr = exchanging.exchange(route="/credential/issue", payload=pl, recipient=self.recipientIdentifier)
             excMsg = self.hab.sanction(excSrdr)
 
-            self.peerClient.tx(excMsg)
+            self.client.tx(excMsg)
             logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(excMsg))
             tyme = (yield self.tock)
 
             logger.info("%s:\n\n\n Sent Verifiable Credential for LEI: %s to %s.\n\n",
                         self.hab.pre, self.lei, self.recipientIdentifier)
 
-            console = serialing.Console()
-            console.reopen()
-            while console.get().decode('utf-8') != "r":
-                (yield self.tock)
-
-            tevt, kevt = self.issuer.revoke(vcdig=creder.said)
-            logger.info("%s:\n\n\n Revoked Verifiable Credential for LEI: %s.\n\n",
-                        self.hab.pre, self.lei)
-            (yield self.tock)
-
-            self.client.tx(kevt)  # send to connected remote
-            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(kevt))
-            (yield self.tock)
-
-            self.client.tx(tevt)  # send to connected remote
-            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(tevt))
-            (yield self.tock)
+            # console = serialing.Console()
+            # console.reopen()
+            # while console.get().decode('utf-8') != "r":
+            #     (yield self.tock)
+            #
+            # tevt, kevt = self.issuer.revoke(vcdig=creder.said)
+            # logger.info("%s:\n\n\n Revoked Verifiable Credential for LEI: %s.\n\n",
+            #             self.hab.pre, self.lei)
+            # (yield self.tock)
+            #
+            # self.client.tx(kevt)  # send to connected remote
+            # logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(kevt))
+            # (yield self.tock)
+            #
+            # self.client.tx(tevt)  # send to connected remote
+            # logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(tevt))
+            # (yield self.tock)
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -685,7 +685,6 @@ class VicDirector(directing.Director):
             presentation = self.presentations.pop()
 
             vc = presentation["vc"]
-            body = vc["d"]
             proof = bytearray(presentation["proof"].encode("utf-8"))
 
             creder = proving.Credentialer(crd=vc, typ=jsonSchema)

@@ -8,11 +8,11 @@ import json
 import falcon
 from hio.base import doing
 from hio.core import http
-from hio.help import helping
+from hio.help import helping, Hict
 
 from .. import help
 from ..app import habbing
-from ..core import parsing, eventing
+from ..core import parsing, eventing, coring
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -289,3 +289,87 @@ def parseCesrHttpRequest(req):
     attachment = req.headers[CESR_ATTACHMENT_HEADER]
 
     return resource, dt, q, attachment
+
+
+class MailboxServer(doing.DoDoer):
+    """
+
+    """
+
+    def __init__(self, port, hab: habbing.Habitat, mbx: exchanging.Mailboxer, **kwa):
+        """
+
+        :param port:
+        :param hab:
+        :param kwa:
+        """
+        self.hab = hab
+        self.mbx = mbx
+        self.port = port
+        self.rxbs = bytearray()
+
+        self.app = falcon.App()
+
+        self.app.add_route("/mbx", self)
+
+        self.server = http.Server(port=self.port, app=self.app)
+        serdoer = http.ServerDoer(server=self.server)
+
+
+        doers = [serdoer]
+
+        super(MailboxServer, self).__init__(doers=doers, **kwa)
+        if self.tymth:
+            self.server.wind(self.tymth)
+
+
+    def on_post(self, req, rep):
+        """
+        Handles POST requests as a stream of SSE events
+        """
+        rep.stream = self.mailboxGenerator(req=req, resp=rep)
+
+
+
+
+    @helping.attributize
+    def mailboxGenerator(self, me, req=None, resp=None):
+        """
+
+        Parameters:
+            me:
+            req:
+            resp:
+
+        """
+
+        resource, dt, msg, attachments = parseCesrHttpRequest(req)
+
+        q = msg["q"]
+
+        pre = coring.Prefixer(qb64=q["i"])
+        idx = q["s"] if "s" in q else 0
+        cur = -1
+
+        yield b''
+
+
+        me._status = http.httping.CREATED
+
+        headers = Hict()
+        headers['Content-Type'] = "text/event-stream"
+        headers['Cache-Control'] = "no-cache"
+        headers['Connection'] = "keep-alive"
+        me._headers = headers
+        while True:
+            if cur < idx:
+                for msg in self.mbx.clonePreIter(pre.qb64b, idx):
+                    cur += 1
+                    data = bytearray(b'data:')
+                    data.extend(msg)
+                    data.extend(b'\n\n')
+                    yield data
+
+            yield b''
+
+
