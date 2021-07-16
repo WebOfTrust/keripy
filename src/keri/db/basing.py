@@ -287,12 +287,13 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .fons is named subDB (states) instance of MatterSuber that maps
-            (prefix, digest) e.g. dgKey to fn (first seen ordinal number) of
-            the associated event with digest
+        .fons is named subDB instance of MatterSuber that maps
+            (prefix, digest) e.g. dgKey to fn value (first seen ordinal number) of
+            the associated event. So one can lookup event digest, get its fn here
+            and then use fn to fetch event by fn from .fels.
 
-        .stts is named subDB (states) instance of SerderSuber that maps prefix
-            to latest keystate for that prefix. Used by ._kevers.db for read
+        .stts is named subDB instance of SerderSuber that maps a prefix
+            to the latest keystate for that prefix. Used by ._kevers.db for read
             through cache of key state to reload kevers in memory
 
         .habs is named subDB instance of Komer that maps habitat names to prefixes
@@ -467,7 +468,7 @@ class Baser(dbing.LMDBer):
                                  "".format(copy.path, self.path))
 
             # replace own kevers with copy kevers by clear and copy
-            # future do this by loading kever from .kyss  key state subdb
+            # future do this by loading kever from .stts  key state subdb
             self.kevers.clear()
             for pre, kever in copy.kevers.items():
                 self.kevers[pre] = kever
