@@ -1348,8 +1348,8 @@ class Kever:
         ilk = serder.ked["t"]
         if ilk not in (Ilks.icp, Ilks.dip):
             raise ValidationError("Expected ilk = {} or {} got {} for evt = {}."
-                                              "".format(Ilks.icp, Ilks.dip,
-                                                        ilk, serder.ked))
+                                  "".format(Ilks.icp, Ilks.dip,
+                                  ilk, serder.ked))
         self.ilk = ilk
 
         labels = DIP_LABELS if ilk == Ilks.dip else ICP_LABELS
@@ -2463,7 +2463,6 @@ class Kevery:
             dig  # qb64 digest of receipted event
         """
         # fetch  pre dig to process
-        print("witness receipt for", serder.pre)
         ked = serder.ked
         pre = serder.pre
         sn = self.validateSN(ked)

@@ -12,9 +12,12 @@ from .. import kering
 from ..core import eventing, coring
 from ..db import subing, dbing
 from ..help import decking, helping
-from ..kering import ValidationError, MissingSignatureError, MissingDestinationError
+from ..kering import ValidationError, MissingSignatureError, MissingDestinationError, AuthZError
+from .. import help
 
-ExchangeMessageTimeWindow = timedelta(seconds=1010)
+ExchangeMessageTimeWindow = timedelta(seconds=1010000)
+
+logger = help.ogler.getLogger()
 
 
 class Exchanger(doing.DoDoer):
@@ -22,7 +25,7 @@ class Exchanger(doing.DoDoer):
      Peer to Peer KERI message Exchanger.
     """
 
-    def __init__(self, hab, cues=None, delta=ExchangeMessageTimeWindow, **kwa):
+    def __init__(self, hab, handlers, controller=None, cues=None, delta=ExchangeMessageTimeWindow, **kwa):
         """
         Initialize instance
 
@@ -32,21 +35,23 @@ class Exchanger(doing.DoDoer):
             delta (timedelta): message timeout window
         """
 
-        super(Exchanger, self).__init__(doers=[], **kwa)
-
         self.hab = hab
+        self.controller = controller
         self.kevers = hab.kvy.kevers
         self.delta = delta
         self.routes = dict()
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
 
+        doers = []
+        for handler in handlers:
+            if handler.resource in self.routes:
+                raise ValidationError("unable to register behavior {}, it has already been registered"
+                                      "".format(handler.resource))
 
-    def wind(self, tymth):
-        """
-        Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
-        Updates winds .tymer .tymth
-        """
-        super(Exchanger, self).wind(tymth)
+            self.routes[handler.resource] = handler
+            doers.append(handler)
+
+        super(Exchanger, self).__init__(doers=doers, **kwa)
 
 
     def processEvent(self, serder, source, sigers):
@@ -60,17 +65,18 @@ class Exchanger(doing.DoDoer):
             sigers (list) of Siger instances of attached controller indexed sigs
 
         """
-
         route = serder.ked["r"]
         payload = serder.ked["q"]
         dts = serder.ked["dt"]
 
-        behavior = self.routes[route]
-        if behavior is None:
+        if route not in self.routes:
             raise AttributeError("unregistered route {} for exchange message = {}"
                                  "".format(route, serder.pretty()))
 
-        delta = behavior.delta if behavior.delta is not None else self.delta
+        behavior = self.routes[route]
+
+        # delta = behavior.delta if behavior.delta is not None else self.delta
+        delta = self.delta
         msgDt = helping.fromIso8601(dts)
         now = helping.nowUTC()
 
@@ -79,80 +85,30 @@ class Exchanger(doing.DoDoer):
                                   "".format(delta, serder.pretty()))
 
 
+        sever = self.kevers[source.qb64]
+
+        if self.controller is not None and self.controller != source.qb64:
+            raise AuthZError("Message {} is from invalid source {}"
+                             "".format(payload, source.qb64))
+
+
+        #  Verify provided sigers using verfers
+        sigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=sever.verfers)
+        if not sever.tholder.satisfy(indices):  # at least one but not enough
+            self.escrowPSEvent(serder=serder, sigers=sigers)
+            raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
+                                        " for evt = {}.".format(sever.tholder.sith,
+                                                                [siger.qb64 for siger in sigers],
+                                                                serder.ked))
+
         msg = dict(
-            source=source,
             payload=payload,
-            serder=serder,
+            pre=source,
             sigers=sigers,
+            verfers=sever.verfers,
         )
 
         behavior.msgs.append(msg)
-
-
-    def registerBehavior(self, route, behave):
-        """
-        Creates and registers a behavior for the specified route that
-        executes the provide func.  The func needs to have the following
-        signature:
-
-           func(payload, pre, sigers, verfers)
-
-        func must return a route and return message if a response is required
-        or (None, None)
-
-
-        Parameters:
-            route (string) is the route to register
-            behave (Behavior) is the code to execute for this behavior
-        """
-
-        if route in self.routes:
-            return ValidationError("unable to register behavior {}, it has already been registered"
-                                   "".format(route))
-
-        behave.exc = self
-        self.routes[route] = behave
-
-
-    def enter(self, doers=None):
-        doers = list(doers) if doers is not None else []
-        for route, behavior in self.routes.items():
-            doers.extend([behavior.msgDo])
-
-        super(Exchanger, self).enter(doers)
-
-
-
-    def processMsgsIter(self, msgs):
-        """
-        Loop over msgs processing them one at a time.  Verifies signatures against the
-        current signing keys of the controller of pre, the identifier prefix
-
-        Parameters:
-            msgs (list) of incoming messages to process
-        """
-        while msgs:
-            msg = msgs.popleft()
-            #  load the signers kever
-
-            pre = msg['source']
-            payload = msg['payload']
-            serder = msg['serder']
-            sigers = msg['sigers']
-
-            sever = self.kevers[pre.qb64]
-
-            #  Verify provided sigers using verfers
-            sigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=sever.verfers)
-            if not sever.tholder.satisfy(indices):  # at least one but not enough
-                self.escrowPSEvent(serder=serder, sigers=sigers)
-                raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
-                                            " for evt = {}.".format(sever.tholder.sith,
-                                                                    [siger.qb64 for siger in sigers],
-                                                                    serder.ked))
-
-            yield payload, pre, sigers, sever.verfers
-
 
     def processResponseIter(self):
         """
@@ -184,91 +140,6 @@ class Exchanger(doing.DoDoer):
             sigers is list of Siger instances of indexed controller sigs
         """
         pass
-
-
-class Behavior:
-    """
-    A Behavior encapsulates the execution environment for an exchange message endpoint.
-
-
-    """
-
-    def __init__(self, func, cues=None, delta=None):
-        """
-        Creates a behavior for that executes the provide func.  The func needs
-        to have the following signature:
-
-           func(payload, pre, sigers, verfers)
-
-        func must return a route and return payload if a response is required
-        or (None, None)
-
-        Parameters:
-            func (function) code to execute when messages arrive for this behavior
-            cues (Deck):  of Cues i.e. notices of requests needing response
-            delta (timedelta): message timeout window for this behavior.  Orderrides
-              delta for Exchanger
-
-
-        """
-        self.msgs = decking.Deck()
-        self.delta = delta
-        self.cues = cues if cues is not None else decking.Deck()
-        self.func = func
-
-
-    @property
-    def exc(self):
-        return self._exc
-
-    @exc.setter
-    def exc(self, exc):
-        self._exc = exc
-
-
-    @doing.doize()
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns Doist compatibile generator method (doer dog) to process
-            .msgs deque
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add to doers list
-        """
-        while True:
-            for payload, pre, sigers, verfers in self._exc.processMsgsIter(self.msgs):
-                rr, resp = self.func(payload, pre, sigers, verfers)
-                if rr is not None:
-                    self.cueResponse(rr, resp)
-                yield  # throttle just do one msg at a time
-            yield
-        return False  # should never get here except forced close
-
-
-    def cueResponse(self, rr, resp):
-        """
-        Create a response message from the response of a behavior,
-        signs it and cues it for return
-
-        Parameters:
-              rr (string) is the return route for the response
-              resp (dict) is the response payload
-        """
-
-        excSrdr = exchange(route=rr, payload=resp)
-        self.cues.append(excSrdr)
-
 
 
 def exchange(route, payload, recipient=None, date=None, version=coring.Version, kind=coring.Serials.json):
@@ -532,8 +403,7 @@ class Mailboxer(dbing.LMDBer):
         for fn, dig in self._getFelItemPreIter(pre, fn=fn):
             try:
                 msg = self.cloneEvtMsg(dig=dig)
-            except Exception as e:
-                print(e)
+            except Exception:
                 continue  # skip this event
             yield msg
 

@@ -130,7 +130,7 @@ def test_store_exchanger():
 
         salt = coring.Salter(raw=b'0123456789abcdef').qb64
         hab = habbing.Habitat(ks=ks, db=db, salt=salt, temp=True)
-        exchr = exchanging.StoreExchanger(hab=hab, db=mber)
+        exchr = exchanging.StoreExchanger(hab=hab, mbx=mber)
 
         source = coring.Prefixer(qb64="E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E")
         siger = coring.Siger(

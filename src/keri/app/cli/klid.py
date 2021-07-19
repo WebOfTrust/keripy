@@ -23,7 +23,6 @@ def main():
             # exit first parent
             sys.exit(0)
     except OSError as e:
-        print("fork #1 failed")
         sys.exit(1)
 
     # decouple from parent environment
@@ -39,7 +38,6 @@ def main():
             print("Daemon PID", pid)
             sys.exit(0)
     except OSError as e:
-        print("fork #2 failed")
         sys.exit(1)
 
     print("starting serving...")

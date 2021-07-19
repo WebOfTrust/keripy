@@ -15,9 +15,11 @@ from hio.core.tcp import clienting
 from keri import __version__
 from keri import help
 from keri.app import habbing, keeping, directing
+from keri.core import scheming
 from keri.db import basing
 from keri.demo.demoing import VicDirector
 from keri.peer import exchanging
+from keri.vc import handling
 from keri.vdr import verifying
 
 logger = help.ogler.getLogger()
@@ -83,12 +85,16 @@ def setupController(secrets, witnessPort=5621, peerPort=5629, indirect=False):
     peerClient = clienting.Client(host='127.0.0.1', port=peerPort, wl=wl)
     peerClientDoer = clienting.ClientDoer(client=peerClient)
 
-    excDoer = exchanging.Exchanger(hab=hab)
+    jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
+    proofHandler = handling.ProofHandler(typ=jsonSchema, callback=print)
+
+    excDoer = exchanging.Exchanger(hab=hab, handlers=[proofHandler])
     director = VicDirector(hab=hab,
                            verifier=verifier,
                            witnessClient=witnessClient,
                            peerClient=peerClient,
                            exchanger=excDoer,
+                           jsonSchema=jsonSchema,
                            tock=0.125)
 
 

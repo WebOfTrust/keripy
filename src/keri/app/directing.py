@@ -395,7 +395,7 @@ class Directant(doing.DoDoer):
        ._tock is hidden attribute for .tock property
     """
 
-    def __init__(self, hab, server, verifier=None, exc=None, doers=None, **kwa):
+    def __init__(self, hab, server, verifier=None, exchanger=None, doers=None, **kwa):
         """
         Initialize instance.
 
@@ -410,7 +410,7 @@ class Directant(doing.DoDoer):
         """
         self.hab = hab
         self.verifier = verifier
-        self.exchanger = exc
+        self.exchanger = exchanger
         self.server = server  # use server for cx
         self.rants = dict()
         doers = doers if doers is not None else []

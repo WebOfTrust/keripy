@@ -8,6 +8,7 @@ from hio.base import doing
 from keri.app import keeping, habbing
 from keri.core import coring, parsing, eventing
 from keri.db import basing
+from keri.help import decking
 from keri.peer import exchanging
 
 
@@ -21,7 +22,7 @@ def test_exchanger():
             keeping.openKS(name="red") as redKS:
 
         limit = 1.0
-        tock = 1.0
+        tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
         # Init key pair managers
@@ -56,10 +57,8 @@ def test_exchanger():
         parsing.Parser().parse(ims=bytearray(sidIcpMsg), kvy=redKvy)
         assert redKvy.kevers[sidPre].sn == 0  # accepted event
 
-        redExc = exchanging.Exchanger(hab=redHab, tymth=doist.tymen())
-
-        behave = exchanging.Behavior(func=echo)
-        redExc.registerBehavior(route="/test/message", behave=behave)
+        echo = EchoDoer(tymth=doist.tymen())
+        redExc = exchanging.Exchanger(hab=redHab, tymth=doist.tymen(), handlers=[echo])
 
         pl = dict(x="y")
         sidExcSrdr = exchanging.exchange(route="/test/message", payload=pl)
@@ -82,21 +81,42 @@ def test_exchanger():
         doist.do(doers=[redExc])
         assert doist.tyme == limit
 
-        resp = behave.cues.popleft()
+        resp = echo.cues.popleft()
         respSer = coring.Serder(raw=resp.raw)
         assert respSer.ked['t'] == coring.Ilks.exn
         assert respSer.ked['r'] == "/test/messageResp"
         assert respSer.ked['q'] == dict(req=pl)
 
 
-def echo(payload, pre, sigers, verfers):
-    assert payload == dict(x="y")
-    assert pre.qb64 == "ELfzj-TkiKYWsNKk2WE8F8VEgbu3P-_HComVHcKrvGmY"
-    assert len(verfers) == 1
-    assert verfers[0].qb64 == "Djy1swBRlUIR5m16EUkc-Aj_WFCzAEbs0YpOh5IWt7kM"
-    assert len(sigers) == 1
+class EchoDoer(doing.Doer):
 
-    return "/test/messageResp", dict(req=payload)
+    resource = "/test/message"
+
+    def __init__(self, **kwa):
+
+        self.msgs = decking.Deck()
+        self.cues = decking.Deck()
+
+        super(EchoDoer, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                payload = msg["payload"]
+                pre = msg["pre"]
+                verfers = msg["verfers"]
+                sigers = msg["sigers"]
+
+                assert payload == dict(x="y")
+                assert pre.qb64 == "ELfzj-TkiKYWsNKk2WE8F8VEgbu3P-_HComVHcKrvGmY"
+                assert len(verfers) == 1
+                assert verfers[0].qb64 == "Djy1swBRlUIR5m16EUkc-Aj_WFCzAEbs0YpOh5IWt7kM"
+                assert len(sigers) == 1
+
+                self.cues.append(exchanging.exchange(route="/test/messageResp", payload=dict(req=payload)))
+                yield
+            yield
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ parser.add_argument('--name', '-n', help='Human readable reference', required=Tr
 def handler(args):
 
     name = args.name
-    with basing.openDB(name=name, temp=False) as db, \
+    with basing.openDB(name=name, temp=False, reload=True) as db, \
             keeping.openKS(name=name, temp=False) as ks:
         try:
             hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
