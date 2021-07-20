@@ -1,7 +1,7 @@
 ### Interop
 
 Demos are built on new pushes to `master`, they can be used to test integration with other core KERI libraries.
-    * [keripy](https://github.com/decentralized-identity/keripy)
+    * [keripy](https://github.com/WebOfTrust/keripy)
     * [kerigo](https://github.com/decentralized-identity/kerigo)
 
 #### Running demos
