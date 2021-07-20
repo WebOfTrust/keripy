@@ -63,7 +63,7 @@ class Habitat:
     """
 
     def __init__(self, *, name='test', ks=None, db=None,
-                 transferable=True, temp=False, erase=True,
+                 transferable=True, temp=False, erase=True, create=True,
                  **kwa):
         """
         Initialize instance.
@@ -77,6 +77,7 @@ class Habitat:
             temp is Boolean used for persistence of lmdb ks and db directories
                 and mode for key generation
             erase is Boolean True means erase private keys once stale
+            create is Boolean True means create if identifier doesn't already exist
 
         Parameters: Passed through via kwa to setup for later init
             seed (str): qb64 private-signing key (seed) for the aeid from which
@@ -110,6 +111,7 @@ class Habitat:
         self.transferable = transferable
         self.temp = temp
         self.erase = erase
+        self.create = create
         self.db = db if db is not None else basing.Baser(name=name,
                                                          temp=self.temp,
                                                          reopen=True)
@@ -196,6 +198,9 @@ class Habitat:
                 #  need to add support for algo
                 self.pre = ex.prefix
                 existing = True
+
+        if not existing and not self.create:
+            raise kering.ConfigurationError("Improper Habitat creating for create False")
 
         if salt is None:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
@@ -400,12 +405,12 @@ class Habitat:
         return msg
 
 
-    def query(self, pre, res, dt=None, dta=None, dtb=None):
+    def query(self, pre, res, dt=None, dta=None, dtb=None, sn=None):
         """
         Returns query message for querying for a single element of type res
         """
         kever = self.kever
-        serder = eventing.query(pre=pre,res=res, dt=dt, dta=dta, dtb=dtb)
+        serder = eventing.query(pre=pre, res=res, dt=dt, dta=dta, dtb=dtb, sn=sn)
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
         msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted

@@ -17,6 +17,7 @@ from hio.core.tcp import clienting, serving
 from .. import help
 from ..app import habbing, keeping, directing
 from ..core import coring, scheming
+from ..core.scheming import CacheResolver
 from ..db import basing
 from ..help import helping
 from ..peer import exchanging
@@ -73,7 +74,7 @@ def setupDemoController(secrets, name="who", remotePort=5621, localPort=5620,
     # Reactants created on demand by directant
 
     logger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
-                 hab.pre, hab.name, localPort, remotePort)
+                hab.pre, hab.name, localPort, remotePort)
 
     return [ksDoer, dbDoer, habDoer, wireDoer, clientDoer, director, reactor,
             serverDoer, directant]
@@ -137,12 +138,12 @@ class BobDirector(directing.Director):
             tyme = (yield (self.tock))
 
             msg = self.hab.rotate()  # Rotation Event
-            self.client.tx(msg)   # send to connected remote
+            self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
             msg = self.hab.interact()  # Interaction event
-            self.client.tx(msg)   # send to connected remote
+            self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
@@ -154,7 +155,7 @@ class BobDirector(directing.Director):
             msgs.append(self.hab.interact())  # Interaction event
             msgs.append(self.hab.rotate())  # Rotation event
             msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.interact()) # Interaction event
+            msgs.append(self.hab.interact())  # Interaction event
             msgs.append(self.hab.rotate())  # Rotation event
             msgs.append(self.hab.rotate())  # Rotation event
             msgs.append(self.hab.rotate())  # Rotation event
@@ -163,10 +164,9 @@ class BobDirector(directing.Director):
             msgs.reverse()  # reverse the order
 
             for msg in msgs:
-                self.client.tx(msg)   # send to connected remote
+                self.client.tx(msg)  # send to connected remote
                 logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
                 tyme = (yield (self.tock))
-
 
             tyme = (yield (self.tock))
 
@@ -179,7 +179,7 @@ class BobDirector(directing.Director):
         finally:  # exit context,  unforced exit due to normal exit of try
             pass
 
-        return True # return value of yield from, or yield ex.value of StopIteration
+        return True  # return value of yield from, or yield ex.value of StopIteration
 
 
 class SamDirector(directing.Director):
@@ -340,6 +340,7 @@ class IanDirector(directing.Director):
             associated Tymist instance that returns Tymist .tyme. when called.
        ._tock is hidden attribute for .tock property
     """
+
     def __init__(self, recipientIdentifier, lei, hab, issuer, witnessClient, peerClient, **kwa):
         super().__init__(hab, witnessClient, **kwa)
         self.peerClient = peerClient
@@ -356,7 +357,6 @@ class IanDirector(directing.Director):
         """
         super(IanDirector, self).wind(tymth)
         self.peerClient.wind(tymth)
-
 
     def do(self, tymth=None, tock=0.0, **opts):
         """
@@ -412,9 +412,11 @@ class IanDirector(directing.Director):
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield self.tock)
 
-
             now = helping.nowIso8601()
-            schemer, jsonSchema = jsonSchemaCache()
+            jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
+            ref = scheming.jsonSchemaCache.resolve("EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY")
+            schemer = scheming.Schemer(raw=ref)
+
             # Build the credential subject and then the Credentialer for the full credential
             credSubject = dict(
                 id=self.recipientIdentifier,  # this needs to be generated from a KEL
@@ -527,11 +529,13 @@ class HanDirector(directing.Director):
             associated Tymist instance that returns Tymist .tyme. when called.
        ._tock is hidden attribute for .tock property
     """
+
+    issuerpre = "ExwBAYqvPpaPpGmBCixIiC_xpcDto8YUxLoNJgE2FOKo"
+
     def __init__(self, wallet, hab, client, exchanger, **kwa):
         super().__init__(hab, client, **kwa)
         self.wallet = wallet
         self.exchanger = exchanger
-
 
     def do(self, tymth=None, tock=0.0, **opts):
         """
@@ -542,26 +546,20 @@ class HanDirector(directing.Director):
             # enter context
             self.wind(tymth)  # change tymist and dependencies
             self.tock = tock
-            # tyme = self.tyme
+            tyme = (yield self.tock)  # yields tock then waits
 
-            # Create resource exn message handler and register
-            schemer, jsonSchema = jsonSchemaCache()
-            issueHandler = handling.IssueHandler(wallet=self.wallet, typ=jsonSchema)
-            self.exchanger.registerBehavior(route=issueHandler.resource, behave=issueHandler.behavior)
-            requestHandler = RequestHandler(wallet=self.wallet, typ=jsonSchema)
-            self.exchanger.registerBehavior(route=requestHandler.resource, behave=requestHandler.behavior)
-
-            # recur context
-            tyme = (yield (self.tock))  # yields tock then waits
-
-            while (not self.client.connected):
+            while not self.client.connected:
                 logger.info("%s:\n waiting for connection to remote %s.\n\n",
                             self.hab.pre, self.client.ha)
-                tyme = (yield (self.tock))
+                tyme = (yield self.tock)
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
-            self.sendOwnInception()  # Inception Event
+            msg = self.hab.query(self.issuerpre, res="logs")  # Query for remote pre Event
+            self.client.tx(msg)  # send to connected remote
+            logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
+            tyme = (yield (self.tock))
+
             (yield self.tock)
 
 
@@ -611,7 +609,7 @@ class VicDirector(directing.Director):
        ._tock is hidden attribute for .tock property
     """
 
-    def __init__(self, hab, witnessClient, peerClient, verifier, exchanger, **kwa):
+    def __init__(self, hab, witnessClient, peerClient, verifier, exchanger, jsonSchema, **kwa):
         """
 
             verifier is Verifier instance of local controller's TEL context
@@ -620,10 +618,10 @@ class VicDirector(directing.Director):
         self.peerClient = peerClient
         self.verifier = verifier
         self.exchanger = exchanger
+        self.jsonSchema = jsonSchema
         self.presentations = []
         if self.tymth:
             self.peerClient.wind(self.tymth)
-
 
     def do(self, tymth=None, tock=0.0, **opts):
         """
@@ -634,19 +632,13 @@ class VicDirector(directing.Director):
             # enter context
             self.wind(tymth)  # change tymist and dependencies
             self.tock = tock
-            # tyme = self.tyme
 
-            schemer, jsonSchema = jsonSchemaCache()
-            proofHandler = handling.ProofHandler(typ=jsonSchema, callback=self.verifiyCredential)
-            self.exchanger.registerBehavior(route=proofHandler.resource, behave=proofHandler.behavior)
+            tyme = (yield self.tock)  # yields tock then waits
 
-            # recur context
-            tyme = (yield (self.tock))  # yields tock then waits
-
-            while (not self.client.connected):
+            while not self.client.connected:
                 logger.info("%s:\n waiting for connection to remote %s.\n\n",
                             self.hab.pre, self.client.ha)
-                tyme = (yield (self.tock))
+                tyme = (yield self.tock)
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
@@ -662,6 +654,9 @@ class VicDirector(directing.Director):
             self.peerClient.tx(msg)
             logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(msg))
             tyme = (yield self.tock)
+
+            ref = scheming.jsonSchemaCache.resolve("EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY")
+            schemer = scheming.Schemer(raw=ref)
 
             pl = dict(
                 input_descriptors=[
@@ -688,7 +683,7 @@ class VicDirector(directing.Director):
             body = vc["d"]
             proof = bytearray(presentation["proof"].encode("utf-8"))
 
-            creder = proving.Credentialer(crd=vc, typ=jsonSchema)
+            creder = proving.Credentialer(crd=vc, typ=self.jsonSchema)
             prefixer, seqner, diger, isigers = walleting.parseProof(proof)
 
             vcid = creder.said
@@ -703,7 +698,6 @@ class VicDirector(directing.Director):
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-
             logger.info("Loading Registry and Credential TEL")
             msg = self.verifier.query(regk,
                                       vcid,
@@ -716,7 +710,6 @@ class VicDirector(directing.Director):
                 logger.info("%s:\n waiting for retrieval of TEL %s.\n\n",
                             self.hab.pre, regk)
                 tyme = (yield (self.tock))
-
 
             valid = self.hab.verify(creder, prefixer, seqner, diger, isigers)
             if valid is True:
@@ -739,7 +732,6 @@ class VicDirector(directing.Director):
             pass
 
         return True  # return value of yield from, or yield ex.value of StopIteration
-
 
     def verifiyCredential(self, issuer, presentation):
         logger.info("%s: \n received presentation from %s\n\n", self.hab.pre, issuer.qb64)
@@ -793,8 +785,6 @@ class VicDirector(directing.Director):
         #
 
 
-
-
 class CamDirector(directing.Director):
     """
     Direct Mode KERI Director (Contextor, Doer) with TCP Client and Kevery
@@ -832,7 +822,6 @@ class CamDirector(directing.Director):
     def __init__(self, remotePre, hab, client, **kwa):
         super().__init__(hab, client, **kwa)
         self.remotePre = remotePre
-
 
     def do(self, tymth=None, tock=0.0, **opts):
         """
@@ -940,29 +929,3 @@ class EveDirector(directing.Director):
             pass
 
         return True  # return value of yield from, or yield ex.value of StopIteration
-
-
-def jsonSchemaCache():
-    sed = dict()
-    sed["$id"] = ""
-    sed["$schema"] = "http://json-schema.org/draft-07/schema#"
-    sed.update(dict(
-        type="object",
-        properties=dict(
-            id=dict(
-                type="string"
-            ),
-            lei=dict(
-                type="string"
-            )
-        )
-    ))
-
-    schemer = scheming.Schemer(sed=sed, code=coring.MtrDex.Blake3_256)
-
-    cache = scheming.CacheResolver()
-    cache.add(schemer.said, schemer.raw)
-    jsonSchema = scheming.JSONSchema(resolver=cache)
-
-    return schemer, jsonSchema
-

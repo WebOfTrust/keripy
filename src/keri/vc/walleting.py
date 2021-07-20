@@ -9,9 +9,12 @@ from ..core.scheming import JSONSchema, CacheResolver
 from ..db import dbing, koming
 from ..kering import ShortageError, ColdStartError, ExtractionError, UnverifiedProofError
 from ..vc.proving import Credentialer
+from .. import help
 
 # TODO: create this and populate with needed schema for now
 cache = CacheResolver()
+
+logger = help.ogler.getLogger()
 
 
 def openPocket(name="test", **kwa):
@@ -555,6 +558,8 @@ class Wallet:
         self.db.addIssu(key=issuer, val=said)
         self.db.addSubj(key=subject, val=said)
         self.db.addSchm(key=schema, val=said)
+
+        logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
 
 
 

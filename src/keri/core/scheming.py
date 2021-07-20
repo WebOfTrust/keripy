@@ -24,7 +24,6 @@ Idage = namedtuple("Idage", "dollar at id i")
 Ids = Idage(dollar="$id", at="@id", id="id", i="i")
 
 
-
 class CacheResolver:
     """
     Sample jsonschema resolver for loading schema $ref references from a local hash.
@@ -78,6 +77,15 @@ class CacheResolver:
 
         """
         return jsonschema.RefResolver("", scer, handlers={"did": self.handler})
+
+
+
+jsonSchemaCache = CacheResolver(cache={
+    "EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY": (b'{"$id":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY",'
+                                                     b'"$schema":"http://json-schema.org/draft-07/schema#",'
+                                                     b'"type":"object","properties":{"id":{"type":"string"},'
+                                                     b'"lei":{"type":"string"}}}')
+})
 
 
 class JSONSchema:

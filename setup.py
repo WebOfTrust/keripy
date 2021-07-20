@@ -73,7 +73,7 @@ setup(
     install_requires=[
                         'lmdb>=1.2.1',
                         'pysodium>=0.7.8',
-                        'blake3>=0.1.8',
+                        'blake3==0.1.8',
                         'msgpack>=1.0.2',
                         'cbor2>=5.4.0',
                         'multidict>=5.1.0',

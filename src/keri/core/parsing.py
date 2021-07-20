@@ -339,9 +339,9 @@ class Parser:
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Parser msg non-extraction error: %s\n", ex.args[0])
+                    logger.exception("XParser msg non-extraction error: %s\n", ex)
                 else:
-                    logger.error("Parser msg non-extraction error: %s\n", ex.args[0])
+                    logger.error("XParser msg non-extraction error: %s\n", ex)
             yield
 
         return True
@@ -547,7 +547,7 @@ class Parser:
         if cold in (Colds.txt, Colds.bny):  # not message error out to flush stream
             # replace with pipelining here once CESR message format supported.
             raise kering.ColdStartError("Expecting message counter tritet={}"
-                                 "".format(cold))
+                                        "".format(cold))
         # Otherwise its a message cold start
         while True:# extract and deserialize message from ims
             try:
@@ -888,7 +888,7 @@ class Parser:
             args = dict(serder=serder)
             if ssgs:
                 pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
-                args["pre"] = pre
+                args["source"] = pre
                 args["sigers"] = sigers
 
             elif cigars:
@@ -901,7 +901,7 @@ class Parser:
             try:
                 exc.processEvent(**args)
 
-            except AttributeError:
+            except AttributeError as e:
                 raise kering.ValidationError("No Exchange to process so dropped msg"
                                              "= {}.".format(serder.pretty()))
 

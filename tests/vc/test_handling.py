@@ -61,9 +61,7 @@ def test_issuing():
         # Create Red's wallet and Issue Handler for receiving the credential
         redWallet = Wallet(hab=sidHab, db=redPDB)
         redIssueHandler = IssueHandler(wallet=redWallet, typ=jsonSchema)
-
-        redExc = exchanging.Exchanger(hab=sidHab, tymth=doist.tymen())
-        redExc.registerBehavior(route=redIssueHandler.resource, behave=redIssueHandler.behavior)
+        redExc = exchanging.Exchanger(hab=sidHab, tymth=doist.tymen(), handlers=[redIssueHandler])
 
         # Build the credential subject and then the Credentialer for the full credential
         credSubject = dict(
@@ -91,7 +89,7 @@ def test_issuing():
 
         # Create the issue credential payload
         pl = dict(
-            verifiableCredential=[envelope(msg, typ=jsonSchema)]
+            vc=[envelope(msg, typ=jsonSchema)]
         )
 
         # Create the `exn` message for issue credential
@@ -211,9 +209,7 @@ def test_proving():
 
         # Create Red's wallet and Issue Handler for receiving the credential
         hanRequestHandler = RequestHandler(wallet=hanWallet, typ=jsonSchema)
-
-        hanExc = exchanging.Exchanger(hab=hanHab, tymth=doist.tymen())
-        hanExc.registerBehavior(route=hanRequestHandler.resource, behave=hanRequestHandler.behavior)
+        hanExc = exchanging.Exchanger(hab=hanHab, tymth=doist.tymen(), handlers=[hanRequestHandler])
 
         # Create the issue credential payload
         pl = dict(
@@ -231,7 +227,7 @@ def test_proving():
         doist.do(doers=[hanExc])
         assert doist.tyme == limit
 
-        resp = hanRequestHandler.behavior.cues.popleft()
+        resp = hanRequestHandler.cues.popleft()
         assert resp is not None
 
         respSer = coring.Serder(raw=resp.raw)
