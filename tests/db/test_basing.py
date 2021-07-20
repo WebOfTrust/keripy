@@ -1743,7 +1743,7 @@ def test_clean_baser():
         assert ldig == natHab.kever.serder.digb
         serder = coring.Serder(raw=bytes(natHab.db.getEvt(dbing.dgKey(natHab.pre,ldig))))
         assert serder.dig == natHab.kever.serder.dig
-        state = natHab.db.stts.get(keys=natHab.pre)  # Serder instance
+        state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.sn == 6
         assert state.ked["f"] == '6'
         assert natHab.db.env.stat()['entries'] == 21
@@ -1770,7 +1770,7 @@ def test_clean_baser():
                                        sith=2,
                                        nxt=natHab.kever.nexter.qb64)
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
-            natHab.db.stts.pin(keys=natHab.pre, val=natHab.kever.state())
+            natHab.db.states.pin(keys=natHab.pre, val=natHab.kever.state())
 
             assert fn == 7
             # verify garbage event in database
@@ -1810,7 +1810,7 @@ def test_clean_baser():
             # confirm bad event missing from database
             assert not natHab.db.getEvt(dbing.dgKey(natHab.pre,badsrdr.dig))
             assert not natHab.db.getFe(dbing.fnKey(natHab.pre, 7))
-            state = natHab.db.stts.get(keys=natHab.pre)  # Serder instance
+            state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
             assert state.sn == 6
             assert state.ked["f"] == '6'
 
@@ -2071,8 +2071,8 @@ def test_dbdict():
         dgkey = eventing.dgKey(pre=pre, dig=serder.dig)
         db.putEvt(key=dgkey, val=serder.raw)
         assert db.getEvt(key=dgkey) is not None
-        db.stts.pin(keys=pre, val=state)  # put state in database
-        assert db.stts.get(keys=pre) is not None
+        db.states.pin(keys=pre, val=state)  # put state in database
+        assert db.states.get(keys=pre) is not None
 
         kever = eventing.Kever(state=state, db=db)
         assert kever.state().ked == state.ked
@@ -2087,7 +2087,7 @@ def test_dbdict():
         dstate = dkever.state()
         assert  dstate.ked == state.ked
 
-        db.stts.rem(keys=pre)
+        db.states.rem(keys=pre)
         assert pre in dbd  # still in memory
         del dbd[pre]
         assert pre not in dbd  # not in memory or db so read through cache misses

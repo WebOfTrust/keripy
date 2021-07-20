@@ -1467,9 +1467,9 @@ def test_kever(mockHelpingNowUTC):
         assert kever.sn == 0
         assert [verfer.qb64 for verfer in kever.verfers] == [skp0.verfer.qb64]
         assert kever.nexter.qb64 == nexter.qb64
-        state = kever.db.stts.get(keys=kever.prefixer.qb64)
+        state = kever.db.states.get(keys=kever.prefixer.qb64)
         assert state.sn == kever.sn == 0
-        feqner = kever.db.fons.get(keys=(kever.prefixer.qb64, kever.serder.dig))
+        feqner = kever.db.firsts.get(keys=(kever.prefixer.qb64, kever.serder.dig))
         assert feqner.sn == kever.sn
 
         serderK = kever.state()
@@ -4202,7 +4202,7 @@ def test_reload_kever(mockHelpingNowUTC):
         assert serder.dig == natHab.kever.serder.dig
         nstate = natHab.kever.state()
 
-        state = natHab.db.stts.get(keys=natHab.pre)  # Serder instance
+        state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.pretty() == ('{\n'
                             ' "v": "KERI10JSON00023f_",\n'
                             ' "i": "E5lskf_uSh7ymhplif9nKREEsuwbBfHbHTJuMZyV6Fls",\n'

@@ -60,7 +60,7 @@ class dbdict(dict):
         except KeyError as ex:
             if not self.db:
                 raise ex  # reraise KeyError
-            if (state := self.db.stts.get(keys=k)) is None:
+            if (state := self.db.states.get(keys=k)) is None:
                 raise ex  # reraise KeyError
             try:
                 kever = eventing.Kever(state=state, db=self.db)
@@ -383,8 +383,8 @@ class Baser(dbing.LMDBer):
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
-        self.fons = subing.MatterSuber(db=self, subkey='fons.', klas=coring.Seqner)
-        self.stts = subing.SerderSuber(db=self, subkey='stts.')  # key states
+        self.firsts = subing.MatterSuber(db=self, subkey='fons.', klas=coring.Seqner)
+        self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
 
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
@@ -400,7 +400,7 @@ class Baser(dbing.LMDBer):
         """
         removes = []
         for keys, data in self.habs.getItemIter():
-            if (state := self.stts.get(keys=data.prefix)) is not None:
+            if (state := self.states.get(keys=data.prefix)) is not None:
                 try:
                     kever = eventing.Kever(state=state, db=self)
                 except kering.MissingEntryError as ex:  # no kel event for keystate

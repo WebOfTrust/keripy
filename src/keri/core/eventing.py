@@ -1385,7 +1385,7 @@ class Kever:
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fn = fn
             self.dater = Dater(dts=dts)
-            self.db.stts.pin(keys=self.prefixer.qb64, val=self.state())
+            self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
 
     @property
@@ -1621,7 +1621,7 @@ class Kever:
             if fn is not None:  # first is non-idempotent for fn check mode fn is None
                 self.fn = fn
                 self.dater = Dater(dts=dts)
-                self.db.stts.pin(keys=self.prefixer.qb64, val=self.state())
+                self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
 
         elif ilk == Ilks.ixn:  # subsequent interaction event
@@ -1668,7 +1668,7 @@ class Kever:
             if fn is not None: # first is non-idempotent for fn check mode fn is None
                 self.fn = fn
                 self.dater = Dater(dts=dts)
-                self.db.stts.pin(keys=self.prefixer.qb64, val=self.state())
+                self.db.states.pin(keys=self.prefixer.qb64, val=self.state())
 
         else:  # unsupported event ilk so discard
             raise ValidationError("Unsupported ilk = {} for evt = {}.".format(ilk, ked))
@@ -2053,7 +2053,7 @@ class Kever:
             if dater:  # cloned replay use original's dts from dater
                 dtsb = dater.dtsb
             self.db.setDts(dgkey, dtsb)  # first seen so set dts to now
-            self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
+            self.db.firsts.pin(keys=dgkey, val=Seqner(sn=fn))
             logger.info("Kever state: %s First seen ordinal %s at %s\nEvent=\n%s\n",
                          serder.preb, fn, dtsb.decode("utf-8"), serder.pretty())
         self.db.addKe(snKey(serder.preb, serder.sn), serder.digb)
