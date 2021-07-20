@@ -239,6 +239,7 @@ class Reactor(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
@@ -264,6 +265,7 @@ class Reactor(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
                 self.sendMessage(msg, label="chit or receipt")
@@ -292,6 +294,7 @@ class Reactor(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         while True:
             for msg in self.exc.processResponseIter():
                 self.sendMessage(msg, label="response")
@@ -322,6 +325,7 @@ class Reactor(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         while True:
             self.kevery.processEscrows()
             yield
@@ -449,6 +453,7 @@ class Directant(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         while True:
             for ca, ix in list(self.server.ixes.items()):
                 if ix.cutoff:
@@ -618,6 +623,7 @@ class Reactant(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         if self.parser.ims:
             logger.info("Server %s: %s received:\n%s\n...\n", self.hab.name,
                         self.hab.pre, self.parser.ims[:1024])
@@ -645,6 +651,7 @@ class Reactant(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
                 self.sendMessage(msg, label="chit or receipt or replay")
@@ -673,6 +680,7 @@ class Reactant(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         while True:
             for msg in self.verifier.processCuesIter(self.tevery.cues):
                 self.sendMessage(msg, label="replay")
@@ -701,6 +709,7 @@ class Reactant(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         while True:
             for msg in self.exchanger.processResponseIter():
                 self.sendMessage(msg, label="response")
@@ -729,6 +738,7 @@ class Reactant(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         while True:
             self.kevery.processEscrows()
             yield

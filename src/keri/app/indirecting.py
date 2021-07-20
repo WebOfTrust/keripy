@@ -177,6 +177,7 @@ class Indirector(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.hab.pre, self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
@@ -203,6 +204,7 @@ class Indirector(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
                 self.sendMessage(msg, label="chit or receipt")
@@ -231,6 +233,7 @@ class Indirector(doing.DoDoer):
         Usage:
             add to doers list
         """
+        yield  # enter context
         while True:
             self.kevery.processEscrows()
             yield
