@@ -678,7 +678,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         #  verify final event states
 
 
-        doist.close()
+        doist.exit()
         assert samClient.opened is False
         assert samServer.opened is False
         assert camClient.opened is False

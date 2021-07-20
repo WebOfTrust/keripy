@@ -2853,7 +2853,7 @@ class Kevery:
         in cigars and/or attached trans indexed sig groups in tsgs
 
         Parameters:
-            serder is chit serder (transferable validator receipt message)
+            serder is receipt serder
             cigars is list of Cigar instances that contain receipt couple
                 signature in .raw and public key in .verfer
             tsgs is list of tuples (quadruples) of form
@@ -2869,14 +2869,45 @@ class Kevery:
         pre = serder.pre
         sn = self.validateSN(ked)
 
-        # key state acceptance mode needs to be defined.
-        # unverified key state from trusted endorsers we accept if endorsed
-        # verified key state from any endorser, endorser sig provides duplicity
-        # detection of malicious endorsers. We only accept key state if it
-        # verifies agains its KEL and escrow key state if KEL incomplete.
-        # need to change logic below
+        """
+        Discussion
 
-        #  may want to separate into two different functions
+        key state acceptance mode needs to be defined.
+        unconfirmed but trusted key state:
+           from trusted endorsers we accept if endorsed. Need list of trusted
+           trusted endorsers
+        confirmed key state:
+           from any endorser, endorser sig provides duplicity
+        detection of malicious endorsers. We drope key state message if its
+        digest does not match agains its KEL stored locally and escrow key state
+        message if its local KEL is incomplete.
+        need to change logic below
+
+         may want to separate into two different functions one for unconfirmed
+         keystate notices from trusted endorsers (always authenticate endorser)
+
+         two classes of escrow. May be staged.
+         1) Endorser is transferable and we do not have
+         KEL of endorser so can't verify its signature yet
+         2) Endorser is untrusted and we do not have KEL of keystate notice so
+         can't confirm that keystate is matches local copy of KEL
+
+        Start with authorized watchers (endorsers) in .wats database. This is
+        for Judge application also for standard controller need to lookup
+        So each Habitat has a .watchers .wats set The set is persisted in an
+        applicaton database of application configuration data. So for ordered list
+        use ordinal
+
+        Also authorized by default are witnesses if habitat is one that has
+        witnesses so watcher set could default to witness set.
+
+        Need to define the workflow
+        request keystate from watcher in order to verifiy siganture of some XX
+        truster watcher keystate so download KEL
+        once KEL downloaded then verify
+
+
+        """
 
         # Only accept key state if for last seen version of event at sn
         ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
