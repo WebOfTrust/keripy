@@ -369,7 +369,7 @@ There are currently two types of messages the KERI protocol uses Events and Rece
 
 ### Events
 Events contain information about a controllers identifier and it's current or past key state. 
-See [KID0003](https://github.com/decentralized-identity/keri/blob/master/kids/kid0003.md#element-labels) for 
+See [KID0003](https://github.com/WebOfTrust/keri/blob/master/kids/kid0003.md#element-labels) for 
 explanations of the different keys meanings.  There are several types of event messages including:
 
 * inception

@@ -38,7 +38,7 @@ setup(
     long_description="KERI Decentralized Key Management Infrastructure",
     author='Samuel M. Smith',
     author_email='smith.samuel.m@gmail.com',
-    url='https://github.com/decentralized-identity/keripy',
+    url='https://github.com/WebOfTrust/keripy',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
@@ -64,7 +64,7 @@ setup(
     project_urls={
         'Documentation': 'https://keri.readthedocs.io/',
         'Changelog': 'https://keri.readthedocs.io/en/latest/changelog.html',
-        'Issue Tracker': 'https://github.com/decentralized-identity/keripy/issues',
+        'Issue Tracker': 'https://github.com/WebOfTrust/keripy/issues',
     },
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
