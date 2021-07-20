@@ -624,6 +624,7 @@ class Reactant(doing.DoDoer):
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
+
     @doing.doize()
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """

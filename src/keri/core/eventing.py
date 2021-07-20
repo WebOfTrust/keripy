@@ -2894,6 +2894,15 @@ class Kevery:
         applicaton database of application configuration data. So for ordered list
         use ordinal
 
+        Also authorized by default are witnesses if habitat is one that has
+        witnesses so watcher set could default to witness set.
+
+        Need to define the workflow
+        request keystate from watcher in order to verifiy siganture of some XX
+        truster watcher keystate so download KEL
+        once KEL downloaded then verify
+
+
         """
 
         # Only accept key state if for last seen version of event at sn
