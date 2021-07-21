@@ -545,7 +545,7 @@ class Wallet:
         said = creder.said.encode("utf-8")
         schema = creder.schema.encode("utf-8")
         issuer = creder.issuer.encode("utf-8")
-        subject = creder.subject["id"].encode("utf-8")
+        subject = creder.subject["i"].encode("utf-8")
         raw = creder.raw
         self.db.putSers(key=said, val=raw)
 
@@ -560,6 +560,7 @@ class Wallet:
         self.db.addSchm(key=schema, val=said)
 
         logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
+        logger.info(creder.pretty())
 
 
 

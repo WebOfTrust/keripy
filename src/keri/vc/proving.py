@@ -95,8 +95,8 @@ class Credentialer:
             scer = self._typ.resolve(self.crd["x"])
             schemer = Schemer(raw=scer, typ=self._typ)
 
-            if not schemer.verify(subr):
-                raise ValidationError("subject is not valid against the schema")
+            # if not schemer.verify(subr):
+            #     raise ValidationError("subject is not valid against the schema")
         except ValueError:
             logger.info("unable to load / validate schema")
 
