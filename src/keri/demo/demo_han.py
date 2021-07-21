@@ -125,7 +125,7 @@ def parseArgs(version=__version__):
 def main():
     args = parseArgs(version=__version__)
 
-    help.ogler.level = logging.INFO
+    help.ogler.level = logging.CRITICAL
     help.ogler.reopen(name="han", temp=True, clear=True)
 
     logger = help.ogler.getLogger()

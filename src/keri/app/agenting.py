@@ -378,6 +378,7 @@ class IssueCredentialHandler(doing.DoDoer):
                 recipientIdentifier = payload["recipient"]
                 credSubject = payload["data"]
                 schema = payload["schema"]
+                # source = payload["source"]
 
                 recptAddy = obtaining.getendpointbyprefix(recipientIdentifier)
                 rcptClient = clienting.Client(host=recptAddy.ip4, port=recptAddy.tcp)

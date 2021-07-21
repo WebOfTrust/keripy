@@ -5,14 +5,13 @@ keri.core.scheming module
 self-addressing and schema support
 """
 
-import blake3
 import hashlib
-import jsonschema
-
+import json
 from collections import namedtuple
 
-import json
+import blake3
 import cbor2 as cbor
+import jsonschema
 import msgpack
 
 from . import coring
@@ -80,65 +79,69 @@ class CacheResolver:
 
 
 jsonSchemaCache = CacheResolver(cache={
-    "EZuJ_R22_paUOOWfgczs1f97Cjc27t5BbUZ7LTYKqL8M": (
-        b'{"$id": "EZuJ_R22_paUOOWfgczs1f97Cjc27t5BbUZ7LTYKqL8M", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
-        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
-        b'"credentialStatus": {"type": "string"}, "i": {"type": "string"}, "issuanceDate": {"format": "date-time", '
-        b'"type": "string"}, "type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", '
-        b'"type"], "type": "object"}, "i": {"type": "string"}, "ti": {"type": "string"}, "x": {"description": "schema '
-        b'block", "type": "string"}}, "required": ["i", "d"], "type": "object"} '
+    "Ek6vA-fVXDRbraVi7a9ydKStHiByUoF37Cgz4L58LWds": (
+        b'{"$id": "Ek6vA-fVXDRbraVi7a9ydKStHiByUoF37Cgz4L58LWds", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "title": "GLEIFvLEICredential", "type": "object", "properties": '
+        b'{"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, "x": {"description": "schema '
+        b'block", "type": "string"}, "d": {"description": "data block", "properties": {"i": {"type": "string"}, '
+        b'"si": {"type": "string"}, "issuanceDate": {"format": "date-time", "type": "string"}, "credentialStatus": {'
+        b'"type": "string"}, "LEI": {"type": "string"}, "type": {"contains": {"const": "GLEIFvLEICredential"}, '
+        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "issuanceDate", "credentialStatus", '
+        b'"LEI", "type"], "type": "object"}}, "additionalProperties": false, "required": ["i", "d"]} '
     ),
-    "E0yExNehx5Ow0wAO8bBtAhGiBgtV0Uqw2qEToo0JtvPQ": (
-        b'{"$id": "E0yExNehx5Ow0wAO8bBtAhGiBgtV0Uqw2qEToo0JtvPQ", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
-        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
-        b'"credentialStatus": {"type": "string"}, "gracePeriod": {"default": 90, "type": "integer"}, "i": {"type": '
-        b'"string"}, "issuanceDate": {"format": "date-time", "type": "string"}, "type": {"type": "array"}}, '
-        b'"required": ["i", "LEI", "credentialStatus", "issuanceDate", "type"], "type": "object"}, "i": {"type": '
-        b'"string"}, "ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ['
-        b'"i", "d"], "type": "object"} '
+    "EZdaE1HCu2ZhyIhpXTWfGSLS2kirKexaC-4up3sIUz1I": (
+        b'{"$id": "EZdaE1HCu2ZhyIhpXTWfGSLS2kirKexaC-4up3sIUz1I", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "title": "LegalEntityEngagementContextRolevLEICredential", '
+        b'"properties": {"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, '
+        b'"x": {"description": "schema block", "type": "string"}, "d": {"description": "data block", "properties": {'
+        b'"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": "date-time", '
+        b'"type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, "personLegalName": {'
+        b'"type": "string"}, "engagementContextRole": {"type": "string"}, "type": {"contains": {"const": '
+        b'"LegalEntityEngagementContextRolevLEICredential"}, "type": "array"}}, "additionalProperties": false, '
+        b'"required": ["i", "issuanceDate", "credentialStatus", "LEI", "personLegalName", "engagementContextRole", '
+        b'"type"], "type": "object"}, "s": {"contains": {"type": "object"}, "description": "source block", '
+        b'"items": {"properties": {"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": '
+        b'false, "required": ["qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, '
+        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} '
     ),
-    "EhBgABCetzS1CnraVpevYm0TjgTSmINxCWv-gl6GTD5s": (
-        b'{"$id": "EhBgABCetzS1CnraVpevYm0TjgTSmINxCWv-gl6GTD5s", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
-        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
-        b'"credentialStatus": {"type": "string"}, "i": {"type": "string"}, "issuanceDate": {"format": "date-time", '
-        b'"type": "string"}, "type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", '
-        b'"type"], "type": "object"}, "i": {"type": "string"}, "s": {"contains": {"type": "object"}, "description": '
-        b'"source block", "items": {"additionalProperties": false, "properties": {'
-        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "required": ['
-        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}, '
-        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ["i", "s", '
-        b'"d"], "type": "object"} '
+    "EDg-Ji3kmi_G97Jctxeajpmp1-A8gSpeyElm-XCzTxiE": (
+        b'{"$id": "EDg-Ji3kmi_G97Jctxeajpmp1-A8gSpeyElm-XCzTxiE", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "title": "LegalEntityOfficialOrganizationalRolevLEICredential", '
+        b'"properties": {"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, '
+        b'"x": {"description": "schema block", "type": "string"}, "d": {"description": "data block", "properties": {'
+        b'"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": "date-time", '
+        b'"type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, "personLegalName": {'
+        b'"type": "string"}, "officialRole": {"type": "string"}, "type": {"contains": {"const": '
+        b'"LegalEntityOfficialOrganizationalRolevLEICredential"}, "type": "array"}}, "additionalProperties": false, '
+        b'"required": ["i", "issuanceDate", "credentialStatus", "LEI", "personLegalName", "officialRole", "type"], '
+        b'"type": "object"}, "s": {"contains": {"type": "object"}, "description": "source block", "items": {'
+        b'"properties": {"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": false, '
+        b'"required": ["qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, '
+        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} '
     ),
-    "EfocvG7mOFXV1wfNORp-JN89odFbmX7HjyvnIXxOsIEs": (
-        b'{"$id": "EfocvG7mOFXV1wfNORp-JN89odFbmX7HjyvnIXxOsIEs", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
-        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
-        b'"credentialStatus": {"type": "string"}, "i": {"type": "string"}, "issuanceDate": {"format": "date-time", '
-        b'"type": "string"}, "officialRole": {"type": "string"}, "personLegalName": {"type": "string"}, '
-        b'"type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", "type", '
-        b'"personLegalName", "officialRole"], "type": "object"}, "i": {"type": "string"}, "s": {"contains": {"type": '
-        b'"object"}, "description": "source block", "items": {"additionalProperties": false, "properties": {'
-        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "required": ['
-        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}, '
-        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ["i", "s", '
-        b'"d"], "type": "object"} '
+    "E46jrVPTzlSkUPqGGeIZ8a8FWS7a6s4reAXRZOkogZ2A": (
+        b'{"$id": "E46jrVPTzlSkUPqGGeIZ8a8FWS7a6s4reAXRZOkogZ2A", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "properties": {"v": {"type": "string"}, "i": {"type": "string"}, '
+        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, "d": {"description": '
+        b'"data block", "properties": {"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": '
+        b'"date-time", "type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, '
+        b'"type": {"contains": {"const": "LegalEntityvLEICredential"}, "type": "array"}}, "additionalProperties": '
+        b'false, "required": ["i", "issuanceDate", "credentialStatus", "LEI", "type"], "type": "object"}, '
+        b'"s": {"contains": {"type": "object"}, "description": "source block", "items": {"properties": {'
+        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": false, "required": ['
+        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}}, '
+        b'"additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} '
     ),
-    "E0bBKiTszAgUgc6MQ71mfPeBweh4_audw_UfaSNyj8ws": (
-        b'{"$id": "E0bBKiTszAgUgc6MQ71mfPeBweh4_audw_UfaSNyj8ws", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
-        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
-        b'"credentialStatus": {"type": "string"}, "engagementContextRole": {"type": "string"}, "i": {"type": '
-        b'"string"}, "issuanceDate": {"format": "date-time", "type": "string"}, "personLegalName": {"type": '
-        b'"string"}, "type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", "type", '
-        b'"personLegalName", "engagementContextRole"], "type": "object"}, "i": {"type": "string"}, "s": {"contains": '
-        b'{"type": "object"}, "description": "source block", "items": {"additionalProperties": false, "properties": {'
-        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "required": ['
-        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}, '
-        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ["i", "s", '
-        b'"d"], "type": "object"} '
+    "ECcj1CBn4dpo6ZOmZQNtAjXxT4_MsVXipt5VTPjvSAf0": (
+        b'{"$id": "ECcj1CBn4dpo6ZOmZQNtAjXxT4_MsVXipt5VTPjvSAf0", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "properties": {"v": {"type": "string"}, "i": {"type": "string"}, '
+        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, "d": {"description": '
+        b'"data block", "properties": {"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": '
+        b'"date-time", "type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, '
+        b'"gracePeriod": {"default": 90, "type": "integer"}, "type": {"contains": {"const": '
+        b'"QualifiedvLEIIssuervLEICredential"}, "type": "array"}}, "additionalProperties": false, "required": ["i", '
+        b'"issuanceDate", "credentialStatus", "LEI", "type"], "type": "object"}}, "additionalProperties": false, '
+        b'"required": ["i", "d"], "type": "object"} '
     ),
 })
 

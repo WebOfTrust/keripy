@@ -562,6 +562,10 @@ class Wallet:
         logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
         logger.info(creder.pretty())
 
+        print(f'Credential: {creder.said}, Schema: {creder.schema},  Saved')
+        print(creder.pretty())
+        print()
+        print()
 
 
     def getCredentials(self, schema=None):
