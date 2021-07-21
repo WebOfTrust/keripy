@@ -23,9 +23,6 @@ logger = help.ogler.getLogger()
 def credential(schema,
                issuer,
                subject,
-               issuance=None,
-               expiry=None,
-               regk=None,
                typ=JSONSchema(),
                version=Version,
                kind=Serials.json):
@@ -43,24 +40,14 @@ def credential(schema,
 
     """
     vs = Versify(version=version, kind=kind, size=0)
-    iss = issuance if issuance is not None else helping.nowIso8601()
 
     vc = dict(
         v=vs,
         i="",
         x=schema,
         ti=issuer,
+        d=subject
     )
-
-    subject["issuanceDate"] = issuance
-
-    if expiry is not None:
-        subject["expiry"] = expiry
-
-    if regk is not None:
-        subject["credentialStatus"] = regk
-
-    vc["d"] = subject
 
     return Credentialer(crd=vc, typ=typ)
 
