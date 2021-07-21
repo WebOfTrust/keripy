@@ -49,19 +49,18 @@ def credential(schema,
         v=vs,
         i="",
         x=schema,
-        issuer=issuer,
-        issuance=iss,
-        d=subject
+        ti=issuer,
     )
 
+    subject["issuanceDate"] = issuance
+
     if expiry is not None:
-        vc["expiry"] = expiry
+        subject["expiry"] = expiry
 
     if regk is not None:
-        vc["status"] = dict(
-            id=regk,
-            type=KERI_REGISTRY_TYPE
-        )
+        subject["credentialStatus"] = regk
+
+    vc["d"] = subject
 
     return Credentialer(crd=vc, typ=typ)
 
@@ -262,7 +261,7 @@ class Credentialer:
     @property
     def issuer(self):
         """ issuer property getter"""
-        return self.crd["issuer"]
+        return self.crd["ti"]
 
     @property
     def schema(self):
@@ -277,7 +276,7 @@ class Credentialer:
     @property
     def status(self):
         """ status property getter"""
-        return self.crd["status"]
+        return self.subject["credentialStatus"]
 
     def pretty(self):
         """

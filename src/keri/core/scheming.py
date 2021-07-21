@@ -79,17 +79,66 @@ class CacheResolver:
         return jsonschema.RefResolver("", scer, handlers={"did": self.handler})
 
 
-
 jsonSchemaCache = CacheResolver(cache={
-    "EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY": (b'{"$id":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY",'
-                                                     b'"$schema":"http://json-schema.org/draft-07/schema#",'
-                                                     b'"type":"object","properties":{"id":{"type":"string"},'
-                                                     b'"lei":{"type":"string"}}}')
+    "E3gXAQwgB_wGtQ5ZVhKrggkDPCQQXPQ1FWlW3d8Csdc8": (
+        b'{"$id": "E3gXAQwgB_wGtQ5ZVhKrggkDPCQQXPQ1FWlW3d8Csdc8", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
+        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
+        b'"credentialStatus": {"type": "string"}, "i": {"type": "string"}, "issuanceDate": {"format": "date-time", '
+        b'"type": "string"}, "type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", '
+        b'"type"], "type": "object"}, "i": {"type": "string"}, "ti": {"type": "string"}, "x": {"description": "schema '
+        b'block", "type": "string"}}, "required": ["i", "d"], "type": "object"}'),
+    "EDN2qAfVB0coKA26AkutgHXEAbnzDI3O-bL7rZOl6YAw": (
+        b'{"$id": "EDN2qAfVB0coKA26AkutgHXEAbnzDI3O-bL7rZOl6YAw", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
+        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
+        b'"credentialStatus": {"type": "string"}, "engagementContextRole": {"type": "string"}, "i": {"type": '
+        b'"string"}, "issuanceDate": {"format": "date-time", "type": "string"}, "personLegalName": {"type": '
+        b'"string"}, "type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", "type", '
+        b'"personLegalName", "engagementContextRole"], "type": "object"}, "i": {"type": "string"}, "s": {"contains": '
+        b'{"type": "object"}, "description": "source block", "items": {"additionalProperties": false, "properties": {'
+        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "required": ['
+        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}, '
+        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ["i", "s", '
+        b'"d"], "type": "object"}'),
+    "Ehp1Pnyhw0BMY_0pdtTUUZh3f2PxTFVHWddZaF7KT2_g": (
+        b'{"$id": "Ehp1Pnyhw0BMY_0pdtTUUZh3f2PxTFVHWddZaF7KT2_g", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
+        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
+        b'"credentialStatus": {"type": "string"}, "i": {"type": "string"}, "issuanceDate": {"format": "date-time", '
+        b'"type": "string"}, "officialRole": {"type": "string"}, "personLegalName": {"type": "string"}, '
+        b'"type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", "type", '
+        b'"personLegalName", "officialRole"], "type": "object"}, "i": {"type": "string"}, "s": {"contains": {"type": '
+        b'"object"}, "description": "source block", "items": {"additionalProperties": false, "properties": {'
+        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "required": ['
+        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}, '
+        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ["i", "s", '
+        b'"d"], "type": "object"}'),
+    "EfFdEfsloa6q0zNZdvwThrtEQ-jJuPu8_LFXDRDFpvmo": (
+        b'{"$id": "EfFdEfsloa6q0zNZdvwThrtEQ-jJuPu8_LFXDRDFpvmo", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
+        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
+        b'"credentialStatus": {"type": "string"}, "i": {"type": "string"}, "issuanceDate": {"format": "date-time", '
+        b'"type": "string"}, "type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", '
+        b'"type"], "type": "object"}, "i": {"type": "string"}, "s": {"contains": {"type": "object"}, "description": '
+        b'"source block", "items": {"additionalProperties": false, "properties": {'
+        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "required": ['
+        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}, '
+        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ["i", "s", '
+        b'"d"], "type": "object"}'),
+    "ELqz2NN3YhEfzonGT-aOLeA1bOY6hWkxl8YR-Lo4C3Og": (
+        b'{"$id": "ELqz2NN3YhEfzonGT-aOLeA1bOY6hWkxl8YR-Lo4C3Og", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
+        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
+        b'"credentialStatus": {"type": "string"}, "gracePeriod": {"default": 90, "type": "integer"}, "i": {"type": '
+        b'"string"}, "issuanceDate": {"format": "date-time", "type": "string"}, "type": {"type": "array"}}, '
+        b'"required": ["i", "LEI", "credentialStatus", "issuanceDate", "type"], "type": "object"}, "i": {"type": '
+        b'"string"}, "ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ['
+        b'"i", "d"], "type": "object"}'),
 })
 
 
 class JSONSchema:
-
     id = Ids.dollar
 
     def __init__(self, resolver=CacheResolver()):
@@ -104,24 +153,23 @@ class JSONSchema:
                 sed = json.loads(raw.decode("utf-8"))
             except Exception as ex:
                 raise DeserializationError("Error deserializing JSON: {}"
-                      "".format(raw.decode("utf-8")))
+                                           "".format(raw.decode("utf-8")))
 
         elif kind == Serials.mgpk:
             try:
                 sed = msgpack.loads(raw)
             except Exception as ex:
                 raise DeserializationError("Error deserializing MGPK: {}"
-                      "".format(raw))
+                                           "".format(raw))
 
         elif kind == Serials.cbor:
             try:
                 sed = cbor.loads(raw)
             except Exception as ex:
                 raise DeserializationError("Error deserializing CBOR: {}"
-                      "".format(raw))
+                                           "".format(raw))
         else:
             raise ValueError("Invalid serialization kind = {}".format(kind))
-
 
         if self.id in sed:
             saider = Saider(qb64=sed[self.id], idder=self.id)
@@ -140,7 +188,6 @@ class JSONSchema:
         raw = coring.dumps(sed, kind)
         return raw
 
-
     @staticmethod
     def detect(raw=b''):
         """
@@ -154,7 +201,6 @@ class JSONSchema:
             return False
 
         return True
-
 
     @staticmethod
     def verify_schema(schema):
@@ -171,7 +217,6 @@ class JSONSchema:
             return False
 
         return True
-
 
     def verify_json(self, schema=b'', raw=b''):
         """
@@ -195,8 +240,6 @@ class JSONSchema:
             return False
 
         return True
-
-
 
 
 class Schemer:
@@ -257,7 +300,6 @@ class Schemer:
             raise ValidationError("invalid kind {} for schema {}"
                                   "".format(self.kind, self.sed))
 
-
     def _inhale(self, raw):
         """
         Loads type specific Schema ked and verifies the self-addressing identifier
@@ -271,7 +313,6 @@ class Schemer:
         sed, kind, saider = self.typ.load(raw=raw)
 
         return sed, kind, saider
-
 
     def _exhale(self, sed, kind=None):
         """
@@ -289,12 +330,10 @@ class Schemer:
 
         return raw, sed, kind, saider
 
-
     @property
     def raw(self):
         """ raw property getter """
         return self._raw
-
 
     @raw.setter
     def raw(self, raw):
@@ -305,12 +344,10 @@ class Schemer:
         self._kind = kind
         self._saider = saider
 
-
     @property
     def sed(self):
         """ ked property getter"""
         return self._sed
-
 
     @sed.setter
     def sed(self, sed):
@@ -321,12 +358,10 @@ class Schemer:
         self._sed = sed
         self._saider = saider
 
-
     @property
     def kind(self):
         """ kind property getter """
         return self._kind
-
 
     @kind.setter
     def kind(self, kind):
@@ -337,18 +372,15 @@ class Schemer:
         self._kind = kind
         self._saider = Saider(raw=self._raw, code=self._code)
 
-
     @property
     def saider(self):
         """ saider property getter """
         return self._saider
 
-
     @property
     def said(self):
         """ said property getter, relies on saider """
         return self.saider.qb64
-
 
     def verify(self, raw=b''):
         """
@@ -395,7 +427,6 @@ class Saider(Matter):
             sed (dict): optional deserialized JSON for which to create the self addressing
         """
 
-
         self.idder = idder
         self._kind = kind
         try:
@@ -432,7 +463,6 @@ class Saider(Matter):
             raw, code = self._derive(sed=sed)
             super(Saider, self).__init__(raw=raw, code=code, **kwa)
 
-
         if self.code == MtrDex.Blake3_256:
             self._verify = self._verify_blake3_256
         elif self.code == MtrDex.Blake2b_256:
@@ -462,7 +492,6 @@ class Saider(Matter):
 
         return self._derive(sed=sed)
 
-
     def verify(self, sed, prefixed=False):
         """
         Returns True if derivation from ked for .code matches .qb64 and
@@ -488,7 +517,6 @@ class Saider(Matter):
 
         return True
 
-
     def rawify(self, sed):
         if 'v' in sed:
             kind, _, _ = coring.Deversify(sed['v'])
@@ -497,7 +525,6 @@ class Saider(Matter):
 
         raw = coring.dumps(sed, kind)
         return raw
-
 
     def _derive_blake3_256(self, sed):
         """
@@ -508,13 +535,12 @@ class Saider(Matter):
 
         idf = self.idder
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake3_256].fs)
+        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.Blake3_256].fs)
 
         raw = self.rawify(sed)
 
         dig = blake3.blake3(raw).digest()
         return dig, MtrDex.Blake3_256
-
 
     def _verify_blake3_256(self, sed):
         """
@@ -526,7 +552,6 @@ class Saider(Matter):
         raw, code = self._derive_blake3_256(sed=sed)
         return Matter(raw=raw, code=MtrDex.Blake3_256)
 
-
     def _derive_sha3_256(self, sed):
         """
         Returns tuple (raw, code) of basic SHA3 digest (qb64)
@@ -536,12 +561,11 @@ class Saider(Matter):
 
         idf = self.idder
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA3_256].fs)
+        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA3_256].fs)
         raw = self.rawify(sed)
 
         dig = hashlib.sha3_256(raw).digest()
         return dig, MtrDex.SHA3_256
-
 
     def _verify_sha3_256(self, sed):
         """
@@ -553,7 +577,6 @@ class Saider(Matter):
         raw, code = self._derive_sha3_256(sed=sed)
         return Matter(raw=raw, code=MtrDex.SHA3_256)
 
-
     def _derive_sha3_512(self, sed):
         """
         Returns tuple (raw, code) of basic SHA3 digest (qb64)
@@ -563,12 +586,11 @@ class Saider(Matter):
 
         idf = self.idder
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA3_512].fs)
+        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA3_512].fs)
         raw = self.rawify(sed)
 
         dig = hashlib.sha3_512(raw).digest()
         return dig, MtrDex.SHA3_512
-
 
     def _verify_sha3_512(self, sed):
         """
@@ -580,7 +602,6 @@ class Saider(Matter):
         raw, code = self._derive_sha3_512(sed=sed)
         return Matter(raw=raw, code=MtrDex.SHA3_512)
 
-
     def _derive_sha2_256(self, sed):
         """
         Returns tuple (raw, code) of basic SHA2 digest (qb64)
@@ -590,12 +611,11 @@ class Saider(Matter):
 
         idf = self.idder
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA2_256].fs)
+        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA2_256].fs)
         raw = self.rawify(sed)
 
         dig = hashlib.sha256(raw).digest()
         return dig, MtrDex.SHA2_256
-
 
     def _verify_sha2_256(self, sed):
         """
@@ -607,7 +627,6 @@ class Saider(Matter):
         raw, code = self._derive_sha2_256(sed=sed)
         return Matter(raw=raw, code=MtrDex.SHA2_256)
 
-
     def _derive_sha2_512(self, sed):
         """
         Returns tuple (raw, code) of basic SHA2 digest (qb64)
@@ -617,12 +636,11 @@ class Saider(Matter):
 
         idf = self.idder
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.SHA2_512].fs)
+        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA2_512].fs)
         raw = self.rawify(sed)
 
         dig = hashlib.sha512(raw).digest()
         return dig, MtrDex.SHA2_512
-
 
     def _verify_sha2_512(self, sed):
         """
@@ -635,7 +653,6 @@ class Saider(Matter):
         raw, code = self._derive_sha2_512(sed=sed)
         return Matter(raw=raw, code=MtrDex.SHA2_512)
 
-
     def _derive_blake2b_256(self, sed):
         """
         Returns tuple (raw, code) of basic BLAKE2B digest (qb64)
@@ -645,12 +662,11 @@ class Saider(Matter):
 
         idf = self.idder
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake2b_256].fs)
+        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.Blake2b_256].fs)
         raw = self.rawify(sed)
 
         dig = hashlib.blake2b(raw).digest()
         return dig, MtrDex.Blake2b_256
-
 
     def _verify_blake2b_256(self, sed):
         """
@@ -662,7 +678,6 @@ class Saider(Matter):
         raw, code = self._derive_blake2b_256(sed=sed)
         return Matter(raw=raw, code=MtrDex.Blake2b_256)
 
-
     def _derive_blake2s_256(self, sed):
         """
         Returns tuple (raw, code) of basic BLAKE2S digest (qb64)
@@ -672,12 +687,11 @@ class Saider(Matter):
 
         idf = self.idder
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake2s_256].fs)
+        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.Blake2s_256].fs)
         raw = self.rawify(sed)
 
         dig = hashlib.blake2s(raw).digest()
         return dig, MtrDex.Blake2s_256
-
 
     def _verify_blake2s_256(self, sed):
         """

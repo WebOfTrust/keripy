@@ -101,7 +101,7 @@ class InceptDoer(doing.DoDoer):
             print(f'Public key {idx+1}:\t{verfer.qb64}')
         print()
 
-        # toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witDoer]
-        # self.remove(toRemove)
+        toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witDoer]
+        self.remove(toRemove)
 
         return

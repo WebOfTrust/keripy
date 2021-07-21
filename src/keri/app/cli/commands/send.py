@@ -24,33 +24,30 @@ parser.add_argument('--target', '-t', help='Target port to send KEL to', default
 def handler(args):
     name = args.name
 
-    ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
-    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
-    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
-
-    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
-    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
-
-    client = clienting.Client(host="", port=int(args.target))
-    clientDoer = clienting.ClientDoer(client=client)
-    sendDoer = SenderDoer(hab=hab, client=client)
-
-    doers = [ksDoer, dbDoer, habDoer, sendDoer, clientDoer]
-    directing.runController(doers=doers, expire=0.0)
+    sendDoer = SenderDoer(name=name, target=int(args.target))
+    directing.runController(doers=[sendDoer], expire=0.0)
 
 
-class SenderDoer(doing.Doer):
+class SenderDoer(doing.DoDoer):
 
-    def __init__(self, client, hab: habbing.Habitat = None, **kwa):
-        self.hab = hab
-        self.client = client
+    def __init__(self, name, target: int, **kwa):
+        ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
+        self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+        db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
+        self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
-        super(SenderDoer, self).__init__(**kwa)
-        if self.tymth:
-            self.client.wind(self.tymth)
+        self.hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
+        self.habDoer = habbing.HabitatDoer(habitat=self.hab)  # setup doer
 
-    def do(self, tymth, tock=0.0, **opts):
+        self.target = target
+        self.client = clienting.Client(host="", port=self.target)
+        self.clientDoer = clienting.ClientDoer(client=self.client)
+
+        doers = [self.ksDoer, self.dbDoer, self.habDoer, self.sendDo, self.clientDoer]
+        super(SenderDoer, self).__init__(doers=doers, **kwa)
+
+    @doing.doize()
+    def sendDo(self, tymth, tock=0.0, **opts):
         # enter context
         self.wind(tymth)
         self.tock = tock
@@ -63,7 +60,13 @@ class SenderDoer(doing.Doer):
 
         # send to connected peer remote
         self.client.tx(msgs)
-        logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(msgs))
         _ = (yield self.tock)
+
+        while not self.client.rxbs:
+            yield self.tock
+
+        print("KEL for {} sent to {}".format(self.hab.pre, self.target))
+
+        self.remove([self.ksDoer, self.dbDoer, self.habDoer, self.clientDoer])
 
         return

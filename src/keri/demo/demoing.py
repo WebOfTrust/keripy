@@ -609,7 +609,7 @@ class VicDirector(directing.Director):
        ._tock is hidden attribute for .tock property
     """
 
-    def __init__(self, hab, witnessClient, peerClient, verifier, exchanger, jsonSchema, **kwa):
+    def __init__(self, hab, witnessClient, peerClient, verifier, exchanger, jsonSchema, proofs, **kwa):
         """
 
             verifier is Verifier instance of local controller's TEL context
@@ -619,9 +619,10 @@ class VicDirector(directing.Director):
         self.verifier = verifier
         self.exchanger = exchanger
         self.jsonSchema = jsonSchema
-        self.presentations = []
+        self.proofs = proofs
         if self.tymth:
             self.peerClient.wind(self.tymth)
+
 
     def do(self, tymth=None, tock=0.0, **opts):
         """
@@ -672,12 +673,12 @@ class VicDirector(directing.Director):
             self.peerClient.tx(excMsg)
             tyme = (yield self.tock)
 
-            while not self.presentations:
+            while not self.proofs:
                 logger.info("%s:\n waiting for proof presentation from %s.\n\n",
                             self.hab.pre, self.peerClient.ha)
                 tyme = (yield self.tock)
 
-            presentation = self.presentations.pop()
+            _, presentation = self.proofs.pop()
 
             vc = presentation["vc"]
             body = vc["d"]
@@ -733,56 +734,6 @@ class VicDirector(directing.Director):
 
         return True  # return value of yield from, or yield ex.value of StopIteration
 
-    def verifiyCredential(self, issuer, presentation):
-        logger.info("%s: \n received presentation from %s\n\n", self.hab.pre, issuer.qb64)
-
-        self.presentations.append(presentation)
-
-        #
-        #
-        # # extract proof from VC
-        # proof = vc.pop("proof")
-        # vcdata = json.dumps(vc).encode("utf-8")
-        # vcsig = proof["jws"]
-        # method = proof["verificationMethod"]
-        # url = parse.urlsplit(method)
-        #
-        # if url.scheme != "did":
-        #     logger.error("%s:\n Invalid verification method scheme %s.\n\n",
-        #                  self.hab.pre, url.scheme)
-        #
-        # (pre, regk) = url.path.removeprefix("keri:").split("/")
-        #
-        # msg = self.verifier.query(regk,
-        #                           vcid,
-        #                           res="tels")
-        # self.client.tx(msg)  # send to connected remote
-        # logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-        # tyme = (yield (self.tock))
-        #
-        # while regk not in self.verifier.tevers:
-        #     logger.info("%s:\n waiting for retrieval of TEL %s.\n\n",
-        #                 self.hab.pre, regk)
-        #     tyme = (yield (self.tock))
-        #
-        # tyme = (yield (self.tock))
-        # sidx = int(url.fragment)
-        #
-        # valid = self.verifier.verify(pre=pre,
-        #                              sidx=sidx,
-        #                              regk=regk,
-        #                              vcid=vcid,
-        #                              vcdata=vcdata,
-        #                              vcsig=vcsig)
-        #
-        # if valid is True:
-        #     sub = vc["credentialSubject"]
-        #     logger.info("%s:\n\n\n Valid vLEI credential for LEI: %s.\n\n",
-        #                 self.hab.pre, sub["lei"])
-        # else:
-        #     logger.error("%s:\n\n\n Invalid vLEI credential.\n\n",
-        #                  self.hab.pre)
-        #
 
 
 class CamDirector(directing.Director):

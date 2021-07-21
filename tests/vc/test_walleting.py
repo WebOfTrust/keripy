@@ -52,30 +52,27 @@ def test_wallet():
                             subject=credSubject,
                             issuance="2021-06-27T21:26:21.233257+00:00",
                             typ=JSONSchema(resolver=cache))
-        assert creder.said == "Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY"
+        assert creder.said == "EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM"
 
         msg = sidHab.endorse(serder=creder)
         assert msg == (
-            b'{"v":"KERI10JSON000136_","i":"Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY",'
-            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY",'
-            b'"issuer":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","issuance":"2021-06-27T21:26:21.233257+00:00",'
-            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v",'
-            b'"lei":"254900OPPU84GM83MG36"}}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE'
-            b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAAVgLJOmUNlMZpSGV0hr'
-            b'-KddJmmEByoxfDdvkW161VsZO2_gjYf5OODwjyA3oSThfXGnj5Jhk5iszNuT2ZSsTMBg')
-
+            b'{"v":"KERI10JSON000136_","i":"EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM",'
+            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
+            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36",'
+            b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE'
+            b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI'
+            b'-AABAA0pXbQllgzXr88IczAnsPrdhgFKs9wNQvfSfzyrtcvbTwq-U1DmBluAklntCqH1AbBL6TWLZIDGi83BHLWJ82CA')
         ser = (
-            b'{"v":"KERI10JSON000136_","i":"Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY",'
-            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY",'
-            b'"issuer":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","issuance":"2021-06-27T21:26:21.233257+00:00",'
-            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v",'
-            b'"lei":"254900OPPU84GM83MG36"}}')
+            b'{"v":"KERI10JSON000136_","i":"EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM",'
+            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
+            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36",'
+            b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
         seal = (
             b'E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw'
             b'-AxDNI7_ZmaI')
 
         sig0 = (
-            b'AAVgLJOmUNlMZpSGV0hr-KddJmmEByoxfDdvkW161VsZO2_gjYf5OODwjyA3oSThfXGnj5Jhk5iszNuT2ZSsTMBg'
+            b'AA0pXbQllgzXr88IczAnsPrdhgFKs9wNQvfSfzyrtcvbTwq-U1DmBluAklntCqH1AbBL6TWLZIDGi83BHLWJ82CA'
         )
 
         sidWallet = Wallet(hab=sidHab, db=sidPDB)
@@ -187,18 +184,17 @@ def test_build_proof():
         sigers = sigHab.mgr.sign(ser=creder.raw, verfers=sigHab.kever.verfers, indexed=True)
 
         proof = buildProof(prefixer, seqner, diger, sigers)
-        assert proof == (b'-FABEiRjCnZfca8gUZqecerjGpjkiY8dIkGudP6GfapWi5MU0AAAAAAAAAAAAAAAAAAAAABAECc96yX1sYswnD6LXE'
-                         b'coNuJ0ehi8gkFMEGedqURhXMBU-AADAAarmUESbxAsy42qOTYN_ChWWgHT7HlM6_qTunFZeuTf9ozrGmvJ-RSjh2r4'
-                         b'cbaID5eKe7mU3PTziJ2YjNlDB1DwAByOIg2T3S2bb8KnI40e0P5Ucllxt-5ZvxX2_2XfrCp6s8DjodXvVhZqqsQVyN'
-                         b'jOvg9MM_fh5s02NKYJ4s9UXgDgACC3_hfvm_H77YuE4IndBvm2DdB2p_wgN9K-VOefzv11e4SLX4W8_Ns4hiaMm3ul'
-                         b'm8f4RAaoJEICDax-xomO1mCA')
+        assert proof == (
+            b'-FABEiRjCnZfca8gUZqecerjGpjkiY8dIkGudP6GfapWi5MU0AAAAAAAAAAAAAAAAAAAAABAECc96yX1sYswnD6LXEcoNuJ0e'
+            b'hi8gkFMEGedqURhXMBU-AADAAGcSUhma16SY3MiKU7n6mK3JzWS2oAiBRB-jeycIDrQ2Z-36QHrMorzRAO9Iw7FvIKrneaLZP'
+            b'whz6DFFiXM4oBgAB1g2CudOfOFd9BqesyAIlCDRAkxAQynrED4_ot1MkhKwjmK71XUx1Xer25iWtHMa9sny07AsTO-KE3vu9e'
+            b'qTPDQAClDQMXWg3I8qeVEjA6JA9xBW2uESMtMzNVQ8lH31UCizqYVjXort--QEJTsfIt_b0Qq1JOCtaj7Y6U-DWHoulBA')
 
         prefixer, seqner, diger, isigers = parseProof(proof)
         assert prefixer.qb64 == sigHab.pre
         assert diger.qb64 == sigHab.kever.lastEst.d
         assert seqner.sn == 4
         assert len(isigers) == 3
-
 
 
 if __name__ == '__main__':
