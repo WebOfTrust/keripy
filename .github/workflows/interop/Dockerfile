@@ -10,7 +10,7 @@ RUN apt-get install -y \
     libsodium-dev \
     python3-nacl
 
-RUN git clone https://github.com/decentralized-identity/keripy.git
+RUN git clone https://github.com/WebOfTrust/keripy.git
 
 WORKDIR /keripy
 

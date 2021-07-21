@@ -84,7 +84,6 @@ class InitDoer(doing.Doer):
             print("not connected")
             (yield self.tock)
 
-        print("yay")
         self.client.tx(b'foo')
 
 # def handle_daemon():

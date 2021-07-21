@@ -402,7 +402,7 @@ class Baser(dbing.LMDBer):
         for keys, data in self.habs.getItemIter():
             if (state := self.states.get(keys=data.prefix)) is not None:
                 try:
-                    kever = eventing.Kever(state=state, db=self)
+                    kever = eventing.Kever(state=state, db=self, prefixes=self.prefixes, local=True)
                 except kering.MissingEntryError as ex:  # no kel event for keystate
                     removes.append(keys)  # remove from .habs
                     continue

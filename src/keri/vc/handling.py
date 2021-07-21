@@ -3,41 +3,21 @@
 keri.vc.handling module
 
 """
+from hio.base import doing
 
 from .. import help
-from keri.core.coring import dumps, Deversify
-from keri.core.scheming import JSONSchema
-from keri.kering import ShortageError
-from keri.peer import exchanging
-from keri.vc.proving import Credentialer
-from keri.vc.walleting import parseCredential, buildProof
+from ..core.coring import dumps, Deversify
+from ..core.scheming import JSONSchema
+from ..help import decking
+from ..kering import ShortageError
+from ..peer import exchanging
+from ..vc.proving import Credentialer
+from ..vc.walleting import parseCredential, buildProof
 
 logger = help.ogler.getLogger()
 
 
-class BaseHandler:
-    """
-    Base class for handling `exn` messages for a given resource
-
-    Properties:
-        resource is str resource
-        behavior is a Behavior for this handler
-    """
-
-    def __init__(self, resource, func):
-        self._resource = resource
-        self._behavior = exchanging.Behavior(func=func)
-
-    @property
-    def resource(self):
-        return self._resource
-
-    @property
-    def behavior(self):
-        return self._behavior
-
-
-class OfferHandler(BaseHandler):
+class OfferHandler(doing.Doer):
     """
     Sample handler to a credential offer message from an Issuer to a Holder for a credential based
     on
@@ -61,7 +41,9 @@ class OfferHandler(BaseHandler):
 
     """
 
-    def __init__(self, wallet, formats, typ=JSONSchema()):
+    resource = "/credential/offer"
+
+    def __init__(self, wallet, formats, typ=JSONSchema(), cues=None, **kwa):
         """
 
         Parameters:
@@ -69,40 +51,60 @@ class OfferHandler(BaseHandler):
             formats (list) of format str names accepted for offers
             typ (JSONSchema) credential type to accept
         """
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
         self.wallet = wallet
         self.formats = formats
         self.typ = typ
 
-        super(OfferHandler, self).__init__(resource="/credential/offer", func=self.handleMessage)
+        super(OfferHandler, self).__init__(**kwa)
 
 
-    def handleMessage(self, payload, pre, sigers, verfers):
+    def do(self, tymth, tock=0.0, **opts):
         """
 
+        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+
+        Parameters:
+            payload is dict representing the body of a /credential/issue message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /credential/issue message
+            verfers is list of Verfers of the keys used to sign the message
+
         """
 
-        issuer = payload["issuer"]
-        descriptors = payload["input_descriptors"]
-        formats = payload["format"]
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                payload = msg["payload"]
 
-        schema = descriptors[0]
+                issuer = payload["issuer"]
+                descriptors = payload["input_descriptors"]
+                formats = payload["format"]
 
-        fmts = []
-        for fmt in self.formats:
-            if fmt in formats:
-                fmts.append(formats[fmt])
+                schema = descriptors[0]
 
-        if not fmts:
-            logger.info("No acceptable formats being offered in {}.  Needed one of {}."
-                        "".format(formats, self.formats))
+                fmts = []
+                for fmt in self.formats:
+                    if fmt in formats:
+                        fmts.append(formats[fmt])
 
-        apply = credential_apply(issuer, schema, format)
+                if not fmts:
+                    logger.info("No acceptable formats being offered in {}.  Needed one of {}."
+                                "".format(formats, self.formats))
+                    continue
 
-        return "/credential/apply", apply
+                apply = credential_apply(issuer, schema, format)
+
+                self.cues.append(exchanging.exchange(route="/credential/apply", payload=apply))
+
+                yield
+
+            yield
 
 
 
-class ApplyHandler(BaseHandler):
+class ApplyHandler(doing.DoDoer):
     """
         {
            "v": "KERI10JSON00011c_",                               // KERI Version String
@@ -124,28 +126,50 @@ class ApplyHandler(BaseHandler):
 
     """
 
-    def __init__(self, hab, typ=JSONSchema()):
+    resource = "/credential/apply"
+
+    def __init__(self, hab, typ=JSONSchema(), cues=None, **kwa):
         """
 
         Parameters:
             hab (Habitat) credential wallet that will hold the issued credentials
             typ (JSONSchema) credential type to accept
         """
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
         self.hab = hab
         self.typ = typ
 
-        super(ApplyHandler, self).__init__(resource="/credential/apply", func=self.handleMessage)
+        super(ApplyHandler, self).__init__(**kwa)
 
 
-    def handleMessage(self, payload, pre, sigers, verfers):
+    def do(self, tymth, tock=0.0, **opts):
         """
 
+        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+
+        Parameters:
+            payload is dict representing the body of a /credential/issue message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /credential/issue message
+            verfers is list of Verfers of the keys used to sign the message
+
         """
-        return None, None
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                payload = msg["payload"]
+                logger.info(payload)
+                yield
+
+            yield
 
 
 
-class IssueHandler(BaseHandler):
+
+class IssueHandler(doing.Doer):
     """
     Sample class that handles a credential Issue `exn` message.  By default, this handler
     stores the credential in the provided wallet.  The incoming message must have the following format:
@@ -186,19 +210,25 @@ class IssueHandler(BaseHandler):
 
     """
 
-    def __init__(self, wallet, typ=JSONSchema()):
+    resource = "/credential/issue"
+
+    def __init__(self, wallet, typ=JSONSchema(), cues=None, **kwa):
         """
 
         Parameters:
             wallet (Wallet) credential wallet that will hold the issued credentials
             typ (JSONSchema) credential type to accept
         """
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
         self.wallet = wallet
         self.typ = typ
 
-        super(IssueHandler, self).__init__(resource="/credential/issue", func=self.handleMessage)
+        super(IssueHandler, self).__init__(**kwa)
 
-    def handleMessage(self, payload, pre, sigers, verfers):
+
+    def do(self, tymth, tock=0.0, **opts):
         """
 
         Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
@@ -211,29 +241,34 @@ class IssueHandler(BaseHandler):
 
         """
 
-        envelopes = payload["verifiableCredential"]
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                payload = msg["payload"]
+                envelopes = payload["vc"]
 
-        for envlop in envelopes:
-            crd = envlop["vc"]
-            proof = envlop["proof"]
+                for envlop in envelopes:
+                    crd = envlop["vc"]
+                    proof = envlop["proof"]
 
-            vs = crd["v"]
+                    vs = crd["v"]
 
-            kind, version, size = Deversify(vs)
-            raw = dumps(ked=crd, kind=kind)
-            if len(raw) != size:
-                raise ValueError("invalid length {} for credential = {}".format(size, crd))
+                    kind, version, size = Deversify(vs)
+                    raw = dumps(ked=crd, kind=kind)
+                    if len(raw) != size:
+                        raise ValueError("invalid length {} for credential = {}".format(size, crd))
 
-            msg = bytearray(raw)
-            msg.extend(proof.encode("utf-8"))
+                    msg = bytearray(raw)
+                    msg.extend(proof.encode("utf-8"))
 
-            parseCredential(ims=msg, wallet=self.wallet, typ=self.typ)
+                    parseCredential(ims=msg, wallet=self.wallet, typ=self.typ)
+
+                yield
+
+            yield
 
 
-        return None, None
-
-
-class RequestHandler(BaseHandler):
+class RequestHandler(doing.Doer):
     """
         Processor for a credential request with input descriptors in the payload used to
         match saved credentials based on a schema.  The payload of the request is expected to
@@ -261,18 +296,22 @@ class RequestHandler(BaseHandler):
 
     """
 
-    def __init__(self, wallet, typ=JSONSchema()):
+    resource = "/presentation/request"
+
+    def __init__(self, wallet, typ=JSONSchema(), cues=None, **kwa):
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
         self.wallet = wallet
         self.typ = typ
 
-        super(RequestHandler, self).__init__(resource="/presentation/request", func=self.handleMessage)
+        super(RequestHandler, self).__init__(**kwa)
 
 
-    def handleMessage(self, payload, pre, sigers, verfers):
+    def do(self, tymth, tock=0.0, **opts):
         """
         Process presentation request message with sender identifier, sigs and verfers
 
-        Parameters:
+        Messages:
             payload is dict representing the body of a /presentation/request message
             pre is qb64 identifier prefix of sender
             sigers is list of Sigers representing the sigs on the /presentation/request message
@@ -280,26 +319,32 @@ class RequestHandler(BaseHandler):
 
         """
 
-        descriptors = payload["input_descriptors"]
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                payload = msg["payload"]
 
-        matches = []
-        for descriptor in descriptors:
-            said = descriptor["x"]
-            credentials = self.wallet.getCredentials(said)
-            if len(credentials) > 0:
-                vc = credentials[0][0].pretty()
-                logger.info("Presenting Credential for schema %s:\n VC=%s", said, vc)
-                matches.append(credentials[0])
+                descriptors = payload["input_descriptors"]
 
-        if len(matches) > 0:
-            pe = presentation_exchange(matches)
-            return "/presentation/proof", pe
+                matches = []
+                for descriptor in descriptors:
+                    said = descriptor["x"]
+                    credentials = self.wallet.getCredentials(said)
+                    if len(credentials) > 0:
+                        vc = credentials[0][0].pretty()
+                        logger.info("Presenting Credential for schema %s:\n VC=%s", said, vc)
+                        matches.append(credentials[0])
 
-        else:
-            return None, None
+                if len(matches) > 0:
+                    pe = presentation_exchange(matches)
+                    self.cues.append(exchanging.exchange(route="/presentation/proof", payload=pe))
+
+                yield
+
+            yield
 
 
-class ProofHandler(BaseHandler):
+class ProofHandler(doing.Doer):
     """
     Processor for responding to presentation proof peer to peer message.  The payload of the message
     is expected to have the following format:
@@ -343,47 +388,61 @@ class ProofHandler(BaseHandler):
         }
     """
 
-    def __init__(self, callback, typ=JSONSchema()):
+    resource = "/presentation/proof"
+
+
+    def __init__(self, typ=JSONSchema(), cues=None, proofs=None, **kwa):
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+        self.proofs = proofs if proofs is not None else decking.Deck()
+
         self.typ = typ
-        self.callback = callback
 
-        super(ProofHandler, self).__init__(resource="/presentation/proof", func=self.handleMessage)
+        super(ProofHandler, self).__init__(**kwa)
 
 
-    def handleMessage(self, payload, pre, sigers, verfers):
+    def do(self, tymth, tock=0.0, **opts):
         """
+
+        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
 
         Parameters:
-            payload is dict representing the body of a /presentation/proof message
+            payload is dict representing the body of a /credential/issue message
             pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/proof message
+            sigers is list of Sigers representing the sigs on the /credential/issue message
             verfers is list of Verfers of the keys used to sign the message
+
         """
 
-        if "presentation_submission" not in payload:
-            raise ValueError("invalid presentation proof payload")
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                payload = msg["payload"]
+                pre = msg["pre"]
 
-        if "verifiableCredential" not in payload:
-            raise ValueError("invalid presentation proof payload")
+                if "presentation_submission" not in payload:
+                    raise ValueError("invalid presentation proof payload")
 
-
-        pe = payload["presentation_submission"]
-        vcs = payload["verifiableCredential"]
-
-        if "descriptor_map" not in pe:
-            raise ValueError("invalud presentation submission in proof payload")
-
-        dm = pe["descriptor_map"]
-
-        for idx, descriptor in enumerate(dm):
-            # TODO:  Find verifiable credential in vcs based on `path`
-            vc = vcs[idx]
-            self.callback(pre, vc)
+                if "verifiableCredential" not in payload:
+                    raise ValueError("invalid presentation proof payload")
 
 
-        return None, None
+                pe = payload["presentation_submission"]
+                vcs = payload["verifiableCredential"]
 
+                if "descriptor_map" not in pe:
+                    raise ValueError("invalud presentation submission in proof payload")
 
+                dm = pe["descriptor_map"]
+
+                for idx, descriptor in enumerate(dm):
+                    # TODO:  Find verifiable credential in vcs based on `path`
+                    vc = vcs[idx]
+                    self.proofs.append((pre, vc))
+
+                yield
+
+            yield
 
 
 def envelope(msg, typ=JSONSchema()):

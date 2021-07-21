@@ -15,15 +15,16 @@ from hio.core.tcp import clienting, serving
 from keri import __version__
 from keri import help
 from keri.app import habbing, keeping, directing
+from keri.core import scheming
 from keri.db import basing
 from keri.demo.demoing import HanDirector
 from keri.peer import exchanging
-from keri.vc import walleting
+from keri.vc import walleting, handling
 
 logger = help.ogler.getLogger()
 
 
-def runDemo(remote=5621, local=5629, expire=0.0):
+def runDemo(witness=5631, local=5629, expire=0.0):
     """
     Setup and run one demo controller for sam, like bob only better
     """
@@ -40,13 +41,13 @@ def runDemo(remote=5621, local=5629, expire=0.0):
         'Alntkt3u6dDgiQxTATr01dy8M72uuaZEf9eTdM-70Gk8',
     ]
     doers = setupController(secrets=secrets,
-                            remotePort=remote,
+                            witnessPort=witness,
                             localPort=local)
 
     directing.runController(doers=doers, expire=expire)
 
 
-def setupController(secrets, remotePort=5621, localPort=5629, indirect=False):
+def setupController(secrets, witnessPort=5631, localPort=5629, indirect=False):
     """
     Setup and return doers list to run controller
     """
@@ -57,7 +58,7 @@ def setupController(secrets, remotePort=5621, localPort=5629, indirect=False):
     # setup habitat
     hab = habbing.Habitat(name="han", secrecies=secrecies, temp=True)
     logger.info("\nDirect Mode demo of %s:\nNamed %s listening on TCP port %s, witness on TCP Port %s.\n\n",
-                hab.pre, hab.name, localPort, remotePort)
+                hab.pre, hab.name, localPort, witnessPort)
     wallet = walleting.Wallet(hab=hab, name="han")
 
     # setup doers
@@ -72,22 +73,27 @@ def setupController(secrets, remotePort=5621, localPort=5629, indirect=False):
                         headDirPath=path)
     wireDoer = wiring.WireLogDoer(wl=wl)
 
-    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
-    clientDoer = clienting.ClientDoer(client=client)
+    jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
 
-    excDoer = exchanging.Exchanger(hab=hab)
+    issueHandler = handling.IssueHandler(wallet=wallet, typ=jsonSchema)
+    requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
+
+    witnessClient = clienting.Client(host='127.0.0.1', port=witnessPort, wl=wl)
+    witnessClientDoer = clienting.ClientDoer(client=witnessClient)
+
+    excDoer = exchanging.Exchanger(hab=hab, handlers=[issueHandler, requestHandler])
     director = HanDirector(hab=hab,
-                           client=client,
+                           client=witnessClient,
                            exchanger=excDoer,
                            tock=0.125,
                            wallet=wallet)
 
-    reactor = directing.Reactor(hab=hab, client=client, indirect=indirect)
+    reactor = directing.Reactor(hab=hab, client=witnessClient, indirect=indirect)
     server = serving.Server(host="", port=localPort)
     serverDoer = serving.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server, exchanger=excDoer)
 
-    return [ksDoer, dbDoer, pdbDoer, excDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
+    return [ksDoer, dbDoer, pdbDoer, excDoer, wireDoer, witnessClientDoer, director, reactor, serverDoer, directant]
 
 
 def parseArgs(version=__version__):
@@ -98,10 +104,10 @@ def parseArgs(version=__version__):
                    action='version',
                    version=version,
                    help="Prints out version of script runner.")
-    p.add_argument('-r', '--remote',
+    p.add_argument('-w', '--witness',
                    action='store',
-                   default=5621,
-                   help="Remote port number the client connects to. Default is 5621.")
+                   default=5631,
+                   help="Remote port number of the witness. Default is 5631.")
     p.add_argument('-l', '--local',
                    action='store',
                    default=5629,
@@ -124,15 +130,15 @@ def main():
 
     logger = help.ogler.getLogger()
 
-    logger.info("\n******* Starting Demo for Han connecting to "
-                "%s.******\n\n", args.remote)
+    logger.info("\n******* Starting Demo for Han listening: tcp/%s "
+                ".******\n\n", args.local)
 
-    runDemo(remote=args.remote,
+    runDemo(witness=args.witness,
             local=int(args.local),
             expire=args.expire)
 
-    logger.info("\n******* Ended Demo for Han connecting to "
-                "%s.******\n\n", args.remote)
+    logger.info("\n******* Ended Demo for Han listening: tcp/%s "
+                ".******\n\n", args.local)
 
 
 if __name__ == "__main__":

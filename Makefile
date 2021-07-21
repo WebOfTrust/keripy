@@ -8,5 +8,5 @@ interop-eve:
 
 .PHONY: interop-sam
 interop-sam:
-	@docker run --rm -i -p 5620-5621 --name keripy-sam ghcr.io/decentralized-identity/keripy/keripy-interop  bash -c 'python -m keri.demo.demo_sam -e 10'
+	@docker run --rm -i -p 5620-5621 --name keripy-sam ghcr.io/WebOfTrust/keripy/keripy-interop  bash -c 'python -m keri.demo.demo_sam -e 10'
 

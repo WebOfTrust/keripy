@@ -13,12 +13,13 @@ from .. import help
 from ..db import dbing, basing
 from ..core import coring, eventing, parsing
 from . import habbing, keeping, directing
+from ..peer import httping, exchanging
 from ..vdr import verifying
 
 logger = help.ogler.getLogger()
 
 
-def setupWitness(name="witness", temp=False, localPort=5620, ):
+def setupWitness(name="witness", temp=False, localPort=5621, ):
     """
     """
     # setup databases  for dependency injection
@@ -35,20 +36,21 @@ def setupWitness(name="witness", temp=False, localPort=5620, ):
 
     verfer = verifying.Verifier(name=name, hab=hab)
 
+    mbx = exchanging.Mailboxer()
+    exc = exchanging.StoreExchanger(hab=hab, mbx=mbx)
+
     # setup doers
-    ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
-    dbDoer = basing.BaserDoer(baser=hab.db)  # doer do reopens if not opened and closes
     regDoer = basing.BaserDoer(baser=verfer.reger)
 
     server = serving.Server(host="", port=localPort)
     serverDoer = serving.ServerDoer(server=server)
-    directant = directing.Directant(hab=hab, server=server, verifier=verfer)
-
+    directant = directing.Directant(hab=hab, server=server, verifier=verfer, exc=exc)
+    mbxer = httping.MailboxServer(port=7777, hab=hab, mbx=mbx)
 
     logger.info("\nWitness- %s:\nNamed %s on TCP port %s.\n\n",
                 hab.pre, hab.name, localPort)
 
-    return [ksDoer, dbDoer, habDoer, regDoer, directant, serverDoer]
+    return [ksDoer, dbDoer, habDoer, regDoer, directant, serverDoer, mbxer]
 
 
 class Indirector(doing.DoDoer):

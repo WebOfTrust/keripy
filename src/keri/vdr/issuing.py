@@ -5,7 +5,7 @@ keri.vdr.issuing module
 
 VC issuer support
 """
-
+from hio.base import doing
 
 from .. import kering
 from ..core.coring import Counter, Seqner, CtrDex, MtrDex, Diger, Serder
@@ -26,8 +26,7 @@ class Issuer:
     issuance and revocation status of those VCs.
 
     """
-    def __init__(self, hab, name="test", reger=None, tevers=None, regk=None, noBackers=False, baks=None, toad=None,
-                 estOnly=False):
+    def __init__(self, hab, name="test", reger=None, tevers=None, regk=None, estOnly=False, **kwa):
         """
         Initialize Instance
 
@@ -49,6 +48,17 @@ class Issuer:
 
         self.reger = reger if reger is not None else Registry(name=name)
         self.tevers = tevers if tevers is not None else dict()
+        self.inited = False
+
+        # save init kwy word arg parameters as ._inits in order to later finish
+        # init setup elseqhere after databases are opened if not below
+        self._inits = kwa
+
+        if self.hab.inited:
+            self.setup(**self._inits)
+
+
+    def setup(self, *, noBackers=False, baks=None, toad=None,):
 
         if self.regk is None:
             self.regi = 0
@@ -104,6 +114,10 @@ class Issuer:
         self.noBackers = tever.noBackers
         self.backers = tever.baks
         self.regi = int(tever.serder.ked["s"], 16)
+
+        self.inited = True
+
+
 
     def rotate(self, toad=None, cuts=None, adds=None):
         """
@@ -214,3 +228,63 @@ class Issuer:
         tevt = self.messagize(serder=serder, seal=seal)
 
         return tevt, kevt
+
+
+class IssuerDoer(doing.Doer):
+    """
+    Basic Issuer Doer  to initialize inception events of the registry
+
+    Inherited Attributes:
+        .done is Boolean completion state:
+            True means completed
+            Otherwise incomplete. Incompletion maybe due to close or abort.
+
+    Attributes:
+        .issuer is Issuer subclass
+
+    Inherited Properties:
+        .tyme is float relative cycle time of associated Tymist .tyme obtained
+            via injected .tymth function wrapper closure.
+        .tymth is function wrapper closure returned by Tymist .tymeth() method.
+            When .tymth is called it returns associated Tymist .tyme.
+            .tymth provides injected dependency on Tymist tyme base.
+        .tock is float, desired time in seconds between runs or until next run,
+                 non negative, zero means run asap
+
+    Properties:
+
+    Methods:
+        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+        .__call__ makes instance callable
+            Appears as generator function that returns generator
+        .do is generator method that returns generator
+        .enter is enter context action method
+        .recur is recur context action method or generator method
+        .exit is exit context method
+        .close is close context method
+        .abort is abort context method
+
+    Hidden:
+        ._tymth is injected function wrapper closure returned by .tymen() of
+            associated Tymist instance that returns Tymist .tyme. when called.
+        ._tock is hidden attribute for .tock property
+    """
+
+    def __init__(self, issuer, **kwa):
+        """
+        Parameters:
+           habitat (Habitat): instance
+        """
+        super(IssuerDoer, self).__init__(**kwa)
+        self.issuer = issuer
+
+
+    def enter(self):
+        """"""
+        if not self.issuer.inited:
+            self.issuer.setup(**self.issuer._inits)
+
+
+    def exit(self):
+        """"""
+        pass

@@ -17,7 +17,6 @@ from keri.core.coring import Serials
 from keri.db import dbing, basing, koming
 
 
-
 def test_habitat():
     """
     Test Habitat class
@@ -29,6 +28,41 @@ def test_habitat():
     hab.ks.close(clear=True)
 
     """End Test"""
+
+
+def test_habitat_rotate_with_witness():
+    if os.path.exists('/usr/local/var/keri/db/phil-test'):
+        shutil.rmtree('/usr/local/var/keri/db/phil-test')
+    if os.path.exists('/usr/local/var/keri/keep/phil-test'):
+        shutil.rmtree('/usr/local/var/keri/keep/phil-test')
+
+    name = "phil-test"
+    with basing.openDB(name=name, temp=False) as db, \
+            keeping.openKS(name=name, temp=False) as ks:
+        hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False,
+                              wits=["B8NkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M"])
+        oidig = hab.iserder.dig
+        opre = hab.pre
+        opub = hab.kever.verfers[0].qb64
+        odig = hab.kever.serder.dig
+
+    with basing.openDB(name=name, temp=False, reload=True) as db, \
+            keeping.openKS(name=name, temp=False) as ks:
+        hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False,
+                              wits=["B8NkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M"])
+
+        assert hab.pre == opre
+        assert hab.prefixes is db.prefixes
+        assert hab.kevers is db.kevers
+        assert hab.pre in hab.prefixes
+        assert hab.pre in hab.kevers
+        assert hab.iserder.dig == oidig
+
+        hab.rotate(count=3)
+
+        assert hab.ridx == 1
+        assert opub != hab.kever.verfers[0].qb64
+        assert odig != hab.kever.serder.dig
 
 
 def test_habitat_reinitialization():
@@ -43,7 +77,7 @@ def test_habitat_reinitialization():
     name = "bob-test"
 
     with basing.openDB(name=name, clear=True, temp=False) as db, \
-         keeping.openKS(name=name, clear=True, temp=False) as ks:
+            keeping.openKS(name=name, clear=True, temp=False) as ks:
 
         hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
         oidig = hab.iserder.dig
@@ -102,7 +136,7 @@ def test_habitat_reinitialization_reload():
     name = "bob-test"
 
     with basing.openDB(name=name, clear=True, temp=False) as db, \
-         keeping.openKS(name=name, clear=True, temp=False) as ks:
+            keeping.openKS(name=name, clear=True, temp=False) as ks:
 
         hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
         oidig = hab.iserder.dig
@@ -151,4 +185,4 @@ def test_habitat_reinitialization_reload():
 
 
 if __name__ == "__main__":
-    test_habitat_reinitialization()
+    test_habitat_rotate_with_witness()

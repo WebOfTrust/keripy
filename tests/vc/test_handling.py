@@ -61,37 +61,34 @@ def test_issuing():
         # Create Red's wallet and Issue Handler for receiving the credential
         redWallet = Wallet(hab=sidHab, db=redPDB)
         redIssueHandler = IssueHandler(wallet=redWallet, typ=jsonSchema)
-
-        redExc = exchanging.Exchanger(hab=sidHab, tymth=doist.tymen())
-        redExc.registerBehavior(route=redIssueHandler.resource, behave=redIssueHandler.behavior)
+        redExc = exchanging.Exchanger(hab=sidHab, tymth=doist.tymen(), handlers=[redIssueHandler])
 
         # Build the credential subject and then the Credentialer for the full credential
         credSubject = dict(
             id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
-            lei="254900OPPU84GM83MG36"
+            lei="254900OPPU84GM83MG36",
+            issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
 
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
                             subject=credSubject,
-                            issuance="2021-06-27T21:26:21.233257+00:00",
                             typ=jsonSchema)
 
-        assert creder.said == "Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY"
+        assert creder.said == "EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM"
 
         msg = sidHab.endorse(serder=creder)
         assert msg == (
-            b'{"v":"KERI10JSON000136_","i":"Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY",'
-            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY",'
-            b'"issuer":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","issuance":"2021-06-27T21:26:21.233257+00:00",'
-            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v",'
-            b'"lei":"254900OPPU84GM83MG36"}}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE'
-            b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAAVgLJOmUNlMZpSGV0hr'
-            b'-KddJmmEByoxfDdvkW161VsZO2_gjYf5OODwjyA3oSThfXGnj5Jhk5iszNuT2ZSsTMBg')
+            b'{"v":"KERI10JSON000136_","i":"EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM",'
+            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
+            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36",'
+            b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE'
+            b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI'
+            b'-AABAA0pXbQllgzXr88IczAnsPrdhgFKs9wNQvfSfzyrtcvbTwq-U1DmBluAklntCqH1AbBL6TWLZIDGi83BHLWJ82CA')
 
         # Create the issue credential payload
         pl = dict(
-            verifiableCredential=[envelope(msg, typ=jsonSchema)]
+            vc=[envelope(msg, typ=jsonSchema)]
         )
 
         # Create the `exn` message for issue credential
@@ -104,13 +101,12 @@ def test_issuing():
         assert doist.tyme == limit
 
         ser = (
-            b'{"v":"KERI10JSON000136_","i":"Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY",'
-            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY",'
-            b'"issuer":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","issuance":"2021-06-27T21:26:21.233257+00:00",'
-            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36"}}'
-        )
+            b'{"v":"KERI10JSON000136_","i":"EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM",'
+            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
+            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36",'
+            b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
         sig0 = (
-            b'AAVgLJOmUNlMZpSGV0hr-KddJmmEByoxfDdvkW161VsZO2_gjYf5OODwjyA3oSThfXGnj5Jhk5iszNuT2ZSsTMBg'
+            b'AA0pXbQllgzXr88IczAnsPrdhgFKs9wNQvfSfzyrtcvbTwq-U1DmBluAklntCqH1AbBL6TWLZIDGi83BHLWJ82CA'
         )
 
         # verify we can load serialized VC by SAID
@@ -189,16 +185,16 @@ def test_proving():
 
         credSubject = dict(
             id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
-            lei="254900OPPU84GM83MG36"
+            lei="254900OPPU84GM83MG36",
+            issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
 
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
                             subject=credSubject,
-                            issuance="2021-06-27T21:26:21.233257+00:00",
                             typ=JSONSchema(resolver=cache))
 
-        assert creder.said == "Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY"
+        assert creder.said == "EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM"
 
         msg = sidHab.endorse(serder=creder)
         hanWallet = Wallet(hab=hanHab, db=hanPDB)
@@ -211,9 +207,7 @@ def test_proving():
 
         # Create Red's wallet and Issue Handler for receiving the credential
         hanRequestHandler = RequestHandler(wallet=hanWallet, typ=jsonSchema)
-
-        hanExc = exchanging.Exchanger(hab=hanHab, tymth=doist.tymen())
-        hanExc.registerBehavior(route=hanRequestHandler.resource, behave=hanRequestHandler.behavior)
+        hanExc = exchanging.Exchanger(hab=hanHab, tymth=doist.tymen(), handlers=[hanRequestHandler])
 
         # Create the issue credential payload
         pl = dict(
@@ -231,7 +225,7 @@ def test_proving():
         doist.do(doers=[hanExc])
         assert doist.tyme == limit
 
-        resp = hanRequestHandler.behavior.cues.popleft()
+        resp = hanRequestHandler.cues.popleft()
         assert resp is not None
 
         respSer = coring.Serder(raw=resp.raw)
@@ -253,7 +247,7 @@ def test_proving():
 
         proof = (
             "-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw"
-            "-AxDNI7_ZmaI-AABAAVgLJOmUNlMZpSGV0hr-KddJmmEByoxfDdvkW161VsZO2_gjYf5OODwjyA3oSThfXGnj5Jhk5iszNuT2ZSsTMBg")
+            "-AxDNI7_ZmaI-AABAA0pXbQllgzXr88IczAnsPrdhgFKs9wNQvfSfzyrtcvbTwq-U1DmBluAklntCqH1AbBL6TWLZIDGi83BHLWJ82CA")
         assert vcs[0]["proof"] == proof
 
 

@@ -1120,6 +1120,7 @@ def query(pre,
           dt=None,
           dta=None,
           dtb=None,
+          sn=None,
           version=Version,
           kind=Serials.json):
 
@@ -1150,6 +1151,9 @@ def query(pre,
 
     if dtb is not None:
         qry["dtb"] = dt
+
+    if sn is not None:
+        qry["s"] = sn
 
 
     ked = dict(v=vs,  # version string
@@ -1344,8 +1348,8 @@ class Kever:
         ilk = serder.ked["t"]
         if ilk not in (Ilks.icp, Ilks.dip):
             raise ValidationError("Expected ilk = {} or {} got {} for evt = {}."
-                                              "".format(Ilks.icp, Ilks.dip,
-                                                        ilk, serder.ked))
+                                  "".format(Ilks.icp, Ilks.dip,
+                                  ilk, serder.ked))
         self.ilk = ilk
 
         labels = DIP_LABELS if ilk == Ilks.dip else ICP_LABELS

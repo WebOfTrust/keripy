@@ -1,0 +1,9 @@
+{
+  "salt": "0123456789abcdef",
+  "transferable": true,
+  "witnesses": ["B8NkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M"],
+  "icount": 3,
+  "ncount": 5,
+  "isith": 1,
+  "nsith": 1
+}
