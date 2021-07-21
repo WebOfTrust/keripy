@@ -41,7 +41,8 @@ def test_wallet():
         schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
         credSubject = dict(
             id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
-            lei="254900OPPU84GM83MG36"
+            lei="254900OPPU84GM83MG36",
+            issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
 
         cache = CacheResolver()
@@ -50,7 +51,6 @@ def test_wallet():
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
                             subject=credSubject,
-                            issuance="2021-06-27T21:26:21.233257+00:00",
                             typ=JSONSchema(resolver=cache))
         assert creder.said == "EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM"
 
@@ -160,7 +160,8 @@ def test_build_proof():
         schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
         credSubject = dict(
             id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
-            lei="254900OPPU84GM83MG36"
+            lei="254900OPPU84GM83MG36",
+            issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
 
         cache = CacheResolver()
@@ -169,7 +170,6 @@ def test_build_proof():
         creder = credential(issuer=sigHab.pre,
                             schema=schemer.said,
                             subject=credSubject,
-                            issuance="2021-06-27T21:26:21.233257+00:00",
                             typ=JSONSchema(resolver=cache))
 
         sigHab.rotate()

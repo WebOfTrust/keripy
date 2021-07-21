@@ -39,7 +39,8 @@ def test_proving():
         schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
         credSubject = dict(
             id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
-            lei="254900OPPU84GM83MG36"
+            lei="254900OPPU84GM83MG36",
+            issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
 
         cache = CacheResolver()
@@ -48,7 +49,6 @@ def test_proving():
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
                             subject=credSubject,
-                            issuance="2021-06-27T21:26:21.233257+00:00",
                             typ=JSONSchema(resolver=cache))
 
         msg = sidHab.endorse(serder=creder)
@@ -181,6 +181,42 @@ def test_credentialer():
     assert creder.crd == d3
 
 
+def test_credential():
+    d = dict(
+        i="",
+        issuanceDate="2021-06-27T21:26:21.233257+00:00",
+        type=["VerifiablePresentation",
+              "LegalEntityEngagementContextRolevLEICredential"],
+        personLegalName="John Doe",
+        engagementContextRole="Project Manager",
+        credentialStatus="EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",
+        LEI="254900OPPU84GM83MG36"
+    )
+
+    # test source chaining with labeled edge
+    s = [
+        dict(qualifiedvLEIIssuervLEICredential="EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD")
+    ]
+
+    saider = scheming.Saider(sed=d, code=coring.MtrDex.Blake3_256, idder=scheming.Ids.i)
+    assert saider.qb64 == "ESRs5eTGniYdVFwPtHYtZ4vMxrgJOaK_5HH9wEmT6rq8"
+    d["i"] = saider.qb64
+
+    cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
+                      issuer="EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
+                      subject=d, source=s)
+
+    assert cred.raw == (
+        b'{"v":"KERI10JSON000273_","i":"EVbiCCuRv-joKhOUCYUQsdkgsExGjQo7bRoZT6HdcuWk",'
+        b'"x":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","ti":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",'
+        b'"d":{"i":"ESRs5eTGniYdVFwPtHYtZ4vMxrgJOaK_5HH9wEmT6rq8","issuanceDate":"2021-06-27T21:26:21.233257+00:00",'
+        b'"type":["VerifiablePresentation","LegalEntityEngagementContextRolevLEICredential"],"personLegalName":"John '
+        b'Doe","engagementContextRole":"Project Manager",'
+        b'"credentialStatus":"EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36"},'
+        b'"s":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}')
+
+
 if __name__ == '__main__':
     test_proving()
     test_credentialer()
+    test_credential()

@@ -23,9 +23,7 @@ logger = help.ogler.getLogger()
 def credential(schema,
                issuer,
                subject,
-               issuance=None,
-               expiry=None,
-               regk=None,
+               source=None,
                typ=JSONSchema(),
                version=Version,
                kind=Serials.json):
@@ -34,33 +32,24 @@ def credential(schema,
         schema is SAID of schema for this credential
         issuer is the identifier prefix of the issuer
         subject is dict of the values being assigned to the subject of this credential
-        issuance is date/time in iso format, defaults to now if None
-        expiry is date/time in iso format of expiration date
-        regk is qb64 identifier of the registry
+        source is list of source credentials to which this credential is chained
         typ is schema type
         version is Version instance
         kind is serialization kind
 
     """
     vs = Versify(version=version, kind=kind, size=0)
-    iss = issuance if issuance is not None else helping.nowIso8601()
 
     vc = dict(
         v=vs,
         i="",
         x=schema,
         ti=issuer,
+        d=subject
     )
 
-    subject["issuanceDate"] = issuance
-
-    if expiry is not None:
-        subject["expiry"] = expiry
-
-    if regk is not None:
-        subject["credentialStatus"] = regk
-
-    vc["d"] = subject
+    if source is not None:
+        vc["s"] = source
 
     return Credentialer(crd=vc, typ=typ)
 

@@ -66,13 +66,13 @@ def test_issuing():
         # Build the credential subject and then the Credentialer for the full credential
         credSubject = dict(
             id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
-            lei="254900OPPU84GM83MG36"
+            lei="254900OPPU84GM83MG36",
+            issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
 
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
                             subject=credSubject,
-                            issuance="2021-06-27T21:26:21.233257+00:00",
                             typ=jsonSchema)
 
         assert creder.said == "EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM"
@@ -185,13 +185,13 @@ def test_proving():
 
         credSubject = dict(
             id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
-            lei="254900OPPU84GM83MG36"
+            lei="254900OPPU84GM83MG36",
+            issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
 
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
                             subject=credSubject,
-                            issuance="2021-06-27T21:26:21.233257+00:00",
                             typ=JSONSchema(resolver=cache))
 
         assert creder.said == "EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM"
