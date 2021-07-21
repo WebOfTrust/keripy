@@ -391,12 +391,12 @@ class ProofHandler(doing.Doer):
     resource = "/presentation/proof"
 
 
-    def __init__(self, callback, typ=JSONSchema(), cues=None, **kwa):
+    def __init__(self, typ=JSONSchema(), cues=None, proofs=None, **kwa):
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.proofs = proofs if proofs is not None else decking.Deck()
 
         self.typ = typ
-        self.callback = callback
 
         super(ProofHandler, self).__init__(**kwa)
 
@@ -438,8 +438,7 @@ class ProofHandler(doing.Doer):
                 for idx, descriptor in enumerate(dm):
                     # TODO:  Find verifiable credential in vcs based on `path`
                     vc = vcs[idx]
-                    self.callback(pre, vc)
-
+                    self.proofs.append((pre, vc))
 
                 yield
 
