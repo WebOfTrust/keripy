@@ -15,10 +15,9 @@ from orderedset import OrderedSet as oset
 from .. import help
 from ..help import helping
 from ..help import decking
-from .coring import MtrDex, NonTransDex, CtrDex, Counter
-from .coring import Seqner, Siger, Cigar, Dater
-from .coring import Verfer, Diger, Nexter, Prefixer, Serder, Tholder
-from .coring import Versify, Serials, Ilks
+from .coring import (Versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
+                     Seqner, Siger, Cigar, Dater,
+                     Verfer, Diger, Nexter, Prefixer, Serder, Tholder)
 from ..db import basing
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN
 
@@ -45,6 +44,9 @@ ROT_LABELS = ["v", "i", "s", "t", "p", "kt", "k", "n",
 DRT_LABELS = ["v", "i", "s", "t", "p", "kt", "k", "n",
               "bt", "br", "ba", "a"]
 IXN_LABELS = ["v", "i", "s", "t", "p", "a"]
+
+KSN_LABELS = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "k", "n",
+              "bt", "b", "c", "ee", "di", "r"]
 
 
 @dataclass(frozen=True)
@@ -979,6 +981,7 @@ def state(pre,
           wits=None, # default to []
           cnfg=None, # default to []
           dpre=None,
+          route="",
           version=Version,
           kind=Serials.json,
           ):
@@ -1004,6 +1007,7 @@ def state(pre,
         wits is list of witness prefixes qb64
         cnfg is list of strings TraitDex of configuration traits
         dpre is qb64 of delegator's identifier prefix if any
+        route (str): endpoint route of this ksn
         version is Version instance
         kind is serialization kind
 
@@ -1031,11 +1035,12 @@ def state(pre,
             "br": ["Dd8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CMZ-i0"],
             "ba": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"]
           },
-        "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv"
+        "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv",
+        "r": "route/to/endpoint/buffer"
     }
 
     "di": "" when not delegated
-
+    "r": ""  when no route
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.ksn
@@ -1109,7 +1114,8 @@ def state(pre,
                b=wits,  # list of qb64 may be empty
                c=cnfg,  # list of config ordered mappings may be empty
                ee=eevt._asdict(),  # latest est event dict
-               di=dpre if dpre is not None else ""
+               di=dpre if dpre is not None else "",
+               r=route,
                )
 
     return Serder(ked=ksd)  # return serialized ksd
@@ -1419,6 +1425,12 @@ class Kever:
             state (Serder): instance of key stat notice 'ksn' message body
 
         """
+        for k in KSN_LABELS:
+            if k not in state.ked:
+                raise ValidationError("Missing element = {} from {} event."
+                                      " evt = {}.".format(k, Ilks.ksn,
+                                                          state.pretty()))
+
         self.version = state.version
         self.prefixer = Prefixer(qb64=state.pre)
         self.sn = state.sn
@@ -2864,6 +2876,11 @@ class Kevery:
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
         """
+        for k in KSN_LABELS:
+            if k not in serder.ked:
+                raise ValidationError("Missing element = {} from {} event."
+                                      " evt = {}.".format(k, Ilks.ksn,
+                                                          serder.pretty()))
         # fetch from serder to process
         ked = serder.ked
         pre = serder.pre

@@ -31,6 +31,15 @@ from ..kering import Versionage, Version
 from ..help import helping
 from ..help.helping import sceil
 
+# ilk (message type )
+Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct ksn '
+                                  'vcp vrt iss rev bis brv req exn')
+
+Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
+              ksn='ksn', vcp='vcp', vrt='vrt', iss='iss', rev='rev',
+              bis='bis', brv='brv', req="req", exn="exn")
+
+
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
@@ -95,13 +104,6 @@ def Deversify(vs):
 
     raise ValueError("Invalid version string = {}".format(vs))
 
-# ilk (message type )
-Ilkage = namedtuple("Ilkage", 'icp rot ixn dip drt rct ksn '
-                                  'vcp vrt iss rev bis brv req exn')
-
-Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              ksn='ksn', vcp='vcp', vrt='vrt', iss='iss', rev='rev',
-              bis='bis', brv='brv', req="req", exn="exn")
 
 
 # Base64 utilities
