@@ -872,6 +872,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
           wits=None, # default to []
           cnfg=None, # default to []
           dpre=None,
+          route="",
           version=Version,
           kind=Serials.json,
           ):
@@ -899,6 +900,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
             "wa": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"]
           },
         "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv",
+        "r": "route/to/endpoint/buffer",
     }
 
     "di": "" when not delegated
@@ -967,18 +969,18 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                     wits=wits,
                     )
 
-    assert serderK.raw == (b'{"v":"KERI10JSON0002c9_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0",'
-                    b'"s":"4","t":"ksn","p":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"Eg'
-                    b'Nkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:0'
-                    b'0.000000+00:00","et":"ixn","kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                    b'WVK9ZBNZk0"],"n":"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ","bt":"2","b"'
-                    b':["BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2GU5ud62LM'
-                    b'YWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"],"c":[],"'
-                    b'ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","br":["BNTks'
-                    b'tUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc'
-                    b'1CQnigIUBKrBFz_1Y"]},"di":""}')
+    assert serderK.raw == (b'{"v":"KERI10JSON0002d0_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0",'
+                        b'"s":"4","t":"ksn","p":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"Eg'
+                        b'Nkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:0'
+                        b'0.000000+00:00","et":"ixn","kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+                        b'WVK9ZBNZk0"],"n":"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ","bt":"2","b"'
+                        b':["BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2GU5ud62LM'
+                        b'YWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"],"c":[],"'
+                        b'ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","br":["BNTks'
+                        b'tUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc'
+                        b'1CQnigIUBKrBFz_1Y"]},"di":"","r":""}')
 
-    assert serderK.dig == 'ErQMT5zNPzT138nMo01rKZc9dTYDEjKT8YiFhqkNdPG8'
+    assert serderK.dig == 'EapwUdeEbLXzm4RgrrcottEItkl6VON_F_nCuFC1dPBY'
     assert serderK.pre == preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
     assert serderK.sn == 4
 
@@ -992,20 +994,20 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     cigarE = signerE.sign(ser=serderK.raw)
     assert signerE.verfer.verify(sig=cigarE.raw, ser=serderK.raw)
     msg = messagize(serderK, cigars=[cigarE])
-    assert msg == (b'{"v":"KERI10JSON0002c9_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                b'WVK9ZBNZk0","s":"4","t":"ksn","p":"EUskHI462CuIMS_gNkcl_QewzrRSK'
-                b'H2p9zHQIO132Z30","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z'
-                b'30","f":"4","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","'
-                b'kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0"],"n"'
-                b':"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ","bt":"2","b":["B'
-                b'aEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2G'
-                b'U5ud62LMYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIU'
-                b'BKrBFz_1Y"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewzr'
-                b'RSKH2p9zHQIO132Z30","br":["BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS'
-                b'2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]}'
-                b',"di":""}-CABByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0BMs2u7'
-                b'nylI7XJwDWm3XQK1aDG43LpOOHn6dn83w7ZVi8oft7VZaxZeSnPPogq5B5wzEhJA'
-                b'-G4JUcnOVDEnsLYBQ')
+    assert msg == (b'{"v":"KERI10JSON0002d0_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+                    b'WVK9ZBNZk0","s":"4","t":"ksn","p":"EUskHI462CuIMS_gNkcl_QewzrRSK'
+                    b'H2p9zHQIO132Z30","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z'
+                    b'30","f":"4","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","'
+                    b'kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0"],"n"'
+                    b':"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ","bt":"2","b":["B'
+                    b'aEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2G'
+                    b'U5ud62LMYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIU'
+                    b'BKrBFz_1Y"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewzr'
+                    b'RSKH2p9zHQIO132Z30","br":["BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS'
+                    b'2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]}'
+                    b',"di":"","r":""}-CABByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+                    b'0BPxWkuJixAdYrPjWnwz1vrvKHG1U3jk8M18dnGgLssXvjf7lcWaBsal_jBEhck2'
+                    b'lMd4jNGo7y4VBesF7sseeDBg')
 
     # create endorsed ksn with trans endorser
     # create trans key pair for endorder of KSN
@@ -1023,7 +1025,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     sigerE = signerE.sign(ser=serderK.raw, index=0)
     assert signerE.verfer.verify(sig=sigerE.raw, ser=serderK.raw)
     msg = messagize(serderK, sigers=[sigerE], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0002c9_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+    assert msg == (b'{"v":"KERI10JSON0002d0_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
           b'WVK9ZBNZk0","s":"4","t":"ksn","p":"EUskHI462CuIMS_gNkcl_QewzrRSK'
           b'H2p9zHQIO132Z30","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z'
           b'30","f":"4","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","'
@@ -1034,10 +1036,10 @@ def test_keyeventfuncs(mockHelpingNowUTC):
           b'BKrBFz_1Y"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewzr'
           b'RSKH2p9zHQIO132Z30","br":["BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS'
           b'2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]}'
-          b',"di":""}-FABDyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAA'
-          b'AAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AA'
-          b'BAAMs2u7nylI7XJwDWm3XQK1aDG43LpOOHn6dn83w7ZVi8oft7VZaxZeSnPPogq5'
-          b'B5wzEhJA-G4JUcnOVDEnsLYBQ')
+          b',"di":"","r":""}-FABDyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+          b'0AAAAAAAAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhke'
+          b'DZ2z-AABAAPxWkuJixAdYrPjWnwz1vrvKHG1U3jk8M18dnGgLssXvjf7lcWaBsal'
+          b'_jBEhck2lMd4jNGo7y4VBesF7sseeDBg')
 
     # State Delegated (key state notification)
     # create transferable key pair for controller of KEL
@@ -1104,19 +1106,21 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                     dpre=preD
                     )
 
-    assert serderK.raw == (b'{"v":"KERI10JSON0002f5_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0",'
-            b'"s":"4","t":"ksn","p":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"Eg'
-            b'Nkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:0'
-            b'0.000000+00:00","et":"ixn","kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-            b'WVK9ZBNZk0"],"n":"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ","bt":"2","b"'
-            b':["BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2GU5ud62LM'
-            b'YWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"],"c":[],"'
-            b'ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","br":["BNTks'
-            b'tUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc'
-            b'1CQnigIUBKrBFz_1Y"]},"di":"DGz6B3ecka0XQKHaOfs0tpQqwIoHuXecuz733f-zkh7U"}')
+    assert serderK.raw == (b'{"v":"KERI10JSON0002fc_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0",'
+                    b'"s":"4","t":"ksn","p":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","d":"Eg'
+                    b'Nkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","f":"4","dt":"2021-01-01T00:00:0'
+                    b'0.000000+00:00","et":"ixn","kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+                    b'WVK9ZBNZk0"],"n":"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ","bt":"2","b"'
+                    b':["BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2GU5ud62LM'
+                    b'YWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"],"c":[],"'
+                    b'ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","br":["BNTks'
+                    b'tUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc'
+                    b'1CQnigIUBKrBFz_1Y"]},"di":"DGz6B3ecka0XQKHaOfs0tpQqwIoHuXecuz733f-zkh7U","r"'
+                    b':""}')
 
 
-    assert serderK.dig == 'ESYZTBL-pFat3qz9_V7qFmBfQdR_Muh6lXOf87DVU1ZM'
+
+    assert serderK.dig == 'Ej1enA_vBCgI9_cOS_oxcWwhl1wagBOcdEOHR5NnhUTo'
     assert serderK.pre == preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
     assert serderK.sn == 4
 
@@ -1131,7 +1135,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     cigarE = signerE.sign(ser=serderK.raw)
     assert signerE.verfer.verify(sig=cigarE.raw, ser=serderK.raw)
     msg = messagize(serderK, cigars=[cigarE])
-    assert msg == (b'{"v":"KERI10JSON0002f5_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+    assert msg == (b'{"v":"KERI10JSON0002fc_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
           b'WVK9ZBNZk0","s":"4","t":"ksn","p":"EUskHI462CuIMS_gNkcl_QewzrRSK'
           b'H2p9zHQIO132Z30","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z'
           b'30","f":"4","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","'
@@ -1142,9 +1146,10 @@ def test_keyeventfuncs(mockHelpingNowUTC):
           b'BKrBFz_1Y"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewzr'
           b'RSKH2p9zHQIO132Z30","br":["BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS'
           b'2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]}'
-          b',"di":"DGz6B3ecka0XQKHaOfs0tpQqwIoHuXecuz733f-zkh7U"}-CABByvCLRr'
-          b'5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0BzaCnCy5mblZkUm0sj3o_Uih2W'
-          b'D0SX7d5bbpmwrGaP1lI8zOK0dcqHRKyVKj_fJSVtJPmsv2Qy53OhQe8qbdCDg')
+          b',"di":"DGz6B3ecka0XQKHaOfs0tpQqwIoHuXecuz733f-zkh7U","r":""}-CAB'
+          b'ByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0B1eH0MbCjEoIO0w4D_7'
+          b'wBDFMZXs691CfrTzW8q-52xjUei0s5gYq_dGYp2xMH-zRktKjCGZEgMG0mqbTu2g'
+          b'HAAQ')
 
 
     # create endorsed ksn with trans endorser
@@ -1163,7 +1168,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     sigerE = signerE.sign(ser=serderK.raw, index=0)
     assert signerE.verfer.verify(sig=sigerE.raw, ser=serderK.raw)
     msg = messagize(serderK, sigers=[sigerE], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0002f5_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+    assert msg == (b'{"v":"KERI10JSON0002fc_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
           b'WVK9ZBNZk0","s":"4","t":"ksn","p":"EUskHI462CuIMS_gNkcl_QewzrRSK'
           b'H2p9zHQIO132Z30","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z'
           b'30","f":"4","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","'
@@ -1174,11 +1179,11 @@ def test_keyeventfuncs(mockHelpingNowUTC):
           b'BKrBFz_1Y"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewzr'
           b'RSKH2p9zHQIO132Z30","br":["BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS'
           b'2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]}'
-          b',"di":"DGz6B3ecka0XQKHaOfs0tpQqwIoHuXecuz733f-zkh7U"}-FABDyvCLRr'
-          b'5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAAAAAAEMu'
-          b'NWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAzaCnCy5mblZkUm0sj'
-          b'3o_Uih2WD0SX7d5bbpmwrGaP1lI8zOK0dcqHRKyVKj_fJSVtJPmsv2Qy53OhQe8q'
-          b'bdCDg')
+          b',"di":"DGz6B3ecka0XQKHaOfs0tpQqwIoHuXecuz733f-zkh7U","r":""}-FAB'
+          b'DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAA'
+          b'AAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAA1eH0MbCjEo'
+          b'IO0w4D_7wBDFMZXs691CfrTzW8q-52xjUei0s5gYq_dGYp2xMH-zRktKjCGZEgMG'
+          b'0mqbTu2gHAAQ')
 
 
     """ Done Test """
@@ -1467,9 +1472,9 @@ def test_kever(mockHelpingNowUTC):
         assert kever.sn == 0
         assert [verfer.qb64 for verfer in kever.verfers] == [skp0.verfer.qb64]
         assert kever.nexter.qb64 == nexter.qb64
-        state = kever.db.stts.get(keys=kever.prefixer.qb64)
+        state = kever.db.states.get(keys=kever.prefixer.qb64)
         assert state.sn == kever.sn == 0
-        feqner = kever.db.fons.get(keys=(kever.prefixer.qb64, kever.serder.dig))
+        feqner = kever.db.firsts.get(keys=(kever.prefixer.qb64, kever.serder.dig))
         assert feqner.sn == kever.sn
 
         serderK = kever.state()
@@ -1478,12 +1483,13 @@ def test_kever(mockHelpingNowUTC):
         assert serderK.sn == kever.sn
         assert ([verfer.qb64 for verfer in serderK.verfers] ==
                 [verfer.qb64 for verfer in kever.verfers])
-        assert serderK.raw == (b'{"v":"KERI10JSON0001b5_","i":"DBQOqSaf6GqVAoPxb4UARrklS8kLYj3JqsR6b4AASDd4",'
-                        b'"s":"0","t":"ksn","p":"","d":"ErSmGekLPyCOf0VIVmYJJLHo6CVdd1K_ApeFUYsU_5WE",'
-                        b'"f":"0","dt":"2021-01-01T00:00:00.000000+00:00","et":"icp","kt":"1","k":["DB'
-                        b'QOqSaf6GqVAoPxb4UARrklS8kLYj3JqsR6b4AASDd4"],"n":"E_d8cX6vuQwmD5P62_b663OeaV'
-                        b'CLbiBFsirRHJsHn9co","bt":"0","b":[],"c":[],"ee":{"s":"0","d":"ErSmGekLPyCOf0'
-                        b'VIVmYJJLHo6CVdd1K_ApeFUYsU_5WE","br":[],"ba":[]},"di":""}')
+        assert serderK.raw == (b'{"v":"KERI10JSON0001bc_","i":"DBQOqSaf6GqVAoPxb4UARrklS8kLYj3JqsR6b4AASDd4",'
+                            b'"s":"0","t":"ksn","p":"","d":"ErSmGekLPyCOf0VIVmYJJLHo6CVdd1K_ApeFUYsU_5WE",'
+                            b'"f":"0","dt":"2021-01-01T00:00:00.000000+00:00","et":"icp","kt":"1","k":["DB'
+                            b'QOqSaf6GqVAoPxb4UARrklS8kLYj3JqsR6b4AASDd4"],"n":"E_d8cX6vuQwmD5P62_b663OeaV'
+                            b'CLbiBFsirRHJsHn9co","bt":"0","b":[],"c":[],"ee":{"s":"0","d":"ErSmGekLPyCOf0'
+                            b'VIVmYJJLHo6CVdd1K_ApeFUYsU_5WE","br":[],"ba":[]},"di":"","r":""}')
+
 
     with openDB() as db:  # Non-Transferable case
         # Setup inception key event dict
@@ -4202,50 +4208,9 @@ def test_reload_kever(mockHelpingNowUTC):
         assert serder.dig == natHab.kever.serder.dig
         nstate = natHab.kever.state()
 
-        state = natHab.db.stts.get(keys=natHab.pre)  # Serder instance
+        state = natHab.db.states.get(keys=natHab.pre)  # Serder instance
         assert state.pretty() == ('{\n'
-                            ' "v": "KERI10JSON00023f_",\n'
-                            ' "i": "E5lskf_uSh7ymhplif9nKREEsuwbBfHbHTJuMZyV6Fls",\n'
-                            ' "s": "6",\n'
-                            ' "t": "ksn",\n'
-                            ' "p": "E4T5Gk5v7cv9x5oxT34zwBrTQ7K-x_Atw_kFFBNs_Mgw",\n'
-                            ' "d": "En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI",\n'
-                            ' "f": "6",\n'
-                            ' "dt": "2021-01-01T00:00:00.000000+00:00",\n'
-                            ' "et": "ixn",\n'
-                            ' "kt": "2",\n'
-                            ' "k": [\n'
-                            '  "DI5E8Zqgy0j9HIkVRMjOTTF3Nr_PqwFDZ7bDNi0QCzew",\n'
-                            '  "D2NIcFtglppQom493fiftJFiJkeKvC9b5CIdG19G8GHg",\n'
-                            '  "D36Ev0IqfpZ2wg0QbbTtPilJ2NowjFT1IqF954cLB-9M"\n'
-                            ' ],\n'
-                            ' "n": "EyIxjAmcXOeiFzlIlRpRa7byustaKPabVGDXIIQHvBHg",\n'
-                            ' "bt": "0",\n'
-                            ' "b": [],\n'
-                            ' "c": [],\n'
-                            ' "ee": {\n'
-                            '  "s": "2",\n'
-                            '  "d": "EVqqrPEkZ08J82HsZss8FUWyzUrDM3mavPTPb0meWr1s",\n'
-                            '  "br": [],\n'
-                            '  "ba": []\n'
-                            ' },\n'
-                            ' "di": ""\n'
-                            '}')
-        assert state.sn == 6
-        assert state.ked["f"] == '6'
-        assert state.ked == nstate.ked
-
-        # now create new Kever with state
-        kever = eventing.Kever(state=state, db=natDB)
-        assert kever.sn == 6
-        assert kever.fn == 6
-        assert kever.serder.ked == natHab.kever.serder.ked
-        assert kever.serder.dig == natHab.kever.serder.dig
-
-        kstate = kever.state()
-        assert kstate.ked == state.ked
-        assert state.pretty() == ('{\n'
-                                    ' "v": "KERI10JSON00023f_",\n'
+                                    ' "v": "KERI10JSON000246_",\n'
                                     ' "i": "E5lskf_uSh7ymhplif9nKREEsuwbBfHbHTJuMZyV6Fls",\n'
                                     ' "s": "6",\n'
                                     ' "t": "ksn",\n'
@@ -4270,7 +4235,50 @@ def test_reload_kever(mockHelpingNowUTC):
                                     '  "br": [],\n'
                                     '  "ba": []\n'
                                     ' },\n'
-                                    ' "di": ""\n'
+                                    ' "di": "",\n'
+                                    ' "r": ""\n'
+                                    '}')
+        assert state.sn == 6
+        assert state.ked["f"] == '6'
+        assert state.ked == nstate.ked
+
+        # now create new Kever with state
+        kever = eventing.Kever(state=state, db=natDB)
+        assert kever.sn == 6
+        assert kever.fn == 6
+        assert kever.serder.ked == natHab.kever.serder.ked
+        assert kever.serder.dig == natHab.kever.serder.dig
+
+        kstate = kever.state()
+        assert kstate.ked == state.ked
+        assert state.pretty() == ('{\n'
+                                    ' "v": "KERI10JSON000246_",\n'
+                                    ' "i": "E5lskf_uSh7ymhplif9nKREEsuwbBfHbHTJuMZyV6Fls",\n'
+                                    ' "s": "6",\n'
+                                    ' "t": "ksn",\n'
+                                    ' "p": "E4T5Gk5v7cv9x5oxT34zwBrTQ7K-x_Atw_kFFBNs_Mgw",\n'
+                                    ' "d": "En0iLDgaeD9Dydf4Tkd0ilgOW-clbhwMdGW3_t4xHsXI",\n'
+                                    ' "f": "6",\n'
+                                    ' "dt": "2021-01-01T00:00:00.000000+00:00",\n'
+                                    ' "et": "ixn",\n'
+                                    ' "kt": "2",\n'
+                                    ' "k": [\n'
+                                    '  "DI5E8Zqgy0j9HIkVRMjOTTF3Nr_PqwFDZ7bDNi0QCzew",\n'
+                                    '  "D2NIcFtglppQom493fiftJFiJkeKvC9b5CIdG19G8GHg",\n'
+                                    '  "D36Ev0IqfpZ2wg0QbbTtPilJ2NowjFT1IqF954cLB-9M"\n'
+                                    ' ],\n'
+                                    ' "n": "EyIxjAmcXOeiFzlIlRpRa7byustaKPabVGDXIIQHvBHg",\n'
+                                    ' "bt": "0",\n'
+                                    ' "b": [],\n'
+                                    ' "c": [],\n'
+                                    ' "ee": {\n'
+                                    '  "s": "2",\n'
+                                    '  "d": "EVqqrPEkZ08J82HsZss8FUWyzUrDM3mavPTPb0meWr1s",\n'
+                                    '  "br": [],\n'
+                                    '  "ba": []\n'
+                                    ' },\n'
+                                    ' "di": "",\n'
+                                    ' "r": ""\n'
                                     '}')
 
     assert not os.path.exists(natKS.path)
@@ -4282,6 +4290,7 @@ def test_reload_kever(mockHelpingNowUTC):
 
 
 if __name__ == "__main__":
-    pytest.main(['-vv', 'test_eventing.py::test_reload_kever'])
-    # test_process_manual()
+    # pytest.main(['-vv', 'test_eventing.py::test_reload_kever'])
+    test_process_manual()
+    "test_keyeventfuncs(mockHelpingNowUTC)"
 
