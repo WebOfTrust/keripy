@@ -451,7 +451,7 @@ class Baser(dbing.LMDBer):
                 copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
                 for keys, data in self.habs.getItemIter():
                     if data.prefix in copy.kevers:  # only copy habs that verified
-                        copy.habs.put(keys=keys, data=data)
+                        copy.habs.put(keys=keys, val=data)
                         copy.prefixes.add(data.prefix)
 
                 if not copy.habs.get(keys=(self.name, )):

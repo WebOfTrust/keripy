@@ -771,7 +771,7 @@ class Manager:
                     salter = self.decrypter.decrypt(ser=data.salt)
                     data.salt = (self.encrypter.encrypt(matter=salter).qb64
                                  if self.encrypter else salter.qb64)
-                    self.ks.prms.pin(keys, data=data)
+                    self.ks.prms.pin(keys, val=data)
 
             # private signing key seeds
             # keys is tuple == (verkey.qb64,) .pris database auto decrypts
@@ -988,26 +988,26 @@ class Manager:
         if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
             raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-        if not self.ks.prms.put(pre, data=pp):
+        if not self.ks.prms.put(pre, val=pp):
             raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
         self.pidx = pidx + 1  # increment for next inception
 
-        if not self.ks.sits.put(pre, data=ps):
+        if not self.ks.sits.put(pre, val=ps):
             raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
 
         for signer in isigners:  # store secrets (private key val keyed by public key)
             self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
                              encrypter=self.encrypter)
 
-        self.ks.pubs.put(riKey(pre, ri=ridx), data=PubSet(pubs=ps.new.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ridx), val=PubSet(pubs=ps.new.pubs))
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
                              encrypter=self.encrypter)
 
         # store publics keys for lookup of private key for replay
-        self.ks.pubs.put(riKey(pre, ri=ridx+1), data=PubSet(pubs=ps.nxt.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ridx+1), val=PubSet(pubs=ps.nxt.pubs))
 
         return (verfers, digers, cst, nst)
 
@@ -1045,12 +1045,12 @@ class Manager:
         if self.ks.sits.get(new) is not None:
             raise ValueError("Preexistent new sit for pre={} may not clobber.".format(new))
 
-        if not self.ks.prms.put(new, data=oldprm):
+        if not self.ks.prms.put(new, val=oldprm):
             raise ValueError("Failed moving prm from old pre={} to new pre={}.".format(old, new))
         else:
             self.ks.prms.rem(old)
 
-        if not self.ks.sits.put(new, data=oldsit):
+        if not self.ks.sits.put(new, val=oldsit):
             raise ValueError("Failed moving sit from old pre={} to new pre={}.".format(old, new))
         else:
             self.ks.sits.rem(old)
@@ -1058,7 +1058,7 @@ class Manager:
         # move .pubs entries if any
         i = 0
         while (pl := self.ks.pubs.get(riKey(old, i))):
-            if not self.ks.pubs.put(riKey(new, i), data=pl):
+            if not self.ks.pubs.put(riKey(new, i), val=pl):
                 raise ValueError("Failed moving pubs at pre={} ri={} to new"
                                  " pre={}".format(old, i, new))
             i += 1
@@ -1172,7 +1172,7 @@ class Manager:
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
                               ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
-        if not self.ks.sits.pin(pre, data=ps):
+        if not self.ks.sits.pin(pre, val=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
         for signer in signers:  # store secrets (private key val keyed by public key)
@@ -1180,7 +1180,7 @@ class Manager:
                              encrypter=self.encrypter)
 
         # store public keys for lookup of private keys by public key for replay
-        self.ks.pubs.put(riKey(pre, ri=ps.nxt.ridx), data=PubSet(pubs=ps.nxt.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ps.nxt.ridx), val=PubSet(pubs=ps.nxt.pubs))
 
         if erase:
             for pub in old.pubs:  # remove old prikeys
@@ -1355,7 +1355,7 @@ class Manager:
                 if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-                if not self.ks.prms.put(pre, data=pp):
+                if not self.ks.prms.put(pre, val=pp):
                     raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
                 self.pidx = pidx + 1  # increment for next inception
@@ -1366,7 +1366,7 @@ class Manager:
                                  encrypter=self.encrypter)
 
             self.ks.pubs.put(riKey(pre, ri=ridx),
-                                data=PubSet(pubs=[signer.verfer.qb64
+                                val=PubSet(pubs=[signer.verfer.qb64
                                         for signer in csigners]))
 
             odt = dt
@@ -1392,7 +1392,7 @@ class Manager:
             self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         self.ks.pubs.put(riKey(pre, ri=ridx),
-                             data=PubSet(pubs=[signer.verfer.qb64
+                             val=PubSet(pubs=[signer.verfer.qb64
                                                for signer in nsigners]))
 
         csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
@@ -1409,7 +1409,7 @@ class Manager:
                            ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
         ps = PreSit(old=old, new=new, nxt=nxt)
-        if not self.ks.sits.pin(pre, data=ps):
+        if not self.ks.sits.pin(pre, val=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
         return (verferies, digers)
 

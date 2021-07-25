@@ -59,7 +59,7 @@ def test_kom_happy_path():
                      zip=84058)
 
         keys = ("test_key", "0001")
-        mydb.put(keys=keys, data=sue)
+        mydb.put(keys=keys, val=sue)
         actual = mydb.get(keys=keys)
 
         assert actual.first == "Susan"
@@ -75,7 +75,7 @@ def test_kom_happy_path():
         assert actual is None
 
         keys = ("test_key", "0001")
-        mydb.put(keys=keys, data=sue)
+        mydb.put(keys=keys, val=sue)
         actual = mydb.get(keys=keys)
         assert actual == sue
 
@@ -85,12 +85,12 @@ def test_kom_happy_path():
                      city="Bluffdale",
                      state="UT",
                      zip=84043)
-        result = mydb.put(keys=keys, data=kip)
+        result = mydb.put(keys=keys, val=kip)
         assert not result
         actual = mydb.get(keys=keys)
         assert actual == sue
 
-        result = mydb.pin(keys=keys, data=kip)
+        result = mydb.pin(keys=keys, val=kip)
         assert result
         actual = mydb.get(keys=keys)
         assert actual == kip
@@ -105,7 +105,7 @@ def test_kom_happy_path():
                      state="UT",
                      zip=84043)
 
-        mydb.put(keys=keys, data=bob)
+        mydb.put(keys=keys, val=bob)
         actual = mydb.get(keys=keys)
 
         assert actual.first == "Bob"
@@ -153,10 +153,10 @@ def test_kom_get_item_iter():
         assert isinstance(mydb, koming.Komer)
 
 
-        mydb.put(keys=("a","1"), data=w)
-        mydb.put(keys=("a","2"), data=x)
-        mydb.put(keys=("a","3"), data=y)
-        mydb.put(keys=("a","4"), data=z)
+        mydb.put(keys=("a","1"), val=w)
+        mydb.put(keys=("a","2"), val=x)
+        mydb.put(keys=("a","3"), val=y)
+        mydb.put(keys=("a","4"), val=z)
 
         items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
         assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
@@ -187,7 +187,7 @@ def test_put_invalid_dataclass():
         keys = ("test_key", "0001")
 
         with pytest.raises(ValueError):
-            mydb.put(keys=keys, data=sue)
+            mydb.put(keys=keys, val=sue)
 
 
 def test_get_invalid_dataclass():
@@ -206,7 +206,7 @@ def test_get_invalid_dataclass():
         mydb = koming.Komer(db=db, schema=Record, subkey='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
-        mydb.put(keys=keys, data=sue)
+        mydb.put(keys=keys, val=sue)
 
         mydb = koming.Komer(db=db, schema=AnotherClass, subkey='records.')
         with pytest.raises(ValueError):
@@ -226,7 +226,7 @@ def test_not_found_entity():
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
 
-        mydb.put(keys=keys, data=sue)
+        mydb.put(keys=keys, val=sue)
         actual = mydb.get(("not_found", "0001"))
         assert actual is None
 
@@ -309,7 +309,7 @@ def test_custom_serialization():
         mydb = koming.Komer(db=db, schema=Record, subkey='records.')
 
         keys = ("test_key", "0001")
-        mydb.put(keys=keys, data=jim)
+        mydb.put(keys=keys, val=jim)
 
         actual = mydb.get(keys=keys)
         assert actual.first == "Jim"

@@ -246,7 +246,7 @@ class Habitat:
 
             # may want db method that updates .habs. and .prefixes together
             self.db.habs.put(keys=self.name,
-                             data=basing.HabitatRecord(name=self.name,
+                             val=basing.HabitatRecord(name=self.name,
                                                        prefix=self.pre))
             self.prefixes.add(self.pre)
 

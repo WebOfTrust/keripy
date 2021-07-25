@@ -439,11 +439,11 @@ def test_keeper():
 
         assert keeper.prms.get(key) == None
         assert keeper.prms.rem(key) == False
-        assert keeper.prms.put(key, data=prma) == True
+        assert keeper.prms.put(key, val=prma) == True
         assert keeper.prms.get(key) == prma
-        assert keeper.prms.put(key, data=prmb) == False
+        assert keeper.prms.put(key, val=prmb) == False
         assert keeper.prms.get(key) == prma
-        assert keeper.prms.pin(key, data=prmb) == True
+        assert keeper.prms.pin(key, val=prmb) == True
         assert keeper.prms.get(key) == prmb
         assert keeper.prms.rem(key) == True
         assert keeper.prms.get(key) == None
@@ -488,11 +488,11 @@ def test_keeper():
 
         assert keeper.sits.get(key) == None
         assert keeper.sits.rem(key) == False
-        assert keeper.sits.put(key, data=sita) == True
+        assert keeper.sits.put(key, val=sita) == True
         assert keeper.sits.get(key) == sita
-        assert keeper.sits.put(key, data=sitb) == False
+        assert keeper.sits.put(key, val=sitb) == False
         assert keeper.sits.get(key) == sita
-        assert keeper.sits.pin(key, data=sitb) == True
+        assert keeper.sits.pin(key, val=sitb) == True
         assert keeper.sits.get(key) == sitb
         assert keeper.sits.rem(key) == True
         assert keeper.sits.get(key) == None
@@ -506,11 +506,11 @@ def test_keeper():
 
         assert keeper.pubs.get(key0) == None
         assert keeper.pubs.rem(key0) == False
-        assert keeper.pubs.put(key0, data=pt1) == True
+        assert keeper.pubs.put(key0, val=pt1) == True
         assert keeper.pubs.get(key0) == pt1
-        assert keeper.pubs.put(key0, data=pt2) == False
+        assert keeper.pubs.put(key0, val=pt2) == False
         assert keeper.pubs.get(key0) == pt1
-        assert keeper.pubs.pin(key0, data=pt2) == True
+        assert keeper.pubs.pin(key0, val=pt2) == True
         assert keeper.pubs.get(key0) == pt2
         assert keeper.pubs.rem(key0) == True
         assert keeper.pubs.get(key0) == None
