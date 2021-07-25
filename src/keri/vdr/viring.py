@@ -8,11 +8,9 @@ Provides public simple Verifiable Credential Issuance/Revocation Registry
 A special purpose Verifiable Data Registry (VDR)
 """
 
-import traceback
-
 from .. import kering
-from ..db import dbing
 from ..core import coring
+from ..db import dbing
 
 
 def openReg(name="test", **kwa):

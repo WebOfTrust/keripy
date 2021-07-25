@@ -10,6 +10,9 @@ class Location:
 
 witnesses = {
     "B8NkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M": Location(ip4="127.0.0.1", tcp=5631),
+    "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo": Location(ip4="127.0.0.1", tcp=5632),  # wan
+    "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw": Location(ip4="127.0.0.1", tcp=5633),  # wil
+    "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c": Location(ip4="127.0.0.1", tcp=5634),  # wes
 }
 
 
