@@ -19,20 +19,21 @@ from ..vdr import verifying
 logger = help.ogler.getLogger()
 
 
-def setupWitness(name="witness", temp=False, localPort=5621, ):
+def setupWitness(name="witness", hab=None, temp=False, localPort=5621):
     """
     """
-    # setup databases  for dependency injection
-    ks = keeping.Keeper(name=name, temp=temp)  # default is to not reopen
-    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    db = basing.Baser(name=name, temp=temp)  # default is to not reopen
-    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
-
+    doers = []
     # setup habitat
-    wsith = 1
-    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, transferable=False,
-                          isith=wsith, icount=1, )
-    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
+    if hab is None:
+        # setup databases  for dependency injection
+        ks = keeping.Keeper(name=name, temp=temp)  # default is to not reopen
+        ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
+        db = basing.Baser(name=name, temp=temp, reload=True)  # default is to not reopen
+        dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+
+        hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, create=False)
+        habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
+        doers.extend([ksDoer, dbDoer, habDoer])
 
     verfer = verifying.Verifier(name=name, hab=hab)
 
@@ -45,12 +46,11 @@ def setupWitness(name="witness", temp=False, localPort=5621, ):
     server = serving.Server(host="", port=localPort)
     serverDoer = serving.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server, verifier=verfer, exc=exc)
-    mbxer = httping.MailboxServer(port=7777, hab=hab, mbx=mbx)
+    # mbxer = httping.MailboxServer(port=7777, hab=hab, mbx=mbx)
 
-    logger.info("\nWitness- %s:\nNamed %s on TCP port %s.\n\n",
-                hab.pre, hab.name, localPort)
+    doers.extend([regDoer, directant, serverDoer])
 
-    return [ksDoer, dbDoer, habDoer, regDoer, directant, serverDoer, mbxer]
+    return doers
 
 
 class Indirector(doing.DoDoer):

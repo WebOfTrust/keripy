@@ -13,7 +13,7 @@ from keri import help
 from keri.app import directing, indirecting
 
 d = "Runs KERI witness controller.\n"
-d += "Example:\nwitness -l 5621 --e 10.0\n"
+d += "Example:\nwitness -l 5631 --e 10.0\n"
 parser = argparse.ArgumentParser(description=d)
 parser.set_defaults(handler=lambda args: launch(args))
 parser.add_argument('-V', '--version',
@@ -23,7 +23,7 @@ parser.add_argument('-V', '--version',
 parser.add_argument('-l', '--local',
                     action='store',
                     default=5631,
-                    help="Local port number the server listens on. Default is 5620.")
+                    help="Local port number the server listens on. Default is 5631.")
 parser.add_argument('-e', '--expire',
                     action='store',
                     default=0.0,
@@ -31,7 +31,7 @@ parser.add_argument('-e', '--expire',
 parser.add_argument('-n', '--name',
                     action='store',
                     default="witness",
-                    help="Name of controller. Default is eve. Choices are bob, sam, or eve.")
+                    help="Name of controller. Default is witness.")
 
 
 def launch(args):
@@ -44,7 +44,7 @@ def launch(args):
                 ".******\n\n", args.name, args.local)
 
     runWitness(name=args.name,
-               local=args.local,
+               local=int(args.local),
                expire=args.expire)
 
     logger.info("\n******* Ended Witness for %s listening on %s"

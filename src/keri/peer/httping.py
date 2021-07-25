@@ -19,8 +19,8 @@ logger = help.ogler.getLogger()
 
 
 CESR_CONTENT_TYPE = "application/cesr+json"
-CESR_ATTACHMENT_HEADER = "X-CESR-ATTACHMENT"
-CESR_DATE_HEADER = "X-CESR-DATE"
+CESR_ATTACHMENT_HEADER = "CESR-ATTACHMENT"
+CESR_DATE_HEADER = "CESR-DATE"
 
 
 class AgentExnServer(doing.DoDoer):
@@ -34,6 +34,15 @@ class AgentExnServer(doing.DoDoer):
     RoutePrefix = "/exn"
 
     def __init__(self, exc: exchanging.Exchanger, app, **kwa):
+        """
+        Registers all behaviors in provided Exchanged as routes to be handled in the provided Falcon app.
+        POST requests are extracted and mapped to `exn` messages that are passed to the provided Exchanger.
+
+        Parameters:
+            exc (Exchanger): an the instance of Exchanger configured to handle behaviors
+            app (falcon.App):  app to use for route registration
+
+        """
         self.exc = exc
         self.rxbs = bytearray()
 
@@ -111,7 +120,12 @@ class AgentExnServer(doing.DoDoer):
 
     def on_post(self, req, rep):
         """
-        Handles POST requests
+        Handles POST requests by generating an `exn` message from the request and passing it to the Exchanger
+
+        Parameters:
+              req (Request) Falcon HTTP request
+              rep (Response) Falcon HTTP response
+
         """
 
         resource, dt, q, signerSeal = parseCesrHttpRequest(req)
@@ -128,8 +142,26 @@ class AgentExnServer(doing.DoDoer):
 
 
 class AgentKelServer(doing.DoDoer):
+    """
+    Peer 2 Peer HTTP server that accepts KEL events POSTed as the body of a request with all attachments to
+    the message as a CESR attachment HTTP header.  Messages are processed and added to the database of the provided
+    Habitat.
+
+    This also handles `req` messages that respond with a KEL replay.
+
+
+    """
 
     def __init__(self, hab: habbing.Habitat, app=None, **kwa):
+        """
+        Create the KEL HTTP server from the Habitat with an optional Falcon App to
+        register the routes with.
+
+        Parameters
+             hab (Habitat): the Habitat in which to store any provided KEL
+             app (Falcon): optional Falcon app in which to register the KEL routes.
+
+        """
         self.hab = hab
         self.rxbs = bytearray()
 
@@ -158,6 +190,11 @@ class AgentKelServer(doing.DoDoer):
     def on_post(self, req, rep):
         """
         Handles POST requests
+
+        Parameters:
+              req (Request) Falcon HTTP request
+              rep (Response) Falcon HTTP response
+
         """
 
         resource, dt, q, attachments = parseCesrHttpRequest(req)
@@ -176,6 +213,11 @@ class AgentKelServer(doing.DoDoer):
     def on_post_req(self, req, rep):
         """
         Handles POST requests for `req` messages
+
+        Parameters:
+              req (Request) Falcon HTTP request
+              rep (Response) Falcon HTTP response
+
         """
 
         resource, dt, q, attachments = parseCesrHttpRequest(req)
@@ -190,7 +232,7 @@ class AgentKelServer(doing.DoDoer):
 
 
     @helping.attributize
-    def cueReplayGenerator(self, me, req=None, resp=None):
+    def cueReplayGenerator(self, req=None, resp=None):
         """
 
         Parameters:
@@ -232,6 +274,14 @@ class AgentKelServer(doing.DoDoer):
 
 
 def parseCesrHttpRequest(req):
+    """
+    Parse Falcon HTTP request and create a CESR message from the body of the request and the two
+    CESR HTTP headers (Date, Attachment).
+
+    Parameters
+        req (falcon.Request) http request object in CESR format:
+
+    """
     if req.content_type != CESR_CONTENT_TYPE:
         raise falcon.HTTPError(falcon.HTTP_NOT_ACCEPTABLE,
                                "Content type error",
@@ -241,14 +291,14 @@ def parseCesrHttpRequest(req):
     try:
         raw_json = req.bounded_stream.read()
     except Exception:
-        raise falcon.HTTPError(falcon.HTTP_748,
+        raise falcon.HTTPError(falcon.HTTP_400,
                                "Read Error",
                                "Could not read the request body.")
 
     try:
         q = json.loads(raw_json)
     except ValueError:
-        raise falcon.HTTPError(falcon.HTTP_753,
+        raise falcon.HTTPError(falcon.HTTP_400,
                                "Malformed JSON",
                                "Could not decode the request body. The "
                                "JSON was incorrect.")
@@ -275,17 +325,20 @@ def parseCesrHttpRequest(req):
 
 class MailboxServer(doing.DoDoer):
     """
+    Message storage for Witnesses.  Provides an inbox service for storing messages for an identifier.
 
     """
 
-    def __init__(self, port, hab: habbing.Habitat, mbx: exchanging.Mailboxer, **kwa):
+    def __init__(self, port, mbx: exchanging.Mailboxer, **kwa):
+        """
+        Create Mailbox server for storing messages on a Witness for a witnessed
+        identifier.
+
+        Parameters:
+             port(int): listening port
+
         """
 
-        :param port:
-        :param hab:
-        :param kwa:
-        """
-        self.hab = hab
         self.mbx = mbx
         self.port = port
         self.rxbs = bytearray()
@@ -308,10 +361,13 @@ class MailboxServer(doing.DoDoer):
     def on_post(self, req, rep):
         """
         Handles POST requests as a stream of SSE events
+
+        Parameters:
+              req (Request) Falcon HTTP request
+              rep (Response) Falcon HTTP response
+
         """
         rep.stream = self.mailboxGenerator(req=req, resp=rep)
-
-
 
 
     @helping.attributize

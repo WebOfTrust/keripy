@@ -426,8 +426,6 @@ class IanDirector(directing.Director):
             creder = proving.credential(issuer=self.hab.pre,
                                         schema=schemer.said,
                                         subject=credSubject,
-                                        issuance=now,
-                                        regk=self.issuer.regk,
                                         typ=jsonSchema)
 
             msg = self.hab.endorse(serder=creder)
