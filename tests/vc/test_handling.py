@@ -42,7 +42,7 @@ def test_issuing():
         sed.update(dict(
             type="object",
             properties=dict(
-                id=dict(
+                i=dict(
                     type="string"
                 ),
                 lei=dict(
@@ -52,7 +52,7 @@ def test_issuing():
         ))
 
         schemer = scheming.Schemer(sed=sed, code=coring.MtrDex.Blake3_256)
-        assert schemer.said == "EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY"
+        assert schemer.said == "EBd67C13qqQcsJVxvBBOdasGIALYUIofv6xoedUj-438"
 
         cache = scheming.CacheResolver()
         cache.add(schemer.said, schemer.raw)
@@ -65,7 +65,7 @@ def test_issuing():
 
         # Build the credential subject and then the Credentialer for the full credential
         credSubject = dict(
-            id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
+            i="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
             lei="254900OPPU84GM83MG36",
             issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
@@ -75,16 +75,19 @@ def test_issuing():
                             subject=credSubject,
                             typ=jsonSchema)
 
-        assert creder.said == "EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM"
+        assert creder.said == "Eo_1yYIr2fb1dNx_0NBu7_cXt5S9uksUd78W0WD8DFS4"
 
         msg = sidHab.endorse(serder=creder)
         assert msg == (
-            b'{"v":"KERI10JSON000136_","i":"EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM",'
-            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36",'
-            b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE'
-            b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI'
-            b'-AABAA0pXbQllgzXr88IczAnsPrdhgFKs9wNQvfSfzyrtcvbTwq-U1DmBluAklntCqH1AbBL6TWLZIDGi83BHLWJ82CA')
+            b'{"v":"KERI10JSON000135_","i":"Eo_1yYIr2fb1dNx_0NBu7_cXt5S9uksUd7'
+            b'8W0WD8DFS4","x":"EBd67C13qqQcsJVxvBBOdasGIALYUIofv6xoedUj-438","'
+            b'ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","d":{"i":"did'
+            b':keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36'
+            b'","issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}-VA0-FABE4Y'
+            b'PqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAA'
+            b'AElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAA9JGgHDciYtbWJ'
+            b'sWfv_vOulGL4yfg4EKBlqLaay9xS1C163mff9X-Z-6PD9pUM7KZeghQmU1y-xjBN'
+            b'g1kY010CQ')
 
         # Create the issue credential payload
         pl = dict(
@@ -101,22 +104,24 @@ def test_issuing():
         assert doist.tyme == limit
 
         ser = (
-            b'{"v":"KERI10JSON000136_","i":"EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM",'
-            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36",'
-            b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
+            b'{"v":"KERI10JSON000135_","i":"Eo_1yYIr2fb1dNx_0NBu7_cXt5S9uksUd7'
+            b'8W0WD8DFS4","x":"EBd67C13qqQcsJVxvBBOdasGIALYUIofv6xoedUj-438","'
+            b'ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","d":{"i":"did'
+            b':keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36'
+            b'","issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
         sig0 = (
-            b'AA0pXbQllgzXr88IczAnsPrdhgFKs9wNQvfSfzyrtcvbTwq-U1DmBluAklntCqH1AbBL6TWLZIDGi83BHLWJ82CA'
+            b'AA9JGgHDciYtbWJsWfv_vOulGL4yfg4EKBlqLaay9xS1C163mff9X-Z-6PD9pUM7'
+            b'KZeghQmU1y-xjBNg1kY010CQ'
         )
 
         # verify we can load serialized VC by SAID
         key = creder.said.encode("utf-8")
-        assert redPDB.getSers(key) == ser
+        assert bytearray(redPDB.getSers(key)) == ser
 
         # verify the signature
         sigs = redPDB.getSigs(key)
         assert len(sigs) == 1
-        assert sigs[0] == sig0
+        assert bytearray(sigs[0]) == sig0
 
         # verify we can look up credential by Schema SAID
         schema = redPDB.getSchms(schemer.saider.qb64b)
@@ -169,7 +174,7 @@ def test_proving():
         sed.update(dict(
             type="object",
             properties=dict(
-                id=dict(
+                i=dict(
                     type="string"
                 ),
                 lei=dict(
@@ -184,7 +189,7 @@ def test_proving():
         jsonSchema = JSONSchema(resolver=cache)
 
         credSubject = dict(
-            id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
+            i="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
             lei="254900OPPU84GM83MG36",
             issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
@@ -194,7 +199,7 @@ def test_proving():
                             subject=credSubject,
                             typ=JSONSchema(resolver=cache))
 
-        assert creder.said == "EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM"
+        assert creder.said == "Eo_1yYIr2fb1dNx_0NBu7_cXt5S9uksUd78W0WD8DFS4"
 
         msg = sidHab.endorse(serder=creder)
         hanWallet = Wallet(hab=hanHab, db=hanPDB)
@@ -247,7 +252,7 @@ def test_proving():
 
         proof = (
             "-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw"
-            "-AxDNI7_ZmaI-AABAA0pXbQllgzXr88IczAnsPrdhgFKs9wNQvfSfzyrtcvbTwq-U1DmBluAklntCqH1AbBL6TWLZIDGi83BHLWJ82CA")
+            "-AxDNI7_ZmaI-AABAA9JGgHDciYtbWJsWfv_vOulGL4yfg4EKBlqLaay9xS1C163mff9X-Z-6PD9pUM7KZeghQmU1y-xjBNg1kY010CQ")
         assert vcs[0]["proof"] == proof
 
 

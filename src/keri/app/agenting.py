@@ -378,7 +378,7 @@ class IssueCredentialHandler(doing.DoDoer):
                 recipientIdentifier = payload["recipient"]
                 credSubject = payload["data"]
                 schema = payload["schema"]
-                # source = payload["source"]
+                source = payload["source"]
 
                 recptAddy = obtaining.getendpointbyprefix(recipientIdentifier)
                 rcptClient = clienting.Client(host=recptAddy.ip4, port=recptAddy.tcp)
@@ -394,7 +394,8 @@ class IssueCredentialHandler(doing.DoDoer):
                 creder = proving.credential(issuer=self.hab.pre,
                                             schema=schemer.said,
                                             subject=credSubject,
-                                            typ=jsonSchema)
+                                            typ=jsonSchema,
+                                            source=source)
 
                 msg = self.hab.endorse(serder=creder)
 

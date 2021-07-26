@@ -87,7 +87,7 @@ jsonSchemaCache = CacheResolver(cache={
         b'"si": {"type": "string"}, "issuanceDate": {"format": "date-time", "type": "string"}, "credentialStatus": {'
         b'"type": "string"}, "LEI": {"type": "string"}, "type": {"contains": {"const": "GLEIFvLEICredential"}, '
         b'"type": "array"}}, "additionalProperties": false, "required": ["i", "issuanceDate", "credentialStatus", '
-        b'"LEI", "type"], "type": "object"}}, "additionalProperties": false, "required": ["i", "d"]} '
+        b'"LEI", "type"], "type": "object"}}, "additionalProperties": false, "required": ["i", "d"]}',
     ),
     "EZdaE1HCu2ZhyIhpXTWfGSLS2kirKexaC-4up3sIUz1I": (
         b'{"$id": "EZdaE1HCu2ZhyIhpXTWfGSLS2kirKexaC-4up3sIUz1I", "$schema": '
