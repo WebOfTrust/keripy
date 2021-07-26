@@ -69,7 +69,7 @@ def datify(cls, d):
         fieldtypes = {f.name: f.type for f in dataclasses.fields(cls)}
         return cls(**{f: datify(fieldtypes[f], d[f]) for f in d})  # recursive
     except:
-        return d  # Not a dataclass field
+        return d  # Not a dataclass.
 
 
 def keyToKey64u(key):

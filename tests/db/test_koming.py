@@ -59,6 +59,11 @@ def test_kom_happy_path():
                      zip=84058)
 
         keys = ("test_key", "0001")
+        assert mydb.Sep == "."
+        key = mydb._tokey(keys)
+        assert key == b"test_key.0001"
+        assert mydb._tokeys(key) == keys
+
         mydb.put(keys=keys, val=sue)
         actual = mydb.get(keys=keys)
 
