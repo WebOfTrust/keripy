@@ -38,11 +38,11 @@ class Habitat:
 
     Attributes:
         name (str): alias of controller
-        transferable (Boolean): True means pre is transferable (default)
+        transferable (bool): True means pre is transferable (default)
                     False means pre is nontransferable
-        temp (Boolean): True for testing it modifies tier of salty key
+        temp (bool): True for testing it modifies tier of salty key
             generation algorithm and persistence of db and ks
-        erase (Boolean): If True erase old private keys, Otherwise not.
+        erase (bool): If True erase old private keys, Otherwise not.
         db (basing.Baser): lmdb data base for KEL etc
         ks (keeping.Keeper): lmdb key store
         ridx (int): rotation index (inception == 0) needed for key replay
@@ -50,7 +50,7 @@ class Habitat:
         psr (parsing.Parser):  parses local messages for .kvy
         mgr (keeping.Manager): creates and rotates keys in key store
         pre (str): qb64 prefix of own local controller
-        inited (Boolean): True means fully initialized wrt databases.
+        inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
 
 
@@ -135,7 +135,7 @@ class Habitat:
 
     def setup(self, *, seed=None, aeid=None, secrecies=None, code=coring.MtrDex.Blake3_256,
                  isith=None, icount=1, nsith=None, ncount=None,
-                 toad=None, wits=None, salt=None, tier=None,):
+                 toad=None, wits=None, algo=None, salt=None, tier=None,):
         """
         Setup habitat. Assumes that both .db and .ks have been opened.
         This allows dependency injection of .db and .ks into habitat instance
@@ -169,6 +169,8 @@ class Habitat:
             ncount is next key count for number of next keys
             toad is int or str hex of witness threshold
             wits is list of qb64 prefixes of witnesses
+            salt is str for algorithm (randy or salty) for creating key pairs
+                default is root algo which defaults to salty
             salt is qb64 salt for creating key pairs
             tier is security tier for generating keys from salt
         """
@@ -190,12 +192,12 @@ class Habitat:
         if not self.temp:
             ex = self.db.habs.get(keys=self.name)
             # found existing habitat, otherwise leave __init__ to incept a new one.
-            if ex is not None:
+            if ex is not None:  # replace params with persisted values from db
                 prms = self.ks.prms.get(ex.prefix)
-                salt = prms.salt  # prms['salt']
-                tier = prms.tier  # prms['tier']
-                pidx = prms.pidx  # prms['pidx']
-                #  need to add support for algo
+                algo = prms.algo
+                salt = prms.salt
+                tier = prms.tier
+                pidx = prms.pidx
                 self.pre = ex.prefix
                 existing = True
 
@@ -206,7 +208,7 @@ class Habitat:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
 
         self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
-                                   salt=salt, tier=tier)
+                                   algo=algo, salt=salt, tier=tier)
 
         if existing:
             self.reinitialize()
@@ -246,8 +248,7 @@ class Habitat:
 
             # may want db method that updates .habs. and .prefixes together
             self.db.habs.put(keys=self.name,
-                             data=basing.HabitatRecord(name=self.name,
-                                                       prefix=self.pre))
+                             val=basing.HabitatRecord(prefix=self.pre))
             self.prefixes.add(self.pre)
 
             # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)

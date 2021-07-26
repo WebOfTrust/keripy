@@ -16,4 +16,3 @@ from hio.help import ogling
 #  want help.ogler always defined by default
 ogler = ogling.initOgler(prefix='keri')  # inits once only on first import
 
-from .decking import Deck

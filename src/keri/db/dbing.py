@@ -258,22 +258,22 @@ class LMDBer:
             name (str): directory path name differentiator for main database
                 When system employs more than one keri database, name allows
                 differentiating each instance by name
-            temp (Boolean): assign to .temp
+            temp (bool): assign to .temp
                 True then open in temporary directory, clear on close
                 Otherwise then open persistent directory, do not clear on close
             headDirPath (str): optional head directory pathname for main database
                 Default .HeadDirPath
             dirMode (int): optional numeric os dir permissions for database
                 directory and database files. Default .DirMode
-            reopen (Boolean): True means database will be reopened by this init
+            reopen (bool): True means database will be reopened by this init
                               False means databse not opened by this init
-            clear (Boolean): True means remove directory upon close if reopon
+            clear (bool): True means remove directory upon close if reopon
                              False means do not remove directory upon close if reopen
-            reuse (Boolean): True means reuse self.path if already exists
+            reuse (bool): True means reuse self.path if already exists
                              False means do not reuse but remake self.path
-            clean (Boolean): True means path uses clean tail variant
+            clean (bool): True means path uses clean tail variant
                              False means path uses normal tail variant
-            readonly (Boolean): True means open database in readonly mode
+            readonly (bool): True means open database in readonly mode
                                 False means open database in read/write mode
 
         """
@@ -298,20 +298,20 @@ class LMDBer:
         Open lmdb and assign to .env
 
         Parameters:
-            temp (Boolean): assign to .temp
+            temp (bool): assign to .temp
                 True then open in temporary directory, clear on close
                 Othewise then open persistent directory, do not clear on close
             headDirPath (str): optional head directory pathname for main database
                 Default .HeadDirpath
             dirMode (int): optional numeric os dir permissions for database
                 directory and database files. Default .DirMode
-            clear (Boolean): True means remove directory upon close
+            clear (bool): True means remove directory upon close
                              False means do not remove directory upon close
-            reuse (Boolean): True means reuse self.path if already exists
+            reuse (bool): True means reuse self.path if already exists
                              False means do not reuse but remake self.path
-            clean (Boolean): True means path uses clean tail variant
+            clean (bool): True means path uses clean tail variant
                              False means path uses normal tail variant
-            readonly (Boolean): True means open database in readonly mode
+            readonly (bool): True means open database in readonly mode
                                 False means open database in read/write mode
         """
         self.close(clear=clear)
@@ -345,7 +345,7 @@ class LMDBer:
 
         Parameters:
             name (str): unique name alias portion of path
-            temp (Boolean): optional
+            temp (bool): optional
                 None means ignore,
                 True means open temporary directory, may clear on close
                 False menans open persistent directory, may not clear on close
@@ -357,7 +357,7 @@ class LMDBer:
                 stat.S_IWUSR Owner has write permission.
                 stat.S_IXUSR Owner has execute permission.
 
-            clean (Boolean): True means make path for cleaned version of db and
+            clean (bool): True means make path for cleaned version of db and
                                remove old directory at clean path if exists
                              False means make path for regular version of db
         """

@@ -89,7 +89,7 @@ class PrePrm:
     Prefix's parameters for creating new key pairs
     """
     pidx: int = 0  # prefix index for this keypair sequence
-    algo: str = Algos.salty  # default use indices and salt  to create new key pairs
+    algo: str = Algos.salty  # salty default uses indices and salt to create new key pairs
     salt: str = ''  # empty salt  used for salty algo.
     stem: str = ''  # default unique path stem for salty algo
     tier: str = ''  # security tier for stretch index salty algo
@@ -164,8 +164,10 @@ class Keeper(dbing.LMDBer):
                        in keeper. Defaults to empty which means no authentication
                        or encryption of key sets.
                    pidx (bytes): hex index of next prefix key-pair sequence to be incepted
+                   algo (str): default root algorithm for generating key pair
                    salt (bytes): root salt for generating key pairs
                    tier (bytes): default root security tier for root salt
+
         .pris is named sub DB whose keys are public key from key pair and values
             are private keys from key pair
             Key is public key (fully qualified qb64)
@@ -593,7 +595,7 @@ class Manager:
             encryption key is derived from aeid (public signing key)
         decrypter (coring.Decrypter): instance for decrypting secrets. Private
             decryption key is derived seed (private signing key seed)
-        inited (Boolean): True means fully initialized wrt database.
+        inited (bool): True means fully initialized wrt database.
                           False means not yet fully initialized
 
     Attributes (Hidden):
@@ -672,7 +674,7 @@ class Manager:
             self.setup(**self._inits)  # first call to .setup with initialize database
 
 
-    def setup(self, aeid=None, pidx=None, salt=None, tier=None):
+    def setup(self, aeid=None, pidx=None, algo=None, salt=None, tier=None):
         """
         Setups manager root or global attributes and properties
         Assumes that .keeper db is open.
@@ -693,7 +695,8 @@ class Manager:
                 a second authentication mechanism besides the prikey.
             pidx (int): index of next new created key pair sequence for given
                 identifier prefix
-            salt (str):  qb64 of root salt. Makes random root salt if not provided
+            algo (str): root algorithm (randy or salty) for creating key pairs
+            salt (str): qb64 of root salt. Makes random root salt if not provided
             tier (str): default security tier (Tierage) for root salt
 
         """
@@ -705,6 +708,8 @@ class Manager:
             aeid = ''
         if pidx is None:
             pidx = 0
+        if algo is None:
+            algo = Algos.salty
         if salt is None:
             salt = coring.Salter().qb64
         if tier is None:
@@ -714,11 +719,15 @@ class Manager:
         if self.pidx is None:  # never before initialized
             self.pidx = pidx  # init to default
 
-        if self.tier is None:  # never before initialized
-            self.tier = tier  # init to default
+        if self.algo is None:  # never before initialized
+            self.algo = algo
 
         if self.salt is None:  # never before initialized
             self.salt = salt
+
+        if self.tier is None:  # never before initialized
+            self.tier = tier  # init to default
+
 
         # must do this after salt is initialized so gets re-encrypted correctly
         if self.aeid is None:  # never before initialized
@@ -771,7 +780,7 @@ class Manager:
                     salter = self.decrypter.decrypt(ser=data.salt)
                     data.salt = (self.encrypter.encrypt(matter=salter).qb64
                                  if self.encrypter else salter.qb64)
-                    self.ks.prms.pin(keys, data=data)
+                    self.ks.prms.pin(keys, val=data)
 
             # private signing key seeds
             # keys is tuple == (verkey.qb64,) .pris database auto decrypts
@@ -804,6 +813,45 @@ class Manager:
         return self.ks.gbls.get('aeid')
 
 
+    @property
+    def pidx(self):
+        """
+        pidx property getter from key store db.
+        Assumes db initialized.
+        pidx is prefix index int for next new key sequence
+        """
+        if (pidx := self.ks.gbls.get("pidx")) is not None:
+            return int(pidx, 16)
+        return pidx  # None
+
+
+    @pidx.setter
+    def pidx(self, pidx):
+        """
+        pidx property setter to key store db.
+        pidx is prefix index int for next new key sequence
+        """
+        self.ks.gbls.pin("pidx", "%x" % pidx)
+
+
+    @property
+    def algo(self):
+        """
+        also property getter from key store db.
+        Assumes db initialized.
+        algo is default root algorithm for creating key pairs
+        """
+        return self.ks.gbls.get('algo')
+
+
+    @algo.setter
+    def algo(self, algo):
+        """
+        algo property setter to key store db.
+        algo is default root algorithm for creating key pairs
+        """
+        self.ks.gbls.pin('algo', algo)
+
 
     @property
     def salt(self):
@@ -832,27 +880,6 @@ class Manager:
 
 
     @property
-    def pidx(self):
-        """
-        pidx property getter from key store db.
-        Assumes db initialized.
-        pidx is prefix index int for next new key sequence
-        """
-        if (pidx := self.ks.gbls.get("pidx")) is not None:
-            return int(pidx, 16)
-        return pidx  # None
-
-
-    @pidx.setter
-    def pidx(self, pidx):
-        """
-        pidx property setter to key store db.
-        pidx is prefix index int for next new key sequence
-        """
-        self.ks.gbls.pin("pidx", "%x" % pidx)
-
-
-    @property
     def tier(self):
         """
         tier property getter from key store db.
@@ -874,7 +901,7 @@ class Manager:
     def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed, isith=None,
                      ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed, nsith=None,
                      dcode=coring.MtrDex.Blake3_256,
-                     algo=Algos.salty, salt=None, stem=None, tier=None, rooted=True,
+                     algo=None, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
         """
         Returns tuple (verfers, digers, cst, nst) for inception event where
@@ -928,10 +955,13 @@ class Manager:
 
         """
         # get root defaults to initialize key sequence
-        if rooted and salt is None:  # use root salt instead of random salt
+        if rooted and algo is None:  # use root algo from db as default
+            algo = self.algo
+
+        if rooted and salt is None:  # use root salt from db instead of random salt
             salt = self.salt
 
-        if rooted and tier is None:  # use root tier as default
+        if rooted and tier is None:  # use root tier from db as default
             tier = self.tier
 
         pidx = self.pidx  # get next pidx
@@ -988,26 +1018,26 @@ class Manager:
         if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
             raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-        if not self.ks.prms.put(pre, data=pp):
+        if not self.ks.prms.put(pre, val=pp):
             raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
         self.pidx = pidx + 1  # increment for next inception
 
-        if not self.ks.sits.put(pre, data=ps):
+        if not self.ks.sits.put(pre, val=ps):
             raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
 
         for signer in isigners:  # store secrets (private key val keyed by public key)
             self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
                              encrypter=self.encrypter)
 
-        self.ks.pubs.put(riKey(pre, ri=ridx), data=PubSet(pubs=ps.new.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ridx), val=PubSet(pubs=ps.new.pubs))
 
         for signer in nsigners:  # store secrets (private key val keyed by public key)
             self.ks.pris.put(keys=signer.verfer.qb64b, val=signer,
                              encrypter=self.encrypter)
 
         # store publics keys for lookup of private key for replay
-        self.ks.pubs.put(riKey(pre, ri=ridx+1), data=PubSet(pubs=ps.nxt.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ridx+1), val=PubSet(pubs=ps.nxt.pubs))
 
         return (verfers, digers, cst, nst)
 
@@ -1045,12 +1075,12 @@ class Manager:
         if self.ks.sits.get(new) is not None:
             raise ValueError("Preexistent new sit for pre={} may not clobber.".format(new))
 
-        if not self.ks.prms.put(new, data=oldprm):
+        if not self.ks.prms.put(new, val=oldprm):
             raise ValueError("Failed moving prm from old pre={} to new pre={}.".format(old, new))
         else:
             self.ks.prms.rem(old)
 
-        if not self.ks.sits.put(new, data=oldsit):
+        if not self.ks.sits.put(new, val=oldsit):
             raise ValueError("Failed moving sit from old pre={} to new pre={}.".format(old, new))
         else:
             self.ks.sits.rem(old)
@@ -1058,7 +1088,7 @@ class Manager:
         # move .pubs entries if any
         i = 0
         while (pl := self.ks.pubs.get(riKey(old, i))):
-            if not self.ks.pubs.put(riKey(new, i), data=pl):
+            if not self.ks.pubs.put(riKey(new, i), val=pl):
                 raise ValueError("Failed moving pubs at pre={} ri={} to new"
                                  " pre={}".format(old, i, new))
             i += 1
@@ -1172,7 +1202,7 @@ class Manager:
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
                               ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
-        if not self.ks.sits.pin(pre, data=ps):
+        if not self.ks.sits.pin(pre, val=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
 
         for signer in signers:  # store secrets (private key val keyed by public key)
@@ -1180,7 +1210,7 @@ class Manager:
                              encrypter=self.encrypter)
 
         # store public keys for lookup of private keys by public key for replay
-        self.ks.pubs.put(riKey(pre, ri=ps.nxt.ridx), data=PubSet(pubs=ps.nxt.pubs))
+        self.ks.pubs.put(riKey(pre, ri=ps.nxt.ridx), val=PubSet(pubs=ps.nxt.pubs))
 
         if erase:
             for pub in old.pubs:  # remove old prikeys
@@ -1355,7 +1385,7 @@ class Manager:
                 if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
-                if not self.ks.prms.put(pre, data=pp):
+                if not self.ks.prms.put(pre, val=pp):
                     raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
 
                 self.pidx = pidx + 1  # increment for next inception
@@ -1366,7 +1396,7 @@ class Manager:
                                  encrypter=self.encrypter)
 
             self.ks.pubs.put(riKey(pre, ri=ridx),
-                                data=PubSet(pubs=[signer.verfer.qb64
+                                val=PubSet(pubs=[signer.verfer.qb64
                                         for signer in csigners]))
 
             odt = dt
@@ -1392,7 +1422,7 @@ class Manager:
             self.ks.pris.put(keys=signer.verfer.qb64b, val=signer)
 
         self.ks.pubs.put(riKey(pre, ri=ridx),
-                             data=PubSet(pubs=[signer.verfer.qb64
+                             val=PubSet(pubs=[signer.verfer.qb64
                                                for signer in nsigners]))
 
         csith = "{:x}".format(max(1, math.ceil(len(csigners) / 2)))
@@ -1409,7 +1439,7 @@ class Manager:
                            ridx=ridx, kidx=kidx, st=nst, dt=dt)
 
         ps = PreSit(old=old, new=new, nxt=nxt)
-        if not self.ks.sits.pin(pre, data=ps):
+        if not self.ks.sits.pin(pre, val=ps):
             raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
         return (verferies, digers)
 

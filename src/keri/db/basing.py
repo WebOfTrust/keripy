@@ -89,8 +89,44 @@ class dbdict(dict):
 
 @dataclass
 class HabitatRecord:
-    name: str
+    """
+    Habitat prefixes keyed by habitat name
+    """
     prefix: str
+
+
+@dataclass
+class EndpointRecord: # ends
+    """
+    Service Endpoint ID Record with fields and keys to manage endpoints by role.
+    Database Keys are (cid, role) where cid is endpoint controller identifier
+    prefix and role is endpoint role such as watcher, witness etc
+    """
+    eid: str  # identifier prefix of endpoint
+    dts: str  # ISO-8601 datetime string of latest update
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+@dataclass
+class LocationRecord:  # locs
+    """
+    Service Endpoint Record with fields and keys to compose endpoint location
+    and cross reference to entry in Endpoint database.
+    Database Keys are (eid, scheme) where eid is endpoint identifier prefix
+    and the protocol scheme (tcp, https). The eid is usually nontransferable.
+    """
+    host: str  # hostname or host ip addresss string
+    port: int  # port
+    path: str  # path string
+    cid: str  # identifier prefix of controller that authorizes endpoint
+    role: str  # endpoint role such as watcher, witness etc
+    dts: str  # ISO-8601 datetime string of latest update
+
+    def __iter__(self):
+        return iter(asdict(self))
+
 
 
 def openDB(name="test", **kwa):
@@ -108,7 +144,7 @@ def reopenDB(db, clear=False, **kwa):
 
     Parameters:
         db (LMDBer): instance with LMDB environment at .env
-        clear (Boolean): True means clear directory after close
+        clear (bool): True means clear directory after close
 
     Usage:
 
@@ -297,8 +333,18 @@ class Baser(dbing.LMDBer):
             through cache of key state to reload kevers in memory
 
         .habs is named subDB instance of Komer that maps habitat names to prefixes
-            key is habitate name str
+            key is habitat name str
             value is serialized HabitatRecord dataclass
+
+        .ends is named subDB instance of DupKomer that maps Controller prefix
+            and endpoint roles to endpoint prefixes
+            key is (cid, role) as "cid.role"
+            value is serialized EndpointRecord dataclass
+
+        .locs is named subDB instance of Komer that maps Endpoint prefix
+            and endpoint network location scheme to endpoint location
+            key is (eid, scheme) as "eid.scheme"
+            value is serialized LocationRecord dataclass
 
     Properties:
 
@@ -318,8 +364,8 @@ class Baser(dbing.LMDBer):
             headDirPath is optional str head directory pathname for main database
                 If not provided use default .HeadDirpath
             mode is int numeric os dir permissions for database directory
-            reopen (Boolean): True means database will be reopened by this init
-            reload (Boolean): True means load habitat prefixes and kevers from .habs
+            reopen (bool): True means database will be reopened by this init
+            reload (bool): True means load habitat prefixes and kevers from .habs
 
         Notes:
 
@@ -386,9 +432,21 @@ class Baser(dbing.LMDBer):
         self.firsts = subing.MatterSuber(db=self, subkey='fons.', klas=coring.Seqner)
         self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
 
+        # habitat prefixes keyed by habitat name
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
-                                 schema=HabitatRecord,)  # habitat names prefixes
+                                 schema=HabitatRecord,)
+
+        # service endpoint identifer prefixes by controller prefixes and rols
+        self.ends = koming.DupKomer(db=self,
+                                    subkey='ends.',
+                                    schema=EndpointRecord,)
+
+        # service endpont locations by endpoint identifier prefixes and schemes
+        self.locs = koming.Komer(db=self,
+                                    subkey='locs.',
+                                    schema=LocationRecord,)
+
         return self.env
 
 
@@ -448,15 +506,28 @@ class Baser(dbing.LMDBer):
                     psr.parseOne(ims=msg)
 
                 # clone .habs  habitat name prefix Komer subdb
-                copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
-                for keys, data in self.habs.getItemIter():
-                    if data.prefix in copy.kevers:  # only copy habs that verified
-                        copy.habs.put(keys=keys, data=data)
-                        copy.prefixes.add(data.prefix)
+                # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
+                for keys, val in self.habs.getItemIter():
+                    if val.prefix in copy.kevers:  # only copy habs that verified
+                        copy.habs.put(keys=keys, val=val)
+                        copy.prefixes.add(val.prefix)
 
                 if not copy.habs.get(keys=(self.name, )):
                     raise ValueError("Error cloning, missing orig name={} subdb."
                                      "".format(self.name))
+
+                # clone .ends and .locs databases
+                for keys, val in self.ends.getItemIter():
+                    exists = False  # only copy if entries in both .ends and .locs
+                    for scheme in ("https", "http", "tcp"):  # all supported schemes
+                        lval = self.locs.get(keys=(val.eid, scheme))
+                        if lval and lval.cid == keys[0] and lval.role == keys[1]:
+                            exists = True  # loc with matching cid and rol
+                            copy.locs.put(keys=(val.eid, scheme), val=lval)
+                    if exists:  # only copy end if has at least one matching loc
+                        copy.ends.put(keys=keys, vals=[val])
+
+
 
             # remove own db directory replace with clean clone copy
             if os.path.exists(self.path):
@@ -2062,15 +2133,15 @@ class BaserDoer(doing.Doer):
     """
     Basic Baser Doer ( LMDB Database )
 
-    Inherited Attributes:
-        .done is Boolean completion state:
+    Attributes:  (inherited)
+        done (bool): completion state:
             True means completed
             Otherwise incomplete. Incompletion maybe due to close or abort.
 
     Attributes:
         .baser is Baser or LMDBer subclass
 
-    Inherited Properties:
+    Properties:  (inherited)
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
         .tymth is function wrapper closure returned by Tymist .tymeth() method.

@@ -7,11 +7,12 @@ keri.peer.exchanging module
 from datetime import timedelta
 
 from hio.base import doing
+from hio.help import decking
 
 from .. import kering
 from ..core import eventing, coring
 from ..db import subing, dbing
-from ..help import decking, helping
+from ..help import helping
 from ..kering import ValidationError, MissingSignatureError, MissingDestinationError, AuthZError
 from .. import help
 
@@ -56,9 +57,9 @@ class Exchanger(doing.DoDoer):
 
     def processEvent(self, serder, source, sigers):
         """
-        Process one serder event with attached indexed signatures representing 
-        a Peer to Peer exchange message.          
-        
+        Process one serder event with attached indexed signatures representing
+        a Peer to Peer exchange message.
+
         Parameters:
             serder (Serder) instance of event to process
             source (Prefixer) identifier prefix of event sender
