@@ -48,7 +48,7 @@ class Suber:
             val (bytes): value
 
         Returns:
-            result (Boolean): True If successful, False otherwise, such as key
+            result (bool): True If successful, False otherwise, such as key
                               already in database.
         """
         if hasattr(val, "encode"):
@@ -65,7 +65,7 @@ class Suber:
             val (bytes): value
 
         Returns:
-            result (Boolean): True If successful. False otherwise.
+            result (bool): True If successful. False otherwise.
         """
         if hasattr(val, "encode"):
             val = val.encode("utf-8")
@@ -102,7 +102,7 @@ class Suber:
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-           result (Boolean): True if key exists so delete successful. False otherwise
+           result (bool): True if key exists so delete successful. False otherwise
         """
         return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
@@ -168,7 +168,7 @@ class SerderSuber(Suber):
             val (Serder): instance
 
         Returns:
-            result (Boolean): True If successful, False otherwise, such as key
+            result (bool): True If successful, False otherwise, such as key
                               already in database.
         """
         return (self.db.putVal(db=self.sdb,
@@ -185,7 +185,7 @@ class SerderSuber(Suber):
             val (Serder): instance
 
         Returns:
-            result (Boolean): True If successful. False otherwise.
+            result (bool): True If successful. False otherwise.
         """
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
@@ -222,7 +222,7 @@ class SerderSuber(Suber):
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-           result (Boolean): True if key exists so delete successful. False otherwise
+           result (bool): True if key exists so delete successful. False otherwise
         """
         return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
@@ -276,7 +276,7 @@ class MatterSuber(Suber):
             val (Matter): instance of self.klas
 
         Returns:
-            result (Boolean): True If successful, False otherwise, such as key
+            result (bool): True If successful, False otherwise, such as key
                               already in database.
         """
         return (self.db.putVal(db=self.sdb,
@@ -293,7 +293,7 @@ class MatterSuber(Suber):
             val (Matter): instance of self.klas
 
         Returns:
-            result (Boolean): True If successful. False otherwise.
+            result (bool): True If successful. False otherwise.
         """
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
@@ -330,7 +330,7 @@ class MatterSuber(Suber):
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-           result (Boolean): True if key exists so delete successful. False otherwise
+           result (bool): True if key exists so delete successful. False otherwise
         """
         return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
@@ -443,7 +443,7 @@ class CryptSignerSuber(SignerSuber):
             encrypter (coring.Encrypter): optional
 
         Returns:
-            result (Boolean): True If successful, False otherwise, such as key
+            result (bool): True If successful, False otherwise, such as key
                               already in database.
         """
         if encrypter:
@@ -465,7 +465,7 @@ class CryptSignerSuber(SignerSuber):
             encrypter (coring.Encrypter): optional
 
         Returns:
-            result (Boolean): True If successful. False otherwise.
+            result (bool): True If successful. False otherwise.
         """
         if encrypter:
             val = encrypter.encrypt(matter=val)  # returns Cipher instance

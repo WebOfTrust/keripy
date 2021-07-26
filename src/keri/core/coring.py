@@ -532,7 +532,7 @@ class Matter:
             qb64b (bytes): fully qualified crypto material Base64
             qb64 (str, bytes):  fully qualified crypto material Base64
             qb2 (bytes): fully qualified crypto material Base2
-            strip (Boolean): True means strip counter contents from input stream
+            strip (bool): True means strip counter contents from input stream
                 bytearray after parsing qb64b or qb2. False means do not strip
 
 
@@ -1703,7 +1703,7 @@ class Decrypter(Matter):
         Parameters:
             ser (Union[bytes,str]): qb64b or qb64 serialization of cipher text
             cipher (Cipher): optional Cipher instance when ser is None
-            transferable (Boolean): True means associated verfer of returned
+            transferable (bool): True means associated verfer of returned
                 signer is transferable. False means non-transferable
         """
         if not (ser or cipher):
@@ -1727,7 +1727,7 @@ class Decrypter(Matter):
             cipher (Cipher): instance of encrypted seed or salt
             prikey (bytes): raw binary decryption private key derived from
                 signing seed or sigkey
-            transferable (Boolean): True means associated verfer of returned
+            transferable (bool): True means associated verfer of returned
                 signer is transferable. False means non-transferable
         """
         pubkey = pysodium.crypto_scalarmult_curve25519_base(prikey)

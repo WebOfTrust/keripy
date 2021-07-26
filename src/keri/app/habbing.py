@@ -38,11 +38,11 @@ class Habitat:
 
     Attributes:
         name (str): alias of controller
-        transferable (Boolean): True means pre is transferable (default)
+        transferable (bool): True means pre is transferable (default)
                     False means pre is nontransferable
-        temp (Boolean): True for testing it modifies tier of salty key
+        temp (bool): True for testing it modifies tier of salty key
             generation algorithm and persistence of db and ks
-        erase (Boolean): If True erase old private keys, Otherwise not.
+        erase (bool): If True erase old private keys, Otherwise not.
         db (basing.Baser): lmdb data base for KEL etc
         ks (keeping.Keeper): lmdb key store
         ridx (int): rotation index (inception == 0) needed for key replay
@@ -50,7 +50,7 @@ class Habitat:
         psr (parsing.Parser):  parses local messages for .kvy
         mgr (keeping.Manager): creates and rotates keys in key store
         pre (str): qb64 prefix of own local controller
-        inited (Boolean): True means fully initialized wrt databases.
+        inited (bool): True means fully initialized wrt databases.
                           False means not yet fully initialized
 
 

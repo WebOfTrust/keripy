@@ -108,7 +108,7 @@ def reopenDB(db, clear=False, **kwa):
 
     Parameters:
         db (LMDBer): instance with LMDB environment at .env
-        clear (Boolean): True means clear directory after close
+        clear (bool): True means clear directory after close
 
     Usage:
 
@@ -318,8 +318,8 @@ class Baser(dbing.LMDBer):
             headDirPath is optional str head directory pathname for main database
                 If not provided use default .HeadDirpath
             mode is int numeric os dir permissions for database directory
-            reopen (Boolean): True means database will be reopened by this init
-            reload (Boolean): True means load habitat prefixes and kevers from .habs
+            reopen (bool): True means database will be reopened by this init
+            reload (bool): True means load habitat prefixes and kevers from .habs
 
         Notes:
 
@@ -2062,15 +2062,15 @@ class BaserDoer(doing.Doer):
     """
     Basic Baser Doer ( LMDB Database )
 
-    Inherited Attributes:
-        .done is Boolean completion state:
+    Attributes:  (inherited)
+        done (bool): completion state:
             True means completed
             Otherwise incomplete. Incompletion maybe due to close or abort.
 
     Attributes:
         .baser is Baser or LMDBer subclass
 
-    Inherited Properties:
+    Properties:  (inherited)
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
         .tymth is function wrapper closure returned by Tymist .tymeth() method.

@@ -79,7 +79,7 @@ class Deck(deque):
         If empty and emptive return None else raise IndexError
 
         Parameters:
-            emptive (Boolean): True means return None instead of raise IndexError
+            emptive (bool): True means return None instead of raise IndexError
                when attempt to pull
                False means normal behavior of deque
         """

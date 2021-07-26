@@ -1283,7 +1283,7 @@ class Kever:
 
     Properties:
         .kevers (dict): reference to self.db.kevers
-        .transferable (Boolean): True if nexter is not none and pre is transferable
+        .transferable (bool): True if nexter is not none and pre is transferable
 
     """
     EstOnly = False
@@ -1325,10 +1325,10 @@ class Kever:
             prefixes is list of own prefixes for own local habitats. May not be the
                 prefix of this Kever's event. Some restrictions if present
                 If empty then promiscuous mode
-            local is Boolean, True means only process msgs for own controller's
+            local (bool): True means only process msgs for own controller's
                 events if .prefixes is not empty. False means only process msgs
                 for not own events if .prefixes is not empty
-            check (Boolean): True means do not update the database in any
+            check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
                 and timestamps.
@@ -1559,7 +1559,7 @@ class Kever:
             dater is optional Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
-            check (Boolean): True means do not update the database in any
+            check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
                 and timestamps.
@@ -2193,18 +2193,18 @@ class Kevery:
         .framed is Boolean stream is packet framed If True Else not framed
         .pipeline is Boolean, True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
-        lax (Boolean): True means operate in promiscuous (unrestricted) mode,
+        lax (bool): True means operate in promiscuous (unrestricted) mode,
                            False means operate in nonpromiscuous (restricted) mode
                               as determined by local and prefixes
 
-        local (Boolean): True means only process msgs for own events if not lax
+        local (bool): True means only process msgs for own events if not lax
                          False means only process msgs for not own events if not lax
-        cloned (Boolen): True means cloned message stream so use attached
+        cloned (bool): True means cloned message stream so use attached
                          datetimes from clone source not own.
                          False means use current datetime
-        direct (Boolean): True means direct mode so cue notices for receipts etc
+        direct (bool): True means direct mode so cue notices for receipts etc
                           False means indirect mode so don't cue notices
-        check (Boolean): True means do not update the database in any
+        check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
                 and timestamps.
@@ -2236,17 +2236,17 @@ class Kevery:
             cues (Deck)  notices to create responses to evts
             kevers is dict of Kever instances of key state in db
             db (Baser): instance of database
-            lax (Boolean): True means operate in promiscuous (unrestricted) mode,
+            lax (bool): True means operate in promiscuous (unrestricted) mode,
                            False means operate in nonpromiscuous (restricted) mode
                               as determined by local and prefixes
-            local (Boolean): True means only process msgs for own events if not lax
+            local (bool): True means only process msgs for own events if not lax
                          False means only process msgs for not own events if not lax
-            cloned (Boolen): True means cloned message stream so use attached
+            cloned (bool): True means cloned message stream so use attached
                          datetimes from clone source not own.
                          False means use current datetime
-            direct (Boolean): True means direct mode so cue notices for receipts etc
+            direct (bool): True means direct mode so cue notices for receipts etc
                           False means indirect mode so don't cue notices
-            check (Boolean): True means do not update the database in any
+            check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
                 and timestamps.

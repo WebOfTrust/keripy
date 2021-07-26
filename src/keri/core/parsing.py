@@ -82,8 +82,8 @@ class Parser:
 
     Attributes:
         ims (bytearray): incoming message stream
-        framed (Boolean): True means stream is packet framed
-        pipeline (Boolean): True means use pipeline processor to process
+        framed (bool): True means stream is packet framed
+        pipeline (bool): True means use pipeline processor to process
                 whenever stream includes pipelined count codes.
         kvy (Kevery): route KEL message types to this instance
         tvy (Tevery): route TEL message types to this instance
@@ -96,9 +96,9 @@ class Parser:
 
         Parameters:
             ims (bytearray): incoming message stream
-            framed (Boolean): True means ims contains only one msg body plus
+            framed (bool): True means ims contains only one msg body plus
                 its foot of attachments, not multiple sets of msg body plus foot
-            pipeline (Boolean): True means use pipeline processor to process
+            pipeline (bool): True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
             kvy (Kevery): route KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
@@ -510,10 +510,10 @@ class Parser:
                 May contain one or more sets each of a serialized message with
                 attached cryptographic material such as signatures or receipts.
 
-            framed (Boolean) True means ims contains only one frame of msg plus
+            framed (bool) True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
 
-            pipeline (Boolean) True means use pipeline processor to process
+            pipeline (bool) True means use pipeline processor to process
                 ims msgs when stream includes pipelined count codes.
 
             kvy (Kevery) route KERI KEL message types to this instance

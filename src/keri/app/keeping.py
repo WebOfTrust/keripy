@@ -593,7 +593,7 @@ class Manager:
             encryption key is derived from aeid (public signing key)
         decrypter (coring.Decrypter): instance for decrypting secrets. Private
             decryption key is derived seed (private signing key seed)
-        inited (Boolean): True means fully initialized wrt database.
+        inited (bool): True means fully initialized wrt database.
                           False means not yet fully initialized
 
     Attributes (Hidden):
