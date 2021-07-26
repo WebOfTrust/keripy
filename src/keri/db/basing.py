@@ -504,15 +504,28 @@ class Baser(dbing.LMDBer):
                     psr.parseOne(ims=msg)
 
                 # clone .habs  habitat name prefix Komer subdb
-                copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
-                for keys, data in self.habs.getItemIter():
-                    if data.prefix in copy.kevers:  # only copy habs that verified
-                        copy.habs.put(keys=keys, val=data)
-                        copy.prefixes.add(data.prefix)
+                # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
+                for keys, val in self.habs.getItemIter():
+                    if val.prefix in copy.kevers:  # only copy habs that verified
+                        copy.habs.put(keys=keys, val=val)
+                        copy.prefixes.add(val.prefix)
 
                 if not copy.habs.get(keys=(self.name, )):
                     raise ValueError("Error cloning, missing orig name={} subdb."
                                      "".format(self.name))
+
+                # clone .ends and .locs databases
+                for keys, val in self.ends.getItemIter():
+                    exists = False  # only copy if entries in both .ends and .locs
+                    for scheme in ("https", "http", "tcp"):  # all supported schemes
+                        lval = self.locs.get(keys=(val.eid, scheme))
+                        if lval and lval.cid == keys[0] and lval.role == keys[1]:
+                            exists = True  # loc with matching cid and rol
+                            copy.locs.put(keys=(val.eid, scheme), val=lval)
+                    if exists:  # only copy end if has at least one matching loc
+                        copy.ends.put(keys=keys, vals=[val])
+
+
 
             # remove own db directory replace with clean clone copy
             if os.path.exists(self.path):
