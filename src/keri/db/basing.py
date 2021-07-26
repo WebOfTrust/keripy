@@ -89,7 +89,9 @@ class dbdict(dict):
 
 @dataclass
 class HabitatRecord:
-    name: str
+    """
+    Habitat prefixes keyed by habitat name
+    """
     prefix: str
 
 
@@ -331,7 +333,7 @@ class Baser(dbing.LMDBer):
             through cache of key state to reload kevers in memory
 
         .habs is named subDB instance of Komer that maps habitat names to prefixes
-            key is habitate name str
+            key is habitat name str
             value is serialized HabitatRecord dataclass
 
         .ends is named subDB instance of DupKomer that maps Controller prefix
@@ -430,7 +432,7 @@ class Baser(dbing.LMDBer):
         self.firsts = subing.MatterSuber(db=self, subkey='fons.', klas=coring.Seqner)
         self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
 
-        # habitat names prefixes
+        # habitat prefixes keyed by habitat name
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
                                  schema=HabitatRecord,)

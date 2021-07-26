@@ -246,8 +246,7 @@ class Habitat:
 
             # may want db method that updates .habs. and .prefixes together
             self.db.habs.put(keys=self.name,
-                             val=basing.HabitatRecord(name=self.name,
-                                                       prefix=self.pre))
+                             val=basing.HabitatRecord(prefix=self.pre))
             self.prefixes.add(self.pre)
 
             # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
