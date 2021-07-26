@@ -176,10 +176,8 @@ class KomerBase:
 
 class Komer(KomerBase):
     """
-    Keyspace Object Mapper factory class
+    Keyspace Object Mapper factory class.
     """
-
-
     def __init__(self,
                  db: dbing.LMDBer, *,
                  subkey: str = 'docs.',
@@ -270,7 +268,7 @@ class Komer(KomerBase):
 
         Returns:
             iterator: of tuples of keys tuple and val dataclass instance for
-            each entry in db
+            each entry in db. Raises StopIteration when done
 
         Example:
             if key in database is "a.b" and val is serialization of dataclass
@@ -288,11 +286,12 @@ class DupKomer(KomerBase):
     Duplicate Keyspace Object Mapper factory class that supports multiple entries
     a given database key (lmdb dupsort == True).
     """
-
-    def __init__(self, db: dbing.LMDBer, *,
-                 subkey: str = 'docs.',
-                 schema: Type[dataclass],  # class not instance
-                 kind: str = coring.Serials.json):
+    def __init__(self,
+             db: dbing.LMDBer, *,
+             subkey: str = 'recs.',
+             schema: Type[dataclass],  # class not instance
+             kind: str = coring.Serials.json,
+             **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
@@ -300,12 +299,9 @@ class DupKomer(KomerBase):
             subdb (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
-        self.db = db
-        self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=True)
-        self.schema = schema
-        self.kind = kind
-        self.serializer = self._serializer(kind)
-        self.deserializer = self._deserializer(kind)
+        super(DupKomer, self).__init__(db=db, subkey=subkey, schema=schema,
+                                       kind=kind, dupsort=True, **kwa)
+
 
 
     def put(self, keys: Union[str, Iterable], vals: list):
@@ -330,6 +326,7 @@ class DupKomer(KomerBase):
         return (self.db.putVals(db=self.sdb,
                                 key=self._tokey(keys),
                                 vals=vals))
+
 
     def add(self, keys: Union[str, Iterable], val: dataclass):
         """
@@ -386,8 +383,8 @@ class DupKomer(KomerBase):
                           empty list if no entry at keys
 
         """
-        vals = self.db.getVals(db=self.sdb, key=self._tokeys(keys))
-        vals = [helping.datify(self.schema, self.deserializer(val)) for val in vals]
+        vals = self.db.getVals(db=self.sdb, key=self._tokey(keys))
+        vals = [self.deserializer(val) for val in vals]
         return vals
 
 
@@ -453,106 +450,6 @@ class DupKomer(KomerBase):
                (("a","b"), dataclass(x=1,y=2))
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            val = helping.datify(self.schema, self.deserializer(val))
-            keys = tuple(key.decode("utf-8").split('.'))  # tuple
-            yield (keys, val)
+            yield (self._tokeys(key), self.deserializer(val))
 
 
-    def _tokey(self, keys: Union[str, bytes, Iterable]):
-        """
-        Converts key to key str with proper separators and returns key bytes.
-        If key is already str then returns. Else If key is iterable (non-str)
-        of strs then joins with separator converts to bytes and returns
-
-        Parameters:
-           keys (Union[str, Iterable]): str or Iterable of str.
-
-        """
-        if hasattr(keys, "encode"):  # str
-            return keys.encode("utf-8")
-        elif hasattr(keys, "decode"): # bytes
-            return keys
-        return (self.sep.join(keys).encode("utf-8"))  # iterable
-
-
-    def _serializer(self, kind):
-        """
-        Parameters:
-            kind (str): serialization
-        """
-        if kind == coring.Serials.mgpk:
-            return self.__serializeMGPK
-        elif kind == coring.Serials.cbor:
-            return self.__serializeCBOR
-        else:
-            return self.__serializeJSON
-
-
-    def _deserializer(self, kind):
-        """
-        Parameters:
-            kind (str): deserialization
-        """
-        if kind == coring.Serials.mgpk:
-            return self.__deserializeMGPK
-        elif kind == coring.Serials.cbor:
-            return self.__deserializeCBOR
-        else:
-            return self.__deserializeJSON
-
-
-    def __deserializeJSON(self, val):
-        if val is None:
-            return
-        if not isinstance(val, self.schema):
-            raise ValueError("Invalid schema type={} of value={}, expected {}."
-                             "".format(type(val), val, self.schema))
-        return json.loads(bytes(val).decode("utf-8"))
-
-
-    def __deserializeMGPK(self, val):
-        if val is None:
-            return
-        if not isinstance(val, self.schema):
-            raise ValueError("Invalid schema type={} of value={}, expected {}."
-                             "".format(type(val), val, self.schema))
-        return msgpack.loads(bytes(val))
-
-
-    def __deserializeCBOR(self, val):
-        if val is None:
-            return
-        if not isinstance(val, self.schema):
-            raise ValueError("Invalid schema type={} of value={}, expected {}."
-                             "".format(type(val), val, self.schema))
-        return cbor2.loads(bytes(val))
-
-
-    def __serializeJSON(self, val):
-        if val is None:
-            return
-        if not isinstance(val, self.schema):
-            raise ValueError("Invalid schema type={} of value={}, expected {}."
-                             "".format(type(val), val, self.schema))
-
-        return json.dumps(helping.dictify(val),
-                          separators=(",", ":"),
-                          ensure_ascii=False).encode("utf-8")
-
-
-    def __serializeMGPK(self, val):
-        if val is None:
-            return
-        if not isinstance(val, self.schema):
-            raise ValueError("Invalid schema type={} of value={}, expected {}."
-                             "".format(type(val), val, self.schema))
-        return msgpack.dumps(helping.dictify(val))
-
-
-    def __serializeCBOR(self, val):
-        if val is None:
-            return
-        if not isinstance(val, self.schema):
-            raise ValueError("Invalid schema type={} of value={}, expected {}."
-                             "".format(type(val), val, self.schema))
-        return cbor2.dumps(helping.dictify(val))
