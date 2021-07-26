@@ -10,6 +10,7 @@ import logging
 import os
 
 from hio.core import wiring
+from hio.help import decking
 from hio.core.tcp import clienting
 
 from keri import __version__
@@ -21,7 +22,7 @@ from keri.demo.demoing import VicDirector
 from keri.peer import exchanging
 from keri.vc import handling
 from keri.vdr import verifying
-from keri.help import decking, helping
+
 
 logger = help.ogler.getLogger()
 

@@ -4,11 +4,11 @@ keri.vc.handling module
 
 """
 from hio.base import doing
+from hio.help import decking
 
 from .. import help
 from ..core.coring import dumps, Deversify
 from ..core.scheming import JSONSchema
-from ..help import decking
 from ..kering import ShortageError
 from ..peer import exchanging
 from ..vc.proving import Credentialer

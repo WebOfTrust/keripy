@@ -12,9 +12,10 @@ from math import ceil
 
 from orderedset import OrderedSet as oset
 
+from hio.help import decking
+
 from .. import help
 from ..help import helping
-from ..help import decking
 from .coring import (Versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
                      Seqner, Siger, Cigar, Dater,
                      Verfer, Diger, Nexter, Prefixer, Serder, Tholder)

@@ -4,11 +4,11 @@ tests.peer.test_exchanging module
 
 """
 from hio.base import doing
+from hio.help import decking
 
 from keri.app import keeping, habbing
 from keri.core import coring, parsing, eventing
 from keri.db import basing
-from keri.help import decking
 from keri.peer import exchanging
 
 
