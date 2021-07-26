@@ -577,6 +577,7 @@ def test_crypt_signer_suber():
         assert manager.decrypter.qb64 == decrypter.qb64  # aeid and seed provided
         assert manager.seed == seed0  # in memory only
         assert manager.aeid == aeid0  # on disk only
+        assert manager.algo == keeping.Algos.salty
         assert manager.salt == salt  # encrypted on disk but property decrypts if seed
         assert manager.pidx == 0
         assert manager.tier == coring.Tiers.low

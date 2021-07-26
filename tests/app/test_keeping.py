@@ -367,6 +367,20 @@ def test_keeper():
         assert keeper.gbls.rem(key) == True
         assert keeper.gbls.get(key) == None
 
+        key = b'algo'
+        algoa = keeping.Algos.salty
+        algob = keeping.Algos.randy
+        assert keeper.gbls.get(key) == None
+        assert keeper.gbls.rem(key) == False
+        assert keeper.gbls.put(key, val=algoa) == True
+        assert keeper.gbls.get(key) == algoa
+        assert keeper.gbls.put(key, val=algob) == False
+        assert keeper.gbls.get(key) == algoa
+        assert keeper.gbls.pin(key, val=algob) == True
+        assert keeper.gbls.get(key) == algob
+        assert keeper.gbls.rem(key) == True
+        assert keeper.gbls.get(key) == None
+
         key = b'salt'
         assert keeper.gbls.get(key) == None
         assert keeper.gbls.rem(key) == False
@@ -1241,6 +1255,7 @@ def test_manager_with_aeid():
         assert manager.seed == seed0  # in memory only
         assert manager.aeid == aeid0  # on disk only
 
+        assert manager.algo == keeping.Algos.salty
         assert manager.salt == salt  # encrypted on disk but property decrypts if seed
         assert manager.pidx == 0
         assert manager.tier == coring.Tiers.low
@@ -1376,7 +1391,7 @@ def test_manager_with_aeid():
         assert manager.decrypter.qb64 == decrypter1.qb64  # aeid and seed provided
         assert manager.seed == seed1  # in memory only
         assert manager.aeid == aeid1
-
+        assert manager.algo == keeping.Algos.salty
         assert manager.salt == salt
         assert manager.pidx == 1
         assert manager.tier == coring.Tiers.low

@@ -135,7 +135,7 @@ class Habitat:
 
     def setup(self, *, seed=None, aeid=None, secrecies=None, code=coring.MtrDex.Blake3_256,
                  isith=None, icount=1, nsith=None, ncount=None,
-                 toad=None, wits=None, salt=None, tier=None,):
+                 toad=None, wits=None, algo=None, salt=None, tier=None,):
         """
         Setup habitat. Assumes that both .db and .ks have been opened.
         This allows dependency injection of .db and .ks into habitat instance
@@ -169,6 +169,8 @@ class Habitat:
             ncount is next key count for number of next keys
             toad is int or str hex of witness threshold
             wits is list of qb64 prefixes of witnesses
+            salt is str for algorithm (randy or salty) for creating key pairs
+                default is root algo which defaults to salty
             salt is qb64 salt for creating key pairs
             tier is security tier for generating keys from salt
         """
@@ -190,12 +192,12 @@ class Habitat:
         if not self.temp:
             ex = self.db.habs.get(keys=self.name)
             # found existing habitat, otherwise leave __init__ to incept a new one.
-            if ex is not None:
+            if ex is not None:  # replace params with persisted values from db
                 prms = self.ks.prms.get(ex.prefix)
-                salt = prms.salt  # prms['salt']
-                tier = prms.tier  # prms['tier']
-                pidx = prms.pidx  # prms['pidx']
-                #  need to add support for algo
+                algo = prms.algo
+                salt = prms.salt
+                tier = prms.tier
+                pidx = prms.pidx
                 self.pre = ex.prefix
                 existing = True
 
@@ -206,7 +208,7 @@ class Habitat:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
 
         self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
-                                   salt=salt, tier=tier)
+                                   algo=algo, salt=salt, tier=tier)
 
         if existing:
             self.reinitialize()

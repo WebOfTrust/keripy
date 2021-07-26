@@ -89,7 +89,7 @@ class PrePrm:
     Prefix's parameters for creating new key pairs
     """
     pidx: int = 0  # prefix index for this keypair sequence
-    algo: str = Algos.salty  # default use indices and salt  to create new key pairs
+    algo: str = Algos.salty  # salty default uses indices and salt to create new key pairs
     salt: str = ''  # empty salt  used for salty algo.
     stem: str = ''  # default unique path stem for salty algo
     tier: str = ''  # security tier for stretch index salty algo
@@ -164,8 +164,10 @@ class Keeper(dbing.LMDBer):
                        in keeper. Defaults to empty which means no authentication
                        or encryption of key sets.
                    pidx (bytes): hex index of next prefix key-pair sequence to be incepted
+                   algo (str): default root algorithm for generating key pair
                    salt (bytes): root salt for generating key pairs
                    tier (bytes): default root security tier for root salt
+
         .pris is named sub DB whose keys are public key from key pair and values
             are private keys from key pair
             Key is public key (fully qualified qb64)
@@ -672,7 +674,7 @@ class Manager:
             self.setup(**self._inits)  # first call to .setup with initialize database
 
 
-    def setup(self, aeid=None, pidx=None, salt=None, tier=None):
+    def setup(self, aeid=None, pidx=None, algo=None, salt=None, tier=None):
         """
         Setups manager root or global attributes and properties
         Assumes that .keeper db is open.
@@ -693,7 +695,8 @@ class Manager:
                 a second authentication mechanism besides the prikey.
             pidx (int): index of next new created key pair sequence for given
                 identifier prefix
-            salt (str):  qb64 of root salt. Makes random root salt if not provided
+            algo (str): root algorithm (randy or salty) for creating key pairs
+            salt (str): qb64 of root salt. Makes random root salt if not provided
             tier (str): default security tier (Tierage) for root salt
 
         """
@@ -705,6 +708,8 @@ class Manager:
             aeid = ''
         if pidx is None:
             pidx = 0
+        if algo is None:
+            algo = Algos.salty
         if salt is None:
             salt = coring.Salter().qb64
         if tier is None:
@@ -714,11 +719,15 @@ class Manager:
         if self.pidx is None:  # never before initialized
             self.pidx = pidx  # init to default
 
-        if self.tier is None:  # never before initialized
-            self.tier = tier  # init to default
+        if self.algo is None:  # never before initialized
+            self.algo = algo
 
         if self.salt is None:  # never before initialized
             self.salt = salt
+
+        if self.tier is None:  # never before initialized
+            self.tier = tier  # init to default
+
 
         # must do this after salt is initialized so gets re-encrypted correctly
         if self.aeid is None:  # never before initialized
@@ -804,6 +813,45 @@ class Manager:
         return self.ks.gbls.get('aeid')
 
 
+    @property
+    def pidx(self):
+        """
+        pidx property getter from key store db.
+        Assumes db initialized.
+        pidx is prefix index int for next new key sequence
+        """
+        if (pidx := self.ks.gbls.get("pidx")) is not None:
+            return int(pidx, 16)
+        return pidx  # None
+
+
+    @pidx.setter
+    def pidx(self, pidx):
+        """
+        pidx property setter to key store db.
+        pidx is prefix index int for next new key sequence
+        """
+        self.ks.gbls.pin("pidx", "%x" % pidx)
+
+
+    @property
+    def algo(self):
+        """
+        also property getter from key store db.
+        Assumes db initialized.
+        algo is default root algorithm for creating key pairs
+        """
+        return self.ks.gbls.get('algo')
+
+
+    @algo.setter
+    def algo(self, algo):
+        """
+        algo property setter to key store db.
+        algo is default root algorithm for creating key pairs
+        """
+        self.ks.gbls.pin('algo', algo)
+
 
     @property
     def salt(self):
@@ -832,27 +880,6 @@ class Manager:
 
 
     @property
-    def pidx(self):
-        """
-        pidx property getter from key store db.
-        Assumes db initialized.
-        pidx is prefix index int for next new key sequence
-        """
-        if (pidx := self.ks.gbls.get("pidx")) is not None:
-            return int(pidx, 16)
-        return pidx  # None
-
-
-    @pidx.setter
-    def pidx(self, pidx):
-        """
-        pidx property setter to key store db.
-        pidx is prefix index int for next new key sequence
-        """
-        self.ks.gbls.pin("pidx", "%x" % pidx)
-
-
-    @property
     def tier(self):
         """
         tier property getter from key store db.
@@ -874,7 +901,7 @@ class Manager:
     def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed, isith=None,
                      ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed, nsith=None,
                      dcode=coring.MtrDex.Blake3_256,
-                     algo=Algos.salty, salt=None, stem=None, tier=None, rooted=True,
+                     algo=None, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
         """
         Returns tuple (verfers, digers, cst, nst) for inception event where
@@ -928,10 +955,13 @@ class Manager:
 
         """
         # get root defaults to initialize key sequence
-        if rooted and salt is None:  # use root salt instead of random salt
+        if rooted and algo is None:  # use root algo from db as default
+            algo = self.algo
+
+        if rooted and salt is None:  # use root salt from db instead of random salt
             salt = self.salt
 
-        if rooted and tier is None:  # use root tier as default
+        if rooted and tier is None:  # use root tier from db as default
             tier = self.tier
 
         pidx = self.pidx  # get next pidx
