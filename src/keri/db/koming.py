@@ -35,7 +35,8 @@ class KomerBase:
                  subkey: str = 'docs.',
                  schema: Type[dataclass],  # class not instance
                  kind: str = coring.Serials.json,
-                 dupsort: bool = False):
+                 dupsort: bool = False,
+                 sep: str = None):
         """
         Parameters:
             db (dbing.LMDBer): base db
@@ -45,6 +46,8 @@ class KomerBase:
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
                                each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
         """
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
@@ -52,6 +55,7 @@ class KomerBase:
         self.kind = kind
         self.serializer = self._serializer(kind)
         self.deserializer = self._deserializer(kind)
+        self.sep = sep if sep is not None else self.Sep
 
 
     def _tokey(self, keys: Union[str, bytes, Iterable]):
@@ -68,7 +72,7 @@ class KomerBase:
             return keys.encode("utf-8")
         elif hasattr(keys, "decode"): # bytes
             return keys
-        return (self.Sep.join(keys).encode("utf-8"))  # iterable
+        return (self.sep.join(keys).encode("utf-8"))  # iterable
 
 
     def _tokeys(self, key: Union[str, bytes]):
@@ -279,7 +283,7 @@ class Komer(KomerBase):
 
 
 
-class DupKomer:
+class DupKomer(KomerBase):
     """
     Duplicate Keyspace Object Mapper factory class that supports multiple entries
     a given database key (lmdb dupsort == True).
@@ -468,7 +472,7 @@ class DupKomer:
             return keys.encode("utf-8")
         elif hasattr(keys, "decode"): # bytes
             return keys
-        return (self.Sep.join(keys).encode("utf-8"))  # iterable
+        return (self.sep.join(keys).encode("utf-8"))  # iterable
 
 
     def _serializer(self, kind):
