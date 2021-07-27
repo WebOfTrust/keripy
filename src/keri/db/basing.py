@@ -103,6 +103,7 @@ class EndpointRecord: # ends
     prefix and role is endpoint role such as watcher, witness etc
     """
     eid: str  # identifier prefix of endpoint
+    name: str  # user friendly name of endpoint
     dts: str  # ISO-8601 datetime string of latest update
 
     def __iter__(self):

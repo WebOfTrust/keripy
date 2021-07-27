@@ -386,6 +386,7 @@ def test_dup_komer():
         prefix and role is endpoint role such as watcher, witness etc
         """
         eid: str  # identifier prefix of endpoint
+        name: str  # user friendly name of endpoint
         dts: str  # ISO-8601 datetime string of latest update
 
         def __iter__(self):
@@ -417,7 +418,7 @@ def test_dup_komer():
     scheme = "https"
 
     wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
-    wit0end = Endpoint(eid=wit0, dts=dts)
+    wit0end = Endpoint(eid=wit0, name='wit0', dts=dts)
     wit0loc = Location(host="localhost",
                     port="8080",
                     path="/witnesses/wit0",
@@ -426,7 +427,7 @@ def test_dup_komer():
                     dts=dts)
 
     wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
-    wit1end = Endpoint(eid=wit1, dts=dts)
+    wit1end = Endpoint(eid=wit1, name='wit1', dts=dts)
     wit1loc = Location(host="localhost",
                 port="8080",
                 path="/witnesses/wit1",
@@ -435,7 +436,7 @@ def test_dup_komer():
                 dts=dts)
 
     wit2 = 'BljDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
-    wit2end = Endpoint(eid=wit2, dts=dts)
+    wit2end = Endpoint(eid=wit2, name='wit2', dts=dts)
     wit2loc = Location(host="localhost",
                 port="8080",
                 path="/witnesses/wit2",
@@ -444,7 +445,7 @@ def test_dup_komer():
                 dts=dts)
 
     wit3 = 'B-_esBko3sppQ0iH5HvMjtGfzJDVe_zH8ajywhjps804'
-    wit3end = Endpoint(eid=wit3, dts=dts)
+    wit3end = Endpoint(eid=wit3, name='wit3', dts=dts)
     wit3loc = Location(host="localhost",
                 port="8080",
                 path="/witnesses/wit3",
