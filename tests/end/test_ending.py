@@ -21,15 +21,6 @@ from keri.end import ending
 
 logger = help.ogler.getLogger()
 
-## must do it here to inject into Falcon endpoint resource instances
-#tymist = tyming.Tymist(tyme=0.0)
-
-#myapp = falcon.App() # falcon.App instances are callable WSGI apps
-#ending.loadEnds(myapp, tymth=tymist.tymen())
-
-#@pytest.fixture
-#def app():  # pytest_falcon client fixture assumes there is a fixture named "app"
-    #return myapp
 
 def test_get_static_sink():
     """
