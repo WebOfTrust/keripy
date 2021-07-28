@@ -234,38 +234,38 @@ class AgentKelServer(doing.DoDoer):
 def parseCesrHttpRequest(req):
     if req.content_type != CESR_CONTENT_TYPE:
         raise falcon.HTTPError(falcon.HTTP_NOT_ACCEPTABLE,
-                               "Content type error",
-                               "Unacceptable content type.")
+                               title="Content type error",
+                               description="Unacceptable content type.")
 
 
     try:
         raw_json = req.bounded_stream.read()
     except Exception:
         raise falcon.HTTPError(falcon.HTTP_748,
-                               "Read Error",
-                               "Could not read the request body.")
+                               title="Read Error",
+                               description="Could not read the request body.")
 
     try:
         q = json.loads(raw_json)
     except ValueError:
         raise falcon.HTTPError(falcon.HTTP_753,
-                               "Malformed JSON",
-                               "Could not decode the request body. The "
+                               title="Malformed JSON",
+                               description="Could not decode the request body. The "
                                "JSON was incorrect.")
 
     resource = req.path
 
     if CESR_DATE_HEADER not in req.headers:
         raise falcon.HTTPError(falcon.HTTP_UNAUTHORIZED,
-                               "Date error",
-                               "Missing required date header.")
+                               title="Date error",
+                               description="Missing required date header.")
 
     dt = req.headers[CESR_DATE_HEADER]
 
     if CESR_ATTACHMENT_HEADER not in req.headers:
         raise falcon.HTTPError(falcon.HTTP_PRECONDITION_FAILED,
-                               "Attachment error",
-                               "Missing required attachment header.")
+                               title="Attachment error",
+                               description="Missing required attachment header.")
 
 
     attachment = req.headers[CESR_ATTACHMENT_HEADER]
