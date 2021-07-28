@@ -16,11 +16,14 @@ import msgpack
 
 from . import coring
 from .coring import Matter, MtrDex, Serials
+from .. import help
 from ..kering import ValidationError, DeserializationError, EmptyMaterialError
 
 Idage = namedtuple("Idage", "dollar at id i")
 
 Ids = Idage(dollar="$id", at="@id", id="id", i="i")
+
+logger = help.ogler.getLogger()
 
 
 class CacheResolver:
@@ -79,7 +82,7 @@ class CacheResolver:
 
 
 jsonSchemaCache = CacheResolver(cache={
-    "Ek6vA-fVXDRbraVi7a9ydKStHiByUoF37Cgz4L58LWds": (
+    "Ek6vA-fVXDRbraVi7a9ydKStHiByUoF37Cgz4L58LWds":
         b'{"$id": "Ek6vA-fVXDRbraVi7a9ydKStHiByUoF37Cgz4L58LWds", "$schema": '
         b'"http://json-schema.org/draft-07/schema#", "title": "GLEIFvLEICredential", "type": "object", "properties": '
         b'{"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, "x": {"description": "schema '
@@ -88,8 +91,8 @@ jsonSchemaCache = CacheResolver(cache={
         b'"type": "string"}, "LEI": {"type": "string"}, "type": {"contains": {"const": "GLEIFvLEICredential"}, '
         b'"type": "array"}}, "additionalProperties": false, "required": ["i", "issuanceDate", "credentialStatus", '
         b'"LEI", "type"], "type": "object"}}, "additionalProperties": false, "required": ["i", "d"]}',
-    ),
-    "EZdaE1HCu2ZhyIhpXTWfGSLS2kirKexaC-4up3sIUz1I": (
+
+    "EZdaE1HCu2ZhyIhpXTWfGSLS2kirKexaC-4up3sIUz1I":
         b'{"$id": "EZdaE1HCu2ZhyIhpXTWfGSLS2kirKexaC-4up3sIUz1I", "$schema": '
         b'"http://json-schema.org/draft-07/schema#", "title": "LegalEntityEngagementContextRolevLEICredential", '
         b'"properties": {"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, '
@@ -102,9 +105,9 @@ jsonSchemaCache = CacheResolver(cache={
         b'"type"], "type": "object"}, "s": {"contains": {"type": "object"}, "description": "source block", '
         b'"items": {"properties": {"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": '
         b'false, "required": ["qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, '
-        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} '
-    ),
-    "EDg-Ji3kmi_G97Jctxeajpmp1-A8gSpeyElm-XCzTxiE": (
+        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} ',
+
+    "EDg-Ji3kmi_G97Jctxeajpmp1-A8gSpeyElm-XCzTxiE":
         b'{"$id": "EDg-Ji3kmi_G97Jctxeajpmp1-A8gSpeyElm-XCzTxiE", "$schema": '
         b'"http://json-schema.org/draft-07/schema#", "title": "LegalEntityOfficialOrganizationalRolevLEICredential", '
         b'"properties": {"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, '
@@ -117,9 +120,9 @@ jsonSchemaCache = CacheResolver(cache={
         b'"type": "object"}, "s": {"contains": {"type": "object"}, "description": "source block", "items": {'
         b'"properties": {"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": false, '
         b'"required": ["qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, '
-        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} '
-    ),
-    "E46jrVPTzlSkUPqGGeIZ8a8FWS7a6s4reAXRZOkogZ2A": (
+        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} ',
+
+    "E46jrVPTzlSkUPqGGeIZ8a8FWS7a6s4reAXRZOkogZ2A":
         b'{"$id": "E46jrVPTzlSkUPqGGeIZ8a8FWS7a6s4reAXRZOkogZ2A", "$schema": '
         b'"http://json-schema.org/draft-07/schema#", "properties": {"v": {"type": "string"}, "i": {"type": "string"}, '
         b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, "d": {"description": '
@@ -130,9 +133,9 @@ jsonSchemaCache = CacheResolver(cache={
         b'"s": {"contains": {"type": "object"}, "description": "source block", "items": {"properties": {'
         b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": false, "required": ['
         b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}}, '
-        b'"additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} '
-    ),
-    "ECcj1CBn4dpo6ZOmZQNtAjXxT4_MsVXipt5VTPjvSAf0": (
+        b'"additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} ',
+
+    "ECcj1CBn4dpo6ZOmZQNtAjXxT4_MsVXipt5VTPjvSAf0":
         b'{"$id": "ECcj1CBn4dpo6ZOmZQNtAjXxT4_MsVXipt5VTPjvSAf0", "$schema": '
         b'"http://json-schema.org/draft-07/schema#", "properties": {"v": {"type": "string"}, "i": {"type": "string"}, '
         b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, "d": {"description": '
@@ -142,7 +145,6 @@ jsonSchemaCache = CacheResolver(cache={
         b'"QualifiedvLEIIssuervLEICredential"}, "type": "array"}}, "additionalProperties": false, "required": ["i", '
         b'"issuanceDate", "credentialStatus", "LEI", "type"], "type": "object"}}, "additionalProperties": false, '
         b'"required": ["i", "d"], "type": "object"} '
-    ),
 })
 
 
@@ -160,22 +162,22 @@ class JSONSchema:
             try:
                 sed = json.loads(raw.decode("utf-8"))
             except Exception as ex:
-                raise DeserializationError("Error deserializing JSON: {}"
-                                           "".format(raw.decode("utf-8")))
+                raise DeserializationError("Error deserializing JSON: {} {}"
+                                           "".format(raw.decode("utf-8"), ex))
 
         elif kind == Serials.mgpk:
             try:
                 sed = msgpack.loads(raw)
             except Exception as ex:
-                raise DeserializationError("Error deserializing MGPK: {}"
-                                           "".format(raw))
+                raise DeserializationError("Error deserializing MGPK: {} {}"
+                                           "".format(raw, ex))
 
         elif kind == Serials.cbor:
             try:
                 sed = cbor.loads(raw)
             except Exception as ex:
-                raise DeserializationError("Error deserializing CBOR: {}"
-                                           "".format(raw))
+                raise DeserializationError("Error deserializing CBOR: {} {}"
+                                           "".format(raw, ex))
         else:
             raise ValueError("Invalid serialization kind = {}".format(kind))
 
@@ -240,11 +242,14 @@ class JSONSchema:
         try:
             d = json.loads(raw)
             jsonschema.validate(instance=d, schema=schema, resolver=self.resolver.resolver(scer=raw))
-        except jsonschema.exceptions.ValidationError:
+        except jsonschema.exceptions.ValidationError as ex:
+            logger.error(f'jsonschema.exceptions.ValidationError {ex}')
             return False
-        except jsonschema.exceptions.SchemaError:
+        except jsonschema.exceptions.SchemaError as ex:
+            logger.error(f'jsonschema.exceptions.SchemaError {ex}')
             return False
-        except json.decoder.JSONDecodeError:
+        except json.decoder.JSONDecodeError as ex:
+            logger.error(f'json.decoder.JSONDecodeError {ex}')
             return False
 
         return True
