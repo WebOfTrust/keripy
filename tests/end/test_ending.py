@@ -5,35 +5,27 @@ Test Falcon Module
 Includes Falcon ReST endpoints for testing purposes
 
 """
+import logging
+
 import falcon
 from falcon import testing
 
 import pytest
 
 from hio import help
-from hio.help import helping
-from hio.base import tyming
-from hio.core import wiring
-from hio.core import http
+from hio.base import tyming, doing
+from hio.core import wiring, http
 from hio.core.http import httping, clienting, serving
 
 from keri.end import ending
 
 logger = help.ogler.getLogger()
 
-## must do it here to inject into Falcon endpoint resource instances
-#tymist = tyming.Tymist(tyme=0.0)
-
-#myapp = falcon.App() # falcon.App instances are callable WSGI apps
-#ending.loadEnds(myapp, tymth=tymist.tymen())
-
-#@pytest.fixture
-#def app():  # pytest_falcon client fixture assumes there is a fixture named "app"
-    #return myapp
 
 def test_get_static_sink():
     """
     Test GET to static files
+    Uses falcon TestClient
     """
     # must do it here to inject into Falcon endpoint resource instances
     tymist = tyming.Tymist(tyme=0.0)
@@ -117,13 +109,9 @@ def test_get_static_sink():
     assert rep.text == '// vanilla index.js\n\nm.render(document.body, "Hello world")\n'
 
 
-def test_get_admin():  # client is a fixture in pytest_falcon
+def test_get_admin():
     """
-    PyTest fixtures are registered globally in the pytest package
-    So any test function can accept a fixture as a parameter supplied by
-    the pytest runner
-
-    pytest_falcon assumes there is a fixture named "app"
+    Uses falcon TestClient
     """
     # must do it here to inject into Falcon endpoint resource instances
     tymist = tyming.Tymist(tyme=0.0)
@@ -137,7 +125,30 @@ def test_get_admin():  # client is a fixture in pytest_falcon
     assert rep.status == falcon.HTTP_OK
     assert rep.text == '\nKERI Admin\n\n'
 
+def test_end_demo():
+    """
+    Run with rest api client like Paw or PostMan
+    """
+    webPort = 8089
+    # help.ogler.resetLevel(level=logging.DEBUG, globally=True)
+    logger.setLevel(logging.INFO)
+
+    logger.info("\nWeb Server on port %s.\n\n", webPort)
+
+    # must do it here to inject into Falcon endpoint resource instances
+    doist = doing.Doist()
+
+    doers = ending.setup(name="Test ReST Server",
+                         temp=True,
+                         webPort=webPort,
+                         tymth=doist.tymen())
+
+    logger.info("\nWeb Server on port %s.\n\n", webPort)
+
+    doist.do(doers=doers, limit=1)
+
+    logger.error("\nWeb Server shutdown on port %s.\n\n", webPort)
 
 
 if __name__ == '__main__':
-    test_get_admin()
+    test_end_demo()
