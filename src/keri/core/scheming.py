@@ -5,23 +5,25 @@ keri.core.scheming module
 self-addressing and schema support
 """
 
-import blake3
 import hashlib
-import jsonschema
-
+import json
 from collections import namedtuple
 
-import json
+import blake3
 import cbor2 as cbor
+import jsonschema
 import msgpack
 
 from . import coring
 from .coring import Matter, MtrDex, Serials
+from .. import help
 from ..kering import ValidationError, DeserializationError, EmptyMaterialError
 
 Idage = namedtuple("Idage", "dollar at id i")
 
 Ids = Idage(dollar="$id", at="@id", id="id", i="i")
+
+logger = help.ogler.getLogger()
 
 
 class CacheResolver:
@@ -80,61 +82,69 @@ class CacheResolver:
 
 
 jsonSchemaCache = CacheResolver(cache={
-    "E3gXAQwgB_wGtQ5ZVhKrggkDPCQQXPQ1FWlW3d8Csdc8": (
-        b'{"$id": "E3gXAQwgB_wGtQ5ZVhKrggkDPCQQXPQ1FWlW3d8Csdc8", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
-        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
-        b'"credentialStatus": {"type": "string"}, "i": {"type": "string"}, "issuanceDate": {"format": "date-time", '
-        b'"type": "string"}, "type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", '
-        b'"type"], "type": "object"}, "i": {"type": "string"}, "ti": {"type": "string"}, "x": {"description": "schema '
-        b'block", "type": "string"}}, "required": ["i", "d"], "type": "object"}'),
-    "EDN2qAfVB0coKA26AkutgHXEAbnzDI3O-bL7rZOl6YAw": (
-        b'{"$id": "EDN2qAfVB0coKA26AkutgHXEAbnzDI3O-bL7rZOl6YAw", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
-        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
-        b'"credentialStatus": {"type": "string"}, "engagementContextRole": {"type": "string"}, "i": {"type": '
-        b'"string"}, "issuanceDate": {"format": "date-time", "type": "string"}, "personLegalName": {"type": '
-        b'"string"}, "type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", "type", '
-        b'"personLegalName", "engagementContextRole"], "type": "object"}, "i": {"type": "string"}, "s": {"contains": '
-        b'{"type": "object"}, "description": "source block", "items": {"additionalProperties": false, "properties": {'
-        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "required": ['
-        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}, '
-        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ["i", "s", '
-        b'"d"], "type": "object"}'),
-    "Ehp1Pnyhw0BMY_0pdtTUUZh3f2PxTFVHWddZaF7KT2_g": (
-        b'{"$id": "Ehp1Pnyhw0BMY_0pdtTUUZh3f2PxTFVHWddZaF7KT2_g", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
-        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
-        b'"credentialStatus": {"type": "string"}, "i": {"type": "string"}, "issuanceDate": {"format": "date-time", '
-        b'"type": "string"}, "officialRole": {"type": "string"}, "personLegalName": {"type": "string"}, '
-        b'"type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", "type", '
-        b'"personLegalName", "officialRole"], "type": "object"}, "i": {"type": "string"}, "s": {"contains": {"type": '
-        b'"object"}, "description": "source block", "items": {"additionalProperties": false, "properties": {'
-        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "required": ['
-        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}, '
-        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ["i", "s", '
-        b'"d"], "type": "object"}'),
-    "EfFdEfsloa6q0zNZdvwThrtEQ-jJuPu8_LFXDRDFpvmo": (
-        b'{"$id": "EfFdEfsloa6q0zNZdvwThrtEQ-jJuPu8_LFXDRDFpvmo", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
-        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
-        b'"credentialStatus": {"type": "string"}, "i": {"type": "string"}, "issuanceDate": {"format": "date-time", '
-        b'"type": "string"}, "type": {"type": "array"}}, "required": ["i", "LEI", "credentialStatus", "issuanceDate", '
-        b'"type"], "type": "object"}, "i": {"type": "string"}, "s": {"contains": {"type": "object"}, "description": '
-        b'"source block", "items": {"additionalProperties": false, "properties": {'
-        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "required": ['
-        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}, '
-        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ["i", "s", '
-        b'"d"], "type": "object"}'),
-    "ELqz2NN3YhEfzonGT-aOLeA1bOY6hWkxl8YR-Lo4C3Og": (
-        b'{"$id": "ELqz2NN3YhEfzonGT-aOLeA1bOY6hWkxl8YR-Lo4C3Og", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "additionalProperties": false, "properties": {"d": {'
-        b'"additionalProperties": false, "description": "data block", "properties": {"LEI": {"type": "string"}, '
-        b'"credentialStatus": {"type": "string"}, "gracePeriod": {"default": 90, "type": "integer"}, "i": {"type": '
-        b'"string"}, "issuanceDate": {"format": "date-time", "type": "string"}, "type": {"type": "array"}}, '
-        b'"required": ["i", "LEI", "credentialStatus", "issuanceDate", "type"], "type": "object"}, "i": {"type": '
-        b'"string"}, "ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}}, "required": ['
-        b'"i", "d"], "type": "object"}'),
+    "Ek6vA-fVXDRbraVi7a9ydKStHiByUoF37Cgz4L58LWds":
+        b'{"$id": "Ek6vA-fVXDRbraVi7a9ydKStHiByUoF37Cgz4L58LWds", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "title": "GLEIFvLEICredential", "type": "object", "properties": '
+        b'{"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, "x": {"description": "schema '
+        b'block", "type": "string"}, "d": {"description": "data block", "properties": {"i": {"type": "string"}, '
+        b'"si": {"type": "string"}, "issuanceDate": {"format": "date-time", "type": "string"}, "credentialStatus": {'
+        b'"type": "string"}, "LEI": {"type": "string"}, "type": {"contains": {"const": "GLEIFvLEICredential"}, '
+        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "issuanceDate", "credentialStatus", '
+        b'"LEI", "type"], "type": "object"}}, "additionalProperties": false, "required": ["i", "d"]}',
+
+    "EZdaE1HCu2ZhyIhpXTWfGSLS2kirKexaC-4up3sIUz1I":
+        b'{"$id": "EZdaE1HCu2ZhyIhpXTWfGSLS2kirKexaC-4up3sIUz1I", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "title": "LegalEntityEngagementContextRolevLEICredential", '
+        b'"properties": {"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, '
+        b'"x": {"description": "schema block", "type": "string"}, "d": {"description": "data block", "properties": {'
+        b'"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": "date-time", '
+        b'"type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, "personLegalName": {'
+        b'"type": "string"}, "engagementContextRole": {"type": "string"}, "type": {"contains": {"const": '
+        b'"LegalEntityEngagementContextRolevLEICredential"}, "type": "array"}}, "additionalProperties": false, '
+        b'"required": ["i", "issuanceDate", "credentialStatus", "LEI", "personLegalName", "engagementContextRole", '
+        b'"type"], "type": "object"}, "s": {"contains": {"type": "object"}, "description": "source block", '
+        b'"items": {"properties": {"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": '
+        b'false, "required": ["qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, '
+        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} ',
+
+    "EDg-Ji3kmi_G97Jctxeajpmp1-A8gSpeyElm-XCzTxiE":
+        b'{"$id": "EDg-Ji3kmi_G97Jctxeajpmp1-A8gSpeyElm-XCzTxiE", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "title": "LegalEntityOfficialOrganizationalRolevLEICredential", '
+        b'"properties": {"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, '
+        b'"x": {"description": "schema block", "type": "string"}, "d": {"description": "data block", "properties": {'
+        b'"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": "date-time", '
+        b'"type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, "personLegalName": {'
+        b'"type": "string"}, "officialRole": {"type": "string"}, "type": {"contains": {"const": '
+        b'"LegalEntityOfficialOrganizationalRolevLEICredential"}, "type": "array"}}, "additionalProperties": false, '
+        b'"required": ["i", "issuanceDate", "credentialStatus", "LEI", "personLegalName", "officialRole", "type"], '
+        b'"type": "object"}, "s": {"contains": {"type": "object"}, "description": "source block", "items": {'
+        b'"properties": {"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": false, '
+        b'"required": ["qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, '
+        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} ',
+
+    "E46jrVPTzlSkUPqGGeIZ8a8FWS7a6s4reAXRZOkogZ2A":
+        b'{"$id": "E46jrVPTzlSkUPqGGeIZ8a8FWS7a6s4reAXRZOkogZ2A", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "properties": {"v": {"type": "string"}, "i": {"type": "string"}, '
+        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, "d": {"description": '
+        b'"data block", "properties": {"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": '
+        b'"date-time", "type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, '
+        b'"type": {"contains": {"const": "LegalEntityvLEICredential"}, "type": "array"}}, "additionalProperties": '
+        b'false, "required": ["i", "issuanceDate", "credentialStatus", "LEI", "type"], "type": "object"}, '
+        b'"s": {"contains": {"type": "object"}, "description": "source block", "items": {"properties": {'
+        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": false, "required": ['
+        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}}, '
+        b'"additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} ',
+
+    "ECcj1CBn4dpo6ZOmZQNtAjXxT4_MsVXipt5VTPjvSAf0":
+        b'{"$id": "ECcj1CBn4dpo6ZOmZQNtAjXxT4_MsVXipt5VTPjvSAf0", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "properties": {"v": {"type": "string"}, "i": {"type": "string"}, '
+        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, "d": {"description": '
+        b'"data block", "properties": {"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": '
+        b'"date-time", "type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, '
+        b'"gracePeriod": {"default": 90, "type": "integer"}, "type": {"contains": {"const": '
+        b'"QualifiedvLEIIssuervLEICredential"}, "type": "array"}}, "additionalProperties": false, "required": ["i", '
+        b'"issuanceDate", "credentialStatus", "LEI", "type"], "type": "object"}}, "additionalProperties": false, '
+        b'"required": ["i", "d"], "type": "object"} '
 })
 
 
@@ -152,22 +162,22 @@ class JSONSchema:
             try:
                 sed = json.loads(raw.decode("utf-8"))
             except Exception as ex:
-                raise DeserializationError("Error deserializing JSON: {}"
-                                           "".format(raw.decode("utf-8")))
+                raise DeserializationError("Error deserializing JSON: {} {}"
+                                           "".format(raw.decode("utf-8"), ex))
 
         elif kind == Serials.mgpk:
             try:
                 sed = msgpack.loads(raw)
             except Exception as ex:
-                raise DeserializationError("Error deserializing MGPK: {}"
-                                           "".format(raw))
+                raise DeserializationError("Error deserializing MGPK: {} {}"
+                                           "".format(raw, ex))
 
         elif kind == Serials.cbor:
             try:
                 sed = cbor.loads(raw)
             except Exception as ex:
-                raise DeserializationError("Error deserializing CBOR: {}"
-                                           "".format(raw))
+                raise DeserializationError("Error deserializing CBOR: {} {}"
+                                           "".format(raw, ex))
         else:
             raise ValueError("Invalid serialization kind = {}".format(kind))
 
@@ -232,11 +242,14 @@ class JSONSchema:
         try:
             d = json.loads(raw)
             jsonschema.validate(instance=d, schema=schema, resolver=self.resolver.resolver(scer=raw))
-        except jsonschema.exceptions.ValidationError:
+        except jsonschema.exceptions.ValidationError as ex:
+            logger.error(f'jsonschema.exceptions.ValidationError {ex}')
             return False
-        except jsonschema.exceptions.SchemaError:
+        except jsonschema.exceptions.SchemaError as ex:
+            logger.error(f'jsonschema.exceptions.SchemaError {ex}')
             return False
-        except json.decoder.JSONDecodeError:
+        except json.decoder.JSONDecodeError as ex:
+            logger.error(f'json.decoder.JSONDecodeError {ex}')
             return False
 
         return True

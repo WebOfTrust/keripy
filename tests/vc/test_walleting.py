@@ -29,7 +29,7 @@ def test_wallet():
         sed.update(dict(
             type="object",
             properties=dict(
-                id=dict(
+                i=dict(
                     type="string"
                 ),
                 lei=dict(
@@ -40,7 +40,7 @@ def test_wallet():
 
         schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
         credSubject = dict(
-            id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
+            i="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
             lei="254900OPPU84GM83MG36",
             issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
@@ -52,28 +52,31 @@ def test_wallet():
                             schema=schemer.said,
                             subject=credSubject,
                             typ=JSONSchema(resolver=cache))
-        assert creder.said == "EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM"
+        assert creder.said == "Eo_1yYIr2fb1dNx_0NBu7_cXt5S9uksUd78W0WD8DFS4"
 
         msg = sidHab.endorse(serder=creder)
         assert msg == (
-            b'{"v":"KERI10JSON000136_","i":"EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM",'
-            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36",'
-            b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE'
-            b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI'
-            b'-AABAA0pXbQllgzXr88IczAnsPrdhgFKs9wNQvfSfzyrtcvbTwq-U1DmBluAklntCqH1AbBL6TWLZIDGi83BHLWJ82CA')
+            b'{"v":"KERI10JSON000135_","i":"Eo_1yYIr2fb1dNx_0NBu7_cXt5S9uksUd7'
+            b'8W0WD8DFS4","x":"EBd67C13qqQcsJVxvBBOdasGIALYUIofv6xoedUj-438","'
+            b'ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","d":{"i":"did'
+            b':keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36'
+            b'","issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}-VA0-FABE4Y'
+            b'PqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAA'
+            b'AElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAA9JGgHDciYtbWJ'
+            b'sWfv_vOulGL4yfg4EKBlqLaay9xS1C163mff9X-Z-6PD9pUM7KZeghQmU1y-xjBN'
+            b'g1kY010CQ')
         ser = (
-            b'{"v":"KERI10JSON000136_","i":"EgaaYOPdG7vootT99cmClvwOoM-hjUIpv5Xl6hFuTcyM",'
-            b'"x":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"d":{"id":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36",'
-            b'"issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
+            b'{"v":"KERI10JSON000135_","i":"Eo_1yYIr2fb1dNx_0NBu7_cXt5S9uksUd7'
+            b'8W0WD8DFS4","x":"EBd67C13qqQcsJVxvBBOdasGIALYUIofv6xoedUj-438","'
+            b'ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","d":{"i":"did'
+            b':keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36'
+            b'","issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
         seal = (
             b'E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw'
             b'-AxDNI7_ZmaI')
 
         sig0 = (
-            b'AA0pXbQllgzXr88IczAnsPrdhgFKs9wNQvfSfzyrtcvbTwq-U1DmBluAklntCqH1AbBL6TWLZIDGi83BHLWJ82CA'
-        )
+            b'AA9JGgHDciYtbWJsWfv_vOulGL4yfg4EKBlqLaay9xS1C163mff9X-Z-6PD9pUM7'b'KZeghQmU1y-xjBNg1kY010CQ')
 
         sidWallet = Wallet(hab=sidHab, db=sidPDB)
 
@@ -81,12 +84,12 @@ def test_wallet():
 
         # verify we can load serialized VC by SAID
         key = creder.said.encode("utf-8")
-        assert sidPDB.getSers(key) == ser
+        assert bytearray(sidPDB.getSers(key)) == ser
 
         # verify the signature
         sigs = sidPDB.getSigs(key)
         assert len(sigs) == 1
-        assert sigs[0] == sig0
+        assert bytearray(sigs[0]) == sig0
 
         # verify the seal
         sl = sidPDB.getSeals(key)

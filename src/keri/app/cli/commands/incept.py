@@ -67,9 +67,10 @@ class InceptDoer(doing.DoDoer):
         db = basing.Baser(name=name, temp=False)  # not opened by default, doer opens
         self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
+        salt = coring.Salter(raw=opts.salt.encode("utf-8")).qb64
         hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, transferable=opts.transferable,
                               isith=opts.isith, icount=opts.icount, nsith=opts.nsith, ncount=opts.ncount,
-                              wits=opts.witnesses)
+                              wits=opts.witnesses, salt=salt)
         self.habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
         self.witDoer = agenting.WitnessReceiptor(hab=hab)
 
@@ -85,16 +86,9 @@ class InceptDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        ser = self.hab.kever.serder
-        wits = self.hab.kever.wits
-
-        while True:
-            dgkey = dbing.dgKey(ser.preb, ser.digb)
-
-            rcts = self.hab.db.getWigs(dgkey)
-            if len(rcts) == len(wits):
-                break
+        while not self.witDoer.done:
             _ = yield self.tock
+
 
         print(f'Prefix\t\t{self.hab.pre}')
         for idx, verfer in enumerate(self.hab.kever.verfers):

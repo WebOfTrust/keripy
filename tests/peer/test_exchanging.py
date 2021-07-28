@@ -3,6 +3,7 @@
 tests.peer.test_exchanging module
 
 """
+
 from hio.base import doing
 from hio.help import decking
 
@@ -14,7 +15,6 @@ from keri.peer import exchanging
 
 def test_exchanger():
     sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
-    redSalt = coring.Salter(raw=b'abcdef0123456789').qb64
 
     with basing.openDB(name="sid") as sidDB, \
             keeping.openKS(name="sid") as sidKS, \

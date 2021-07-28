@@ -87,15 +87,11 @@ class Credentialer:
         else:
             raise ValueError("Improper initialization need raw or ked.")
 
-
-        # TODO:  decide the proper time / place to load and validate schema
-        #  (hint: probably not here).
         try:
-            subr = json.dumps(self.crd["d"]).encode("utf-8")
             scer = self._typ.resolve(self.crd["x"])
             schemer = Schemer(raw=scer, typ=self._typ)
 
-            if not schemer.verify(subr):
+            if not schemer.verify(self.raw):
                 raise ValidationError("subject is not valid against the schema")
         except ValueError:
             logger.info("unable to load / validate schema")

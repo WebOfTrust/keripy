@@ -7,6 +7,7 @@ keri.app.agenting module
 from hio.base import doing
 from hio.help import decking
 from hio.core.tcp import clienting
+from keri.core import coring
 
 from ..app import obtaining
 from ..core import eventing, parsing, scheming
@@ -20,42 +21,117 @@ from .. import help
 logger = help.ogler.getLogger()
 
 
-class AgentController:
-    """
-
-    """
-
-    def __init__(self, hab, issuer, **kwa):
-        """
-
-        Parameters:
-            hab (Habitat):
-            issuer (Issuer):
-
-        """
-        self.hab = hab
-        self.issuer = issuer
-
-
-
 class WitnessReceiptor(doing.DoDoer):
+    """
+    Sends messages to all current witnesses of given identifier (from hab) and waits
+    for receipts from each of those witnesses and propogates those receipts to each
+    of the other witnesses after receiving the complete set.
 
-    def __init__(self, hab, doers=None, **kwa):
+    Removes all Doers and exits as Done once all witnesses have been sent the entire
+    receipt set.  Could be enhanced to have a `once` method that runs once and cleans up
+    and an `all` method that runs and waits for more messages to receipt.
+
+    """
+
+    def __init__(self, hab, msg=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
 
         Parameters:
             hab: Habitat of the identifier to populate witnesses
+            msg: is the message to send to all witnesses.
+                 Defaults to sending the latest KEL event if msg is None
 
         """
         self.hab = hab
+        self.msg = msg
         super(WitnessReceiptor, self).__init__(doers=[self.receiptDo], **kwa)
-
 
     @doing.doize()
     def receiptDo(self, tymth=None, tock=0.0, **opts):
-        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        ser = self.hab.kever.serder
+        sn = self.hab.kever.sn
+        wits = self.hab.kever.wits
+
+        if len(wits) == 0:
+            return True
+
+        msg = self.msg if self.msg is not None else self.hab.makeOwnEvent(sn=sn)
+
+        witers = []
+        for wit in wits:
+            witer = Witnesser(hab=self.hab, wit=wit)
+            witers.append(witer)
+            witer.msgs.append(msg)
+            self.extend([witer])
+
+            _ = (yield self.tock)
+
+        while True:
+            dgkey = dbing.dgKey(ser.preb, ser.digb)
+
+            wigs = self.hab.db.getWigs(dgkey)
+            if len(wigs) == len(wits):
+                break
+            _ = yield self.tock
+
+        # generate all rct msgs to send to all witnesses
+        wigers = [coring.Siger(qb64b=bytes(wig)) for wig in wigs]
+        rserder = eventing.receipt(pre=ser.pre,
+                                   sn=sn,
+                                   dig=ser.dig)
+        rctMsg = eventing.messagize(serder=rserder, wigers=wigers)
+
+        # this is a little brute forcey and can be improved by gathering receipts
+        # along the way and passing them out as we go and only sending the
+        # required ones here
+        for witer in witers:
+            witer.msgs.append(rctMsg)
+            _ = (yield self.tock)
+
+        total = len(witers) * 2
+        count = 0
+        while count < total:
+            for witer in witers:
+                count += len(witer.sent)
+            _ = (yield self.tock)
+
+        self.remove(witers)
+        return True
+
+
+class WitnessSender(doing.DoDoer):
+    """
+    Sends messages to all current witnesses of given identifier (from hab) and exits.
+
+    Removes all Doers and exits as Done once all witnesses have been sent the message.
+    Could be enhanced to have a `once` method that runs once and cleans up
+    and an `all` method that runs and waits for more messages to receipt.
+
+    """
+
+    def __init__(self, hab, msg, **kwa):
+        """
+        For the current event, gather the current set of witnesses, send the event,
+        gather all receipts and send them to all other witnesses
+
+        Parameters:
+            hab: Habitat of the identifier to populate witnesses
+            msg: is the message to send to all witnesses.
+                 Defaults to sending the latest KEL event if msg is None
+
+        """
+        self.hab = hab
+        self.msg = msg
+        super(WitnessSender, self).__init__(doers=[self.sendDo], **kwa)
+
+    @doing.doize()
+    def sendDo(self, tymth=None, tock=0.0, **opts):
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -63,16 +139,31 @@ class WitnessReceiptor(doing.DoDoer):
         sn = self.hab.kever.sn
         wits = self.hab.kever.wits
 
-        msg = self.hab.makeOwnEvent(sn=sn)
+        if len(wits) == 0:
+            return True
 
+        witers = []
         for wit in wits:
-            witer = Witnesser(hab=self.hab, wit=wit, msg=msg)
+            witer = Witnesser(hab=self.hab, wit=wit)
+            witers.append(witer)
+            witer.msgs.append(self.msg)
             self.extend([witer])
+
             _ = (yield self.tock)
+
+        total = len(witers)
+        count = 0
+        while count < total:
+            for witer in witers:
+                count += len(witer.sent)
+            _ = (yield self.tock)
+
+        self.remove(witers)
+        return True
 
 
 class Witnesser(doing.DoDoer):
-    def __init__(self, hab, wit, msg, doers=None, **kwa):
+    def __init__(self, hab, wit, msgs=None, sent=None, doers=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -83,7 +174,8 @@ class Witnesser(doing.DoDoer):
         """
         self.hab = hab
         self.wit = wit
-        self.msg = msg
+        self.msgs = msgs if msgs is not None else decking.Deck()
+        self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
         doers = doers if doers is not None else []
         doers.extend([self.receiptDo])
@@ -94,25 +186,35 @@ class Witnesser(doing.DoDoer):
 
         super(Witnesser, self).__init__(doers=doers, **kwa)
 
-
     @doing.doize()
     def receiptDo(self, tymth=None, tock=0.0, **opts):
-        # enter context
+
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
 
-        loc = obtaining.getwitnessbyprefix(self.wit)
-        client = clienting.Client(host=loc.ip4, port=loc.tcp)
-        self.parser = parsing.Parser(ims=client.rxbs,
-                                     framed=True,
-                                     kvy=self.kevery)
+        while True:
+            while not self.msgs:
+                yield self.tock
 
-        clientDoer = clienting.ClientDoer(client=client)
-        self.extend([clientDoer, self.msgDo])
+            msg = self.msgs.popleft()
 
-        client.tx(self.msg)   # send to connected remote
+            loc = obtaining.getwitnessbyprefix(self.wit)
+            client = clienting.Client(host=loc.ip4, port=loc.tcp)
+            self.parser = parsing.Parser(ims=client.rxbs,
+                                         framed=True,
+                                         kvy=self.kevery)
 
+            clientDoer = clienting.ClientDoer(client=client)
+            self.extend([clientDoer, self.msgDo])
+
+            client.tx(msg)  # send to connected remote
+
+            while client.txbs:
+                yield self.tock
+
+            self.sent.append(msg)
+            yield self.tock
 
     @doing.doize()
     def msgDo(self, tymth=None, tock=0.0, **opts):
@@ -135,8 +237,7 @@ class Witnesser(doing.DoDoer):
         Usage:
             add to doers list
         """
-        done = yield from self.parser.parsator()  # process messages continuously
-        return done  # should nover get here except forced close
+        yield from self.parser.parsator()  # process messages continuously
 
 
 class RotateHandler(doing.DoDoer):
@@ -162,11 +263,9 @@ class RotateHandler(doing.DoDoer):
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-
         doers = [self.msgDo]
 
         super(RotateHandler, self).__init__(doers=doers, **kwa)
-
 
     @doing.doize()
     def msgDo(self, tymth=None, tock=0.0, **opts):
@@ -219,13 +318,12 @@ class RotateHandler(doing.DoDoer):
 
                 logger.info('Prefix\t\t{%s}', self.hab.pre)
                 for idx, verfer in enumerate(self.hab.kever.verfers):
-                    logger.info('Public key %d:\t%s', idx+1, verfer.qb64)
+                    logger.info('Public key %d:\t%s', idx + 1, verfer.qb64)
                 logger.info("")
 
                 yield
 
             yield
-
 
 
 class IssueCredentialHandler(doing.DoDoer):
@@ -258,7 +356,6 @@ class IssueCredentialHandler(doing.DoDoer):
 
         super(IssueCredentialHandler, self).__init__(doers=doers, **kwa)
 
-
     @doing.doize()
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -279,14 +376,14 @@ class IssueCredentialHandler(doing.DoDoer):
                 recipientIdentifier = payload["recipient"]
                 credSubject = payload["data"]
                 schema = payload["schema"]
+                # not all credentials have a source
+                source = payload.get("source")
 
                 recptAddy = obtaining.getendpointbyprefix(recipientIdentifier)
                 rcptClient = clienting.Client(host=recptAddy.ip4, port=recptAddy.tcp)
                 rcptClientDoer = clienting.ClientDoer(client=rcptClient)
 
                 self.extend([rcptClientDoer])
-
-                now = helping.nowIso8601()
 
                 ref = scheming.jsonSchemaCache.resolve(schema)
                 schemer = scheming.Schemer(raw=ref)
@@ -296,20 +393,18 @@ class IssueCredentialHandler(doing.DoDoer):
                 creder = proving.credential(issuer=self.hab.pre,
                                             schema=schemer.said,
                                             subject=credSubject,
-                                            issuance=now,
-                                            regk=self.issuer.regk,
-                                            typ=jsonSchema)
+                                            typ=jsonSchema,
+                                            source=source)
 
                 msg = self.hab.endorse(serder=creder)
 
                 tevt, kevt = self.issuer.issue(vcdig=creder.said)
 
-                # # TODO: figure out how to send these to my witnesses
-                # self.client.tx(kevt)  # send to connected remote
-                # tyme = (yield self.tock)
-                #
-                # self.client.tx(tevt)  # send to connected remote
-                # tyme = (yield self.tock)
+                witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
+                self.extend([witDoer])
+
+                witSender = WitnessSender(hab=self.hab, msg=tevt)
+                self.extend([witSender])
 
                 pl = dict(
                     vc=[handling.envelope(msg, typ=jsonSchema)]

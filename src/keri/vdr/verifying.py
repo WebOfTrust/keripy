@@ -6,14 +6,12 @@ keri.vdr.verifying module
 VC verifier support
 """
 
+from .. import help
 from ..core import parsing, coring
-from ..core import eventing as ceventing
-from ..core.coring import Verfer, Cigar
+from ..core.coring import Cigar
 from ..vdr import eventing
 from ..vdr.eventing import VcStates
 from ..vdr.viring import Registry
-
-from .. import help
 
 logger = help.ogler.getLogger()
 

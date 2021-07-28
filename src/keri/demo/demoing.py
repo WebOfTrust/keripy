@@ -426,8 +426,6 @@ class IanDirector(directing.Director):
             creder = proving.credential(issuer=self.hab.pre,
                                         schema=schemer.said,
                                         subject=credSubject,
-                                        issuance=now,
-                                        regk=self.issuer.regk,
                                         typ=jsonSchema)
 
             msg = self.hab.endorse(serder=creder)
@@ -554,6 +552,8 @@ class HanDirector(directing.Director):
                 tyme = (yield self.tock)
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
+            print(f'{self.hab.name}\'s Wallet ({self.hab.pre}) ')
+            print()
 
             msg = self.hab.query(self.issuerpre, res="logs")  # Query for remote pre Event
             self.client.tx(msg)  # send to connected remote
