@@ -130,7 +130,6 @@ class WitnessSender(doing.DoDoer):
         self.msg = msg
         super(WitnessSender, self).__init__(doers=[self.sendDo], **kwa)
 
-
     @doing.doize()
     def sendDo(self, tymth=None, tock=0.0, **opts):
         self.wind(tymth)
@@ -238,8 +237,7 @@ class Witnesser(doing.DoDoer):
         Usage:
             add to doers list
         """
-        done = yield from self.parser.parsator()  # process messages continuously
-        return done  # should nover get here except forced close
+        yield from self.parser.parsator()  # process messages continuously
 
 
 class RotateHandler(doing.DoDoer):
@@ -378,6 +376,8 @@ class IssueCredentialHandler(doing.DoDoer):
                 recipientIdentifier = payload["recipient"]
                 credSubject = payload["data"]
                 schema = payload["schema"]
+                # not all credentials have a source
+                source = payload.get("source")
 
                 recptAddy = obtaining.getendpointbyprefix(recipientIdentifier)
                 rcptClient = clienting.Client(host=recptAddy.ip4, port=recptAddy.tcp)
@@ -393,7 +393,8 @@ class IssueCredentialHandler(doing.DoDoer):
                 creder = proving.credential(issuer=self.hab.pre,
                                             schema=schemer.said,
                                             subject=credSubject,
-                                            typ=jsonSchema)
+                                            typ=jsonSchema,
+                                            source=source)
 
                 msg = self.hab.endorse(serder=creder)
 

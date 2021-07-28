@@ -4,17 +4,11 @@ tests.app.apping module
 
 """
 
-import json
 import os
 import shutil
-from dataclasses import dataclass, asdict
 
-import pytest
-
-from keri.app import apping, habbing, keeping
-from keri.core import coring, eventing
-from keri.core.coring import Serials
-from keri.db import dbing, basing, koming
+from keri.app import habbing, keeping
+from keri.db import basing
 
 
 def test_habitat():

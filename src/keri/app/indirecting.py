@@ -9,11 +9,11 @@ simple indirect mode demo support classes
 from hio.base import doing
 from hio.core.tcp import serving
 
-from .. import help
-from ..db import dbing, basing
-from ..core import coring, eventing, parsing
 from . import habbing, keeping, directing
-from ..peer import httping, exchanging
+from .. import help
+from ..core import eventing, parsing
+from ..db import basing
+from ..peer import exchanging
 from ..vdr import verifying
 
 logger = help.ogler.getLogger()
@@ -31,7 +31,7 @@ def setupWitness(name="witness", hab=None, temp=False, localPort=5621):
         db = basing.Baser(name=name, temp=temp, reload=True)  # default is to not reopen
         dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
-        hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, create=False)
+        hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, create=True, transferable=False)
         habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
         doers.extend([ksDoer, dbDoer, habDoer])
 
@@ -111,7 +111,6 @@ class Indirector(doing.DoDoer):
 
     """
 
-
     def __init__(self, hab, client, direct=True, doers=None, **kwa):
         """
         Initialize instance.
@@ -137,8 +136,8 @@ class Indirector(doing.DoDoer):
                                       cloned=not self.direct,
                                       direct=self.direct)
         self.parser = parsing.Parser(ims=self.client.rxbs,
-                                      framed=True,
-                                      kvy=self.kevery)
+                                     framed=True,
+                                     kvy=self.kevery)
         doers = doers if doers is not None else []
         doers.extend([self.msgDo, self.escrowDo])
         if self.direct:
@@ -148,7 +147,6 @@ class Indirector(doing.DoDoer):
         if self.tymth:
             self.client.wind(self.tymth)
 
-
     def wind(self, tymth):
         """
         Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
@@ -156,7 +154,6 @@ class Indirector(doing.DoDoer):
         """
         super(Indirector, self).wind(tymth)
         self.client.wind(tymth)
-
 
     @doing.doize()
     def msgDo(self, tymth=None, tock=0.0, **opts):
@@ -185,7 +182,6 @@ class Indirector(doing.DoDoer):
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
-
     @doing.doize()
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -212,8 +208,6 @@ class Indirector(doing.DoDoer):
                 self.sendMessage(msg, label="chit or receipt")
                 yield  # throttle just do one cue at a time
             yield
-        return False  # should never get here except forced close
-
 
     @doing.doize()
     def escrowDo(self, tymth=None, tock=0.0, **opts):
@@ -239,8 +233,6 @@ class Indirector(doing.DoDoer):
         while True:
             self.kevery.processEscrows()
             yield
-        return False  # should never get here except forced close
-
 
     def sendMessage(self, msg, label=""):
         """
