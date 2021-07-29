@@ -5,18 +5,19 @@ keri.app.agenting module
 
 """
 from hio.base import doing
-from hio.help import decking
 from hio.core.tcp import clienting
+from hio.core import http
+from hio.help import decking
 from keri.core import coring
+from keri.peer import httping
 
+from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, scheming
 from ..db import dbing
-from ..help import helping
 from ..peer import exchanging
 from ..vc import proving, handling
 from ..vdr import issuing
-from .. import help
 
 logger = help.ogler.getLogger()
 
@@ -33,7 +34,7 @@ class WitnessReceiptor(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, msg=None, **kwa):
+    def __init__(self, hab, msg=None, klas=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -46,6 +47,7 @@ class WitnessReceiptor(doing.DoDoer):
         """
         self.hab = hab
         self.msg = msg
+        self.klas = klas if klas is not None else HTTPWitnesser
         super(WitnessReceiptor, self).__init__(doers=[self.receiptDo], **kwa)
 
     @doing.doize()
@@ -65,9 +67,9 @@ class WitnessReceiptor(doing.DoDoer):
 
         witers = []
         for wit in wits:
-            witer = Witnesser(hab=self.hab, wit=wit)
+            witer = self.klas(hab=self.hab, wit=wit)
             witers.append(witer)
-            witer.msgs.append(msg)
+            witer.msgs.append(bytearray(msg))  # make a copy
             self.extend([witer])
 
             _ = (yield self.tock)
@@ -91,7 +93,7 @@ class WitnessReceiptor(doing.DoDoer):
         # along the way and passing them out as we go and only sending the
         # required ones here
         for witer in witers:
-            witer.msgs.append(rctMsg)
+            witer.msgs.append(bytearray(rctMsg))
             _ = (yield self.tock)
 
         total = len(witers) * 2
@@ -115,7 +117,7 @@ class WitnessSender(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, msg, **kwa):
+    def __init__(self, hab, msg, klas=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -128,6 +130,7 @@ class WitnessSender(doing.DoDoer):
         """
         self.hab = hab
         self.msg = msg
+        self.klas = klas if klas is not None else HTTPWitnesser
         super(WitnessSender, self).__init__(doers=[self.sendDo], **kwa)
 
     @doing.doize()
@@ -136,7 +139,6 @@ class WitnessSender(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        sn = self.hab.kever.sn
         wits = self.hab.kever.wits
 
         if len(wits) == 0:
@@ -144,7 +146,7 @@ class WitnessSender(doing.DoDoer):
 
         witers = []
         for wit in wits:
-            witer = Witnesser(hab=self.hab, wit=wit)
+            witer = self.klas(hab=self.hab, wit=wit)
             witers.append(witer)
             witer.msgs.append(self.msg)
             self.extend([witer])
@@ -162,7 +164,11 @@ class WitnessSender(doing.DoDoer):
         return True
 
 
-class Witnesser(doing.DoDoer):
+class TCPWitnesser(doing.DoDoer):
+    """
+
+    """
+
     def __init__(self, hab, wit, msgs=None, sent=None, doers=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
@@ -184,10 +190,10 @@ class Witnesser(doing.DoDoer):
                                       lax=False,
                                       local=True)
 
-        super(Witnesser, self).__init__(doers=doers, **kwa)
+        super(TCPWitnesser, self).__init__(doers=doers, **kwa)
 
     @doing.doize()
-    def receiptDo(self, tymth=None, tock=0.0, **opts):
+    def receiptDo(self, tymth=None, tock=0.0):
 
         self.wind(tymth)
         self.tock = tock
@@ -238,6 +244,63 @@ class Witnesser(doing.DoDoer):
             add to doers list
         """
         yield from self.parser.parsator()  # process messages continuously
+
+
+class HTTPWitnesser(doing.DoDoer):
+    """
+    Interacts with Witnesses on HTTP and SSE for sending events and receiving receipts
+
+    """
+
+    def __init__(self, hab, wit, msgs=None, sent=None, doers=None, **kwa):
+        """
+        For the current event, gather the current set of witnesses, send the event,
+        gather all receipts and send them to all other witnesses
+
+        Parameters:
+            hab: Habitat of the identifier to populate witnesses
+
+        """
+        self.hab = hab
+        self.wit = wit
+        self.msgs = msgs if msgs is not None else decking.Deck()
+        self.sent = sent if sent is not None else decking.Deck()
+        self.parser = None
+        doers = doers if doers is not None else []
+        doers.extend([self.msgDo])
+
+        self.kevery = eventing.Kevery(db=self.hab.db,
+                                      lax=False,
+                                      local=True)
+
+        super(HTTPWitnesser, self).__init__(doers=doers, **kwa)
+
+    @doing.doize()
+    def msgDo(self, tymth=None, tock=0.0):
+
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while not self.msgs:
+                yield self.tock
+
+            msg = self.msgs.popleft()
+
+            loc = obtaining.getwitnessbyprefix(self.wit)
+
+            client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+            clientDoer = http.clienting.ClientDoer(client=client)
+
+            self.extend([clientDoer])
+
+            httping.createCESRRequest(msg, client)
+            while client.requests:
+                yield self.tock
+
+            self.sent.append(msg)
+            yield self.tock
 
 
 class RotateHandler(doing.DoDoer):

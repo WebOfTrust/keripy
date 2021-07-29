@@ -9,12 +9,12 @@ from datetime import timedelta
 from hio.base import doing
 from hio.help import decking
 
-from .. import kering
+from .. import help
 from ..core import eventing, coring
+from ..core.coring import MtrDex
 from ..db import subing, dbing
 from ..help import helping
-from ..kering import ValidationError, MissingSignatureError, MissingDestinationError, AuthZError
-from .. import help
+from ..kering import ValidationError, MissingSignatureError, MissingDestinationError, AuthZError, ExchangeError
 
 ExchangeMessageTimeWindow = timedelta(seconds=1010000)
 
@@ -67,7 +67,7 @@ class Exchanger(doing.DoDoer):
 
         """
         route = serder.ked["r"]
-        payload = serder.ked["q"]
+        payload = serder.ked["d"]
         dts = serder.ked["dt"]
 
         if route not in self.routes:
@@ -143,7 +143,8 @@ class Exchanger(doing.DoDoer):
         pass
 
 
-def exchange(route, payload, recipient=None, date=None, version=coring.Version, kind=coring.Serials.json):
+def exchange(route, payload, recipient=None, date=None, modifiers=None, version=coring.Version,
+             kind=coring.Serials.json):
     """
     Create an `exn` message with the specified route and payload
     Parameters:
@@ -151,6 +152,8 @@ def exchange(route, payload, recipient=None, date=None, version=coring.Version, 
         payload (dict) body of message to deliver to route
         recipient (str) qb64 identifier prefix of target of message
         date (str) Iso8601 formatted date string to use for this request
+        modifiers (dict) equivalent of query string of uri, modifiers for the request that are not
+                         part of the payload
         version (Version) is Version instance
         kind (Serials) is serialization kind
 
@@ -164,11 +167,15 @@ def exchange(route, payload, recipient=None, date=None, version=coring.Version, 
                i=recipient,
                dt=dt,
                r=route,
-               q=payload
+               d=payload,
+               q=modifiers
                )
 
     if recipient is None:
         del ked["i"]
+
+    if modifiers is None:
+        del ked["q"]
 
     return eventing.Serder(ked=ked)  # return serialized ked
 
@@ -179,10 +186,16 @@ class StoreExchanger:
 
     """
 
-    def __init__(self, hab, mbx=None):
+    def __init__(self, hab, mbx=None, exc=None):
         self.hab = hab
         self.kevers = self.hab.kevers
         self.db = mbx if mbx is not None else Mailboxer()
+        self.exc = exc if exc is not None else Exchanger(hab=hab, handlers=[])
+
+
+    @property
+    def routes(self):
+        return self.exc.routes
 
 
     def processEvent(self, serder, source, sigers):
@@ -202,7 +215,7 @@ class StoreExchanger:
         #  Verify provided sigers using verfers
         sigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=sever.verfers)
         if not sever.tholder.satisfy(indices):  # at least one but not enough
-            self.escrowPSEvent(serder=serder, sigers=sigers)
+            self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
             raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                         " for evt = {}.".format(sever.tholder.sith,
                                                                 [siger.qb64 for siger in sigers],
@@ -211,17 +224,20 @@ class StoreExchanger:
             raise MissingDestinationError("Failure saving evt = {} from = {} in mailbox, missing destination"
                                           "".format(serder.ked, source.qb64))
 
-        dest = eventing.Prefixer(qb64=serder.pre)
+        if serder.pre == self.hab.pre:
+            self.exc.processEvent(serder=serder, source=source, sigers=sigers)
+        elif self.hab.pre in sever.wits:
+            dest = eventing.Prefixer(qb64=serder.pre)
+            msg = self._reconstruct(serder=serder, source=source, sigers=sigers)
+            self.db.storeMsg(dest=dest.qb64b, msg=msg)
+        else:
+            raise ExchangeError("Event recipient {} is neither this witness {} nor a prefix for whom this"
+                                "witness is a witness {}".format(serder.pre, self.hab.pre, sever.wits))
 
-        self.db.storeEvent(serder, source, dest, sigers)
+    def processResponseIter(self):
+        yield from self.exc.processResponseIter()
 
-
-    @staticmethod
-    def processResponseIter():
-        return []
-
-
-    def escrowPSEvent(self, serder, sigers):
+    def escrowPSEvent(self, serder, source, sigers):
         """
         Escrow event that does not have enough signatures.
 
@@ -230,6 +246,23 @@ class StoreExchanger:
             sigers is list of Siger instances of indexed controller sigs
         """
         pass
+
+
+    @staticmethod
+    def _reconstruct(serder, source, sigers):
+        msg = bytearray()  # message
+
+        msg.extend(serder.raw)
+
+        msg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
+        msg.extend(source.qb64b)
+
+        if sigers:
+            msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+
+            for sig in sigers:
+                msg.extend(sig.qb64b)
+        return msg
 
 
 
@@ -253,9 +286,7 @@ class Mailboxer(dbing.LMDBer):
             kwa:
         """
         self.fels = None
-        self.exns = None
-        self.sigs = None
-        self.srcs = None
+        self.msgs = None
 
         super(Mailboxer, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
@@ -270,9 +301,7 @@ class Mailboxer(dbing.LMDBer):
         super(Mailboxer, self).reopen(**kwa)
 
         self.fels = self.env.open_db(key=b'fels.')
-        self.exns = subing.SerderSuber(db=self, subkey='exns.')  # key states
-        self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
-        self.srcs = subing.MatterSuber(db=self, subkey='srcs.', klas=coring.Prefixer)
+        self.msgs = subing.Suber(db=self, subkey='msgs.')  # key states
 
         return self.env
 
@@ -339,57 +368,24 @@ class Mailboxer(dbing.LMDBer):
         return self.getAllOrdItemAllPreIter(db=self.fels, key=key)
 
 
-    def putSigs(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes receipt couplets vals to key
-        Couple is pre+cig (non indexed signature)
-        Adds to existing receipts at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.sigs, key, vals)
-
-
-    def getSigs(self, key):
-        """
-        Use dgKey()
-        Return list of receipt couplets at key
-        Couple is pre+cig (non indexed signature)
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.sigs, key)
-
-
-    def delSigs(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.sigs, key, val)
-
-
-    def storeEvent(self, serder, source, dest, sigers):
+    def storeMsg(self, dest, msg):
         """
         Add exn event to mailbox of dest identifier
 
         Parameters:
-            serder:
-            source (Prefixer):
-            dest (Prefixer):
-            sigers:
+            msg (bytes):
+            dest (qb64b):
 
         """
+        if hasattr(dest, "encode"):
+            dest = dest.encode("utf-8")
 
+        if hasattr(msg, "encode"):
+            msg = msg.encode("utf-8")
 
-        self.appendFe(dest.qb64b, serder.digb)
-        self.exns.pin(keys=serder.digb, val=serder)
-        self.srcs.pin(keys=serder.digb, val=source)
-        if sigers:
-            self.putSigs(serder.digb, [siger.qb64b for siger in sigers])  # idempotent
+        digb = coring.Diger(ser=msg, code=MtrDex.Blake3_256).qb64b
+        self.appendFe(dest, digb)
+        self.msgs.pin(keys=digb, val=msg)
 
 
     def clonePreIter(self, pre, fn=0):
@@ -402,41 +398,6 @@ class Mailboxer(dbing.LMDBer):
             pre = pre.encode("utf-8")
 
         for fn, dig in self._getFelItemPreIter(pre, fn=fn):
-            try:
-                msg = self.cloneEvtMsg(dig=dig)
-            except Exception:
-                continue  # skip this event
-            yield msg
+            if msg := self.msgs.get(keys=dig):
+                yield msg
 
-
-    def cloneEvtMsg(self, dig):
-        """
-        Clones Event as Serialized CESR Message with Body and attached Foot
-
-        Parameters:
-            dig (bytes): digest of event
-
-        Returns:
-            bytearray: message body with attachments
-        """
-        msg = bytearray()  # message
-
-        if not (serder := self.exns.get(keys=dig)):
-            raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
-        msg.extend(serder.raw)
-
-        if not (pre := self.srcs.get(keys=dig)):
-            raise kering.MissingEntryError("Missing source for dig={}.".format(dig))
-
-        msg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
-        msg.extend(pre.qb64b)
-
-        # add indexed signatures to attachments
-        if not (sigs := self.getSigs(key=dig)):
-            raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
-        msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                  count=len(sigs)).qb64b)
-        for sig in sigs:
-            msg.extend(sig)
-
-        return msg

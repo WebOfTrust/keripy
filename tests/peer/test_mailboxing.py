@@ -9,7 +9,7 @@ import lmdb
 import pytest
 
 from keri.app import habbing, keeping
-from keri.core import coring
+from keri.core import coring, eventing, parsing
 from keri.db import dbing, subing, basing
 from keri.kering import MissingSignatureError, MissingDestinationError
 from keri.peer import exchanging
@@ -56,29 +56,23 @@ def test_mailboxing():
     assert not os.path.exists(mber.path)
     assert not mber.opened
 
-    assert isinstance(mber.exns, subing.SerderSuber)
+    assert isinstance(mber.msgs, subing.Suber)
 
     with dbing.openLMDB(cls=Mailboxer) as mber:
         assert isinstance(mber, Mailboxer)
 
-        msg = bytearray(
+        msg = (
             b'{"v":"KERI10JSON0000ac_","t":"exn","i":"E4D919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I",'
             b'"dt":"2021-07-15T13:01:37.624492+00:00","r":"/credential/issue","q":{"a":"b",'
             b'"b":123}}-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E'
             b'-AABAAMKEkKlqSYcAbOHfNXQ_D0Rbj9bQD5FqhFqckAlDnOFozRKOIPrCWaszRzSUN20UBj80tO5ozN35KrQp9m7Z1AA')
 
         dest = coring.Prefixer(qb64="E4D919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
-        source = coring.Prefixer(qb64="E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E")
-        siger = coring.Siger(
-            qb64="AAMKEkKlqSYcAbOHfNXQ_D0Rbj9bQD5FqhFqckAlDnOFozRKOIPrCWaszRzSUN20UBj80tO5ozN35KrQp9m7Z1AA")
+        mber.storeMsg(dest=dest.qb64b, msg=msg)
 
-        d = dict(a="b", b=123)
-        exn = exchanging.exchange("/credential/issue", payload=d,
-                                  recipient=dest.qb64, date="2021-07-15T13:01:37.624492+00:00")
-        mber.storeEvent(serder=exn, source=source, dest=dest, sigers=[siger])
-
-        actual = mber.cloneEvtMsg(dig=exn.digb)
-        assert actual == msg
+        digb = coring.Diger(ser=msg).qb64b
+        actual = mber.msgs.get(keys=digb)
+        assert actual == msg.decode("utf-8")
 
     assert not os.path.exists(mber.path)
 
@@ -92,12 +86,10 @@ def test_mailboxing():
         for idx in range(10):
             d = dict(a="b", b=idx)
             dest = coring.Prefixer(qb64="E4D919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
-            source = coring.Prefixer(qb64="E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E")
 
             exn = exchanging.exchange("/credential/issue", payload=d,
                                       recipient=dest.qb64, date="2021-07-15T13:01:37.624492+00:00")
-            sigers = hab.mgr.sign(ser=exn.raw, verfers=hab.kever.verfers)
-            mber.storeEvent(serder=exn, source=source, dest=dest, sigers=sigers)
+            mber.storeMsg(dest=dest.qb64b, msg=exn.raw)
 
         msgs = []
         for msg in mber.clonePreIter(pre=dest.qb64b, fn=0):
@@ -106,8 +98,8 @@ def test_mailboxing():
         assert(len(msgs)) == 10
 
         for idx, msg in enumerate(msgs):
-            exn = coring.Serder(msg)
-            d = exn.ked["q"]
+            exn = coring.Serder(msg.encode("utf-8"))
+            d = exn.ked["d"]
             assert d["b"] == idx
 
         msgs = []
@@ -125,14 +117,30 @@ def test_mailboxing():
 
 def test_store_exchanger():
     with dbing.openLMDB(cls=Mailboxer) as mber, \
+            basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
             basing.openDB(name="test") as db, \
             keeping.openKS(name="test") as ks:
 
         salt = coring.Salter(raw=b'0123456789abcdef').qb64
-        hab = habbing.Habitat(ks=ks, db=db, salt=salt, temp=True)
-        exchr = exchanging.StoreExchanger(hab=hab, mbx=mber)
 
-        source = coring.Prefixer(qb64="E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E")
+        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
+                                 isith=1, icount=1,
+                                 salt=salt, transferable=False, temp=True)
+        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
+        assert wesHab.ks == wesKS
+        assert wesHab.db == wesDB
+        assert not wesHab.kever.prefixer.transferable
+
+        hab = habbing.Habitat(ks=ks, db=db, salt=salt, temp=True, wits=[wesHab.pre])
+
+        icpMsg = hab.makeOwnInception()
+        parsing.Parser().parse(ims=bytearray(icpMsg), kvy=wesKvy)
+        assert hab.pre in wesKvy.kevers
+
+
+        exchr = exchanging.StoreExchanger(hab=wesHab, mbx=mber)
+
+        source = coring.Prefixer(qb64=hab.pre)
         siger = coring.Siger(
             qb64="AAMKEkKlqSYcAbOHfNXQ_D0Rbj9bQD5FqhFqckAlDnOFozRKOIPrCWaszRzSUN20UBj80tO5ozN35KrQp9m7Z1AA")
 
@@ -149,7 +157,7 @@ def test_store_exchanger():
         for idx in range(10):
             d = dict(a="b", b=idx)
             dest = coring.Prefixer(qb64="E4D919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
-            source = coring.Prefixer(qb64="E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E")
+            source = coring.Prefixer(qb64=hab.pre)
 
             exn = exchanging.exchange("/credential/issue", payload=d,
                                       recipient=dest.qb64, date="2021-07-15T13:01:37.624492+00:00")
@@ -163,8 +171,8 @@ def test_store_exchanger():
         assert(len(msgs)) == 10
 
         for idx, msg in enumerate(msgs):
-            exn = coring.Serder(msg)
-            d = exn.ked["q"]
+            exn = coring.Serder(raw=msg.encode("utf-8"))
+            d = exn.ked["d"]
             assert d["b"] == idx
 
         msgs = []

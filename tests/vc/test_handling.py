@@ -236,7 +236,7 @@ def test_proving():
         respSer = coring.Serder(raw=resp.raw)
         assert respSer.ked['t'] == coring.Ilks.exn
         assert respSer.ked['r'] == "/presentation/proof"
-        data = respSer.ked['q']
+        data = respSer.ked['d']
         assert "presentation_submission" in data
 
         pe = data["presentation_submission"]
