@@ -40,11 +40,11 @@ parser.add_argument('-T', '--tcp',
 parser.add_argument('-a', '--admin-http-port',
                     action='store',
                     default=5623,
-                    help="Admin port number the HTTP server listens on. Default is 5621.")
+                    help="Admin port number the HTTP server listens on. Default is 5623.")
 parser.add_argument('-t', '--admin-tcp-port',
                     action='store',
                     default=5624,
-                    help="Admin port number the HTTP server listens on. Default is 5621.")
+                    help="Admin port number the HTTP server listens on. Default is 5624.")
 parser.add_argument('-n', '--name',
                     action='store',
                     default="agent",
@@ -79,7 +79,6 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
     """
     Setup and run one agent
     """
-    logger = help.ogler.getLogger()
 
     ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
     ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
@@ -90,7 +89,6 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
     hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
     habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
 
-    # kvy = eventing.Kevery(db=hab.db, local=False)
     # setup doers
     server = tcpServing.Server(host="", port=tcp)
     tcpServerDoer = tcpServing.ServerDoer(server=server)
@@ -120,7 +118,8 @@ def adminInterface(controller, hab, adminHttpPort=5623, adminTcpPort=5624):
 
     rotateHandler = agenting.RotateHandler(hab=hab)
     issueHandler = agenting.IssueCredentialHandler(hab=hab)
-    handlers = [rotateHandler, issueHandler]
+    requestHandler = agenting.PresentationRequestHandler(hab=hab)
+    handlers = [rotateHandler, issueHandler, requestHandler]
 
     exchanger = exchanging.Exchanger(hab=hab, controller=controller, handlers=handlers)
 
@@ -134,7 +133,6 @@ def adminInterface(controller, hab, adminHttpPort=5623, adminTcpPort=5624):
 
     server = http.Server(port=adminHttpPort, app=exnServer.app)
     httpServerDoer = http.ServerDoer(server=server)
-
 
     doers = [exnServer, exchanger, tcpServerDoer, directant, httpKelServer, httpServerDoer]
 

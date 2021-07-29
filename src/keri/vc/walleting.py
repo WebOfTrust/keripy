@@ -3,13 +3,13 @@
 keri.vc.walleting module
 
 """
+from .. import help
 from ..core.coring import Counter, CtrDex, Prefixer, Seqner, Diger, Siger
 from ..core.parsing import Parser, Colds
 from ..core.scheming import JSONSchema, CacheResolver
-from ..db import dbing, koming
+from ..db import dbing
 from ..kering import ShortageError, ColdStartError, ExtractionError, UnverifiedProofError
 from ..vc.proving import Credentialer
-from .. import help
 
 # TODO: create this and populate with needed schema for now
 cache = CacheResolver()
@@ -69,7 +69,6 @@ def parseProof(ims=b''):
         raise ExtractionError("Invalid attachment to VC {}, expected one {}"
                               "".format(ctr.code, CtrDex.TransIndexedSigGroups))
 
-
     prefixer = Parser.extract(ims=ims, klas=Prefixer)
     seqner = Parser.extract(ims=ims, klas=Seqner)
     diger = Parser.extract(ims=ims, klas=Diger)
@@ -97,7 +96,7 @@ def buildProof(prefixer, seqner, diger, sigers):
         sigers (list) are the cryptographic signatures on the credential
     
     """
-    
+
     prf = bytearray()
     prf.extend(Counter(CtrDex.TransIndexedSigGroups, count=1).qb64b)
     prf.extend(prefixer.qb64b)
@@ -107,10 +106,10 @@ def buildProof(prefixer, seqner, diger, sigers):
     prf.extend(Counter(code=CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
     for siger in sigers:
         prf.extend(siger.qb64b)
-    
+
     return prf
-    
-    
+
+
 class Pocketer(dbing.LMDBer):
     """
     Pocketer is the store for the wallet (get it?).
@@ -167,7 +166,6 @@ class Pocketer(dbing.LMDBer):
         """
 
         super(Pocketer, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
-
 
     def reopen(self, **kwa):
         """
@@ -239,8 +237,6 @@ class Pocketer(dbing.LMDBer):
         """
         return self.delVals(self.sigs, key, val)
 
-
-
     def getIssus(self, key):
         """
         Use dgKey()
@@ -295,8 +291,6 @@ class Pocketer(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delIoVals(self.issus, key)
-
-
 
     def getSubjs(self, key):
         """
@@ -353,7 +347,6 @@ class Pocketer(dbing.LMDBer):
         """
         return self.delIoVals(self.subjs, key)
 
-
     def getSchms(self, key):
         """
         Use dgKey()
@@ -371,7 +364,6 @@ class Pocketer(dbing.LMDBer):
         Duplicates are retrieved in lexocographic order not insertion order.
         """
         return self.getIoValsIter(self.schms, key)
-
 
     def putSchms(self, key, vals):
         """
@@ -402,7 +394,6 @@ class Pocketer(dbing.LMDBer):
         """
         return self.cntIoVals(self.schms, key)
 
-
     def delSchms(self, key):
         """
         Use dgKey()
@@ -410,8 +401,6 @@ class Pocketer(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delIoVals(self.schms, key)
-
-
 
     def putSers(self, key, val):
         """
@@ -423,7 +412,6 @@ class Pocketer(dbing.LMDBer):
         """
         return self.putVal(self.sers, key, val)
 
-
     def setSers(self, key, val):
         """
         Use dgKey()
@@ -433,7 +421,6 @@ class Pocketer(dbing.LMDBer):
         """
         return self.setVal(self.sers, key, val)
 
-
     def getSers(self, key):
         """
         Use dgKey()
@@ -442,7 +429,6 @@ class Pocketer(dbing.LMDBer):
         """
         return self.getVal(self.sers, key)
 
-
     def delSers(self, key):
         """
         Use dgKey()
@@ -450,7 +436,6 @@ class Pocketer(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.sers, key)
-
 
     def putSeals(self, key, val):
         """
@@ -462,7 +447,6 @@ class Pocketer(dbing.LMDBer):
         """
         return self.putVal(self.seals, key, val)
 
-
     def setSeals(self, key, val):
         """
         Use dgKey()
@@ -472,7 +456,6 @@ class Pocketer(dbing.LMDBer):
         """
         return self.setVal(self.seals, key, val)
 
-
     def getSeals(self, key):
         """
         Use dgKey()
@@ -480,7 +463,6 @@ class Pocketer(dbing.LMDBer):
         Returns None if no entry at key
         """
         return self.getVal(self.seals, key)
-
 
     def delSeals(self, key):
         """
@@ -491,14 +473,14 @@ class Pocketer(dbing.LMDBer):
         return self.delVal(self.seals, key)
 
 
-
 class Wallet:
     """
     Wallet represents all credentials received or verified
 
 
     """
-    def __init__(self, hab, db: Pocketer=None, name="test", temp=False):
+
+    def __init__(self, hab, db: Pocketer = None, name="test", temp=False):
         """
         Create a Wallet associated with a Habitat
 
@@ -527,9 +509,7 @@ class Wallet:
         if not self.hab.verify(creder, prefixer, seqner, diger, sigers):
             raise UnverifiedProofError("invalid signatures on credential")
 
-
         self.saveCredential(creder, prefixer, seqner, diger, sigers)
-
 
     def saveCredential(self, creder, prefixer, seqner, diger, sigers):
         """
@@ -567,7 +547,6 @@ class Wallet:
         print()
         print()
 
-
     def getCredentials(self, schema=None):
         """
         Return list of (creder, prefixer, seqner, diger, sigers) for each credential
@@ -581,16 +560,16 @@ class Wallet:
 
         creds = []
         for said in saids:
-            raw = self.db.getSers(key=said)
+            raw = self.db.getSers(key=bytearray(said))
             creder = Credentialer(raw=bytes(raw))
 
-            trip = bytearray(self.db.getSeals(said))
+            trip = bytearray(self.db.getSeals(bytearray(said)))
 
             prefixer = Prefixer(qb64b=trip, strip=True)
             seqner = Seqner(qb64b=trip, strip=True)
             diger = Diger(qb64b=trip, strip=True)
 
-            sigs = self.db.getSigs(said)
+            sigs = self.db.getSigs(bytearray(said))
             sigers = [Siger(qb64b=bytearray(sig)) for sig in sigs]
 
             creds.append((creder, prefixer, seqner, diger, sigers))

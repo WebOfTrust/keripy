@@ -721,8 +721,6 @@ class VicDirector(directing.Director):
                 logger.error("%s:\n\n\n Invalid vLEI credential.\n\n",
                              self.hab.pre)
 
-
-
         except GeneratorExit:  # close context, forced exit due to .close
             pass
 

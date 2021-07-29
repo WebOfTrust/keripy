@@ -82,69 +82,73 @@ class CacheResolver:
 
 
 jsonSchemaCache = CacheResolver(cache={
-    "Ek6vA-fVXDRbraVi7a9ydKStHiByUoF37Cgz4L58LWds":
-        b'{"$id": "Ek6vA-fVXDRbraVi7a9ydKStHiByUoF37Cgz4L58LWds", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "title": "GLEIFvLEICredential", "type": "object", "properties": '
-        b'{"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, "x": {"description": "schema '
-        b'block", "type": "string"}, "d": {"description": "data block", "properties": {"i": {"type": "string"}, '
-        b'"si": {"type": "string"}, "issuanceDate": {"format": "date-time", "type": "string"}, "credentialStatus": {'
-        b'"type": "string"}, "LEI": {"type": "string"}, "type": {"contains": {"const": "GLEIFvLEICredential"}, '
+    "E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4":
+        b'{"$id": "E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "title": "GLEIF vLEI Credential", "description": "The vLEI '
+        b'Credential issued to GLEIF", "type": "object", "properties": {"v": {"type": "string"}, "i": {"type": '
+        b'"string"}, "ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, '
+        b'"d": {"description": "data block", "properties": {"i": {"type": "string"}, "si": {"type": "string"}, '
+        b'"issuanceDate": {"format": "date-time", "type": "string"}, "credentialStatus": {"type": "string"}, '
+        b'"LEI": {"type": "string"}, "type": {"contains": {"const": "GLEIFvLEICredential"}, "type": "array"}}, '
+        b'"additionalProperties": false, "required": ["i", "issuanceDate", "credentialStatus", "LEI", "type"], '
+        b'"type": "object"}}, "additionalProperties": false, "required": ["i", "d"]}',
+    "EWPMkW-_BU6gh1Y8kizXHchFdmvu_i1wYlYbAC3aJABk":
+        b'{"$id": "EWPMkW-_BU6gh1Y8kizXHchFdmvu_i1wYlYbAC3aJABk", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "title": "Legal Entity Engagement Context Role vLEI Credential", '
+        b'"description": "A vLEI Role Credential issued to representatives of a Legal Entity in other than official '
+        b'roles but in functional or other context of engagement", "properties": {"v": {"type": "string"}, '
+        b'"i": {"type": "string"}, "ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, '
+        b'"d": {"description": "data block", "properties": {"i": {"type": "string"}, "si": {"type": "string"}, '
+        b'"issuanceDate": {"format": "date-time", "type": "string"}, "credentialStatus": {"type": "string"}, '
+        b'"LEI": {"type": "string"}, "personLegalName": {"type": "string"}, "engagementContextRole": {"type": '
+        b'"string"}, "type": {"contains": {"const": "LegalEntityEngagementContextRolevLEICredential"}, '
         b'"type": "array"}}, "additionalProperties": false, "required": ["i", "issuanceDate", "credentialStatus", '
-        b'"LEI", "type"], "type": "object"}}, "additionalProperties": false, "required": ["i", "d"]}',
-
-    "EZdaE1HCu2ZhyIhpXTWfGSLS2kirKexaC-4up3sIUz1I":
-        b'{"$id": "EZdaE1HCu2ZhyIhpXTWfGSLS2kirKexaC-4up3sIUz1I", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "title": "LegalEntityEngagementContextRolevLEICredential", '
-        b'"properties": {"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, '
-        b'"x": {"description": "schema block", "type": "string"}, "d": {"description": "data block", "properties": {'
-        b'"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": "date-time", '
-        b'"type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, "personLegalName": {'
-        b'"type": "string"}, "engagementContextRole": {"type": "string"}, "type": {"contains": {"const": '
-        b'"LegalEntityEngagementContextRolevLEICredential"}, "type": "array"}}, "additionalProperties": false, '
-        b'"required": ["i", "issuanceDate", "credentialStatus", "LEI", "personLegalName", "engagementContextRole", '
-        b'"type"], "type": "object"}, "s": {"contains": {"type": "object"}, "description": "source block", '
-        b'"items": {"properties": {"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": '
-        b'false, "required": ["qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, '
-        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} ',
-
-    "EDg-Ji3kmi_G97Jctxeajpmp1-A8gSpeyElm-XCzTxiE":
-        b'{"$id": "EDg-Ji3kmi_G97Jctxeajpmp1-A8gSpeyElm-XCzTxiE", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "title": "LegalEntityOfficialOrganizationalRolevLEICredential", '
-        b'"properties": {"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, '
-        b'"x": {"description": "schema block", "type": "string"}, "d": {"description": "data block", "properties": {'
-        b'"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": "date-time", '
-        b'"type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, "personLegalName": {'
-        b'"type": "string"}, "officialRole": {"type": "string"}, "type": {"contains": {"const": '
+        b'"LEI", "personLegalName", "engagementContextRole", "type"], "type": "object"}, "s": {"contains": {"type": '
+        b'"object"}, "description": "source block", "items": {"properties": {"qualifiedvLEIIssuervLEICredential": {'
+        b'"type": "string"}}, "additionalProperties": false, "required": ["qualifiedvLEIIssuervLEICredential"], '
+        b'"type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}}, "additionalProperties": false, '
+        b'"required": ["i", "s", "d"], "type": "object"}',
+    "EUZ_F1do5sG78zeeA_8CChT5utRpOXQK4GYnv0WGRfuU":
+        b'{"$id": "EUZ_F1do5sG78zeeA_8CChT5utRpOXQK4GYnv0WGRfuU", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "title": "Legal Entity Official Organizational Role vLEI '
+        b'Credential", "description": "A vLEI Role Credential issued by a Qualified vLEI issuer to official '
+        b'representatives of a Legal Entity", "properties": {"v": {"type": "string"}, "i": {"type": "string"}, '
+        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, "d": {"description": '
+        b'"data block", "properties": {"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": '
+        b'"date-time", "type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, '
+        b'"personLegalName": {"type": "string"}, "officialRole": {"type": "string"}, "type": {"contains": {"const": '
         b'"LegalEntityOfficialOrganizationalRolevLEICredential"}, "type": "array"}}, "additionalProperties": false, '
         b'"required": ["i", "issuanceDate", "credentialStatus", "LEI", "personLegalName", "officialRole", "type"], '
         b'"type": "object"}, "s": {"contains": {"type": "object"}, "description": "source block", "items": {'
         b'"properties": {"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": false, '
         b'"required": ["qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, '
-        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} ',
-
-    "E46jrVPTzlSkUPqGGeIZ8a8FWS7a6s4reAXRZOkogZ2A":
-        b'{"$id": "E46jrVPTzlSkUPqGGeIZ8a8FWS7a6s4reAXRZOkogZ2A", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "properties": {"v": {"type": "string"}, "i": {"type": "string"}, '
-        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, "d": {"description": '
-        b'"data block", "properties": {"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": '
-        b'"date-time", "type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, '
-        b'"type": {"contains": {"const": "LegalEntityvLEICredential"}, "type": "array"}}, "additionalProperties": '
-        b'false, "required": ["i", "issuanceDate", "credentialStatus", "LEI", "type"], "type": "object"}, '
-        b'"s": {"contains": {"type": "object"}, "description": "source block", "items": {"properties": {'
-        b'"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": false, "required": ['
-        b'"qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, "type": "array"}}, '
-        b'"additionalProperties": false, "required": ["i", "s", "d"], "type": "object"} ',
-
-    "ECcj1CBn4dpo6ZOmZQNtAjXxT4_MsVXipt5VTPjvSAf0":
-        b'{"$id": "ECcj1CBn4dpo6ZOmZQNtAjXxT4_MsVXipt5VTPjvSAf0", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "properties": {"v": {"type": "string"}, "i": {"type": "string"}, '
-        b'"ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, "d": {"description": '
-        b'"data block", "properties": {"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": '
-        b'"date-time", "type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, '
-        b'"gracePeriod": {"default": 90, "type": "integer"}, "type": {"contains": {"const": '
-        b'"QualifiedvLEIIssuervLEICredential"}, "type": "array"}}, "additionalProperties": false, "required": ["i", '
-        b'"issuanceDate", "credentialStatus", "LEI", "type"], "type": "object"}}, "additionalProperties": false, '
-        b'"required": ["i", "d"], "type": "object"} '
+        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"}',
+    "E-BRq9StLuC9DxGgiFiy2XND0fFgzyn8cjptlcdvGEFY":
+        b'{"$id": "E-BRq9StLuC9DxGgiFiy2XND0fFgzyn8cjptlcdvGEFY", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "title": "Legal Entity vLEI Credential", "description": "A vLEI '
+        b'Credential issued by a Qualified vLEI issuer to a Legal Entity", "properties": {"v": {"type": "string"}, '
+        b'"i": {"type": "string"}, "ti": {"type": "string"}, "x": {"description": "schema block", "type": "string"}, '
+        b'"d": {"description": "data block", "properties": {"i": {"type": "string"}, "si": {"type": "string"}, '
+        b'"issuanceDate": {"format": "date-time", "type": "string"}, "credentialStatus": {"type": "string"}, '
+        b'"LEI": {"type": "string"}, "type": {"contains": {"const": "LegalEntityvLEICredential"}, "type": "array"}}, '
+        b'"additionalProperties": false, "required": ["i", "issuanceDate", "credentialStatus", "LEI", "type"], '
+        b'"type": "object"}, "s": {"contains": {"type": "object"}, "description": "source block", "items": {'
+        b'"properties": {"qualifiedvLEIIssuervLEICredential": {"type": "string"}}, "additionalProperties": false, '
+        b'"required": ["qualifiedvLEIIssuervLEICredential"], "type": "object"}, "maxItems": 1, "minItems": 1, '
+        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "s", "d"], "type": "object"}',
+    "E9bX8Do0nb1Eq986HvoJ2iNO00TjC6J_2En8Du9L-hYU":
+        b'{"$id": "E9bX8Do0nb1Eq986HvoJ2iNO00TjC6J_2En8Du9L-hYU", "$schema": '
+        b'"http://json-schema.org/draft-07/schema#", "title": "Qualified vLEI Issuer Credential", "description": "A '
+        b'vLEI Credential issued by GLEIF to Qualified vLEI Issuers which allows the Qualified vLEI Issuers to issue, '
+        b'verify and revoke Legal Entity vLEI Credentials and Legal Entity Official Organizational Role vLEI '
+        b'Credentials", "properties": {"v": {"type": "string"}, "i": {"type": "string"}, "ti": {"type": "string"}, '
+        b'"x": {"description": "schema block", "type": "string"}, "d": {"description": "data block", "properties": {'
+        b'"i": {"type": "string"}, "si": {"type": "string"}, "issuanceDate": {"format": "date-time", '
+        b'"type": "string"}, "credentialStatus": {"type": "string"}, "LEI": {"type": "string"}, "gracePeriod": {'
+        b'"default": 90, "type": "integer"}, "type": {"contains": {"const": "QualifiedvLEIIssuervLEICredential"}, '
+        b'"type": "array"}}, "additionalProperties": false, "required": ["i", "issuanceDate", "credentialStatus", '
+        b'"LEI", "type"], "type": "object"}}, "additionalProperties": false, "required": ["i", "d"], '
+        b'"type": "object"}',
 })
 
 

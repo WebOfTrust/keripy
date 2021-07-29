@@ -13,6 +13,7 @@ from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, scheming, coring
 from ..db import dbing
+from ..help import helping
 from ..peer import exchanging, httping
 from ..vc import proving, handling
 from ..vdr import issuing
@@ -389,18 +390,11 @@ class RotateHandler(doing.DoDoer):
 
 class IssueCredentialHandler(doing.DoDoer):
     """
-        Processor for a performing a key rotate in an agent.
-        {
-            sith=3,
-            count=5,
-            erase=False,
-            toad=1,
-            cuts=[],
-            adds=[],
-            data=[
-               {}
-            ]
-        }
+        IssueCredentialHandler - exn behavior for issuing a credential
+
+        Validates payload against specified JSON-Schema
+        Receipts KEL event and propagates TEL event to witnesses
+        Errors will be placed in the corresponding issuer
     """
 
     resource = "/cmd/credential/issue"
@@ -419,16 +413,6 @@ class IssueCredentialHandler(doing.DoDoer):
 
     @doing.doize()
     def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Rotate identifier.
-
-        Messages:
-            payload is dict representing the body of a /presentation/request message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/request message
-            verfers is list of Verfers of the keys used to sign the message
-
-        """
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
@@ -449,6 +433,11 @@ class IssueCredentialHandler(doing.DoDoer):
                 ref = scheming.jsonSchemaCache.resolve(schema)
                 schemer = scheming.Schemer(raw=ref)
                 jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
+
+                if type(credSubject) is dict:
+                    credSubject |= dict(si=recipientIdentifier,
+                                        credentialStatus=self.issuer.regk,
+                                        issuanceDate=helping.nowIso8601())
 
                 # Build the credential subject and then the Credentialer for the full credential
                 creder = proving.credential(issuer=self.hab.pre,
@@ -476,6 +465,55 @@ class IssueCredentialHandler(doing.DoDoer):
 
                 rcptClient.tx(excMsg)
 
+                yield
+
+            yield
+
+
+class PresentationRequestHandler(doing.DoDoer):
+    """
+    """
+
+    resource = "/cmd/presentation/request"
+
+    def __init__(self, hab, cues=None, **kwa):
+        self.hab = hab
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
+        doers = [self.msgDo]
+
+        super(PresentationRequestHandler, self).__init__(doers=doers, **kwa)
+
+    @doing.doize()
+    def msgDo(self, tymth=None, tock=0.0, **opts):
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                payload = msg["payload"]
+
+                recipientIdentifier = payload["recipient"]
+                schema = payload["schema"]
+
+                recptAddy = obtaining.getendpointbyprefix(recipientIdentifier)
+                rcptClient = clienting.Client(host=recptAddy.ip4, port=recptAddy.tcp)
+                rcptClientDoer = clienting.ClientDoer(client=rcptClient)
+
+                self.extend([rcptClientDoer])
+
+                ref = scheming.jsonSchemaCache.resolve(schema)
+                schemer = scheming.Schemer(raw=ref)
+
+                pl = dict(
+                    input_descriptors=[
+                        dict(x=schemer.said)
+                    ]
+                )
+
+                excSrdr = exchanging.exchange(route="/presentation/request", payload=pl)
+                excMsg = self.hab.sanction(excSrdr)
+
+                rcptClient.tx(excMsg)
                 yield
 
             yield

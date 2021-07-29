@@ -471,7 +471,6 @@ class Directant(doing.DoDoer):
                     self.closeConnection(ca)  # also removes rant
 
             yield
-        return False  # should never get here
 
     def closeConnection(self, ca):
         """
@@ -582,7 +581,6 @@ class Reactant(doing.DoDoer):
 
         if self.exchanger is not None:
             doers.extend([self.exchangerDo])
-
 
         self.parser = parsing.Parser(ims=self.remoter.rxbs,
                                      framed=True,
