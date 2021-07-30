@@ -29,28 +29,66 @@ Schemes = Schemage(tcp='tcp', http='http', https='https')
 Rolage = namedtuple("Rolage", 'witness watcher')
 Roles = Rolage(witness='witness', watcher='watcher')
 
-def headerize(signatures):
+FALSY = (False, 0, "?0", "no", "false", "False", "off")
+TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
+
+def signatize(signatures, indexed=None):
     """
     Creates  Signature HTTP header item from signatures list
 
     Returns:
-       item (tuple): header (label, value)
+       header (dict): {'Signature': 'values'}
 
     Parameters:
        signatures (list): instances of either coring.Siger or coring.Cigar
+       indexed (bool): True means indexed signatures coring.Siger.
+                       False means unindexed signatures coring.Cigar
+                       None means auto detect from first signature
     """
-    label = "Signature"
+    if indexed is None:
+        indexed = hasattr(signatures[0], "index")
+
     values = []
+    tag = 'indexed'
+    value = '?1' if indexed else '?0'  #  RFC8941 HTTP structured field values
+    values.append('{}="{}"'.format(tag, value))
+
     for signature in signatures:
         if hasattr(signature, "index"):  # Siger has index
+            if not indexed:
+                raise ValueError("Indexed signature {} when indexed False.".format(signature))
             tag = str(signature.index)
         elif hasattr(signature, "verfer"):  # Cigar has verfer but not index
+            if indexed:
+                raise ValueError("Unindexed signature {} when indexed True.".format(signature))
             tag = signature.verfer.qb64
         else:
             raise ValueError("Invalid signature instance = {}.".format(signature))
         value = signature.qb64
         values.append('{}="{}"'.format(tag, value))
-    return (label, ";".join(values))
+    return dict(Signature=";".join(values))
+
+
+def designatize(value):
+    """
+    Parse signature header str value
+
+    Returns:
+       signatures (list): Siger or Cigar instances
+    """
+    items = [item.split("=") for item in value.split(";")]
+    sigs = {key: val.strip('"') for key, val in items}
+    if "indexed" not in  sigs:
+        raise ValueError("Missing indexed field in Signature header.")
+    indexed = sigs["indexed"] not in FALSY
+    del sigs["indexed"]
+
+    if indexed:
+        return [coring.Siger(qb64=val) for key, val in sigs.items()]
+    else:
+        return [coring.Cigar(qb64=val, verfer=coring.Verfer(qb64=key))
+                for key, val in sigs.items()]
+
 
 # Falcon reource endpoints
 

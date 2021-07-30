@@ -43,9 +43,16 @@ Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
-Mimes = Serialage(json='application/keri+json',
-                  mgpk='application/keri+msgpack',
-                  cbor='application/keri+cbor',)
+KeriMimes = Serialage(json='application/keri+json',
+                      mgpk='application/keri+msgpack',
+                      cbor='application/keri+cbor',)
+
+Mimage = namedtuple("Mimage", "json mgpk cbor cser")
+Mimes = Mimage(json="application/json",
+               mgpk='application/msgpack',
+               cbor='application/cbor',
+               cser='application/cser')
+
 
 VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
@@ -1225,7 +1232,6 @@ class Cigar(Matter):
 
         """
         super(Cigar, self).__init__(**kwa)
-
         self._verfer = verfer
 
 

@@ -26,7 +26,7 @@ from keri.end import ending
 logger = help.ogler.getLogger()
 
 
-def test_headerize():
+def test_signatize_designatize():
     """
     Test headerize function that creates signature header item
     """
@@ -45,22 +45,32 @@ def test_headerize():
                     b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
                     b'8080,"path":"/witness"}')
     sigers = hab.mgr.sign(ser=text, verfers=hab.kever.verfers)
-    item = ending.headerize(sigers)
-    assert item == ('Signature',
-        '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
-        '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-        '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"')
+    header = ending.signatize(sigers)
+    assert header == ({'Signature':
+                       'indexed="?1";'
+                       '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
+                       '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
+                       '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
+
+    hsigers = ending.designatize(header["Signature"])
+    for i, siger in enumerate(sigers):
+        assert siger.qb64 == hsigers[i].qb64
 
     cigars = hab.mgr.sign(ser=text, verfers=hab.kever.verfers, indexed=False)
-    item = ending.headerize(cigars)
-    assert item == ('Signature',
-        'DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA='
-        '"0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
-        'D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0='
-        '"0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-        'DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM='
-        '"0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"')
+    header = ending.signatize(cigars)
+    assert header == ({'Signature':
+                       'indexed="?0";'
+                       'DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA='
+                       '"0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
+                       'D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0='
+                       '"0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
+                       'DO8ighip65cnhlvx7aW5Z-M9ODgV4jN8fMg7yULnpaMM='
+                       '"0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
 
+    hcigars = ending.designatize(header["Signature"])
+    for i, cigar in enumerate(cigars):
+        assert cigar.qb64 == hcigars[i].qb64
+        assert cigar.verfer.qb64 == hcigars[i].verfer.qb64
     # do with non-transferable hab
 
     """Done Test"""
@@ -207,8 +217,10 @@ def test_seid_api():
                     b'8080,"path":"/witness"}')
     # sign here  check for non-transferable
     sigers = hab.mgr.sign(ser=text, verfers=hab.kever.verfers)
-    headers = dict([ending.headerize(sigers)])
-    assert headers == {'Signature':'0="AAH-y80HeaPE4s8R265y1dCSFbE6xqbkRhWS-veWTXHZpLlE2A4P0lVGI1Ep2JMPjCRbeTylaD3QVLovzNyOV3Dg"'}
+    headers = ending.signatize(sigers)
+    assert headers == ({'Signature':
+                        'indexed="?1";'
+                        '0="AAH-y80HeaPE4s8R265y1dCSFbE6xqbkRhWS-veWTXHZpLlE2A4P0lVGI1Ep2JMPjCRbeTylaD3QVLovzNyOV3Dg"'})
 
     endpath = "/end/{}/{}".format(aid, role)
     assert endpath == '/end/E6vI-DyZz1TVj2M5yQrHneBT_l16Z8McxUOVWfTKB16Y/witness'
