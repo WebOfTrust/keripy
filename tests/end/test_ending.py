@@ -205,7 +205,7 @@ def test_seid_api():
     assert text == (b'{"seid":"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
                     b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
                     b'8080,"path":"/witness"}')
-    # sign here
+    # sign here  check for non-transferable
     sigers = hab.mgr.sign(ser=text, verfers=hab.kever.verfers)
     headers = dict([ending.headerize(sigers)])
     assert headers == {'Signature':'0="AAH-y80HeaPE4s8R265y1dCSFbE6xqbkRhWS-veWTXHZpLlE2A4P0lVGI1Ep2JMPjCRbeTylaD3QVLovzNyOV3Dg"'}
