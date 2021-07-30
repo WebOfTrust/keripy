@@ -85,7 +85,7 @@ def test_exchanger():
         respSer = coring.Serder(raw=resp.raw)
         assert respSer.ked['t'] == coring.Ilks.exn
         assert respSer.ked['r'] == "/test/messageResp"
-        assert respSer.ked['q'] == dict(req=pl)
+        assert respSer.ked['d'] == dict(req=pl)
 
 
 class EchoDoer(doing.Doer):

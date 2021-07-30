@@ -336,5 +336,15 @@ class MissingAnchorError(ValidationError):
 
 class ExchangeError(KeriError):
     """
+    Error handling an `exn` message
+    Usage:
+        raise ExchangeError("error message")
+    """
 
+
+class InvalidEventTypeError(KeriError):
+    """
+    Error trying to process an unexpected event type
+    Usage:
+        raise InvalidEventTypeError("error message")
     """

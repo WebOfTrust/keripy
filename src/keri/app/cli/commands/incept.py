@@ -12,7 +12,7 @@ from json import JSONDecodeError
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing, keeping, directing, agenting
+from keri.app import habbing, keeping, directing, agenting, indirecting
 from keri.core import coring
 from keri.db import basing, dbing
 
@@ -73,8 +73,9 @@ class InceptDoer(doing.DoDoer):
                               wits=opts.witnesses, salt=salt)
         self.habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
         self.witDoer = agenting.WitnessReceiptor(hab=hab)
+        self.mbx = indirecting.MailboxDirector(hab=hab)
 
-        doers = [self.inceptDo, self.ksDoer, self.dbDoer, self.habDoer, self.witDoer]
+        doers = [self.inceptDo, self.ksDoer, self.dbDoer, self.habDoer, self.witDoer, self.mbx]
         self.hab = hab
         super(InceptDoer, self).__init__(doers=doers, **kwa)
 
@@ -95,7 +96,7 @@ class InceptDoer(doing.DoDoer):
             print(f'Public key {idx+1}:\t{verfer.qb64}')
         print()
 
-        toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witDoer]
+        toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witDoer, self.mbx]
         self.remove(toRemove)
 
         return
