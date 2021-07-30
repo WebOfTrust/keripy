@@ -15,14 +15,14 @@ from hio.core.tcp import serving as tcpServing
 
 from keri import __version__, kering
 from keri import help
-from keri.app import directing, habbing, keeping, agenting
+from keri.app import directing, habbing, keeping, agenting, indirecting
 from keri.core import scheming
 from keri.db import basing
 from keri.peer import httping, exchanging
 from keri.vc import walleting, handling
 
 d = "Runs KERI Agent controller.\n"
-d += "Example:\nagent -p 5621 --e 10.0\n"
+d += "Example:\nagent -t 5621\n"
 parser = argparse.ArgumentParser(description=d)
 parser.set_defaults(handler=lambda args: launch(args))
 parser.add_argument('-V', '--version',
@@ -45,10 +45,6 @@ parser.add_argument('-t', '--admin-tcp-port',
                     action='store',
                     default=5624,
                     help="Admin port number the HTTP server listens on. Default is 5621.")
-parser.add_argument('-e', '--expire',
-                    action='store',
-                    default=0.0,
-                    help="Expire time for demo. 0.0 means not expire. Default is 0.0.")
 parser.add_argument('-n', '--name',
                     action='store',
                     default="agent",
@@ -73,14 +69,13 @@ def launch(args):
              httpPort=int(args.http),
              tcp=int(args.tcp),
              adminHttpPort=int(args.admin_http_port),
-             adminTcpPort=int(args.admin_tcp_port),
-             expire=args.expire)
+             adminTcpPort=int(args.admin_tcp_port))
 
     logger.info("\n******* Ended Agent for %s listening: http/%s, tcp/%s"
                 ".******\n\n", args.name, args.http, args.tcp)
 
 
-def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=5623, adminTcpPort=5624, expire=0.0):
+def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=5623, adminTcpPort=5624):
     """
     Setup and run one agent
     """
@@ -108,19 +103,14 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
     requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
     exchanger = exchanging.Exchanger(hab=hab, handlers=[issueHandler, requestHandler])
 
-    app = falcon.App()
-    exnServer = httping.AgentExnServer(exc=exchanger, app=app)
-    httpKelServer = httping.AgentKelServer(hab=hab, app=app)
+    mbx = indirecting.MailboxDirector(hab=hab, exc=exchanger)
 
-    server = http.Server(port=httpPort, app=exnServer.app)
-    httpServerDoer = http.ServerDoer(server=server)
-
-    doers = [ksDoer, dbDoer, habDoer, exchanger, directant, tcpServerDoer, exnServer, httpServerDoer, httpKelServer]
+    doers = [ksDoer, dbDoer, habDoer, exchanger, directant, tcpServerDoer, mbx]
     doers.extend(adminInterface(controller, hab, adminHttpPort, adminTcpPort))
 
     try:
         tock = 0.03125
-        doist = doing.Doist(limit=expire, tock=tock, real=True)
+        doist = doing.Doist(limit=0.0, tock=tock, real=True)
         doist.do(doers=doers)
     except kering.ConfigurationError:
         print(f"prefix for {name} does not exist, incept must be run first", )

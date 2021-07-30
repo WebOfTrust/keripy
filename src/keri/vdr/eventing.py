@@ -1111,14 +1111,14 @@ class Tevery:
             else:  # duplicitious
                 raise LikelyDuplicitousError("Likely Duplicitous event={} with sn {}.".format(ked, sn))
 
-    def processQuery(self, serder, pre=None, sigers=None):
+    def processQuery(self, serder, src=None, sigers=None):
         """
         Process query mode replay message for collective or single element query.
         Assume promiscuous mode for now.
 
         Parameters:
             serder (Serder) is query message serder
-            pre (qb64) identifier prefix of event sender
+            src (qb64) identifier prefix of event sender
             sigers (list) of Siger instances of attached controller indexed sigs
 
         """

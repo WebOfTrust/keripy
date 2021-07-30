@@ -489,7 +489,7 @@ def test_run_sam_eve_demo():
 
 
 def test_indirect_mode_sam_cam_wit_demo():
-    """ Test indirect mode, bob and eve with witness """
+    """ Test indirect mode, sam and cam with witness """
 
     help.ogler.resetLevel(level=logging.DEBUG)
     # set of secrets (seeds for private keys)
@@ -674,10 +674,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert camHab.pre in camHab.kevers
         assert samHab.pre in camHab.kevers
 
-
         #  verify final event states
-
-
         doist.exit()
         assert samClient.opened is False
         assert samServer.opened is False

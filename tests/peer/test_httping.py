@@ -48,11 +48,11 @@ def test_parse_cesr_request():
         body='{"i": 1234}',
     )
 
-    resource, dt, q, attachment = httping.parseCesrHttpRequest(req=req)
-    assert resource == "/credential/issue"
-    assert dt == "2021-06-27T21:26:21.233257+00:00"
-    assert q == dict(i=1234)
-    assert attachment == "-H000000000"
+    cr = httping.parseCesrHttpRequest(req=req)
+    assert cr.resource == "/credential/issue"
+    assert cr.date == "2021-06-27T21:26:21.233257+00:00"
+    assert cr.payload == dict(i=1234)
+    assert cr.attachments == "-H000000000"
 
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 
 from hio.base import doing
+
 from keri.app import keeping, habbing, indirecting, agenting
 from keri.core import coring
 from keri.core.eventing import SealSource
@@ -16,11 +17,11 @@ def test_withness_receiptor(mockGetWitnessByPrefix):
             openHab(name="pal", salt=b'0123456789abcdef', transferable=True,
                     wits=[wanHab.pre, wilHab.pre, wesHab.pre]) as palHab:
 
-        wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=True, localPort=5632)
-        wilDoers = indirecting.setupWitness(name="wil", hab=wilHab, temp=True, localPort=5633)
-        wesDoers = indirecting.setupWitness(name="wes", hab=wesHab, temp=True, localPort=5634)
+        wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=True, tcpPort=5632, httpPort=5642)
+        wilDoers = indirecting.setupWitness(name="wil", hab=wilHab, temp=True, tcpPort=5633, httpPort=5643)
+        wesDoers = indirecting.setupWitness(name="wes", hab=wesHab, temp=True, tcpPort=5634, httpPort=5644)
 
-        witDoer = agenting.WitnessReceiptor(hab=palHab)
+        witDoer = agenting.WitnessReceiptor(hab=palHab, klas=agenting.TCPWitnesser)
 
         limit = 1.0
         tock = 0.03125
@@ -47,16 +48,16 @@ def test_witness_sender(mockGetWitnessByPrefix):
             openHab(name="pal", salt=b'0123456789abcdef', transferable=True,
                     wits=[wanHab.pre, wilHab.pre, wesHab.pre]) as palHab:
 
-        wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=True, localPort=5632)
-        wilDoers = indirecting.setupWitness(name="wil", hab=wilHab, temp=True, localPort=5633)
-        wesDoers = indirecting.setupWitness(name="wes", hab=wesHab, temp=True, localPort=5634)
+        wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=True, tcpPort=5632, httpPort=5642)
+        wilDoers = indirecting.setupWitness(name="wil", hab=wilHab, temp=True, tcpPort=5633, httpPort=5643)
+        wesDoers = indirecting.setupWitness(name="wes", hab=wesHab, temp=True, tcpPort=5634, httpPort=5644)
 
         serder = eventing.issue(vcdig="Ekb-iNmnXnOYIAlZ9vzK6RV9slYiKQSyQvAO-k0HMOI8",
                                 regk="EbA1o_bItVC9i6YB3hr2C3I_Gtqvz02vCmavJNoBA3Jg")
         seal = SealSource(s=palHab.kever.sn, d=palHab.kever.serder.dig)
         msg = issuing.Issuer.messagize(serder=serder, seal=seal)
 
-        witDoer = agenting.WitnessSender(hab=palHab, msg=msg)
+        witDoer = agenting.WitnessSender(hab=palHab, msg=msg, klas=agenting.TCPWitnesser)
 
         limit = 1.0
         tock = 0.03125
