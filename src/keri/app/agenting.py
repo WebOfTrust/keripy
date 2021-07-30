@@ -5,17 +5,15 @@ keri.app.agenting module
 
 """
 from hio.base import doing
-from hio.core.tcp import clienting
 from hio.core import http
+from hio.core.tcp import clienting
 from hio.help import decking
-from keri.core import coring
-from keri.peer import httping
 
 from .. import help
 from ..app import obtaining
-from ..core import eventing, parsing, scheming
+from ..core import eventing, parsing, scheming, coring
 from ..db import dbing
-from ..peer import exchanging
+from ..peer import exchanging, httping
 from ..vc import proving, handling
 from ..vdr import issuing
 

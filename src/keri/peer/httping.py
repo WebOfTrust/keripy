@@ -11,11 +11,11 @@ from hio.base import doing
 from hio.core import http
 from hio.help import helping, Hict
 
-from keri import kering
-from keri.core.coring import Ilks
-from keri.help.helping import nowIso8601
 from .. import help
+from .. import kering
 from ..core import parsing, coring
+from ..core.coring import Ilks
+from ..help.helping import nowIso8601
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -298,8 +298,6 @@ class MailboxServer(doing.DoDoer):
 
         """
         cr = parseCesrHttpRequest(req=req)
-
-        print("cr!", cr)
 
         q = cr.payload['q']
 

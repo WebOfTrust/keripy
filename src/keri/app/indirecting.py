@@ -12,14 +12,14 @@ from hio.core import http
 from hio.core.tcp import serving
 from hio.help import decking
 
-from keri.app import obtaining
-from keri.vdr.eventing import Tevery
 from . import habbing, keeping, directing
 from .. import help
+from ..app import obtaining
 from ..core import eventing, parsing
 from ..db import basing
 from ..peer import exchanging, httping
 from ..vdr import verifying
+from ..vdr.eventing import Tevery
 
 logger = help.ogler.getLogger()
 
