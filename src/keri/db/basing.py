@@ -98,11 +98,11 @@ class HabitatRecord:
 @dataclass
 class EndpointRecord: # ends
     """
-    Service Endpoint ID Record with fields and keys to manage endpoints by role.
+    Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by role.
     Database Keys are (cid, role) where cid is endpoint controller identifier
     prefix and role is endpoint role such as watcher, witness etc
     """
-    eid: str  # identifier prefix of endpoint
+    seid: str  # identifier prefix of service endpoint
     name: str  # user friendly name of endpoint
     dts: str  # ISO-8601 datetime string of latest update
 
@@ -438,7 +438,7 @@ class Baser(dbing.LMDBer):
                                  subkey='habs.',
                                  schema=HabitatRecord,)
 
-        # service endpoint identifer prefixes by controller prefixes and rols
+        # service endpoint identifer (SEID) prefixes by controller prefixes and roles
         self.ends = koming.DupKomer(db=self,
                                     subkey='ends.',
                                     schema=EndpointRecord,)

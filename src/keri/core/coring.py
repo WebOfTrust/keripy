@@ -39,7 +39,6 @@ Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
               ksn='ksn', vcp='vcp', vrt='vrt', iss='iss', rev='rev',
               bis='bis', brv='brv', req="req", exn="exn")
 
-
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
@@ -450,7 +449,9 @@ class Matter:
     Attributes:
 
     Properties:
-        .code is  str derivation code to indicate cypher suite
+        .code is str derivation code to indicate cypher suite
+        .size is size (int): number of quadlets when variable sized material besides
+                        full derivation code else None
         .raw is bytes crypto material only without code
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
@@ -460,6 +461,7 @@ class Matter:
 
     Hidden:
         ._code is str value for .code property
+        ._size is int value for .size property
         ._raw is bytes value for .raw property
         ._infil is method to compute fully qualified Base64 from .raw and .code
         ._exfil is method to extract .code and .raw from fully qualified Base64
@@ -651,7 +653,7 @@ class Matter:
     @property
     def size(self):
         """
-        Returns ._size
+        Returns ._size int
         Makes .size read only
         """
         return self._size
@@ -1185,19 +1187,26 @@ class Cigar(Matter):
 
     Attributes:
 
-    Inherited Properties:
-        .pad  is int number of pad chars given raw
-        .code is  str derivation code to indicate cypher suite
+    Properties:  (Inherited)
+        .code is str derivation code to indicate cypher suite
+        .size is size (int): number of quadlets when variable sized material besides
+                        full derivation code else None
         .raw is bytes crypto material only without code
-        .index is int count of attached crypto material by context (receipts)
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
         .qb2  is bytes in binary with derivation code + crypto material
         .transferable is Boolean, True when transferable derivation code False otherwise
+        .digestive is Boolean, True when digest derivation code False otherwise
 
     Properties:
         .verfer is verfer of public key used to verify signature
 
+    Hidden:
+        ._code is str value for .code property
+        ._size is int value for .size property
+        ._raw is bytes value for .raw property
+        ._infil is method to compute fully qualified Base64 from .raw and .code
+        ._exfil is method to extract .code and .raw from fully qualified Base64
 
     Methods:
 
