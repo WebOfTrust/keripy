@@ -96,7 +96,7 @@ class HabitatRecord:
 
 
 @dataclass
-class EndpointRecord: # ends
+class EndpointRecord:  # ends
     """
     Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by role.
     Database Keys are (cid, role) where cid is endpoint controller identifier
@@ -128,6 +128,13 @@ class LocationRecord:  # locs
     def __iter__(self):
         return iter(asdict(self))
 
+
+@dataclass
+class WitnessRecord:  # wits
+    """
+    Tracks the last message index retrieved from the witness mailbox
+    """
+    idx: int
 
 
 def openDB(name="test", **kwa):
@@ -347,6 +354,11 @@ class Baser(dbing.LMDBer):
             key is (eid, scheme) as "eid.scheme"
             value is serialized LocationRecord dataclass
 
+        .wits is named subDB instance of Komer that maps Witness prefix
+            to index of last received mailbox message.
+            key is witness prefix identifier
+            value is serialized WitnessRecord dataclass
+
     Properties:
 
 
@@ -447,6 +459,11 @@ class Baser(dbing.LMDBer):
         self.locs = koming.Komer(db=self,
                                     subkey='locs.',
                                     schema=LocationRecord,)
+
+        # service endpont locations by endpoint identifier prefixes and schemes
+        self.wits = koming.Komer(db=self,
+                                 subkey='wits.',
+                                 schema=WitnessRecord,)
 
         return self.env
 
