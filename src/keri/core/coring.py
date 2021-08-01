@@ -1164,6 +1164,7 @@ class Verfer(Matter):
         """
         return (self._verify(sig=sig, ser=ser, key=self.raw))
 
+
     @staticmethod
     def _ed25519(sig, ser, key):
         """
@@ -1244,6 +1245,7 @@ class Cigar(Matter):
         """
         return self._verfer
 
+
     @verfer.setter
     def verfer(self, verfer):
         """ verfer property setter """
@@ -1301,6 +1303,7 @@ class Signer(Matter):
 
         self._verfer = verfer
 
+
     @property
     def verfer(self):
         """
@@ -1309,6 +1312,7 @@ class Signer(Matter):
         Assumes ._verfer is correctly assigned
         """
         return self._verfer
+
 
     def sign(self, ser, index=None):
         """
@@ -1328,6 +1332,7 @@ class Signer(Matter):
                            seed=self.raw,
                            verfer=self.verfer,
                            index=index))
+
 
     @staticmethod
     def _ed25519(ser, seed, verfer, index):
