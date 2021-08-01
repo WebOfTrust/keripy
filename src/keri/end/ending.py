@@ -33,7 +33,7 @@ Roles = Rolage(witness='witness', watcher='watcher')
 FALSY = (False, 0, "?0", "no", "false", "False", "off")
 TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
 
-Signage = namedtuple("Signage", "markers indexed signer ", defaults=(None, None))
+Signage = namedtuple("Signage", "markers indexed signer kind", defaults=(None, None, None))
 
 
 def signature(signages):
@@ -76,6 +76,7 @@ def signature(signages):
         markers = signage.markers
         indexed = signage.indexed
         signer = signage.signer
+        kind = signage.kind
 
         if isinstance(markers, Mapping):
             tags = list(markers.keys())
@@ -93,6 +94,10 @@ def signature(signages):
         if signer:
             tag = "signer"
             val = signer
+            items.append('{}="{}"'.format(tag, val))
+        if kind:
+            tag = "kind"
+            val = kind
             items.append('{}="{}"'.format(tag, val))
 
         for i, marker in enumerate(markers):
@@ -168,11 +173,19 @@ def designature(value):
         else:
             signer = None
 
-        for key, val in items.items():
-            if indexed:
-                items[key] = coring.Siger(qb64=val)
-            else:
-                items[key] = coring.Cigar(qb64=val)
+        if "kind" in items:
+            kind = items["kind"]
+            del items["kind"]
+        else:
+            kind = "CESR"  # default is empty or missing
+
+        if kind == "CESR":  # convert to Siger or Cigar instances
+            for key, val in items.items():
+                if indexed:
+                    items[key] = coring.Siger(qb64=val)
+                else:
+                    items[key] = coring.Cigar(qb64=val)
+
         signages.append(Signage(markers=items, indexed=indexed, signer=signer, ))
 
     return signages

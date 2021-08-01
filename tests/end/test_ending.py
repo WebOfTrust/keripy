@@ -94,18 +94,22 @@ def test_signature_designature():
 
     #  now combine into one header
     signages = []
-    signages.append(ending.Signage(markers=sigers, signer=hab.pre, indexed=True))
-    signages.append(ending.Signage(markers=cigars, signer=hab.pre, indexed=False))
+    signages.append(ending.Signage(markers=sigers, signer=hab.pre, indexed=True,
+                                   kind="CESR"))
+    signages.append(ending.Signage(markers=cigars, signer=hab.pre, indexed=False,
+                                   kind="CESR"))
 
     header = ending.signature(signages)
     assert header == ({'Signature':
                        'indexed="?1";'
                        'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
+                       'kind="CESR";'
                        '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
                        '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
                        '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
                        'indexed="?0";'
                        'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
+                       'kind="CESR";'
                        'DCLZNpE1W0aZXx5JS-ocgHNPMiCtCLnu8rPDlK-bLuPA='
                        '"0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
                        'D0rYoWcvSNQaWa9kdGx7sfA0ZV22Qz45G9Nl8XDuYNu0='
@@ -137,19 +141,23 @@ def test_signature_designature():
     tags = ["wit0", "wit1", "wit2"]
     signages = []
     markers = {tags[i]: marker for i, marker in enumerate(sigers)}
-    signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=True))
+    signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=True,
+                                   kind="CESR"))
     markers = {tags[i]: marker for i, marker in enumerate(cigars)}
-    signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=False))
+    signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=False,
+                                   kind="CESR"))
 
     header = ending.signature(signages)
     assert header == ({'Signature':
                        'indexed="?1";'
                        'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
+                       'kind="CESR";'
                        'wit0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
                        'wit1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
                        'wit2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ",'
                        'indexed="?0";'
                        'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
+                       'kind="CESR";'
                        'wit0="0B9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
                        'wit1="0BqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
                        'wit2="0BcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
