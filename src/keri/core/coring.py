@@ -43,15 +43,21 @@ Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
-KeriMimes = Serialage(json='application/keri+json',
-                      mgpk='application/keri+msgpack',
-                      cbor='application/keri+cbor',)
-
 Mimage = namedtuple("Mimage", "json mgpk cbor cser")
+
 Mimes = Mimage(json="application/json",
                mgpk='application/msgpack',
                cbor='application/cbor',
                cser='application/cser')
+
+KeriMimes = Mimage(json='application/keri+json',
+                   mgpk='application/keri+msgpack',
+                   cbor='application/keri+cbor',
+                   cser='application/keri+cser')
+
+# Usage: to get Mime from serialization kind
+# getattr(Mimes, Serials.json.lower())
+# getattr(KeriMimes, Serials.json.lower())
 
 
 VERRAWSIZE = 6  # hex characters in raw serialization size in version string
@@ -243,6 +249,16 @@ def sniff(raw):
 
 
 def dumps(ked, kind=Serials.json):
+    """
+    utility function to handle serialization by kind
+
+    Returns:
+       raw (bytes): serialized version of ked dict
+
+    Parameters:
+       ked (dict): key event dict or message dict to serialize
+       kind (str): serialization kind (JSON, MGPK, CBOR)
+    """
     if kind == Serials.json:
         raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
@@ -255,6 +271,46 @@ def dumps(ked, kind=Serials.json):
         raise ValueError("Invalid serialization kind = {}".format(kind))
 
     return raw
+
+
+def loads(raw, size, kind=Serials.json):
+    """
+    utility function to handle deserialization by kind
+
+    Returns:
+       ked (dict): deserialized
+
+    Parameters:
+       raw (Union[bytes,bytearray]): raw serialization to deserialze as dict
+       size (int): number of bytes to consume for the deserialization
+       kind (str): serialization kind (JSON, MGPK, CBOR)
+    """
+    if kind == Serials.json:
+        try:
+            ked = json.loads(raw[:size].decode("utf-8"))
+        except Exception as ex:
+            raise DeserializationError("Error deserializing JSON: {}"
+                    "".format(raw[:size].decode("utf-8")))
+
+    elif kind == Serials.mgpk:
+        try:
+            ked = msgpack.loads(raw[:size])
+        except Exception as ex:
+            raise DeserializationError("Error deserializing MGPK: {}"
+                    "".format(raw[:size]))
+
+    elif kind ==  Serials.cbor:
+        try:
+            ked = cbor.loads(raw[:size])
+        except Exception as ex:
+            raise DeserializationError("Error deserializing CBOR: {}"
+                    "".format(raw[:size]))
+
+    else:
+        raise DeserializationError("Invalid deserialization kind: {}"
+                    "".format(kind))
+
+    return ked
 
 
 def generateSigners(salt=None, count=8, transferable=True):
@@ -3319,29 +3375,7 @@ class Serder:
         if len(raw) < size:
             raise ShortageError("Need more bytes.")
 
-        if kind == Serials.json:
-            try:
-                ked = json.loads(raw[:size].decode("utf-8"))
-            except Exception as ex:
-                raise DeserializationError("Error deserializing JSON: {}"
-                        "".format(raw[:size].decode("utf-8")))
-
-        elif kind == Serials.mgpk:
-            try:
-                ked = msgpack.loads(raw[:size])
-            except Exception as ex:
-                raise DeserializationError("Error deserializing MGPK: {}"
-                        "".format(raw[:size]))
-
-        elif kind ==  Serials.cbor:
-            try:
-                ked = cbor.loads(raw[:size])
-            except Exception as ex:
-                raise DeserializationError("Error deserializing CBOR: {}"
-                        "".format(raw[:size]))
-
-        else:
-            ked = None
+        ked = loads(raw=raw, size=size, kind=kind)
 
         return (ked, kind, version, size)
 

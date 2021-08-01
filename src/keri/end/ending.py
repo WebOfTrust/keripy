@@ -27,8 +27,9 @@ logger = help.ogler.getLogger()
 Schemage = namedtuple("Schemage", 'tcp http https')
 Schemes = Schemage(tcp='tcp', http='http', https='https')
 
-Rolage = namedtuple("Rolage", 'witness watcher')
-Roles = Rolage(witness='witness', watcher='watcher')
+Rolage = namedtuple("Rolage", 'witness registrar watcher judge juror')
+Roles = Rolage(witness='witness', registrar='registrar', watcher='watcher',
+               judge='judge', juror='juror')
 
 FALSY = (False, 0, "?0", "no", "false", "False", "off")
 TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
