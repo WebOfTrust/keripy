@@ -307,6 +307,10 @@ def test_witness():
         assert vcKvr.sn == 2
         assert vcKvr.wits == camHab.kever.wits
 
+        # need disjoint test of sending witness receipts to Van not conjoint
+        # from Cam replay
+
+
 
 
     assert not os.path.exists(wokKS.path)
