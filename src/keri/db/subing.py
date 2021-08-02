@@ -22,21 +22,77 @@ from . import dbing
 
 logger = help.ogler.getLogger()
 
-
-class Suber:
+class SuberBase:
     """
-    Sub DB of LMDBer
+    Base class for Sub DBs of LMDBer
+    Provides common methods for subclasses
+    Do not instantiate but use a subclass
     """
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, db: Type[dbing.LMDBer], *, subkey: str = 'docs.',):
+    def __init__(self, db: Type[dbing.LMDBer], *,
+                       subkey: str = 'docs.',
+                       dupsort: bool = False,
+                       sep: str = None):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+        """
+        self.db = db
+        self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
+        self.sep = sep if sep is not None else self.Sep
+
+
+    def _tokey(self, keys: Union[str, bytes, Iterable]):
+        """
+        Converts key to key str with proper separators and returns key bytes.
+        If key is already str then returns. Else If key is iterable (non-str)
+        of strs then joins with separator converts to bytes and returns
+
+        Parameters:
+           keys (Union[str, bytes, Iterable]): str, bytes, or Iterable of str.
+
+        """
+        if hasattr(keys, "encode"):  # str
+            return keys.encode("utf-8")
+        elif hasattr(keys, "decode"): # bytes
+            return keys
+        return (self.sep.join(keys).encode("utf-8"))  # iterable
+
+
+    def _tokeys(self, key: Union[str, bytes]):
+        """
+        Converts key bytes to keys tuple of strs by decoding and then splitting
+        at separator.
+
+        Returns:
+           keys (iterable): of str
+
+        Parameters:
+           key (Union[str, bytes]): str or bytes.
+
+        """
+        return tuple(key.decode("utf-8").split(self.sep))
+
+
+class Suber(SuberBase):
+    """
+    Sub DB of LMDBer. Subclass of SuberBase
+    """
+
+    def __init__(self, db: Type[dbing.LMDBer], *, subkey: str = 'docs.', **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
         """
-        self.db = db
-        self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"))
+        super(Suber, self).__init__(db=db, subkey=subkey, dupsort=False, **kwa)
 
 
     def put(self, keys: Union[str, Iterable], val: Union[bytes, str]):
@@ -121,26 +177,7 @@ class Suber:
                (("a","b"), dataclass(x=1,y=2))
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            keys = tuple(key.decode("utf-8").split('.'))
-            yield (keys, bytes(val).decode("utf-8"))
-
-
-    def _tokey(self, keys: Union[str, Iterable]):
-        """
-        Converts key to key str with proper separators and returns key bytes.
-        If key is already str then returns. Else If key is iterable (non-str)
-        of strs then joins with separator converts to bytes and returns
-
-        Parameters:
-           keys (Union[str, Iterable]): str or Iterable of str.
-
-        """
-        if hasattr(keys, "encode"):  # str
-            return keys.encode("utf-8")
-        elif hasattr(keys, "decode"): # bytes
-            return keys
-        return (self.Sep.join(keys).encode("utf-8"))
-
+            yield (self._tokeys(key), bytes(val).decode("utf-8"))
 
 
 class SerderSuber(Suber):
@@ -241,8 +278,7 @@ class SerderSuber(Suber):
                (("a","b"), dataclass(x=1,y=2))
         """
         for key, raw in self.db.getAllItemIter(db=self.sdb, split=False):
-            keys = tuple(key.decode("utf-8").split('.'))
-            yield (keys, coring.Serder(raw=bytes(raw)))
+            yield (self._tokeys(key), coring.Serder(raw=bytes(raw)))
 
 
 class MatterSuber(Suber):
@@ -345,8 +381,7 @@ class MatterSuber(Suber):
 
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            keys = tuple(key.decode("utf-8").split('.'))
-            yield (keys, self.klas(qb64b=bytes(val)))
+            yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
 
 
 
@@ -398,7 +433,7 @@ class SignerSuber(MatterSuber):
         """
         key = self._tokey(keys)  # keys maybe string or tuple
         val = self.db.getVal(db=self.sdb, key=key)
-        keys = tuple(key.decode("utf-8").split('.'))  # verkey is last split if any
+        keys = self._tokeys(key)  # verkey is last split if any
         verfer = coring.Verfer(qb64b=keys[-1])  # last split
         return (self.klas(qb64b=bytes(val), transferable=verfer.transferable)
                 if val is not None else None)
@@ -413,7 +448,7 @@ class SignerSuber(MatterSuber):
                 each entry in db
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            keys = tuple(key.decode("utf-8").split('.'))  # verkey is last split if any
+            keys = self._tokeys(key)  # verkey is last split if any
             verfer = coring.Verfer(qb64b=keys[-1])   # last split
             yield (keys, self.klas(qb64b=bytes(val),
                                    transferable=verfer.transferable))
@@ -503,7 +538,7 @@ class CryptSignerSuber(SignerSuber):
         val = self.db.getVal(db=self.sdb, key=key)
         if val is None:
             return None
-        keys = tuple(key.decode("utf-8").split('.'))  # verkey is last split if any
+        keys = self._tokeys(key)  # verkey is last split if any
         verfer = coring.Verfer(qb64b=keys[-1])  # last split
         if decrypter:
             return (decrypter.decrypt(ser=bytes(val),
@@ -526,7 +561,7 @@ class CryptSignerSuber(SignerSuber):
 
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            keys = tuple(key.decode("utf-8").split('.'))  # verkey is last split if any
+            keys = self._tokeys(key)  # verkey is last split if any
             verfer = coring.Verfer(qb64b=keys[-1])   # last split
             if decrypter:
                 yield (keys, decrypter.decrypt(ser=bytes(val),

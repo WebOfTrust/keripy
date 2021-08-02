@@ -41,7 +41,7 @@ class KomerBase:
         Parameters:
             db (dbing.LMDBer): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subdb (str):  LMDB sub database key
+            subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -77,9 +77,8 @@ class KomerBase:
 
     def _tokeys(self, key: Union[str, bytes]):
         """
-        Converts key str to keys tuple by splitting at separator and returns key bytes.
-        If key is already str then returns. Else If key is iterable (non-str)
-        of strs then joins with separator converts to bytes and returns
+        Converts key bytes to keys tuple of strs by decoding and then splitting
+        at separator.
 
         Returns:
            keys (iterable): of str
@@ -88,7 +87,7 @@ class KomerBase:
            key (Union[str, bytes]): str or bytes.
 
         """
-        return tuple(key.decode("utf-8").split(self.Sep))
+        return tuple(key.decode("utf-8").split(self.sep))
 
 
     def _serializer(self, kind):
@@ -188,7 +187,7 @@ class Komer(KomerBase):
         Parameters:
             db (dbing.LMDBer): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subdb (str):  LMDB sub database key
+            subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
         super(Komer, self).__init__(db=db, subkey=subkey, schema=schema,
@@ -296,7 +295,7 @@ class DupKomer(KomerBase):
         Parameters:
             db (dbing.LMDBer): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subdb (str):  LMDB sub database key
+            subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
         super(DupKomer, self).__init__(db=db, subkey=subkey, schema=schema,
