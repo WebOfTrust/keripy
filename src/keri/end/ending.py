@@ -24,6 +24,23 @@ from  ..core import coring
 
 logger = help.ogler.getLogger()
 
+Mimage = namedtuple("Mimage", "json mgpk cbor cesr")
+
+Mimes = Mimage(json="application/json",
+               mgpk='application/msgpack',
+               cbor='application/cbor',
+               cesr='application/cesr')
+
+KeriMimes = Mimage(json='application/keri+json',
+                   mgpk='application/keri+msgpack',
+                   cbor='application/keri+cbor',
+                   cesr='application/keri+cesr')
+
+# Usage: to get Mime from serialization kind
+# getattr(Mimes, coring.Serials.json.lower())
+# getattr(KeriMimes, coring.Serials.json.lower())
+
+
 Schemage = namedtuple("Schemage", 'tcp http https')
 Schemes = Schemage(tcp='tcp', http='http', https='https')
 

@@ -25,6 +25,29 @@ from keri.end import ending
 
 logger = help.ogler.getLogger()
 
+def test_mimes():
+    """
+    Test mime type namedtuples
+    """
+    assert ending.Mimes.json == 'application/json'
+    assert ending.Mimes.mgpk == 'application/msgpack'
+    assert ending.Mimes.cbor == 'application/cbor'
+    assert ending.Mimes.cesr == 'application/cesr'
+
+    assert ending.KeriMimes.json == 'application/keri+json'
+    assert ending.KeriMimes.mgpk == 'application/keri+msgpack'
+    assert ending.KeriMimes.cbor == 'application/keri+cbor'
+    assert ending.KeriMimes.cesr == 'application/keri+cesr'
+
+    # Usage: to get Mime from serialization kind
+    assert getattr(ending.Mimes, coring.Serials.json.lower()) == ending.Mimes.json
+    assert getattr(ending.Mimes, coring.Serials.mgpk.lower()) == ending.Mimes.mgpk
+    assert getattr(ending.Mimes, coring.Serials.cbor.lower()) == ending.Mimes.cbor
+
+    assert getattr(ending.KeriMimes, coring.Serials.json.lower()) == ending.KeriMimes.json
+    assert getattr(ending.KeriMimes, coring.Serials.mgpk.lower()) == ending.KeriMimes.mgpk
+    assert getattr(ending.KeriMimes, coring.Serials.cbor.lower()) == ending.KeriMimes.cbor
+    """Done Test"""
 
 def test_signature_designature():
     """

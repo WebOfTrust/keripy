@@ -50,6 +50,7 @@ def test_kom_happy_path():
 
         mydb = koming.Komer(db=db, schema=Record, subkey='records.')
         assert isinstance(mydb, koming.Komer)
+        assert not mydb.sdb.flags()["dupsort"]
 
         sue = Record(first="Susan",
                      last="Black",
@@ -472,6 +473,7 @@ def test_dup_komer():
 
         endDB = koming.DupKomer(db=db, schema=Endpoint, subkey='ends.')
         assert isinstance(endDB, koming.DupKomer)
+        assert endDB.sdb.flags()["dupsort"]
         assert endDB.sep == endDB.Sep == "."
 
         locDB = koming.Komer(db=db, schema=Location, subkey='locs.')

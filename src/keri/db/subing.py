@@ -175,13 +175,175 @@ class Suber(SuberBase):
             iterator: of tuples of keys tuple and val bytes for
             each entry in db
 
-        Example:
-            if key in database is "a.b" and val is serialization of dataclass
-               with attributes x and y then returns
-               (("a","b"), dataclass(x=1,y=2))
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
             yield (self._tokeys(key), bytes(val).decode("utf-8"))
+
+
+class DupSuber(SuberBase):
+    """
+    Sub DB of LMDBer. Subclass of SuberBase that supports multiple entries at
+    each key (duplicates) with dupsort==True
+    """
+
+    def __init__(self, db: Type[dbing.LMDBer], *, subkey: str = 'docs.', **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+        """
+        super(DupSuber, self).__init__(db=db, subkey=subkey, dupsort=True, **kwa)
+
+    @staticmethod
+    def _encode(val):
+        return (val.encode("utf-8") if hasattr(val, "encode") else val)
+
+    @staticmethod
+    def _decode(val):
+        return (val.decode("utf-8") if hasattr(val, "decode") else val)
+
+
+    def put(self, keys: Union[str, Iterable], vals: list):
+        """
+        Puts all vals at key made from keys. Does not overwrite. Adds to existing
+        dup values at key if any. Duplicate means another entry at the same key
+        but the entry is still a unique value. Duplicates are inserted in
+        lexocographic order not insertion order. Lmdb does not insert a duplicate
+        unless it is a unique value for that key.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (list): str or bytes of each value to be written at key
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        Apparently always returns True (how .put works with dupsort=True)
+
+        """
+        return (self.db.putVals(db=self.sdb,
+                                key=self._tokey(keys),
+                                vals=[self._encode(val) for val in vals]))
+
+
+    def add(self, keys: Union[str, Iterable], val: Union[bytes, str]):
+        """
+        Add val to vals at key made from keys. Does not overwrite. Adds to existing
+        dup values at key if any. Duplicate means another entry at the same key
+        but the entry is still a unique value. Duplicates are inserted in
+        lexocographic order not insertion order. Lmdb does not insert a duplicate
+        unless it is a unique value for that key.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Union[str, bytes]): value
+
+        Returns:
+            result (bool): True means unique value among duplications,
+                              False means duplicte of same value already exists.
+
+        """
+        return (self.db.addVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=self._encode(val)))
+
+
+    def pin(self, keys: Union[str, Iterable], vals: list):
+        """
+        Pins (sets) vals at key made from keys. Overwrites. Removes all
+        pre-existing dup vals and replaces them with vals
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (list): str or bytes values
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        """
+        key = self._tokey(keys)
+        self.db.delVals(db=self.sdb, key=key)  # delete all values
+        return (self.db.putVals(db=self.sdb,
+                                key=key,
+                                vals=[self._encode(val) for val in vals]))
+
+
+
+    def get(self, keys: Union[str, Iterable]):
+        """
+        Gets dup vals list at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            vals (list):  each item in list is str
+                          empty list if no entry at keys
+
+        """
+        return [self._decode(bytes(val)) for val in
+                        self.db.getVals(db=self.sdb, key=self._tokey(keys))]
+
+
+    def getIter(self, keys: Union[str, Iterable]):
+        """
+        Gets dup vals iterator at key made from keys
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            iterator:  vals each of str. Raises StopIteration when done
+
+        """
+        for val in self.db.getValsIter(db=self.sdb, key=self._tokey(keys)):
+            yield self._decode(bytes(val))
+
+
+    def cnt(self, keys: Union[str, Iterable]):
+        """
+        Return count of dup values at key made from keys, zero otherwise
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+        """
+        return (self.db.cntVals(db=self.sdb, key=self._tokey(keys)))
+
+
+    def rem(self, keys: Union[str, Iterable], val=None):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Union[str, bytes]):  instance of dup val at key to delete
+                              if val is None then remove all values at key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+
+        """
+        if val is not None:
+            val = self._encode(val)
+        else:
+            val = b''
+        return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
+
+
+    def getItemIter(self):
+        """
+        Return iterator over the all the items in subdb. Each duplicate at a
+        given key is yielded as a separate item.
+
+        Returns:
+            iterator: of tuples of keys tuple and val dataclass instance for
+            each entry in db. Raises StopIteration when done
+
+        """
+        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield (self._tokeys(key), self._decode(bytes(val)))
 
 
 class SerderSuber(Suber):
@@ -273,13 +435,157 @@ class SerderSuber(Suber):
         Return iterator over the all the items in subdb
 
         Returns:
-            iterator: of tuples of keys tuple and val Serder for
+            iterator: of tuples of keys tuple and val coring.Serder for
             each entry in db
 
-        Example:
-            if key in database is "a.b" and val is serialization of dataclass
-               with attributes x and y then returns
-               (("a","b"), dataclass(x=1,y=2))
+        """
+        for key, raw in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield (self._tokeys(key), coring.Serder(raw=bytes(raw)))
+
+
+class SerderDupSuber(DupSuber):
+    """
+    Sub class of DupSuber where data is serialized Serder instance
+    Automatically serializes and deserializes using Serder methods
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+        """
+        super(SerderDupSuber, self).__init__(*pa, **kwa)
+
+
+    def put(self, keys: Union[str, Iterable], vals: list):
+        """
+        Puts all vals at key made from keys. Does not overwrite. Adds to existing
+        dup values at key if any. Duplicate means another entry at the same key
+        but the entry is still a unique value. Duplicates are inserted in
+        lexocographic order not insertion order. Lmdb does not insert a duplicate
+        unless it is a unique value for that key.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (list): instances of coring.Serder
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        Apparently always returns True (how .put works with dupsort=True)
+
+        """
+        return (self.db.putVals(db=self.sdb,
+                                key=self._tokey(keys),
+                                vals=[val.raw for val in vals]))
+
+
+    def add(self, keys: Union[str, Iterable], val: coring.Serder):
+        """
+        Add val to vals at key made from keys. Does not overwrite. Adds to existing
+        dup values at key if any. Duplicate means another entry at the same key
+        but the entry is still a unique value. Duplicates are inserted in
+        lexocographic order not insertion order. Lmdb does not insert a duplicate
+        unless it is a unique value for that key.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (coring.Serder): value
+
+        Returns:
+            result (bool): True means unique value among duplications,
+                              False means duplicte of same value already exists.
+
+        """
+        return (self.db.addVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.raw))
+
+
+    def pin(self, keys: Union[str, Iterable], vals: list):
+        """
+        Pins (sets) vals at key made from keys. Overwrites. Removes all
+        pre-existing dup vals and replaces them with vals
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (list): instances of coring.Serder
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        """
+        key = self._tokey(keys)
+        self.db.delVals(db=self.sdb, key=key)  # delete all values
+        return (self.db.putVals(db=self.sdb,
+                                key=key,
+                                vals=[val.raw for val in vals]))
+
+
+    def get(self, keys: Union[str, Iterable]):
+        """
+        Gets dup vals list at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            vals (list):  each item in list is instance of coring.Serder
+                          empty list if no entry at keys
+
+        """
+        return [coring.Serder(raw=bytes(raw)) for raw in
+                        self.db.getVals(db=self.sdb, key=self._tokey(keys))]
+
+
+    def getIter(self, keys: Union[str, Iterable]):
+        """
+        Gets dup vals iterator at key made from keys
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            iterator:  vals each of coring.Serder. Raises StopIteration when done
+
+        """
+        for raw in self.db.getValsIter(db=self.sdb, key=self._tokey(keys)):
+            yield coring.Serder(raw=bytes(raw))
+
+
+    def rem(self, keys: Union[str, Iterable], val=None):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (coring.Serder):  instance of coring.Serder dup val at key to delete
+                              if val is None then remove all values at key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+
+        """
+        if val is not None:
+            val = val.raw
+        else:
+            val = b''
+        return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
+
+
+    def getItemIter(self):
+        """
+        Return iterator over the all the items in subdb. Each duplicate at a
+        given key is yielded as a separate item.
+
+        Returns:
+            iterator: of tuples of keys tuple and val coring.Serder instance for
+            each entry in db. Raises StopIteration when done
+
         """
         for key, raw in self.db.getAllItemIter(db=self.sdb, split=False):
             yield (self._tokeys(key), coring.Serder(raw=bytes(raw)))

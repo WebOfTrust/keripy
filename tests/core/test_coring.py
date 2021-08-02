@@ -29,7 +29,7 @@ from keri.core.coring import (Verfer, Cigar, Signer, Salter,
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64, nabSextets
 from keri.core.coring import Seqner, Siger, Dater
-from keri.core.coring import Serialage, Serials, KeriMimes, Vstrings
+from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import Serder, Tholder
 from keri.core.coring import Ilkage, Ilks
@@ -2651,10 +2651,6 @@ def test_serials():
     assert 'MGPK' in Serials
     assert 'CBOR' in Serials
 
-    assert KeriMimes.json == 'application/keri+json'
-    assert KeriMimes.mgpk == 'application/keri+msgpack'
-    assert KeriMimes.cbor == 'application/keri+cbor'
-
     assert Vstrings.json == 'KERI10JSON000000_'
     assert Vstrings.mgpk == 'KERI10MGPK000000_'
     assert Vstrings.cbor == 'KERI10CBOR000000_'
@@ -3091,6 +3087,10 @@ def test_serder():
     assert not srdr.compare(dig=Diger(ser=ser1).qb64)  # codes match
     assert not srdr.compare(diger=Diger(ser=ser1, code=MtrDex.SHA3_256)) # codes not match
     assert not srdr.compare(dig=Diger(ser=ser1, code=MtrDex.SHA2_256).qb64b)     # codes not match
+
+    # need tests will fully populated serder for icp rot dip drt
+    # test for serder.verfers and serder.werfers
+
     """Done Test """
 
 

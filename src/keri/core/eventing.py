@@ -1885,8 +1885,6 @@ class Kever:
         # sigers  now have .verfer assigned
 
         werfers = [Verfer(qb64=wit) for wit in wits]
-        #for wit in wits:  # create list of werfers one for each witness
-            #werfers.append(Verfer(qb64=wit))
 
         # get unique verified wigers and windices lists from wigers list
         wigers, windices = verifySigs(serder=serder, sigers=wigers, verfers=werfers)

@@ -95,6 +95,7 @@ def test_witness():
         assert camHab.ks == camKS
         assert camHab.db == camDB
         assert camHab.kever.prefixer.transferable
+        assert len(camHab.iserder.werfers) == len(wits)
         for werfer in camHab.iserder.werfers:
             assert werfer.qb64 in wits
         assert camHab.kever.wits == wits

@@ -43,22 +43,6 @@ Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
-Mimage = namedtuple("Mimage", "json mgpk cbor cser")
-
-Mimes = Mimage(json="application/json",
-               mgpk='application/msgpack',
-               cbor='application/cbor',
-               cser='application/cser')
-
-KeriMimes = Mimage(json='application/keri+json',
-                   mgpk='application/keri+msgpack',
-                   cbor='application/keri+cbor',
-                   cser='application/keri+cser')
-
-# Usage: to get Mime from serialization kind
-# getattr(Mimes, Serials.json.lower())
-# getattr(KeriMimes, Serials.json.lower())
-
 
 VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
@@ -3569,11 +3553,11 @@ class Serder:
     @property
     def werfers(self):
         """
-        Returns list of Verfer instances as converted from .ked['k'].
-        One for each witness.
+        Returns list of Verfer instances as converted from .ked['b'].
+        One for each backer (witness).
         werfers property getter
         """
-        if "w" in self.ked:  # inception establishment event
+        if "b" in self.ked:  # inception establishment event
             wits = self.ked["b"]
         else:  # non-establishment event
             wits =  []
