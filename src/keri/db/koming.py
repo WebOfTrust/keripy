@@ -11,6 +11,8 @@ from typing import Type, Union, Iterable
 import cbor2
 import msgpack
 
+import hio
+
 from . import dbing
 from .. import help
 from ..core import coring
@@ -20,7 +22,7 @@ logger = help.ogler.getLogger()
 
 
 
-class KomerBase:
+class KomerBase(hio.Mixin):
     """
     KomerBase is a base class for Komer (Keyspace Object Mapper) subclasses that
     each use a dataclass as the object mapped via serialization to an dber LMDB
@@ -36,7 +38,8 @@ class KomerBase:
                  schema: Type[dataclass],  # class not instance
                  kind: str = coring.Serials.json,
                  dupsort: bool = False,
-                 sep: str = None):
+                 sep: str = None,
+                 **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
@@ -49,6 +52,7 @@ class KomerBase:
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
         """
+        super(KomerBase, self).__init__(**kwa)  # Mixin for Multi-inheritance MRO
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
         self.schema = schema

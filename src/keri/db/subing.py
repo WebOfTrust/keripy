@@ -11,6 +11,8 @@ from typing import Type, Union, Iterable
 import cbor2
 import msgpack
 
+import hio
+
 from .. import kering
 from .. import help
 from ..help import helping
@@ -22,7 +24,7 @@ from . import dbing
 
 logger = help.ogler.getLogger()
 
-class SuberBase:
+class SuberBase(hio.Mixin):
     """
     Base class for Sub DBs of LMDBer
     Provides common methods for subclasses
@@ -33,7 +35,8 @@ class SuberBase:
     def __init__(self, db: Type[dbing.LMDBer], *,
                        subkey: str = 'docs.',
                        dupsort: bool = False,
-                       sep: str = None):
+                       sep: str = None,
+                       **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
@@ -44,6 +47,7 @@ class SuberBase:
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
         """
+        super(SuberBase, self).__init__(**kwa)  # Mixin for Multi-inheritance MRO
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
         self.sep = sep if sep is not None else self.Sep
