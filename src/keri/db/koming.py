@@ -11,8 +11,6 @@ from typing import Type, Union, Iterable
 import cbor2
 import msgpack
 
-import hio
-
 from . import dbing
 from .. import help
 from ..core import coring
@@ -22,7 +20,7 @@ logger = help.ogler.getLogger()
 
 
 
-class KomerBase(hio.Mixin):
+class KomerBase():
     """
     KomerBase is a base class for Komer (Keyspace Object Mapper) subclasses that
     each use a dataclass as the object mapped via serialization to an dber LMDB
