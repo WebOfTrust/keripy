@@ -3293,7 +3293,7 @@ class Serder:
         .dig  is qb64 digest from .diger
         .digb is qb64b digest from .diger
         .verfers is list of Verfers converted from .ked["k"]
-        .werfers is list of Verfers converted from .ked["w"]
+        .werfers is list of Verfers converted from .ked["b"]
         .sn is int sequence number converted from .ked["s"]
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
