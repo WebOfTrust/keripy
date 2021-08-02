@@ -29,10 +29,12 @@ from keri.core.coring import (Verfer, Cigar, Signer, Salter,
 from keri.core.coring import generateSigners,  generateSecrets
 from keri.core.coring import intToB64, intToB64b, b64ToInt, b64ToB2, b2ToB64, nabSextets
 from keri.core.coring import Seqner, Siger, Dater
-from keri.core.coring import Serialage, Serials, Mimes, Vstrings
+from keri.core.coring import Serialage, Serials, Vstrings
 from keri.core.coring import Versify, Deversify, Rever, VERFULLSIZE, MINSNIFFSIZE
 from keri.core.coring import Serder, Tholder
 from keri.core.coring import Ilkage, Ilks
+
+from keri.core import eventing
 
 
 def test_ilks():
@@ -2651,10 +2653,6 @@ def test_serials():
     assert 'MGPK' in Serials
     assert 'CBOR' in Serials
 
-    assert Mimes.json == 'application/keri+json'
-    assert Mimes.mgpk == 'application/keri+msgpack'
-    assert Mimes.cbor == 'application/keri+cbor'
-
     assert Vstrings.json == 'KERI10JSON000000_'
     assert Vstrings.mgpk == 'KERI10MGPK000000_'
     assert Vstrings.cbor == 'KERI10CBOR000000_'
@@ -3091,6 +3089,22 @@ def test_serder():
     assert not srdr.compare(dig=Diger(ser=ser1).qb64)  # codes match
     assert not srdr.compare(diger=Diger(ser=ser1, code=MtrDex.SHA3_256)) # codes not match
     assert not srdr.compare(dig=Diger(ser=ser1, code=MtrDex.SHA2_256).qb64b)     # codes not match
+
+    # need tests will fully populated serder for icp rot dip drt
+    pre0 = "BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+    wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
+    wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
+    srdr = eventing.incept(keys=[pre0], wits=[wit0, wit1])
+    assert srdr.raw == (b'{"v":"KERI10JSON00011e_","i":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",'
+                         b'"s":"0","t":"icp","kt":"1","k":["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                         b'c"],"n":"","bt":"2","b":["B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","Bed'
+                         b'2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I"],"c":[],"a":[]}')
+    # test for serder.verfers and serder.werfers
+    assert srdr.pre == pre0
+    assert srdr.sn == 0
+    assert [verfer.qb64 for verfer in srdr.verfers] == [pre0]
+    assert [werfer.qb64 for werfer in srdr.werfers] == [wit0, wit1]
+
     """Done Test """
 
 
@@ -3228,4 +3242,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_encrypter()
+    test_serder()

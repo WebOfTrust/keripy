@@ -9,6 +9,7 @@ import sys
 import os
 import json
 from collections import namedtuple
+from collections.abc import Mapping
 from typing import Union
 
 import falcon
@@ -23,34 +24,190 @@ from  ..core import coring
 
 logger = help.ogler.getLogger()
 
+Mimage = namedtuple("Mimage", "json mgpk cbor cesr")
+
+Mimes = Mimage(json="application/json",
+               mgpk='application/msgpack',
+               cbor='application/cbor',
+               cesr='application/cesr')
+
+KeriMimes = Mimage(json='application/keri+json',
+                   mgpk='application/keri+msgpack',
+                   cbor='application/keri+cbor',
+                   cesr='application/keri+cesr')
+
+# Usage: to get Mime from serialization kind
+# getattr(Mimes, coring.Serials.json.lower())
+# getattr(KeriMimes, coring.Serials.json.lower())
+
+
 Schemage = namedtuple("Schemage", 'tcp http https')
 Schemes = Schemage(tcp='tcp', http='http', https='https')
 
-Rolage = namedtuple("Rolage", 'witness watcher')
-Roles = Rolage(witness='witness', watcher='watcher')
+Rolage = namedtuple("Rolage", 'witness registrar watcher judge juror')
+Roles = Rolage(witness='witness', registrar='registrar', watcher='watcher',
+               judge='judge', juror='juror')
 
-def headerize(signatures):
+FALSY = (False, 0, "?0", "no", "false", "False", "off")
+TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
+
+Signage = namedtuple("Signage", "markers indexed signer kind", defaults=(None, None, None))
+
+
+def signature(signages):
     """
-    Creates  Signature HTTP header item from signatures list
+    Creates  Signature HTTP header item from signats list
+
+    RFC8941 structured Field Values for HTTP
 
     Returns:
-       item (tuple): header (label, value)
+        header (dict): {'Signature': 'value'} where value is RFC8941 compliant
+        (Structured Field Values for HTTP) formatted str of of Signage group.
+        Each signage group is separated by a comma. Each group is parameter list
+        of label=value items separated by ;
+        The signer and indexed are special parameters in each group.
+        This format is compatible with HTTP servers that merge multiple signature
+        headers into one header by iteratively appending the comma separated
+        value from each Signature header.
 
     Parameters:
-       signatures (list): instances of either coring.Siger or coring.Cigar
+        signages (list): items are Signage namedtuples,(markers, indexed, indexed)
+            where:
+                markers (Union[list, dict]): When dict each item (key, val) has
+                    key as str identifier of marker and has val as instance of
+                    either coring.Siger or coring.Cigar.
+                    When list each item is instance of either coring.Siger or
+                    coring.Cigar.
+                    All markers must be of same class
+                indexed (bool): True means marker values are indexed signatures
+                    using coring.Siger. False means marker values are unindexed
+                    signatures using coring.Cigar. None means auto detect from
+                    first marker value class. All markers must be of same class.
+                signer (str): optional identifier of signage. May be a
+                    multi-sig group identifier. Default is None. When None or
+                    empty signer is not included in header value
+
+
     """
-    label = "Signature"
-    values = []
-    for signature in signatures:
-        if hasattr(signature, "index"):  # Siger has index
-            tag = str(signature.index)
-        elif hasattr(signature, "verfer"):  # Cigar has verfer but not index
-            tag = signature.verfer.qb64
+    values = []  # list of parameter items value str for each signage
+    for signage in signages:
+        markers = signage.markers
+        indexed = signage.indexed
+        signer = signage.signer
+        kind = signage.kind
+
+        if isinstance(markers, Mapping):
+            tags = list(markers.keys())
+            markers = list(markers.values())
         else:
-            raise ValueError("Invalid signature instance = {}.".format(signature))
-        value = signature.qb64
-        values.append('{}="{}"'.format(tag, value))
-    return (label, ";".join(values))
+            tags = []
+
+        if indexed is None:
+            indexed = hasattr(markers[0], "index")
+
+        items = []
+        tag = 'indexed'
+        val = '?1' if indexed else '?0'  #  RFC8941 HTTP structured field values
+        items.append('{}="{}"'.format(tag, val))
+        if signer:
+            tag = "signer"
+            val = signer
+            items.append('{}="{}"'.format(tag, val))
+        if kind:
+            tag = "kind"
+            val = kind
+            items.append('{}="{}"'.format(tag, val))
+
+        for i, marker in enumerate(markers):
+            if tags:
+                tag = tags[i]
+            else:  # assign defaults names since not provided
+                if hasattr(marker, "index"):  # Siger has index
+                    if not indexed:
+                        raise ValueError("Indexed signature marker {} when "
+                                         "indexed False.".format(marker))
+                    tag = str(marker.index)
+                elif hasattr(marker, "verfer"):  # Cigar has verfer but not index
+                    if indexed:
+                        raise ValueError("Unindexed signature marker {} when "
+                                         "indexed True.".format(marker))
+                    tag = marker.verfer.qb64
+                else:
+                    raise ValueError("Invalid signature marker instance = {}."
+                                     "".format(marker))
+
+            val = marker.qb64
+            items.append('{}="{}"'.format(tag, val))
+
+        values.append(";".join(items))
+
+    return dict(Signature=",".join(values))  # join all signage value strs
+
+
+def designature(value):
+    """
+    Parse signature header str value where value is RFC8941 compliant
+        (Structured Field Values for HTTP) formatted str of of Signage group.
+        Each signage group is separated by a comma. Each group is parameter list
+        of label=value items separated by ;
+        The signer and indexed are special parameters in each group.
+        This format is compatible with HTTP servers that merge multiple signature
+        headers into one header by iteratively appending the comma separated
+        value from each Signature header.
+
+    RFC8941 structured Field Values for HTTP
+
+    Returns:
+       signages (list): items are Signage namedtuples,(markers, signer, indexed)
+            where:
+                markers (dict): each item (key, val) has key as str identifier
+                    of marker and has val as instance of either coring.Siger or
+                    coring.Cigar. All markers must be of same class
+                signer (str): optional identifier of signage. May be a multi-sig
+                    group identifier
+                indexed (bool): True means marker values are indexed signatures
+                    using coring.Siger. False means marker values are unindexed
+                    signatures using coring.Cigar.
+
+
+       signatures (list): Siger or Cigar instances
+    """
+    signages = []
+    values = value.replace(" ", "").split(",")  # removes all spaces
+    for value in values:
+        items = {}
+        for item in value.split(";"):
+            key, val = item.split("=", maxsplit=1)
+            items[key] = val.strip('"')
+
+        if "indexed" not in  items:
+            raise ValueError("Missing indexed field in Signature header signage.")
+        indexed = items["indexed"] not in FALSY  # make bool
+        del items["indexed"]
+
+        if "signer" in items:
+            signer = items["signer"]
+            del items["signer"]
+        else:
+            signer = None
+
+        if "kind" in items:
+            kind = items["kind"]
+            del items["kind"]
+        else:
+            kind = "CESR"  # default is empty or missing
+
+        if kind == "CESR":  # convert to Siger or Cigar instances
+            for key, val in items.items():
+                if indexed:
+                    items[key] = coring.Siger(qb64=val)
+                else:
+                    items[key] = coring.Cigar(qb64=val)
+
+        signages.append(Signage(markers=items, indexed=indexed, signer=signer, ))
+
+    return signages
+
 
 # Falcon reource endpoints
 

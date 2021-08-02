@@ -20,7 +20,7 @@ logger = help.ogler.getLogger()
 
 
 
-class KomerBase:
+class KomerBase():
     """
     KomerBase is a base class for Komer (Keyspace Object Mapper) subclasses that
     each use a dataclass as the object mapped via serialization to an dber LMDB
@@ -36,12 +36,13 @@ class KomerBase:
                  schema: Type[dataclass],  # class not instance
                  kind: str = coring.Serials.json,
                  dupsort: bool = False,
-                 sep: str = None):
+                 sep: str = None,
+                 **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subdb (str):  LMDB sub database key
+            subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -49,6 +50,7 @@ class KomerBase:
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
         """
+        super(KomerBase, self).__init__(**kwa)  # Mixin for Multi-inheritance MRO
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
         self.schema = schema
@@ -77,9 +79,8 @@ class KomerBase:
 
     def _tokeys(self, key: Union[str, bytes]):
         """
-        Converts key str to keys tuple by splitting at separator and returns key bytes.
-        If key is already str then returns. Else If key is iterable (non-str)
-        of strs then joins with separator converts to bytes and returns
+        Converts key bytes to keys tuple of strs by decoding and then splitting
+        at separator.
 
         Returns:
            keys (iterable): of str
@@ -88,7 +89,7 @@ class KomerBase:
            key (Union[str, bytes]): str or bytes.
 
         """
-        return tuple(key.decode("utf-8").split(self.Sep))
+        return tuple(key.decode("utf-8").split(self.sep))
 
 
     def _serializer(self, kind):
@@ -188,7 +189,7 @@ class Komer(KomerBase):
         Parameters:
             db (dbing.LMDBer): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subdb (str):  LMDB sub database key
+            subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
         super(Komer, self).__init__(db=db, subkey=subkey, schema=schema,
@@ -296,7 +297,7 @@ class DupKomer(KomerBase):
         Parameters:
             db (dbing.LMDBer): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
-            subdb (str):  LMDB sub database key
+            subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
         super(DupKomer, self).__init__(db=db, subkey=subkey, schema=schema,

@@ -514,7 +514,7 @@ class Baser(dbing.LMDBer):
                         copy.prefixes.add(val.prefix)
 
                 if not copy.habs.get(keys=(self.name, )):
-                    raise ValueError("Error cloning, missing orig name={} subdb."
+                    raise ValueError("Error cloning habs, missing orig name={}."
                                      "".format(self.name))
 
                 # clone .ends and .locs databases

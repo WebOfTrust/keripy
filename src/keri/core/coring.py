@@ -43,9 +43,6 @@ Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
 Serials = Serialage(json='JSON', mgpk='MGPK', cbor='CBOR')
 
-Mimes = Serialage(json='application/keri+json',
-                  mgpk='application/keri+msgpack',
-                  cbor='application/keri+cbor',)
 
 VERRAWSIZE = 6  # hex characters in raw serialization size in version string
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
@@ -236,6 +233,16 @@ def sniff(raw):
 
 
 def dumps(ked, kind=Serials.json):
+    """
+    utility function to handle serialization by kind
+
+    Returns:
+       raw (bytes): serialized version of ked dict
+
+    Parameters:
+       ked (dict): key event dict or message dict to serialize
+       kind (str): serialization kind (JSON, MGPK, CBOR)
+    """
     if kind == Serials.json:
         raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
@@ -248,6 +255,46 @@ def dumps(ked, kind=Serials.json):
         raise ValueError("Invalid serialization kind = {}".format(kind))
 
     return raw
+
+
+def loads(raw, size, kind=Serials.json):
+    """
+    utility function to handle deserialization by kind
+
+    Returns:
+       ked (dict): deserialized
+
+    Parameters:
+       raw (Union[bytes,bytearray]): raw serialization to deserialze as dict
+       size (int): number of bytes to consume for the deserialization
+       kind (str): serialization kind (JSON, MGPK, CBOR)
+    """
+    if kind == Serials.json:
+        try:
+            ked = json.loads(raw[:size].decode("utf-8"))
+        except Exception as ex:
+            raise DeserializationError("Error deserializing JSON: {}"
+                    "".format(raw[:size].decode("utf-8")))
+
+    elif kind == Serials.mgpk:
+        try:
+            ked = msgpack.loads(raw[:size])
+        except Exception as ex:
+            raise DeserializationError("Error deserializing MGPK: {}"
+                    "".format(raw[:size]))
+
+    elif kind ==  Serials.cbor:
+        try:
+            ked = cbor.loads(raw[:size])
+        except Exception as ex:
+            raise DeserializationError("Error deserializing CBOR: {}"
+                    "".format(raw[:size]))
+
+    else:
+        raise DeserializationError("Invalid deserialization kind: {}"
+                    "".format(kind))
+
+    return ked
 
 
 def generateSigners(salt=None, count=8, transferable=True):
@@ -1157,6 +1204,7 @@ class Verfer(Matter):
         """
         return (self._verify(sig=sig, ser=ser, key=self.raw))
 
+
     @staticmethod
     def _ed25519(sig, ser, key):
         """
@@ -1225,7 +1273,6 @@ class Cigar(Matter):
 
         """
         super(Cigar, self).__init__(**kwa)
-
         self._verfer = verfer
 
 
@@ -1237,6 +1284,7 @@ class Cigar(Matter):
         Assumes ._verfer is correctly assigned
         """
         return self._verfer
+
 
     @verfer.setter
     def verfer(self, verfer):
@@ -1295,6 +1343,7 @@ class Signer(Matter):
 
         self._verfer = verfer
 
+
     @property
     def verfer(self):
         """
@@ -1303,6 +1352,7 @@ class Signer(Matter):
         Assumes ._verfer is correctly assigned
         """
         return self._verfer
+
 
     def sign(self, ser, index=None):
         """
@@ -1322,6 +1372,7 @@ class Signer(Matter):
                            seed=self.raw,
                            verfer=self.verfer,
                            index=index))
+
 
     @staticmethod
     def _ed25519(ser, seed, verfer, index):
@@ -3242,7 +3293,7 @@ class Serder:
         .dig  is qb64 digest from .diger
         .digb is qb64b digest from .diger
         .verfers is list of Verfers converted from .ked["k"]
-        .werfers is list of Verfers converted from .ked["w"]
+        .werfers is list of Verfers converted from .ked["b"]
         .sn is int sequence number converted from .ked["s"]
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
@@ -3308,29 +3359,7 @@ class Serder:
         if len(raw) < size:
             raise ShortageError("Need more bytes.")
 
-        if kind == Serials.json:
-            try:
-                ked = json.loads(raw[:size].decode("utf-8"))
-            except Exception as ex:
-                raise DeserializationError("Error deserializing JSON: {}"
-                        "".format(raw[:size].decode("utf-8")))
-
-        elif kind == Serials.mgpk:
-            try:
-                ked = msgpack.loads(raw[:size])
-            except Exception as ex:
-                raise DeserializationError("Error deserializing MGPK: {}"
-                        "".format(raw[:size]))
-
-        elif kind ==  Serials.cbor:
-            try:
-                ked = cbor.loads(raw[:size])
-            except Exception as ex:
-                raise DeserializationError("Error deserializing CBOR: {}"
-                        "".format(raw[:size]))
-
-        else:
-            ked = None
+        ked = loads(raw=raw, size=size, kind=kind)
 
         return (ked, kind, version, size)
 
@@ -3524,11 +3553,11 @@ class Serder:
     @property
     def werfers(self):
         """
-        Returns list of Verfer instances as converted from .ked['k'].
-        One for each witness.
+        Returns list of Verfer instances as converted from .ked['b'].
+        One for each backer (witness).
         werfers property getter
         """
-        if "w" in self.ked:  # inception establishment event
+        if "b" in self.ked:  # inception establishment event
             wits = self.ked["b"]
         else:  # non-establishment event
             wits =  []
