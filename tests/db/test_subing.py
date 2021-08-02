@@ -70,7 +70,7 @@ def test_suber():
         assert actual is None
 
 
-        liz =  "May live is insane."
+        liz =  "May life is insane."
         keys = ("test_key", "0002")
 
         sdb.put(keys=keys, val=liz)
