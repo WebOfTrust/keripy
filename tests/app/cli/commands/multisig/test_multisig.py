@@ -72,7 +72,7 @@ def test_incept():
         #assert hab3.db.path == '/usr/local/var/keri/db/multisig3'
 
         tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
-        doist.done == False
+
         while not tymer.expired:
             doist.recur()
             time.sleep(doist.tock)

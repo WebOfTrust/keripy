@@ -14,7 +14,7 @@ import blake3
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing, keeping, directing, agenting
+from keri.app import habbing, keeping, directing, agenting, indirecting
 from keri.core import coring, eventing
 from keri.db import basing
 from keri.kering import ConfigurationError
@@ -40,6 +40,7 @@ class MultiSigInceptOptions:
     isith: int
     ncount: int
     nsith: int
+    sigs: list
 
 
 def handler(args):
@@ -79,7 +80,7 @@ class MultiSigInceptDoer(doing.DoDoer):
 
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
-        # doers = [self.inceptDo, self.ksDoer, self.dbDoer, self.habDoer, self.witq]
+        # doers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, self.inceptDo]
         doers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, doing.doify(self.inceptDo)]
         self.hab = hab
         super(MultiSigInceptDoer, self).__init__(doers=doers, **kwa)
@@ -130,20 +131,41 @@ class MultiSigInceptDoer(doing.DoDoer):
                                                    digs=[diger.qb64 for diger in msdigers]).qb64,
                                  code=coring.MtrDex.Blake3_256)
 
-        sigers = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
+        sigers = []
+        sigers.extend([coring.Siger(qb64=sig) for sig in self.iopts.sigs])
+
+        mine = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
+        sigers.extend(mine)
 
         msg = eventing.messagize(mssrdr, sigers=sigers)
         self.hab.prefixes.add(mssrdr.pre)  # make this prefix one of my own
         self.hab.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
 
-        witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
-        self.extend([witRctDoer])
+        if self.iopts.sigs:
 
-        while not witRctDoer.done:
-            _ = yield self.tock
+            mbx = indirecting.MailboxDirector(hab=self.hab)
+            witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
+            self.extend([mbx, witRctDoer])
 
-        toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, witRctDoer]
-        self.remove(toRemove)
+            while not witRctDoer.done:
+                _ = yield self.tock
+
+            toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, witRctDoer, mbx]
+            self.remove(toRemove)
+
+            print(f'Prefix  {mssrdr.pre}')
+            for idx, verfer in enumerate(mskeys):
+                print(f'\tPublic key {idx+1}:  {verfer.qb64}')
+            print()
+
+        else:
+
+            print(mssrdr.pretty())
+            for siger in sigers:
+                print(siger.qb64)
+
+            toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witq]
+            self.remove(toRemove)
 
         return
 

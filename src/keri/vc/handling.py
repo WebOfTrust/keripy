@@ -240,7 +240,6 @@ class IssueHandler(doing.Doer):
                 msg = self.msgs.popleft()
                 payload = msg["payload"]
                 envelopes = payload["vc"]
-
                 for envlop in envelopes:
                     crd = envlop["vc"]
                     proof = envlop["proof"]
@@ -316,6 +315,7 @@ class RequestHandler(doing.Doer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 payload = msg["payload"]
+                requestor = msg["pre"]
                 descriptors = payload["input_descriptors"]
 
                 matches = []
@@ -324,12 +324,13 @@ class RequestHandler(doing.Doer):
                     credentials = self.wallet.getCredentials(said)
                     if len(credentials) > 0:
                         vc = credentials[0][0].pretty()
-                        logger.info("Presenting Credential for schema %s:\n VC=%s", said, vc)
+                        # logger.info("Presenting Credential for schema %s:\n VC=%s", said, vc)
                         matches.append(credentials[0])
 
                 if len(matches) > 0:
                     pe = presentation_exchange(matches)
-                    self.cues.append(exchanging.exchange(route="/presentation/proof", payload=pe))
+                    self.cues.append(exchanging.exchange(route="/presentation/proof", payload=pe,
+                                                         recipient=requestor.qb64))
 
                 yield
 

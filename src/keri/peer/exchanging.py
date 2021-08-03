@@ -65,6 +65,7 @@ class Exchanger(doing.DoDoer):
             sigers (list) of Siger instances of attached controller indexed sigs
 
         """
+
         route = serder.ked["r"]
         payload = serder.ked["d"]
         dts = serder.ked["dt"]
@@ -184,7 +185,7 @@ class StoreExchanger:
     def __init__(self, hab, mbx=None, exc=None):
         self.hab = hab
         self.kevers = self.hab.kevers
-        self.db = mbx if mbx is not None else Mailboxer()
+        self.db = mbx if mbx is not None else Mailboxer(name=hab.name)
         self.exc = exc if exc is not None else Exchanger(hab=hab, handlers=[])
 
 
@@ -270,7 +271,7 @@ class Mailboxer(dbing.LMDBer):
     AltTailDirPath = ".keri/mbx"
     TempPrefix = "keri_mbx_"
 
-    def __init__(self, headDirPath=None, reopen=True, **kwa):
+    def __init__(self, name="mbx", headDirPath=None, reopen=True, **kwa):
         """
 
         Parameters:
@@ -282,7 +283,7 @@ class Mailboxer(dbing.LMDBer):
         self.fels = None
         self.msgs = None
 
-        super(Mailboxer, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
+        super(Mailboxer, self).__init__(name=name, headDirPath=headDirPath, reopen=reopen, **kwa)
 
     def reopen(self, **kwa):
         """

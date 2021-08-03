@@ -34,8 +34,8 @@ def handler(args):
             print("Prefix:\t{}".format(hab.pre))
             print("Seq No:\t{}".format(kev.sn))
             print("\nWitnesses:")
-            print("Count:\t\t{}".format(len(wigs)))
-            print("Receipts:\t{}".format(len(kev.wits)))
+            print("Count:\t\t{}".format(len(kev.wits)))
+            print("Receipts:\t{}".format(len(wigs)))
             print("Threshold:\t{}".format(kev.toad))
             print("\nPublic Keys:\t")
             for idx, verfer in enumerate(kev.verfers):
