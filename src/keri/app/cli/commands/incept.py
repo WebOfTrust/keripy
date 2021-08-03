@@ -23,6 +23,8 @@ parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
+parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
+                                          'http)', default="http")
 
 
 @dataclass
@@ -51,7 +53,7 @@ def handler(args):
 
     name = args.name
 
-    icpDoer = InceptDoer(name=name, opts=opts)
+    icpDoer = InceptDoer(name=name, proto=args.proto, opts=opts)
 
     doers = [icpDoer]
     directing.runController(doers=doers, expire=0.0)
@@ -60,7 +62,7 @@ def handler(args):
 
 class InceptDoer(doing.DoDoer):
 
-    def __init__(self, name, opts, **kwa):
+    def __init__(self, name, proto, opts, **kwa):
 
         ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
@@ -72,10 +74,18 @@ class InceptDoer(doing.DoDoer):
                               isith=opts.isith, icount=opts.icount, nsith=opts.nsith, ncount=opts.ncount,
                               wits=opts.witnesses, salt=salt)
         self.habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
-        self.witDoer = agenting.WitnessReceiptor(hab=hab)
-        self.mbx = indirecting.MailboxDirector(hab=hab)
+        doers = [self.inceptDo, self.ksDoer, self.dbDoer, self.habDoer]
 
-        doers = [self.inceptDo, self.ksDoer, self.dbDoer, self.habDoer, self.witDoer, self.mbx]
+        if proto == "tcp":
+            self.mbx = None
+            self.witDoer = agenting.WitnessReceiptor(hab=hab, klas=agenting.TCPWitnesser)
+            doers.extend([self.witDoer])
+        else:  # "http"
+            self.mbx = indirecting.MailboxDirector(hab=hab)
+            self.witDoer = agenting.WitnessReceiptor(hab=hab, klas=agenting.TCPWitnesser)
+            doers.extend([self.mbx, self.witDoer])
+
+
         self.hab = hab
         super(InceptDoer, self).__init__(doers=doers, **kwa)
 
@@ -91,12 +101,15 @@ class InceptDoer(doing.DoDoer):
             _ = yield self.tock
 
 
-        print(f'Prefix\t\t{self.hab.pre}')
+        print(f'Prefix  {self.hab.pre}')
         for idx, verfer in enumerate(self.hab.kever.verfers):
-            print(f'Public key {idx+1}:\t{verfer.qb64}')
+            print(f'\tPublic key {idx+1}:  {verfer.qb64}')
         print()
 
-        toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witDoer, self.mbx]
+        toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witDoer]
+        if self.mbx:
+            toRemove.append(self.mbx)
+
         self.remove(toRemove)
 
         return

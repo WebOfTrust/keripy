@@ -19,7 +19,6 @@ from keri.demo import demoing
 from keri import help  # logger support
 
 
-
 def test_direct_mode_bob_eve_demo():
     """
     Test direct mode bob and eve

@@ -116,10 +116,11 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
 
 def adminInterface(controller, hab, adminHttpPort=5623, adminTcpPort=5624):
 
+    echoHandler = agenting.EchoHandler()
     rotateHandler = agenting.RotateHandler(hab=hab)
     issueHandler = agenting.IssueCredentialHandler(hab=hab)
     requestHandler = agenting.PresentationRequestHandler(hab=hab)
-    handlers = [rotateHandler, issueHandler, requestHandler]
+    handlers = [rotateHandler, issueHandler, requestHandler, echoHandler]
 
     exchanger = exchanging.Exchanger(hab=hab, controller=controller, handlers=handlers)
 
@@ -128,12 +129,15 @@ def adminInterface(controller, hab, adminHttpPort=5623, adminTcpPort=5624):
     directant = directing.Directant(hab=hab, server=server)
 
     app = falcon.App()
-    exnServer = httping.AgentExnServer(exc=exchanger, app=app)
-    httpKelServer = httping.AgentKelServer(hab=hab, app=app)
+
+    mbx = exchanging.Mailboxer()
+    rep = httping.Respondant(hab=hab, mbx=mbx)
+    exnServer = httping.AgentExnServer(exc=exchanger, app=app, rep=rep)
+    mbxer = httping.MailboxServer(app=app, hab=hab, mbx=mbx)
 
     server = http.Server(port=adminHttpPort, app=exnServer.app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [exnServer, exchanger, tcpServerDoer, directant, httpKelServer, httpServerDoer]
+    doers = [exchanger, exnServer, tcpServerDoer, directant, httpServerDoer, rep, mbxer]
 
     return doers

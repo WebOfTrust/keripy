@@ -4,15 +4,17 @@ keri.peer.httping module
 
 """
 import json
+import random
 from dataclasses import dataclass
 
 import falcon
 from hio.base import doing
 from hio.core import http
-from hio.help import helping, Hict
+from hio.help import helping, Hict, decking
 
 from .. import help
 from .. import kering
+from ..app import obtaining
 from ..core import parsing, coring
 from ..core.coring import Ilks
 from ..help.helping import nowIso8601
@@ -36,17 +38,19 @@ class AgentExnServer(doing.DoDoer):
 
     RoutePrefix = "/exn"
 
-    def __init__(self, exc, app, **kwa):
+    def __init__(self, exc, app, rep, **kwa):
         """
         Registers all behaviors in provided Exchanged as routes to be handled in the provided Falcon app.
         POST requests are extracted and mapped to `exn` messages that are passed to the provided Exchanger.
 
         Parameters:
             exc (Exchanger): an the instance of Exchanger configured to handle behaviors
+            rep (Respondant):  Handles response messages from exchange behaviors
             app (falcon.App):  app to use for route registration
 
         """
         self.exc = exc
+        self.rep = rep
         self.rxbs = bytearray()
 
         self.app = app if app is not None else falcon.App()
@@ -111,9 +115,8 @@ class AgentExnServer(doing.DoDoer):
             add to doers list
         """
         while True:
-            for msg in self.exc.processResponseIter():
-                # TODO: figure out how to handle responses.
-                print(msg)
+            for rep in self.exc.processResponseIter():
+                self.rep.msgs.append(rep)
                 yield  # throttle just do one cue at a time
             yield
 
@@ -303,7 +306,6 @@ class MailboxServer(doing.DoDoer):
 
         pre = coring.Prefixer(qb64=q["i"])
         idx = int(q["s"]) if "s" in q else 0
-        cur = -1
 
         me._status = http.httping.CREATED
 
@@ -314,12 +316,84 @@ class MailboxServer(doing.DoDoer):
         me._headers = headers
 
         while True:
-            if cur < idx:
-                for msg in self.mbx.clonePreIter(pre.qb64b, idx):
-                    cur += 1
-                    data = bytearray("event: msg\ndata:".format(cur).encode("utf-8"))
-                    data.extend(msg.encode("utf-8"))
-                    data.extend(b'\n\n')
-                    yield data
+            for fn, msg in self.mbx.clonePreIter(pre.qb64b, idx):
+                data = bytearray("id: {}\ndata:".format(fn).encode("utf-8"))
+                data.extend(msg.encode("utf-8"))
+                data.extend(b'\n\n')
+                idx += 1
+                yield data
 
             yield b''
+
+
+class Respondant(doing.DoDoer):
+    """
+    Respondant processes buffer of response messages from inbound 'exn' messages and
+    routes them to the appropriate mailbox.  If destination has witnesses, send response to
+    one of the (randomly selected) witnesses.  Otherwise store the response in the recipients
+    mailbox locally.
+
+    """
+
+    def __init__(self, hab, msgs=None, mbx=None, **kwa):
+        """
+        Creates Respondant that uses local environment to find the destination KEL and stores
+        peer to peer messages in mbx, the mailboxer
+
+        Parameters:
+            hab (Habitat):  local environment
+            mbx (Mailboxer): storage for local messages
+
+        """
+        self.msgs = msgs if msgs is not None else decking.Deck()
+
+        self.hab = hab
+        self.mbx = mbx if mbx is not None else exchanging.Mailboxer()
+
+        doers = [self.responseDo]
+        super(Respondant, self).__init__(doers=doers, **kwa)
+
+
+    @doing.doize()
+    def responseDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Doist compatibile generator method to process response messages from `exn` handlers.
+        If dest is not in local environment, ignore the response (for now).  If dest has witnesses,
+        pick one at random and send the response to that witness for storage in the recipients mailbox
+        on that witness.  Otherwise this is a peer to peer HTTP message and should be stored in a mailbox
+        locally for the recipient.
+
+
+        """
+        while True:
+            while self.msgs:
+                rep = self.msgs.popleft()
+                dest = rep["dest"]
+                msg = rep["msg"]
+
+                print("we are processing an response", msg)
+
+                kever = self.hab.kevers[dest]
+                if kever is None:
+                    logger.Error("unable to reply, dest {} not found".format(dest))
+                    continue
+
+                if len(kever.wits) == 0:
+                    self.mbx.storeMsg(dest=dest, msg=msg)
+                else:
+                    wit = random.choice(kever.wits)
+                    loc = obtaining.getwitnessbyprefix(wit)
+
+                    client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+                    clientDoer = http.clienting.ClientDoer(client=client)
+
+                    self.extend([clientDoer])
+
+                    createCESRRequest(msg, client)
+                    while client.requests:
+                        yield self.tock
+
+                    self.remove([clientDoer])
+
+                yield  # throttle just do one cue at a time
+            yield

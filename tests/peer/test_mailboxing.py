@@ -97,7 +97,7 @@ def test_mailboxing():
 
         assert(len(msgs)) == 10
 
-        for idx, msg in enumerate(msgs):
+        for idx, msg in msgs:
             exn = coring.Serder(msg.encode("utf-8"))
             d = exn.ked["d"]
             assert d["b"] == idx
@@ -170,7 +170,7 @@ def test_store_exchanger():
 
         assert(len(msgs)) == 10
 
-        for idx, msg in enumerate(msgs):
+        for idx, msg in msgs:
             exn = coring.Serder(raw=msg.encode("utf-8"))
             d = exn.ked["d"]
             assert d["b"] == idx

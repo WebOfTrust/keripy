@@ -121,7 +121,7 @@ class Exchanger(doing.DoDoer):
             while behavior.cues:
                 excSrdr = behavior.cues.popleft()
                 msg = self.hab.sanction(excSrdr)
-                responses.append(msg)
+                responses.append(dict(dest=excSrdr.ked["i"], msg=msg))
 
         while responses:  # iteratively process each response in responses
             msg = responses.pop(0)
@@ -387,5 +387,5 @@ class Mailboxer(dbing.LMDBer):
 
         for fn, dig in self._getFelItemPreIter(pre, fn=fn):
             if msg := self.msgs.get(keys=dig):
-                yield msg
+                yield fn, msg
 
