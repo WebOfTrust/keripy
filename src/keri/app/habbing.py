@@ -7,6 +7,7 @@ keri.app.habbing module
 import os
 import shutil
 import json
+from contextlib import contextmanager
 from dataclasses import dataclass, asdict
 from typing import Type
 
@@ -29,6 +30,30 @@ from . import apping
 from ..kering import UnverifiedProofError, ValidationError
 
 logger = help.ogler.getLogger()
+
+
+@contextmanager
+def openHab(name="test", salt=b'0123456789abcdef', temp=True, **kwa):
+    """
+    Context manager wrapper for Habitat instance.
+    Defaults to temporary database and keeper.
+    Context 'with' statements call .close on exit of 'with' block
+
+    Parameters:
+        name(str): name of habitat to create
+        salt(bytes): passed to habitat to use for inception
+        temp(bool): indicates if this uses temporary databases
+
+    """
+
+    with basing.openDB(name=name, temp=temp) as db, \
+            keeping.openKS(name=name, temp=temp) as ks:
+
+        salt = coring.Salter(raw=salt).qb64
+        hab = Habitat(name=name, ks=ks, db=db, temp=temp, salt=salt,
+                      icount=1, isith=1, ncount=1, nsith=1, **kwa)
+
+        yield hab
 
 
 class Habitat:

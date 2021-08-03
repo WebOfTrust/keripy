@@ -8,7 +8,7 @@ import argparse
 from hio import help
 
 from keri.app import habbing, keeping
-from keri.db import basing
+from keri.db import basing, dbing
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
@@ -26,9 +26,25 @@ def handler(args):
             keeping.openKS(name=name, temp=False) as ks:
         try:
             hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
-            print(f'Prefix\t\t{hab.pre}')
-            for idx, verfer in enumerate(hab.kever.verfers):
-                print(f'Public key {idx+1}:\t{verfer.qb64}')
+            kev = hab.kever
+            ser = kev.serder
+            dgkey = dbing.dgKey(ser.preb, ser.digb)
+            wigs = hab.db.getWigs(dgkey)
+
+            print("Prefix:\t{}".format(hab.pre))
+            print("Seq No:\t{}".format(kev.sn))
+            print("\nWitnesses:")
+            print("Count:\t\t{}".format(len(wigs)))
+            print("Receipts:\t{}".format(len(kev.wits)))
+            print("Threshold:\t{}".format(kev.toad))
+            print("\nPublic Keys:\t")
+            for idx, verfer in enumerate(kev.verfers):
+                print(f'\t{idx+1}. {verfer.qb64}')
+            print()
+            for pre in hab.prefixes:
+                if pre == hab.pre:
+                    continue
+                print(f"Additional Prefix:\t\t{pre}")
             print()
         except ConfigurationError:
             print(f"prefix for {name} does not exist, incept must be run first", )

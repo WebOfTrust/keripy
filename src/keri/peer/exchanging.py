@@ -54,7 +54,6 @@ class Exchanger(doing.DoDoer):
 
         super(Exchanger, self).__init__(doers=doers, **kwa)
 
-
     def processEvent(self, serder, source, sigers):
         """
         Process one serder event with attached indexed signatures representing
@@ -85,13 +84,11 @@ class Exchanger(doing.DoDoer):
             raise ValidationError("message received outside time window with delta {} message={}"
                                   "".format(delta, serder.pretty()))
 
-
         sever = self.kevers[source.qb64]
 
         if self.controller is not None and self.controller != source.qb64:
             raise AuthZError("Message {} is from invalid source {}"
                              "".format(payload, source.qb64))
-
 
         #  Verify provided sigers using verfers
         sigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=sever.verfers)
@@ -124,13 +121,11 @@ class Exchanger(doing.DoDoer):
             while behavior.cues:
                 excSrdr = behavior.cues.popleft()
                 msg = self.hab.sanction(excSrdr)
-                responses.append(msg)
-
+                responses.append(dict(dest=excSrdr.ked["i"], msg=msg))
 
         while responses:  # iteratively process each response in responses
             msg = responses.pop(0)
             yield msg
-
 
     def escrowPSEvent(self, serder, sigers):
         """
@@ -196,7 +191,6 @@ class StoreExchanger:
     @property
     def routes(self):
         return self.exc.routes
-
 
     def processEvent(self, serder, source, sigers):
         """
@@ -290,8 +284,6 @@ class Mailboxer(dbing.LMDBer):
 
         super(Mailboxer, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
 
-
-
     def reopen(self, **kwa):
         """
 
@@ -305,7 +297,6 @@ class Mailboxer(dbing.LMDBer):
 
         return self.env
 
-
     def delFe(self, key):
         """
         Use snKey()
@@ -313,7 +304,6 @@ class Mailboxer(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.fels, key)
-
 
     def appendFe(self, pre, val):
         """
@@ -329,7 +319,6 @@ class Mailboxer(dbing.LMDBer):
             val is event digest
         """
         return self.appendOrdValPre(db=self.fels, pre=pre, val=val)
-
 
     def _getFelItemPreIter(self, pre, fn=0):
         """
@@ -347,7 +336,6 @@ class Mailboxer(dbing.LMDBer):
             fn is int fn to resume replay. Earliset is fn=0
         """
         return self.getAllOrdItemPreIter(db=self.fels, pre=pre, on=fn)
-
 
     def getFelItemAllPreIter(self, key=b''):
         """
@@ -399,5 +387,5 @@ class Mailboxer(dbing.LMDBer):
 
         for fn, dig in self._getFelItemPreIter(pre, fn=fn):
             if msg := self.msgs.get(keys=dig):
-                yield msg
+                yield fn, msg
 

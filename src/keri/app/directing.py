@@ -296,8 +296,8 @@ class Reactor(doing.DoDoer):
         """
         yield  # enter context
         while True:
-            for msg in self.exc.processResponseIter():
-                self.sendMessage(msg, label="response")
+            for rep in self.exc.processResponseIter():
+                self.sendMessage(rep["msg"], label="response")
                 yield  # throttle just do one cue at a time
             yield
         return False  # should never get here except forced close
@@ -471,7 +471,6 @@ class Directant(doing.DoDoer):
                     self.closeConnection(ca)  # also removes rant
 
             yield
-        return False  # should never get here
 
     def closeConnection(self, ca):
         """
@@ -582,7 +581,6 @@ class Reactant(doing.DoDoer):
 
         if self.exchanger is not None:
             doers.extend([self.exchangerDo])
-
 
         self.parser = parsing.Parser(ims=self.remoter.rxbs,
                                      framed=True,
@@ -711,8 +709,8 @@ class Reactant(doing.DoDoer):
         """
         yield  # enter context
         while True:
-            for msg in self.exchanger.processResponseIter():
-                self.sendMessage(msg, label="response")
+            for rep in self.exchanger.processResponseIter():
+                self.sendMessage(rep["msg"], label="response")
                 yield  # throttle just do one cue at a time
             yield
         return False  # should never get here except forced close

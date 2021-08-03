@@ -21,7 +21,8 @@ class Verifier:
     Verifier class accepts and validates TEL events.
 
     """
-    def __init__(self, hab, name="test", reger=None, tevers=None):
+
+    def __init__(self, hab, name="test", reger=None, tevers=None, **kwa):
         """
         Initialize Verifier instance
 
@@ -35,11 +36,21 @@ class Verifier:
         self.reger = reger if reger is not None else Registry(name=name)
         self.tevers = tevers if tevers is not None else dict()
 
+        self.inited = False
 
+        # save init kwy word arg parameters as ._inits in order to later finish
+        # init setup elseqhere after databases are opened if not below
+        self._inits = kwa
+
+        if self.hab.inited:
+            self.setup()
+
+    def setup(self):
         self.tvy = eventing.Tevery(tevers=self.tevers, reger=self.reger, db=self.hab.db,
                                    regk=None, local=False)
         self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
+        self.inited = True
 
     def verify(self, pre, sidx, regk, vcid, vcdata, vcsig):
         """
@@ -75,11 +86,7 @@ class Verifier:
 
         cigar = Cigar(qb64=vcsig)
 
-        if verfer.verify(sig=cigar.raw, ser=vcdata) is True:
-            return True
-
-        return False
-
+        return verfer.verify(sig=cigar.raw, ser=vcdata)
 
     def query(self, regk, vcid, res, dt=None, dta=None, dtb=None):
         """
@@ -102,7 +109,6 @@ class Verifier:
 
         return msg
 
-
     @staticmethod
     def processCuesIter(cues):
         """
@@ -116,7 +122,6 @@ class Verifier:
             cue = cues.popleft()
             cueKin = cue["kin"]  # type or kind of cue
 
-            if cueKin in ("replay", ):
+            if cueKin in ("replay",):
                 msgs = cue["msgs"]
                 yield msgs
-

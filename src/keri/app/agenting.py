@@ -4,15 +4,19 @@ KERI
 keri.app.agenting module
 
 """
+import random
+
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
+from keri import kering
 from hio.help import decking
 
 from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, scheming, coring
 from ..db import dbing
+from ..help import helping
 from ..peer import exchanging, httping
 from ..vc import proving, handling
 from ..vdr import issuing
@@ -102,7 +106,70 @@ class WitnessReceiptor(doing.DoDoer):
             _ = (yield self.tock)
 
         self.remove(witers)
+
         return True
+
+
+class WitnessInquisitor(doing.DoDoer):
+    """
+    Sends messages to all current witnesses of given identifier (from hab) and waits
+    for receipts from each of those witnesses and propogates those receipts to each
+    of the other witnesses after receiving the complete set.
+
+    Removes all Doers and exits as Done once all witnesses have been sent the entire
+    receipt set.  Could be enhanced to have a `once` method that runs once and cleans up
+    and an `all` method that runs and waits for more messages to receipt.
+
+    """
+
+    def __init__(self, hab, msgs=None, klas=None, **kwa):
+        """
+        For all msgs, select a random witness from Habitat's current set of witnesses
+        send the msg and process all responses (KEL replays, RCTs, etc)
+
+        Parameters:
+            hab: Habitat of the identifier to use to identify witnesses
+            msgs: is the message buffer to process and send to one random witness.
+
+        """
+        self.hab = hab
+        self.klas = klas if klas is not None else HTTPWitnesser
+        self.msgs = msgs if msgs is not None else decking.Deck()
+
+        super(WitnessInquisitor, self).__init__(doers=[self.receiptDo], **kwa)
+
+    @doing.doize()
+    def receiptDo(self, tymth=None, tock=0.0, **opts):
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        wits = self.hab.kever.wits
+        if len(wits) == 0:
+            raise kering.ConfigurationError("Must be used with an identifier that has witnesses")
+
+        witers = []
+        for wit in wits:
+            witer = self.klas(hab=self.hab, wit=wit, lax=True, local=False)
+            witers.append(witer)
+
+        self.extend(witers)
+
+        while True:
+            while not self.msgs:
+                yield self.tock
+
+            msg = self.msgs.popleft()
+
+            witer = random.choice(witers)
+            witer.msgs.append(msg)
+
+            yield
+
+
+    def query(self, pre, res="logs"):
+        msg = self.hab.query(pre, res=res)  # Query for remote pre Event
+        self.msgs.append(msg)
 
 
 class WitnessSender(doing.DoDoer):
@@ -185,10 +252,9 @@ class TCPWitnesser(doing.DoDoer):
         doers.extend([self.receiptDo])
 
         self.kevery = eventing.Kevery(db=self.hab.db,
-                                      lax=False,
-                                      local=True)
+                                      **kwa)
 
-        super(TCPWitnesser, self).__init__(doers=doers, **kwa)
+        super(TCPWitnesser, self).__init__(doers=doers)
 
     @doing.doize()
     def receiptDo(self, tymth=None, tock=0.0):
@@ -197,20 +263,20 @@ class TCPWitnesser(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
+        loc = obtaining.getwitnessbyprefix(self.wit)
+        client = clienting.Client(host=loc.ip4, port=loc.tcp)
+        self.parser = parsing.Parser(ims=client.rxbs,
+                                     framed=True,
+                                     kvy=self.kevery)
+
+        clientDoer = clienting.ClientDoer(client=client)
+        self.extend([clientDoer, self.msgDo])
+
         while True:
             while not self.msgs:
                 yield self.tock
 
             msg = self.msgs.popleft()
-
-            loc = obtaining.getwitnessbyprefix(self.wit)
-            client = clienting.Client(host=loc.ip4, port=loc.tcp)
-            self.parser = parsing.Parser(ims=client.rxbs,
-                                         framed=True,
-                                         kvy=self.kevery)
-
-            clientDoer = clienting.ClientDoer(client=client)
-            self.extend([clientDoer, self.msgDo])
 
             client.tx(msg)  # send to connected remote
 
@@ -280,18 +346,18 @@ class HTTPWitnesser(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
+        loc = obtaining.getwitnessbyprefix(self.wit)
+
+        client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+        clientDoer = http.clienting.ClientDoer(client=client)
+
+        self.extend([clientDoer])
+
         while True:
             while not self.msgs:
                 yield self.tock
 
             msg = self.msgs.popleft()
-
-            loc = obtaining.getwitnessbyprefix(self.wit)
-
-            client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
-            clientDoer = http.clienting.ClientDoer(client=client)
-
-            self.extend([clientDoer])
 
             httping.createCESRRequest(msg, client)
             while client.requests:
@@ -389,18 +455,11 @@ class RotateHandler(doing.DoDoer):
 
 class IssueCredentialHandler(doing.DoDoer):
     """
-        Processor for a performing a key rotate in an agent.
-        {
-            sith=3,
-            count=5,
-            erase=False,
-            toad=1,
-            cuts=[],
-            adds=[],
-            data=[
-               {}
-            ]
-        }
+        IssueCredentialHandler - exn behavior for issuing a credential
+
+        Validates payload against specified JSON-Schema
+        Receipts KEL event and propagates TEL event to witnesses
+        Errors will be placed in the corresponding issuer
     """
 
     resource = "/cmd/credential/issue"
@@ -419,16 +478,6 @@ class IssueCredentialHandler(doing.DoDoer):
 
     @doing.doize()
     def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Rotate identifier.
-
-        Messages:
-            payload is dict representing the body of a /presentation/request message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/request message
-            verfers is list of Verfers of the keys used to sign the message
-
-        """
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
@@ -449,6 +498,11 @@ class IssueCredentialHandler(doing.DoDoer):
                 ref = scheming.jsonSchemaCache.resolve(schema)
                 schemer = scheming.Schemer(raw=ref)
                 jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
+
+                if type(credSubject) is dict:
+                    credSubject |= dict(si=recipientIdentifier,
+                                        credentialStatus=self.issuer.regk,
+                                        issuanceDate=helping.nowIso8601())
 
                 # Build the credential subject and then the Credentialer for the full credential
                 creder = proving.credential(issuer=self.hab.pre,
@@ -475,6 +529,105 @@ class IssueCredentialHandler(doing.DoDoer):
                 excMsg = self.hab.sanction(excSrdr)
 
                 rcptClient.tx(excMsg)
+
+                yield
+
+            yield
+
+
+class PresentationRequestHandler(doing.DoDoer):
+    """
+    """
+
+    resource = "/cmd/presentation/request"
+
+    def __init__(self, hab, cues=None, **kwa):
+        self.hab = hab
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
+        doers = [self.msgDo]
+
+        super(PresentationRequestHandler, self).__init__(doers=doers, **kwa)
+
+    @doing.doize()
+    def msgDo(self, tymth=None, tock=0.0, **opts):
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                payload = msg["payload"]
+
+                recipientIdentifier = payload["recipient"]
+                schema = payload["schema"]
+
+                recptAddy = obtaining.getendpointbyprefix(recipientIdentifier)
+                rcptClient = clienting.Client(host=recptAddy.ip4, port=recptAddy.tcp)
+                rcptClientDoer = clienting.ClientDoer(client=rcptClient)
+
+                self.extend([rcptClientDoer])
+
+                ref = scheming.jsonSchemaCache.resolve(schema)
+                schemer = scheming.Schemer(raw=ref)
+
+                pl = dict(
+                    input_descriptors=[
+                        dict(x=schemer.said)
+                    ]
+                )
+
+                excSrdr = exchanging.exchange(route="/presentation/request", payload=pl)
+                excMsg = self.hab.sanction(excSrdr)
+
+                rcptClient.tx(excMsg)
+                yield
+
+            yield
+
+
+class EchoHandler(doing.DoDoer):
+    """
+        Processor for testing end to end HTTP with mailbox
+        {
+            msg="",
+        }
+    """
+
+    resource = "/cmd/echo"
+
+    def __init__(self, cues=None, **kwa):
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
+        doers = [self.msgDo]
+
+        super(EchoHandler, self).__init__(doers=doers, **kwa)
+
+    @doing.doize()
+    def msgDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Echo the proviced message back to the sender
+
+        Messages:
+            payload is dict representing the body of a /presentation/request message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /presentation/request message
+            verfers is list of Verfers of the keys used to sign the message
+
+        """
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                payload = msg["payload"]
+                rcp = msg["pre"]
+
+                msg = payload["msg"]
+
+                resp = dict(
+                    echo=msg
+                )
+
+                serder = exchanging.exchange(route="/cmd/message", payload=resp, recipient=rcp.qb64)
+                self.cues.append(serder)
 
                 yield
 

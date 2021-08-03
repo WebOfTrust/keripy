@@ -48,7 +48,8 @@ def setupWitness(name="witness", hab=None, temp=False, tcpPort=5631, httpPort=56
     mbx = exchanging.Mailboxer()
     storeExchanger = exchanging.StoreExchanger(hab=hab, mbx=mbx, exc=exchanger)
 
-    exnServer = httping.AgentExnServer(exc=storeExchanger, app=app)
+    repServer = httping.Respondant(hab=hab, mbx=mbx)
+    exnServer = httping.AgentExnServer(exc=storeExchanger, app=app, rep=repServer)
     kelHandler = WitnessKelHandler(hab=hab, app=app, mbx=mbx)
     mbxer = httping.MailboxServer(app=app, hab=hab, mbx=mbx)
 
@@ -63,7 +64,7 @@ def setupWitness(name="witness", hab=None, temp=False, tcpPort=5631, httpPort=56
 
     directant = directing.Directant(hab=hab, server=server, verifier=verfer, exc=storeExchanger)
 
-    doers.extend([regDoer, directant, serverDoer, mbxer, kelHandler, httpServerDoer, exnServer])
+    doers.extend([regDoer, directant, serverDoer, mbxer, kelHandler, httpServerDoer, exnServer, repServer])
 
     return doers
 
@@ -380,18 +381,18 @@ class MailboxDirector(doing.DoDoer):
         wits = self.hab.kever.wits
 
         for wit in wits:
-            loc = obtaining.getwitnessbyprefix(wit)
-
-            client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
-            clientDoer = http.clienting.ClientDoer(client=client)
-
-            poller = Poller(hab=self.hab, client=client)
+            # TODO: Pass the witness prefix and Location info to the Poller so
+            #       She can make decisions about what index to load and update
+            #       the database on each message.
+            poller = Poller(hab=self.hab, witness=wit)
             self.pollers.append(poller)
-            self.extend([poller, clientDoer])
+            self.extend([poller])
             _ = (yield self.tock)
 
         while True:
             for msg in self.processPollIter():
+                #  TODO: Message will have its idx as part of an envelope so that
+                #        the Poller can update its database when it passes it along
                 self.ims.extend(msg)
                 _ = (yield self.tock)
             _ = (yield self.tock)
@@ -521,9 +522,9 @@ class MailboxDirector(doing.DoDoer):
         """
         yield  # enter context
         while True:
-            for msg in self.exchanger.processResponseIter():
+            for rep in self.exchanger.processResponseIter():
                 # self.sendMessage(msg, label="response")
-                print(msg)
+                print(rep["msg"])
                 yield  # throttle just do one cue at a time
             yield
 
@@ -559,7 +560,7 @@ class Poller(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, client, msgs=None, **kwa):
+    def __init__(self, hab, witness, msgs=None, **kwa):
         """
 
         Parameters:
@@ -567,7 +568,7 @@ class Poller(doing.DoDoer):
         """
 
         self.hab = hab
-        self.client = client
+        self.witness = witness
         self.msgs = None if msgs is not None else decking.Deck()
         doers = [self.eventDo]
 
@@ -575,18 +576,31 @@ class Poller(doing.DoDoer):
 
     @doing.doize()
     def eventDo(self, tymth=None, tock=0.0, **opts):
+        loc = obtaining.getwitnessbyprefix(self.witness)
 
-        msg = self.hab.query(pre=self.hab.pre, res="/mbx", sn=0)
+        client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+        clientDoer = http.clienting.ClientDoer(client=client)
+        self.extend([clientDoer])
 
-        httping.createCESRRequest(msg, self.client)
+        witrec = self.hab.db.wits.get(self.witness)
+        if witrec is None:
+            witrec = basing.WitnessRecord(idx=0)
 
-        while self.client.requests:
+        msg = self.hab.query(pre=self.hab.pre, res="/mbx", sn=witrec.idx)
+
+        httping.createCESRRequest(msg, client)
+
+        while client.requests:
             yield self.tock
         while True:
-            while self.client.events:
-                evt = self.client.events.popleft()
+            while client.events:
+                evt = client.events.popleft()
+                idx = evt["id"]
                 msg = evt["data"]
                 self.msgs.append(msg.encode("utf=8"))
+
+                witrec.idx = int(idx)
+                self.hab.db.wits.pin(witrec)
                 yield
             yield
 
