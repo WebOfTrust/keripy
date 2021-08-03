@@ -59,7 +59,6 @@ class OfferHandler(doing.Doer):
 
         super(OfferHandler, self).__init__(**kwa)
 
-
     def do(self, tymth, tock=0.0, **opts):
         """
 
@@ -103,7 +102,6 @@ class OfferHandler(doing.Doer):
             yield
 
 
-
 class ApplyHandler(doing.DoDoer):
     """
         {
@@ -143,7 +141,6 @@ class ApplyHandler(doing.DoDoer):
 
         super(ApplyHandler, self).__init__(**kwa)
 
-
     def do(self, tymth, tock=0.0, **opts):
         """
 
@@ -165,8 +162,6 @@ class ApplyHandler(doing.DoDoer):
                 yield
 
             yield
-
-
 
 
 class IssueHandler(doing.Doer):
@@ -226,7 +221,6 @@ class IssueHandler(doing.Doer):
         self.typ = typ
 
         super(IssueHandler, self).__init__(**kwa)
-
 
     def do(self, tymth, tock=0.0, **opts):
         """
@@ -306,7 +300,6 @@ class RequestHandler(doing.Doer):
 
         super(RequestHandler, self).__init__(**kwa)
 
-
     def do(self, tymth, tock=0.0, **opts):
         """
         Process presentation request message with sender identifier, sigs and verfers
@@ -323,7 +316,6 @@ class RequestHandler(doing.Doer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 payload = msg["payload"]
-
                 descriptors = payload["input_descriptors"]
 
                 matches = []
@@ -390,7 +382,6 @@ class ProofHandler(doing.Doer):
 
     resource = "/presentation/proof"
 
-
     def __init__(self, typ=JSONSchema(), cues=None, proofs=None, **kwa):
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
@@ -399,7 +390,6 @@ class ProofHandler(doing.Doer):
         self.typ = typ
 
         super(ProofHandler, self).__init__(**kwa)
-
 
     def do(self, tymth, tock=0.0, **opts):
         """
@@ -425,7 +415,6 @@ class ProofHandler(doing.Doer):
 
                 if "verifiableCredential" not in payload:
                     raise ValueError("invalid presentation proof payload")
-
 
                 pe = payload["presentation_submission"]
                 vcs = payload["verifiableCredential"]

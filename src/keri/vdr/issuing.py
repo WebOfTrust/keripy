@@ -8,9 +8,9 @@ VC issuer support
 from hio.base import doing
 
 from .. import kering
-from ..core.coring import Counter, Seqner, CtrDex, MtrDex, Diger, Serder
-from ..core.eventing import SealEvent, SealSource, TraitDex
 from ..core import parsing
+from ..core.coring import Counter, Seqner, CtrDex, MtrDex, Serder
+from ..core.eventing import SealEvent, SealSource, TraitDex
 from ..db.dbing import snKey, dgKey
 from ..vdr import eventing
 from ..vdr.viring import Registry, nsKey
@@ -26,6 +26,7 @@ class Issuer:
     issuance and revocation status of those VCs.
 
     """
+
     def __init__(self, hab, name="test", reger=None, tevers=None, regk=None, estOnly=False, **kwa):
         """
         Initialize Instance
@@ -57,8 +58,7 @@ class Issuer:
         if self.hab.inited:
             self.setup(**self._inits)
 
-
-    def setup(self, *, noBackers=False, baks=None, toad=None,):
+    def setup(self, *, noBackers=False, baks=None, toad=None, ):
 
         if self.regk is None:
             self.regi = 0
@@ -117,8 +117,6 @@ class Issuer:
 
         self.inited = True
 
-
-
     def rotate(self, toad=None, cuts=None, adds=None):
         """
         Rotate backer list for registry
@@ -133,7 +131,7 @@ class Issuer:
             raise ValueError("Attempt to rotate registry {} that does not support backers".format(self.regk))
 
         tever = self.tevers[self.regk]
-        serder = eventing.rotate(dig=self.regser.dig, regk=self.regk, sn=self.regi+1, toad=toad, baks=self.backers,
+        serder = eventing.rotate(dig=self.regser.dig, regk=self.regk, sn=self.regi + 1, toad=toad, baks=self.backers,
                                  adds=adds, cuts=cuts)
 
         self.regser = serder
@@ -273,17 +271,15 @@ class IssuerDoer(doing.Doer):
     def __init__(self, issuer, **kwa):
         """
         Parameters:
-           habitat (Habitat): instance
+           issuer (Issuer): instance
         """
         super(IssuerDoer, self).__init__(**kwa)
         self.issuer = issuer
-
 
     def enter(self):
         """"""
         if not self.issuer.inited:
             self.issuer.setup(**self.issuer._inits)
-
 
     def exit(self):
         """"""
