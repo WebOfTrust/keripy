@@ -74,7 +74,7 @@ class InceptDoer(doing.DoDoer):
                               isith=opts.isith, icount=opts.icount, nsith=opts.nsith, ncount=opts.ncount,
                               wits=opts.witnesses, salt=salt)
         self.habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
-        doers = [self.inceptDo, self.ksDoer, self.dbDoer, self.habDoer]
+        doers = [doing.doify(self.inceptDo), self.ksDoer, self.dbDoer, self.habDoer]
 
         if proto == "tcp":
             self.mbx = None
@@ -89,8 +89,12 @@ class InceptDoer(doing.DoDoer):
         super(InceptDoer, self).__init__(doers=doers, **kwa)
 
 
-    @doing.doize()
     def inceptDo(self, tymth, tock=0.0, **opts):
+        """
+        Returns:  doifiable Doist compatible generator method
+        Usage:
+            add result of doify on this method to doers list
+        """
         # enter context
         self.wind(tymth)
         self.tock = tock

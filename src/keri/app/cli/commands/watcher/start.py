@@ -36,10 +36,15 @@ class StartIst(doing.Doist):
         self.client = clienting.Client(tymth=self.tymen(), host='127.0.0.1', port=5678)
         clientDoer = clienting.ClientDoer(client=self.client)
 
-        self.extend([clientDoer, self.infoDoer])
+        self.extend([clientDoer, doing.doify(self.infoDoer)])
 
-    @doing.doize()
+
     def infoDoer(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns:  doifiable Doist compatible generator method
+        Usage:
+            add result of doify on this method to doers list
+        """
         while not self.client.connected:
             (yield self.tock)
 

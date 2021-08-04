@@ -78,12 +78,17 @@ class RotateDoer(doing.DoDoer):
 
         self.hab = habbing.Habitat(name=self.name, ks=ks, db=db, temp=False, create=False)
         self.habDoer = habbing.HabitatDoer(habitat=self.hab)  # setup doer
-        doers = [self.ksDoer, self.dbDoer, self.habDoer, self.rotateDo]
+        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.rotateDo)]
 
         super(RotateDoer, self).__init__(doers=doers, **kwa)
 
-    @doing.doize()
+
     def rotateDo(self, tymth, tock=0.0, **opts):
+        """
+        Returns:  doifiable Doist compatible generator method
+        Usage:
+            add result of doify on this method to doers list
+        """
 
         if self.wits:
             if self.adds or self.cuts:

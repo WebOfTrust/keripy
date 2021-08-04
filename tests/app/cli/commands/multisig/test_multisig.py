@@ -114,14 +114,17 @@ def test_incept():
 #class InceptingDoer(doing.DoDoer):
 
     #def __init__(self, **kwa):
-        #super(InceptingDoer, self).__init__(doers=[self.inceptDo], **kwa)
+        #super(InceptingDoer, self).__init__(doers=[doing.doify(self.inceptDo)], **kwa)
         #self.members = []
         #self.group = None
 
-    #@doing.doize()
+
     #def inceptDo(self, tymth=None, tock=0.0):
         #"""
         #Create Member Doers with habitats
+        #Returns:  doifiable Doist compatible generator method
+        #Usage:
+            #add result of doify on this method to doers list
         #"""
         ## start enter context
         #for i in range(1, 4):
@@ -158,10 +161,15 @@ class InceptingDoer(doing.DoDoer):
 
     def __init__(self, **kwa):
 
-        super(InceptingDoer, self).__init__(doers=[self.inceptDo], **kwa)
+        super(InceptingDoer, self).__init__(doers=[doing.doify(self.inceptDo)], **kwa)
 
-    @doing.doize()
+
     def inceptDo(self, tymth=None, tock=0.0):
+        """
+        Returns:  doifiable Doist compatible generator method
+        Usage:
+            add result of doify on this method to doers list
+        """
         yield self.tock  # enter context
 
         sigs = ["multisig1", "multisig2", "multisig3"]

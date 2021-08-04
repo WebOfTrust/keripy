@@ -155,9 +155,10 @@ class Indirector(doing.DoDoer):
                                      framed=True,
                                      kvy=self.kevery)
         doers = doers if doers is not None else []
-        doers.extend([self.msgDo, self.escrowDo])
+        doers.extend([doing.doify(self.msgDo),
+                      doing.doify(self.escrowDo)])
         if self.direct:
-            doers.extend([self.cueDo])
+            doers.extend([doing.doify(self.cueDo)])
 
         super(Indirector, self).__init__(doers=doers, **kwa)
         if self.tymth:
@@ -171,10 +172,10 @@ class Indirector(doing.DoDoer):
         super(Indirector, self).wind(tymth)
         self.client.wind(tymth)
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns Doist compatibile generator method (doer dog) to process
+        Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
 
         Doist Injected Attributes:
@@ -190,7 +191,7 @@ class Indirector(doing.DoDoer):
 
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         if self.parser.ims:
@@ -198,10 +199,10 @@ class Indirector(doing.DoDoer):
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
-    @doing.doize()
+
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """
-         Returns Doist compatibile generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
 
         Doist Injected Attributes:
@@ -216,7 +217,7 @@ class Indirector(doing.DoDoer):
             opts is dict of injected optional additional parameters
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         while True:
@@ -225,10 +226,10 @@ class Indirector(doing.DoDoer):
                 yield  # throttle just do one cue at a time
             yield
 
-    @doing.doize()
+
     def escrowDo(self, tymth=None, tock=0.0, **opts):
         """
-         Returns Doist compatibile generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery escrows.
 
         Doist Injected Attributes:
@@ -243,7 +244,7 @@ class Indirector(doing.DoDoer):
             opts is dict of injected optional additional parameters
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         while True:
@@ -340,7 +341,10 @@ class MailboxDirector(doing.DoDoer):
         self.ims = bytearray()
 
         doers = doers if doers is not None else []
-        doers.extend([self.pollDo, self.msgDo, self.cueDo, self.escrowDo])
+        doers.extend([doing.doify(self.pollDo),
+                      doing.doify(self.msgDo),
+                      doing.doify(self.cueDo),
+                      doing.doify(self.escrowDo)])
 
         #  neeeds unique kevery with ims per remoter connnection
         self.kevery = eventing.Kevery(db=self.hab.db,
@@ -352,12 +356,12 @@ class MailboxDirector(doing.DoDoer):
                                  reger=self.verifier.reger,
                                  db=self.hab.db,
                                  regk=None, local=False)
-            doers.extend([self.verifierDo])
+            doers.extend([doing.doify(self.verifierDo)])
         else:
             self.tevery = None
 
         if self.exchanger is not None:
-            doers.extend([self.exchangerDo])
+            doers.extend([doing.doify(self.exchangerDo)])
 
         self.parser = parsing.Parser(ims=self.ims,
                                      framed=True,
@@ -374,8 +378,15 @@ class MailboxDirector(doing.DoDoer):
         """
         super(MailboxDirector, self).wind(tymth)
 
-    @doing.doize()
+
     def pollDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns:
+           doifiable Doist compatible generator method
+
+        Usage:
+            add result of doify on this method to doers list
+        """
         yield  # enter context
 
         wits = self.hab.kever.wits
@@ -397,6 +408,7 @@ class MailboxDirector(doing.DoDoer):
                 _ = (yield self.tock)
             _ = (yield self.tock)
 
+
     def processPollIter(self):
         """
         Iterate through cues and yields one or more responses for each cue.
@@ -416,10 +428,10 @@ class MailboxDirector(doing.DoDoer):
             msg = responses.pop(0)
             yield msg
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns Doist compatibile generator method (doer dog) to process
+        Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
 
         Doist Injected Attributes:
@@ -433,9 +445,8 @@ class MailboxDirector(doing.DoDoer):
             tock is injected initial tock value
             opts is dict of injected optional additional parameters
 
-
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         if self.parser.ims:
@@ -444,10 +455,10 @@ class MailboxDirector(doing.DoDoer):
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
-    @doing.doize()
+
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """
-         Returns Doist compatibile generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
 
         Doist Injected Attributes:
@@ -462,7 +473,7 @@ class MailboxDirector(doing.DoDoer):
             opts is dict of injected optional additional parameters
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         while True:
@@ -472,66 +483,10 @@ class MailboxDirector(doing.DoDoer):
                 yield  # throttle just do one cue at a time
             yield
 
-    @doing.doize()
-    def verifierDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns Doist compatibile generator method (doer dog) to process
-            .tevery.cues deque
 
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add to doers list
-        """
-        yield  # enter context
-        while True:
-            for msg in self.verifier.processCuesIter(self.tevery.cues):
-                # self.sendMessage(msg, label="replay")
-                print(msg)
-                yield  # throttle just do one cue at a time
-            yield
-
-    @doing.doize()
-    def exchangerDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns Doist compatibile generator method (doer dog) to process
-            .tevery.cues deque
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add to doers list
-        """
-        yield  # enter context
-        while True:
-            for rep in self.exchanger.processResponseIter():
-                # self.sendMessage(msg, label="response")
-                print(rep["msg"])
-                yield  # throttle just do one cue at a time
-            yield
-
-    @doing.doize()
     def escrowDo(self, tymth=None, tock=0.0, **opts):
         """
-         Returns Doist compatibile generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery escrows.
 
         Doist Injected Attributes:
@@ -546,12 +501,71 @@ class MailboxDirector(doing.DoDoer):
             opts is dict of injected optional additional parameters
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         while True:
             self.kevery.processEscrows()
             yield
+
+
+
+    def verifierDo(self, tymth=None, tock=0.0, **opts):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            .tevery.cues deque
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        yield  # enter context
+        while True:
+            for msg in self.verifier.processCuesIter(self.tevery.cues):
+                # self.sendMessage(msg, label="replay")
+                print(msg)
+                yield  # throttle just do one cue at a time
+            yield
+
+
+
+    def exchangerDo(self, tymth=None, tock=0.0, **opts):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            .tevery.cues deque
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        yield  # enter context
+        while True:
+            for rep in self.exchanger.processResponseIter():
+                # self.sendMessage(msg, label="response")
+                print(rep["msg"])
+                yield  # throttle just do one cue at a time
+            yield
+
 
 
 class Poller(doing.DoDoer):
@@ -570,12 +584,19 @@ class Poller(doing.DoDoer):
         self.hab = hab
         self.witness = witness
         self.msgs = None if msgs is not None else decking.Deck()
-        doers = [self.eventDo]
+        doers = [doing.doify(self.eventDo)]
 
         super(Poller, self).__init__(doers=doers, **kwa)
 
-    @doing.doize()
+
     def eventDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns:
+           doifiable Doist compatible generator method
+
+        Usage:
+            add result of doify on this method to doers list
+        """
         loc = obtaining.getwitnessbyprefix(self.witness)
 
         client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
@@ -645,9 +666,10 @@ class WitnessKelHandler(doing.DoDoer):
                                      framed=True,
                                      kvy=self.kevery)
 
-        doers = [self.msgDo, self.cueDo]
+        doers = [doing.doify(self.msgDo), doing.doify(self.cueDo)]
 
         super(WitnessKelHandler, self).__init__(doers=doers, **kwa)
+
 
     def on_post(self, req, rep):
         """
@@ -669,10 +691,10 @@ class WitnessKelHandler(doing.DoDoer):
 
         rep.status = falcon.HTTP_202  # This is the default status
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns Doist compatibile generator method (doer dog) to process
+        Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
 
         Doist Injected Attributes:
@@ -688,17 +710,17 @@ class WitnessKelHandler(doing.DoDoer):
 
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.kevery, self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
-    @doing.doize()
+
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """
-         Returns Doist compatibile generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
 
         Doist Injected Attributes:
@@ -713,7 +735,7 @@ class WitnessKelHandler(doing.DoDoer):
             opts is dict of injected optional additional parameters
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         while True:

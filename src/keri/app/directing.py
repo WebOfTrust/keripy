@@ -180,7 +180,9 @@ class Reactor(doing.DoDoer):
         self.exc = exchanger
         self.direct = True if direct else False
         doers = doers if doers is not None else []
-        doers.extend([self.msgDo, self.escrowDo, self.cueDo])
+        doers.extend([doing.doify(self.msgDo),
+                      doing.doify(self.escrowDo),
+                      doing.doify(self.cueDo)])
 
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       lax=False,
@@ -196,7 +198,7 @@ class Reactor(doing.DoDoer):
             self.tvy = None
 
         if self.exc is not None:
-            doers.extend([self.exchangerDo])
+            doers.extend([doing.doify(self.exchangerDo)])
 
 
         self.parser = parsing.Parser(ims=self.client.rxbs,
@@ -218,10 +220,10 @@ class Reactor(doing.DoDoer):
         super(Reactor, self).wind(tymth)
         self.client.wind(tymth)
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns Doist compatibile generator method (doer dog) to process
+        Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
 
         Doist Injected Attributes:
@@ -237,7 +239,7 @@ class Reactor(doing.DoDoer):
 
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         if self.parser.ims:
@@ -245,10 +247,10 @@ class Reactor(doing.DoDoer):
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
-    @doing.doize()
+
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """
-         Returns Doist compatibile generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
 
         Doist Injected Attributes:
@@ -263,7 +265,7 @@ class Reactor(doing.DoDoer):
             opts is dict of injected optional additional parameters
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         while True:
@@ -274,41 +276,9 @@ class Reactor(doing.DoDoer):
         return False  # should never get here except forced close
 
 
-    @doing.doize()
-    def exchangerDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns Doist compatibile generator method (doer dog) to process
-            .tevery.cues deque
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add to doers list
-        """
-        yield  # enter context
-        while True:
-            for rep in self.exc.processResponseIter():
-                self.sendMessage(rep["msg"], label="response")
-                yield  # throttle just do one cue at a time
-            yield
-        return False  # should never get here except forced close
-
-
-
-
-    @doing.doize()
     def escrowDo(self, tymth=None, tock=0.0, **opts):
         """
-         Returns Doist compatibile generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery escrows.
 
         Doist Injected Attributes:
@@ -323,13 +293,42 @@ class Reactor(doing.DoDoer):
             opts is dict of injected optional additional parameters
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         while True:
             self.kevery.processEscrows()
             yield
         return False  # should never get here except forced close
+
+
+    def exchangerDo(self, tymth=None, tock=0.0, **opts):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            .tevery.cues deque
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        yield  # enter context
+        while True:
+            for rep in self.exc.processResponseIter():
+                self.sendMessage(rep["msg"], label="response")
+                yield  # throttle just do one cue at a time
+            yield
+        return False  # should never get here except forced close
+
 
     def sendMessage(self, msg, label=""):
         """
@@ -418,7 +417,7 @@ class Directant(doing.DoDoer):
         self.server = server  # use server for cx
         self.rants = dict()
         doers = doers if doers is not None else []
-        doers.extend([self.serviceDo])
+        doers.extend([doing.doify(self.serviceDo)])
         super(Directant, self).__init__(doers=doers, **kwa)
         if self.tymth:
             self.server.wind(self.tymth)
@@ -431,10 +430,10 @@ class Directant(doing.DoDoer):
         super(Directant, self).wind(tymth)
         self.server.wind(tymth)
 
-    @doing.doize()
+
     def serviceDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns Doist compatibile generator method (doer dog) to service
+        Returns doifiable Doist compatibile generator method (doer dog) to service
             connections on .server. Creates remoter and rant (Reactant) for each
             open connection and adds rant to running doers.
 
@@ -451,7 +450,7 @@ class Directant(doing.DoDoer):
 
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         while True:
@@ -471,6 +470,7 @@ class Directant(doing.DoDoer):
                     self.closeConnection(ca)  # also removes rant
 
             yield
+
 
     def closeConnection(self, ca):
         """
@@ -563,7 +563,9 @@ class Reactant(doing.DoDoer):
         self.remoter = remoter  # use remoter for both rx and tx
 
         doers = doers if doers is not None else []
-        doers.extend([self.msgDo, self.cueDo, self.escrowDo])
+        doers.extend([doing.doify(self.msgDo),
+                      doing.doify(self.cueDo),
+                      doing.doify(self.escrowDo)])
 
         #  neeeds unique kevery with ims per remoter connnection
         self.kevery = eventing.Kevery(db=self.hab.db,
@@ -575,12 +577,12 @@ class Reactant(doing.DoDoer):
                                  reger=self.verifier.reger,
                                  db=self.hab.db,
                                  regk=None, local=False)
-            doers.extend([self.verifierDo])
+            doers.extend([doing.doify(self.verifierDo)])
         else:
             self.tevery = None
 
         if self.exchanger is not None:
-            doers.extend([self.exchangerDo])
+            doers.extend([doing.doify(self.exchangerDo)])
 
         self.parser = parsing.Parser(ims=self.remoter.rxbs,
                                      framed=True,
@@ -600,10 +602,10 @@ class Reactant(doing.DoDoer):
         super(Reactant, self).wind(tymth)
         self.remoter.wind(tymth)
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns Doist compatibile generator method (doer dog) to process
+        Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
 
         Doist Injected Attributes:
@@ -619,7 +621,7 @@ class Reactant(doing.DoDoer):
 
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         if self.parser.ims:
@@ -629,10 +631,9 @@ class Reactant(doing.DoDoer):
         return done  # should nover get here except forced close
 
 
-    @doing.doize()
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """
-         Returns Doist compatibile generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             .kevery.cues deque
 
         Doist Injected Attributes:
@@ -647,7 +648,7 @@ class Reactant(doing.DoDoer):
             opts is dict of injected optional additional parameters
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield  # enter context
         while True:
@@ -658,10 +659,35 @@ class Reactant(doing.DoDoer):
         return False  # should never get here except forced close
 
 
-    @doing.doize()
+    def escrowDo(self, tymth=None, tock=0.0, **opts):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            .kevery escrows.
+
+        Doist Injected Attributes:
+            g.tock = tock  # default tock attributes
+            g.done = None  # default done state
+            g.opts
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        yield  # enter context
+        while True:
+            self.kevery.processEscrows()
+            yield
+        return False  # should never get here except forced close
+
+
     def verifierDo(self, tymth=None, tock=0.0, **opts):
         """
-         Returns Doist compatibile generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             .tevery.cues deque
 
         Doist Injected Attributes:
@@ -687,7 +713,6 @@ class Reactant(doing.DoDoer):
         return False  # should never get here except forced close
 
 
-    @doing.doize()
     def exchangerDo(self, tymth=None, tock=0.0, **opts):
         """
          Returns Doist compatibile generator method (doer dog) to process
@@ -716,31 +741,6 @@ class Reactant(doing.DoDoer):
         return False  # should never get here except forced close
 
 
-    @doing.doize()
-    def escrowDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns Doist compatibile generator method (doer dog) to process
-            .kevery escrows.
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add to doers list
-        """
-        yield  # enter context
-        while True:
-            self.kevery.processEscrows()
-            yield
-        return False  # should never get here except forced close
 
     def sendMessage(self, msg, label=""):
         """

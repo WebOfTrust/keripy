@@ -44,11 +44,16 @@ class QueryDoer(doing.DoDoer):
         self.wit = wit
         self.pre = pre
 
-        doers = [self.ksDoer, self.dbDoer, self.habDoer, self.queryDo]
+        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.queryDo)]
         super(QueryDoer, self).__init__(doers=doers, **kwa)
 
-    @doing.doize()
+
     def queryDo(self, tymth, tock=0.0, **opts):
+        """
+        Returns:  doifiable Doist compatible generator method
+        Usage:
+            add result of doify on this method to doers list
+        """
         # enter context
         self.wind(tymth)
         self.tock = tock
@@ -66,7 +71,7 @@ class QueryDoer(doing.DoDoer):
                                      framed=True,
                                      kvy=kevery)
 
-        self.extend([clientDoer, self.msgDo])
+        self.extend([clientDoer, doing.doify(self.msgDo)])
 
         msg = self.hab.query(self.pre, res="logs")  # Query for remote pre Event
         client.tx(msg)  # send to connected remote
@@ -93,10 +98,10 @@ class QueryDoer(doing.DoDoer):
 
         return
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns Doist compatibile generator method (doer dog) to process
+        Returns: doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
 
         Doist Injected Attributes:
@@ -110,9 +115,8 @@ class QueryDoer(doing.DoDoer):
             tock is injected initial tock value
             opts is dict of injected optional additional parameters
 
-
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
