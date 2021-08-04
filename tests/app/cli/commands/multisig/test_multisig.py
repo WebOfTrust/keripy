@@ -7,8 +7,11 @@ tests.app.cli.commands.multisig
 import json
 import os
 import shutil
+import time
 
-from hio.base import doing
+from dataclasses import dataclass
+
+from hio.base import doing, tyming
 
 from keri.app import indirecting, habbing
 from keri.app.cli.commands import incept
@@ -50,21 +53,104 @@ def test_incept():
 
         limit = 10.0
         tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit)
-        doist.do(doers=doers)
+        doist = doing.Doist(tock=tock, limit=limit, doers=doers)
+        doist.enter()
+
+        #assert inceptor.members
+        #assert not inceptor.group
+
+        #hab1 = inceptor.members[0].doer.hab
+        #assert hab1.pre == 'Eu_se69BU6tYdF2o-YD411OzwbvImOfu1m023Bu8FM_I'
+        #assert hab1.db.path == '/usr/local/var/keri/db/multisig1'
+
+        #hab2 = inceptor.members[1].doer.hab
+        #assert hab2.pre == 'EEWuHgyO9iTgfz43mtY1IaRH-TrmV-YpcbpPoKKSpz8U'
+        #assert hab2.db.path == '/usr/local/var/keri/db/multisig2'
+
+        #hab3 = inceptor.members[2].doer.hab
+        #assert hab3.pre == 'E5JuUB6iOaKV5-0EeADj0S3KCvvkUZDnuLw8VPK8Qang'
+        #assert hab3.db.path == '/usr/local/var/keri/db/multisig3'
+
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+        doist.done == False
+        while not tymer.expired:
+            doist.recur()
+            time.sleep(doist.tock)
+        # doist.do(doers=doers)
 
         assert doist.limit == limit
 
-        preb = b'Ep4WexrfQvQjblYg9ti12cr7NpKWaXLNP5CXmq_4Zhng'
-        digb = b'E5_qNBzfkBc2kWAzGn5UUWhWUVrX4Yk1QBpVXHucygfk'
+        preb = b'Ep4WexrfQvQjblYg9ti12cr7NpKWaXLNP5CXmq_4Zhng'  # multisig aid
+        digb = b'E5_qNBzfkBc2kWAzGn5UUWhWUVrX4Yk1QBpVXHucygfk'  # multisig inception digest
         dgkey = dbing.dgKey(preb, digb)
 
-        # wigs = wanHab.db.getWigs(dgkey)
+        wigs = wanHab.db.getWigs(dgkey)
         # assert len(wigs) == 3
-        # wigs = wilHab.db.getWigs(dgkey)
+        wigs = wilHab.db.getWigs(dgkey)
         # assert len(wigs) == 3
-        # wigs = wesHab.db.getWigs(dgkey)
+        wigs = wesHab.db.getWigs(dgkey)
         # assert len(wigs) == 3
+
+
+#@dataclass
+#class Member:
+    #"""
+    #Multi-sig group member
+    #"""
+    #name: str  # name of member in group
+    #index: int  # index of member in group
+    #doer: doing.DoDoer  # DoDoer of member  doer.hab for database
+
+#@dataclass
+#class Group:
+    #"""
+    #Multi-sig group id
+    #"""
+    #name: str  # name of group
+    #count: int  # number of members in group
+    #sith: int  # signing threshold
+    #doer: doing.DoDoer  # DoDoer of group doer.hab for database
+
+#class InceptingDoer(doing.DoDoer):
+
+    #def __init__(self, **kwa):
+        #super(InceptingDoer, self).__init__(doers=[self.inceptDo], **kwa)
+        #self.members = []
+        #self.group = None
+
+    #@doing.doize()
+    #def inceptDo(self, tymth=None, tock=0.0):
+        #"""
+        #Create Member Doers with habitats
+        #"""
+        ## start enter context
+        #for i in range(1, 4):
+            #name = "multisig" + str(i)
+            #doer = incept.InceptDoer(name=name, proto="tcp", opts=loadInceptOpts(f"multisig-{i}-sample.json"))
+            #self.members.append(Member(index=i, name=name, doer=doer))
+        #self.extend([member.doer for member in self.members])
+
+        #yield self.tock  # finish enter context
+
+        ## start recur context
+        #for member in self.members:
+            #while not member.doer.done:
+                #yield self.tock
+
+            #self.remove([member.doer])
+            #yield self.tock
+
+        #member = self.members[0]
+        #name = "groupby" + member.name
+        #doer = MultiSigInceptDoer(name=name,
+                                 #opts=loadMultiInceptOpts("multisig-sample.json"))
+        #group = Group(name=name, count=len(members), sith=2, doer=doer)
+        #self.extend([group.doer])
+        #while not group.doer.done:
+            #yield self.tock
+
+        #self.remove([group.doer.done])
+        #yield self.tock
 
 
 
@@ -76,7 +162,7 @@ class InceptingDoer(doing.DoDoer):
 
     @doing.doize()
     def inceptDo(self, tymth=None, tock=0.0):
-        yield self.tock
+        yield self.tock  # enter context
 
         sigs = ["multisig1", "multisig2", "multisig3"]
         # Create three separate identifiers to seed the multisig group identifier
@@ -99,8 +185,6 @@ class InceptingDoer(doing.DoDoer):
 
             self.remove([msd])
             yield self.tock
-
-
 
 def loadInceptOpts(filename):
     filepath = os.path.join(TEST_DIR, filename)

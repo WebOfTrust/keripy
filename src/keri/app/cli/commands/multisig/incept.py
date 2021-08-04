@@ -86,10 +86,10 @@ class MultiSigInceptDoer(doing.DoDoer):
 
     @doing.doize()
     def inceptDo(self, tymth, tock=0.0):
-        # enter context
+        # start enter context
         self.wind(tymth)
         self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield self.tock)  # finish enter context
 
         aids = list(self.iopts.aids)
         if self.hab.pre not in aids:

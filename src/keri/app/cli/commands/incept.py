@@ -85,7 +85,6 @@ class InceptDoer(doing.DoDoer):
             self.witDoer = agenting.WitnessReceiptor(hab=hab, klas=agenting.TCPWitnesser)
             doers.extend([self.mbx, self.witDoer])
 
-
         self.hab = hab
         super(InceptDoer, self).__init__(doers=doers, **kwa)
 
