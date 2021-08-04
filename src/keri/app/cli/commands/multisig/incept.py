@@ -79,7 +79,8 @@ class MultiSigInceptDoer(doing.DoDoer):
 
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
-        doers = [self.inceptDo, self.ksDoer, self.dbDoer, self.habDoer, self.witq]
+        # doers = [self.inceptDo, self.ksDoer, self.dbDoer, self.habDoer, self.witq]
+        doers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, self.inceptDo]
         self.hab = hab
         super(MultiSigInceptDoer, self).__init__(doers=doers, **kwa)
 
