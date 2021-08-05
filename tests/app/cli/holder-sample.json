@@ -1,0 +1,13 @@
+{
+  "salt": "abcdef0123456789",
+  "transferable": true,
+  "witnesses": [
+    "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
+    "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
+    "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
+  ],
+  "icount": 1,
+  "ncount": 1,
+  "isith": 1,
+  "nsith": 1
+}

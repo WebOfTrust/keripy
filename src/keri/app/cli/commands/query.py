@@ -79,6 +79,7 @@ class QueryDoer(doing.DoDoer):
         while self.pre not in kevery.kevers:
             yield self.tock
 
+
         kev = kevery.kevers[self.pre]
         ser = kev.serder
         dgkey = dbing.dgKey(ser.preb, ser.digb)
@@ -87,8 +88,8 @@ class QueryDoer(doing.DoDoer):
         print("Prefix:\t{}".format(self.pre))
         print("Seq No:\t{}".format(kev.sn))
         print("\nWitnesses:")
-        print("Count:\t\t{}".format(len(wigs)))
-        print("Receipts:\t{}".format(len(kev.wits)))
+        print("Count:\t\t{}".format(len(kev.wits)))
+        print("Receipts:\t{}".format(len(wigs)))
         print("Threshold:\t{}".format(kev.toad))
         print("\nPublic Keys:\t")
         for idx, verfer in enumerate(kev.verfers):

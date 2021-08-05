@@ -46,10 +46,13 @@ class Issuer:
         self.name = name
         self.estOnly = estOnly
         self.regk = regk
+        self.incept = None
+        self.ianchor = None
 
         self.reger = reger if reger is not None else Registry(name=name)
         self.tevers = tevers if tevers is not None else dict()
         self.inited = False
+
 
         # save init kwy word arg parameters as ._inits in order to later finish
         # init setup elseqhere after databases are opened if not below

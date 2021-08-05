@@ -2,10 +2,11 @@
   "salt": "single-witness00",
   "transferable": true,
   "witnesses": [
+    "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
     "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
   ],
   "icount": 1,
-  "ncount": 1,
+  "ncount": 3,
   "isith": 1,
   "nsith": 1
 }

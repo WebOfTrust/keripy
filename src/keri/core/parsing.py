@@ -339,9 +339,9 @@ class Parser:
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("XParser msg non-extraction error: %s\n", ex)
+                    logger.exception("Parser msg non-extraction error: %s\n", ex)
                 else:
-                    logger.error("XParser msg non-extraction error: %s\n", ex)
+                    logger.error("Parser msg non-extraction error: %s\n", ex)
             yield
 
         return True

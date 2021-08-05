@@ -1,0 +1,22 @@
+{
+  "aids": [
+    "ERpQFqwDuNz45oPCRoN-6w4kwLHqJSxbA_X7INa-t63I",
+    "EaecgkKJ6pxJ2wYYTOshIqXIUqr_ORUGoB8DD00rd-XQ",
+    "EXhz7gOa0FyJAPr9qm4atOQ3-4YyAb94BfwgmT-upTn0"
+  ],
+  "transferable": true,
+  "witnesses": [
+    "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
+    "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
+    "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
+  ],
+  "toad": 1,
+  "icount": 3,
+  "ncount": 3,
+  "isith":3,
+  "nsith": 3,
+  "sigs": [
+    "AAtLcNH01ThLcj7kca7aFiagD5lSk0isZ9V7JgZ3XMXN1HVJJ8RFsh8eo-rwgJnzBssCxCfpjQOccj1EWa-F5TAw",
+    "ABzX5ZDS2qaB7jE1RNoiaPsXR4m7oaryfe0MOnC_TBZPcD6xOSfop9B_Nkljf3EsIzdXGxTu-KBYPnFVCsSzg3Ag"
+  ]
+}
