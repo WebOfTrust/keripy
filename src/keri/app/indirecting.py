@@ -15,7 +15,7 @@ from hio.help import decking
 from . import habbing, keeping, directing
 from .. import help
 from ..app import obtaining
-from ..core import eventing, parsing
+from ..core import eventing, parsing, coring
 from ..db import basing
 from ..peer import exchanging, httping
 from ..vdr import verifying
@@ -41,11 +41,11 @@ def setupWitness(name="witness", hab=None, temp=False, tcpPort=5631, httpPort=56
         doers.extend([ksDoer, dbDoer, habDoer])
 
     verfer = verifying.Verifier(name=name, hab=hab)
-    app = falcon.App()
+    app = falcon.App(cors_enable=True)
 
     exchanger = exchanging.Exchanger(hab=hab, handlers=[])
 
-    mbx = exchanging.Mailboxer()
+    mbx = exchanging.Mailboxer(name=name)
     storeExchanger = exchanging.StoreExchanger(hab=hab, mbx=mbx, exc=exchanger)
 
     repServer = httping.Respondant(hab=hab, mbx=mbx)
@@ -317,7 +317,7 @@ class MailboxDirector(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, verifier=None, exchanger=None, doers=None, **kwa):
+    def __init__(self, hab, verifier=None, exc=None, rep=None, **kwa):
         """
         Initialize instance.
 
@@ -335,12 +335,13 @@ class MailboxDirector(doing.DoDoer):
         """
         self.hab = hab
         self.verifier = verifier
-        self.exchanger = exchanger
+        self.exchanger = exc
+        self.rep = rep
         self.pollers = []
 
         self.ims = bytearray()
 
-        doers = doers if doers is not None else []
+        doers = []
         doers.extend([doing.doify(self.pollDo),
                       doing.doify(self.msgDo),
                       doing.doify(self.cueDo),
@@ -392,9 +393,6 @@ class MailboxDirector(doing.DoDoer):
         wits = self.hab.kever.wits
 
         for wit in wits:
-            # TODO: Pass the witness prefix and Location info to the Poller so
-            #       She can make decisions about what index to load and update
-            #       the database on each message.
             poller = Poller(hab=self.hab, witness=wit)
             self.pollers.append(poller)
             self.extend([poller])
@@ -402,8 +400,6 @@ class MailboxDirector(doing.DoDoer):
 
         while True:
             for msg in self.processPollIter():
-                #  TODO: Message will have its idx as part of an envelope so that
-                #        the Poller can update its database when it passes it along
                 self.ims.extend(msg)
                 _ = (yield self.tock)
             _ = (yield self.tock)
@@ -417,15 +413,14 @@ class MailboxDirector(doing.DoDoer):
             cues is deque of cues
 
         """
-        responses = []
+        mail = []
         for poller in self.pollers:  # get responses from all behaviors
             while poller.msgs:
                 msg = poller.msgs.popleft()
-                # msg = self.hab.sanction(excSrdr)
-                responses.append(msg)
+                mail.append(msg)
 
-        while responses:  # iteratively process each response in responses
-            msg = responses.pop(0)
+        while mail:  # iteratively process each response in responses
+            msg = mail.pop(0)
             yield msg
 
 
@@ -531,9 +526,8 @@ class MailboxDirector(doing.DoDoer):
         """
         yield  # enter context
         while True:
-            for msg in self.verifier.processCuesIter(self.tevery.cues):
-                # self.sendMessage(msg, label="replay")
-                print(msg)
+            for rep in self.exchanger.processResponseIter():
+                self.rep.msgs.append(rep)
                 yield  # throttle just do one cue at a time
             yield
 
@@ -606,6 +600,8 @@ class Poller(doing.DoDoer):
         witrec = self.hab.db.wits.get(self.witness)
         if witrec is None:
             witrec = basing.WitnessRecord(idx=0)
+        else:
+            witrec.idx += 1
 
         msg = self.hab.query(pre=self.hab.pre, res="/mbx", sn=witrec.idx)
 
@@ -613,15 +609,17 @@ class Poller(doing.DoDoer):
 
         while client.requests:
             yield self.tock
+
         while True:
             while client.events:
                 evt = client.events.popleft()
                 idx = evt["id"]
                 msg = evt["data"]
+                ser = coring.Serder(raw=msg.encode("utf-8"))
                 self.msgs.append(msg.encode("utf=8"))
 
                 witrec.idx = int(idx)
-                self.hab.db.wits.pin(witrec)
+                self.hab.db.wits.pin(self.witness, witrec)
                 yield
             yield
 
@@ -648,10 +646,10 @@ class WitnessKelHandler(doing.DoDoer):
 
         """
         self.hab = hab
-        self.mbx = mbx if mbx is not None else exchanging.Mailboxer()
+        self.mbx = mbx if mbx is not None else exchanging.Mailboxer(name=hab.name)
         self.rxbs = bytearray()
 
-        self.app = app if app is not None else falcon.App()
+        self.app = app if app is not None else falcon.App(cors_enable=True)
 
         self.app.add_route("/kel", self)
         self.app.add_route("/tel", self)

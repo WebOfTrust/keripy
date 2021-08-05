@@ -415,7 +415,7 @@ def setup(name="who", temp=False, tymth=None, sith=None, count=1,
     #reactor = directing.Reactor(hab=hab, client=client)
 
     # must do it here to inject into Falcon endpoint resource instances
-    myapp = falcon.App() # falcon.App instances are callable WSGI apps
+    myapp = falcon.App(cors_enable=True) # falcon.App instances are callable WSGI apps
     loadEnds(myapp, tymth=tymth, hab=hab)
 
     webServer = http.Server(name="keri.wsgi.server", app=myapp, port=webPort, wl=wl)

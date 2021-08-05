@@ -15,11 +15,11 @@ parser = argparse.ArgumentParser(description='Rotate keys')
 parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
-                                          'http)', default="http")
+                                          'http)', default="tcp")
 parser.add_argument('--erase', '-e', help='if this option is provided stale keys will be erased', default=False)
-parser.add_argument('--count', '-C', help='', default="", required=False)
-parser.add_argument('--sith', '-s', help='', default="", required=False)
-parser.add_argument('--toad', '-t', help='', default="", required=False)
+parser.add_argument('--count', '-C', help='', default=None, type=int, required=False)
+parser.add_argument('--sith', '-s', help='', default=None, type=int, required=False)
+parser.add_argument('--toad', '-t', help='', default=None, type=int, required=False)
 parser.add_argument('--witnesses', '-w', help='New set of witnesses, replaces all existing witnesses.  Can appear '
                                               'multiple times', metavar="<prefix>", default=[],
                     action="append", required=False)
@@ -35,9 +35,10 @@ parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=[
 def handler(args):
     name = args.name
 
-    icpDoer = RotateDoer(name=name, proto=args.proto)
+    rotDoer = RotateDoer(name=name, proto=args.proto, wits=args.witnesses, cuts=args.witness_cut, adds=args.witness_add,
+                         sith=args.sith, count=args.count, toad=args.toad, erase=args.erase)
 
-    doers = [icpDoer]
+    doers = [rotDoer]
     directing.runController(doers=doers, expire=0.0)
 
 
@@ -89,6 +90,9 @@ class RotateDoer(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
 
         if self.wits:
             if self.adds or self.cuts:
@@ -99,24 +103,25 @@ class RotateDoer(doing.DoDoer):
             self.cuts = set(self.wits) & set(ewits)
             self.adds = set(self.wits) - set(ewits)
 
-
         msg = self.hab.rotate(sith=self.sith, count=self.count, erase=self.erase, toad=self.toad,
                               cuts=list(self.cuts), adds=list(self.adds), data=self.data)
 
-        print("rotated", msg)
         if self.proto == "tcp":
             mbx = None
             witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.TCPWitnesser, msg=msg)
-            self.extend([witDoer])
+            self.extend(doers=[witDoer])
+            yield self.tock
         else:  # "http"
             mbx = indirecting.MailboxDirector(hab=self.hab)
             witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.TCPWitnesser, msg=msg)
-            self.extend([mbx, witDoer])
+            self.extend(doers=[mbx, witDoer])
+            yield self.tock
 
         while not witDoer.done:
             _ = yield self.tock
 
 
+        print(f'Prefix  {self.hab.pre}')
         for idx, verfer in enumerate(self.hab.kever.verfers):
             print(f'\tPublic key {idx+1}:  {verfer.qb64}')
 

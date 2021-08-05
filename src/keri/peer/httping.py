@@ -44,7 +44,7 @@ class AgentExnServer(doing.DoDoer):
         POST requests are extracted and mapped to `exn` messages that are passed to the provided Exchanger.
 
         Parameters:
-            exc (Exchanger): an the instance of Exchanger configured to handle behaviors
+            exc (Exchanger):   an the instance of Exchanger configured to handle behaviors
             rep (Respondant):  Handles response messages from exchange behaviors
             app (falcon.App):  app to use for route registration
 
@@ -53,16 +53,19 @@ class AgentExnServer(doing.DoDoer):
         self.rep = rep
         self.rxbs = bytearray()
 
-        self.app = app if app is not None else falcon.App()
+        self.app = app if app is not None else falcon.App(cors_enable=True)
 
-        for route in exc.routes:
-            self.app.add_route(self.RoutePrefix + route, self)
+        # for route in exc.routes:
+        #     self.app.add_route(self.RoutePrefix + route, self)
 
         self.parser = parsing.Parser(ims=self.rxbs,
                                      framed=True,
                                      kvy=None,
                                      tvy=None,
                                      exc=self.exc)
+
+        self.app.add_sink(prefix=self.RoutePrefix, sink=self.on_post)
+
 
         doers = [doing.doify(self.exchangerDo), doing.doify(self.msgDo)]
 
@@ -129,10 +132,14 @@ class AgentExnServer(doing.DoDoer):
               rep (Response) Falcon HTTP response
 
         """
+        if req.method == 'OPTIONS':
+            rep.status = falcon.HTTP_200
+            return
+
 
         cr = parseCesrHttpRequest(req=req, prefix=self.RoutePrefix)
 
-        serder = exchanging.exchange(route=cr.resource, date=cr.date, payload=cr.payload)
+        serder = exchanging.exchange(route=cr.resource, date=cr.date, payload=cr.payload, recipient=cr.recipient)
         msg = bytearray(serder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
@@ -171,7 +178,7 @@ def parseCesrHttpRequest(req, prefix=None):
         raise falcon.HTTPError(falcon.HTTP_400,
                                title="Malformed JSON",
                                description="Could not decode the request body. The "
-                               "JSON was incorrect.")
+                                           "JSON was incorrect.")
 
     resource = req.path
     if prefix is not None:
@@ -224,18 +231,25 @@ def createCESRRequest(msg, client, date=None):
     attachments = bytearray(msg)
     query = serder.ked["q"] if "q" in serder.ked else None
 
-    if ilk in (Ilks.req, Ilks.exn):
+    if ilk in (Ilks.exn,):
         resource = "/" + ilk + serder.ked['r']
+        body = json.dumps(serder.ked["d"]).encode("utf-8")
+        dt = serder.ked["dt"]
+    elif ilk in (Ilks.req,):
+        resource = "/" + ilk + serder.ked['r']
+        body = serder.raw
     elif ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.ksn, Ilks.rct):
         resource = "/kel"
+        body = serder.raw
     elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
         resource = "/tel"
+        body = serder.raw
     else:
         raise kering.InvalidEventTypeError("Event type {} is not handled by http clients".format(ilk))
 
     headers = Hict([
         ("Content-Type", CESR_CONTENT_TYPE),
-        ("Content-Length", serder.size),
+        ("Content-Length", len(body)),
         (CESR_DATE_HEADER, dt),
         (CESR_ATTACHMENT_HEADER, attachments)
     ])
@@ -248,7 +262,7 @@ def createCESRRequest(msg, client, date=None):
         path=resource,
         quargs=query,
         headers=headers,
-        body=serder.raw
+        body=body
     )
 
 
@@ -271,7 +285,7 @@ class MailboxServer(doing.DoDoer):
         self.mbx = mbx
         self.rxbs = bytearray()
 
-        self.app = app if app is not None else falcon.App()
+        self.app = app if app is not None else falcon.App(cors_enable=True)
 
         self.app.add_route("/req/mbx", self)
 
@@ -279,35 +293,47 @@ class MailboxServer(doing.DoDoer):
 
         super(MailboxServer, self).__init__(doers=doers, **kwa)
 
-    def on_post(self, req, rep):
+    def on_get(self, req, rep):
         """
-        Handles POST requests as a stream of SSE events
+        Handles GET requests as a stream of SSE events
 
         Parameters:
               req (Request) Falcon HTTP request
               rep (Response) Falcon HTTP response
 
         """
-        rep.stream = self.mailboxGenerator(req=req, resp=rep)
+        rep.stream = self.mailboxGenerator(query=req.params, resp=rep)
 
-    @helping.attributize
-    def mailboxGenerator(self, me, req=None, resp=None):
+    def on_post(self, req, rep):
         """
+        Handles GET requests as a stream of SSE events
 
         Parameters:
-            me:
-            req:
-            resp:
+              req (Request) Falcon HTTP request
+              rep (Response) Falcon HTTP response
 
         """
         cr = parseCesrHttpRequest(req=req)
 
         q = cr.payload['q']
 
-        pre = coring.Prefixer(qb64=q["i"])
-        idx = int(q["s"]) if "s" in q else 0
+        rep.stream = self.mailboxGenerator(query=q, resp=rep)
 
-        me._status = http.httping.CREATED
+
+    @helping.attributize
+    def mailboxGenerator(self, me, query=None, resp=None):
+        """
+
+        Parameters:
+            me:
+            query:
+            resp:
+
+        """
+        pre = coring.Prefixer(qb64=query["i"])
+        idx = int(query["s"]) if "s" in query else 0
+
+        me._status = http.httping.OK
 
         headers = Hict()
         headers['Content-Type'] = "text/event-stream"
@@ -315,9 +341,11 @@ class MailboxServer(doing.DoDoer):
         headers['Connection'] = "keep-alive"
         me._headers = headers
 
+        yield b'retry: 1000\n'
+
         while True:
             for fn, msg in self.mbx.clonePreIter(pre.qb64b, idx):
-                data = bytearray("id: {}\ndata:".format(fn).encode("utf-8"))
+                data = bytearray("id: {}\nevent: data\ndata: ".format(fn).encode("utf-8"))
                 data.extend(msg.encode("utf-8"))
                 data.extend(b'\n\n')
                 idx += 1
@@ -348,7 +376,7 @@ class Respondant(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
 
         self.hab = hab
-        self.mbx = mbx if mbx is not None else exchanging.Mailboxer()
+        self.mbx = mbx if mbx is not None else exchanging.Mailboxer(name=hab.name)
 
         doers = [doing.doify(self.responseDo)]
         super(Respondant, self).__init__(doers=doers, **kwa)
@@ -371,8 +399,6 @@ class Respondant(doing.DoDoer):
                 dest = rep["dest"]
                 msg = rep["msg"]
 
-                print("we are processing an response", msg)
-
                 kever = self.hab.kevers[dest]
                 if kever is None:
                     logger.Error("unable to reply, dest {} not found".format(dest))
@@ -390,7 +416,8 @@ class Respondant(doing.DoDoer):
                     self.extend([clientDoer])
 
                     createCESRRequest(msg, client)
-                    while client.requests:
+
+                    while not client.responses:
                         yield self.tock
 
                     self.remove([clientDoer])

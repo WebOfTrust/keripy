@@ -9,9 +9,9 @@ import random
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
-from keri import kering
 from hio.help import decking
 
+from keri import kering
 from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, scheming, coring
@@ -64,7 +64,6 @@ class WitnessReceiptor(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        ser = self.hab.kever.serder
         sn = self.hab.kever.sn
         wits = self.hab.kever.wits
 
@@ -72,6 +71,7 @@ class WitnessReceiptor(doing.DoDoer):
             return True
 
         msg = self.msg if self.msg is not None else self.hab.makeOwnEvent(sn=sn)
+        ser = coring.Serder(raw=msg)
 
         witers = []
         for wit in wits:
@@ -82,9 +82,9 @@ class WitnessReceiptor(doing.DoDoer):
 
             _ = (yield self.tock)
 
+
         while True:
             dgkey = dbing.dgKey(ser.preb, ser.digb)
-
             wigs = self.hab.db.getWigs(dgkey)
             if len(wigs) == len(wits):
                 break
@@ -178,7 +178,6 @@ class WitnessInquisitor(doing.DoDoer):
 
             yield
 
-
     def query(self, pre, res="logs"):
         msg = self.hab.query(pre, res=res)  # Query for remote pre Event
         self.msgs.append(msg)
@@ -231,7 +230,7 @@ class WitnessSender(doing.DoDoer):
         for wit in wits:
             witer = self.klas(hab=self.hab, wit=wit)
             witers.append(witer)
-            witer.msgs.append(self.msg)
+            witer.msgs.append(bytearray(self.msg))  # make a copy so every munges their own
             self.extend([witer])
 
             _ = (yield self.tock)
@@ -267,7 +266,7 @@ class TCPWitnesser(doing.DoDoer):
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
         doers = doers if doers is not None else []
-        doers.extend([doing.doify(self.receiptDo)])
+        doers.extend([doing.doify(self.receiptDo), doing.doify(self.escrowDo)])
 
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       **kwa)
@@ -331,6 +330,13 @@ class TCPWitnesser(doing.DoDoer):
             add result of doify on this method to doers list
         """
         yield from self.parser.parsator()  # process messages continuously
+
+    def escrowDo(self, tymth=None, tock=0.0, **opts):
+        yield  # enter context
+        while True:
+            self.kevery.processEscrows()
+            yield
+
 
 
 class HTTPWitnesser(doing.DoDoer):
@@ -502,9 +508,9 @@ class IssueCredentialHandler(doing.DoDoer):
         self.cues = cues if cues is not None else decking.Deck()
 
         self.issuer = issuing.Issuer(hab=hab, name=self.hab.name, noBackers=True)
-        issuerDoer = issuing.IssuerDoer(issuer=self.issuer)
+        self.issuerDoer = issuing.IssuerDoer(issuer=self.issuer)
 
-        doers = [doing.doify(self.msgDo), issuerDoer]
+        doers = [doing.doify(self.msgDo), self.issuerDoer]
 
         super(IssueCredentialHandler, self).__init__(doers=doers, **kwa)
 
@@ -516,6 +522,20 @@ class IssueCredentialHandler(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
+
+        while not self.issuer.incept:
+            yield self.tock
+
+        kevt = self.issuer.incept
+        tevt = self.issuer.ianchor
+
+        witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
+        self.extend([witDoer])
+
+        witSender = WitnessSender(hab=self.hab, msg=tevt)
+        self.extend([witSender])
+
+
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
@@ -526,12 +546,6 @@ class IssueCredentialHandler(doing.DoDoer):
                 schema = payload["schema"]
                 # not all credentials have a source
                 source = payload.get("source")
-
-                recptAddy = obtaining.getendpointbyprefix(recipientIdentifier)
-                rcptClient = clienting.Client(host=recptAddy.ip4, port=recptAddy.tcp)
-                rcptClientDoer = clienting.ClientDoer(client=rcptClient)
-
-                self.extend([rcptClientDoer])
 
                 ref = scheming.jsonSchemaCache.resolve(schema)
                 schemer = scheming.Schemer(raw=ref)
@@ -563,11 +577,8 @@ class IssueCredentialHandler(doing.DoDoer):
                     vc=[handling.envelope(msg, typ=jsonSchema)]
                 )
 
-                excSrdr = exchanging.exchange(route="/credential/issue", payload=pl, recipient=recipientIdentifier)
-                excMsg = self.hab.sanction(excSrdr)
-
-                rcptClient.tx(excMsg)
-
+                self.cues.append(
+                    exchanging.exchange(route="/credential/issue", payload=pl, recipient=recipientIdentifier))
                 yield
 
             yield
@@ -604,12 +615,6 @@ class PresentationRequestHandler(doing.DoDoer):
                 recipientIdentifier = payload["recipient"]
                 schema = payload["schema"]
 
-                recptAddy = obtaining.getendpointbyprefix(recipientIdentifier)
-                rcptClient = clienting.Client(host=recptAddy.ip4, port=recptAddy.tcp)
-                rcptClientDoer = clienting.ClientDoer(client=rcptClient)
-
-                self.extend([rcptClientDoer])
-
                 ref = scheming.jsonSchemaCache.resolve(schema)
                 schemer = scheming.Schemer(raw=ref)
 
@@ -619,10 +624,8 @@ class PresentationRequestHandler(doing.DoDoer):
                     ]
                 )
 
-                excSrdr = exchanging.exchange(route="/presentation/request", payload=pl)
-                excMsg = self.hab.sanction(excSrdr)
-
-                rcptClient.tx(excMsg)
+                self.cues.append(
+                    exchanging.exchange(route="/presentation/request", payload=pl, recipient=recipientIdentifier))
                 yield
 
             yield

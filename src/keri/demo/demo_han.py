@@ -26,7 +26,7 @@ logger = help.ogler.getLogger()
 
 def runDemo(witness=5631, local=5629, expire=0.0):
     """
-    Setup and run one demo controller for sam, like bob only better
+    Setup and run one demo controller for Han, like bob only better
     """
 
 
