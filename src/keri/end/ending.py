@@ -51,6 +51,7 @@ Roles = Rolage(witness='witness', registrar='registrar', watcher='watcher',
 FALSY = (False, 0, "?0", "no", "false", "False", "off")
 TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
 
+# Signature HTTP header support
 Signage = namedtuple("Signage", "markers indexed signer kind", defaults=(None, None, None))
 
 
@@ -236,16 +237,21 @@ class PointEnd(hio.base.Tymee):
                                    #description='Error loading the request body.')
 
         try:
-            raw_json = req.bounded_stream.read()
+            raw = req.bounded_stream.read()
         except Exception:
             raise falcon.HTTPError(falcon.HTTP_400,
                                    title='Read Error',
                                    description='Malformed request body.')
 
-        # Verify signatures here
+        # Verify signatures here on raw
+        # falcon get header call to get Signature header
+
+        # use Serder to load from raw to support any serialization
+        # verify mime type
+
 
         try:
-            data = json.loads(raw_json)
+            data = json.loads(raw)
         except ValueError:
             raise falcon.HTTPError(falcon.HTTP_400,
                                    title='JSON Error',
