@@ -418,4 +418,4 @@ def test_end_demo():
 
 
 if __name__ == '__main__':
-    test_signature_designature()
+    test_seid_api()
