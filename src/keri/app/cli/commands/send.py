@@ -43,11 +43,16 @@ class SenderDoer(doing.DoDoer):
         self.client = clienting.Client(host="", port=self.target)
         self.clientDoer = clienting.ClientDoer(client=self.client)
 
-        doers = [self.ksDoer, self.dbDoer, self.habDoer, self.sendDo, self.clientDoer]
+        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.sendDo), self.clientDoer]
         super(SenderDoer, self).__init__(doers=doers, **kwa)
 
-    @doing.doize()
+
     def sendDo(self, tymth, tock=0.0, **opts):
+        """
+        Returns:  doifiable Doist compatible generator method
+        Usage:
+            add result of doify on this method to doers list
+        """
         # enter context
         self.wind(tymth)
         self.tock = tock

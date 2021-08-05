@@ -50,10 +50,16 @@ class WitnessReceiptor(doing.DoDoer):
         self.hab = hab
         self.msg = msg
         self.klas = klas if klas is not None else HTTPWitnesser
-        super(WitnessReceiptor, self).__init__(doers=[self.receiptDo], **kwa)
+        super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
-    @doing.doize()
+
     def receiptDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns doifiable Doist compatibile generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -136,10 +142,16 @@ class WitnessInquisitor(doing.DoDoer):
         self.klas = klas if klas is not None else HTTPWitnesser
         self.msgs = msgs if msgs is not None else decking.Deck()
 
-        super(WitnessInquisitor, self).__init__(doers=[self.receiptDo], **kwa)
+        super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
-    @doing.doize()
+
     def receiptDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns doifiable Doist compatibile generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -196,10 +208,16 @@ class WitnessSender(doing.DoDoer):
         self.hab = hab
         self.msg = msg
         self.klas = klas if klas is not None else HTTPWitnesser
-        super(WitnessSender, self).__init__(doers=[self.sendDo], **kwa)
+        super(WitnessSender, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
 
-    @doing.doize()
+
     def sendDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns doifiable Doist compatibile generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -249,16 +267,21 @@ class TCPWitnesser(doing.DoDoer):
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
         doers = doers if doers is not None else []
-        doers.extend([self.receiptDo])
+        doers.extend([doing.doify(self.receiptDo)])
 
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       **kwa)
 
         super(TCPWitnesser, self).__init__(doers=doers)
 
-    @doing.doize()
-    def receiptDo(self, tymth=None, tock=0.0):
 
+    def receiptDo(self, tymth=None, tock=0.0):
+        """
+        Returns doifiable Doist compatibile generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -270,7 +293,7 @@ class TCPWitnesser(doing.DoDoer):
                                      kvy=self.kevery)
 
         clientDoer = clienting.ClientDoer(client=client)
-        self.extend([clientDoer, self.msgDo])
+        self.extend([clientDoer, doing.doify(self.msgDo)])
 
         while True:
             while not self.msgs:
@@ -286,10 +309,10 @@ class TCPWitnesser(doing.DoDoer):
             self.sent.append(msg)
             yield self.tock
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns Doist compatibile generator method (doer dog) to process
+        Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
 
         Doist Injected Attributes:
@@ -305,7 +328,7 @@ class TCPWitnesser(doing.DoDoer):
 
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         yield from self.parser.parsator()  # process messages continuously
 
@@ -331,7 +354,7 @@ class HTTPWitnesser(doing.DoDoer):
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
         doers = doers if doers is not None else []
-        doers.extend([self.msgDo])
+        doers.extend([doing.doify(self.msgDo)])
 
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       lax=False,
@@ -339,9 +362,14 @@ class HTTPWitnesser(doing.DoDoer):
 
         super(HTTPWitnesser, self).__init__(doers=doers, **kwa)
 
-    @doing.doize()
-    def msgDo(self, tymth=None, tock=0.0):
 
+    def msgDo(self, tymth=None, tock=0.0):
+        """
+        Returns doifiable Doist compatibile generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -390,11 +418,11 @@ class RotateHandler(doing.DoDoer):
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        doers = [self.msgDo]
+        doers = [doing.doify(self.msgDo)]
 
         super(RotateHandler, self).__init__(doers=doers, **kwa)
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
         Rotate identifier.
@@ -405,6 +433,10 @@ class RotateHandler(doing.DoDoer):
             sigers is list of Sigers representing the sigs on the /presentation/request message
             verfers is list of Verfers of the keys used to sign the message
 
+        Returns doifiable Doist compatibile generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
         """
         while True:
             while self.msgs:
@@ -472,12 +504,18 @@ class IssueCredentialHandler(doing.DoDoer):
         self.issuer = issuing.Issuer(hab=hab, name=self.hab.name, noBackers=True)
         issuerDoer = issuing.IssuerDoer(issuer=self.issuer)
 
-        doers = [self.msgDo, issuerDoer]
+        doers = [doing.doify(self.msgDo), issuerDoer]
 
         super(IssueCredentialHandler, self).__init__(doers=doers, **kwa)
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns doifiable Doist compatibile generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
@@ -546,12 +584,18 @@ class PresentationRequestHandler(doing.DoDoer):
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        doers = [self.msgDo]
+        doers = [doing.doify(self.msgDo)]
 
         super(PresentationRequestHandler, self).__init__(doers=doers, **kwa)
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns doifiable Doist compatibile generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
@@ -598,11 +642,11 @@ class EchoHandler(doing.DoDoer):
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        doers = [self.msgDo]
+        doers = [doing.doify(self.msgDo)]
 
         super(EchoHandler, self).__init__(doers=doers, **kwa)
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
         Echo the proviced message back to the sender
@@ -613,6 +657,10 @@ class EchoHandler(doing.DoDoer):
             sigers is list of Sigers representing the sigs on the /presentation/request message
             verfers is list of Verfers of the keys used to sign the message
 
+        Returns doifiable Doist compatibile generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
         """
         while True:
             while self.msgs:

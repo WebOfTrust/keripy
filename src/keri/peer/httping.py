@@ -64,14 +64,14 @@ class AgentExnServer(doing.DoDoer):
                                      tvy=None,
                                      exc=self.exc)
 
-        doers = [self.exchangerDo, self.msgDo]
+        doers = [doing.doify(self.exchangerDo), doing.doify(self.msgDo)]
 
         super(AgentExnServer, self).__init__(doers=doers, **kwa)
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns Doist compatibile generator method (doer dog) to process
+        Returns doifiable Doist compatibile generator method (doer dog) to process
             incoming message stream of .kevery
 
         Doist Injected Attributes:
@@ -85,19 +85,18 @@ class AgentExnServer(doing.DoDoer):
             tock is injected initial tock value
             opts is dict of injected optional additional parameters
 
-
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         if self.parser.ims:
             logger.info("Client exn-http received:\n%s\n...\n", self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
-    @doing.doize()
+
     def exchangerDo(self, tymth=None, tock=0.0, **opts):
         """
-         Returns Doist compatibile generator method (doer dog) to process
+         Returns doifiable Doist compatibile generator method (doer dog) to process
             .tevery.cues deque
 
         Doist Injected Attributes:
@@ -112,13 +111,14 @@ class AgentExnServer(doing.DoDoer):
             opts is dict of injected optional additional parameters
 
         Usage:
-            add to doers list
+            add result of doify on this method to doers list
         """
         while True:
             for rep in self.exc.processResponseIter():
                 self.rep.msgs.append(rep)
                 yield  # throttle just do one cue at a time
             yield
+
 
     def on_post(self, req, rep):
         """
@@ -350,20 +350,20 @@ class Respondant(doing.DoDoer):
         self.hab = hab
         self.mbx = mbx if mbx is not None else exchanging.Mailboxer()
 
-        doers = [self.responseDo]
+        doers = [doing.doify(self.responseDo)]
         super(Respondant, self).__init__(doers=doers, **kwa)
 
 
-    @doing.doize()
     def responseDo(self, tymth=None, tock=0.0, **opts):
         """
-        Doist compatibile generator method to process response messages from `exn` handlers.
+        Doifiable Doist compatibile generator method to process response messages from `exn` handlers.
         If dest is not in local environment, ignore the response (for now).  If dest has witnesses,
         pick one at random and send the response to that witness for storage in the recipients mailbox
         on that witness.  Otherwise this is a peer to peer HTTP message and should be stored in a mailbox
         locally for the recipient.
 
-
+        Usage:
+            add result of doify on this method to doers list
         """
         while True:
             while self.msgs:

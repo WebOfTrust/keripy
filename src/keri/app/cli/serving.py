@@ -38,7 +38,7 @@ class Serving(doing.DoDoer):
         doers = doers if doers is not None else []
         # self.excDoDoer = exchanging.Exchanger(hab=self.hab)
 
-        doers.extend([self.serviceDo])
+        doers.extend([doing.doify(self.serviceDo)])
 
         logging.info('super')
 
@@ -47,8 +47,13 @@ class Serving(doing.DoDoer):
         # behave = exchanging.Behavior(lambda payload, pre, sigers, verfers: None, None)
         # exc.registerBehavior(route="/cmd", behave=behave)
 
-    @doing.doize()
+
     def serviceDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns:  doifiable Doist compatible generator method
+        Usage:
+            add result of doify on this method to doers list
+        """
         while True:
             for ca, ix in list(self.server.ixes.items()):
                 logging.info("connection")
@@ -92,12 +97,17 @@ class Commandant(doing.DoDoer):
 
         doers = doers if doers is not None else []
 
-        doers.extend([self.msgDo])
+        doers.extend([doing.doify(self.msgDo)])
 
         super(Commandant, self).__init__(doers=doers, **kwa)
 
-    @doing.doize()
+
     def msgDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns:  doifiable Doist compatible generator method
+        Usage:
+            add result of doify on this method to doers list
+        """
         while True:
             if self.parser.ims:
                 logging.info("Server received command:\n%s\n...\n", self.parser.ims[:1024])

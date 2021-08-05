@@ -79,17 +79,22 @@ class MultiSigInceptDoer(doing.DoDoer):
 
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
-        doers = [self.inceptDo, self.ksDoer, self.dbDoer, self.habDoer, self.witq]
+        # doers = [self.inceptDo, self.ksDoer, self.dbDoer, self.habDoer, self.witq]
+        doers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, doing.doify(self.inceptDo)]
         self.hab = hab
         super(MultiSigInceptDoer, self).__init__(doers=doers, **kwa)
 
 
-    @doing.doize()
     def inceptDo(self, tymth, tock=0.0):
-        # enter context
+        """
+        Returns:  doifiable Doist compatible generator method
+        Usage:
+            add result of doify on this method to doers list
+        """
+        # start enter context
         self.wind(tymth)
         self.tock = tock
-        _ = (yield self.tock)
+        _ = (yield self.tock)  # finish enter context
 
         aids = list(self.iopts.aids)
         if self.hab.pre not in aids:

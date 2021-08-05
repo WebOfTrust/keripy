@@ -496,7 +496,7 @@ class Parser:
 
     def msgParsator(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None):
         """
-        Returns generator that upton each iterations extracts and parses msg
+        Returns generator that upon each iteration extracts and parses msg
         with attached crypto material (signature etc) from incoming message
         stream, ims, and dispatches processing of message with attachments.
 
