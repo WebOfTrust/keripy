@@ -560,17 +560,14 @@ class CredentialIssueHandler(doing.DoDoer):
                 schemer = scheming.Schemer(raw=ref)
                 jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
 
-                if type(credSubject) is dict:
-                    credSubject |= dict(si=recipientIdentifier,
-                                        credentialStatus=self.issuer.regk,
-                                        issuanceDate=helping.nowIso8601())
-
                 # Build the credential subject and then the Credentialer for the full credential
                 creder = proving.credential(issuer=self.hab.pre,
                                             schema=schemer.said,
                                             subject=credSubject,
                                             typ=jsonSchema,
                                             source=source)
+
+                print(creder.pretty())
 
                 msg = self.hab.endorse(serder=creder)
 
