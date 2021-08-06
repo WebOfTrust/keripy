@@ -184,6 +184,8 @@ class InceptingDoer(doing.DoDoer):
             yield self.tock
 
 
+
+
         for sig in sigs:
             msd = MultiSigInceptDoer(name=sig, opts=loadMultiInceptOpts("multisig-sample.json"))
             self.extend([msd])
@@ -193,6 +195,7 @@ class InceptingDoer(doing.DoDoer):
 
             self.remove([msd])
             yield self.tock
+
 
 def loadInceptOpts(filename):
     filepath = os.path.join(TEST_DIR, filename)

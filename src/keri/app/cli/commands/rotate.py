@@ -17,7 +17,8 @@ parser.add_argument('--name', '-n', help='Human readable reference', required=Tr
 parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
                                           'http)', default="tcp")
 parser.add_argument('--erase', '-e', help='if this option is provided stale keys will be erased', default=False)
-parser.add_argument('--count', '-C', help='', default=None, type=int, required=False)
+parser.add_argument('--next-count', '-C', help='Count of pre-rotated keys (signing keys after next rotation).', 
+                    default=None, type=int, required=False)
 parser.add_argument('--sith', '-s', help='', default=None, type=int, required=False)
 parser.add_argument('--toad', '-t', help='', default=None, type=int, required=False)
 parser.add_argument('--witnesses', '-w', help='New set of witnesses, replaces all existing witnesses.  Can appear '
@@ -36,7 +37,7 @@ def handler(args):
     name = args.name
 
     rotDoer = RotateDoer(name=name, proto=args.proto, wits=args.witnesses, cuts=args.witness_cut, adds=args.witness_add,
-                         sith=args.sith, count=args.count, toad=args.toad, erase=args.erase)
+                         sith=args.sith, count=args.next_count, toad=args.toad, erase=args.erase)
 
     doers = [rotDoer]
     directing.runController(doers=doers, expire=0.0)

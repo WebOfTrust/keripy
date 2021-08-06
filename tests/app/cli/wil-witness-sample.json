@@ -1,7 +1,7 @@
 {
   "salt": "will-the-witness",
   "transferable": false,
-  "witnesses": [],
+  "wits": [],
   "icount": 1,
   "ncount": 1,
   "isith": 1,

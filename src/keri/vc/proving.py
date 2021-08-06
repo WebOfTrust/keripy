@@ -87,14 +87,14 @@ class Credentialer:
         else:
             raise ValueError("Improper initialization need raw or ked.")
 
-        # try:
-        #     scer = self._typ.resolve(self.crd["x"])
-        #     schemer = Schemer(raw=scer, typ=self._typ)
-        #
-        #     if not schemer.verify(self.raw):
-        #         raise ValidationError("subject is not valid against the schema")
-        # except ValueError:
-        #     logger.info("unable to load / validate schema")
+        try:
+            scer = self._typ.resolve(self.crd["x"])
+            schemer = Schemer(raw=scer, typ=self._typ)
+
+            if not schemer.verify(self.raw):
+                raise ValidationError("subject is not valid against the schema")
+        except ValueError:
+            logger.info("unable to load / validate schema")
 
 
 
