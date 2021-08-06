@@ -654,7 +654,7 @@ class CredentialRevokeHandler(doing.DoDoer):
 
                 iss = issuing.Issuer(hab=self.hab, name=self.hab.name, regk=regk)
                 issDoer = issuing.IssuerDoer(issuer=iss)
-                self.extend(issDoer)
+                self.extend([issDoer])
 
                 tevt, kevt = iss.revoke(vcdig=said)
                 (yield self.tock)
