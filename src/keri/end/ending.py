@@ -229,13 +229,6 @@ class PointEnd(hio.base.Tymee):
         """
         Handles POST requests
         """
-        #try:
-            #data = json.load(req.bounded_stream)
-        #except ValueError:
-            #raise falcon.HTTPError(falcon.HTTP_400,
-                                   #title='Malformed JSON',
-                                   #description='Error loading the request body.')
-
         try:
             raw = req.bounded_stream.read()
         except Exception:
