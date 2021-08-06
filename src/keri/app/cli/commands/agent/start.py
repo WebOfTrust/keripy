@@ -113,9 +113,10 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
 def adminInterface(controller, hab, proofs, adminHttpPort=5623, adminTcpPort=5624):
     echoHandler = agenting.EchoHandler()
     rotateHandler = agenting.RotateHandler(hab=hab)
-    issueHandler = agenting.IssueCredentialHandler(hab=hab)
+    issueHandler = agenting.CredentialIssueHandler(hab=hab)
+    revokeHandler = agenting.CredentialRevokeHandler(hab=hab)
     requestHandler = agenting.PresentationRequestHandler(hab=hab)
-    handlers = [rotateHandler, issueHandler, requestHandler, echoHandler]
+    handlers = [rotateHandler, issueHandler, revokeHandler, requestHandler, echoHandler]
 
     exchanger = exchanging.Exchanger(hab=hab, controller=controller, handlers=handlers)
 

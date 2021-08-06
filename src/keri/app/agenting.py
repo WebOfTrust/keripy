@@ -52,7 +52,6 @@ class WitnessReceiptor(doing.DoDoer):
         self.klas = klas if klas is not None else HTTPWitnesser
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
-
     def receiptDo(self, tymth=None, tock=0.0, **opts):
         """
         Returns doifiable Doist compatibile generator method (doer dog)
@@ -81,7 +80,6 @@ class WitnessReceiptor(doing.DoDoer):
             self.extend([witer])
 
             _ = (yield self.tock)
-
 
         while True:
             dgkey = dbing.dgKey(ser.preb, ser.digb)
@@ -143,7 +141,6 @@ class WitnessInquisitor(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
 
         super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
-
 
     def receiptDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -210,7 +207,6 @@ class WitnessSender(doing.DoDoer):
         self.klas = klas if klas is not None else HTTPWitnesser
         super(WitnessSender, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
 
-
     def sendDo(self, tymth=None, tock=0.0, **opts):
         """
         Returns doifiable Doist compatibile generator method (doer dog)
@@ -272,7 +268,6 @@ class TCPWitnesser(doing.DoDoer):
 
         super(TCPWitnesser, self).__init__(doers=doers)
 
-
     def receiptDo(self, tymth=None, tock=0.0):
         """
         Returns doifiable Doist compatibile generator method (doer dog)
@@ -307,7 +302,6 @@ class TCPWitnesser(doing.DoDoer):
             self.sent.append(msg)
             yield self.tock
 
-
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
@@ -335,7 +329,6 @@ class TCPWitnesser(doing.DoDoer):
         while True:
             self.kevery.processEscrows()
             yield
-
 
 
 class HTTPWitnesser(doing.DoDoer):
@@ -373,7 +366,6 @@ class HTTPWitnesser(doing.DoDoer):
         doers.extend([clientDoer])
 
         super(HTTPWitnesser, self).__init__(doers=doers, **kwa)
-
 
     def msgDo(self, tymth=None, tock=0.0):
         """
@@ -444,7 +436,6 @@ class RotateHandler(doing.DoDoer):
 
         super(RotateHandler, self).__init__(doers=doers, **kwa)
 
-
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
         Rotate identifier.
@@ -511,9 +502,9 @@ class RotateHandler(doing.DoDoer):
             yield
 
 
-class IssueCredentialHandler(doing.DoDoer):
+class CredentialIssueHandler(doing.DoDoer):
     """
-        IssueCredentialHandler - exn behavior for issuing a credential
+        CredentialIssueHandler - exn behavior for issuing a credential
 
         Validates payload against specified JSON-Schema
         Receipts KEL event and propagates TEL event to witnesses
@@ -532,8 +523,7 @@ class IssueCredentialHandler(doing.DoDoer):
 
         doers = [doing.doify(self.msgDo), self.issuerDoer]
 
-        super(IssueCredentialHandler, self).__init__(doers=doers, **kwa)
-
+        super(CredentialIssueHandler, self).__init__(doers=doers, **kwa)
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -554,7 +544,6 @@ class IssueCredentialHandler(doing.DoDoer):
 
         witSender = WitnessSender(hab=self.hab, msg=tevt)
         self.extend([witSender])
-
 
         while True:
             while self.msgs:
@@ -604,6 +593,85 @@ class IssueCredentialHandler(doing.DoDoer):
             yield
 
 
+class CredentialRevokeHandler(doing.DoDoer):
+    """
+        Processor for revoking a credential.  The parameters needed are the SAID of the credential to revoke and the
+        SCID of the revocation registry for the credential. If the identifier of this cloud agent is the issuing
+        party, the credential is revoked by issuing the correct event to the TEL for this credential.
+
+        {
+            regk="<self-certifying identifier of the revocation registry>",
+            said="<self-addressing identifier of the credential to revoke>",
+        }
+    """
+
+    resource = "/cmd/credential/revoke"
+
+    def __init__(self, hab, cues=None, **kwa):
+        """
+        Creates an exn handler capable of revoking credentials previous issued by the identifier
+        managed by the passed in Habitat
+
+        Parameters:
+            hab (Hobitat): the environment of the issuing identifier
+
+        """
+        self.hab = hab
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
+        doers = [doing.doify(self.msgDo)]
+
+        super(CredentialRevokeHandler, self).__init__(doers=doers, **kwa)
+
+    def msgDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Echo the proviced message back to the sender
+
+        Messages:
+            payload is dict representing the body of a /presentation/request message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /presentation/request message
+            verfers is list of Verfers of the keys used to sign the message
+
+        Returns doifiable Doist compatibile generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                pl = msg["payload"]
+
+                regk = pl["regk"]
+                said = pl["said"]
+
+
+                iss = issuing.Issuer(hab=self.hab, name=self.hab.name, regk=regk)
+                issDoer = issuing.IssuerDoer(issuer=iss)
+                self.extend(issDoer)
+
+                tevt, kevt = iss.revoke(vcdig=said)
+                (yield self.tock)
+
+                witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
+                self.extend([witDoer])
+
+                witSender = WitnessSender(hab=self.hab, msg=tevt)
+                self.extend([witSender])
+
+
+                (yield self.tock)
+
+
+            yield
+
+
 class PresentationRequestHandler(doing.DoDoer):
     """
     """
@@ -618,7 +686,6 @@ class PresentationRequestHandler(doing.DoDoer):
         doers = [doing.doify(self.msgDo)]
 
         super(PresentationRequestHandler, self).__init__(doers=doers, **kwa)
-
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -651,6 +718,7 @@ class PresentationRequestHandler(doing.DoDoer):
             yield
 
 
+
 class EchoHandler(doing.DoDoer):
     """
         Processor for testing end to end HTTP with mailbox
@@ -668,7 +736,6 @@ class EchoHandler(doing.DoDoer):
         doers = [doing.doify(self.msgDo)]
 
         super(EchoHandler, self).__init__(doers=doers, **kwa)
-
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
