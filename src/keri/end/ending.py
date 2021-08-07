@@ -109,15 +109,15 @@ def signature(signages):
         items = []
         tag = 'indexed'
         val = '?1' if indexed else '?0'  #  RFC8941 HTTP structured field values
-        items.append('{}="{}"'.format(tag, val))
+        items.append(f'{tag}="{val}"')
         if signer:
             tag = "signer"
             val = signer
-            items.append('{}="{}"'.format(tag, val))
+            items.append(f'{tag}="{val}"')
         if kind:
             tag = "kind"
             val = kind
-            items.append('{}="{}"'.format(tag, val))
+            items.append(f'{tag}="{val}"')
 
         for i, marker in enumerate(markers):
             if tags:
@@ -125,20 +125,20 @@ def signature(signages):
             else:  # assign defaults names since not provided
                 if hasattr(marker, "index"):  # Siger has index
                     if not indexed:
-                        raise ValueError("Indexed signature marker {} when "
-                                         "indexed False.".format(marker))
+                        raise ValueError(f"Indexed signature marker {marker} when "
+                                         f"indexed False.")
                     tag = str(marker.index)
                 elif hasattr(marker, "verfer"):  # Cigar has verfer but not index
                     if indexed:
-                        raise ValueError("Unindexed signature marker {} when "
-                                         "indexed True.".format(marker))
+                        raise ValueError(f"Unindexed signature marker {marker}"
+                                         f"  when indexed True.")
                     tag = marker.verfer.qb64
                 else:
-                    raise ValueError("Invalid signature marker instance = {}."
-                                     "".format(marker))
+                    raise ValueError(f"Invalid signature marker instance = "
+                                     f"{marker}.")
 
             val = marker.qb64
-            items.append('{}="{}"'.format(tag, val))
+            items.append(f'{tag}="{val}"')
 
         values.append(";".join(items))
 
