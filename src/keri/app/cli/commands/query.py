@@ -71,7 +71,8 @@ class QueryDoer(doing.DoDoer):
                                      framed=True,
                                      kvy=kevery)
 
-        self.extend([clientDoer, doing.doify(self.msgDo)])
+        doifiedDoer = doing.doify(self.msgDo)
+        self.extend([clientDoer, doifiedDoer])
 
         msg = self.hab.query(self.pre, res="logs")  # Query for remote pre Event
         client.tx(msg)  # send to connected remote
@@ -95,7 +96,7 @@ class QueryDoer(doing.DoDoer):
         for idx, verfer in enumerate(kev.verfers):
             print(f'\t{idx+1}. {verfer.qb64}')
 
-        self.remove([self.ksDoer, self.dbDoer, self.habDoer, self.msgDo, clientDoer])
+        self.remove([self.ksDoer, self.dbDoer, self.habDoer, doifiedDoer, clientDoer])
 
         return
 

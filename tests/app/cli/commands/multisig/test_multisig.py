@@ -9,8 +9,6 @@ import os
 import shutil
 import time
 
-from dataclasses import dataclass
-
 from hio.base import doing, tyming
 
 from keri.app import indirecting, habbing
@@ -175,7 +173,9 @@ class InceptingDoer(doing.DoDoer):
         sigs = ["multisig1", "multisig2", "multisig3"]
         # Create three separate identifiers to seed the multisig group identifier
         for i, sig in enumerate(sigs):
-            sigr = incept.InceptDoer(name=sig, proto="tcp", opts=loadInceptOpts(f"multisig-{i+1}-sample.json"))
+            opts = loadInceptOpts(f"multisig-{i+1}-sample.json")
+            kwa = opts.__dict__
+            sigr = incept.InceptDoer(name=sig, proto="tcp", **kwa)
             self.extend([sigr])
             while not sigr.done:
                 yield self.tock
@@ -183,11 +183,10 @@ class InceptingDoer(doing.DoDoer):
             self.remove([sigr])
             yield self.tock
 
-
-
-
         for sig in sigs:
-            msd = MultiSigInceptDoer(name=sig, opts=loadMultiInceptOpts("multisig-sample.json"))
+            opts = loadMultiInceptOpts("multisig-sample.json")
+            kwa = opts.__dict__
+            msd = MultiSigInceptDoer(name=sig, **kwa)
             self.extend([msd])
 
             while not msd.done:
