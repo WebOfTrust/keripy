@@ -474,7 +474,6 @@ class MailboxDirector(doing.DoDoer):
         while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
                 # self.sendMessage(msg, label="chit or receipt or replay")
-                print(msg)
                 yield  # throttle just do one cue at a time
             yield
 
@@ -505,7 +504,7 @@ class MailboxDirector(doing.DoDoer):
 
 
 
-    def verifierDo(self, tymth=None, tock=0.0, **opts):
+    def exchangerDo(self, tymth=None, tock=0.0, **opts):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .tevery.cues deque
@@ -532,8 +531,7 @@ class MailboxDirector(doing.DoDoer):
             yield
 
 
-
-    def exchangerDo(self, tymth=None, tock=0.0, **opts):
+    def verifierDo(self, tymth=None, tock=0.0, **opts):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
             .tevery.cues deque
@@ -550,13 +548,12 @@ class MailboxDirector(doing.DoDoer):
             opts is dict of injected optional additional parameters
 
         Usage:
-            add result of doify on this method to doers list
+            add to doers list
         """
         yield  # enter context
         while True:
-            for rep in self.exchanger.processResponseIter():
-                # self.sendMessage(msg, label="response")
-                print(rep["msg"])
+            for msg in self.verifier.processCuesIter(self.tevery.cues):
+                # self.sendMessage(msg, label="replay")
                 yield  # throttle just do one cue at a time
             yield
 

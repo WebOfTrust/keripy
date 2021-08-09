@@ -14,7 +14,7 @@ from hio.base import doing
 
 from keri.app import habbing, keeping, directing, agenting, indirecting
 from keri.core import coring
-from keri.db import basing, dbing
+from keri.db import basing
 
 logger = help.ogler.getLogger()
 
@@ -31,7 +31,7 @@ parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP 
 class InceptOptions:
     salt: str
     transferable: bool
-    witnesses: list
+    wits: list
     icount: int
     isith: int
     ncount: int
@@ -53,7 +53,8 @@ def handler(args):
 
     name = args.name
 
-    icpDoer = InceptDoer(name=name, proto=args.proto, opts=opts)
+    kwa = opts.__dict__
+    icpDoer = InceptDoer(name=name, proto=args.proto, **kwa)
 
     doers = [icpDoer]
     directing.runController(doers=doers, expire=0.0)
@@ -62,19 +63,17 @@ def handler(args):
 
 class InceptDoer(doing.DoDoer):
 
-    def __init__(self, name, proto, opts, **kwa):
+    def __init__(self, name, proto, **kwa):
 
         ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
         db = basing.Baser(name=name, temp=False)  # not opened by default, doer opens
         self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
-        salt = coring.Salter(raw=opts.salt.encode("utf-8")).qb64
-        hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, transferable=opts.transferable,
-                              isith=opts.isith, icount=opts.icount, nsith=opts.nsith, ncount=opts.ncount,
-                              wits=opts.witnesses, salt=salt)
+        kwa["salt"] = coring.Salter(raw=kwa["salt"].encode("utf-8")).qb64
+        hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, **kwa)
         self.habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
-        doers = [doing.doify(self.inceptDo), self.ksDoer, self.dbDoer, self.habDoer]
+        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.inceptDo)]
 
         if proto == "tcp":
             self.mbx = None
@@ -89,7 +88,7 @@ class InceptDoer(doing.DoDoer):
         super(InceptDoer, self).__init__(doers=doers, **kwa)
 
 
-    def inceptDo(self, tymth, tock=0.0, **opts):
+    def inceptDo(self, tymth, tock=0.0):
         """
         Returns:  doifiable Doist compatible generator method
         Usage:

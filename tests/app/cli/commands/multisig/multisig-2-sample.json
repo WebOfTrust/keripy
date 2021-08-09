@@ -1,7 +1,7 @@
 {
   "salt": "multisig00000002",
   "transferable": true,
-  "witnesses": [
+  "wits": [
     "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
     "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
     "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
