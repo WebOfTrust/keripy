@@ -116,24 +116,24 @@ class Consoler(doing.Doer):
         command = None
         verb = chunks[0]
 
-        if verb.startswith('r'):
+        if verb.startswith(b'r'):
             command = ('turn', 'right')
 
-        elif verb.startswith('l'):
+        elif verb.startswith(b'l'):
             command = ('turn', 'left')
 
-        elif verb.startswith('w'):
+        elif verb.startswith(b'w'):
             command = ('walk', 1)
 
-        elif verb.startswith('s'):
+        elif verb.startswith(b's'):
             command = ('stop', '')
 
         else:
-            self.console.put("Invalid command: {0}\n".format(verb))
+            self.console.put( "Invalid command: {0}\n".format(verb))
             self.console.put("Try one of: t[urn] s[top] w[alk]\n")
             return False
 
-        self.console.put("Did: {} {}\n".format(command[0], command[1]))
+        self.console.put("Did: {} {}\n".format(command[0], command[1]).encode("utf-8"))
 
         return (False)
 

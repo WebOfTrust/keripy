@@ -59,7 +59,8 @@ def handler(args):
 
     name = args.name
 
-    icpDoer = MultiSigInceptDoer(name=name, proto=args.proto, opts=opts)
+    kwa = opts.__dict__
+    icpDoer = MultiSigInceptDoer(name=name, proto=args.proto, **kwa)
 
     doers = [icpDoer]
     directing.runController(doers=doers, expire=0.0)
@@ -67,9 +68,8 @@ def handler(args):
 
 class MultiSigInceptDoer(doing.DoDoer):
 
-    def __init__(self, name, opts, **kwa):
+    def __init__(self, name, **kwa):
 
-        self.iopts = opts
         ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
         db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
@@ -80,13 +80,12 @@ class MultiSigInceptDoer(doing.DoDoer):
 
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
-        # doers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, self.inceptDo]
-        doers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, doing.doify(self.inceptDo)]
+        doers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, doing.doify(self.inceptDo, **kwa)]
         self.hab = hab
         super(MultiSigInceptDoer, self).__init__(doers=doers, **kwa)
 
 
-    def inceptDo(self, tymth, tock=0.0):
+    def inceptDo(self, tymth, tock=0.0, **kwa):
         """
         Returns:  doifiable Doist compatible generator method
         Usage:
@@ -97,7 +96,7 @@ class MultiSigInceptDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)  # finish enter context
 
-        aids = list(self.iopts.aids)
+        aids = list(kwa['aids'])
         if self.hab.pre not in aids:
             raise ConfigurationError("Local identifer {} must be member of aids ={}".format(self.hab.pre, aids))
 
@@ -121,18 +120,18 @@ class MultiSigInceptDoer(doing.DoDoer):
             mskeys.append(keys[0])
             msdigers.append(diger)
 
-        wits = self.iopts.witnesses if self.iopts.witnesses is not None else self.hab.kever.wits
+        wits = kwa["witnesses"] if kwa["witnesses"] is not None else self.hab.kever.wits
 
         mssrdr = eventing.incept(keys=[mskey.qb64 for mskey in mskeys],
-                                 sith=self.iopts.isith,
-                                 toad=self.iopts.toad,
+                                 sith=kwa["isith"],
+                                 toad=kwa["toad"],
                                  wits=wits,
-                                 nxt=coring.Nexter(sith=self.iopts.nsith,
+                                 nxt=coring.Nexter(sith=kwa["nsith"],
                                                    digs=[diger.qb64 for diger in msdigers]).qb64,
                                  code=coring.MtrDex.Blake3_256)
 
         sigers = []
-        sigers.extend([coring.Siger(qb64=sig) for sig in self.iopts.sigs])
+        sigers.extend([coring.Siger(qb64=sig) for sig in kwa["sigs"]])
 
         mine = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
         sigers.extend(mine)
@@ -141,7 +140,7 @@ class MultiSigInceptDoer(doing.DoDoer):
         self.hab.prefixes.add(mssrdr.pre)  # make this prefix one of my own
         self.hab.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
 
-        if self.iopts.sigs:
+        if kwa["sigs"]:
 
             mbx = indirecting.MailboxDirector(hab=self.hab)
             witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)

@@ -1,7 +1,7 @@
 {
   "salt": "controller-kel00",
   "transferable": true,
-  "witnesses": [],
+  "wits": [],
   "icount": 1,
   "ncount": 1,
   "isith": 1,
