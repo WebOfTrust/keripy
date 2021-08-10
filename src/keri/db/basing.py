@@ -88,7 +88,7 @@ class dbdict(dict):
 
 
 @dataclass
-class HabitatRecord:
+class HabitatRecord:  # habs
     """
     Habitat prefixes keyed by habitat name
     """
