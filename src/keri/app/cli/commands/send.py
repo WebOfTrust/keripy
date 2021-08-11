@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
+KERI
 keri.kli.commands module
 
 """
@@ -15,13 +16,13 @@ from keri.db import basing
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Send KEL to a target tcp endpoint')
-parser.set_defaults(handler=lambda args: handler(args),
+parser.set_defaults(handler=lambda args: sendKEL(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--target', '-t', help='Target port to send KEL to', default="", required=True)
 
 
-def handler(args):
+def sendKEL(args):
     name = args.name
 
     sendDoer = SenderDoer(name=name, target=int(args.target))
