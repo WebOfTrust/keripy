@@ -193,7 +193,7 @@ class WitnessSender(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, msg, klas=None, **kwa):
+    def __init__(self, hab, msg, wits=None, klas=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -206,6 +206,7 @@ class WitnessSender(doing.DoDoer):
         """
         self.hab = hab
         self.msg = msg
+        self.wits = wits if wits is not None else self.hab.kever.wits
         self.klas = klas if klas is not None else HTTPWitnesser
         super(WitnessSender, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
 
@@ -221,13 +222,11 @@ class WitnessSender(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        wits = self.hab.kever.wits
-
-        if len(wits) == 0:
+        if len(self.wits) == 0:
             return True
 
         witers = []
-        for wit in wits:
+        for wit in self.wits:
             witer = self.klas(hab=self.hab, wit=wit)
             witers.append(witer)
             witer.msgs.append(bytearray(self.msg))  # make a copy so every munges their own
@@ -360,11 +359,18 @@ class HTTPWitnesser(doing.DoDoer):
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
         doers = doers if doers is not None else []
-        doers.extend([doing.doify(self.msgDo)])
+        doers.extend([doing.doify(self.msgDo), doing.doify(self.responseDo)])
 
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       lax=False,
                                       local=True)
+
+        loc = obtaining.getwitnessbyprefix(self.wit)
+
+        self.client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+        clientDoer = http.clienting.ClientDoer(client=self.client)
+
+        doers.extend([clientDoer])
 
         super(HTTPWitnesser, self).__init__(doers=doers, **kwa)
 
@@ -380,25 +386,35 @@ class HTTPWitnesser(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        loc = obtaining.getwitnessbyprefix(self.wit)
-
-        client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
-        clientDoer = http.clienting.ClientDoer(client=client)
-
-        self.extend([clientDoer])
-
         while True:
             while not self.msgs:
                 yield self.tock
 
             msg = self.msgs.popleft()
 
-            httping.createCESRRequest(msg, client)
-            while client.requests:
+            httping.createCESRRequest(msg, self.client)
+            while self.client.requests:
                 yield self.tock
 
-            self.sent.append(msg)
             yield self.tock
+
+    def responseDo(self, tymth=None, tock=0.0):
+        """
+        Processes responses from client and adds them to sent cue
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+
+        while True:
+            while not self.client.responses:
+                rep = self.client.respond()
+
+                self.sent.append(rep)
+                yield
+            yield
 
 
 class RotateHandler(doing.DoDoer):
@@ -444,6 +460,10 @@ class RotateHandler(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()

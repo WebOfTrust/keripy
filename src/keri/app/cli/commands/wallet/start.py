@@ -76,9 +76,9 @@ def runWallet(name="wallet"):
 
     mbx = exchanging.Mailboxer(name=name)
     rep = httping.Respondant(hab=hab, mbx=mbx)
-    mbx = indirecting.MailboxDirector(hab=hab, exc=exchanger, rep=rep)
+    mdir = indirecting.MailboxDirector(hab=hab, exc=exchanger, rep=rep)
 
-    doers = [ksDoer, dbDoer, habDoer, exchanger, mbx, rep]
+    doers = [ksDoer, dbDoer, habDoer, exchanger, mdir, rep]
 
     try:
         tock = 0.03125

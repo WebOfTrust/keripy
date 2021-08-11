@@ -11,7 +11,7 @@ from keri.db import basing
 
 parser = argparse.ArgumentParser(description='Delete existing KERI database')
 parser.set_defaults(handler=lambda args: purge(args.name))
-parser.add_argument('--name', '-n', help='Humane reference')
+parser.add_argument('--name', '-n', help='Human reference')
 
 
 def purge(name):

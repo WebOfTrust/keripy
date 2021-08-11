@@ -8,22 +8,22 @@ import argparse
 from hio import help
 from hio.base import doing
 from hio.core.tcp import clienting
-
 from keri.app import habbing, keeping, directing, obtaining
 from keri.core import eventing, parsing
-from keri.db import basing, dbing
+from keri.db import basing
+from keri.app.cli.common import displaying
 
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Request KEL from Witness')
-parser.set_defaults(handler=lambda args: handler(args),
+parser.set_defaults(handler=lambda args: query(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--witness', '-w', help='QB64 identifier of witness to query', default="", required=True)
 parser.add_argument('--prefix', '-p', help='QB64 identifier to query', default="", required=True)
 
 
-def handler(args):
+def query(args):
     name = args.name
 
     qryDoer = QueryDoer(name=name, wit=args.witness, pre=args.prefix)
@@ -81,20 +81,7 @@ class QueryDoer(doing.DoDoer):
             yield self.tock
 
 
-        kev = kevery.kevers[self.pre]
-        ser = kev.serder
-        dgkey = dbing.dgKey(ser.preb, ser.digb)
-        wigs = self.hab.db.getWigs(dgkey)
-
-        print("Prefix:\t{}".format(self.pre))
-        print("Seq No:\t{}".format(kev.sn))
-        print("\nWitnesses:")
-        print("Count:\t\t{}".format(len(kev.wits)))
-        print("Receipts:\t{}".format(len(wigs)))
-        print("Threshold:\t{}".format(kev.toad))
-        print("\nPublic Keys:\t")
-        for idx, verfer in enumerate(kev.verfers):
-            print(f'\t{idx+1}. {verfer.qb64}')
+        displaying.printIdentifier(self.hab, self.pre)
 
         self.remove([self.ksDoer, self.dbDoer, self.habDoer, doifiedDoer, clientDoer])
 

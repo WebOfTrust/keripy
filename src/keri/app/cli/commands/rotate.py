@@ -12,7 +12,7 @@ from keri.db import basing
 from ... import habbing, keeping, agenting, indirecting, directing
 
 parser = argparse.ArgumentParser(description='Rotate keys')
-parser.set_defaults(handler=lambda args: handler(args))
+parser.set_defaults(handler=lambda args: rotate(args))
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
                                           'http)', default="tcp")
@@ -33,7 +33,13 @@ parser.add_argument('--witness-add', '-a', help='Witnesses to add.  Can appear m
 parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=[], action="store", required=False)
 
 
-def handler(args):
+def rotate(args):
+    """
+    Performs a rotation of the identifier of the environment represented by the provided name parameter
+
+        args (parseargs):  Command line argument
+
+    """
     name = args.name
 
     rotDoer = RotateDoer(name=name, proto=args.proto, wits=args.witnesses, cuts=args.witness_cut, adds=args.witness_add,
@@ -44,10 +50,15 @@ def handler(args):
 
 
 class RotateDoer(doing.DoDoer):
+    """
+    DoDoer that launches Doers needed to perform a rotation and publication of the rotation event
+    to all appropriate witnesses
+    """
 
     def __init__(self, name, proto, sith=None, count=None, erase=None,
-                 toad=None, wits=None, cuts=None, adds=None, data=None, tock=0.0, **kwa):
+                 toad=None, wits=None, cuts=None, adds=None, data=None):
         """
+        Returns DoDoer with all registered Doers needed to perform rotation.
 
         Parameters:
             name is human readable str of identifier
@@ -82,7 +93,7 @@ class RotateDoer(doing.DoDoer):
         self.habDoer = habbing.HabitatDoer(habitat=self.hab)  # setup doer
         doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.rotateDo)]
 
-        super(RotateDoer, self).__init__(doers=doers, **kwa)
+        super(RotateDoer, self).__init__(doers=doers)
 
 
     def rotateDo(self, tymth, tock=0.0, **opts):
@@ -114,7 +125,7 @@ class RotateDoer(doing.DoDoer):
             yield self.tock
         else:  # "http"
             mbx = indirecting.MailboxDirector(hab=self.hab)
-            witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.TCPWitnesser, msg=msg)
+            witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.HTTPWitnesser, msg=msg)
             self.extend(doers=[mbx, witDoer])
             yield self.tock
 

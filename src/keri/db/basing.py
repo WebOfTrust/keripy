@@ -33,13 +33,10 @@ from orderedset import OrderedSet as oset
 
 from hio.base import doing
 
-from  .. import kering
-from  ..help import helping
-from  ..core import coring, eventing, parsing
+from .. import kering
+from ..help import helping
+from ..core import coring, eventing, parsing
 from . import dbing, koming, subing
-
-
-
 
 
 class dbdict(dict):
@@ -84,7 +81,6 @@ class dbdict(dict):
             return default
         else:
             return self.__getitem__(k)
-
 
 
 @dataclass
@@ -133,8 +129,20 @@ class LocationRecord:  # locs
 class WitnessRecord:  # wits
     """
     Tracks the last message index retrieved from the witness mailbox
+    Database Key is the identifier prefix of the witness that is storing
+    events in a mailbox
     """
     idx: int
+
+
+@dataclass
+class GroupIdentifier:  # gids
+    """
+    Track group identifiers that we are participating in
+    Database Key is the identifier prefix of the group identifier
+    """
+    lid: str  # local identifier that contributes to the group
+    aids: list  # all identifiers participating in the group identity
 
 
 def openDB(name="test", **kwa):
@@ -166,7 +174,6 @@ def reopenDB(db, clear=False, **kwa):
 
     finally:
         db.close(clear=clear)
-
 
 
 class Baser(dbing.LMDBer):
@@ -354,15 +361,22 @@ class Baser(dbing.LMDBer):
             key is (eid, scheme) as "eid.scheme"
             value is serialized LocationRecord dataclass
 
-        .wits is named subDB instance of Komer that maps Witness prefix
-            to index of last received mailbox message.
+        .wits is named subDB instance of Komer that maps Witness identifier
+            prefix to index of last received mailbox message.
             key is witness prefix identifier
             value is serialized WitnessRecord dataclass
+
+        .gids is named subDB instance of Komer that maps group identifier prefix
+            to the local identifier prefix and list of remote identifier prefixes
+            that participate in the group identifier.
+            key is group identifier prefix
+            value is serialized GroupIdentifier dataclass
 
     Properties:
 
 
     """
+
     def __init__(self, headDirPath=None, reopen=False, reload=False, **kwa):
         """
         Setup named sub databases.
@@ -404,14 +418,12 @@ class Baser(dbing.LMDBer):
         if reload:
             self.reload()
 
-
     @property
     def kevers(self):
         """
         Returns .db.kevers
         """
         return self._kevers
-
 
     def reopen(self, **kwa):
         """
@@ -448,25 +460,29 @@ class Baser(dbing.LMDBer):
         # habitat prefixes keyed by habitat name
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
-                                 schema=HabitatRecord,)
+                                 schema=HabitatRecord, )
 
         # service endpoint identifer (SEID) prefixes by controller prefixes and roles
         self.ends = koming.DupKomer(db=self,
                                     subkey='ends.',
-                                    schema=EndpointRecord,)
+                                    schema=EndpointRecord, )
 
         # service endpont locations by endpoint identifier prefixes and schemes
         self.locs = koming.Komer(db=self,
-                                    subkey='locs.',
-                                    schema=LocationRecord,)
+                                 subkey='locs.',
+                                 schema=LocationRecord, )
 
-        # service endpont locations by endpoint identifier prefixes and schemes
+        # index of last retrieved message from witness mailbox
         self.wits = koming.Komer(db=self,
                                  subkey='wits.',
-                                 schema=WitnessRecord,)
+                                 schema=WitnessRecord, )
+
+        # group identifiers that we are participating in
+        self.gids = koming.Komer(db=self,
+                                 subkey='gids.',
+                                 schema=GroupIdentifier, )
 
         return self.env
-
 
     def reload(self):
         """
@@ -490,7 +506,6 @@ class Baser(dbing.LMDBer):
         for keys in removes:  # remove bare .habs without key state or KEL event
             self.habs.rem(keys=keys)
 
-
     def clean(self):
         """
         Clean database by creating re-verified cleaned cloned copy
@@ -502,10 +517,10 @@ class Baser(dbing.LMDBer):
         """
         # create copy to clone into
         with openDB(name=self.name,
-                          temp=self.temp,
-                          headDirPath=self.headDirPath,
-                          dirMode=self.dirMode,
-                          clean=True) as copy:
+                    temp=self.temp,
+                    headDirPath=self.headDirPath,
+                    dirMode=self.dirMode,
+                    clean=True) as copy:
 
             with reopenDB(db=self, reuse=True, readonly=True):  # reopen as readonly
                 if not os.path.exists(self.path):
@@ -530,7 +545,7 @@ class Baser(dbing.LMDBer):
                         copy.habs.put(keys=keys, val=val)
                         copy.prefixes.add(val.prefix)
 
-                if not copy.habs.get(keys=(self.name, )):
+                if not copy.habs.get(keys=(self.name,)):
                     raise ValueError("Error cloning habs, missing orig name={}."
                                      "".format(self.name))
 
@@ -545,14 +560,12 @@ class Baser(dbing.LMDBer):
                     if exists:  # only copy end if has at least one matching loc
                         copy.ends.put(keys=keys, vals=[val])
 
-
-
             # remove own db directory replace with clean clone copy
             if os.path.exists(self.path):
                 shutil.rmtree(self.path)
 
             dst = shutil.move(copy.path, self.path)  # move copy back to orig
-            if not dst:  #  move failed leave new in place so can manually fix
+            if not dst:  # move failed leave new in place so can manually fix
                 raise ValueError("Error cloning, unable to move {} to {}."
                                  "".format(copy.path, self.path))
 
@@ -563,7 +576,6 @@ class Baser(dbing.LMDBer):
                 self.kevers[pre] = kever
 
             # replace prefixes with cloned copy prefixes
-
 
             # clear and clone .prefixes
             self.prefixes.clear()
@@ -577,8 +589,6 @@ class Baser(dbing.LMDBer):
         # clone success so remove if still there
         if os.path.exists(copy.path):
             shutil.rmtree(copy.path)
-
-
 
     def clonePreIter(self, pre, fn=0):
         """
@@ -595,7 +605,6 @@ class Baser(dbing.LMDBer):
             except Exception:
                 continue  # skip this event
             yield msg
-
 
     def cloneAllPreIter(self, key=b''):
         """
@@ -615,7 +624,6 @@ class Baser(dbing.LMDBer):
                 continue  # skip this event
             yield msg
 
-
     def cloneEvtMsg(self, pre, fn, dig):
         """
         Clones Event as Serialized CESR Message with Body and attached Foot
@@ -630,7 +638,7 @@ class Baser(dbing.LMDBer):
         """
         msg = bytearray()  # message
         atc = bytearray()  # attachments
-        dgkey = dbing.dgKey(pre, dig) # get message
+        dgkey = dbing.dgKey(pre, dig)  # get message
         if not (raw := self.getEvt(key=dgkey)):
             raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
         msg.extend(raw)
@@ -646,7 +654,7 @@ class Baser(dbing.LMDBer):
         # add indexed witness signatures to attachments
         if (wigs := self.getWigs(key=dgkey)):
             atc.extend(coring.Counter(code=coring.CtrDex.WitnessIdxSigs,
-                                              count=len(wigs) ).qb64b)
+                                      count=len(wigs)).qb64b)
             for wig in wigs:
                 atc.extend(wig)
 
@@ -654,20 +662,20 @@ class Baser(dbing.LMDBer):
         couple = self.getAes(dgkey)
         if couple is not None:
             atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                  count=1 ).qb64b)
+                                      count=1).qb64b)
             atc.extend(couple)
 
         # add trans receipts quadruples to attachments
         if (quads := self.getVrcs(key=dgkey)):
             atc.extend(coring.Counter(code=coring.CtrDex.TransReceiptQuadruples,
-                                  count=len(quads) ).qb64b)
+                                      count=len(quads)).qb64b)
             for quad in quads:
                 atc.extend(quad)
 
         # add nontrans receipts couples to attachments
         if (coups := self.getRcts(key=dgkey)):
             atc.extend(coring.Counter(code=coring.CtrDex.NonTransReceiptCouples,
-                                              count=len(coups) ).qb64b)
+                                      count=len(coups)).qb64b)
             for coup in coups:
                 atc.extend(coup)
 
@@ -684,11 +692,10 @@ class Baser(dbing.LMDBer):
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         pcnt = coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
-                                  count=(len(atc) // 4)).qb64b
+                              count=(len(atc) // 4)).qb64b
         msg.extend(pcnt)
         msg.extend(atc)
         return msg
-
 
     def putEvt(self, key, val):
         """
@@ -700,7 +707,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putVal(self.evts, key, val)
 
-
     def setEvt(self, key, val):
         """
         Use dgKey()
@@ -710,7 +716,6 @@ class Baser(dbing.LMDBer):
         """
         return self.setVal(self.evts, key, val)
 
-
     def getEvt(self, key):
         """
         Use dgKey()
@@ -719,7 +724,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getVal(self.evts, key)
 
-
     def delEvt(self, key):
         """
         Use dgKey()
@@ -727,7 +731,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.evts, key)
-
 
     def putFe(self, key, val):
         """
@@ -739,7 +742,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putVal(self.fels, key, val)
 
-
     def setFe(self, key, val):
         """
         Use fnKey()
@@ -749,7 +751,6 @@ class Baser(dbing.LMDBer):
         """
         return self.setVal(self.fels, key, val)
 
-
     def getFe(self, key):
         """
         Use fnKey()
@@ -758,7 +759,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getVal(self.fels, key)
 
-
     def delFe(self, key):
         """
         Use snKey()
@@ -766,7 +766,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.fels, key)
-
 
     def appendFe(self, pre, val):
         """
@@ -782,7 +781,6 @@ class Baser(dbing.LMDBer):
             val is event digest
         """
         return self.appendOrdValPre(db=self.fels, pre=pre, val=val)
-
 
     def getFelItemPreIter(self, pre, fn=0):
         """
@@ -800,7 +798,6 @@ class Baser(dbing.LMDBer):
             fn is int fn to resume replay. Earliset is fn=0
         """
         return self.getAllOrdItemPreIter(db=self.fels, pre=pre, on=fn)
-
 
     def getFelItemAllPreIter(self, key=b''):
         """
@@ -820,7 +817,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getAllOrdItemAllPreIter(db=self.fels, key=key)
 
-
     def putDts(self, key, val):
         """
         Use dgKey()
@@ -831,7 +827,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putVal(self.dtss, key, val)
 
-
     def setDts(self, key, val):
         """
         Use dgKey()
@@ -841,7 +836,6 @@ class Baser(dbing.LMDBer):
         """
         return self.setVal(self.dtss, key, val)
 
-
     def getDts(self, key):
         """
         Use dgKey()
@@ -850,7 +844,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getVal(self.dtss, key)
 
-
     def delDts(self, key):
         """
         Use dgKey()
@@ -858,7 +851,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.dtss, key)
-
 
     def putAes(self, key, val):
         """
@@ -870,7 +862,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putVal(self.aess, key, val)
 
-
     def setAes(self, key, val):
         """
         Use dgKey()
@@ -880,7 +871,6 @@ class Baser(dbing.LMDBer):
         """
         return self.setVal(self.aess, key, val)
 
-
     def getAes(self, key):
         """
         Use dgKey()
@@ -889,7 +879,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getVal(self.aess, key)
 
-
     def delAes(self, key):
         """
         Use dgKey()
@@ -897,7 +886,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.aess, key)
-
 
     def getSigs(self, key):
         """
@@ -908,7 +896,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getVals(self.sigs, key)
 
-
     def getSigsIter(self, key):
         """
         Use dgKey()
@@ -917,7 +904,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in lexocographic order not insertion order.
         """
         return self.getValsIter(self.sigs, key)
-
 
     def putSigs(self, key, vals):
         """
@@ -930,7 +916,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putVals(self.sigs, key, vals)
 
-
     def addSig(self, key, val):
         """
         Use dgKey()
@@ -941,7 +926,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addVal(self.sigs, key, val)
 
-
     def cntSigs(self, key):
         """
         Use dgKey()
@@ -950,7 +934,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntVals(self.sigs, key)
 
-
     def delSigs(self, key, val=b''):
         """
         Use dgKey()
@@ -958,7 +941,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delVals(self.sigs, key, val)
-
 
     def getWigs(self, key):
         """
@@ -969,7 +951,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getVals(self.wigs, key)
 
-
     def getWigsIter(self, key):
         """
         Use dgKey()
@@ -978,7 +959,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in lexocographic order not insertion order.
         """
         return self.getValsIter(self.wigs, key)
-
 
     def putWigs(self, key, vals):
         """
@@ -991,7 +971,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putVals(self.wigs, key, vals)
 
-
     def addWig(self, key, val):
         """
         Use dgKey()
@@ -1002,7 +981,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addVal(self.wigs, key, val)
 
-
     def cntWigs(self, key):
         """
         Use dgKey()
@@ -1011,7 +989,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntVals(self.wigs, key)
 
-
     def delWigs(self, key, val=b''):
         """
         Use dgKey()
@@ -1019,7 +996,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delVals(self.wigs, key, val)
-
 
     def putRcts(self, key, vals):
         """
@@ -1033,7 +1009,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putVals(self.rcts, key, vals)
 
-
     def addRct(self, key, val):
         """
         Use dgKey()
@@ -1045,7 +1020,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addVal(self.rcts, key, val)
 
-
     def getRcts(self, key):
         """
         Use dgKey()
@@ -1055,7 +1029,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in lexocographic order not insertion order.
         """
         return self.getVals(self.rcts, key)
-
 
     def getRctsIter(self, key):
         """
@@ -1067,7 +1040,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getValsIter(self.rcts, key)
 
-
     def cntRcts(self, key):
         """
         Use dgKey()
@@ -1077,7 +1049,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntVals(self.rcts, key)
 
-
     def delRcts(self, key, val=b''):
         """
         Use dgKey()
@@ -1085,7 +1056,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delVals(self.rcts, key, val)
-
 
     def putUres(self, key, vals):
         """
@@ -1098,7 +1068,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putIoVals(self.ures, key, vals)
 
-
     def addUre(self, key, val):
         """
         Use snKey()
@@ -1110,7 +1079,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addIoVal(self.ures, key, val)
 
-
     def getUres(self, key):
         """
         Use snKey()
@@ -1120,7 +1088,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.ures, key)
-
 
     def getUresIter(self, key):
         """
@@ -1132,7 +1099,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoValsIter(self.ures, key)
 
-
     def getUreLast(self, key):
         """
         Use snKey()
@@ -1142,7 +1108,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValLast(self.ures, key)
-
 
     def getUreItemsNext(self, key=b'', skip=True):
         """
@@ -1158,7 +1123,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNext(self.ures, key, skip)
 
-
     def getUreItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
@@ -1173,7 +1137,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNextIter(self.ures, key, skip)
 
-
     def cntUres(self, key):
         """
         Use snKey()
@@ -1182,7 +1145,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntIoVals(self.ures, key)
 
-
     def delUres(self, key):
         """
         Use snKey()
@@ -1190,7 +1152,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.ures, key)
-
 
     def delUre(self, key, val):
         """
@@ -1204,7 +1165,6 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoVal(self.ures, key, val)
 
-
     def putVrcs(self, key, vals):
         """
         Use dgKey()
@@ -1217,7 +1177,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putVals(self.vrcs, key, vals)
 
-
     def addVrc(self, key, val):
         """
         Use dgKey()
@@ -1229,7 +1188,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addVal(self.vrcs, key, val)
 
-
     def getVrcs(self, key):
         """
         Use dgKey()
@@ -1239,7 +1197,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in lexocographic order not insertion order.
         """
         return self.getVals(self.vrcs, key)
-
 
     def getVrcsIter(self, key):
         """
@@ -1251,7 +1208,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getValsIter(self.vrcs, key)
 
-
     def cntVrcs(self, key):
         """
         Use dgKey()
@@ -1260,7 +1216,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntVals(self.vrcs, key)
 
-
     def delVrcs(self, key, val=b''):
         """
         Use dgKey()
@@ -1268,7 +1223,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database (or key, val if val not b'') Else False
         """
         return self.delVals(self.vrcs, key, val)
-
 
     def putVres(self, key, vals):
         """
@@ -1281,7 +1235,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putIoVals(self.vres, key, vals)
 
-
     def addVre(self, key, val):
         """
         Use snKey()
@@ -1293,7 +1246,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addIoVal(self.vres, key, val)
 
-
     def getVres(self, key):
         """
         Use snKey()
@@ -1303,7 +1255,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.vres, key)
-
 
     def getVresIter(self, key):
         """
@@ -1315,7 +1266,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoValsIter(self.vres, key)
 
-
     def getVreLast(self, key):
         """
         Use snKey()
@@ -1325,7 +1275,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValLast(self.vres, key)
-
 
     def getVreItemsNext(self, key=b'', skip=True):
         """
@@ -1341,7 +1290,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNext(self.vres, key, skip)
 
-
     def getVreItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
@@ -1356,7 +1304,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNextIter(self.vres, key, skip)
 
-
     def cntVres(self, key):
         """
         Use snKey()
@@ -1365,7 +1312,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntIoVals(self.vres, key)
 
-
     def delVres(self, key):
         """
          Use snKey()
@@ -1373,7 +1319,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.vres, key)
-
 
     def delVre(self, key, val):
         """
@@ -1387,7 +1332,6 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoVal(self.vres, key, val)
 
-
     def putKes(self, key, vals):
         """
         Use snKey()
@@ -1397,7 +1341,6 @@ class Baser(dbing.LMDBer):
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.kels, key, vals)
-
 
     def addKe(self, key, val):
         """
@@ -1409,7 +1352,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addIoVal(self.kels, key, val)
 
-
     def getKes(self, key):
         """
         Use snKey()
@@ -1418,7 +1360,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.kels, key)
-
 
     def getKeLast(self, key):
         """
@@ -1429,7 +1370,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoValLast(self.kels, key)
 
-
     def cntKes(self, key):
         """
         Use snKey()
@@ -1438,7 +1378,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntIoVals(self.kels, key)
 
-
     def delKes(self, key):
         """
         Use snKey()
@@ -1446,7 +1385,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.kels, key)
-
 
     def getKelIter(self, pre):
         """
@@ -1468,7 +1406,6 @@ class Baser(dbing.LMDBer):
             pre = pre.encode("utf-8")  # convert str to bytes
         return self.getIoValsAllPreIter(self.kels, pre)
 
-
     def getKelEstIter(self, pre):
         """
         Returns iterator of last one of dup vals at each key in insertion order
@@ -1489,7 +1426,6 @@ class Baser(dbing.LMDBer):
             pre = pre.encode("utf-8")  # convert str to bytes
         return self.getIoValLastAllPreIter(self.kels, pre)
 
-
     def putPses(self, key, vals):
         """
         Use snKey()
@@ -1499,7 +1435,6 @@ class Baser(dbing.LMDBer):
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.pses, key, vals)
-
 
     def addPse(self, key, val):
         """
@@ -1511,7 +1446,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addIoVal(self.pses, key, val)
 
-
     def getPses(self, key):
         """
         Use snKey()
@@ -1520,7 +1454,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.pses, key)
-
 
     def getPsesIter(self, key):
         """
@@ -1531,7 +1464,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoValsIter(self.pses, key)
 
-
     def getPseLast(self, key):
         """
         Use snKey()
@@ -1540,7 +1472,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValLast(self.pses, key)
-
 
     def getPseItemsNext(self, key=b'', skip=True):
         """
@@ -1554,7 +1485,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNext(self.pses, key, skip)
 
-
     def getPseItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
@@ -1567,7 +1497,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNextIter(self.pses, key, skip)
 
-
     def cntPses(self, key):
         """
         Use snKey()
@@ -1576,7 +1505,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntIoVals(self.pses, key)
 
-
     def delPses(self, key):
         """
         Use snKey()
@@ -1584,7 +1512,6 @@ class Baser(dbing.LMDBer):
         Returns True If key  exists in db Else False
         """
         return self.delIoVals(self.pses, key)
-
 
     def delPse(self, key, val):
         """
@@ -1598,7 +1525,6 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoVal(self.pses, key, val)
 
-
     def putPde(self, key, val):
         """
         Use dgKey()
@@ -1609,7 +1535,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putVal(self.pdes, key, val)
 
-
     def setPde(self, key, val):
         """
         Use dgKey()
@@ -1619,7 +1544,6 @@ class Baser(dbing.LMDBer):
         """
         return self.setVal(self.pdes, key, val)
 
-
     def getPde(self, key):
         """
         Use dgKey()
@@ -1628,7 +1552,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getVal(self.pdes, key)
 
-
     def delPde(self, key):
         """
         Use dgKey()
@@ -1636,7 +1559,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delVal(self.pdes, key)
-
 
     def putPwes(self, key, vals):
         """
@@ -1648,7 +1570,6 @@ class Baser(dbing.LMDBer):
         """
         return self.putIoVals(self.pwes, key, vals)
 
-
     def addPwe(self, key, val):
         """
         Use snKey()
@@ -1659,7 +1580,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addIoVal(self.pwes, key, val)
 
-
     def getPwes(self, key):
         """
         Use snKey()
@@ -1668,7 +1588,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.pwes, key)
-
 
     def getPwesIter(self, key):
         """
@@ -1679,7 +1598,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoValsIter(self.pwes, key)
 
-
     def getPweLast(self, key):
         """
         Use snKey()
@@ -1688,7 +1606,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValLast(self.pwes, key)
-
 
     def getPweItemsNext(self, key=b'', skip=True):
         """
@@ -1702,7 +1619,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNext(self.pwes, key, skip)
 
-
     def getPweItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
@@ -1715,7 +1631,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNextIter(self.pwes, key, skip)
 
-
     def cntPwes(self, key):
         """
         Use snKey()
@@ -1724,7 +1639,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntIoVals(self.pwes, key)
 
-
     def delPwes(self, key):
         """
         Use snKey()
@@ -1732,7 +1646,6 @@ class Baser(dbing.LMDBer):
         Returns True If key  exists in db Else False
         """
         return self.delIoVals(self.pwes, key)
-
 
     def delPwe(self, key, val):
         """
@@ -1746,7 +1659,6 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoVal(self.pwes, key, val)
 
-
     def putUwes(self, key, vals):
         """
         Use snKey()
@@ -1757,7 +1669,6 @@ class Baser(dbing.LMDBer):
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.uwes, key, vals)
-
 
     def addUwe(self, key, val):
         """
@@ -1770,7 +1681,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addIoVal(self.uwes, key, val)
 
-
     def getUwes(self, key):
         """
         Use snKey()
@@ -1780,7 +1690,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.uwes, key)
-
 
     def getUwesIter(self, key):
         """
@@ -1792,7 +1701,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoValsIter(self.uwes, key)
 
-
     def getUweLast(self, key):
         """
         Use snKey()
@@ -1802,7 +1710,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValLast(self.uwes, key)
-
 
     def getUweItemsNext(self, key=b'', skip=True):
         """
@@ -1818,7 +1725,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNext(self.uwes, key, skip)
 
-
     def getUweItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
@@ -1833,7 +1739,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNextIter(self.uwes, key, skip)
 
-
     def cntUwes(self, key):
         """
         Use snKey()
@@ -1842,7 +1747,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntIoVals(self.uwes, key)
 
-
     def delUwes(self, key):
         """
         Use snKey()
@@ -1850,7 +1754,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.uwes, key)
-
 
     def delUwe(self, key, val):
         """
@@ -1864,7 +1767,6 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoVal(self.uwes, key, val)
 
-
     def putOoes(self, key, vals):
         """
         Use snKey()
@@ -1874,7 +1776,6 @@ class Baser(dbing.LMDBer):
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.ooes, key, vals)
-
 
     def addOoe(self, key, val):
         """
@@ -1886,7 +1787,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addIoVal(self.ooes, key, val)
 
-
     def getOoes(self, key):
         """
         Use snKey()
@@ -1896,7 +1796,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoVals(self.ooes, key)
 
-
     def getOoeLast(self, key):
         """
         Use snKey()
@@ -1905,7 +1804,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValLast(self.ooes, key)
-
 
     def getOoeItemsNext(self, key=b'', skip=True):
         """
@@ -1919,7 +1817,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNext(self.ooes, key, skip)
 
-
     def getOoeItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
@@ -1932,7 +1829,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNextIter(self.ooes, key, skip)
 
-
     def cntOoes(self, key):
         """
         Use snKey()
@@ -1941,7 +1837,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntIoVals(self.ooes, key)
 
-
     def delOoes(self, key):
         """
         Use snKey()
@@ -1949,7 +1844,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.ooes, key)
-
 
     def delOoe(self, key, val):
         """
@@ -1964,7 +1858,6 @@ class Baser(dbing.LMDBer):
         """
         return self.delIoVal(self.ooes, key, val)
 
-
     def putDes(self, key, vals):
         """
         Use snKey()
@@ -1974,7 +1867,6 @@ class Baser(dbing.LMDBer):
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.dels, key, vals)
-
 
     def addDe(self, key, val):
         """
@@ -1986,7 +1878,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addIoVal(self.dels, key, val)
 
-
     def getDes(self, key):
         """
         Use snKey()
@@ -1995,7 +1886,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoVals(self.dels, key)
-
 
     def getDeLast(self, key):
         """
@@ -2007,7 +1897,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoValLast(self.dels, key)
 
-
     def cntDes(self, key):
         """
         Use snKey()
@@ -2016,7 +1905,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntIoVals(self.dels, key)
 
-
     def delDes(self, key):
         """
         Use snKey()
@@ -2024,7 +1912,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.dels, key)
-
 
     def getDelIter(self, pre):
         """
@@ -2045,7 +1932,6 @@ class Baser(dbing.LMDBer):
             pre = pre.encode("utf-8")  # convert str to bytes
         return self.getIoValsAnyPreIter(self.dels, pre)
 
-
     def putLdes(self, key, vals):
         """
         Use snKey()
@@ -2055,7 +1941,6 @@ class Baser(dbing.LMDBer):
         Duplicates are inserted in insertion order.
         """
         return self.putIoVals(self.ldes, key, vals)
-
 
     def addLde(self, key, val):
         """
@@ -2067,7 +1952,6 @@ class Baser(dbing.LMDBer):
         """
         return self.addIoVal(self.ldes, key, val)
 
-
     def getLdes(self, key):
         """
         Use snKey()
@@ -2077,7 +1961,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoVals(self.ldes, key)
 
-
     def getLdeLast(self, key):
         """
         Use snKey()
@@ -2086,7 +1969,6 @@ class Baser(dbing.LMDBer):
         Duplicates are retrieved in insertion order.
         """
         return self.getIoValLast(self.ldes, key)
-
 
     def getLdeItemsNext(self, key=b'', skip=True):
         """
@@ -2100,7 +1982,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNext(self.ldes, key, skip)
 
-
     def getLdeItemsNextIter(self, key=b'', skip=True):
         """
         Use sgKey()
@@ -2113,7 +1994,6 @@ class Baser(dbing.LMDBer):
         """
         return self.getIoItemsNextIter(self.ldes, key, skip)
 
-
     def cntLdes(self, key):
         """
         Use snKey()
@@ -2122,7 +2002,6 @@ class Baser(dbing.LMDBer):
         """
         return self.cntIoVals(self.ldes, key)
 
-
     def delLdes(self, key):
         """
         Use snKey()
@@ -2130,7 +2009,6 @@ class Baser(dbing.LMDBer):
         Returns True If key exists in database Else False
         """
         return self.delIoVals(self.ldes, key)
-
 
     def delLde(self, key, val):
         """
@@ -2144,7 +2022,6 @@ class Baser(dbing.LMDBer):
             val is dup val (does not include insertion ordering proem)
         """
         return self.delIoVal(self.ldes, key, val)
-
 
 
 class BaserDoer(doing.Doer):
@@ -2199,12 +2076,10 @@ class BaserDoer(doing.Doer):
         super(BaserDoer, self).__init__(**kwa)
         self.baser = baser
 
-
     def enter(self):
         """"""
         if not self.baser.opened:
             self.baser.reopen()
-
 
     def exit(self):
         """"""
