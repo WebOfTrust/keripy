@@ -664,7 +664,8 @@ class HttpMessageHandler(doing.DoDoer):
                                       lax=False,
                                       local=False)
 
-        doers = [doing.doify(self.msgDo), doing.doify(self.cueDo), doing.doify(self.exchangerDo)]
+        doers = [doing.doify(self.msgDo), doing.doify(self.cueDo), doing.doify(self.exchangerDo),
+                 doing.doify(self.escrowDo)]
 
         if self.verifier is not None:
             self.tvy = Tevery(tevers=self.verifier.tevers,

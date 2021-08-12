@@ -56,12 +56,12 @@ parser.add_argument('-p', '--pre',
                     default="",
                     help="Identifier prefix to accept control messages from.")
 
+help.ogler.level = logging.INFO
+help.ogler.reopen(name="keri", temp=True, clear=True)
 logger = help.ogler.getLogger()
 
 
 def launch(args):
-    help.ogler.level = logging.INFO
-    help.ogler.reopen(name=args.name, temp=True, clear=True)
 
     logger.info("\n******* Starting Agent for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.http, args.tcp)
@@ -133,11 +133,10 @@ def adminInterface(controller, hab, proofs, adminHttpPort=5623, adminTcpPort=562
     mbx = exchanging.Mailboxer(name=hab.name)
     rep = httping.Respondant(hab=hab, mbx=mbx)
 
-
     httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep, exchanger=exchanger)
     mbxer = httping.MailboxServer(app=app, hab=hab, mbx=mbx)
     verifier = verifying.Verifier(name=hab.name, hab=hab)
-    wiq = WitnessInquisitor(hab=hab)
+    wiq = agenting.WitnessInquisitor(hab=hab)
 
     proofHandler = AdminProofHandler(hab=hab, controller=controller, mbx=mbx, verifier=verifier, wiq=wiq, proofs=proofs)
     server = http.Server(port=adminHttpPort, app=app)

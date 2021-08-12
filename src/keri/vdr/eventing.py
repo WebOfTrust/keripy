@@ -1190,9 +1190,9 @@ class Tevery:
 
         except Exception as ex:  # log diagnostics errors etc
             if logger.isEnabledFor(logging.DEBUG):
-                logger.exception("Kevery escrow process error: %s\n", ex.args[0])
+                logger.exception("Tevery escrow process error: %s\n", ex.args[0])
             else:
-                logger.error("Kevery escrow process error: %s\n", ex.args[0])
+                logger.error("Tevery escrow process error: %s\n", ex.args[0])
 
 
 
@@ -1207,8 +1207,9 @@ class Tevery:
         event.
 
         """
-        for (pre, sn, digb) in self.reger.getTaeItemIter():
+        for (pre, snb, digb) in self.reger.getTaeItemIter():
             try:
+                sn = int(snb, 16)
                 dgkey = dgKey(pre, digb)
                 traw = self.reger.getTvt(dgkey)
                 if traw is None:
@@ -1257,7 +1258,7 @@ class Tevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.db.delTae(snKey(pre, sn))  # removes from escrow
+                self.reger.delTae(snKey(pre, sn))  # removes from escrow
                 logger.info("Tevery unescrow succeeded in valid event: "
                             "event=\n%s\n", json.dumps(tserder.ked, indent=1))
 
