@@ -5,15 +5,16 @@ keri.vc.proving module
 """
 
 import json
+
 import cbor2 as cbor
 import msgpack
 
 from .. import help
 from ..core import coring
-from ..core.coring import Serials, sniff, Versify, Deversify, Rever
-from ..core.scheming import Saider, Ids, Schemer, JSONSchema
-from ..help import helping
-from ..kering import ValidationError, Version, VersionError, ShortageError, DeserializationError
+from ..core.coring import Serials, sniff, Versify, Deversify, Rever, Counter, CtrDex, Prefixer, Seqner, Diger, Siger
+from ..core.parsing import Parser, Colds
+from ..core.scheming import Saider, Ids, JSONSchema
+from ..kering import Version, VersionError, ShortageError, DeserializationError, ColdStartError, ExtractionError
 
 KERI_REGISTRY_TYPE = "KERICredentialRegistry"
 
@@ -53,6 +54,94 @@ def credential(schema,
 
     return Credentialer(crd=vc, typ=typ)
 
+
+def parseCredential(ims=b'', wallet=None, typ=JSONSchema()):
+    """
+    Parse the ims bytearray as a CESR Proof Format verifiable credential
+
+    Parameters:
+        ims (bytearray) of serialized incoming verifiable credential in CESR Proof Format.
+        wallet (Wallet) storage for the verified credential
+        typ (JSONSchema) class for resolving schema references:
+
+    """
+    try:
+        creder = Credentialer(raw=ims, typ=typ)
+    except ShortageError as e:
+        raise e
+    else:
+        del ims[:creder.size]
+    cold = Parser.sniff(ims)
+    if cold is Colds.msg:
+        raise ColdStartError("unable to parse VC, attachments expected")
+
+    ctr = Parser.extract(ims=ims, klas=Counter, cold=cold)
+    if ctr.code != CtrDex.AttachedMaterialQuadlets:
+        raise ExtractionError("Invalid attachment to VC {}, expected {}"
+                              "".format(ctr.code, CtrDex.AttachedMaterialQuadlets))
+
+    pags = ctr.count * 4
+    if len(ims) != pags:
+        raise ShortageError("VC proof attachment invalid length {}, expected {}"
+                            "".format(len(ims), pags))
+
+    prefixer, seqner, diger, isigers = parseProof(ims=ims)
+
+    if wallet is not None:
+        wallet.processCredential(creder, prefixer, seqner, diger, isigers)
+
+    return creder, prefixer, seqner, diger, isigers
+
+
+def parseProof(ims=b''):
+    cold = Parser.sniff(ims)
+    if cold is Colds.msg:
+        raise ColdStartError("unable to parse VC, attachments expected")
+
+    ctr = Parser.extract(ims=ims, klas=Counter, cold=cold)
+    if ctr.code != CtrDex.TransIndexedSigGroups or ctr.count != 1:
+        raise ExtractionError("Invalid attachment to VC {}, expected one {}"
+                              "".format(ctr.code, CtrDex.TransIndexedSigGroups))
+
+    prefixer = Parser.extract(ims=ims, klas=Prefixer)
+    seqner = Parser.extract(ims=ims, klas=Seqner)
+    diger = Parser.extract(ims=ims, klas=Diger)
+
+    ictr = Parser.extract(ims=ims, klas=Counter)
+    if ictr.code != CtrDex.ControllerIdxSigs:
+        raise ExtractionError("Invalid attachment to VC {}, expected {}"
+                              "".format(ctr.code, CtrDex.ControllerIdxSigs))
+
+    isigers = []
+    for i in range(ictr.count):
+        isiger = Parser.extract(ims=ims, klas=Siger)
+        isigers.append(isiger)
+
+    return prefixer, seqner, diger, isigers
+
+
+def buildProof(prefixer, seqner, diger, sigers):
+    """
+
+    Parameters:
+        prefixer (Prefixer) Identifier of the issuer of the credential
+        seqner (Seqner) is the sequence number of the event used to sign the credential
+        diger (Diger) is the digest of the event used to sign the credential
+        sigers (list) are the cryptographic signatures on the credential
+
+    """
+
+    prf = bytearray()
+    prf.extend(Counter(CtrDex.TransIndexedSigGroups, count=1).qb64b)
+    prf.extend(prefixer.qb64b)
+    prf.extend(seqner.qb64b)
+    prf.extend(diger.qb64b)
+
+    prf.extend(Counter(code=CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
+    for siger in sigers:
+        prf.extend(siger.qb64b)
+
+    return prf
 
 
 class Credentialer:
@@ -96,8 +185,6 @@ class Credentialer:
         # except ValueError:
         #     logger.info("unable to load / validate schema")
 
-
-
     @staticmethod
     def _inhale(raw):
         """
@@ -138,8 +225,6 @@ class Credentialer:
 
         return crd, kind, version, size
 
-
-
     @staticmethod
     def _exhale(crd, kind=None):
         """
@@ -152,7 +237,7 @@ class Credentialer:
             raise ValueError("Unsupported version = {}.{}".format(version.major,
                                                                   version.minor))
 
-        crd["i"] = "{}".format(Saider.Dummy*coring.Matter.Codes[coring.MtrDex.Blake3_256].fs)
+        crd["i"] = "{}".format(Saider.Dummy * coring.Matter.Codes[coring.MtrDex.Blake3_256].fs)
 
         if not kind:
             kind = knd
@@ -189,8 +274,6 @@ class Credentialer:
         """ kind property getter"""
         return self._kind
 
-
-
     @property
     def raw(self):
         """ raw gettter bytes of serialized type """
@@ -207,12 +290,10 @@ class Credentialer:
         self._size = size
         self._saider = Saider(qb64=self._crd[Ids.i], code=coring.MtrDex.Blake3_256, idder=Ids.i)
 
-
     @property
     def crd(self):
         """ crd dict property getter"""
         return self._crd
-
 
     @crd.setter
     def crd(self, crd):
@@ -231,12 +312,10 @@ class Credentialer:
         """ size property getter"""
         return self._size
 
-
     @property
     def saider(self):
         """ saider property getter"""
         return self._saider
-
 
     @property
     def said(self):

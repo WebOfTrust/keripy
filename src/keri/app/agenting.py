@@ -27,7 +27,7 @@ logger = help.ogler.getLogger()
 class WitnessReceiptor(doing.DoDoer):
     """
     Sends messages to all current witnesses of given identifier (from hab) and waits
-    for receipts from each of those witnesses and propogates those receipts to each
+    for receipts from each of those witnesses and propagates those receipts to each
     of the other witnesses after receiving the complete set.
 
     Removes all Doers and exits as Done once all witnesses have been sent the entire
@@ -54,7 +54,7 @@ class WitnessReceiptor(doing.DoDoer):
 
     def receiptDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -117,7 +117,7 @@ class WitnessReceiptor(doing.DoDoer):
 class WitnessInquisitor(doing.DoDoer):
     """
     Sends messages to all current witnesses of given identifier (from hab) and waits
-    for receipts from each of those witnesses and propogates those receipts to each
+    for receipts from each of those witnesses and propagates those receipts to each
     of the other witnesses after receiving the complete set.
 
     Removes all Doers and exits as Done once all witnesses have been sent the entire
@@ -144,7 +144,7 @@ class WitnessInquisitor(doing.DoDoer):
 
     def receiptDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -209,7 +209,7 @@ class WitnessSender(doing.DoDoer):
 
     def sendDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -270,7 +270,7 @@ class TCPWitnesser(doing.DoDoer):
 
     def receiptDo(self, tymth=None, tock=0.0):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -304,7 +304,7 @@ class TCPWitnesser(doing.DoDoer):
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog) to process
+        Returns doifiable Doist compatible generator method (doer dog) to process
             incoming message stream of .kevery
 
         Doist Injected Attributes:
@@ -369,7 +369,7 @@ class HTTPWitnesser(doing.DoDoer):
 
     def msgDo(self, tymth=None, tock=0.0):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -446,7 +446,7 @@ class RotateHandler(doing.DoDoer):
             sigers is list of Sigers representing the sigs on the /presentation/request message
             verfers is list of Verfers of the keys used to sign the message
 
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -526,7 +526,7 @@ class CredentialIssueHandler(doing.DoDoer):
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -629,7 +629,7 @@ class CredentialRevokeHandler(doing.DoDoer):
             sigers is list of Sigers representing the sigs on the /presentation/request message
             verfers is list of Verfers of the keys used to sign the message
 
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -683,7 +683,7 @@ class PresentationRequestHandler(doing.DoDoer):
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -741,7 +741,7 @@ class EchoHandler(doing.DoDoer):
             sigers is list of Sigers representing the sigs on the /presentation/request message
             verfers is list of Verfers of the keys used to sign the message
 
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list

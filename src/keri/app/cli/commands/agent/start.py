@@ -6,6 +6,7 @@ keri.kli.witness module
 Witness command line interface
 """
 import argparse
+import json
 import logging
 
 import falcon
@@ -20,7 +21,7 @@ from keri.app.cli.common import existing
 from keri.core import scheming
 from keri.peer import httping, exchanging
 from keri.vc import walleting, handling
-from keri.vdr import issuing
+from keri.vdr import issuing, verifying
 
 d = "Runs KERI Agent controller.\n"
 d += "Example:\nagent -t 5621\n"
@@ -55,18 +56,15 @@ parser.add_argument('-p', '--pre',
                     default="",
                     help="Identifier prefix to accept control messages from.")
 
+logger = help.ogler.getLogger()
 
 
 def launch(args):
     help.ogler.level = logging.INFO
     help.ogler.reopen(name=args.name, temp=True, clear=True)
 
-    logger = help.ogler.getLogger()
-
     logger.info("\n******* Starting Agent for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.http, args.tcp)
-
-
 
     runAgent(controller=args.pre, name=args.name,
              httpPort=int(args.http),
@@ -138,22 +136,26 @@ def adminInterface(controller, hab, proofs, adminHttpPort=5623, adminTcpPort=562
 
     httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep, exchanger=exchanger)
     mbxer = httping.MailboxServer(app=app, hab=hab, mbx=mbx)
-    proofHandler = AdminProofHandler(hab=hab, controller=controller, mbx=mbx, proofs=proofs)
+    verifier = verifying.Verifier(name=hab.name, hab=hab)
+    wiq = WitnessInquisitor(hab=hab)
+
+    proofHandler = AdminProofHandler(hab=hab, controller=controller, mbx=mbx, verifier=verifier, wiq=wiq, proofs=proofs)
     server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [exchanger, issDoer, tcpServerDoer, directant, httpServerDoer, httpHandler, rep, mbxer, proofHandler]
+    doers = [exchanger, issDoer, tcpServerDoer, directant, httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler]
 
     return doers
 
 
 class AdminProofHandler(doing.Doer):
-    def __init__(self, hab, controller, mbx, proofs=None, **kwa):
+    def __init__(self, hab, controller, mbx, verifier, wiq, proofs=None, **kwa):
         self.hab = hab
         self.controller = controller
         self.mbx = mbx
+        self.verifier = verifier
         self.proofs = proofs if proofs is not None else decking.Deck()
-
+        self.wiq = wiq
         super(AdminProofHandler, self).__init__(**kwa)
 
     def do(self, tymth, tock=0.0, **opts):
@@ -173,16 +175,40 @@ class AdminProofHandler(doing.Doer):
             while self.proofs:
                 (pre, vc) = self.proofs.popleft()
 
+                regk = vc["vc"]["d"]["credentialStatus"]
+                vcid = vc["vc"]["i"]
+                vcdata = json.dumps(vc["vc"]).encode("utf-8")
+                vcproof = vc["proof"].encode("utf-8")
+
+                print(regk)
+                print(vcid)
+
+                msg = self.verifier.query(regk,
+                                          vcid,
+                                          res="tels")
+                print(msg)
+                self.wiq.msgs.append(msg)
+                print("foo")
+                # potentially add another doer -  to wait on this?
+                # map the vc to the pending credential status and store the message from there?
+                # like an escrow for pending verifications
+                while regk not in self.verifier.tevers:
+                    print("bar")
+                    logger.info("%s:\n waiting for retrieval of TEL %s.\n\n",
+                                self.hab.pre, regk)
+                    yield self.tock
+
+                status = self.verifier.verify(pre, regk, vcid, vcdata, vcproof)
                 pl = dict(
                     pre=pre.qb64,
-                    vc=vc
+                    vc=vc,
+                    status=status,
                 )
+
+                print("STORING VC PROOF FOR MY CONTROLLER", self.controller, pl)
 
                 ser = exchanging.exchange(route="/cmd/presentation/proof", payload=pl, recipient=self.controller)
                 msg = self.hab.sanction(ser)
-
-                print("STORING VC PROOF FOR MY CONTROLLER", self.controller)
-
                 self.mbx.storeMsg(self.controller, msg)
 
                 yield

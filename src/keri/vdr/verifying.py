@@ -8,7 +8,7 @@ VC verifier support
 
 from .. import help
 from ..core import parsing, coring
-from ..core.coring import Cigar
+from ..vc import proving
 from ..vdr import eventing
 from ..vdr.eventing import VcStates
 from ..vdr.viring import Registry
@@ -52,14 +52,13 @@ class Verifier:
 
         self.inited = True
 
-    def verify(self, pre, sidx, regk, vcid, vcdata, vcsig):
+    def verify(self, pre, regk, vcid, vcdata, vcsig):
         """
-        Verifiy the signature and issuance status of a verifiable credential.
+        Verify the signature and issuance status of a verifiable credential.
         Returns True if the signature is valid
 
         Parameters:
             pre is qb64 prefix identifier of issuer
-            sidx is Int signing key index into issuers keys
             regk is qb64 identifier of the registry
             vcpre is qb64 identifier of VC
             vcdata is the serialized content of the VC
@@ -74,19 +73,10 @@ class Verifier:
         if pre not in self.hab.kevers:
             return False
 
-        kever = self.hab.kevers[pre]
-        ksn = kever.state()
+        creder = proving.parseCredential(vcdata)
+        prefixer, seqner, diger, isigers = proving.parseProof(vcsig)
 
-        # invalid signature index
-        if sidx >= len(ksn.ked["k"]):
-            return False
-
-        # assume single signature for now
-        verfer = kever.verfers[sidx]
-
-        cigar = Cigar(qb64=vcsig)
-
-        return verfer.verify(sig=cigar.raw, ser=vcdata)
+        return self.hab.verify(creder, prefixer, seqner, diger, isigers)
 
     def query(self, regk, vcid, res, dt=None, dta=None, dtb=None):
         """
