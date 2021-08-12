@@ -298,6 +298,8 @@ class Reactor(doing.DoDoer):
         yield  # enter context
         while True:
             self.kevery.processEscrows()
+            if self.tvy is not None:
+                self.tvy.processEscrows()
             yield
         return False  # should never get here except forced close
 
@@ -681,6 +683,8 @@ class Reactant(doing.DoDoer):
         yield  # enter context
         while True:
             self.kevery.processEscrows()
+            if self.tevery is not None:
+                self.tevery.processEscrows()
             yield
         return False  # should never get here except forced close
 

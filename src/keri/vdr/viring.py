@@ -167,7 +167,7 @@ class Registry(dbing.LMDBer):
             couple = self.getAnc(dgkey)
             if couple is not None:
                 atc.extend(coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                      count=1 ).qb64b)
+                                          count=1).qb64b)
                 atc.extend(couple)
 
             # prepend pipelining counter to attachments
@@ -396,6 +396,13 @@ class Registry(dbing.LMDBer):
         Returns None if no entry at key
         """
         return self.getVal(self.taes, key)
+
+    def getTaeItemIter(self):
+        """
+        Return iterator of all items in .taes
+
+        """
+        return self.getAllItemIter(self.taes, split=True)
 
     def delTae(self, key):
         """

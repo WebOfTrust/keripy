@@ -28,126 +28,6 @@ CESR_DATE_HEADER = "CESR-DATE"
 CESR_RECIPIENT_HEADER = "CESR-RECIPIENT"
 
 
-class AgentExnServer(doing.DoDoer):
-    """
-    Peer 2 Peer HTTP Server that allows for handler registration of `exn` messages by providing an Exchanger
-    that is configured with Handlers for all message types to handle.
-
-
-    """
-
-    RoutePrefix = "/exn"
-
-    def __init__(self, exc, app, rep, **kwa):
-        """
-        Registers all behaviors in provided Exchanged as routes to be handled in the provided Falcon app.
-        POST requests are extracted and mapped to `exn` messages that are passed to the provided Exchanger.
-
-        Parameters:
-            exc (Exchanger):   an the instance of Exchanger configured to handle behaviors
-            rep (Respondant):  Handles response messages from exchange behaviors
-            app (falcon.App):  app to use for route registration
-
-        """
-        self.exc = exc
-        self.rep = rep
-        self.rxbs = bytearray()
-
-        self.app = app if app is not None else falcon.App(cors_enable=True)
-
-        # for route in exc.routes:
-        #     self.app.add_route(self.RoutePrefix + route, self)
-
-        self.parser = parsing.Parser(ims=self.rxbs,
-                                     framed=True,
-                                     kvy=None,
-                                     tvy=None,
-                                     exc=self.exc)
-
-        self.app.add_sink(prefix=self.RoutePrefix, sink=self.on_post)
-
-
-        doers = [doing.doify(self.exchangerDo), doing.doify(self.msgDo)]
-
-        super(AgentExnServer, self).__init__(doers=doers, **kwa)
-
-
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Returns doifiable Doist compatibile generator method (doer dog) to process
-            incoming message stream of .kevery
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        if self.parser.ims:
-            logger.info("Client exn-http received:\n%s\n...\n", self.parser.ims[:1024])
-        done = yield from self.parser.parsator()  # process messages continuously
-        return done  # should nover get here except forced close
-
-
-    def exchangerDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .tevery.cues deque
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        while True:
-            for rep in self.exc.processResponseIter():
-                self.rep.msgs.append(rep)
-                yield  # throttle just do one cue at a time
-            yield
-
-
-    def on_post(self, req, rep):
-        """
-        Handles POST requests by generating an `exn` message from the request and passing it to the Exchanger
-
-        Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
-
-        """
-        if req.method == 'OPTIONS':
-            rep.status = falcon.HTTP_200
-            return
-
-
-        cr = parseCesrHttpRequest(req=req, prefix=self.RoutePrefix)
-
-        serder = exchanging.exchange(route=cr.resource, date=cr.date, payload=cr.payload, recipient=cr.recipient)
-        msg = bytearray(serder.raw)
-        msg.extend(cr.attachments.encode("utf-8"))
-
-        self.rxbs.extend(msg)
-
-        rep.status = falcon.HTTP_202  # This is the default status
-
-
 @dataclass
 class CesrRequest:
     resource: str
@@ -363,7 +243,7 @@ class Respondant(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, msgs=None, mbx=None, **kwa):
+    def __init__(self, hab, reps=None, cues=None, mbx=None, **kwa):
         """
         Creates Respondant that uses local environment to find the destination KEL and stores
         peer to peer messages in mbx, the mailboxer
@@ -373,12 +253,13 @@ class Respondant(doing.DoDoer):
             mbx (Mailboxer): storage for local messages
 
         """
-        self.msgs = msgs if msgs is not None else decking.Deck()
+        self.reps = reps if reps is not None else decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
 
         self.hab = hab
         self.mbx = mbx if mbx is not None else exchanging.Mailboxer(name=hab.name)
 
-        doers = [doing.doify(self.responseDo)]
+        doers = [doing.doify(self.responseDo), doing.doify(self.cueDo)]
         super(Respondant, self).__init__(doers=doers, **kwa)
 
 
@@ -394,8 +275,8 @@ class Respondant(doing.DoDoer):
             add result of doify on this method to doers list
         """
         while True:
-            while self.msgs:
-                rep = self.msgs.popleft()
+            while self.reps:
+                rep = self.reps.popleft()
                 dest = rep["dest"]
                 msg = rep["msg"]
 
@@ -424,3 +305,35 @@ class Respondant(doing.DoDoer):
 
                 yield  # throttle just do one cue at a time
             yield
+
+
+
+    def cueDo(self, tymth=None, tock=0.0, **opts):
+        """
+         Returns doifiable Doist compatibile generator method (doer dog) to process
+            Kevery and Tevery cues deque
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        yield  # enter context
+        while True:
+            while self.cues:  # iteratively process each cue in cues
+                msg = bytearray()
+                cue = self.cues.popleft()
+                cueKin = cue["kin"]  # type or kind of cue
+
+                if cueKin in ("receipt",):  # cue to receipt a received event from other pre
+                    serder = cue["serder"]  # Serder of received event for other pre
+                    msg.extend(self.hab.receipt(serder))
+                    print("storing receipt in", serder.pre)
+
+                    self.mbx.storeMsg(dest=serder.preb, msg=msg)
+                elif cueKin in ("replay",):
+                    dest = cue["dest"]
+                    msgs = cue["msgs"]
+                    self.mbx.storeMsg(dest=dest, msg=msgs)
+
+                yield self.tock
+
+            yield self.tock
