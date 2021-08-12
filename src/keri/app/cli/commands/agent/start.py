@@ -20,6 +20,7 @@ from keri.app.cli.common import existing
 from keri.core import scheming
 from keri.peer import httping, exchanging
 from keri.vc import walleting, handling
+from keri.vdr import issuing
 
 d = "Runs KERI Agent controller.\n"
 d += "Example:\nagent -t 5621\n"
@@ -113,8 +114,11 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
 def adminInterface(controller, hab, proofs, adminHttpPort=5623, adminTcpPort=5624):
     echoHandler = agenting.EchoHandler()
     rotateHandler = agenting.RotateHandler(hab=hab)
-    issueHandler = agenting.CredentialIssueHandler(hab=hab)
-    revokeHandler = agenting.CredentialRevokeHandler(hab=hab)
+    issuer = issuing.Issuer(hab=hab, name=hab.name, noBackers=True)
+    issDoer = issuing.IssuerDoer(issuer=issuer)
+
+    issueHandler = agenting.CredentialIssueHandler(hab=hab, issuer=issuer)
+    revokeHandler = agenting.CredentialRevokeHandler(hab=hab, issuer=issueHandler.issuer)
     requestHandler = agenting.PresentationRequestHandler(hab=hab)
     handlers = [rotateHandler, issueHandler, revokeHandler, requestHandler, echoHandler]
 
@@ -138,7 +142,7 @@ def adminInterface(controller, hab, proofs, adminHttpPort=5623, adminTcpPort=562
     server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [exchanger,  tcpServerDoer, directant, httpServerDoer, httpHandler, rep, mbxer, proofHandler]
+    doers = [exchanger, issDoer, tcpServerDoer, directant, httpServerDoer, httpHandler, rep, mbxer, proofHandler]
 
     return doers
 

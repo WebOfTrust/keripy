@@ -513,15 +513,14 @@ class CredentialIssueHandler(doing.DoDoer):
 
     resource = "/cmd/credential/issue"
 
-    def __init__(self, hab, cues=None, **kwa):
+    def __init__(self, hab, issuer=None, cues=None, **kwa):
         self.hab = hab
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.issuer = issuing.Issuer(hab=hab, name=self.hab.name, noBackers=True)
-        self.issuerDoer = issuing.IssuerDoer(issuer=self.issuer)
+        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=hab, name=self.hab.name, noBackers=True)
 
-        doers = [doing.doify(self.msgDo), self.issuerDoer]
+        doers = [doing.doify(self.msgDo)]
 
         super(CredentialIssueHandler, self).__init__(doers=doers, **kwa)
 
@@ -567,8 +566,6 @@ class CredentialIssueHandler(doing.DoDoer):
                                             typ=jsonSchema,
                                             source=source)
 
-                print(creder.pretty())
-
                 msg = self.hab.endorse(serder=creder)
 
                 tevt, kevt = self.issuer.issue(vcdig=creder.said)
@@ -586,7 +583,6 @@ class CredentialIssueHandler(doing.DoDoer):
                 self.cues.append(
                     exchanging.exchange(route="/credential/issue", payload=pl, recipient=recipientIdentifier))
                 yield
-
             yield
 
 
@@ -600,11 +596,12 @@ class CredentialRevokeHandler(doing.DoDoer):
             regk="<self-certifying identifier of the revocation registry>",
             said="<self-addressing identifier of the credential to revoke>",
         }
+
     """
 
     resource = "/cmd/credential/revoke"
 
-    def __init__(self, hab, cues=None, **kwa):
+    def __init__(self, hab, issuer=None, cues=None, **kwa):
         """
         Creates an exn handler capable of revoking credentials previous issued by the identifier
         managed by the passed in Habitat
@@ -614,6 +611,7 @@ class CredentialRevokeHandler(doing.DoDoer):
 
         """
         self.hab = hab
+        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=self.hab, name=self.hab.name)
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
@@ -648,12 +646,11 @@ class CredentialRevokeHandler(doing.DoDoer):
                 regk = pl["regk"]
                 said = pl["said"]
 
+                if regk != self.issuer.regk:
+                    raise ValueError("provided registry identifier {} does not match our registry {}"
+                                     "".format(regk, self.issuer.regk))
 
-                iss = issuing.Issuer(hab=self.hab, name=self.hab.name, regk=regk)
-                issDoer = issuing.IssuerDoer(issuer=iss)
-                self.extend([issDoer])
-
-                tevt, kevt = iss.revoke(vcdig=said)
+                tevt, kevt = self.issuer.revoke(vcdig=said)
                 (yield self.tock)
 
                 witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)

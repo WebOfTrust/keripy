@@ -1099,7 +1099,6 @@ class Tevery:
                 raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
             tever = self.tevers[regk]
-
             if ilk in [Ilks.vrt]:
                 sno = tever.sn + 1  # proper sn of new inorder event
             else:
@@ -1107,7 +1106,7 @@ class Tevery:
                 sno = 0 if esn is None else esn + 1
 
             if sn > sno:  # sn later than sno so out of order escrow
-                # escrow out-of-order event
+                # escrow oEut-of-order event
                 self.escrowOOEvent(serder=serder, seqner=seqner, diger=diger)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
             elif sn == sno:  # new inorder event
