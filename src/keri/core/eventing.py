@@ -1931,8 +1931,8 @@ class Kever:
 
     def validateDelegation(self, serder, sigers, wigers=None, seqner=None, diger=None):
         """
-        Returns delegator's qb64 identifier prefix if seal instance of SealLocation if seal validates with respect
-        to Delegator's KEL
+        Returns delegator's qb64 identifier prefix if seal instance of
+        SealLocation if seal validates with respect to Delegator's KEL
         Location Seal is from Delegate's establishment event
         Assumes state setup
 
@@ -1963,6 +1963,9 @@ class Kever:
         key = snKey(pre=delegator, sn=ssn)
         raw = self.db.getKeLast(key)  # get dig of delegating event
         if raw is None:  # no delegating event at key pre, sn
+            #  id own is delgator then create cue to created delegating event
+            #  this may include MFA business logic
+
             #  escrow event here
             inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
             sn = self.validateSN(sn=serder.ked["s"], inceptive=inceptive)
