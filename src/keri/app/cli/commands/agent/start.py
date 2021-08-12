@@ -13,12 +13,11 @@ from hio.base import doing
 from hio.core import http
 from hio.core.tcp import serving as tcpServing
 from hio.help import decking
-
 from keri import __version__, kering
 from keri import help
-from keri.app import directing, habbing, keeping, agenting, indirecting
+from keri.app import directing, agenting, indirecting
+from keri.app.cli.common import existing
 from keri.core import scheming
-from keri.db import basing
 from keri.peer import httping, exchanging
 from keri.vc import walleting, handling
 
@@ -83,14 +82,7 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
     Setup and run one agent
     """
 
-    ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
-    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
-    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
-
-    # setup habitat
-    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
-    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
+    hab, doers = existing.openHabitat(name=name)
 
     # setup doers
     server = tcpServing.Server(host="", port=tcp)
@@ -107,7 +99,7 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
 
     mbx = indirecting.MailboxDirector(hab=hab, exc=exchanger)
 
-    doers = [ksDoer, dbDoer, habDoer, exchanger, directant, tcpServerDoer, mbx]
+    doers.extend([exchanger, directant, tcpServerDoer, mbx])
     doers.extend(adminInterface(controller, hab, proofHandler.proofs, adminHttpPort, adminTcpPort))
 
     try:
@@ -137,13 +129,15 @@ def adminInterface(controller, hab, proofs, adminHttpPort=5623, adminTcpPort=562
 
     mbx = exchanging.Mailboxer(name=hab.name)
     rep = httping.Respondant(hab=hab, mbx=mbx)
-    exnServer = httping.AgentExnServer(exc=exchanger, app=app, rep=rep)
+
+
+    httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep, exchanger=exchanger)
     mbxer = httping.MailboxServer(app=app, hab=hab, mbx=mbx)
     proofHandler = AdminProofHandler(hab=hab, controller=controller, mbx=mbx, proofs=proofs)
-    server = http.Server(port=adminHttpPort, app=exnServer.app)
+    server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [exchanger, exnServer, tcpServerDoer, directant, httpServerDoer, rep, mbxer, proofHandler]
+    doers = [exchanger,  tcpServerDoer, directant, httpServerDoer, httpHandler, rep, mbxer, proofHandler]
 
     return doers
 
