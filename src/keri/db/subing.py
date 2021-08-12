@@ -173,6 +173,9 @@ class DupSuber(SuberBase):
     """
     Sub DB of LMDBer. Subclass of SuberBase that supports multiple entries at
     each key (duplicates) with dupsort==True
+
+    Do not use if  serialized value is greater than 511 bytes.
+    This is a limitation of dupsort==True sub dbs in LMDB
     """
 
     def __init__(self, db: Type[dbing.LMDBer], *, subkey: str = 'docs.', **kwa):
@@ -438,6 +441,9 @@ class SerderDupSuber(DupSuber):
     with dupsort==True, where data is serialized Serder instance.
     Automatically serializes and deserializes using Serder methods
 
+    Do not use if  serialized value is greater than 511 bytes.
+    This is a limitation of dupsort==True sub dbs in LMDB
+
     """
 
     def __init__(self, *pa, **kwa):
@@ -692,6 +698,8 @@ class MatterDupSuber(DupSuber):
     which is a fully qualified serialization of matter subclass instance
     Automatically serializes and deserializes from qb64b to/from Matter instances
 
+    Do not use if  serialized value is greater than 511 bytes.
+    This is a limitation of dupsort==True sub dbs in LMDB
     """
     def __init__(self, *pa, klas: Type[coring.Matter] = coring.Matter, **kwa):
         """

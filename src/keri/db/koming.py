@@ -286,6 +286,9 @@ class DupKomer(KomerBase):
     """
     Duplicate Keyspace Object Mapper factory class that supports multiple entries
     a given database key (lmdb dupsort == True).
+
+    Do not use if Komer schema instance serialized is greater than 511 bytes.
+    This is a limitation of dupsort==True sub dbs in LMDB
     """
     def __init__(self,
              db: dbing.LMDBer, *,
@@ -897,3 +900,110 @@ class MultiKomer(KomerBase):
                     if val == proval[33:]:  #  strip of proem
                         return cursor.delete()
         return False
+
+
+
+    # For subdbs with no duplicate values allowed at each key. (dupsort==False)
+    # and use keys with ordinal as monotonically increasing number part
+    # such as sn or fn
+    def appendOrdValPre(self, db, pre, val):
+        """
+        Appends val in order after last previous key with same pre in db.
+        Returns ordinal number in, on, of appended entry. Appended on is 1 greater
+        than previous latest on.
+        Uses snKey(pre, on) for entries.
+
+        Append val to end of db entries with same pre but with on incremented by
+        1 relative to last preexisting entry at pre.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            pre is bytes identifier prefix for event
+            val is event digest
+        """
+        # set key with fn at max and then walk backwards to find last entry at pre
+        # if any otherwise zeroth entry at pre
+        key = snKey(pre, MaxON)
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            on = 0  # unless other cases match then zeroth entry at pre
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  # max is past end of database
+                #  so either empty database or last is earlier pre or
+                #  last is last entry  at same pre
+                if cursor.last():  # not empty db. last entry earlier than max
+                    ckey = cursor.key()
+                    cpre, cn = splitKeyON(ckey)
+                    if cpre == pre:  # last is last entry for same pre
+                        on = cn + 1  # increment
+            else:  # not past end so not empty either later pre or max entry at pre
+                ckey = cursor.key()
+                cpre, cn = splitKeyON(ckey)
+                if cpre == pre:  # last entry for pre is already at max
+                    raise ValueError("Number part of key {}  exceeds maximum"
+                                     " size.".format(ckey))
+                else:  # later pre so backup one entry
+                    # either no entry before last or earlier pre with entry
+                    if cursor.prev():  # prev entry, maybe same or earlier pre
+                        ckey = cursor.key()
+                        cpre, cn = splitKeyON(ckey)
+                        if cpre == pre:  # last entry at pre
+                            on = cn + 1  # increment
+
+            key = onKey(pre, on)
+
+            if not cursor.put(key, val, overwrite=False):
+                raise  ValueError("Failed appending {} at {}.".format(val, key))
+            return on
+
+
+    def getAllOrdItemPreIter(self, db, pre, on=0):
+        """
+        Returns iterator of duple item, (on, dig), at each key over all ordinal
+        numbered keys with same prefix, pre, in db. Values are sorted by
+        snKey(pre, on) where on is ordinal number int.
+        Returned items are duples of (on, dig) where on is ordinal number int
+        and dig is event digest for lookup in .evts sub db.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            pre is bytes of itdentifier prefix
+            on is int ordinal number to resume replay
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            key = onKey(pre, on)  # start replay at this enty 0 is earliest
+            if not cursor.set_range(key):  #  moves to val at key >= key
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # get key, val at cursor
+                cpre, cn = splitKeyON(key)
+                if cpre != pre:  # prev is now the last event for pre
+                    break  # done
+                yield (cn, bytes(val))  # (on, dig) of event
+
+
+    def getAllOrdItemAllPreIter(self, db, key=b''):
+        """
+        Returns iterator of triple item, (pre, on, dig), at each key over all
+        ordinal numbered keys for all prefixes in db. Values are sorted by
+        snKey(pre, on) where on is ordinal number int.
+        Each returned item is triple (pre, on, dig) where pre is identifier prefix,
+        on is ordinal number int and dig is event digest for lookup in .evts sub db.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db is opened named sub db with dupsort=False
+            key is key location in db to resume replay,
+                   If empty then start at first key in database
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if not cursor.set_range(key):  #  moves to val at key >= key, first if empty
+                return  # no values end of db
+
+            for key, val in cursor.iternext():  # return key, val at cursor
+                cpre, cn = splitKeyON(key)
+                yield (cpre, cn, bytes(val))  # (pre, on, dig) of event
