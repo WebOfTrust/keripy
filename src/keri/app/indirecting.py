@@ -171,7 +171,6 @@ class Indirector(doing.DoDoer):
         super(Indirector, self).wind(tymth)
         self.client.wind(tymth)
 
-
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
@@ -198,7 +197,6 @@ class Indirector(doing.DoDoer):
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
-
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
@@ -224,7 +222,6 @@ class Indirector(doing.DoDoer):
                 self.sendMessage(msg, label="chit or receipt")
                 yield  # throttle just do one cue at a time
             yield
-
 
     def escrowDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -378,7 +375,6 @@ class MailboxDirector(doing.DoDoer):
         """
         super(MailboxDirector, self).wind(tymth)
 
-
     def pollDo(self, tymth=None, tock=0.0, **opts):
         """
         Returns:
@@ -403,7 +399,6 @@ class MailboxDirector(doing.DoDoer):
                 _ = (yield self.tock)
             _ = (yield self.tock)
 
-
     def processPollIter(self):
         """
         Iterate through cues and yields one or more responses for each cue.
@@ -421,7 +416,6 @@ class MailboxDirector(doing.DoDoer):
         while mail:  # iteratively process each response in responses
             msg = mail.pop(0)
             yield msg
-
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -449,7 +443,6 @@ class MailboxDirector(doing.DoDoer):
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
-
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
@@ -475,7 +468,6 @@ class MailboxDirector(doing.DoDoer):
                 # self.sendMessage(msg, label="chit or receipt or replay")
                 yield  # throttle just do one cue at a time
             yield
-
 
     def escrowDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -504,8 +496,6 @@ class MailboxDirector(doing.DoDoer):
 
             yield
 
-
-
     def exchangerDo(self, tymth=None, tock=0.0, **opts):
         """
          Returns doifiable Doist compatibile generator method (doer dog) to process
@@ -528,10 +518,9 @@ class MailboxDirector(doing.DoDoer):
         yield  # enter context
         while True:
             for rep in self.exchanger.processResponseIter():
-                self.rep.msgs.append(rep)
+                self.rep.reps.append(rep)
                 yield  # throttle just do one cue at a time
             yield
-
 
     def verifierDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -560,7 +549,6 @@ class MailboxDirector(doing.DoDoer):
             yield
 
 
-
 class Poller(doing.DoDoer):
     """
     Polls remote SSE endpoint for event that are KERI messages to be processed
@@ -580,7 +568,6 @@ class Poller(doing.DoDoer):
         doers = [doing.doify(self.eventDo)]
 
         super(Poller, self).__init__(doers=doers, **kwa)
-
 
     def eventDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -630,8 +617,6 @@ class HttpMessageHandler(doing.DoDoer):
     of the provided Habitat.
 
     This also handles `req`, `exn` and `tel` messages that respond with a KEL replay.
-
-
     """
 
     def __init__(self, hab: habbing.Habitat, rep, verifier=None, exchanger=None, app=None, **kwa):
@@ -679,16 +664,13 @@ class HttpMessageHandler(doing.DoDoer):
         if self.exc is not None:
             doers.extend([doing.doify(self.exchangerDo)])
 
-
         self.parser = parsing.Parser(ims=self.rxbs,
                                      framed=True,
                                      kvy=self.kevery,
                                      tvy=self.tvy,
                                      exc=self.exc)
 
-
         super(HttpMessageHandler, self).__init__(doers=doers, **kwa)
-
 
     def on_post(self, req, rep):
         """
@@ -699,6 +681,9 @@ class HttpMessageHandler(doing.DoDoer):
               rep (Response) Falcon HTTP response
 
         """
+        if req.method == "OPTIONS":
+            rep.status = falcon.HTTP_200
+            return
 
         cr = httping.parseCesrHttpRequest(req=req)
         self.handle(cr, rep)
@@ -712,10 +697,14 @@ class HttpMessageHandler(doing.DoDoer):
               rep (Response) Falcon HTTP response
 
         """
+        print(req)
+
+        if req.method == "OPTIONS":
+            rep.status = falcon.HTTP_200
+            return
 
         cr = httping.parseCesrHttpRequest(req=req, prefix="/req/")
         self.handle(cr, rep)
-
 
     def on_post_exn(self, req, rep):
         """
@@ -725,10 +714,19 @@ class HttpMessageHandler(doing.DoDoer):
               rep (Response) Falcon HTTP response
 
         """
+        if req.method == "OPTIONS":
+            rep.status = falcon.HTTP_200
+            return
 
         cr = httping.parseCesrHttpRequest(req=req, prefix="/exn")
-        self.handle(cr, rep)
 
+        serder = exchanging.exchange(route=cr.resource, date=cr.date, payload=cr.payload, recipient=cr.recipient)
+        msg = bytearray(serder.raw)
+        msg.extend(cr.attachments.encode("utf-8"))
+
+        self.rxbs.extend(msg)
+
+        rep.status = falcon.HTTP_202  # This is the default status
 
     def handle(self, cr, rep):
         """
@@ -753,7 +751,6 @@ class HttpMessageHandler(doing.DoDoer):
 
         rep.status = falcon.HTTP_202  # This is the default status
 
-
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
@@ -766,7 +763,6 @@ class HttpMessageHandler(doing.DoDoer):
             logger.info("Client %s received:\n%s\n...\n", self.kevery, self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
-
 
     def cueDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -783,7 +779,6 @@ class HttpMessageHandler(doing.DoDoer):
                 yield  # throttle just do one cue at a time
             yield
 
-
     def exchangerDo(self, tymth=None, tock=0.0, **opts):
         """
         Returns doifiable Doist compatibile generator method (doer dog) to process
@@ -794,7 +789,7 @@ class HttpMessageHandler(doing.DoDoer):
         """
         while True:
             for rep in self.exc.processResponseIter():
-                self.rep.msgs.append(rep)
+                self.rep.reps.append(rep)
                 yield  # throttle just do one cue at a time
             yield
 

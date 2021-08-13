@@ -179,18 +179,11 @@ class AdminProofHandler(doing.Doer):
                 vcdata = json.dumps(vc["vc"]).encode("utf-8")
                 vcproof = vc["proof"].encode("utf-8")
 
-                print(regk)
-                print(vcid)
-
                 msg = self.verifier.query(regk,
                                           vcid,
                                           res="tels")
-                print(msg)
                 self.wiq.msgs.append(msg)
-                print("foo")
-                # potentially add another doer -  to wait on this?
-                # map the vc to the pending credential status and store the message from there?
-                # like an escrow for pending verifications
+
                 while regk not in self.verifier.tevers:
                     print("bar")
                     logger.info("%s:\n waiting for retrieval of TEL %s.\n\n",
