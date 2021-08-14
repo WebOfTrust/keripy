@@ -589,7 +589,7 @@ class Poller(doing.DoDoer):
         else:
             witrec.idx += 1
 
-        msg = self.hab.query(pre=self.hab.pre, res="/mbx", sn=witrec.idx)
+        msg = self.hab.query(pre=self.hab.pre, res="mbx", sn=witrec.idx)
 
         httping.createCESRRequest(msg, client)
 
@@ -697,8 +697,6 @@ class HttpMessageHandler(doing.DoDoer):
               rep (Response) Falcon HTTP response
 
         """
-        print(req)
-
         if req.method == "OPTIONS":
             rep.status = falcon.HTTP_200
             return
@@ -803,7 +801,8 @@ class HttpMessageHandler(doing.DoDoer):
         """
         yield  # enter context
         while True:
-            for cue in self.verifier.processCuesIter(self.tvy.cues):
+            while self.tvy.cues:  # iteratively process each cue in cues
+                cue = self.tvy.cues.popleft()
                 self.rep.cues.append(cue)
                 yield  # throttle just do one cue at a time
             yield

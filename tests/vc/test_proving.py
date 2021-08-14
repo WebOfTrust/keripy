@@ -117,6 +117,7 @@ def test_credentialer():
     assert creder.subject == sub
     assert creder.crd == d
     assert creder.size == 169
+    assert creder.size == len(creder.raw)
     assert creder.raw == (
         b'{"v":"KERI10JSON0000a9_","i":"EeFdv935UXIkVl3QGMLTMz5OQHHW650WsOHE0cF3q9f4","x":"abc","ti":"i",'
         b'"d":{"a":123,"b":"abc","issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
@@ -142,6 +143,7 @@ def test_credentialer():
     assert creder.schema == "abc"
     assert creder.subject == sub
     assert creder.size == 140
+    assert creder.size == len(creder.raw)
     assert creder.crd == d2
     assert creder.raw == (
         b'\xa5avqKERI10CBOR00008c_aix,EUoO89lNIr0K-W6-3rtyYgucAc1Jx0gKNryqYtd1aJMgaxcabcbtiaiad\xa3aa\x18{'
@@ -154,6 +156,7 @@ def test_credentialer():
     assert creder.schema == "abc"
     assert creder.subject == sub
     assert creder.size == 140
+    assert creder.size == len(creder.raw)
     assert creder.crd == d2
 
     d3 = dict(d)
@@ -165,6 +168,7 @@ def test_credentialer():
     assert creder.schema == "abc"
     assert creder.subject == sub
     assert creder.size == 139
+    assert creder.size == len(creder.raw)
     assert creder.crd == d3
     assert creder.raw == (
         b'\x85\xa1v\xb1KERI10MGPK00008b_\xa1i\xd9,'
@@ -178,6 +182,7 @@ def test_credentialer():
     assert creder.schema == "abc"
     assert creder.subject == sub
     assert creder.size == 139
+    assert creder.size == len(creder.raw)
     assert creder.crd == d3
 
 
@@ -204,16 +209,19 @@ def test_credential():
 
     cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
                       issuer="EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
-                      subject=d, source=s)
+                      subject=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
+    assert cred.size == len(cred.raw)
+    print(cred.raw)
     assert cred.raw == (
-        b'{"v":"KERI10JSON000273_","i":"EVbiCCuRv-joKhOUCYUQsdkgsExGjQo7bRoZT6HdcuWk",'
+        b'{"v":"KERI10JSON0002a7_","i":"E-LcFxJ_mwwT6aGipuwfp5WUp1g777UvX8EAE4qhP6ec",'
         b'"x":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","ti":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",'
         b'"d":{"i":"ESRs5eTGniYdVFwPtHYtZ4vMxrgJOaK_5HH9wEmT6rq8","issuanceDate":"2021-06-27T21:26:21.233257+00:00",'
         b'"type":["VerifiablePresentation","LegalEntityEngagementContextRolevLEICredential"],"personLegalName":"John '
         b'Doe","engagementContextRole":"Project Manager",'
         b'"credentialStatus":"EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36"},'
-        b'"s":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}')
+        b'"s":[{"qualifiedvLEIIssuervLEICredential":"EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}],'
+        b'"ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M"}')
 
 
 def test_parse_proof():

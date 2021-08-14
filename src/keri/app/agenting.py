@@ -10,13 +10,12 @@ from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
-
 from keri import kering
+
 from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, scheming, coring
 from ..db import dbing
-from ..help import helping
 from ..peer import exchanging, httping
 from ..vc import proving, handling
 from ..vdr import issuing
@@ -518,7 +517,7 @@ class CredentialIssueHandler(doing.DoDoer):
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=hab, name=self.hab.name, noBackers=True)
+        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=hab, name=self.hab.name)
 
         doers = [doing.doify(self.msgDo)]
 
@@ -532,17 +531,8 @@ class CredentialIssueHandler(doing.DoDoer):
             add result of doify on this method to doers list
         """
 
-        while not self.issuer.incept:
+        while not self.issuer.regk:
             yield self.tock
-
-        kevt = self.issuer.incept
-        tevt = self.issuer.ianchor
-
-        witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
-        self.extend([witDoer])
-
-        witSender = WitnessSender(hab=self.hab, msg=tevt)
-        self.extend([witSender])
 
         while True:
             while self.msgs:
@@ -564,7 +554,8 @@ class CredentialIssueHandler(doing.DoDoer):
                                             schema=schemer.said,
                                             subject=credSubject,
                                             typ=jsonSchema,
-                                            source=source)
+                                            source=source,
+                                            status=self.issuer.regk)
 
                 msg = self.hab.endorse(serder=creder)
 

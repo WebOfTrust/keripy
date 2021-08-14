@@ -116,7 +116,7 @@ def createCESRRequest(msg, client, date=None):
         body = json.dumps(serder.ked["d"]).encode("utf-8")
         dt = serder.ked["dt"]
     elif ilk in (Ilks.req,):
-        resource = "/" + ilk + serder.ked['r']
+        resource = "/" + ilk + "/" + serder.ked['r']
         body = serder.raw
     elif ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.ksn, Ilks.rct):
         resource = "/kel"
@@ -332,7 +332,7 @@ class Respondant(doing.DoDoer):
                 elif cueKin in ("replay",):
                     dest = cue["dest"]
                     msgs = cue["msgs"]
-                    self.mbx.storeMsg(dest=dest, msg=msgs)
+                    self.mbx.storeMsg(dest=dest.encode("utf-8"), msg=msgs)
 
                 yield self.tock
 

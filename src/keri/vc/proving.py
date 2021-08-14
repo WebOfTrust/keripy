@@ -25,6 +25,7 @@ def credential(schema,
                issuer,
                subject,
                source=None,
+               status=None,
                typ=JSONSchema(),
                version=Version,
                kind=Serials.json):
@@ -51,6 +52,9 @@ def credential(schema,
 
     if source is not None:
         vc["s"] = source
+
+    if status is not None:
+        vc["ri"] = status
 
     return Credentialer(crd=vc, typ=typ)
 
@@ -340,7 +344,7 @@ class Credentialer:
     @property
     def status(self):
         """ status property getter"""
-        return self.subject["credentialStatus"]
+        return self.crd["ri"]
 
     def pretty(self):
         """

@@ -481,6 +481,9 @@ class Wallet:
             sigs = self.db.getSigs(bytearray(said))
             sigers = [Siger(qb64b=bytearray(sig)) for sig in sigs]
 
+            print("found match")
+            print(creder.pretty())
+
             creds.append((creder, prefixer, seqner, diger, sigers))
 
         return creds

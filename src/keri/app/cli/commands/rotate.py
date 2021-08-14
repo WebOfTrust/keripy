@@ -46,7 +46,13 @@ def rotate(args):
                          sith=args.sith, count=args.next_count, toad=args.toad, erase=args.erase)
 
     doers = [rotDoer]
-    directing.runController(doers=doers, expire=0.0)
+
+    try:
+        directing.runController(doers=doers, expire=0.0)
+    except kering.ConfigurationError:
+        print(f"identifier prefix for {name} does not exist, incept must be run first", )
+        return -1
+
 
 
 class RotateDoer(doing.DoDoer):

@@ -1086,7 +1086,9 @@ class Tevery:
                 self.tevers[regk] = tever
                 if not self.regk or self.regk != regk:
                     # witness style backers will need to send receipts so lets queue them up for now
-                    self.cues.append(dict(kin="receipt", serder=serder))
+                    # actually, lets not because the Kevery has no idea what to do with them!
+                    # self.cues.append(dict(kin="receipt", serder=serder))
+                    pass
             else:
                 # out of order, need to escrow
                 self.escrowOOEvent(serder=serder, seqner=seqner, diger=diger)
@@ -1114,7 +1116,9 @@ class Tevery:
 
                 if not self.regk or self.regk != regk:
                     # witness style backers will need to send receipts so lets queue them up for now
-                    self.cues.append(dict(kin="receipt", serder=serder))
+                    # actually, lets not because the Kevery has no idea what to do with them!
+                    # self.cues.append(dict(kin="receipt", serder=serder))
+                    pass
             else:  # duplicitious
                 raise LikelyDuplicitousError("Likely Duplicitous event={} with sn {}.".format(ked, sn))
 
@@ -1149,7 +1153,7 @@ class Tevery:
             for msg in cloner:
                 msgs.extend(msg)
 
-            self.cues.append(dict(kin="replay", msgs=msgs))
+            self.cues.append(dict(kin="replay", dest=src, msgs=msgs))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
 

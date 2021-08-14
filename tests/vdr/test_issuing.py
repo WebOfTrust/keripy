@@ -1,3 +1,8 @@
+# -*- encoding: utf-8 -*-
+"""
+tests.vdr.issuing module
+
+"""
 import pytest
 
 from keri.app import habbing, keeping
@@ -13,7 +18,7 @@ def test_issuer(mockHelpingNowUTC):
     with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
         # setup issuer with defaults for allowBackers, backers and estOnly
-        issuer = Issuer(hab=hab, name="bob", reger=reg)
+        issuer = Issuer(hab=hab, name="bob", reger=reg, temp=True)
         assert issuer.incept == (
             b'{"v":"KERI10JSON0000a9_","i":"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",'
             b'"ii":"EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY","s":"0","t":"vcp","c":[],"bt":"0",'
@@ -80,7 +85,7 @@ def test_issuer(mockHelpingNowUTC):
         with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
             hab = buildHab(db, kpr)
             # issuer, not allowed to issue backers
-            issuer = Issuer(hab=hab, name="bob", noBackers=True, reger=reg)
+            issuer = Issuer(hab=hab, name="bob", noBackers=True, reger=reg, temp=True)
             ser = Serder(raw=issuer.incept)
             assert ser.pre == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
             assert ser.ked["t"] == "vcp"
@@ -101,7 +106,7 @@ def test_issuer(mockHelpingNowUTC):
 
         with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
             hab = buildHab(db, kpr)
-            issuer = Issuer(hab=hab, name="bob", noBackers=True, reger=reg)
+            issuer = Issuer(hab=hab, name="bob", noBackers=True, reger=reg, temp=True)
 
             tevt, kevt = issuer.issue(vcdig="EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8")
             ser = Serder(raw=tevt)
@@ -135,7 +140,7 @@ def test_issuer(mockHelpingNowUTC):
         hab = buildHab(db, kpr)
 
         # issuer, allowed backers, initial set of backers
-        issuer = Issuer(hab=hab, reger=reg, baks=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"])
+        issuer = Issuer(hab=hab, reger=reg, baks=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"], temp=True)
         ser = Serder(raw=issuer.incept)
         assert ser.pre == "EaU321874i434f59ab7cMH6YlN52PJ395nrLS_6tLq6c"
         assert ser.ked["t"] == "vcp"
@@ -197,7 +202,7 @@ def test_issuer(mockHelpingNowUTC):
         hab = buildHab(db, kpr)
 
         # issuer, no backers allowed, establishment events only
-        issuer = Issuer(hab=hab, reger=reg, noBackers=True, estOnly=True)
+        issuer = Issuer(hab=hab, reger=reg, noBackers=True, estOnly=True, temp=True)
         ser = Serder(raw=issuer.incept)
         assert ser.pre == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
         assert ser.ked["t"] == "vcp"
@@ -235,7 +240,8 @@ def test_issuer(mockHelpingNowUTC):
         hab = buildHab(db, kpr)
 
         # issuer, backers allowed, initial backer, establishment events only
-        issuer = Issuer(hab=hab, reger=reg, baks=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"], estOnly=True)
+        issuer = Issuer(hab=hab, reger=reg, baks=["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"], estOnly=True,
+                        temp=True)
         ser = Serder(raw=issuer.incept)
         assert ser.pre == "EaU321874i434f59ab7cMH6YlN52PJ395nrLS_6tLq6c"
         assert ser.ked["b"] == ["BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"]

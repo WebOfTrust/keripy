@@ -322,8 +322,6 @@ class RequestHandler(doing.Doer):
                     said = descriptor["x"]
                     credentials = self.wallet.getCredentials(said)
                     if len(credentials) > 0:
-                        vc = credentials[0][0].pretty()
-                        # logger.info("Presenting Credential for schema %s:\n VC=%s", said, vc)
                         matches.append(credentials[0])
 
                 if len(matches) > 0:

@@ -131,7 +131,7 @@ def test_credential_handlers(mockHelpingNowUTC):
         sigers = hab.mgr.sign(exn.raw, verfers=hab.kever.verfers, indexed=True)
         exchanger.processEvent(serder=exn, source=hab.kever.prefixer, sigers=sigers)
 
-        said = "EjVJJJ_DOiHDvE8xsGEXMhu2AoRg3RJA9okDaB-DzX48"
+        said = "EAPngnAg5B0g_fV1BxFuHuewuOaXF69HFfhF21pb5dTI"
         payload = dict(
             said=said,
             regk=issuer.regk
@@ -159,15 +159,16 @@ def test_credential_handlers(mockHelpingNowUTC):
         digb = b'EzQTt6mn97jGXC4yG5eBMXksAFFYw1yxDjdrpF7hB8wU'
         vcp = b'{"v":"KERI10JSON0000ad_","i":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38",' \
               b'"ii":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","s":"0","t":"vcp","c":["NB"],"bt":"0","b":[]}'
-        credpb = b'E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38:EjVJJJ_DOiHDvE8xsGEXMhu2AoRg3RJA9okDaB-DzX48'
-        creddigb = b'EuCl5c4if2DMzdZh9eiEKUNk9GX_HYJKCM26dfVin4Ao'
-        iss = b'{"v":"KERI10JSON0000ba_","i":"EjVJJJ_DOiHDvE8xsGEXMhu2AoRg3RJA9okDaB-DzX48","s":"0","t":"iss",' \
+        credpb = b'E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38:EAPngnAg5B0g_fV1BxFuHuewuOaXF69HFfhF21pb5dTI'
+        creddigb = b'E_hwTTuhIxpAl1GrlxLZEYdl7OfJPJgIWkvSyvREpuBs'
+        iss = b'{"v":"KERI10JSON0000ba_","i":"EAPngnAg5B0g_fV1BxFuHuewuOaXF69HFfhF21pb5dTI","s":"0","t":"iss",' \
               b'"ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38","dt":"2021-01-01T00:00:00.000000+00:00"}'
 
-        revdigb = b'EveQPfIq-4Nnq0s2Zv7_N0MSK7Ri78_U6s-KHEcNgKGE'
-        rev = b'{"v":"KERI10JSON0000ed_","i":"EjVJJJ_DOiHDvE8xsGEXMhu2AoRg3RJA9okDaB-DzX48","s":"1","t":"rev",' \
-              b'"ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38",' \
-              b'"p":"EuCl5c4if2DMzdZh9eiEKUNk9GX_HYJKCM26dfVin4Ao","dt":"2021-01-01T00:00:00.000000+00:00"}'
+        revdigb = b'EoR4Vm7XJNCM8dolzpjDqYwA9Zd4lrS7kL3IshAdWVaA'
+        rev = (
+            b'{"v":"KERI10JSON0000ed_","i":"EAPngnAg5B0g_fV1BxFuHuewuOaXF69HFfhF21pb5dTI","s":"1","t":"rev",'
+            b'"ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38","p":"E_hwTTuhIxpAl1GrlxLZEYdl7OfJPJgIWkvSyvREpuBs",'
+            b'"dt":"2021-01-01T00:00:00.000000+00:00"}')
 
         # Check for the Registry inception
         tkey = dbing.snKey(regkb, 0)

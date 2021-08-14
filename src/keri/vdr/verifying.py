@@ -52,7 +52,7 @@ class Verifier:
 
         self.inited = True
 
-    def verify(self, pre, regk, vcid, vcdata, vcsig):
+    def verify(self, pre, regk, vcid, creder, vcsig):
         """
         Verify the signature and issuance status of a verifiable credential.
         Returns True if the signature is valid
@@ -70,10 +70,9 @@ class Verifier:
             return False
 
         # we don't know about this issuer
-        if pre not in self.hab.kevers:
+        if creder.issuer not in self.hab.kevers:
             return False
 
-        creder = proving.parseCredential(vcdata)
         prefixer, seqner, diger, isigers = proving.parseProof(vcsig)
 
         return self.hab.verify(creder, prefixer, seqner, diger, isigers)
