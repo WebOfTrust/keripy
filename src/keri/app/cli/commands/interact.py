@@ -28,8 +28,23 @@ def interact(args):
 
     """
     name = args.name
+    if args.data is not None:
+        try:
+            if args.data.startswith("@"):
+                f = open(args.data[1:], "r")
+                data = json.load(f)
+            else:
+                data = json.loads(args.data)
+        except json.JSONDecodeError:
+            raise kering.ConfigurationError("data supplied must be value JSON to anchor in a seal")
 
-    ixnDoer = InteractDoer(name=name, proto=args.proto, data=args.data)
+        if not isinstance(data, list):
+            data = [data]
+
+    else:
+        data = None
+
+    ixnDoer = InteractDoer(name=name, proto=args.proto, data=data)
 
     doers = [ixnDoer]
 
@@ -47,7 +62,7 @@ class InteractDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, proto, data=None):
+    def __init__(self, name, proto, data: list = None):
         """
         Returns DoDoer with all registered Doers needed to perform interaction event.
 
@@ -59,12 +74,7 @@ class InteractDoer(doing.DoDoer):
 
         self.name = name
         self.proto = proto
-
-        if data.startswith("@"):
-            f = open(data[1:], "r")
-            self.data = f.read()
-        else:
-            self.data = data
+        self.data = data
 
         ks = keeping.Keeper(name=self.name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
@@ -89,18 +99,7 @@ class InteractDoer(doing.DoDoer):
         _ = (yield self.tock)
 
 
-        data = []
-        if self.data is not None:
-            try:
-                # noinspection PyTypeChecker
-                data = json.loads(self.data)
-                if not isinstance(data, list):
-                    data = [data]
-            except json.JSONDecodeError:
-                raise kering.ConfigurationError("data supplied must be value JSON to anchor in a seal")
-
-
-        msg = self.hab.interact(data=data)
+        msg = self.hab.interact(data=self.data)
 
         if self.proto == "tcp":
             mbx = None

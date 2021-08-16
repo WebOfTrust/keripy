@@ -78,6 +78,8 @@ def test_incept():
 
         assert doist.limit == limit
 
+        doist.exit()
+
         preb = b'Ep4WexrfQvQjblYg9ti12cr7NpKWaXLNP5CXmq_4Zhng'  # multisig aid
         digb = b'E5_qNBzfkBc2kWAzGn5UUWhWUVrX4Yk1QBpVXHucygfk'  # multisig inception digest
         dgkey = dbing.dgKey(preb, digb)

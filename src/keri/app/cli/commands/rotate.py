@@ -33,8 +33,25 @@ def rotate(args):
     """
     name = args.name
 
+    if args.data is not None:
+        try:
+            if args.data.startswith("@"):
+                f = open(args.data[1:], "r")
+                data = json.load(f)
+            else:
+                data = json.loads(args.data)
+        except json.JSONDecodeError:
+            raise kering.ConfigurationError("data supplied must be value JSON to anchor in a seal")
+
+        if not isinstance(data, list):
+            data = [data]
+
+    else:
+        data = None
+
+
     rotDoer = RotateDoer(name=name, proto=args.proto, wits=args.witnesses, cuts=args.witness_cut, adds=args.witness_add,
-                         sith=args.sith, count=args.next_count, toad=args.toad, erase=args.erase, data=args.data)
+                         sith=args.sith, count=args.next_count, toad=args.toad, erase=args.erase, data=data)
 
     doers = [rotDoer]
 
@@ -53,7 +70,7 @@ class RotateDoer(doing.DoDoer):
     """
 
     def __init__(self, name, proto, sith=None, count=None, erase=None,
-                 toad=None, wits=None, cuts=None, adds=None, data=None):
+                 toad=None, wits=None, cuts=None, adds=None, data: list = None):
         """
         Returns DoDoer with all registered Doers needed to perform rotation.
 
@@ -75,12 +92,7 @@ class RotateDoer(doing.DoDoer):
         self.count = count
         self.erase = erase
         self.toad = toad
-
-        if data.startswith("@"):
-            f = open(data[1:], "r")
-            self.data = f.read()
-        else:
-            self.data = data
+        self.data = data
 
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
@@ -117,19 +129,9 @@ class RotateDoer(doing.DoDoer):
             self.cuts = set(self.wits) & set(ewits)
             self.adds = set(self.wits) - set(ewits)
 
-        data = []
-        if self.data is not None:
-            try:
-                # noinspection PyTypeChecker
-                data = json.loads(self.data)
-                if not isinstance(data, list):
-                    data = [data]
-            except json.JSONDecodeError:
-                raise kering.ConfigurationError("data supplied must be value JSON to anchor in a seal")
-
 
         msg = self.hab.rotate(sith=self.sith, count=self.count, erase=self.erase, toad=self.toad,
-                              cuts=list(self.cuts), adds=list(self.adds), data=data)
+                              cuts=list(self.cuts), adds=list(self.adds), data=self.data)
 
         if self.proto == "tcp":
             mbx = None
