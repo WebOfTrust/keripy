@@ -10,13 +10,12 @@ from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
-
 from keri import kering
+
 from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, scheming, coring
 from ..db import dbing
-from ..help import helping
 from ..peer import exchanging, httping
 from ..vc import proving, handling
 from ..vdr import issuing
@@ -27,7 +26,7 @@ logger = help.ogler.getLogger()
 class WitnessReceiptor(doing.DoDoer):
     """
     Sends messages to all current witnesses of given identifier (from hab) and waits
-    for receipts from each of those witnesses and propogates those receipts to each
+    for receipts from each of those witnesses and propagates those receipts to each
     of the other witnesses after receiving the complete set.
 
     Removes all Doers and exits as Done once all witnesses have been sent the entire
@@ -52,10 +51,9 @@ class WitnessReceiptor(doing.DoDoer):
         self.klas = klas if klas is not None else HTTPWitnesser
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
-
     def receiptDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -81,7 +79,6 @@ class WitnessReceiptor(doing.DoDoer):
             self.extend([witer])
 
             _ = (yield self.tock)
-
 
         while True:
             dgkey = dbing.dgKey(ser.preb, ser.digb)
@@ -119,7 +116,7 @@ class WitnessReceiptor(doing.DoDoer):
 class WitnessInquisitor(doing.DoDoer):
     """
     Sends messages to all current witnesses of given identifier (from hab) and waits
-    for receipts from each of those witnesses and propogates those receipts to each
+    for receipts from each of those witnesses and propagates those receipts to each
     of the other witnesses after receiving the complete set.
 
     Removes all Doers and exits as Done once all witnesses have been sent the entire
@@ -144,10 +141,9 @@ class WitnessInquisitor(doing.DoDoer):
 
         super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
-
     def receiptDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -210,10 +206,9 @@ class WitnessSender(doing.DoDoer):
         self.klas = klas if klas is not None else HTTPWitnesser
         super(WitnessSender, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
 
-
     def sendDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -272,10 +267,9 @@ class TCPWitnesser(doing.DoDoer):
 
         super(TCPWitnesser, self).__init__(doers=doers)
 
-
     def receiptDo(self, tymth=None, tock=0.0):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -307,10 +301,9 @@ class TCPWitnesser(doing.DoDoer):
             self.sent.append(msg)
             yield self.tock
 
-
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog) to process
+        Returns doifiable Doist compatible generator method (doer dog) to process
             incoming message stream of .kevery
 
         Doist Injected Attributes:
@@ -335,7 +328,6 @@ class TCPWitnesser(doing.DoDoer):
         while True:
             self.kevery.processEscrows()
             yield
-
 
 
 class HTTPWitnesser(doing.DoDoer):
@@ -374,10 +366,9 @@ class HTTPWitnesser(doing.DoDoer):
 
         super(HTTPWitnesser, self).__init__(doers=doers, **kwa)
 
-
     def msgDo(self, tymth=None, tock=0.0):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -444,7 +435,6 @@ class RotateHandler(doing.DoDoer):
 
         super(RotateHandler, self).__init__(doers=doers, **kwa)
 
-
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
         Rotate identifier.
@@ -455,7 +445,7 @@ class RotateHandler(doing.DoDoer):
             sigers is list of Sigers representing the sigs on the /presentation/request message
             verfers is list of Verfers of the keys used to sign the message
 
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -511,9 +501,9 @@ class RotateHandler(doing.DoDoer):
             yield
 
 
-class IssueCredentialHandler(doing.DoDoer):
+class CredentialIssueHandler(doing.DoDoer):
     """
-        IssueCredentialHandler - exn behavior for issuing a credential
+        CredentialIssueHandler - exn behavior for issuing a credential
 
         Validates payload against specified JSON-Schema
         Receipts KEL event and propagates TEL event to witnesses
@@ -522,39 +512,27 @@ class IssueCredentialHandler(doing.DoDoer):
 
     resource = "/cmd/credential/issue"
 
-    def __init__(self, hab, cues=None, **kwa):
+    def __init__(self, hab, issuer=None, cues=None, **kwa):
         self.hab = hab
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.issuer = issuing.Issuer(hab=hab, name=self.hab.name, noBackers=True)
-        self.issuerDoer = issuing.IssuerDoer(issuer=self.issuer)
+        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=hab, name=self.hab.name)
 
-        doers = [doing.doify(self.msgDo), self.issuerDoer]
+        doers = [doing.doify(self.msgDo)]
 
-        super(IssueCredentialHandler, self).__init__(doers=doers, **kwa)
-
+        super(CredentialIssueHandler, self).__init__(doers=doers, **kwa)
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
         """
 
-        while not self.issuer.incept:
+        while not self.issuer.regk:
             yield self.tock
-
-        kevt = self.issuer.incept
-        tevt = self.issuer.ianchor
-
-        witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
-        self.extend([witDoer])
-
-        witSender = WitnessSender(hab=self.hab, msg=tevt)
-        self.extend([witSender])
-
 
         while True:
             while self.msgs:
@@ -571,17 +549,13 @@ class IssueCredentialHandler(doing.DoDoer):
                 schemer = scheming.Schemer(raw=ref)
                 jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
 
-                if type(credSubject) is dict:
-                    credSubject |= dict(si=recipientIdentifier,
-                                        credentialStatus=self.issuer.regk,
-                                        issuanceDate=helping.nowIso8601())
-
                 # Build the credential subject and then the Credentialer for the full credential
                 creder = proving.credential(issuer=self.hab.pre,
                                             schema=schemer.said,
                                             subject=credSubject,
                                             typ=jsonSchema,
-                                            source=source)
+                                            source=source,
+                                            status=self.issuer.regk)
 
                 msg = self.hab.endorse(serder=creder)
 
@@ -600,6 +574,85 @@ class IssueCredentialHandler(doing.DoDoer):
                 self.cues.append(
                     exchanging.exchange(route="/credential/issue", payload=pl, recipient=recipientIdentifier))
                 yield
+            yield
+
+
+class CredentialRevokeHandler(doing.DoDoer):
+    """
+        Processor for revoking a credential.  The parameters needed are the SAID of the credential to revoke and the
+        SCID of the revocation registry for the credential. If the identifier of this cloud agent is the issuing
+        party, the credential is revoked by issuing the correct event to the TEL for this credential.
+
+        {
+            regk="<self-certifying identifier of the revocation registry>",
+            said="<self-addressing identifier of the credential to revoke>",
+        }
+
+    """
+
+    resource = "/cmd/credential/revoke"
+
+    def __init__(self, hab, issuer=None, cues=None, **kwa):
+        """
+        Creates an exn handler capable of revoking credentials previous issued by the identifier
+        managed by the passed in Habitat
+
+        Parameters:
+            hab (Hobitat): the environment of the issuing identifier
+
+        """
+        self.hab = hab
+        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=self.hab, name=self.hab.name)
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
+        doers = [doing.doify(self.msgDo)]
+
+        super(CredentialRevokeHandler, self).__init__(doers=doers, **kwa)
+
+    def msgDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Echo the proviced message back to the sender
+
+        Messages:
+            payload is dict representing the body of a /presentation/request message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /presentation/request message
+            verfers is list of Verfers of the keys used to sign the message
+
+        Returns doifiable Doist compatible generator method (doer dog)
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                pl = msg["payload"]
+
+                regk = pl["regk"]
+                said = pl["said"]
+
+                if regk != self.issuer.regk:
+                    raise ValueError("provided registry identifier {} does not match our registry {}"
+                                     "".format(regk, self.issuer.regk))
+
+                tevt, kevt = self.issuer.revoke(vcdig=said)
+                (yield self.tock)
+
+                witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
+                self.extend([witDoer])
+
+                witSender = WitnessSender(hab=self.hab, msg=tevt)
+                self.extend([witSender])
+
+
+                (yield self.tock)
+
 
             yield
 
@@ -619,10 +672,9 @@ class PresentationRequestHandler(doing.DoDoer):
 
         super(PresentationRequestHandler, self).__init__(doers=doers, **kwa)
 
-
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
@@ -651,6 +703,7 @@ class PresentationRequestHandler(doing.DoDoer):
             yield
 
 
+
 class EchoHandler(doing.DoDoer):
     """
         Processor for testing end to end HTTP with mailbox
@@ -669,7 +722,6 @@ class EchoHandler(doing.DoDoer):
 
         super(EchoHandler, self).__init__(doers=doers, **kwa)
 
-
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """
         Echo the proviced message back to the sender
@@ -680,7 +732,7 @@ class EchoHandler(doing.DoDoer):
             sigers is list of Sigers representing the sigs on the /presentation/request message
             verfers is list of Verfers of the keys used to sign the message
 
-        Returns doifiable Doist compatibile generator method (doer dog)
+        Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list

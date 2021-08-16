@@ -4017,7 +4017,7 @@ class Kevery:
                         dig = self.db.getKeLast(snKey(pre, sn))
                         if dig is None:  # no receipted event so keep in escrow
                             logger.info("Kevery unescrow error: Missing receipted "
-                                     "event at pre=%s sn=%x\n", (pre, sn))
+                                     "event at pre=%s sn=%x\n", pre, sn)
 
                             raise UnverifiedReceiptError("Missing receipted evt "
                                     "at pre={} sn={:x}".format(pre, sn))
@@ -4287,7 +4287,7 @@ class Kevery:
                     if raw is None:
                         # no event so keep in escrow
                         logger.info("Kevery unescrow error: Missing receipted "
-                                 "event at pre=%s sn=%x\n", (pre, sn))
+                                 "event at pre=%s sn=%x\n", pre, sn)
 
                         raise UnverifiedTransferableReceiptError("Missing receipted evt at pre={} "
                                               " sn={:x}".format(pre, sn))

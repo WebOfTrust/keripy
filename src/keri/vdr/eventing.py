@@ -1086,7 +1086,9 @@ class Tevery:
                 self.tevers[regk] = tever
                 if not self.regk or self.regk != regk:
                     # witness style backers will need to send receipts so lets queue them up for now
-                    self.cues.append(dict(kin="receipt", serder=serder))
+                    # actually, lets not because the Kevery has no idea what to do with them!
+                    # self.cues.append(dict(kin="receipt", serder=serder))
+                    pass
             else:
                 # out of order, need to escrow
                 self.escrowOOEvent(serder=serder, seqner=seqner, diger=diger)
@@ -1099,7 +1101,6 @@ class Tevery:
                 raise LikelyDuplicitousError("Likely Duplicitous event={}.".format(ked))
 
             tever = self.tevers[regk]
-
             if ilk in [Ilks.vrt]:
                 sno = tever.sn + 1  # proper sn of new inorder event
             else:
@@ -1107,7 +1108,7 @@ class Tevery:
                 sno = 0 if esn is None else esn + 1
 
             if sn > sno:  # sn later than sno so out of order escrow
-                # escrow out-of-order event
+                # escrow oEut-of-order event
                 self.escrowOOEvent(serder=serder, seqner=seqner, diger=diger)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
             elif sn == sno:  # new inorder event
@@ -1115,7 +1116,9 @@ class Tevery:
 
                 if not self.regk or self.regk != regk:
                     # witness style backers will need to send receipts so lets queue them up for now
-                    self.cues.append(dict(kin="receipt", serder=serder))
+                    # actually, lets not because the Kevery has no idea what to do with them!
+                    # self.cues.append(dict(kin="receipt", serder=serder))
+                    pass
             else:  # duplicitious
                 raise LikelyDuplicitousError("Likely Duplicitous event={} with sn {}.".format(ked, sn))
 
@@ -1150,7 +1153,7 @@ class Tevery:
             for msg in cloner:
                 msgs.extend(msg)
 
-            self.cues.append(dict(kin="replay", msgs=msgs))
+            self.cues.append(dict(kin="replay", dest=src, msgs=msgs))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
 
@@ -1191,9 +1194,9 @@ class Tevery:
 
         except Exception as ex:  # log diagnostics errors etc
             if logger.isEnabledFor(logging.DEBUG):
-                logger.exception("Kevery escrow process error: %s\n", ex.args[0])
+                logger.exception("Tevery escrow process error: %s\n", ex.args[0])
             else:
-                logger.error("Kevery escrow process error: %s\n", ex.args[0])
+                logger.error("Tevery escrow process error: %s\n", ex.args[0])
 
 
 
@@ -1208,8 +1211,9 @@ class Tevery:
         event.
 
         """
-        for (pre, sn, digb) in self.reger.getTaeItemIter():
+        for (pre, snb, digb) in self.reger.getTaeItemIter():
             try:
+                sn = int(snb, 16)
                 dgkey = dgKey(pre, digb)
                 traw = self.reger.getTvt(dgkey)
                 if traw is None:
@@ -1258,7 +1262,7 @@ class Tevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.db.delTae(snKey(pre, sn))  # removes from escrow
+                self.reger.delTae(snKey(pre, sn))  # removes from escrow
                 logger.info("Tevery unescrow succeeded in valid event: "
                             "event=\n%s\n", json.dumps(tserder.ked, indent=1))
 

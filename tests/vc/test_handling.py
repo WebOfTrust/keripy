@@ -11,8 +11,8 @@ from keri.core.scheming import CacheResolver, JSONSchema
 from keri.db import basing
 from keri.peer import exchanging
 from keri.vc.handling import IssueHandler, envelope, RequestHandler
-from keri.vc.proving import credential
-from keri.vc.walleting import Wallet, openPocket, parseCredential
+from keri.vc.proving import credential, parseCredential
+from keri.vc.walleting import Wallet, openPocket
 
 
 def test_issuing():
@@ -204,7 +204,9 @@ def test_proving():
         msg = sidHab.endorse(serder=creder)
         hanWallet = Wallet(hab=hanHab, db=hanPDB)
 
-        parseCredential(ims=msg, wallet=hanWallet, typ=JSONSchema(resolver=cache))
+        creder, prefixer, seqner, diger, isigers = parseCredential(ims=msg,
+                                                                   wallet=hanWallet,
+                                                                   typ=JSONSchema(resolver=cache))
 
         # verify we can load serialized VC by SAID
         key = creder.said.encode("utf-8")

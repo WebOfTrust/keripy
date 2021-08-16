@@ -1,3 +1,8 @@
+# -*- encoding: utf-8 -*-
+"""
+tests.vdr.eventing module
+
+"""
 import pytest
 
 from keri.app import habbing, keeping

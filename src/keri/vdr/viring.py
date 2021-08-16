@@ -7,10 +7,21 @@ VIR  Verifiable Issuance(Revocation) Registry
 Provides public simple Verifiable Credential Issuance/Revocation Registry
 A special purpose Verifiable Data Registry (VDR)
 """
+from dataclasses import dataclass
+
+from keri.db import koming
 
 from .. import kering
 from ..core import coring
 from ..db import dbing
+
+
+@dataclass
+class RegistryRecord:
+    """
+     Registry Key keyed by Regsitry name
+    """
+    registryKey: str
 
 
 def openReg(name="test", **kwa):
@@ -79,6 +90,10 @@ class Registry(dbing.LMDBer):
             DB is keyed by identifer prefix plus digest of serialized event
             Only one value per DB key is allowed
 
+        .regs is named subDB instance of Komer that maps registry names to registry keys
+            key is habitat name str
+            value is serialized RegistryRecord dataclass
+
     Properties:
 
 
@@ -135,6 +150,11 @@ class Registry(dbing.LMDBer):
         self.oots = self.env.open_db(key=b'oots.')
         self.twes = self.env.open_db(key=b'twes.')
         self.taes = self.env.open_db(key=b'taes.')
+
+        # registry keys keyed by Registry name
+        self.regs = koming.Komer(db=self,
+                                 subkey='regs.',
+                                 schema=RegistryRecord, )
 
         return self.env
 

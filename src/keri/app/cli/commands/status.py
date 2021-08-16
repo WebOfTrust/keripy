@@ -35,4 +35,5 @@ def handler(args):
             print()
 
     except ConfigurationError:
-        print(f"prefix for {name} does not exist, incept must be run first", )
+        print(f"identifier prefix for {name} does not exist, incept must be run first", )
+        return -1
