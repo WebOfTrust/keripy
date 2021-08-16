@@ -114,11 +114,11 @@ class DelegateCreateDoer(doing.DoDoer):
                                        delpre=self.delegatorPrefix,
                                        nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
 
-            seal = eventing.SealEvent(i=self.hab.pre,
-                                      s=delSrdr.ked["s"],
-                                      d=delSrdr.dig)
+            seal = dict(i=self.hab.pre,
+                        s=delSrdr.ked["s"],
+                        d=delSrdr.dig)
 
-            print(seal)
+            print(json.dumps(seal, indent=1))
 
             self.remove([self.ksDoer, self.dbDoer, self.habDoer])
 
