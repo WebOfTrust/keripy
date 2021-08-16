@@ -7,24 +7,20 @@ import argparse
 import json
 
 from hio.base import doing
-
 from keri import kering
-from keri.app.cli.common import rotating
 from keri.db import basing
+
 from ... import habbing, keeping, agenting, indirecting, directing
 
 parser = argparse.ArgumentParser(description='Rotate keys')
-parser.set_defaults(handler=lambda args: rotate(args))
+parser.set_defaults(handler=lambda args: interact(args))
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
                                           'http)', default="tcp")
-parser.add_argument('--erase', '-e', help='if this option is provided stale keys will be erased', default=False)
-parser.add_argument('--next-count', '-C', help='Count of pre-rotated keys (signing keys after next rotation).', 
-                    default=None, type=int, required=False)
-rotating.addRotationArgs(parser)
+parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=[], action="store", required=False)
 
 
-def rotate(args):
+def interact(args):
     """
     Performs a rotation of the identifier of the environment represented by the provided name parameter
 
@@ -33,10 +29,9 @@ def rotate(args):
     """
     name = args.name
 
-    rotDoer = RotateDoer(name=name, proto=args.proto, wits=args.witnesses, cuts=args.witness_cut, adds=args.witness_add,
-                         sith=args.sith, count=args.next_count, toad=args.toad, erase=args.erase, data=args.data)
+    ixnDoer = InteractDoer(name=name, proto=args.proto, data=args.data)
 
-    doers = [rotDoer]
+    doers = [ixnDoer]
 
     try:
         directing.runController(doers=doers, expire=0.0)
@@ -46,45 +41,30 @@ def rotate(args):
 
 
 
-class RotateDoer(doing.DoDoer):
+class InteractDoer(doing.DoDoer):
     """
-    DoDoer that launches Doers needed to perform a rotation and publication of the rotation event
+    DoDoer that launches Doers needed to create an interaction event and publication of the event
     to all appropriate witnesses
     """
 
-    def __init__(self, name, proto, sith=None, count=None, erase=None,
-                 toad=None, wits=None, cuts=None, adds=None, data=None):
+    def __init__(self, name, proto, data=None):
         """
-        Returns DoDoer with all registered Doers needed to perform rotation.
+        Returns DoDoer with all registered Doers needed to perform interaction event.
 
         Parameters:
             name is human readable str of identifier
             proto is tcp or http method for communicating with Witness
-            sith is next signing threshold as int or str hex or list of str weights
-            count is int next number of signing keys
-            erase is Boolean True means erase stale keys
-            toad is int or str hex of witness threshold after cuts and adds
-            cuts is list of qb64 pre of witnesses to be removed from witness list
-            adds is list of qb64 pre of witnesses to be added to witness list
             data is list of dicts of committed data such as seals
        """
 
         self.name = name
         self.proto = proto
-        self.sith = sith
-        self.count = count
-        self.erase = erase
-        self.toad = toad
 
         if data.startswith("@"):
             f = open(data[1:], "r")
             self.data = f.read()
         else:
             self.data = data
-
-        self.wits = wits if wits is not None else []
-        self.cuts = cuts if cuts is not None else []
-        self.adds = adds if adds is not None else []
 
         ks = keeping.Keeper(name=self.name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
@@ -93,12 +73,12 @@ class RotateDoer(doing.DoDoer):
 
         self.hab = habbing.Habitat(name=self.name, ks=ks, db=db, temp=False, create=False)
         self.habDoer = habbing.HabitatDoer(habitat=self.hab)  # setup doer
-        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.rotateDo)]
+        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.interactDo)]
 
-        super(RotateDoer, self).__init__(doers=doers)
+        super(InteractDoer, self).__init__(doers=doers)
 
 
-    def rotateDo(self, tymth, tock=0.0, **opts):
+    def interactDo(self, tymth, tock=0.0, **opts):
         """
         Returns:  doifiable Doist compatible generator method
         Usage:
@@ -108,14 +88,6 @@ class RotateDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        if self.wits:
-            if self.adds or self.cuts:
-                raise kering.ConfigurationError("you can only specify witnesses or cuts and add")
-            ewits = self.hab.kever.lastEst.wits
-
-            # wits= [a,b,c]  wits=[b, z]
-            self.cuts = set(self.wits) & set(ewits)
-            self.adds = set(self.wits) - set(ewits)
 
         data = []
         if self.data is not None:
@@ -128,8 +100,7 @@ class RotateDoer(doing.DoDoer):
                 raise kering.ConfigurationError("data supplied must be value JSON to anchor in a seal")
 
 
-        msg = self.hab.rotate(sith=self.sith, count=self.count, erase=self.erase, toad=self.toad,
-                              cuts=list(self.cuts), adds=list(self.adds), data=data)
+        msg = self.hab.interact(data=data)
 
         if self.proto == "tcp":
             mbx = None

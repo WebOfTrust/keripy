@@ -11,7 +11,7 @@ from hio.base import doing
 from hio.help import decking
 from keri import kering
 from keri.app import habbing, keeping, directing, agenting, indirecting
-from keri.app.cli.common import grouping
+from keri.app.cli.common import grouping, rotating
 from keri.core import coring, eventing
 from keri.db import basing
 from keri.peer import exchanging, httping
@@ -24,19 +24,8 @@ parser.set_defaults(handler=lambda args: rotateGroupIdentifier(args),
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
 parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
                                           'http)', default="http")
-parser.add_argument('--sith', '-s', help='', default=None, type=int, required=False)
-parser.add_argument('--toad', '-t', help='', default=None, type=int, required=False)
-parser.add_argument('--witnesses', '-w', help='New set of witnesses, replaces all existing witnesses.  Can appear '
-                                              'multiple times', metavar="<prefix>", default=[],
-                    action="append", required=False)
-parser.add_argument('--witness-cut', '-c', help='Witnesses to remove.  Can appear multiple times', metavar="<prefix>",
-                    default=[],
-                    action="append", required=False)
-parser.add_argument('--witness-add', '-a', help='Witnesses to add.  Can appear multiple times', metavar="<prefix>",
-                    default=[],
-                    action="append", required=False)
-parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=[], action="store", required=False)
 parser.add_argument('gid', help='group identifier prefix to rotate', action="store")
+rotating.addRotationArgs(parser)
 
 
 def rotateGroupIdentifier(args):

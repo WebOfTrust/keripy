@@ -9,6 +9,7 @@ import argparse
 from hio import help
 from keri.app import habbing
 from keri.app.cli.common import displaying
+from keri.core import coring
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
@@ -17,6 +18,7 @@ parser = argparse.ArgumentParser(description='Initialize a prefix')
 parser.set_defaults(handler=lambda args: handler(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
+parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
 
 
 def handler(args):
@@ -33,6 +35,13 @@ def handler(args):
                     continue
                 print(f"Additional Prefix:\t\t{pre}")
             print()
+
+            if args.verbose:
+                cloner = hab.db.clonePreIter(pre=hab.pre, fn=0)  # create iterator at 0
+                for msg in cloner:
+                    srdr = coring.Serder(raw=msg)
+                    print(srdr.pretty())
+                    print()
 
     except ConfigurationError:
         print(f"identifier prefix for {name} does not exist, incept must be run first", )

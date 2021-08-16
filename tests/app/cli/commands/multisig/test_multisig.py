@@ -156,6 +156,11 @@ def test_incept():
 
 
 class InceptingDoer(doing.DoDoer):
+    """
+    DoDoer for running the multisig scenario to test the multisig
+    `kli` commands.
+
+    """
 
     def __init__(self, **kwa):
 
