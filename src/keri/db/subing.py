@@ -277,6 +277,23 @@ class DupSuber(SuberBase):
                         self.db.getVals(db=self.sdb, key=self._tokey(keys))]
 
 
+    def getLast(self, keys: Union[str, Iterable]):
+        """
+        Gets last dup val at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            val (str):  value else None if no value at key
+
+        """
+        val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
+        if val is not None:
+            val = self._decode(bytes(val))
+        return val
+
+
     def getIter(self, keys: Union[str, Iterable]):
         """
         Gets dup vals iterator at key made from keys
@@ -534,6 +551,24 @@ class SerderDupSuber(DupSuber):
         """
         return [coring.Serder(raw=bytes(val)) for val in
                         self.db.getVals(db=self.sdb, key=self._tokey(keys))]
+
+
+    def getLast(self, keys: Union[str, Iterable]):
+        """
+        Gets last dup val at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            val (coring.Serder):  instance of Serder else None if no value at key
+
+        """
+        val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
+        if val is not None:
+            val = coring.Serder(raw=bytes(val))
+        return val
+
 
 
     def getIter(self, keys: Union[str, Iterable]):
@@ -794,6 +829,24 @@ class MatterDupSuber(DupSuber):
         """
         return [self.klas(qb64b=bytes(val)) for val in
                         self.db.getVals(db=self.sdb, key=self._tokey(keys))]
+
+
+    def getLast(self, keys: Union[str, Iterable]):
+        """
+        Gets last dup val at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            val (str):  instance of self.klas else None if no value at key
+
+        """
+        val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
+        if val is not None:
+            val = self.klas(qb64b=bytes(val))
+        return val
+
 
 
     def getIter(self, keys: Union[str, Iterable]):

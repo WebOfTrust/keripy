@@ -407,14 +407,14 @@ class DupKomer(KomerBase):
 
     def getLast(self, keys: Union[str, Iterable]):
         """
-        Gets last dup valat key made from keys
+        Gets last dup val at key made from keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
             val (Type[dataclass]):  instance of type self.schema
-                          empty list if no entry at keys
+                          None if no entry at keys
 
         """
         val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
