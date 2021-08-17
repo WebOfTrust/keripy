@@ -134,6 +134,8 @@ def test_dup_suber():
         sdb.put(keys=keys0, vals=[sal, sue])
         actual = sdb.get(keys=keys0)
         assert actual == [sue, sal]  # lexicographic order
+        actual = sdb.getLast(keys=keys0)
+        assert actual == sal
 
         sam = "A real charmer!"
         result = sdb.add(keys=keys0, val=sam)
@@ -310,6 +312,8 @@ def test_serder_dup_suber():
         keds = [srdr.ked for srdr in actual]
         assert keds == [srdr1.ked, srdr0.ked]  # lexicographic order
         assert sdb.cnt(keys0) == 2
+        actual = sdb.getLast(keys=keys0)
+        assert actual.ked == srdr0.ked
 
         sdb.rem(keys0)
         actual = sdb.get(keys=keys0)
@@ -585,6 +589,8 @@ def test_matter_dup_suber():
         pres = [val.qb64 for val in actual]
         assert pres == [val1.qb64, val0.qb64] == [pre1, pre0]  # lexicographic order
         assert sdb.cnt(keys0) == 2
+        actual = sdb.getLast(keys=keys0)
+        assert actual.qb64 == pre0
 
         sdb.rem(keys0)
         actual = sdb.get(keys=keys0)

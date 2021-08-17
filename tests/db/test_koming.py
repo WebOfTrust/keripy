@@ -491,6 +491,8 @@ def test_dup_komer():
         actuals = endDB.get(keys=keys0)
         assert len(actuals) == 3
         assert actuals == [wit0end, wit1end, wit2end]  # lex order
+        actual = endDB.getLast(keys=keys0)
+        assert actual == wit2end
 
         for i, end in enumerate(endDB.getIter(keys0)):
             assert end == ends[i]
