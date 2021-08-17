@@ -168,7 +168,7 @@ def splitKeyDT(key):
     return (pre, dt)
 
 
-def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: bytes=b'.'):
+def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, str]=b'.'):
     """
     Returns:
        iokey (bytes): actual DB key after concatenating suffix as base64 version
@@ -183,11 +183,13 @@ def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: bytes=b'.'):
         key = bytes(key)
     elif hasattr(key, "encode"):
         key = key.encode("utf-8")  # encode str to bytes
+    if hasattr(sep, "encode"):
+        sep = sep.encode("utf-8")
     ion = coring.intToB64b(ion, SuffixSize)
     return sep.join((key, ion))
 
 
-def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: bytes=b'.'):
+def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: Union[bytes, str]=b'.'):
     """
     Returns:
        result (tuple): (key, ion) by splitting iokey at rightmost separator sep
@@ -203,6 +205,8 @@ def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: bytes=b'.'):
         iokey = bytes(iokey)
     elif hasattr(iokey, "encode"):
         iokey = iokey.encode("utf-8")  # encode str to bytes
+    if hasattr(sep, "encode"):
+        sep = sep.encode("utf-8")
     key, ion = iokey.rsplit(sep=sep, maxsplit=1)
     ion = coring.b64ToInt(ion)
     return (key, ion)
@@ -559,12 +563,16 @@ class LMDBer:
         of returing duple it results tuple with one entry for each key split
         as well as the value.
 
+        Works for both dupsort==False and dupsort==True
+
         Raises StopIteration Error when empty.
 
         Parameters:
             db is opened named sub db with dupsort=False
             key is key location in db to resume replay,
                    If empty then start at first key in database
+            split (bool): True means split key at sep before returning
+            sep (bytes): separator char for key
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()

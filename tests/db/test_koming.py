@@ -478,6 +478,7 @@ def test_dup_komer():
 
         locDB = koming.Komer(db=db, schema=Location, subkey='locs.')
         assert isinstance(locDB, koming.Komer)
+        assert not locDB.sdb.flags()["dupsort"]
         assert locDB.sep == locDB.Sep == "."
 
         keys0 = (cid0, role)
@@ -531,7 +532,7 @@ def test_dup_komer():
 
         ends = ends + [wit3end]
         i = 0
-        for keys, end in endDB.getItemIter():
+        for keys, end in endDB.getAllItemIter():
             assert end == ends[i]
             i += 1
 
@@ -546,5 +547,208 @@ def test_dup_komer():
     assert not db.opened
 
 
+
+def test_ioset_komer():
+    """
+    Test IoSetKomer object class
+    """
+    @dataclass
+    class Endpoint: # ends
+        """
+        Service Endpoint ID Record with fields and keys to manage endpoints by role.
+        Database Keys are (cid, role) where cid is endpoint controller identifier
+        prefix and role is endpoint role such as watcher, witness etc
+        """
+        eid: str  # identifier prefix of endpoint
+        name: str  # user friendly name of endpoint
+        dts: str  # ISO-8601 datetime string of latest update
+
+        def __iter__(self):
+            return iter(asdict(self))
+
+    @dataclass
+    class Location:  # locs
+        """
+        Service Endpoint Record with fields and keys to compose endpoint location
+        and cross reference to entry in Endpoint database.
+        Database Keys are (eid, scheme) where eid is endpoint identifier prefix
+        and the protocol scheme (tcp, https). The eid is usually nontransferable.
+        """
+        host: str  # hostname or host ip addresss string
+        port: int  # port
+        path: str  # path string
+        cid: str  # identifier prefix of controller that authorizes endpoint
+        role: str  # endpoint role such as watcher, witness etc
+        dts: str  # ISO-8601 datetime string of latest update
+
+        def __iter__(self):
+            return iter(asdict(self))
+
+
+    cid0 = "EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY"
+    cid1 = "EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E"
+    dts = '2021-01-01T00:00:00.000000+00:00'
+    role = "witness"
+    scheme = "https"
+
+    wit0 = 'B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68'
+    wit0end = Endpoint(eid=wit0, name='wit0', dts=dts)
+    wit0loc = Location(host="localhost",
+                    port="8080",
+                    path="/witnesses/wit0",
+                    cid=cid0,
+                    role=role,
+                    dts=dts)
+
+    wit1 = 'Bed2Tpxc8KeCEWoq3_RKKRjU_3P-chSser9J4eAtAK6I'
+    wit1end = Endpoint(eid=wit1, name='wit1', dts=dts)
+    wit1loc = Location(host="localhost",
+                port="8080",
+                path="/witnesses/wit1",
+                cid=cid0,
+                role=role,
+                dts=dts)
+
+    wit2 = 'BljDbmdNfb63KOpGV4mmPKwyyp3OzDsRzpNrdL1BRQts'
+    wit2end = Endpoint(eid=wit2, name='wit2', dts=dts)
+    wit2loc = Location(host="localhost",
+                port="8080",
+                path="/witnesses/wit2",
+                cid="EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY",
+                role=role,
+                dts=dts)
+
+    wit3 = 'B-_esBko3sppQ0iH5HvMjtGfzJDVe_zH8ajywhjps804'
+    wit3end = Endpoint(eid=wit3, name='wit3', dts=dts)
+    wit3loc = Location(host="localhost",
+                port="8080",
+                path="/witnesses/wit3",
+                cid=cid1,
+                role=role,
+                dts=dts)
+
+    locser = json.dumps(asdict(wit0loc)).encode("utf-8")
+    endpnt = helping.datify(Location, json.loads(bytes(locser).decode("utf-8")))
+    assert isinstance(endpnt, Location)
+
+    locser = json.dumps(asdict(wit0loc)).encode("utf-8")
+    endpnt = helping.datify(Location, json.loads(bytes(locser).decode("utf-8")))
+    assert isinstance(endpnt, Location)
+
+    ends = [wit0end, wit1end, wit2end]  #  lex order
+    rends = [wit2end, wit1end, wit0end]  # reverse lex order
+    eids = [wit0, wit1, wit2]
+    locs = [wit0loc, wit1loc, wit2loc]
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        endDB = koming.IoSetKomer(db=db, schema=Endpoint, subkey='ends.')
+        assert isinstance(endDB, koming.IoSetKomer)
+        assert not endDB.sdb.flags()["dupsort"]
+        assert endDB.sep == endDB.Sep == "."
+
+        locDB = koming.Komer(db=db, schema=Location, subkey='locs.')
+        assert isinstance(locDB, koming.Komer)
+        assert not locDB.sdb.flags()["dupsort"]
+        assert locDB.sep == locDB.Sep == "."
+
+        keys0 = (cid0, role)
+        key = endDB._tokey(keys0)
+        assert key == b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness'
+        assert endDB._tokeys(key) == keys0
+
+        keys1 = (cid1, role)
+
+        assert endDB.put(keys=keys0, vals=[wit2end, wit1end, wit0end])  # reverse lex order
+        assert endDB.cnt(keys0) == 3
+        actuals = endDB.get(keys=keys0)
+        assert len(actuals) == 3
+        assert actuals == [wit2end, wit1end, wit0end]  # insertion order
+        actual = endDB.getLast(keys=keys0)
+        assert actual == wit0end
+
+        for i, end in enumerate(endDB.getIter(keys0)):
+            assert end == rends[i]
+
+        assert endDB.cnt(keys0) == 3
+
+        assert endDB.pin(keys=keys0, vals=[wit3end])
+        assert endDB.cnt(keys0) == 1
+        actuals = endDB.get(keys=keys0)
+        assert len(actuals) == 1
+        assert actuals == [wit3end]
+
+        assert endDB.rem(keys0)
+        assert endDB.cnt(keys0) == 0
+        assert not endDB.rem(keys0)
+        assert endDB.cnt(keys0) == 0
+        actuals = endDB.get(keys=keys0)
+        assert len(actuals) == 0
+        assert not endDB.get(keys=keys0)
+
+        for i, end in enumerate(ends):  # fill both dbs
+            assert endDB.put(keys=(cid0, role), vals=[end])
+            assert locDB.put(keys=(eids[i], scheme), val=locs[i])
+
+        assert endDB.put(keys=(cid1, role), vals=[wit3end])
+        assert locDB.put(keys=(wit3, scheme), val=wit3loc)
+
+        for i, end in enumerate(endDB.getIter(keys=(cid0, role))):
+            loc = locDB.get(keys=(end.eid, scheme))
+            assert loc == locs[i]
+
+        for end in endDB.getIter(keys=(cid1, role)):
+            loc = locDB.get(keys=(end.eid, scheme))
+            assert loc == wit3loc
+
+        # test IoItem methods
+        iokeys = [b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.AAAAAAAAAAAAAAAAAAAAAA',
+                  b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.AAAAAAAAAAAAAAAAAAAAAB',
+                  b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.AAAAAAAAAAAAAAAAAAAAAC']
+        i = 0
+        for iokey, end in endDB.getIoItem(keys=(cid0, role)):
+            assert end == ends[i]
+            assert iokey == iokeys[i]
+            i += 1
+
+        i = 0
+        for iokey, end in endDB.getIoItemIter(keys=(cid0, role)):
+            assert end == ends[i]
+            assert iokey == iokeys[i]
+            i += 1
+
+        # test getAll
+        ends = ends + [wit3end]
+        i = 0
+        for keys, end in endDB.getAllItemIter():
+            assert end == ends[i]
+            i += 1
+
+        locs = [wit3loc] + locs
+        i = 0
+        for keys, loc in locDB.getItemIter():
+            assert loc == locs[i]
+            i += 1
+
+        # test getAllIoItem
+        iokeys.append(b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E.witness.AAAAAAAAAAAAAAAAAAAAAA')
+        i = 0
+        for iokey, end in endDB.getAllIoItemIter():
+            assert end == ends[i]
+            assert iokey == iokeys[i]
+            i += 1
+            assert endDB.remIokey(iokey)
+
+        assert endDB.cnt(keys0) == 0
+        assert endDB.cnt(keys1) == 0
+
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+
+
 if __name__ == "__main__":
-    test_dup_komer()
+    test_ioset_komer()

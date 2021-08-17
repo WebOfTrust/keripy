@@ -470,7 +470,7 @@ class DupKomer(KomerBase):
         return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
 
 
-    def getItemIter(self):
+    def getAllItemIter(self):
         """
         Return iterator over the all the items in subdb. Each duplicate at a
         given key is yielded as a separate item.
@@ -532,27 +532,6 @@ class IoSetKomer(KomerBase):
         super(IoSetKomer, self).__init__(db=db, subkey=subkey, schema=schema,
                                        kind=kind, dupsort=False, **kwa)
 
-
-        """
-               putIoSetVals
-               addIoSetVal
-               setIoSetVals
-               appendIoSetVal
-
-               getIoSetVals
-               getIoSetValsIter
-               getIoSetValLast
-
-               cntIoSetVals
-
-               delIoSetVals
-               delIoSetVal
-
-               getIoSetItems
-               getIoSetItemsIter
-
-               delIoSetIokey
-        """
 
     def put(self, keys: Union[str, Iterable], vals: list):
         """
@@ -621,7 +600,7 @@ class IoSetKomer(KomerBase):
         return (self.db.setIoSetVals(db=self.sdb,
                                      key=key,
                                      vals=vals,
-                                     sep=sep))
+                                     sep=self.sep))
 
 
 
@@ -641,8 +620,26 @@ class IoSetKomer(KomerBase):
         vals = self.db.getIoSetVals(db=self.sdb,
                                     key=self._tokey(keys),
                                     sep=self.sep)
-        vals = oset(self.deserializer(val) for val in vals)
-        return vals
+        return [self.deserializer(val) for val in vals]
+
+
+    def getLast(self, keys: Union[str, Iterable]):
+        """
+        Gets last dup val at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            val (Type[dataclass]):  instance of type self.schema
+                          None if no entry at keys
+
+        """
+        val = self.db.getIoSetValLast(db=self.sdb, key=self._tokey(keys))
+        if val is not None:
+            val = self.deserializer(val)
+        return val
+
 
 
 
@@ -705,7 +702,26 @@ class IoSetKomer(KomerBase):
                                        sep=self.sep)
 
 
-    def getItems(self, keys: Union[str, Iterable]):
+    def getAllItemIter(self):
+        """
+        Return iterator over the all the items in subdb. Each entry at a
+        given key including set members is yielded as a separate item.
+
+        Returns:
+            iterator: of tuples of keys tuple and val dataclass instance for
+            each entry in db. Raises StopIteration when done
+
+        Example:
+            if key in database is "a.b" and val is serialization of dataclass
+               with attributes x and y then returns
+               (("a","b"), dataclass(x=1,y=2))
+        """
+        for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            key, ion = dbing.unsuffix(iokey, sep=self.sep)
+            yield (self._tokeys(key), self.deserializer(val))
+
+
+    def getIoItem(self, keys: Union[str, Iterable]):
         """
         Gets items list at key made from keys where key is apparent effective key
         and items all have same apparent effective key
@@ -727,13 +743,10 @@ class IoSetKomer(KomerBase):
         return items
 
 
-
-    def getItemsIter(self, keys: Union[str, Iterable]):
+    def getIoItemIter(self, keys: Union[str, Iterable]):
         """
         Gets items iterator Gets items list at key made from keys where key is
         apparent effective key and items all have same apparent effective key
-
-
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -765,8 +778,22 @@ class IoSetKomer(KomerBase):
            result (bool): True if key exists so delete successful. False otherwise
 
         """
-        if isinstance(key, memoryview):
-            key = bytes(key)
-        elif hasattr(key, "encode"):
-            key = key.encode("utf-8")  # encode str to bytes
-        return self.delIoSetIokey(db=self.sdb, iokey=iokey)
+        if isinstance(iokey, memoryview):
+            iokey = bytes(iokey)
+        elif hasattr(iokey, "encode"):
+            iokey = iokey.encode("utf-8")  # encode str to bytes
+        return self.db.delIoSetIokey(db=self.sdb, iokey=iokey)
+
+
+    def getAllIoItemIter(self):
+        """
+        Return iterator over the all the items in subdb. Each entry at a
+        given key including set members is yielded as a separate item.
+
+        Returns:
+            iterator: of tuples of (iokey, val) where iokey is actual key with
+            ion ordinal and val is dataclass instance for
+            each entry in db. Raises StopIteration when done
+        """
+        for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield (iokey, self.deserializer(val))

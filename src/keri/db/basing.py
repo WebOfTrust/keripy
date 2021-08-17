@@ -535,7 +535,7 @@ class Baser(dbing.LMDBer):
                                      "".format(self.name))
 
                 # clone .ends and .locs databases
-                for keys, val in self.ends.getItemIter():
+                for keys, val in self.ends.getAllItemIter():
                     exists = False  # only copy if entries in both .ends and .locs
                     for scheme in ("https", "http", "tcp"):  # all supported schemes
                         lval = self.locs.get(keys=(val.eid, scheme))
