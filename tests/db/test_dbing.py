@@ -784,6 +784,11 @@ def test_lmdber():
 
         assert dber.getIoSetVals(db, key0) == oset()
 
+        vals3 = [b"q", b"e"]
+        svals3 = oset(vals3)
+        assert dber.setIoSetVals(db, key2, vals3)
+        assert dber.getIoSetVals(db, key2) == svals3
+
     assert not os.path.exists(dber.path)
 
     """ End Test """

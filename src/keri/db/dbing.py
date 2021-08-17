@@ -774,6 +774,31 @@ class LMDBer:
             return cursor.put(iokey, val, dupdata=False, overwrite=False)
 
 
+    def setIoSetVals(self, db, key, vals):
+        """
+        Erase all vals at key and then add unique vals as insertion ordered set of
+        values all with the same apparent effective key.
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+           result (bool): True is added to set.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            vals (abc.Iterable): serialized values to add to set of vals at key
+        """
+        self.delIoSetVals(db=db, key=key)
+        result = False
+        vals = oset(vals)  # make set
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            for i, val in enumerate(vals):
+                iokey = suffix(key, i)  # ion is at add on amount
+                result = txn.put(iokey, val, dupdata=False, overwrite=True) or result
+            return result
+
+
     def appendIoSetVal(self, db, key, val):
         """
         Append val to insertion ordered set of values all with the same apparent
