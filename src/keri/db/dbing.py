@@ -821,7 +821,7 @@ class LMDBer:
                             ion = cion + 1  # so set ion to the increment of cion
 
             iokey = suffix(key, ion=ion)
-            if not cursor.put(key, val, overwrite=False):
+            if not cursor.put(iokey, val, overwrite=False):
                 raise  ValueError("Failed appending {} at {}.".format(val, key))
 
             return ion
@@ -928,7 +928,7 @@ class LMDBer:
 
             if ion is not None:
                 iokey = suffix(key, ion=ion)
-                val = cursor.get(key=iokey)
+                val = cursor.get(iokey)
 
             return val
 
@@ -947,61 +947,6 @@ class LMDBer:
             key (bytes): Apparent effective key
         """
         return len(self.getIoSetVals(db=db, key=key))
-
-
-
-    def getIoSetItems(self, db, key, *, ion=0):
-        """
-        Returns:
-            items (list): list of tuples (iokey, val) of entries in set of with
-                same apparent effective key. iokey includes the ordinal key suffix
-            Uses hidden ordinal key suffix for insertion ordering.
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): Apparent effective key
-            ion (int): starting ordinal value, default 0
-
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            items = []
-            iokey = suffix(key, ion)  # start ion th value for key zeroth default
-            cursor = txn.cursor()
-            if cursor.set_range(iokey):  # move to val at key >= iokey if any
-                for iokey, val in cursor.iternext():  # get iokey, val at cursor
-                    ckey, cion = unsuffix(iokey)
-                    if ckey != key:  # prev entry if any was the last entry for key
-                        break  # done
-                    items.append((iokey, val))  # another entry at key
-            return items
-
-
-    def getIoSetItemsIter(self, db, key, *, ion=0):
-        """
-        Returns:
-            items (abc.Iterator): iterator over insertion ordered set of values
-            at same apparent effective key where each iteration returns tuple
-            (iokey, val). iokey includes the ordinal key suffix.
-            Uses hidden ordinal key suffix for insertion ordering.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): Apparent effective key
-            ion (int): starting ordinal value, default 0
-        """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            iokey = suffix(key, ion)  # start ion th value for key zeroth default
-            cursor = txn.cursor()
-            if cursor.set_range(iokey):  # move to val at key >= iokey if any
-                for iokey, val in cursor.iternext():  # get key, val at cursor
-                    ckey, cion = unsuffix(iokey)
-                    if ckey != key: #  prev entry if any was the last entry for key
-                        break  # done
-                    yield (iokey, val)  # another entry at key
-            return  # done raises StopIteration
-
 
 
     def delIoSetVals(self, db, key):
@@ -1073,6 +1018,59 @@ class LMDBer:
                     if val == cval:
                         return cursor.delete()
             return False
+
+
+    def getIoSetItems(self, db, key, *, ion=0):
+        """
+        Returns:
+            items (list): list of tuples (iokey, val) of entries in set of with
+                same apparent effective key. iokey includes the ordinal key suffix
+            Uses hidden ordinal key suffix for insertion ordering.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            ion (int): starting ordinal value, default 0
+
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            items = []
+            iokey = suffix(key, ion)  # start ion th value for key zeroth default
+            cursor = txn.cursor()
+            if cursor.set_range(iokey):  # move to val at key >= iokey if any
+                for iokey, val in cursor.iternext():  # get iokey, val at cursor
+                    ckey, cion = unsuffix(iokey)
+                    if ckey != key:  # prev entry if any was the last entry for key
+                        break  # done
+                    items.append((iokey, val))  # another entry at key
+            return items
+
+
+    def getIoSetItemsIter(self, db, key, *, ion=0):
+        """
+        Returns:
+            items (abc.Iterator): iterator over insertion ordered set of values
+            at same apparent effective key where each iteration returns tuple
+            (iokey, val). iokey includes the ordinal key suffix.
+            Uses hidden ordinal key suffix for insertion ordering.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            ion (int): starting ordinal value, default 0
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            iokey = suffix(key, ion)  # start ion th value for key zeroth default
+            cursor = txn.cursor()
+            if cursor.set_range(iokey):  # move to val at key >= iokey if any
+                for iokey, val in cursor.iternext():  # get key, val at cursor
+                    ckey, cion = unsuffix(iokey)
+                    if ckey != key: #  prev entry if any was the last entry for key
+                        break  # done
+                    yield (iokey, val)  # another entry at key
+            return  # done raises StopIteration
 
 
     def delIoSetIokey(self, db, iokey):
