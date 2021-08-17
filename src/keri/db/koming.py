@@ -513,7 +513,26 @@ class IoSetKomer(KomerBase):
                                        kind=kind, dupsort=False, **kwa)
 
 
+        """
+               putIoSetVals
+               addIoSetVal
+               setIoSetVals
+               appendIoSetVal
 
+               getIoSetVals
+               getIoSetValsIter
+               getIoSetValLast
+
+               cntIoSetVals
+
+               delIoSetVals
+               delIoSetVal
+
+               getIoSetItems
+               getIoSetItemsIter
+
+               delIoSetIokey
+        """
 
     def put(self, keys: Union[str, Iterable], vals: list):
         """
