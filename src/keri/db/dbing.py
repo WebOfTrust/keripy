@@ -852,7 +852,6 @@ class LMDBer:
             return ion
 
 
-
     def getIoSetVals(self, db, key, *, ion=0, sep=b'.'):
         """
         Returns:
