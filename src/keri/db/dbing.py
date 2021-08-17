@@ -168,7 +168,7 @@ def splitKeyDT(key):
     return (pre, dt)
 
 
-def suffix(key: Union[bytes, str], ion: int, *, sep: bytes=b'.'):
+def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: bytes=b'.'):
     """
     Returns:
        iokey (bytes): actual DB key after concatenating suffix as base64 version
@@ -187,7 +187,7 @@ def suffix(key: Union[bytes, str], ion: int, *, sep: bytes=b'.'):
     return sep.join((key, ion))
 
 
-def unsuffix(iokey: Union[bytes, str], *, sep: bytes=b'.'):
+def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: bytes=b'.'):
     """
     Returns:
        result (tuple): (key, ion) by splitting iokey at rightmost separator sep
@@ -1183,6 +1183,26 @@ class LMDBer:
             if cursor.set_key(key):  # moves to first_dup
                 vals = [val for val in cursor.iternext_dup()]
             return vals
+
+
+    def getValLast(self, db, key):
+        """
+        Return last dup value at key in db in lexicographic order
+        Returns None no entry at key
+        Assumes DB opened with dupsort=True
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            val = None
+            if cursor.set_key(key):  # move to first_dup
+                if cursor.last_dup(): # move to last_dup
+                    val = cursor.value()
+            return val
 
 
     def getValsIter(self, db, key):

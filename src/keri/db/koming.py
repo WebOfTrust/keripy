@@ -13,6 +13,8 @@ import cbor2
 import msgpack
 import lmdb
 
+from orderedset import OrderedSet as oset
+
 from . import dbing
 from .. import help
 from ..core import coring
@@ -403,6 +405,24 @@ class DupKomer(KomerBase):
         return vals
 
 
+    def getLast(self, keys: Union[str, Iterable]):
+        """
+        Gets last dup valat key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            val (Type[dataclass]):  instance of type self.schema
+                          empty list if no entry at keys
+
+        """
+        val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
+        if val is not None:
+            val = self.deserializer(val)
+        return val
+
+
     def getIter(self, keys: Union[str, Iterable]):
         """
         Gets dup vals iterator at key made from keys
@@ -553,11 +573,10 @@ class IoSetKomer(KomerBase):
 
         """
         vals = [self.serializer(val) for val in vals]
-        return (self.db.putVals(db=self.sdb,
-                                key=self._tokey(keys),
-                                vals=vals))
-
-
+        return (self.db.putIoSetVals(db=self.sdb,
+                                     key=self._tokey(keys),
+                                     vals=vals,
+                                     sep=self.sep))
 
 
     def add(self, keys: Union[str, Iterable], val: dataclass):
@@ -577,9 +596,10 @@ class IoSetKomer(KomerBase):
                               False means duplicte of same value already exists.
 
         """
-        return (self.db.addVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=self.serializer(val)))
+        return (self.db.addIoSetVal(db=self.sdb,
+                                    key=self._tokey(keys),
+                                    val=self.serializer(val),
+                                    sep=self.sep))
 
 
     def pin(self, keys: Union[str, Iterable], vals: list):
@@ -598,9 +618,10 @@ class IoSetKomer(KomerBase):
         key = self._tokey(keys)
         self.db.delVals(db=self.sdb, key=key)  # delete all values
         vals = [self.serializer(val) for val in vals]
-        return (self.db.putVals(db=self.sdb,
-                                key=key,
-                                vals=vals))
+        return (self.db.setIoSetVals(db=self.sdb,
+                                     key=key,
+                                     vals=vals,
+                                     sep=sep))
 
 
 
@@ -617,9 +638,12 @@ class IoSetKomer(KomerBase):
                           empty list if no entry at keys
 
         """
-        vals = self.db.getVals(db=self.sdb, key=self._tokey(keys))
-        vals = [self.deserializer(val) for val in vals]
+        vals = self.db.getIoSetVals(db=self.sdb,
+                                    key=self._tokey(keys),
+                                    sep=self.sep)
+        vals = oset(self.deserializer(val) for val in vals)
         return vals
+
 
 
     def getIter(self, keys: Union[str, Iterable]):
@@ -635,7 +659,9 @@ class IoSetKomer(KomerBase):
             iterator:  vals each of type self.schema. Raises StopIteration when done
 
         """
-        for val in self.db.getValsIter(db=self.sdb, key=self._tokey(keys)):
+        for val in self.db.getIoSetValsIter(db=self.sdb,
+                                            key=self._tokey(keys),
+                                            sep=self.sep):
             yield self.deserializer(val)
 
 
@@ -647,7 +673,9 @@ class IoSetKomer(KomerBase):
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
         """
-        return (self.db.cntVals(db=self.sdb, key=self._tokey(keys)))
+        return (self.db.cntIoSetVals(db=self.sdb,
+                                     key=self._tokey(keys),
+                                     sep=self.sep))
 
 
 
@@ -667,8 +695,78 @@ class IoSetKomer(KomerBase):
         """
         if val is not None:
             val = self.serializer(val)
+            return self.db.delIoSetVal(db=self.sdb,
+                                       key=self._tokey(keys),
+                                       val=val,
+                                       sep=self.sep)
         else:
-            val = b''
-        return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
+            return self.db.delIoSetVals(db=self.sdb,
+                                       key=self._tokey(keys),
+                                       sep=self.sep)
 
 
+    def getItems(self, keys: Union[str, Iterable]):
+        """
+        Gets items list at key made from keys where key is apparent effective key
+        and items all have same apparent effective key
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            items (list):  each item in list is tuple (iokey, val) where each
+                    iokey is actual key with hidden suffix and each val is
+                    instance of type self.schema
+                    empty list if no entry at keys
+
+        """
+        items = self.db.getIoSetItems(db=self.sdb,
+                                      key=self._tokey(keys),
+                                      sep=self.sep)
+        items = [(iokey, self.deserializer(val)) for iokey, val in  items]
+        return items
+
+
+
+    def getItemsIter(self, keys: Union[str, Iterable]):
+        """
+        Gets items iterator Gets items list at key made from keys where key is
+        apparent effective key and items all have same apparent effective key
+
+
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            iterator:  each item iterated is tuple (iokey, val) where each
+                    iokey is actual key with hidden suffix and each val is
+                    instance of type self.schema
+                    empty list if no entry at keys.
+                    Raises StopIteration when done
+
+        """
+        for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
+                                                    key=self._tokey(keys),
+                                                    sep=self.sep):
+            yield (iokey, self.deserializer(val))
+
+
+    def remIokey(self, iokey: Union[str, bytes, memoryview]):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (dataclass):  instance of dup val at key to delete
+                              if val is None then remove all values at key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+
+        """
+        if isinstance(key, memoryview):
+            key = bytes(key)
+        elif hasattr(key, "encode"):
+            key = key.encode("utf-8")  # encode str to bytes
+        return self.delIoSetIokey(db=self.sdb, iokey=iokey)
