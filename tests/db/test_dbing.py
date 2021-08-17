@@ -699,6 +699,7 @@ def test_lmdber():
         """
         putIoSetVals
         addIoSetVal
+        setIoSetVals
         appendIoSetVal
 
         getIoSetVals
@@ -781,7 +782,6 @@ def test_lmdber():
 
         for iokey, val in dber.getIoSetItemsIter(db, key0):
             assert dber.delIoSetIokey(db, iokey)
-
         assert dber.getIoSetVals(db, key0) == oset()
 
         vals3 = [b"q", b"e"]
