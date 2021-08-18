@@ -875,7 +875,7 @@ class LMDBer:
 
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
-            vals = oset()
+            vals = []
             iokey = suffix(key, ion, sep=sep)  # start ion th value for key zeroth default
             cursor = txn.cursor()
             if cursor.set_range(iokey):  # move to val at key >= iokey if any
@@ -883,7 +883,7 @@ class LMDBer:
                     ckey, cion = unsuffix(iokey, sep=sep)
                     if ckey != key:  # prev entry if any was the last entry for key
                         break  # done
-                    vals.add(val)  # another entry at key
+                    vals.append(val)  # another entry at key
             return vals
 
 
