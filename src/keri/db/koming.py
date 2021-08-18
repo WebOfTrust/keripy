@@ -400,9 +400,8 @@ class DupKomer(KomerBase):
                           empty list if no entry at keys
 
         """
-        vals = self.db.getVals(db=self.sdb, key=self._tokey(keys))
-        vals = [self.deserializer(val) for val in vals]
-        return vals
+        return ([self.deserializer(val) for val in
+                self.db.getValsIter(db=self.sdb, key=self._tokey(keys))])
 
 
     def getLast(self, keys: Union[str, Iterable]):
@@ -595,7 +594,7 @@ class IoSetKomer(KomerBase):
 
         """
         key = self._tokey(keys)
-        self.db.delVals(db=self.sdb, key=key)  # delete all values
+        self.db.delIoSetVals(db=self.sdb, key=key)  # delete all values
         vals = [self.serializer(val) for val in vals]
         return (self.db.setIoSetVals(db=self.sdb,
                                      key=key,
@@ -617,10 +616,10 @@ class IoSetKomer(KomerBase):
                           empty list if no entry at keys
 
         """
-        vals = self.db.getIoSetVals(db=self.sdb,
-                                    key=self._tokey(keys),
-                                    sep=self.sep)
-        return [self.deserializer(val) for val in vals]
+        return [self.deserializer(val) for val in
+                    self.db.getIoSetValsIter(db=self.sdb,
+                                             key=self._tokey(keys),
+                                             sep=self.sep)]
 
 
     def getLast(self, keys: Union[str, Iterable]):

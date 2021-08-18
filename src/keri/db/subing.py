@@ -18,6 +18,11 @@ class SuberBase():
     Base class for Sub DBs of LMDBer
     Provides common methods for subclasses
     Do not instantiate but use a subclass
+
+    Attributes:
+        db (dbing.LMDBer): base LMDB db
+        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        sep (str): separator for combining keys tuple of strs into key bytes
     """
     Sep = '.'  # separator for combining key iterables
 
@@ -72,6 +77,17 @@ class SuberBase():
 
         """
         return tuple(key.decode("utf-8").split(self.sep))
+
+
+    @staticmethod
+    def _encode(val):
+        return (val.encode("utf-8") if hasattr(val, "encode") else val)
+
+
+    @staticmethod
+    def _decode(val):
+        return (val.decode("utf-8") if hasattr(val, "decode") else val)
+
 
 
 class Suber(SuberBase):
@@ -186,14 +202,6 @@ class DupSuber(SuberBase):
         """
         super(DupSuber, self).__init__(db=db, subkey=subkey, dupsort=True, **kwa)
 
-    @staticmethod
-    def _encode(val):
-        return (val.encode("utf-8") if hasattr(val, "encode") else val)
-
-    @staticmethod
-    def _decode(val):
-        return (val.decode("utf-8") if hasattr(val, "decode") else val)
-
 
     def put(self, keys: Union[str, Iterable], vals: list):
         """
@@ -274,7 +282,7 @@ class DupSuber(SuberBase):
 
         """
         return [self._decode(bytes(val)) for val in
-                        self.db.getVals(db=self.sdb, key=self._tokey(keys))]
+                        self.db.getValsIter(db=self.sdb, key=self._tokey(keys))]
 
 
     def getLast(self, keys: Union[str, Iterable]):
@@ -353,6 +361,298 @@ class DupSuber(SuberBase):
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
             yield (self._tokeys(key), self._decode(bytes(val)))
+
+
+class IoSetSuber(SuberBase):
+    """
+    Insertion Ordered Set Suber factory class that supports
+    a set of distinct entries at a given effective database key but with
+    dupsort==False. Effective data model is that there are multiple values in a
+    set of values where every member of the set has the same key (duplicate key).
+    The set of values is an ordered set using insertion order. Any given value
+    may appear only once in the set (not a list).
+
+    This works similarly to the IO value duplicates for the LMDBer class with a
+    sub db  of LMDB (dupsort==True) but without its size limitation of 511 bytes
+    for each value when dupsort==True.
+    Here the key is augmented with a hidden numbered suffix that provides a
+    an ordered set of values at each effective key (duplicate key). The suffix
+    is appended and stripped transparently. The set of multiple items with
+    duplicate keys are retrieved in insertion order when iterating or as a list
+    of the set elements.
+
+    Attributes:
+        db (dbing.LMDBer): base LMDB db
+        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        sep (str): separator for combining keys tuple of strs into key bytes
+    """
+    def __init__(self, db: Type[dbing.LMDBer], *, subkey: str = 'docs.', **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+        """
+        super(IoSetSuber, self).__init__(db=db, subkey=subkey, dupsort=False, **kwa)
+
+
+    def put(self, keys: Union[str, Iterable], vals: list):
+        """
+        Puts all vals at key made from keys. Does not overwrite. Adds to existing
+        dup values at key if any. Duplicate means another entry at the same key
+        but the entry is still a unique value. Duplicates are inserted in
+        lexocographic order not insertion order. Lmdb does not insert a duplicate
+        unless it is a unique value for that key.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (list): dataclass instances each of type self.schema as values
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        Apparently always returns True (how .put works with dupsort=True)
+
+        """
+        return (self.db.putIoSetVals(db=self.sdb,
+                                     key=self._tokey(keys),
+                                     vals=[self._encode(val) for val in vals],
+                                     sep=self.sep))
+
+
+    def add(self, keys: Union[str, Iterable], val: Union[bytes, str]):
+        """
+        Add val to vals at key made from keys. Does not overwrite. Adds to existing
+        dup values at key if any. Duplicate means another entry at the same key
+        but the entry is still a unique value. Duplicates are inserted in
+        lexocographic order not insertion order. Lmdb does not insert a duplicate
+        unless it is a unique value for that key.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Union[bytes, str]): instance of type self.schema
+
+        Returns:
+            result (bool): True means unique value among duplications,
+                              False means duplicte of same value already exists.
+
+        """
+        return (self.db.addIoSetVal(db=self.sdb,
+                                    key=self._tokey(keys),
+                                    val=self._encode(val),
+                                    sep=self.sep))
+
+
+    def pin(self, keys: Union[str, Iterable], vals: list):
+        """
+        Pins (sets) vals at key made from keys. Overwrites. Removes all
+        pre-existing dup vals and replaces them with vals
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (list): dataclass instances each of type self.schema as values
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        """
+        key = self._tokey(keys)
+        self.db.delIoSetVals(db=self.sdb, key=key)  # delete all values
+        return (self.db.setIoSetVals(db=self.sdb,
+                                     key=key,
+                                     vals=[self._encode(val) for val in vals],
+                                     sep=self.sep))
+
+
+
+
+    def get(self, keys: Union[str, Iterable]):
+        """
+        Gets dup vals list at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            vals (list):  each item in list is str
+                          empty list if no entry at keys
+
+        """
+        return ([self._decode(bytes(val)) for val in
+                    self.db.getIoSetValsIter(db=self.sdb,
+                                             key=self._tokey(keys),
+                                             sep=self.sep)])
+
+
+    def getLast(self, keys: Union[str, Iterable]):
+        """
+        Gets last dup val at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            val (str):  value str, None if no entry at keys
+
+        """
+        val = self.db.getIoSetValLast(db=self.sdb, key=self._tokey(keys))
+        if val is not None:
+            val = self._decode(bytes(val))
+        return val
+
+
+
+    def getIter(self, keys: Union[str, Iterable]):
+        """
+        Gets dup vals iterator at key made from keys
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            vals (iterator):  str values. Raises StopIteration when done
+
+        """
+        for val in self.db.getIoSetValsIter(db=self.sdb,
+                                            key=self._tokey(keys),
+                                            sep=self.sep):
+            yield self._decode(bytes(val))
+
+
+
+    def cnt(self, keys: Union[str, Iterable]):
+        """
+        Return count of dup values at key made from keys, zero otherwise
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+        """
+        return (self.db.cntIoSetVals(db=self.sdb,
+                                     key=self._tokey(keys),
+                                     sep=self.sep))
+
+
+
+
+    def rem(self, keys: Union[str, Iterable], val=None):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (str):  value at key to delete
+                              if val is None then remove all values at key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+
+        """
+        if val is not None:
+            val = self._encode(val)
+            return self.db.delIoSetVal(db=self.sdb,
+                                       key=self._tokey(keys),
+                                       val=val,
+                                       sep=self.sep)
+        else:
+            return self.db.delIoSetVals(db=self.sdb,
+                                       key=self._tokey(keys),
+                                       sep=self.sep)
+
+
+    def getAllItemIter(self):
+        """
+        Return iterator over the all the items in subdb. Each entry at a
+        given key including set members is yielded as a separate item.
+
+        Returns:
+            iterator: of tuples of keys tuple and val str for
+            each entry in db. Raises StopIteration when done
+        """
+        for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            key, ion = dbing.unsuffix(iokey, sep=self.sep)
+            yield (self._tokeys(key), self._decode(bytes(val)))
+
+
+    def getIoItem(self, keys: Union[str, Iterable]):
+        """
+        Gets items list at key made from keys where key is apparent effective key
+        and items all have same apparent effective key
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            items (list):  each item in list is tuple (iokey, val) where each
+                    iokey is actual key with hidden suffix and each val is str
+                    empty list if no entry at keys
+
+        """
+        return ([(iokey, self._decode(bytes(val))) for iokey, val in
+                        self.db.getIoSetItemsIter(db=self.sdb,
+                                                  key=self._tokey(keys),
+                                                  sep=self.sep)])
+
+
+    def getIoItemIter(self, keys: Union[str, Iterable]):
+        """
+        Gets items iterator Gets items list at key made from keys where key is
+        apparent effective key and items all have same apparent effective key
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            iterator:  each item iterated is tuple (iokey, val) where each
+                    iokey is actual key with hidden suffix and each val is str
+                    empty list if no entry at keys.
+                    Raises StopIteration when done
+
+        """
+        for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
+                                                    key=self._tokey(keys),
+                                                    sep=self.sep):
+            yield (iokey, self._decode(bytes(val)))
+
+
+    def remIokey(self, iokey: Union[str, bytes, memoryview]):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (dataclass):  instance of dup val at key to delete
+                              if val is None then remove all values at key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+
+        """
+        if isinstance(iokey, memoryview):
+            iokey = bytes(iokey)
+        elif hasattr(iokey, "encode"):
+            iokey = iokey.encode("utf-8")  # encode str to bytes
+        return self.db.delIoSetIokey(db=self.sdb, iokey=iokey)
+
+
+    def getAllIoItemIter(self):
+        """
+        Return iterator over the all the items in subdb. Each entry at a
+        given key including set members is yielded as a separate item.
+
+        Returns:
+            iterator: of tuples of (iokey, val) where iokey is actual key with
+            ion ordinal and val is str for each entry in db.
+            Raises StopIteration when done
+        """
+        for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield (iokey, self._decode(bytes(val)))
+
 
 
 class SerderSuber(Suber):
@@ -550,7 +850,7 @@ class SerderDupSuber(DupSuber):
 
         """
         return [coring.Serder(raw=bytes(val)) for val in
-                        self.db.getVals(db=self.sdb, key=self._tokey(keys))]
+                        self.db.getValsIter(db=self.sdb, key=self._tokey(keys))]
 
 
     def getLast(self, keys: Union[str, Iterable]):
@@ -828,7 +1128,7 @@ class MatterDupSuber(DupSuber):
 
         """
         return [self.klas(qb64b=bytes(val)) for val in
-                        self.db.getVals(db=self.sdb, key=self._tokey(keys))]
+                        self.db.getValsIter(db=self.sdb, key=self._tokey(keys))]
 
 
     def getLast(self, keys: Union[str, Iterable]):
@@ -899,6 +1199,8 @@ class MatterDupSuber(DupSuber):
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
             yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
+
+
 
 
 class SignerSuber(MatterSuber):
