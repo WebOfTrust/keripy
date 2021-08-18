@@ -1,7 +1,9 @@
 {
   "salt": "temp-sample-1234",
   "transferable": true,
-  "wits": [],
+  "wits": [
+    "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw"
+  ],
   "icount": 1,
   "ncount": 1,
   "isith": 1,

@@ -7,38 +7,27 @@ keri.kli.commands.delegate module
 import argparse
 import json
 import sys
-from dataclasses import dataclass
 from json import JSONDecodeError
 
 from hio import help
 from hio.base import doing
 
-from keri.app import directing, keeping, habbing
-from keri.core import eventing, coring
+from keri import kering
+from keri.app import directing, keeping, habbing, agenting
+from keri.app.cli.commands.delegate.create import DelegateOptions
+from keri.core import eventing, coring, parsing
 from keri.db import basing
 
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a seal for creating a delegated identifier')
-parser.set_defaults(handler=lambda args: create(args))
+parser.set_defaults(handler=lambda args: rotate(args))
 parser.add_argument('--name', '-n', help='Human readable environment reference', required=True)
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
+parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=None, action="store", required=False)
 
 
-@dataclass
-class DelegateOptions:
-    """
-    Options dataclass loaded from the file parameter to this command line function.
-    Represents all the options needed to create a delegated identifier
-
-    """
-    delegateeSalt: str
-    delegateeName: str
-    delegatorPrefix: str
-    delegatorWits: list
-
-
-def create(args):
+def rotate(args):
     """
     Reads the config file into a CreateDelegateOptions dataclass and creates
     delegated identifier prefixes and events
@@ -61,20 +50,36 @@ def create(args):
 
     name = args.name
 
+    if args.data is not None:
+        try:
+            if args.data.startswith("@"):
+                f = open(args.data[1:], "r")
+                data = json.load(f)
+            else:
+                data = json.loads(args.data)
+        except json.JSONDecodeError:
+            raise kering.ConfigurationError("data supplied must be value JSON to anchor in a seal")
+
+        if not isinstance(data, list):
+            data = [data]
+
+    else:
+        data = None
+
     kwa = opts.__dict__
-    icpDoer = DelegateCreateDoer(name=name, **kwa)
+    icpDoer = DelegateRotateDoer(name=name, data=data, **kwa)
 
     doers = [icpDoer]
     directing.runController(doers=doers, expire=0.0)
 
 
-class DelegateCreateDoer(doing.DoDoer):
+class DelegateRotateDoer(doing.DoDoer):
     """
     DoDoer instance that launches the environment and dependencies needed to create and disseminate
     the inception event for a delegated identifier.
     """
 
-    def __init__(self, name, **kwa):
+    def __init__(self, name, data, **kwa):
         """
         Creates the DoDoer needed to create the seal for a delegated identifier.
 
@@ -91,36 +96,15 @@ class DelegateCreateDoer(doing.DoDoer):
         hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
         self.habDoer = habbing.HabitatDoer(habitat=hab)
 
-        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.createDo, **kwa)]
+        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.rotateDo, **kwa)]
         self.hab = hab
-        self.delegateeSalt = kwa["delegateeSalt"]
-        self.delegateeName = kwa["delegateeName"]
-        self.delegatorPrefix = kwa["delegatorPrefix"]
 
-        super(DelegateCreateDoer, self).__init__(doers=doers)
+        super(DelegateRotateDoer, self).__init__(doers=doers)
 
-    def createDo(self, tymth, tock=0.0, **kwa):
+    def rotateDo(self, tymth, tock=0.0, **kwa):
         # start enter context
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)  # finish enter context
-
-        with keeping.openKS(name=self.delegateeName) as delKS:
-            delSalt = coring.Salter(raw=self.delegateeSalt.encode('utf-8')).qb64
-            delMgr = keeping.Manager(ks=delKS, salt=delSalt)
-
-            verfers, digers, cst, nst = delMgr.incept(stem=self.delegateeName, temp=True)
-
-            delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
-                                       delpre=self.delegatorPrefix,
-                                       nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
-
-            seal = dict(i=delSrdr.pre,
-                        s=delSrdr.ked["s"],
-                        d=delSrdr.dig)
-
-            print(json.dumps(seal, indent=1))
-
-            self.remove([self.ksDoer, self.dbDoer, self.habDoer])
 
         return
