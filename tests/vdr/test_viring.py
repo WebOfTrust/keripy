@@ -1,8 +1,9 @@
 # -*- encoding: utf-8 -*-
 """
-tests.db.dbing module
+tests.vdr.viring module
 
 """
+
 import json
 import os
 

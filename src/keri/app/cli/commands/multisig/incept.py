@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
+KERI
 keri.kli.commands.multisig module
 
 """
@@ -10,21 +11,19 @@ import sys
 from dataclasses import dataclass
 from json import JSONDecodeError
 
-import blake3
 from hio import help
 from hio.base import doing
-
 from keri.app import habbing, keeping, directing, agenting, indirecting
+from keri.app.cli.common import grouping, displaying
 from keri.core import coring, eventing
 from keri.db import basing
 from keri.kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a prefix')
-parser.set_defaults(handler=lambda args: handler(args),
-                    transferable=True)
-parser.add_argument('--name', '-n', help='Human readable reference', required=True)
+parser = argparse.ArgumentParser(description='Initialize a group identifier prefix')
+parser.set_defaults(handler=lambda args: inceptMultisig(args))
+parser.add_argument('--name', '-n', help='Human readable environment reference', required=True)
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
 parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
                                           'http)', default="http")
@@ -32,6 +31,11 @@ parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP 
 
 @dataclass
 class MultiSigInceptOptions:
+    """
+    Options dataclass loaded fromt he file parameter to this command line function.
+    Represents all the options needed to incept a multisig group identifier
+
+    """
     aids: list
     transferable: bool
     witnesses: list
@@ -43,7 +47,16 @@ class MultiSigInceptOptions:
     sigs: list
 
 
-def handler(args):
+def inceptMultisig(args):
+    """
+    Reads the config file into a MultiSigInceptOptions dataclass and creates and signs the inception
+    event for the group identifier.  If signatures are provided in the options file, the event is submitted
+    to its witnesses and receipts are collected.
+
+    Parameters:
+        args: Parsed arguments from the command line
+
+    """
     try:
         f = open(args.file)
         config = json.load(f)
@@ -67,8 +80,24 @@ def handler(args):
 
 
 class MultiSigInceptDoer(doing.DoDoer):
+    """
+    DoDoer instance that launches the environment and dependencies needed to create and disseminate
+    the inception event for a multisig group identifier.  The identifier of the environment loaded from `name`
+    must be a member of the group of identifiers listed in the configuration file.
+
+    """
 
     def __init__(self, name, **kwa):
+        """
+        Creates the DoDoer needed to incept a multisig group identifier.  Requires the
+        name of the environment whose identifier is a member of the group being created.
+        All other arguments are passed to the inceptDo generator method as parameters to create
+        the inception event.
+
+        Parameters
+            name (str): Name of the local identifier environment
+
+        """
 
         ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
@@ -82,7 +111,7 @@ class MultiSigInceptDoer(doing.DoDoer):
 
         doers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, doing.doify(self.inceptDo, **kwa)]
         self.hab = hab
-        super(MultiSigInceptDoer, self).__init__(doers=doers, **kwa)
+        super(MultiSigInceptDoer, self).__init__(doers=doers)
 
 
     def inceptDo(self, tymth, tock=0.0, **kwa):
@@ -115,7 +144,7 @@ class MultiSigInceptDoer(doing.DoDoer):
             if len(keys) > 1:
                 raise ConfigurationError("Identifier must have only one key, {} has {}".format(aid, len(keys)))
 
-            diger = self._extract(nexter=kever.nexter, tholder=kever.tholder)
+            diger = grouping.extractDig(nexter=kever.nexter, tholder=kever.tholder)
 
             mskeys.append(keys[0])
             msdigers.append(diger)
@@ -140,43 +169,28 @@ class MultiSigInceptDoer(doing.DoDoer):
         self.hab.prefixes.add(mssrdr.pre)  # make this prefix one of my own
         self.hab.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
 
+        toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witq]
         if kwa["sigs"]:
 
             mbx = indirecting.MailboxDirector(hab=self.hab)
             witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
             self.extend([mbx, witRctDoer])
+            toRemove.extend([mbx, witRctDoer])
 
             while not witRctDoer.done:
                 _ = yield self.tock
 
-            toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, witRctDoer, mbx]
-            self.remove(toRemove)
-
-            print(f'Prefix  {mssrdr.pre}')
-            for idx, verfer in enumerate(mskeys):
-                print(f'\tPublic key {idx+1}:  {verfer.qb64}')
-            print()
+            displaying.printIdentifier(self.hab, mssrdr.pre)
 
         else:
-
             print(mssrdr.pretty())
             for siger in sigers:
                 print(siger.qb64)
 
-            toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witq]
-            self.remove(toRemove)
+        #  Add this group identifier prefix to my list of group identifiers I participate in
+        bid = basing.GroupIdentifier(lid=self.hab.pre, aids=aids)
+        self.hab.db.gids.put(mssrdr.pre, bid)
+
+        self.remove(toRemove)
 
         return
-
-
-    @staticmethod
-    def _extract(nexter, tholder):
-        dint = int.from_bytes(nexter.raw, 'big')
-
-        limen = tholder.limen
-        ldig = blake3.blake3(limen.encode("utf-8")).digest()
-        sint = int.from_bytes(ldig, 'big')
-        kint = sint ^ dint
-
-        diger = coring.Diger(raw=kint.to_bytes(coring.Matter._rawSize(coring.MtrDex.Blake3_256), 'big'))
-        return diger

@@ -56,6 +56,25 @@ def openHab(name="test", salt=b'0123456789abcdef', temp=True, **kwa):
         yield hab
 
 
+@contextmanager
+def existingHab(name="test"):
+    """
+    Context manager wrapper for existing Habitat instance.
+    Will raise exception if Habitat and database has not already been created.
+    Context 'with' statements call .close on exit of 'with' block
+
+    Parameters:
+        name(str): name of habitat to create
+
+    """
+
+    with basing.openDB(name=name, temp=False, reload=True) as db, \
+            keeping.openKS(name=name, temp=False) as ks:
+
+        hab = Habitat(name=name, ks=ks, db=db, temp=False, create=False)
+        yield hab
+
+
 class Habitat:
     """
     Habitat class provides direct mode controller's local shared habitat

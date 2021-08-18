@@ -6,13 +6,13 @@ keri.vc.handling module
 from hio.base import doing
 from hio.help import decking
 
+from . import proving
 from .. import help
 from ..core.coring import dumps, Deversify
 from ..core.scheming import JSONSchema
 from ..kering import ShortageError
 from ..peer import exchanging
-from ..vc.proving import Credentialer
-from ..vc.walleting import parseCredential, buildProof
+from ..vc.proving import Credentialer, buildProof
 
 logger = help.ogler.getLogger()
 
@@ -254,8 +254,7 @@ class IssueHandler(doing.Doer):
                     msg = bytearray(raw)
                     msg.extend(proof.encode("utf-8"))
 
-                    parseCredential(ims=msg, wallet=self.wallet, typ=self.typ)
-
+                    proving.parseCredential(ims=msg, wallet=self.wallet, typ=self.typ)
                 yield
 
             yield
@@ -323,8 +322,6 @@ class RequestHandler(doing.Doer):
                     said = descriptor["x"]
                     credentials = self.wallet.getCredentials(said)
                     if len(credentials) > 0:
-                        vc = credentials[0][0].pretty()
-                        # logger.info("Presenting Credential for schema %s:\n VC=%s", said, vc)
                         matches.append(credentials[0])
 
                 if len(matches) > 0:
@@ -395,7 +392,7 @@ class ProofHandler(doing.Doer):
     def do(self, tymth, tock=0.0, **opts):
         """
 
-        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+        Handle incoming messages by parsing and verifying the credential and storing it in the wallet
 
         Parameters:
             payload is dict representing the body of a /credential/issue message

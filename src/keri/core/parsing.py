@@ -855,7 +855,7 @@ class Parser:
             args = dict(serder=serder)
             if ssgs:
                 pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
-                args["src"] = pre
+                args["src"] = pre.qb64
                 args["sigers"] = sigers
 
             elif cigars:

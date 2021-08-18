@@ -6,6 +6,7 @@ keri.vdr.issuing module
 VC issuer support
 """
 from hio.base import doing
+from keri.vdr import viring
 
 from .. import kering
 from ..core import parsing
@@ -27,7 +28,7 @@ class Issuer:
 
     """
 
-    def __init__(self, hab, name="test", reger=None, tevers=None, regk=None, estOnly=False, **kwa):
+    def __init__(self, hab, name="test", reger=None, tevers=None, estOnly=False, temp=False, **kwa):
         """
         Initialize Instance
 
@@ -45,11 +46,11 @@ class Issuer:
         self.hab = hab
         self.name = name
         self.estOnly = estOnly
-        self.regk = regk
         self.incept = None
         self.ianchor = None
+        self.regk = None
 
-        self.reger = reger if reger is not None else Registry(name=name)
+        self.reger = reger if reger is not None else Registry(name=name, temp=temp)
         self.tevers = tevers if tevers is not None else dict()
         self.inited = False
 
@@ -62,6 +63,11 @@ class Issuer:
             self.setup(**self._inits)
 
     def setup(self, *, noBackers=False, baks=None, toad=None, ):
+
+        ex = self.reger.regs.get(keys=self.name)
+        if ex is not None:
+            self.regk = ex.registryKey
+
 
         if self.regk is None:
             self.regi = 0
@@ -100,6 +106,9 @@ class Issuer:
             if self.regk not in self.tevers:
                 raise kering.ConfigurationError("Improper Issuer inception for "
                                                 "pre={}.".format(self.regk))
+            self.reger.regs.put(keys=self.name,
+                                val=viring.RegistryRecord(registryKey=self.regk))
+
         else:
             self.tvy = eventing.Tevery(tevers=self.tevers, reger=self.reger, db=self.hab.db,
                                        regk=self.regk, local=True)

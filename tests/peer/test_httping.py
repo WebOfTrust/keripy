@@ -7,7 +7,9 @@ tests.peer.httping module
 import falcon
 import pytest
 from falcon.testing import helpers
+from keri.app import habbing
 from keri.peer import httping
+from keri.vdr import issuing, verifying
 
 
 def test_parse_cesr_request():
@@ -55,5 +57,61 @@ def test_parse_cesr_request():
     assert cr.attachments == "-H000000000"
 
 
-if __name__ == '__main__':
-    test_parse_cesr_request()
+class MockClient:
+
+    def __init__(self):
+        self.args = dict()
+
+    def request(self, **kwargs):
+        self.args = kwargs
+
+
+def test_create_cesr_request():
+    with habbing.openHab(name="test", transferable=True, temp=True) as hab:
+        issuer = issuing.Issuer(hab=hab, name="test", temp=True)
+
+        verfer = verifying.Verifier(hab=hab)
+        msg = verfer.query(issuer.regk,
+                           "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
+                           res="tels")
+        print()
+        print(msg)
+        client = MockClient()
+
+        httping.createCESRRequest(msg, client, date="2021-02-13T19:16:50.750302+00:00")
+
+        assert client.args["method"] == "POST"
+        assert client.args["path"] == "/req/tels"
+        assert client.args["body"] == (
+            b'{"v":"KERI10JSON00009b_","t":"req","r":"tels","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",'
+            b'"ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT78Tt2r9M4"}}')
+
+        headers = client.args["headers"]
+        assert headers["Content-Type"] == "application/cesr+json"
+        assert headers["Content-Length"] == 155
+        assert headers["CESR-DATE"] == "2021-02-13T19:16:50.750302+00:00"
+        assert headers["CESR-ATTACHMENT"] == bytearray(
+            b'-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E'
+            b'-AABAAhulhMW2RDUCHK5mxHryjlQ0i3HW_6CXbAGjNnHb9U9pq6N0C9DiavUbX6SgDskKIfoQLtV_EqTI_q9AyNAstAQ')
+
+        msg = hab.query(pre=hab.pre, res="mbx", sn=0)
+        client = MockClient()
+
+        httping.createCESRRequest(msg, client, date="2021-02-13T19:16:50.750302+00:00")
+
+        assert client.args["method"] == "POST"
+        assert client.args["path"] == "/req/mbx"
+        assert client.args["body"] == (
+            b'{"v":"KERI10JSON00006c_","t":"req","r":"mbx","q":{"i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
+            b'"s":0}}')
+
+        headers = client.args["headers"]
+        assert headers["Content-Type"] == "application/cesr+json"
+        assert headers["Content-Length"] == 108
+        assert headers["CESR-DATE"] == "2021-02-13T19:16:50.750302+00:00"
+        assert headers["CESR-ATTACHMENT"] == bytearray(
+            b'-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABAAHAlNsNulD335Dgya4-r5_E_48R4'
+            b'-ugG6nLMd62xU2gvEWxTDBMTeob4fR3WwBptL23Ld1qg0rSOfpjDaJ_9mAw')
+
+        if __name__ == '__main__':
+            test_parse_cesr_request()

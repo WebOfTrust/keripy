@@ -31,7 +31,9 @@ class Exchanger(doing.DoDoer):
         Initialize instance
 
         Parameters:
-            hab (Habitat): instance of local controller's context
+            hab (Habitat): instance of local controller's
+            handler(list): list of Handlers capable of responding to exn messages
+            controller (str) qb64 prefix of the controlling identifier
             cues (Deck):  of Cues i.e. notices of requests needing response
             delta (timedelta): message timeout window
         """

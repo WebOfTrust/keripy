@@ -8,16 +8,12 @@ Witness command line interface
 import argparse
 import logging
 
-import falcon
 from hio.base import doing
-from hio.core import http
-from hio.core.tcp import serving as tcpServing
-
 from keri import __version__, kering
 from keri import help
-from keri.app import directing, habbing, keeping, agenting, indirecting
+from keri.app import indirecting
+from keri.app.cli.common import existing
 from keri.core import scheming
-from keri.db import basing
 from keri.peer import httping, exchanging
 from keri.vc import walleting, handling
 
@@ -56,17 +52,7 @@ def runWallet(name="wallet"):
     Setup and run one wallet
     """
 
-    ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
-    ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
-    dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
-
-    # setup habitat
-    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
-    habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
-
-    # setup doers
-
+    hab, doers = existing.openHabitat(name=name)
     wallet = walleting.Wallet(hab=hab, name=name)
 
     jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
@@ -76,9 +62,9 @@ def runWallet(name="wallet"):
 
     mbx = exchanging.Mailboxer(name=name)
     rep = httping.Respondant(hab=hab, mbx=mbx)
-    mbx = indirecting.MailboxDirector(hab=hab, exc=exchanger, rep=rep)
+    mdir = indirecting.MailboxDirector(hab=hab, exc=exchanger, rep=rep)
 
-    doers = [ksDoer, dbDoer, habDoer, exchanger, mbx, rep]
+    doers.extend([exchanger, mdir, rep])
 
     try:
         tock = 0.03125

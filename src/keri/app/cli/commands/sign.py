@@ -1,30 +1,42 @@
 # -*- encoding: utf-8 -*-
 """
+KERI
 keri.kli.commands module
 
 """
 import argparse
 
-from hio.base import doing
-
+from keri import kering
 from keri.app import habbing
 
 parser = argparse.ArgumentParser(description='Sign an arbitrary string')
-parser.set_defaults(handler=lambda args: SignDoer(text=args.text, hab=args.hab))
-parser.add_argument('--text', '-t', help='An arbitrary string')
+parser.set_defaults(handler=lambda args: sign(args))
+parser.add_argument('--name', '-n', help='Human readable reference', required=True)
+parser.add_argument('--text', '-t', help='Text or file (starts with "@") to sign', required=True)
 
 
-class SignDoer(doing.Doer):
+def sign(args):
 
-    def __init__(self, text, tock=0.0, hab: habbing.Habitat = None, **kwa):
-        self.hab = hab
-        self.text = text
+    name = args.name
 
-        super(SignDoer, self).__init__(**kwa)
+    try:
+        with habbing.existingHab(name=name) as hab:
 
-    def do(self, tymth, tock=0.0, **opts):
-        print(self.hab.mgr.sign(ser=self.text.encode("utf-8"),
-                                verfers=self.hab.kever.verfers,
-                                indexed=False)[0].qb64)
+            txt = args.text
+            if txt.startswith("@"):
+                f = open(txt[1:], "r")
+                data = f.read()
+            else:
+                data = txt
 
-        return super().do(tymth, tock, **opts)
+            sigers = hab.mgr.sign(ser=data.encode("utf-8"),
+                                  verfers=hab.kever.verfers,
+                                  indexed=True)
+
+            for idx, siger in enumerate(sigers):
+                print("{}. {}".format(idx+1, siger.qb64))
+
+    except kering.ConfigurationError:
+        print(f"prefix for {name} does not exist, incept must be run first", )
+    except FileNotFoundError:
+        print("unable to open file", args.text[1:])
