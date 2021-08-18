@@ -1133,7 +1133,54 @@ def query(pre,
 
     """
     Returns serder of query event message.
-    Utility function to automate creation of interaction events.
+    Utility function to automate creation of query messages.
+
+     Parameters:
+        pre is identifier prefix qb64
+        dig is digest of previous event qb64
+        sn is int sequence number
+        data is list of dicts of comitted data such as seals
+        version is Version instance
+        kind is serialization kind
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.req
+
+    qry = dict(
+        i=pre
+    )
+
+    if dt is not None:
+        qry["dt"] = dt
+
+    if dta is not None:
+        qry["dta"] = dt
+
+    if dtb is not None:
+        qry["dtb"] = dt
+
+    if sn is not None:
+        qry["s"] = sn
+
+
+    ked = dict(v=vs,  # version string
+               t=ilk,
+               r=res,  # resource type for single item request
+               q=qry
+               )
+
+    return Serder(ked=ked)  # return serialized ked
+
+def reply(pre,
+          route,
+          dt=None,
+          data=None,
+          version=Version,
+          kind=Serials.json):
+
+    """
+    Returns serder of reply  message.
+    Utility function to automate creation of query messages.
 
      Parameters:
         pre is identifier prefix qb64
