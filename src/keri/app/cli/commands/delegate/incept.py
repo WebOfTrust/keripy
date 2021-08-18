@@ -7,14 +7,13 @@ keri.kli.commands.delegate module
 import argparse
 import json
 import sys
+from dataclasses import dataclass
 from json import JSONDecodeError
 
 from hio import help
 from hio.base import doing
 
-from keri import kering
 from keri.app import directing, keeping, habbing, agenting
-from keri.app.cli.commands.delegate.create import DelegateOptions
 from keri.core import eventing, coring, parsing
 from keri.db import basing
 
@@ -24,7 +23,18 @@ parser = argparse.ArgumentParser(description='Initialize a seal for creating a d
 parser.set_defaults(handler=lambda args: incept(args))
 parser.add_argument('--name', '-n', help='Human readable environment reference', required=True)
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
-parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=None, action="store", required=False)
+parser.add_argument('--seal', '-s', help='Filename to write seal', default="", required=True)
+
+
+@dataclass
+class DelegateOptions:
+    """
+    Options dataclass loaded from the file parameter to this command line function.
+    Represents all the options needed to create a delegated identifier
+
+    """
+    delegatorPrefix: str
+    delegatorWits: list
 
 
 def incept(args):
@@ -49,25 +59,10 @@ def incept(args):
         sys.exit(-1)
 
     name = args.name
-
-    if args.data is not None:
-        try:
-            if args.data.startswith("@"):
-                f = open(args.data[1:], "r")
-                data = json.load(f)
-            else:
-                data = json.loads(args.data)
-        except json.JSONDecodeError:
-            raise kering.ConfigurationError("data supplied must be value JSON to anchor in a seal")
-
-        if not isinstance(data, list):
-            data = [data]
-
-    else:
-        data = None
+    sealFile = args.seal
 
     kwa = opts.__dict__
-    icpDoer = DelegateInceptDoer(name=name, data=data, **kwa)
+    icpDoer = DelegateInceptDoer(name=name, sealFile=sealFile, **kwa)
 
     doers = [icpDoer]
     directing.runController(doers=doers, expire=0.0)
@@ -79,7 +74,7 @@ class DelegateInceptDoer(doing.DoDoer):
     the inception event for a delegated identifier.
     """
 
-    def __init__(self, name, data, **kwa):
+    def __init__(self, name, sealFile, **kwa):
         """
         Creates the DoDoer needed to create the seal for a delegated identifier.
 
@@ -98,11 +93,9 @@ class DelegateInceptDoer(doing.DoDoer):
 
         doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.inceptDo, **kwa)]
         self.hab = hab
-        self.delegateeSalt = kwa["delegateeSalt"]
         self.delegatorWitness = kwa["delegatorWits"]
-        self.delegateeName = kwa["delegateeName"]
         self.delegatorPrefix = kwa["delegatorPrefix"]
-        self.data = data
+        self.sealFile = sealFile
 
         super(DelegateInceptDoer, self).__init__(doers=doers)
 
@@ -112,51 +105,55 @@ class DelegateInceptDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)  # finish enter context
 
-        witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.TCPWitnesser)
-        witq.query(self.delegatorPrefix)  # Query for remote pre Event
+        verfers, digers, cst, nst = self.hab.mgr.incept(algo=keeping.Algos.randy, temp=True)
 
+        # build and consume delcept
+        icpSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
+                                   delpre=self.delegatorPrefix,
+                                   nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
+
+        self.hab.mgr.move(old=verfers[0].qb64, new=icpSrdr.pre)
+
+        seal = dict(i=icpSrdr.pre,
+                    s=icpSrdr.ked["s"],
+                    d=icpSrdr.dig)
+
+        with open(self.sealFile, "w") as f:
+            f.write(json.dumps(seal, indent=4))
+
+        witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.TCPWitnesser)
         self.extend([witq])
 
+        print("Hello, could someone approve my delegated identifier inception, please?")
         while self.delegatorPrefix not in self.hab.kevers or self.hab.kevers[self.delegatorPrefix].sn < 1:
+            witq.query(self.delegatorPrefix)
             yield self.tock
 
+        sigers = self.hab.mgr.sign(ser=icpSrdr.raw, verfers=verfers)
+        msg = bytearray(icpSrdr.raw)
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        counter = coring.Counter(code=coring.CtrDex.SealSourceCouples,
+                                 count=1)
+        msg.extend(counter.qb64b)
+
         event = self.hab.kevers[self.delegatorPrefix]
+        seqner = coring.Seqner(sn=event.sn)
+        msg.extend(seqner.qb64b)
+        msg.extend(event.serder.diger.qb64b)
 
-        with keeping.openKS(name=self.delegateeName) as ks:
-            delSalt = coring.Salter(raw=self.delegateeSalt.encode('utf-8')).qb64
-            delMgr = keeping.Manager(ks=ks, salt=delSalt)
+        delKvy = eventing.Kevery(db=self.hab.db, lax=True)
+        parsing.Parser().parseOne(ims=bytearray(msg), kvy=delKvy)
 
-            verfers, digers, cst, nst = delMgr.incept(stem=self.delegateeName, temp=True)
+        while icpSrdr.pre not in delKvy.kevers:
+            yield self.tock
 
-            # build and consume delcept
-            delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
-                                       delpre=self.delegatorPrefix,
-                                       nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
+        print("Successfully created delegate identifier", icpSrdr.pre)
+        print("Public key", icpSrdr.verfers[0].qb64)
 
-            sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
-
-            msg = bytearray(delSrdr.raw)
-            counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                     count=len(sigers))
-            msg.extend(counter.qb64b)
-            for siger in sigers:
-                msg.extend(siger.qb64b)
-            counter = coring.Counter(code=coring.CtrDex.SealSourceCouples,
-                                     count=1)
-            msg.extend(counter.qb64b)
-            seqner = coring.Seqner(sn=event.sn)
-            msg.extend(seqner.qb64b)
-            msg.extend(event.serder.diger.qb64b)
-
-            delKvy = eventing.Kevery(db=self.hab.db,
-                                     lax=True, )
-            parsing.Parser().parseOne(ims=bytearray(msg), kvy=delKvy)
-
-            while delSrdr.pre not in delKvy.kevers:
-                yield self.tock
-
-            print("Successfully created delegate identifier", delSrdr.pre)
-
-            self.remove([self.ksDoer, self.dbDoer, self.habDoer, witq])
+        self.remove([self.ksDoer, self.dbDoer, self.habDoer, witq])
 
         return
