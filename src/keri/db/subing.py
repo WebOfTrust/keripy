@@ -47,7 +47,7 @@ class SuberBase():
         self.sep = sep if sep is not None else self.Sep
 
 
-    def _tokey(self, keys: Union[str, bytes, Iterable]):
+    def _tokey(self, keys: Union[str, bytes, memoryview, Iterable]):
         """
         Converts key to key str with proper separators and returns key bytes.
         If key is already str then returns. Else If key is iterable (non-str)
@@ -57,6 +57,8 @@ class SuberBase():
            keys (Union[str, bytes, Iterable]): str, bytes, or Iterable of str.
 
         """
+        if isinstance(keys, memoryview):  # memoryview of bytes
+            return bytes(keys)  # return bytes
         if hasattr(keys, "encode"):  # str
             return keys.encode("utf-8")
         elif hasattr(keys, "decode"): # bytes
@@ -64,7 +66,7 @@ class SuberBase():
         return (self.sep.join(keys).encode("utf-8"))  # iterable
 
 
-    def _tokeys(self, key: Union[str, bytes]):
+    def _tokeys(self, key: Union[str, bytes, memoryview]):
         """
         Converts key bytes to keys tuple of strs by decoding and then splitting
         at separator.
@@ -76,6 +78,8 @@ class SuberBase():
            key (Union[str, bytes]): str or bytes.
 
         """
+        if isinstance(key, memoryview):  # memoryview of bytes
+            key = bytes(key)
         return tuple(key.decode("utf-8").split(self.sep))
 
 
@@ -588,12 +592,13 @@ class IoSetSuber(SuberBase):
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-            items (list):  each item in list is tuple (iokey, val) where each
-                    iokey is actual key with hidden suffix and each val is str
+            items (list):  each item in list is tuple (iokeys, val) where each
+                    iokeys is actual key tuple with hidden suffix and
+                    each val is str
                     empty list if no entry at keys
 
         """
-        return ([(iokey, self._decode(bytes(val))) for iokey, val in
+        return ([(self._tokeys(iokey), self._decode(bytes(val))) for iokey, val in
                         self.db.getIoSetItemsIter(db=self.sdb,
                                                   key=self._tokey(keys),
                                                   sep=self.sep)])
@@ -608,8 +613,9 @@ class IoSetSuber(SuberBase):
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-            iterator:  each item iterated is tuple (iokey, val) where each
-                    iokey is actual key with hidden suffix and each val is str
+            iterator:  each item iterated is tuple (iokeys, val) where each
+                    iokeys is actual keys tuple with hidden suffix and
+                    each val is str
                     empty list if no entry at keys.
                     Raises StopIteration when done
 
@@ -617,27 +623,7 @@ class IoSetSuber(SuberBase):
         for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
                                                     key=self._tokey(keys),
                                                     sep=self.sep):
-            yield (iokey, self._decode(bytes(val)))
-
-
-    def remIokey(self, iokey: Union[str, bytes, memoryview]):
-        """
-        Removes entry at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (dataclass):  instance of dup val at key to delete
-                              if val is None then remove all values at key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-
-        """
-        if isinstance(iokey, memoryview):
-            iokey = bytes(iokey)
-        elif hasattr(iokey, "encode"):
-            iokey = iokey.encode("utf-8")  # encode str to bytes
-        return self.db.delIoSetIokey(db=self.sdb, iokey=iokey)
+            yield (self._tokeys(iokey), self._decode(bytes(val)))
 
 
     def getAllIoItemIter(self):
@@ -650,8 +636,25 @@ class IoSetSuber(SuberBase):
             ion ordinal and val is str for each entry in db.
             Raises StopIteration when done
         """
+        # getAllItemIter converts both key and val memoryviews to bytes
         for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (iokey, self._decode(bytes(val)))
+            yield (self._tokeys(iokey), self._decode(val))
+
+
+    def remIokey(self, iokeys: Union[str, bytes, memoryview, Iterable]):
+        """
+        Removes entry at keys
+
+        Parameters:
+            iokeys (tuple): of key str or tuple of key strs to be combined
+                            in order to form key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+
+        """
+        return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
+
 
 
 

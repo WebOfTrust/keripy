@@ -689,11 +689,12 @@ def test_ioset_komer():
         assert len(actuals) == 0
         assert not endDB.get(keys=keys0)
 
-        for i, end in enumerate(ends):  # fill both dbs
-            assert endDB.put(keys=(cid0, role), vals=[end])
+        # fill both dbs
+        for i, end in enumerate(ends):  # keys0
+            assert endDB.put(keys=keys0, vals=[end])
             assert locDB.put(keys=(eids[i], scheme), val=locs[i])
 
-        assert endDB.put(keys=(cid1, role), vals=[wit3end])
+        assert endDB.put(keys=keys1, vals=[wit3end])  # keys1
         assert locDB.put(keys=(wit3, scheme), val=wit3loc)
 
         for i, end in enumerate(endDB.getIter(keys=(cid0, role))):
@@ -705,26 +706,38 @@ def test_ioset_komer():
             assert loc == wit3loc
 
         # test IoItem methods
-        iokeys = [b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.AAAAAAAAAAAAAAAAAAAAAA',
+        iokeys0 = [b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.AAAAAAAAAAAAAAAAAAAAAA',
                   b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.AAAAAAAAAAAAAAAAAAAAAB',
                   b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.AAAAAAAAAAAAAAAAAAAAAC']
+        iokeys0 = [endDB._tokeys(iokey) for iokey in iokeys0]
+        assert iokeys0 == [('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                            'witness',
+                            'AAAAAAAAAAAAAAAAAAAAAA'),
+                           ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                            'witness',
+                            'AAAAAAAAAAAAAAAAAAAAAB'),
+                           ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                            'witness',
+                            'AAAAAAAAAAAAAAAAAAAAAC')]
+
         i = 0
-        for iokey, end in endDB.getIoItem(keys=(cid0, role)):
+        for iokeys, end in endDB.getIoItem(keys=keys0):
             assert end == ends[i]
-            assert iokey == iokeys[i]
+            assert iokeys == iokeys0[i]
             i += 1
 
         i = 0
-        for iokey, end in endDB.getIoItemIter(keys=(cid0, role)):
+        for iokeys, end in endDB.getIoItemIter(keys=keys0):
             assert end == ends[i]
-            assert iokey == iokeys[i]
+            assert iokeys == iokeys0[i]
             i += 1
 
-        # test getAll
+        # test getAllItemIter
         ends = ends + [wit3end]
         i = 0
         for keys, end in endDB.getAllItemIter():
             assert end == ends[i]
+            assert keys in  (keys0, keys1)
             i += 1
 
         locs = [wit3loc] + locs
@@ -734,13 +747,28 @@ def test_ioset_komer():
             i += 1
 
         # test getAllIoItem
-        iokeys.append(b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E.witness.AAAAAAAAAAAAAAAAAAAAAA')
+        iokeys1 = [b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E.witness.AAAAAAAAAAAAAAAAAAAAAA']
+        iokeys1 = [endDB._tokeys(iokey) for iokey in iokeys1]
+        iokeysall = iokeys0 + iokeys1
+        assert iokeysall ==  [('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                                'witness',
+                                'AAAAAAAAAAAAAAAAAAAAAA'),
+                               ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                                'witness',
+                                'AAAAAAAAAAAAAAAAAAAAAB'),
+                               ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
+                                'witness',
+                                'AAAAAAAAAAAAAAAAAAAAAC'),
+                               ('EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E',
+                                'witness',
+                                'AAAAAAAAAAAAAAAAAAAAAA')]
+
         i = 0
-        for iokey, end in endDB.getAllIoItemIter():
+        for iokeys, end in endDB.getAllIoItemIter():
             assert end == ends[i]
-            assert iokey == iokeys[i]
+            assert iokeys == iokeysall[i]
             i += 1
-            assert endDB.remIokey(iokey)
+            assert endDB.remIokey(iokeys)
 
         assert endDB.cnt(keys0) == 0
         assert endDB.cnt(keys1) == 0
