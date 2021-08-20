@@ -7,9 +7,7 @@ on:
   push:
     branches:
       - 'master'
-      - 'mac-matrix'
   pull_request:
-    types: [ opened, edited, closed, synchronize, reopened, unlocked ]
 
 jobs:
   test:
