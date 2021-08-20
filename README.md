@@ -2,6 +2,7 @@
 
 Project Name:  keripy
 
+![test](https://github.com/webOfTrust/keripy/actions/workflows/python-app-ci.yml/badge.svg)
 
 ## Installation
 
