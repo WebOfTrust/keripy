@@ -48,7 +48,7 @@ def test_saider():
     assert sad.verify(sed, prefixed=True) is False
 
     # Initialize from dict
-    sad = Saider(sed=sed, code=MtrDex.Blake3_256)
+    sad = Saider(sad=sed, code=MtrDex.Blake3_256)
     assert sad.qb64 == "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA"
     assert sad.verify(sed, prefixed=False) is True
 

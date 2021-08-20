@@ -95,12 +95,13 @@ class HabitatRecord:  # habs
 class EndpointRecord:  # ends
     """
     Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by role.
-    Database Keys are (cid, role) where cid is endpoint controller identifier
-    prefix and role is endpoint role such as watcher, witness etc
+    Database Keys are (acid, role) where acid is attributable controller identifier
+    of endpoint (qb64 prefix) and role is endpoint role such as watcher, witness etc
     """
     seid: str  # identifier prefix of service endpoint
     name: str  # user friendly name of endpoint
-    dts: str  # ISO-8601 datetime string of latest update
+    said: str # Self-Addressing ID of conveying reply message
+    dts: str  # ISO-8601 datetime string of conveying reply message
 
     def __iter__(self):
         return iter(asdict(self))
@@ -111,15 +112,18 @@ class LocationRecord:  # locs
     """
     Service Endpoint Record with fields and keys to compose endpoint location
     and cross reference to entry in Endpoint database.
-    Database Keys are (eid, scheme) where eid is endpoint identifier prefix
-    and the protocol scheme (tcp, https). The eid is usually nontransferable.
+    Database Keys are (seid, scheme) where seid is service endpoint identifier
+    (qb64 prefix) and scheme is the url protocol scheme (tcp, https).
+    The seid is usually a nontransferable identifier (witness, watcher) but may be
+    transferable (judge, juror, public watcher).
     """
     host: str  # hostname or host ip addresss string
     port: int  # port
     path: str  # path string
-    cid: str  # identifier prefix of controller that authorizes endpoint
+    acid: str  # identifier prefix of controller that authorizes endpoint
     role: str  # endpoint role such as watcher, witness etc
-    dts: str  # ISO-8601 datetime string of latest update
+    said: str  # Self-Addressing ID of conveying reply message
+    dts: str  # ISO-8601 datetime string of conveying replay message
 
     def __iter__(self):
         return iter(asdict(self))
@@ -318,9 +322,11 @@ class Baser(dbing.LMDBer):
             More than one value per DB key is allowed
 
         .ooes is named sub DB of out of order escrowed event tables
-            that map sequence numbers to serialized event digests.
+            that map a prefix and sequence number to a set of serialized event
+            digests.
+            Values are digests used to lookup event in .evts, .sigs and .dtss
+            sub DBs.
             snKey
-            Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifer prefix plus sequence number of key event
             More than one value per DB key is allowed
 
@@ -463,7 +469,7 @@ class Baser(dbing.LMDBer):
                                  schema=HabitatRecord, )
 
         # service endpoint identifer (SEID) prefixes by controller prefixes and roles
-        self.ends = koming.DupKomer(db=self,
+        self.ends = koming.IoSetKomer(db=self,
                                     subkey='ends.',
                                     schema=EndpointRecord, )
 

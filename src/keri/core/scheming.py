@@ -19,9 +19,9 @@ from .coring import Matter, MtrDex, Serials
 from .. import help
 from ..kering import ValidationError, DeserializationError, EmptyMaterialError
 
-Idage = namedtuple("Idage", "dollar at id i")
+Idage = namedtuple("Idage", "dollar at id i d")
 
-Ids = Idage(dollar="$id", at="@id", id="id", i="i")
+Ids = Idage(dollar="$id", at="@id", id="id", i="i", d="d")
 
 logger = help.ogler.getLogger()
 
@@ -186,7 +186,7 @@ class JSONSchema:
             raise ValueError("Invalid serialization kind = {}".format(kind))
 
         if self.id in sed:
-            saider = Saider(qb64=sed[self.id], idder=self.id)
+            saider = Saider(qb64=sed[self.id], idl=self.id)
             said = sed[self.id]
             if not saider.verify(sed, prefixed=True):
                 raise ValidationError("invalid self-addressing identifier {} instead of {} in schema = {}"
@@ -341,7 +341,7 @@ class Schemer:
             kind (Schema) tuple of schema type
 
         """
-        saider = Saider(sed=sed, code=self._code, idder=self.typ.id)
+        saider = Saider(sad=sed, code=self._code, idl=self.typ.id)
         sed[self.typ.id] = saider.qb64
         raw = self.typ.dump(sed)
 
@@ -430,7 +430,7 @@ class Saider(Matter):
 
     Dummy = "#"  # dummy spaceholder char for pre. Must not be a valid Base64 char
 
-    def __init__(self, raw=None, code=None, sed=None, kind=Serials.json, idder=Ids.dollar, **kwa):
+    def __init__(self, raw=None, code=None, sad=None, kind=Serials.json, idl=Ids.dollar, **kwa):
         """
 
         Inherited Parameters:
@@ -441,10 +441,10 @@ class Saider(Matter):
             code is str of derivation code
 
         Parameters:
-            sed (dict): optional deserialized JSON for which to create the self addressing
+            sad (dict): self addressed data (sad) dict to serialize and inject said
         """
 
-        self.idder = idder
+        self.idl = idl
         self._kind = kind
         try:
             # raw is populated
@@ -452,11 +452,11 @@ class Saider(Matter):
         except EmptyMaterialError as ex:
             # No raw, try and calculate code and said
 
-            if not sed or (not code and self.idder not in sed):  # No sed or no code and no id in sed, no luck
+            if not sad or (not code and self.idl not in sad):  # No sad or no code and no id in sad, no luck
                 raise ex
 
             if not code:
-                super(Saider, self).__init__(qb64=sed[self.idder], code=code, **kwa)
+                super(Saider, self).__init__(qb64=sad[self.idl], code=code, **kwa)
                 code = self.code
 
             if code == MtrDex.Blake3_256:
@@ -477,7 +477,7 @@ class Saider(Matter):
                 raise ValueError("Unsupported code = {} for saider.".format(code))
 
             # use ked and ._derive from code to derive aid prefix and code
-            raw, code = self._derive(sed=sed)
+            raw, code = self._derive(sad=sad)
             super(Saider, self).__init__(raw=raw, code=code, **kwa)
 
         if self.code == MtrDex.Blake3_256:
@@ -497,36 +497,36 @@ class Saider(Matter):
         else:
             raise ValueError("Unsupported code = {} for saider.".format(self.code))
 
-    def derive(self, sed):
+    def derive(self, sad):
         """
-        Returns tuple (raw, code) of said as derived from serialized dict sed.
-                uses a derivation code specific _derive method
+        Returns:
+            result (tuple): (raw, code) of said as derived from serialized dict
+                sad. Uses a derivation code specific _derive method
 
         Parameters:
-            sed is json dict
-
+            sad (dict): self addressed data to be serialized
         """
+        return self._derive(sad=sad)
 
-        return self._derive(sed=sed)
 
-    def verify(self, sed, prefixed=False):
+    def verify(self, sad, prefixed=False):
         """
         Returns True if derivation from ked for .code matches .qb64 and
                 If prefixed also verifies ID value matches .qb64
                 False otherwise
 
         Parameters:
-            sed (dict) is json dict
-            prefixed (boolean) indicates whether to verify ID value matched .qb64
+            sad (dict): self addressed data to be serialized
+            prefixed (boolean): indicates whether to verify ID value matched .qb64
         """
         try:
             said = self.qb64
-            crymat = self._verify(sed=sed)
+            crymat = self._verify(sad=sad)
             if crymat.qb64 != said:
                 return False
 
-            idf = self.idder
-            if prefixed and sed[idf] != said:
+            idl = self.idl
+            if prefixed and sad[idl] != said:
                 return False
 
         except Exception as ex:
@@ -534,188 +534,188 @@ class Saider(Matter):
 
         return True
 
-    def rawify(self, sed):
-        if 'v' in sed:
-            kind, _, _ = coring.Deversify(sed['v'])
+    def rawify(self, sad):
+        if 'v' in sad:
+            kind, _, _ = coring.Deversify(sad['v'])
         else:
             kind = self._kind
 
-        raw = coring.dumps(sed, kind)
+        raw = coring.dumps(sad, kind)
         return raw
 
-    def _derive_blake3_256(self, sed):
+    def _derive_blake3_256(self, sad):
         """
         Returns tuple (raw, code) of basic Blake3 digest (qb64)
-            as derived from json dict sed
+            as derived from json dict sad
         """
-        sed = dict(sed)  # make copy so don't clobber original sed
+        sad = dict(sad)  # make copy so don't clobber original sad
 
-        idf = self.idder
+        idl = self.idl
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.Blake3_256].fs)
+        sad[idl] = "{}".format(self.Dummy * Matter.Codes[MtrDex.Blake3_256].fs)
 
-        raw = self.rawify(sed)
+        raw = self.rawify(sad)
 
         dig = blake3.blake3(raw).digest()
         return dig, MtrDex.Blake3_256
 
-    def _verify_blake3_256(self, sed):
+    def _verify_blake3_256(self, sad):
         """
         Returns Matter of typed cryptographic material
 
         Parameters:
-            sed is inception key event dict
+            sad is inception key event dict
         """
-        raw, code = self._derive_blake3_256(sed=sed)
+        raw, code = self._derive_blake3_256(sad=sad)
         return Matter(raw=raw, code=MtrDex.Blake3_256)
 
-    def _derive_sha3_256(self, sed):
+    def _derive_sha3_256(self, sad):
         """
         Returns tuple (raw, code) of basic SHA3 digest (qb64)
-            as derived from json dict sed
+            as derived from dict sad
         """
-        sed = dict(sed)  # make copy so don't clobber original sed
+        sad = dict(sad)  # make copy so don't clobber original sad
 
-        idf = self.idder
+        idl = self.idl
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA3_256].fs)
-        raw = self.rawify(sed)
+        sad[idl] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA3_256].fs)
+        raw = self.rawify(sad)
 
         dig = hashlib.sha3_256(raw).digest()
         return dig, MtrDex.SHA3_256
 
-    def _verify_sha3_256(self, sed):
+    def _verify_sha3_256(self, sad):
         """
         Returns Matter of typed cryptographic material
 
         Parameters:
-            sed is inception key event dict
+            sad is inception key event dict
         """
-        raw, code = self._derive_sha3_256(sed=sed)
+        raw, code = self._derive_sha3_256(sad=sad)
         return Matter(raw=raw, code=MtrDex.SHA3_256)
 
-    def _derive_sha3_512(self, sed):
+    def _derive_sha3_512(self, sad):
         """
         Returns tuple (raw, code) of basic SHA3 digest (qb64)
-            as derived from json dict sed
+            as derived from json dict sad
         """
-        sed = dict(sed)  # make copy so don't clobber original sed
+        sad = dict(sad)  # make copy so don't clobber original sad
 
-        idf = self.idder
+        idl = self.idl
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA3_512].fs)
-        raw = self.rawify(sed)
+        sad[idl] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA3_512].fs)
+        raw = self.rawify(sad)
 
         dig = hashlib.sha3_512(raw).digest()
         return dig, MtrDex.SHA3_512
 
-    def _verify_sha3_512(self, sed):
+    def _verify_sha3_512(self, sad):
         """
         Returns Matter of typed cryptographic material
 
         Parameters:
-            sed is inception key event dict
+            sad is inception key event dict
         """
-        raw, code = self._derive_sha3_512(sed=sed)
+        raw, code = self._derive_sha3_512(sad=sad)
         return Matter(raw=raw, code=MtrDex.SHA3_512)
 
-    def _derive_sha2_256(self, sed):
+    def _derive_sha2_256(self, sad):
         """
         Returns tuple (raw, code) of basic SHA2 digest (qb64)
-            as derived from json dict sed
+            as derived from json dict sad
         """
-        sed = dict(sed)  # make copy so don't clobber original sed
+        sad = dict(sad)  # make copy so don't clobber original sad
 
-        idf = self.idder
+        idl = self.idl
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA2_256].fs)
-        raw = self.rawify(sed)
+        sad[idl] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA2_256].fs)
+        raw = self.rawify(sad)
 
         dig = hashlib.sha256(raw).digest()
         return dig, MtrDex.SHA2_256
 
-    def _verify_sha2_256(self, sed):
+    def _verify_sha2_256(self, sad):
         """
         Returns Matter of typed cryptographic material
 
         Parameters:
-            sed is schema JSON dict
+            sad is dict to be serialized
         """
-        raw, code = self._derive_sha2_256(sed=sed)
+        raw, code = self._derive_sha2_256(sad=sad)
         return Matter(raw=raw, code=MtrDex.SHA2_256)
 
-    def _derive_sha2_512(self, sed):
+    def _derive_sha2_512(self, sad):
         """
         Returns tuple (raw, code) of basic SHA2 digest (qb64)
-            as derived from json dict sed
+            as derived from dict sad
         """
-        sed = dict(sed)  # make copy so don't clobber original sed
+        sad = dict(sad)  # make copy so don't clobber original sad
 
-        idf = self.idder
+        idl = self.idl
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA2_512].fs)
-        raw = self.rawify(sed)
+        sad[idl] = "{}".format(self.Dummy * Matter.Codes[MtrDex.SHA2_512].fs)
+        raw = self.rawify(sad)
 
         dig = hashlib.sha512(raw).digest()
         return dig, MtrDex.SHA2_512
 
-    def _verify_sha2_512(self, sed):
+    def _verify_sha2_512(self, sad):
         """
         Returns Matter of typed cryptographic material
 
         Parameters:
-            sed is inception key event dict
+            sad is inception key event dict
             said is Base64 fully qualified default to .qb64
         """
-        raw, code = self._derive_sha2_512(sed=sed)
+        raw, code = self._derive_sha2_512(sad=sad)
         return Matter(raw=raw, code=MtrDex.SHA2_512)
 
-    def _derive_blake2b_256(self, sed):
+    def _derive_blake2b_256(self, sad):
         """
         Returns tuple (raw, code) of basic BLAKE2B digest (qb64)
-            as derived from json dict sed
+            as derived from json dict sad
         """
-        sed = dict(sed)  # make copy so don't clobber original sed
+        sad = dict(sad)  # make copy so don't clobber original sad
 
-        idf = self.idder
+        idl = self.idl
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.Blake2b_256].fs)
-        raw = self.rawify(sed)
+        sad[idl] = "{}".format(self.Dummy * Matter.Codes[MtrDex.Blake2b_256].fs)
+        raw = self.rawify(sad)
 
         dig = hashlib.blake2b(raw).digest()
         return dig, MtrDex.Blake2b_256
 
-    def _verify_blake2b_256(self, sed):
+    def _verify_blake2b_256(self, sad):
         """
         Returns Matter of typed cryptographic material
 
         Parameters:
-            sed is inception key event dict
+            sad is inception key event dict
         """
-        raw, code = self._derive_blake2b_256(sed=sed)
+        raw, code = self._derive_blake2b_256(sad=sad)
         return Matter(raw=raw, code=MtrDex.Blake2b_256)
 
-    def _derive_blake2s_256(self, sed):
+    def _derive_blake2s_256(self, sad):
         """
         Returns tuple (raw, code) of basic BLAKE2S digest (qb64)
-            as derived from json dict sed
+            as derived from json dict sad
         """
-        sed = dict(sed)  # make copy so don't clobber original sed
+        sad = dict(sad)  # make copy so don't clobber original sad
 
-        idf = self.idder
+        idl = self.idl
         # put in dummy pre to get size correct
-        sed[idf] = "{}".format(self.Dummy * Matter.Codes[MtrDex.Blake2s_256].fs)
-        raw = self.rawify(sed)
+        sad[idl] = "{}".format(self.Dummy * Matter.Codes[MtrDex.Blake2s_256].fs)
+        raw = self.rawify(sad)
 
         dig = hashlib.blake2s(raw).digest()
         return dig, MtrDex.Blake2s_256
 
-    def _verify_blake2s_256(self, sed):
+    def _verify_blake2s_256(self, sad):
         """
         Returns Matter of typed cryptographic material
 
         Parameters:
-            sed is inception key event dict
+            sad is inception key event dict
         """
-        raw, code = self._derive_blake2s_256(sed=sed)
+        raw, code = self._derive_blake2s_256(sad=sad)
         return Matter(raw=raw, code=MtrDex.Blake2s_256)

@@ -266,7 +266,7 @@ class Credentialer:
             raise ValueError("Malformed version string size = {}".format(vs))
         crd["v"] = vs
 
-        saider = Saider(sed=crd, code=coring.MtrDex.Blake3_256, idder=Ids.i)
+        saider = Saider(sad=crd, code=coring.MtrDex.Blake3_256, idl=Ids.i)
         crd["i"] = saider.qb64
 
         raw = coring.dumps(crd, kind)
@@ -292,7 +292,7 @@ class Credentialer:
         self._kind = kind
         self._version = version
         self._size = size
-        self._saider = Saider(qb64=self._crd[Ids.i], code=coring.MtrDex.Blake3_256, idder=Ids.i)
+        self._saider = Saider(qb64=self._crd[Ids.i], code=coring.MtrDex.Blake3_256, idl=Ids.i)
 
     @property
     def crd(self):

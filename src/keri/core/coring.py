@@ -3395,7 +3395,8 @@ class Serder:
         Assumes only supports Version
         """
         if "v" not in ked:
-            raise ValueError("Missing or empty version string in key event dict = {}".format(ked))
+            raise ValueError("Missing or empty version string in key event "
+                             "dict = {}".format(ked))
 
         knd, version, size = Deversify(ked["v"])  # extract kind and version
         if version != Version:

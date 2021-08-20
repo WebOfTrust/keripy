@@ -1142,6 +1142,20 @@ def query(pre,
         data is list of dicts of comitted data such as seals
         version is Version instance
         kind is serialization kind
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "qry",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "logs",
+      "rr": "log/processor",
+      "q" :
+      {
+        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+        "sn": "5",
+        "dt": "2020-08-01T12:20:05.123456+00:00",
+      }
+    }
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.req
@@ -1171,9 +1185,9 @@ def query(pre,
 
     return Serder(ked=ked)  # return serialized ked
 
-def reply(pre,
-          route,
-          dt=None,
+
+def reply(route=None,
+          dts=None,
           data=None,
           version=Version,
           kind=Serials.json):
@@ -1189,34 +1203,33 @@ def reply(pre,
         data is list of dicts of comitted data such as seals
         version is Version instance
         kind is serialization kind
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rep",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "logs/processor",
+      "a" :
+      {
+         "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+         "name": "John Jones",
+        "role": "Founder,
+      }
+    }
     """
     vs = Versify(version=version, kind=kind, size=0)
-    ilk = Ilks.req
 
-    qry = dict(
-        i=pre
-    )
-
-    if dt is not None:
-        qry["dt"] = dt
-
-    if dta is not None:
-        qry["dta"] = dt
-
-    if dtb is not None:
-        qry["dtb"] = dt
-
-    if sn is not None:
-        qry["s"] = sn
-
-
-    ked = dict(v=vs,  # version string
-               t=ilk,
-               r=res,  # resource type for single item request
-               q=qry
+    sad = dict(v=vs,  # version string
+               t=Ilks.rpy,
+               d="",
+               dt=dts if dts is not None else helping.nowIso8601(),
+               r=route if route is not None else "",  # route
+               a=data
                )
 
-    return Serder(ked=ked)  # return serialized ked
+    return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
 
 
 def messagize(serder, sigers=None, seal=None, wigers=None, cigars=None, pipelined=False):
@@ -2648,7 +2661,7 @@ class Kevery:
 
     def processReceiptCouples(self, serder, cigars, firner=None):
         """
-        Process replay event serder with attached cigars for attached receipt couples.
+        Process attachment with receipt couple
 
         Parameters:
             serder is Serder instance of receipted serialized event message
@@ -2805,7 +2818,7 @@ class Kevery:
 
     def processReceiptQuadruples(self, serder, trqs, firner=None):
         """
-        Process one transferable validator receipt (chit) serder with attached sigers
+        Process one attachment quadruple that comprises a transferable receipt
 
         Parameters:
             serder is chit serder (transferable validator receipt message)
