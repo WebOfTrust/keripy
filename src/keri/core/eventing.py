@@ -16,6 +16,7 @@ from hio.help import decking
 
 from .. import help
 from ..help import helping
+from . import coring
 from .coring import (Versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
                      Seqner, Siger, Cigar, Dater,
                      Verfer, Diger, Nexter, Prefixer, Serder, Tholder)
@@ -48,6 +49,15 @@ IXN_LABELS = ["v", "i", "s", "t", "p", "a"]
 
 KSN_LABELS = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "k", "n",
               "bt", "b", "c", "ee", "di", "r"]
+
+
+
+Schemage = namedtuple("Schemage", 'tcp http https')
+Schemes = Schemage(tcp='tcp', http='http', https='https')
+
+Rolage = namedtuple("Rolage", 'witness registrar watcher judge juror')
+Roles = Rolage(witness='witness', registrar='registrar', watcher='watcher',
+               judge='judge', juror='juror')
 
 
 @dataclass(frozen=True)
@@ -1186,9 +1196,9 @@ def query(pre,
     return Serder(ked=ked)  # return serialized ked
 
 
-def reply(route=None,
-          dts=None,
+def reply(route="",
           data=None,
+          dts=None,
           version=Version,
           kind=Serials.json):
 
@@ -1220,14 +1230,18 @@ def reply(route=None,
     }
     """
     vs = Versify(version=version, kind=kind, size=0)
+    if data is None:
+        data = {}
 
     sad = dict(v=vs,  # version string
                t=Ilks.rpy,
                d="",
                dt=dts if dts is not None else helping.nowIso8601(),
                r=route if route is not None else "",  # route
-               a=data
+               a=data,
                )
+
+    _, sad = coring.Saider.saidify(sad=sad)
 
     return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
 

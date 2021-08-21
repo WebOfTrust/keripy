@@ -20,7 +20,7 @@ from hio.core import tcp, http, wiring
 from .. import help
 from  ..app import keeping, habbing, directing
 from  ..db import basing
-from  ..core import coring
+from  ..core import coring, eventing
 
 logger = help.ogler.getLogger()
 
@@ -41,12 +41,6 @@ KeriMimes = Mimage(json='application/keri+json',
 # getattr(KeriMimes, coring.Serials.json.lower())
 
 
-Schemage = namedtuple("Schemage", 'tcp http https')
-Schemes = Schemage(tcp='tcp', http='http', https='https')
-
-Rolage = namedtuple("Rolage", 'witness registrar watcher judge juror')
-Roles = Rolage(witness='witness', registrar='registrar', watcher='watcher',
-               judge='judge', juror='juror')
 
 FALSY = (False, 0, "?0", "no", "false", "False", "off")
 TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
@@ -250,7 +244,7 @@ class PointEnd(hio.base.Tymee):
                                    title='JSON Error',
                                    description='Malformed JSON.')
 
-        if role not in Roles:
+        if role not in eventing.Roles:
             raise falcon.HTTPError(falcon.HTTP_400,
                                    title='Malformed JSON',
                                    description='Invalid role.')
@@ -261,7 +255,7 @@ class PointEnd(hio.base.Tymee):
                                        title='Malformed JSON',
                                        description='Missing label.')
         scheme = data["scheme"]
-        if scheme not in Schemes:
+        if scheme not in eventing.Schemes:
             raise falcon.HTTPError(falcon.HTTP_400,
                                    title='Malformed JSON',
                                    description='Invalid scheme.')
