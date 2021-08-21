@@ -654,7 +654,7 @@ def delcept(keys,
     prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
 
     if not prefixer.digestive:
-        raise ValueError("Invalid derivation code ={} for delegation. Must be"
+        raise ValueError("Invalid derivation code = {} for delegation. Must be"
                          " digestive".format(prefixer.code))
 
     ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
@@ -1215,7 +1215,7 @@ def reply(route=None,
          "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
          "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
          "name": "John Jones",
-        "role": "Founder,
+        "role": "Founder",
       }
     }
     """

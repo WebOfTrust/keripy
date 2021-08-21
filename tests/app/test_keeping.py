@@ -617,7 +617,7 @@ def test_creator():
     assert isinstance(signer, coring.Signer)
     assert signer.code == coring.MtrDex.Ed25519_Seed
     assert signer.verfer.code == coring.MtrDex.Ed25519
-    assert signer.verfer.code not in coring.CryNonTransDex
+    assert signer.verfer.code not in coring.NonTransDex
 
     signers = creator.create(count=2, transferable=False)
     assert len(signers) == 2
@@ -625,7 +625,7 @@ def test_creator():
         assert isinstance(signer, coring.Signer)
         assert signer.code == coring.MtrDex.Ed25519_Seed
         assert signer.verfer.code == coring.MtrDex.Ed25519N
-        assert signer.verfer.code in coring.CryNonTransDex
+        assert signer.verfer.code in coring.NonTransDex
 
     creator = keeping.SaltyCreator()
     assert isinstance(creator, keeping.SaltyCreator)
@@ -641,7 +641,7 @@ def test_creator():
     assert isinstance(signer, coring.Signer)
     assert signer.code == coring.MtrDex.Ed25519_Seed
     assert signer.verfer.code == coring.MtrDex.Ed25519
-    assert signer.verfer.code not in coring.CryNonTransDex
+    assert signer.verfer.code not in coring.NonTransDex
 
     signers = creator.create(count=2, transferable=False)
     assert len(signers) == 2
@@ -649,7 +649,7 @@ def test_creator():
         assert isinstance(signer, coring.Signer)
         assert signer.code == coring.MtrDex.Ed25519_Seed
         assert signer.verfer.code == coring.MtrDex.Ed25519N
-        assert signer.verfer.code in coring.CryNonTransDex
+        assert signer.verfer.code in coring.NonTransDex
 
     raw = b'0123456789abcdef'
     salt = coring.Salter(raw=raw).qb64
@@ -668,7 +668,7 @@ def test_creator():
     assert signer.code == coring.MtrDex.Ed25519_Seed
     assert signer.qb64 == 'A8wl7SXA6nCdf0-S9fWaHbq-XMZiXpFaBYZyVzwIBAn0'
     assert signer.verfer.code == coring.MtrDex.Ed25519
-    assert signer.verfer.code not in coring.CryNonTransDex
+    assert signer.verfer.code not in coring.NonTransDex
     assert signer.verfer.qb64 == 'DxnLqpuCcrO8ITn3i1DhI-zqkgQJdNhAEfsGQLiE1jcQ'
 
     signers = creator.create(count=1, transferable=False, temp=True)
@@ -678,7 +678,7 @@ def test_creator():
     assert signer.code == coring.MtrDex.Ed25519_Seed
     assert signer.qb64 == 'AwasAzSejEulG1472bEZP7LNhKsoXAky40jgqWZKTbp4'
     assert signer.verfer.code == coring.MtrDex.Ed25519N
-    assert signer.verfer.code in coring.CryNonTransDex
+    assert signer.verfer.code in coring.NonTransDex
     assert signer.verfer.qb64 == 'BVG3IcCNK4lpFfpMM-9rfkY3XVUcCu5o5cxzv1lgMqxM'
 
     creator = keeping.Creatory(algo=keeping.Algos.salty).make(salt=salt)

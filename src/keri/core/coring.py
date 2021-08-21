@@ -5,6 +5,7 @@ keri.core.coring module
 """
 import re
 import json
+import types
 from typing import Union
 
 from dataclasses import dataclass, astuple
@@ -360,44 +361,6 @@ def generateSecrets(salt=None, count=8):
 
     return [signer.qb64 for signer in signers]  #  fetch the qb64 as secret
 
-
-@dataclass(frozen=True)
-class CryNonTransCodex:
-    """
-    CryNonTransCodex is codex all non-transferable derivation codes
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Ed25519N:      str = 'B'  #  Ed25519 verification key non-transferable, basic derivation.
-    ECDSA_256k1N:  str = "1AAA"  # ECDSA secp256k1 verification key non-transferable, basic derivation.
-    Ed448N:        str = "1AAC"  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-CryNonTransDex = CryNonTransCodex()  #  Make instance
-
-
-@dataclass(frozen=True)
-class CryDigCodex:
-    """
-    CryDigCodex is codex all digest derivation codes. This is needed to ensure
-    delegated inception using a self-addressing derivation i.e. digest derivation
-    code.
-    Only provide defined codes.
-    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
-    """
-    Blake3_256:           str = 'E'  #  Blake3 256 bit digest self-addressing derivation.
-    Blake2b_256:          str = 'F'  #  Blake2b 256 bit digest self-addressing derivation.
-    Blake2s_256:          str = 'G'  #  Blake2s 256 bit digest self-addressing derivation.
-    SHA3_256:             str = 'H'  #  SHA3 256 bit digest self-addressing derivation.
-    SHA2_256:             str = 'I'  #  SHA2 256 bit digest self-addressing derivation.
-
-    def __iter__(self):
-        return iter(astuple(self))
-
-CryDigDex = CryDigCodex()  #  Make instance
-
 # secret derivation security tier
 Tierage = namedtuple("Tierage", 'low med high')
 
@@ -514,22 +477,24 @@ class Matter:
     Attributes:
 
     Properties:
-        .code is str derivation code to indicate cypher suite
-        .size is size (int): number of quadlets when variable sized material besides
+        code (str): derivation code to indicate cypher suite
+        size (int): number of quadlets when variable sized material besides
                         full derivation code else None
-        .raw is bytes crypto material only without code
-        .qb64 is str in Base64 fully qualified with derivation code + crypto mat
-        .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
-        .qb2  is bytes in binary with derivation code + crypto material
-        .transferable is Boolean, True when transferable derivation code False otherwise
-        .digestive is Boolean, True when digest derivation code False otherwise
+        raw (bytes): crypto material only without code
+        qb64 (str): Base64 fully qualified with derivation code + crypto mat
+        qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
+        qb2  (bytes): binary with derivation code + crypto material
+        transferable (bool): True means transferable derivation code False otherwise
+        digestive (bool): True means digest derivation code False otherwise
 
     Hidden:
-        ._code is str value for .code property
-        ._size is int value for .size property
-        ._raw is bytes value for .raw property
-        ._infil is method to compute fully qualified Base64 from .raw and .code
-        ._exfil is method to extract .code and .raw from fully qualified Base64
+        _code (str): value for .code property
+        _size (int): value for .size property
+        _raw (bytes): value for .raw property
+        _infil (types.MethodType): creates qb64b from .raw and .code
+                                   (fully qualified Base64)
+        _exfil (types.MethodType): extracts .code and .raw from qb64b
+                                   (fully qualified Base64)
 
     """
     Codex = MtrDex
@@ -2221,10 +2186,6 @@ class Prefixer(Matter):
         ._exfil is method to extract .code and .raw from fully qualified Base64
     """
     Dummy = "#"  # dummy spaceholder char for pre. Must not be a valid Base64 char
-    # element labels to exclude in digest or signature derivation from inception icp
-    IcpExcludes = ["i"]
-    # element labels to exclude in digest or signature derivation from delegated inception dip
-    DipExcludes = ["i"]
 
     def __init__(self, raw=None, code=None, ked=None, allows=None, **kwa):
         """
@@ -2425,7 +2386,7 @@ class Prefixer(Matter):
 
     def _derive_blake3_256(self, ked):
         """
-        Returns tuple (raw, code) of basic Ed25519 pre (qb64)
+        Returns tuple (raw, code) of pre (qb64) as blake3 digest
             as derived from inception key event dict ked
         """
         ked = dict(ked)  # make copy so don't clobber original ked
@@ -2434,11 +2395,11 @@ class Prefixer(Matter):
             raise DerivationError("Invalid ilk = {} to derive pre.".format(ilk))
 
         # put in dummy pre to get size correct
-        ked["i"] = "{}".format(self.Dummy*Matter.Codes[MtrDex.Blake3_256].fs)
-        serder = Serder(ked=ked)
-        ked = serder.ked  # use updated ked with valid vs element
-        dig =  blake3.blake3(serder.raw).digest()
-        return (dig, MtrDex.Blake3_256)
+        ked["i"] = self.Dummy * Matter.Codes[MtrDex.Blake3_256].fs
+        serder = Serder(ked=ked)  # serder with dummy for 'i'
+        ked = serder.ked  # use updated ked with valid 'v' version string field
+        dig =  blake3.blake3(serder.raw).digest()  # digest with dummy 'i'
+        return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i'
 
 
     def _verify_blake3_256(self, ked, pre, prefixed=False):
@@ -2452,18 +2413,242 @@ class Prefixer(Matter):
             pre is Base64 fully qualified default to .qb64
         """
         try:
-            raw, code =  self._derive_blake3_256(ked=ked)
+            raw, code =  self._derive_blake3_256(ked=ked)  # replace with dummy 'i'
             crymat = Matter(raw=raw, code=MtrDex.Blake3_256)
-            if crymat.qb64 != pre:
+            if crymat.qb64 != pre:  # derived raw with dummy 'i' must match pre
                 return False
 
-            if prefixed and ked["i"] != pre:
+            if prefixed and ked["i"] != pre:  # incoming 'i' must match pre
                 return False
 
         except Exception as ex:
             return False
 
         return True
+
+
+Idage = namedtuple("Idage", "dollar at id_ i d")
+
+Ids = Idage(dollar="$id", at="@id", id_="id", i="i", d="d")
+
+# digest klas, digest size (not default), digest length
+# size and length are needed for some digest types as function parameters
+Digestage = namedtuple("Digestage", "klas size length")
+
+
+class Saider(Matter):
+    """
+    Saider is Matter subclass for self-addressing identifier prefix using
+    derivation as determined by code from ked
+
+    Properties: (inherited)
+        code (str): derivation code to indicate cypher suite
+        size (int): number of quadlets when variable sized material besides
+                        full derivation code else None
+        raw (bytes): crypto material only without code
+        qb64 (str): Base64 fully qualified with derivation code + crypto mat
+        qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
+        qb2  (bytes): binary with derivation code + crypto material
+        transferable (bool): True means transferable derivation code False otherwise
+        digestive (bool): True means digest derivation code False otherwise
+
+    Hidden:
+        _code (str): value for .code property
+        _size (int): value for .size property
+        _raw (bytes): value for .raw property
+        _infil (types.MethodType): creates qb64b from .raw and .code
+                                   (fully qualified Base64)
+        _exfil (types.MethodType): extracts .code and .raw from qb64b
+                                   (fully qualified Base64)
+        _derive (types.MethodType): derives said (.qb64 )
+        _verify (types.MethodType): verifies said ((.qb64 ) against a given sad
+
+    """
+    Dummy = "#"  # dummy spaceholder char for said. Must not be a valid Base64 char
+    # should be same set of codes as in coring.DigestCodex coring.DigDex so
+    # .digestive property works. Unit test ensures code sets match
+    Digests = {
+                MtrDex.Blake3_256: Digestage(klas=blake3.blake3, size=None, length=None),
+                MtrDex.Blake2b_256: Digestage(klas=hashlib.blake2b, size=32, length=None),
+                MtrDex.Blake2s_256: Digestage(klas=hashlib.blake2s, size=None, length=None),
+                MtrDex.SHA3_256: Digestage(klas=hashlib.sha3_256, size=None, length=None),
+                MtrDex.SHA2_256: Digestage(klas=hashlib.sha256, size=None, length=None),
+                MtrDex.Blake3_512: Digestage(klas=blake3.blake3, size=None, length=64),
+                MtrDex.Blake2b_512: Digestage(klas=hashlib.blake2b, size=None, length=None),
+                MtrDex.SHA3_512: Digestage(klas=hashlib.sha3_512, size=None, length=None),
+                MtrDex.SHA2_512: Digestage(klas=hashlib.sha512, size=None, length=None),
+              }
+
+
+    def __init__(self, raw=None, *, code=None, sad=None,
+                 kind=Serials.json, label=Ids.d, **kwa):
+        """
+        See Matter.__init__ for inherited parameters
+
+        Parameters:
+            sad (dict): self addressed data to serialize and inject said
+            kind (str): serialization algorithm of sad, one of Serials
+            label (str): id field label, one of Ids
+        """
+        try:
+            # when raw and code are both provided
+            super(Saider, self).__init__(raw=raw, code=code, **kwa)
+        except EmptyMaterialError as ex:  # raw or code missing
+            if not sad or label not in sad:
+                raise ex  # need sad with label field to calculate raw or qb64
+
+            if not code:
+                if sad[label]:  # no code but sad[label] not empty
+                    # attempt to get code from said in sad
+                    super(Saider, self).__init__(qb64=sad[label], code=code, **kwa)
+                    code = self._code
+                else:  # use default code
+                    code = MtrDex.Blake3_256
+
+            if code not in DigDex:  # need valid code
+                raise ValueError("Unsupported digest code = {}.".format(code))
+
+            # re-derive said raw bytes from sad and code, so code overrides label
+            raw = self.derive(sad=sad, code=code, kind=kind, label=label)
+            super(Saider, self).__init__(raw=raw, code=code, **kwa)
+
+        if not self.digestive:
+            raise ValueError("Unsupported digest code = {}."
+                                 "".format(self.code))
+
+
+    @classmethod
+    def serialize(clas, sad: dict, kind: str=Serials.json):
+        """
+        Serialize sad with serialization kind from embedded 'v', version string
+            if present, else use kind
+
+        Returns:
+           ser (bytes): raw serialization of sad
+
+        Parameters:
+           sad (dict): serializable dict
+           kind (str): serialization type, one of Serials
+
+        """
+        if 'v' in sad:  # versioned sad
+            kind, _, _ = Deversify(sad['v'])
+
+        return dumps(sad, kind=kind)
+
+
+    @classmethod
+    def saidify(clas, sad: dict, *,
+                code: str=MtrDex.Blake3_256,
+                kind: str=Serials.json,
+                label: str=Ids.d, **kwa):
+        """
+        Derives said for sad and injects it into copy of sad
+
+        Returns:
+            result (tuple): of the form (saider, sad) where saider is Saider
+                    instance generated from sad using code and sad is copy of
+                    parameter sad but with its label id field filled
+                    in with generated said from saider
+
+
+        Parameters:
+            sad (dict): serializable dict
+            code (str): digest type code from DigDex
+            kind (str): default serialization kind from Serials when sad does
+                        not include 'v' field
+            label (str): id field label from Ids in which to inject said
+
+        """
+        if label not in sad:
+            raise KeyError("Missing id field labeled={} in sad.".format(label))
+        raw = clas._derive(sad=sad, code=code, kind=kind, label=label)
+        saider = clas(raw=raw, code=code, kind=kind, label=label, **kwa)
+        sad[label] = saider.qb64
+        return (saider, sad)
+
+
+    @classmethod
+    def _derive(clas, sad: dict, *,
+                code:str=MtrDex.Blake3_256,
+                kind:str=Serials.json,
+                label:str=Ids.d,):
+        """
+        Derives raw said from sad with .Dummy filled sad[label]
+
+        Returns:
+            raw (bytes): raw said from sad with dummy filled label id field
+
+        Parameters:
+            sad (dict): self addressed data to be injected with dummy and serialized
+            code (str): digest type code from DigDex
+            kind (str): default serialization kind from Serials when sad does
+                        not include 'v' field
+            label (str): id field label from Ids in which to inject dummy
+        """
+        if code not in DigDex or code not  in clas.Digests:
+            raise ValueError("Unsupported digest code = {}.".format(code))
+
+        sad = dict(sad)  # make shallow copy so don't clobber original sad
+        # fill id field denoted by label with dummy chars to get size correct
+        sad[label] = clas.Dummy * Matter.Codes[code].fs
+        klas, size, length = clas.Digests[code]
+        # sad as 'v' verision string then use its kind otherwise passed in kind
+        cpa = [clas.serialize(sad, kind=kind)]  # raw pos arg class
+        ckwa = dict()  # class keyword args
+        if size:
+            ckwa.update(digest_size=size)  # optional digest_size
+        dkwa = dict() # digest keyword args
+        if length:
+            dkwa.update(length=length)
+        return klas(*cpa, **ckwa).digest(**dkwa)  # raw digest
+
+
+    def derive(self, sad, code=None, **kwa):
+        """
+        Returns:
+            result (bytes): raw said as derived from serialized dict sad.
+
+        Parameters:
+            sad (dict): self addressed data to be serialized
+            code (str): digest type code from DigDex.
+            kind (str): default serialization kind from Serials when sad does
+                        not include 'v' field
+            label (str): id field label from Ids in which to inject dummy
+        """
+        code = code if code is not None else self.code
+        return self._derive(sad=sad, code=code, **kwa)
+
+
+    def verify(self, sad, *, prefixed=False, code=None,
+               kind=Serials.json, label=Ids.d, **kwa):
+        """
+        Returns:
+            result (bool): True means derivation from sad for ._code matches
+                .qb64 and if prefixed also verifies match of id field denoted by label
+                .qb64. False otherwise
+
+        Parameters:
+            sad (dict): self addressed data to be serialized
+            prefixed (boolean): indicates whether to verify ID value matched .qb64
+        """
+        try:
+            # override ensure code is self.code
+            raw = self._derive(sad=sad, code=self.code, kind=kind, label=label)
+            saider = Saider(raw=raw, code=self.code, **kwa)
+            if self.qb64b != saider.qb64b:
+                return False  # not match .qb64b
+
+            if prefixed and sad[label] != self.qb64:  # check label field
+                return False  # label id field not match .qb64
+
+        except Exception as ex:
+            return False
+
+        return True
+
+
+
 
 
 @dataclass(frozen=True)
