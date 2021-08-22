@@ -1282,78 +1282,64 @@ def test_reply(mockHelpingNowUTC):
     # create SealEvent for endorsers est evt whose keys use to sign
     seal = SealEvent(i=preC,
                      s='0',
-                     d=serderR.dig)
+                     d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
     # Sign reply
     sigerC = signerC.sign(ser=serderR.raw, index=0)
     assert signerC.verfer.verify(sig=sigerC.raw, ser=serderR.raw)
     msg = messagize(serderR, sigers=[sigerC], seal=seal)
     assert msg == (b'{"v":"KERI10JSON000123_","t":"rpy","d":"EAOChnlT17KgJh4J3Lm2e5U9'
-                   b'r2fc3SultM8TK0EA3ZKU","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                   b'":"/to/the/moon","a":{"acid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                   b'WVK9ZBNZk0","role":"watcher","seid":"EAoTNZH3ULvYAfSVPzhzS6baU6J'
-                   b'R2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABD3pYGFaqnrALTyejaJaGAVhNp'
-                   b'SCtqyerPqWVK9ZBNZk00AAAAAAAAAAAAAAAAAAAAAAAE0ZzX_9CgI7xx6gDodjE8'
-                   b'j1FSJXcLX84gW-BwiHaVykg-AABAAMQgAkXhlOTDRSpZZpVRkHHXiiSDvy85b2eK'
-                   b'sACSzKMhiGnLVMAjhq5pyR0ikrK7Zv1rtnlCpUi61FOt3JQHlBw')
+                    b'r2fc3SultM8TK0EA3ZKU","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/to/the/moon","a":{"acid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+                    b'WVK9ZBNZk0","role":"watcher","seid":"EAoTNZH3ULvYAfSVPzhzS6baU6J'
+                    b'R2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABD3pYGFaqnrALTyejaJaGAVhNp'
+                    b'SCtqyerPqWVK9ZBNZk00AAAAAAAAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1j'
+                    b'n2DXfrEaqN7zhqTEhkeDZ2z-AABAAMQgAkXhlOTDRSpZZpVRkHHXiiSDvy85b2eK'
+                    b'sACSzKMhiGnLVMAjhq5pyR0ikrK7Zv1rtnlCpUi61FOt3JQHlBw')
 
 
-    ## create endorsed ksn with trans endorser
-    ## create trans key pair for endorder of KSN
-    #signerE = salter.signer(path="E", temp=True)
-    #assert signerE.verfer.code == MtrDex.Ed25519  # transferable
-    #preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
-    #assert preE == 'DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+    # create endorsed rpy with trans endorser
+    # create trans key pair for endorder
+    signerE = salter.signer(path="E", temp=True)
+    assert signerE.verfer.code == MtrDex.Ed25519  # transferable
+    preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preE == 'DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
 
-    ## create SealEvent for endorsers est evt whose keys use to sign
-    #seal = SealEvent(i=preE,
-                     #s='0',
-                     #d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+    # create SealEvent for endorsers est evt whose keys use to sign
+    seal = SealEvent(i=preE,
+                     s='0',
+                     d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-    ## create endorsed ksn
-    #sigerE = signerE.sign(ser=serderK.raw, index=0)
-    #assert signerE.verfer.verify(sig=sigerE.raw, ser=serderK.raw)
-    #msg = messagize(serderK, sigers=[sigerE], seal=seal)
-    #assert msg == (b'{"v":"KERI10JSON0002d0_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-          #b'WVK9ZBNZk0","s":"4","t":"ksn","p":"EUskHI462CuIMS_gNkcl_QewzrRSK'
-          #b'H2p9zHQIO132Z30","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z'
-          #b'30","f":"4","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","'
-          #b'kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0"],"n"'
-          #b':"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ","bt":"2","b":["B'
-          #b'aEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2G'
-          #b'U5ud62LMYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIU'
-          #b'BKrBFz_1Y"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewzr'
-          #b'RSKH2p9zHQIO132Z30","br":["BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS'
-          #b'2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]}'
-          #b',"di":"","r":""}-FABDyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
-          #b'0AAAAAAAAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhke'
-          #b'DZ2z-AABAAPxWkuJixAdYrPjWnwz1vrvKHG1U3jk8M18dnGgLssXvjf7lcWaBsal'
-          #b'_jBEhck2lMd4jNGo7y4VBesF7sseeDBg')
+    # create endorsed ksn
+    sigerE = signerE.sign(ser=serderR.raw, index=0)
+    assert signerE.verfer.verify(sig=sigerE.raw, ser=serderR.raw)
+    msg = messagize(serderR, sigers=[sigerE], seal=seal)
+    assert msg == bytearray(b'{"v":"KERI10JSON000123_","t":"rpy","d":"EAOChnlT17KgJh4J3Lm2e5U9'
+                            b'r2fc3SultM8TK0EA3ZKU","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                            b'":"/to/the/moon","a":{"acid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+                            b'WVK9ZBNZk0","role":"watcher","seid":"EAoTNZH3ULvYAfSVPzhzS6baU6J'
+                            b'R2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDyvCLRr5luWmp7keDvDuLP0kI'
+                            b'qcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1j'
+                            b'n2DXfrEaqN7zhqTEhkeDZ2z-AABAAmR9XyfaFsBw8Z6tO0KuV3erRIb3XgoSAvEW'
+                            b'BzNi3YUbF5wakjarrVidoM-hh7kbhkUECragqjhNVckka5WQVAA')
 
-    ## create endorsed rpy with nontrans endorser
-    ## create nontrans key pair for endorder of KSN
-    #signerE = salter.signer(path="E", transferable=False, temp=True)
-    #assert signerE.verfer.code == MtrDex.Ed25519N  # non-transferable
-    #preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
-    #assert preE == 'ByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+    # create endorsed rpy with nontrans endorser
+    # create nontrans key pair for endorder
+    signerE = salter.signer(path="E", transferable=False, temp=True)
+    assert signerE.verfer.code == MtrDex.Ed25519N  # non-transferable
+    preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
+    assert preE == 'ByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
 
-    #cigarE = signerE.sign(ser=serderK.raw)
-    #assert signerE.verfer.verify(sig=cigarE.raw, ser=serderK.raw)
-    #msg = messagize(serderK, cigars=[cigarE])
-    #assert msg == (b'{"v":"KERI10JSON0002d0_","i":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                    #b'WVK9ZBNZk0","s":"4","t":"ksn","p":"EUskHI462CuIMS_gNkcl_QewzrRSK'
-                    #b'H2p9zHQIO132Z30","d":"EgNkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z'
-                    #b'30","f":"4","dt":"2021-01-01T00:00:00.000000+00:00","et":"ixn","'
-                    #b'kt":"1","k":["D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0"],"n"'
-                    #b':"E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ","bt":"2","b":["B'
-                    #b'aEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU","B7vHpy1IDsWWUnHf2G'
-                    #b'U5ud62LMYWO5lPWOrSB6ejQ1Eo","BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIU'
-                    #b'BKrBFz_1Y"],"c":[],"ee":{"s":"3","d":"EUskHI462CuIMS_gNkcl_Qewzr'
-                    #b'RSKH2p9zHQIO132Z30","br":["BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS'
-                    #b'2Q6_lG0"],"ba":["BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y"]}'
-                    #b',"di":"","r":""}-CABByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
-                    #b'0BPxWkuJixAdYrPjWnwz1vrvKHG1U3jk8M18dnGgLssXvjf7lcWaBsal_jBEhck2'
-                    #b'lMd4jNGo7y4VBesF7sseeDBg')
+    cigarE = signerE.sign(ser=serderR.raw)  # no index so Cigar
+    assert signerE.verfer.verify(sig=cigarE.raw, ser=serderR.raw)
+    msg = messagize(serderR, cigars=[cigarE])
+    assert msg == (b'{"v":"KERI10JSON000123_","t":"rpy","d":"EAOChnlT17KgJh4J3Lm2e5U9'
+                    b'r2fc3SultM8TK0EA3ZKU","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/to/the/moon","a":{"acid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+                    b'WVK9ZBNZk0","role":"watcher","seid":"EAoTNZH3ULvYAfSVPzhzS6baU6J'
+                    b'R2nmwyZ-i0d8JZ5CM","name":"besty"}}-CABByvCLRr5luWmp7keDvDuLP0kI'
+                    b'qcyBYq79b3Dho1QvrjI0BmR9XyfaFsBw8Z6tO0KuV3erRIb3XgoSAvEWBzNi3YUb'
+                    b'F5wakjarrVidoM-hh7kbhkUECragqjhNVckka5WQVAA')
 
     """Done Test"""
 
