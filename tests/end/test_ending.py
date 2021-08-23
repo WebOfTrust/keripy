@@ -49,6 +49,7 @@ def test_mimes():
     assert getattr(ending.KeriMimes, coring.Serials.cbor.lower()) == ending.KeriMimes.cbor
     """Done Test"""
 
+
 def test_signature_designature():
     """
     Test headerize function that creates signature header item

@@ -140,7 +140,7 @@ def createCESRRequest(msg, client, date=None):
     client.request(
         method="POST",
         path=resource,
-        quargs=query,
+        qargs=query,
         headers=headers,
         body=body
     )

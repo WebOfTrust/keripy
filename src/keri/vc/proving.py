@@ -11,9 +11,10 @@ import msgpack
 
 from .. import help
 from ..core import coring
-from ..core.coring import Serials, sniff, Versify, Deversify, Rever, Counter, CtrDex, Prefixer, Seqner, Diger, Siger
+from ..core.coring import (Serials, sniff, Versify, Deversify, Rever, Counter,
+                           CtrDex, Prefixer, Seqner, Diger, Siger, Saider, Ids)
 from ..core.parsing import Parser, Colds
-from ..core.scheming import Saider, Ids, JSONSchema
+from ..core.scheming import JSONSchema
 from ..kering import Version, VersionError, ShortageError, DeserializationError, ColdStartError, ExtractionError
 
 KERI_REGISTRY_TYPE = "KERICredentialRegistry"
@@ -241,7 +242,7 @@ class Credentialer:
             raise ValueError("Unsupported version = {}.{}".format(version.major,
                                                                   version.minor))
 
-        crd["i"] = "{}".format(Saider.Dummy * coring.Matter.Codes[coring.MtrDex.Blake3_256].fs)
+        crd["i"] = Saider.Dummy * coring.Matter.Codes[coring.MtrDex.Blake3_256].fs
 
         if not kind:
             kind = knd
@@ -266,7 +267,7 @@ class Credentialer:
             raise ValueError("Malformed version string size = {}".format(vs))
         crd["v"] = vs
 
-        saider = Saider(sed=crd, code=coring.MtrDex.Blake3_256, idder=Ids.i)
+        saider = Saider(sad=crd, code=coring.MtrDex.Blake3_256, label=Ids.i)
         crd["i"] = saider.qb64
 
         raw = coring.dumps(crd, kind)
@@ -292,7 +293,7 @@ class Credentialer:
         self._kind = kind
         self._version = version
         self._size = size
-        self._saider = Saider(qb64=self._crd[Ids.i], code=coring.MtrDex.Blake3_256, idder=Ids.i)
+        self._saider = Saider(qb64=self._crd[Ids.i], code=coring.MtrDex.Blake3_256, label=Ids.i)
 
     @property
     def crd(self):

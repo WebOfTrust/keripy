@@ -20,7 +20,7 @@ from hio.core import tcp, http, wiring
 from .. import help
 from  ..app import keeping, habbing, directing
 from  ..db import basing
-from  ..core import coring
+from  ..core import coring, eventing
 
 logger = help.ogler.getLogger()
 
@@ -41,12 +41,6 @@ KeriMimes = Mimage(json='application/keri+json',
 # getattr(KeriMimes, coring.Serials.json.lower())
 
 
-Schemage = namedtuple("Schemage", 'tcp http https')
-Schemes = Schemage(tcp='tcp', http='http', https='https')
-
-Rolage = namedtuple("Rolage", 'witness registrar watcher judge juror')
-Roles = Rolage(witness='witness', registrar='registrar', watcher='watcher',
-               judge='judge', juror='juror')
 
 FALSY = (False, 0, "?0", "no", "false", "False", "off")
 TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
@@ -109,15 +103,15 @@ def signature(signages):
         items = []
         tag = 'indexed'
         val = '?1' if indexed else '?0'  #  RFC8941 HTTP structured field values
-        items.append('{}="{}"'.format(tag, val))
+        items.append(f'{tag}="{val}"')
         if signer:
             tag = "signer"
             val = signer
-            items.append('{}="{}"'.format(tag, val))
+            items.append(f'{tag}="{val}"')
         if kind:
             tag = "kind"
             val = kind
-            items.append('{}="{}"'.format(tag, val))
+            items.append(f'{tag}="{val}"')
 
         for i, marker in enumerate(markers):
             if tags:
@@ -125,20 +119,20 @@ def signature(signages):
             else:  # assign defaults names since not provided
                 if hasattr(marker, "index"):  # Siger has index
                     if not indexed:
-                        raise ValueError("Indexed signature marker {} when "
-                                         "indexed False.".format(marker))
+                        raise ValueError(f"Indexed signature marker {marker} when "
+                                         f"indexed False.")
                     tag = str(marker.index)
                 elif hasattr(marker, "verfer"):  # Cigar has verfer but not index
                     if indexed:
-                        raise ValueError("Unindexed signature marker {} when "
-                                         "indexed True.".format(marker))
+                        raise ValueError(f"Unindexed signature marker {marker}"
+                                         f"  when indexed True.")
                     tag = marker.verfer.qb64
                 else:
-                    raise ValueError("Invalid signature marker instance = {}."
-                                     "".format(marker))
+                    raise ValueError(f"Invalid signature marker instance = "
+                                     f"{marker}.")
 
             val = marker.qb64
-            items.append('{}="{}"'.format(tag, val))
+            items.append(f'{tag}="{val}"')
 
         values.append(";".join(items))
 
@@ -250,7 +244,7 @@ class PointEnd(hio.base.Tymee):
                                    title='JSON Error',
                                    description='Malformed JSON.')
 
-        if role not in Roles:
+        if role not in eventing.Roles:
             raise falcon.HTTPError(falcon.HTTP_400,
                                    title='Malformed JSON',
                                    description='Invalid role.')
@@ -261,7 +255,7 @@ class PointEnd(hio.base.Tymee):
                                        title='Malformed JSON',
                                        description='Missing label.')
         scheme = data["scheme"]
-        if scheme not in Schemes:
+        if scheme not in eventing.Schemes:
             raise falcon.HTTPError(falcon.HTTP_400,
                                    title='Malformed JSON',
                                    description='Invalid scheme.')

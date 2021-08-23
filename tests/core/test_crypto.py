@@ -335,13 +335,16 @@ def test_blake3():
 
     #  digest of publickey
     digest = blake3.blake3(verkey).digest()
-    assert len(digest) == 32 == blake3.OUT_LEN
+    assert len(digest) == 32
     assert digest == b'\xb4\xaf\xd5,G\x97\xaf\x06\xda\xbbTNs\xcbM4\xa81\xb8\xcd\xc60\xc7c"\xe2B\xe5_\x96\xcb\x95'
 
     digestbig = blake3.blake3(verkey).digest(length=64)
     assert len(digestbig) == 64
     assert digestbig[:32] == digest
 
+    digestbig = blake3.blake3(verkey).digest(length=64)
+    assert len(digestbig) == 64
+    assert digestbig[:32] == digest
 
     """
     Done Test
@@ -469,4 +472,4 @@ def test_sha3():
 
 
 if __name__ == "__main__":
-    test_pysodium()
+    test_blake3()

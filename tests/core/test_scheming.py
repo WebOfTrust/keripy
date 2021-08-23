@@ -7,53 +7,10 @@ import json
 
 import pytest
 
-from keri.core.coring import MtrDex
-from keri.core.scheming import Schemer, Saider, JSONSchema, CacheResolver
+from keri.core.coring import MtrDex, Saider
+from keri.core.scheming import Ids, Schemer, JSONSchema, CacheResolver
 from keri.kering import ValidationError
 
-
-def test_saider():
-    # Initialize from JSON Schema JSON
-    scer = (
-        b'{"$id": "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA", "$schema": '
-        b'"http://json-schema.org/draft-07/schema#", "type": "object", "properties": {"a": {"type": "string"}, '
-        b'"b": {"type": "number"}, "c": {"type": "string", "format": "date-time"}}}')
-
-    sad = Saider(qb64="ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA")
-    assert sad.code == MtrDex.Blake3_256
-
-    sed = json.loads(scer)
-    assert sad.verify(sed, prefixed=True) is True
-
-    sed = dict()
-    sed["$id"] = ""
-    sed["$schema"] = "http://json-schema.org/draft-07/schema#"
-    sed.update(dict(
-        type="object",
-        properties=dict(
-            a=dict(
-                type="string"
-            ),
-            b=dict(
-                type="number"
-            ),
-            c=dict(
-                type="string",
-                format="date-time"
-            )
-        )
-    ))
-
-    assert sad.verify(sed, prefixed=False) is True
-    assert sad.verify(sed, prefixed=True) is False
-
-    # Initialize from dict
-    sad = Saider(sed=sed, code=MtrDex.Blake3_256)
-    assert sad.qb64 == "ExG9LuUbFzV4OV5cGS9IeQWzy9SuyVFyVrpRc4l1xzPA"
-    assert sad.verify(sed, prefixed=False) is True
-
-    sed = json.loads(scer)
-    assert sad.verify(sed, prefixed=True) is True
 
 
 def test_json_schema():
@@ -182,15 +139,19 @@ def test_json_schema_dict():
 
     # Additional hash types
     sce = Schemer(sed=sed, code=MtrDex.Blake2b_256)
-    assert sce.said == "FWOS-OuKCWnux0Oka2G5rlQY2I68XBJmZsXDLHbHKu_I"
+    assert sce.said == 'Ff3FXnx2ncqwIwwpSbY4fozdL01OQK3d9TG1Ejp9DZN8'
     sce = Schemer(sed=sed, code=MtrDex.Blake2s_256)
     assert sce.said == "GRidELCmdk-47s0OI6EAVk1PBolvS1HetzVbxbwBNIbI"
     sce = Schemer(sed=sed, code=MtrDex.SHA3_256)
     assert sce.said == "HmDms9gN0b0Zjmu7HyT2HEDkdnaOYm-1KgxIIhNTQPaI"
-    sce = Schemer(sed=sed, code=MtrDex.SHA3_512)
-    assert sce.said == "0FAYWj9GFRxh-YrppcR5lpVM1rm-sez1K6DDTKGfTljfbYPcdpeatBl46G8IXsQUG8ww0AbqDZRzeFuWWar2wAyA"
     sce = Schemer(sed=sed, code=MtrDex.SHA2_256)
     assert sce.said == "IvT1u5jtwcVQl6GlOGyfNeoyJoSmKXnOwJyIZuB2Vsh4"
+    sce = Schemer(sed=sed, code=MtrDex.Blake3_512)
+    assert sce.said == '0DdBaf5mQNkJku1SMrA0fOx1B2Pw4a8ZreOt8fUp2qAjDSqTfjmyUcX2Nwt28wWbD1E804ACGky8-qnmtrKSU05g'
+    sce = Schemer(sed=sed, code=MtrDex.Blake2b_512)
+    assert sce.said == '0E1h6aA1i48yX1nNPEVbxUwo82e6DwYIu5pf6ty6xybuKpzLYw-HQrBxfl02rhpfBci319PXt4BL_1gBqsc6Q6gw'
+    sce = Schemer(sed=sed, code=MtrDex.SHA3_512)
+    assert sce.said == "0FAYWj9GFRxh-YrppcR5lpVM1rm-sez1K6DDTKGfTljfbYPcdpeatBl46G8IXsQUG8ww0AbqDZRzeFuWWar2wAyA"
     sce = Schemer(sed=sed, code=MtrDex.SHA2_512)
     assert sce.said == "0GkKvqMZLvSfsGhYfl8wTZAq7Gv4khAs8v7JmUNBzZ-WOuL21RkJpxaiTXMk4_S8w_y73AnfjQZK06Vr0KMYdxww"
 
@@ -239,7 +200,6 @@ def test_resolution():
 
 
 if __name__ == '__main__':
-    test_saider()
     test_json_schema()
     test_json_schema_dict()
     test_resolution()

@@ -16,6 +16,7 @@ from hio.help import decking
 
 from .. import help
 from ..help import helping
+from . import coring
 from .coring import (Versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
                      Seqner, Siger, Cigar, Dater,
                      Verfer, Diger, Nexter, Prefixer, Serder, Tholder)
@@ -48,6 +49,15 @@ IXN_LABELS = ["v", "i", "s", "t", "p", "a"]
 
 KSN_LABELS = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "k", "n",
               "bt", "b", "c", "ee", "di", "r"]
+
+
+
+Schemage = namedtuple("Schemage", 'tcp http https')
+Schemes = Schemage(tcp='tcp', http='http', https='https')
+
+Rolage = namedtuple("Rolage", 'witness registrar watcher judge juror')
+Roles = Rolage(witness='witness', registrar='registrar', watcher='watcher',
+               judge='judge', juror='juror')
 
 
 @dataclass(frozen=True)
@@ -654,7 +664,7 @@ def delcept(keys,
     prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
 
     if not prefixer.digestive:
-        raise ValueError("Invalid derivation code ={} for delegation. Must be"
+        raise ValueError("Invalid derivation code = {} for delegation. Must be"
                          " digestive".format(prefixer.code))
 
     ked["i"] = prefixer.qb64  # update pre element in ked with pre qb64
@@ -1133,7 +1143,7 @@ def query(pre,
 
     """
     Returns serder of query event message.
-    Utility function to automate creation of interaction events.
+    Utility function to automate creation of query messages.
 
      Parameters:
         pre is identifier prefix qb64
@@ -1142,6 +1152,20 @@ def query(pre,
         data is list of dicts of comitted data such as seals
         version is Version instance
         kind is serialization kind
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "qry",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "logs",
+      "rr": "log/processor",
+      "q" :
+      {
+        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+        "sn": "5",
+        "dt": "2020-08-01T12:20:05.123456+00:00",
+      }
+    }
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.req
@@ -1170,6 +1194,56 @@ def query(pre,
                )
 
     return Serder(ked=ked)  # return serialized ked
+
+
+def reply(route="",
+          data=None,
+          dts=None,
+          version=Version,
+          kind=Serials.json):
+
+    """
+    Returns serder of reply  message.
+    Utility function to automate creation of query messages.
+
+     Parameters:
+        pre is identifier prefix qb64
+        dig is digest of previous event qb64
+        sn is int sequence number
+        data is list of dicts of comitted data such as seals
+        version is Version instance
+        kind is serialization kind
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rep",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "logs/processor",
+      "a" :
+      {
+         "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+         "name": "John Jones",
+        "role": "Founder",
+      }
+    }
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    if data is None:
+        data = {}
+
+    sad = dict(v=vs,  # version string
+               t=Ilks.rpy,
+               d="",
+               dt=dts if dts is not None else helping.nowIso8601(),
+               r=route if route is not None else "",  # route
+               a=data,
+               )
+
+    _, sad = coring.Saider.saidify(sad=sad)
+
+    return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
 
 
 def messagize(serder, sigers=None, seal=None, wigers=None, cigars=None, pipelined=False):
@@ -1931,8 +2005,8 @@ class Kever:
 
     def validateDelegation(self, serder, sigers, wigers=None, seqner=None, diger=None):
         """
-        Returns delegator's qb64 identifier prefix if seal instance of SealLocation if seal validates with respect
-        to Delegator's KEL
+        Returns delegator's qb64 identifier prefix if seal instance of
+        SealLocation if seal validates with respect to Delegator's KEL
         Location Seal is from Delegate's establishment event
         Assumes state setup
 
@@ -1963,6 +2037,9 @@ class Kever:
         key = snKey(pre=delegator, sn=ssn)
         raw = self.db.getKeLast(key)  # get dig of delegating event
         if raw is None:  # no delegating event at key pre, sn
+            #  id own is delgator then create cue to created delegating event
+            #  this may include MFA business logic
+
             #  escrow event here
             inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
             sn = self.validateSN(sn=serder.ked["s"], inceptive=inceptive)
@@ -2598,7 +2675,7 @@ class Kevery:
 
     def processReceiptCouples(self, serder, cigars, firner=None):
         """
-        Process replay event serder with attached cigars for attached receipt couples.
+        Process attachment with receipt couple
 
         Parameters:
             serder is Serder instance of receipted serialized event message
@@ -2755,7 +2832,7 @@ class Kevery:
 
     def processReceiptQuadruples(self, serder, trqs, firner=None):
         """
-        Process one transferable validator receipt (chit) serder with attached sigers
+        Process one attachment quadruple that comprises a transferable receipt
 
         Parameters:
             serder is chit serder (transferable validator receipt message)

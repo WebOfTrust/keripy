@@ -8,7 +8,9 @@ import pytest
 import os
 import json
 import datetime
+
 import lmdb
+from orderedset import OrderedSet as oset
 
 from hio.base import doing
 
@@ -105,6 +107,40 @@ def test_key_funcs():
 
     """Done Test"""
 
+
+def test_suffix():
+    """
+    Test suffix unsuffix stuff
+    """
+    assert dbing.SuffixSize == 22
+    assert dbing.MaxSuffix ==  5444517870735015415413993718908291383295
+    assert dbing.MaxSuffix >= dbing.MaxON
+
+    key = "ABCDEFG.FFFFFF"
+    keyb = b"ABCDEFG.FFFFFF"
+
+    ion = 0
+    iokey = dbing.suffix(key, ion)
+    assert iokey == b'ABCDEFG.FFFFFF.AAAAAAAAAAAAAAAAAAAAAA'
+    k, i = dbing.unsuffix(iokey)
+    assert k == keyb
+    assert i == ion
+
+    ion = 64
+    iokey = dbing.suffix(keyb, ion)
+    assert iokey == b'ABCDEFG.FFFFFF.AAAAAAAAAAAAAAAAAAAABA'
+    k, i = dbing.unsuffix(iokey)
+    assert k == keyb
+    assert i == ion
+
+    iokey = dbing.suffix(key, dbing.MaxSuffix)
+    assert iokey ==  b'ABCDEFG.FFFFFF.______________________'
+    k, i = dbing.unsuffix(iokey)
+    assert k == keyb
+    assert i == dbing.MaxSuffix
+
+
+    """Done Test"""
 
 def test_opendatabaser():
     """
@@ -646,6 +682,108 @@ def test_lmdber():
         assert items == []  # empty
         assert not items
 
+        # test IoSetVals insertion order set of vals methods.
+        key0 = b'ABC.ZYX'
+        key1 = b'DEF.WVU'
+        key2 = b'GHI.TSR'
+
+        vals0 = [b"z", b"m", b"x", b"a"]
+        vals1 = [b"w", b"n", b"y", b"d"]
+        vals2 = [b"p", b"o", b"h", b"f"]
+
+        db = dber.env.open_db(key=b'ioset.', dupsort=False)
+
+        """
+        putIoSetVals
+        addIoSetVal
+        setIoSetVals
+        appendIoSetVal
+
+        getIoSetVals
+        getIoSetValsIter
+        getIoSetValLast
+
+        cntIoSetVals
+
+        delIoSetVals
+        delIoSetVal
+
+        getIoSetItems
+        getIoSetItemsIter
+
+        delIoSetIokey
+        """
+
+        assert dber.getIoSetVals(db, key0) == oset()
+        assert dber.getIoSetValLast(db, key0) == None
+        assert dber.cntIoSetVals(db, key0) == 0
+        assert dber.delIoSetVals(db, key0) == False
+
+        assert dber.putIoSetVals(db, key0, vals0) == True
+        assert dber.getIoSetVals(db, key0) == vals0  # preserved insertion order
+        assert dber.cntIoSetVals(db, key0) == len(vals0) == 4
+        assert dber.getIoSetValLast(db, key0) == vals0[-1] == vals0[-1]
+
+        assert dber.putIoSetVals(db, key0, vals=[b'a']) == False   # duplicate
+        assert dber.getIoSetVals(db, key0) == vals0  #  no change
+        assert dber.putIoSetVals(db, key0, vals=[b'f']) == True
+        assert dber.getIoSetVals(db, key0) == [b"z", b"m", b"x", b"a", b"f"]
+        assert dber.addIoSetVal(db, key0, val=b'b') == True
+        assert dber.addIoSetVal(db, key0, val=b'a') == False
+        assert dber.getIoSetVals(db, key0) == [b"z", b"m", b"x", b"a", b"f", b"b"]
+
+        assert [val for val in dber.getIoSetValsIter(db, key0)] == [b"z", b"m", b"x", b"a", b"f", b"b"]
+        assert dber.delIoSetVals(db, key0) == True
+        assert dber.getIoSetVals(db, key0) == []
+
+        assert dber.putIoSetVals(db, key0, vals0) == True
+        for val in vals0:
+            assert dber.delIoSetVal(db, key0, val)
+        assert dber.getIoSetVals(db, key0) == oset()
+        assert dber.putIoSetVals(db, key0, vals0) == True
+        for val in sorted(vals0):  # test deletion out of order
+            assert dber.delIoSetVal(db, key0, val)
+        assert dber.getIoSetVals(db, key0) == []
+
+        #delete and add in odd order
+        assert dber.putIoSetVals(db, key0, vals0) == True
+        assert dber.delIoSetVal(db, key0, vals0[2])
+        assert dber.addIoSetVal(db, key0, b'w')
+        assert dber.delIoSetVal(db, key0, vals0[0])
+        assert dber.addIoSetVal(db, key0, b'e')
+        assert dber.getIoSetVals(db, key0) == [b'm', b'a', b'w', b'e']
+
+        assert dber.delIoSetVals(db, key0) == True
+        assert dber.getIoSetVals(db, key0) == oset()
+
+        assert dber.putIoSetVals(db, key0, vals0) == True
+        assert dber.putIoSetVals(db, key1, vals1) == True
+        assert dber.putIoSetVals(db, key2, vals2) == True
+        assert dber.getIoSetVals(db, key0) == vals0
+        assert dber.getIoSetVals(db, key1) == vals1
+        assert dber.getIoSetVals(db, key2) == vals2
+
+        assert dber.appendIoSetVal(db, key1, val=b"k") == 4
+        assert dber.getIoSetVals(db, key1) == [b"w", b"n", b"y", b"d", b"k"]
+
+        assert dber.getIoSetItems(db, key0) == [(b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAA', b'z'),
+                                                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAB', b'm'),
+                                                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAC', b'x'),
+                                                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAD', b'a')]
+
+        assert ([(bytes(iokey), bytes(val)) for iokey, val in dber.getIoSetItemsIter(db, key0)] ==
+                [(b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAA', b'z'),
+                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAB', b'm'),
+                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAC', b'x'),
+                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAD', b'a')])
+
+        for iokey, val in dber.getIoSetItemsIter(db, key0):
+            assert dber.delIoSetIokey(db, iokey)
+        assert dber.getIoSetVals(db, key0) == []
+
+        vals3 = [b"q", b"e"]
+        assert dber.setIoSetVals(db, key2, vals3)
+        assert dber.getIoSetVals(db, key2) == vals3
 
     assert not os.path.exists(dber.path)
 

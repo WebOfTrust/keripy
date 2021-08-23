@@ -16,16 +16,20 @@ from orderedset import OrderedSet as oset
 # Utilities
 def isign(i):
     """
-    Returns 1 if i > 0, -1 if i < 0, 0 otherwise
     Integer sign function
+    Returns:
+        (int): 1 if i > 0, -1 if i < 0, 0 otherwise
+
     """
     return (1 if i > 0 else -1 if i < 0 else 0)
 
 
 def sceil(r):
     """
-    Returns integer value that is symmetric ceiling of r away from zero
     Symmetric ceiling function
+    Returns:
+       sc (int): value that is symmetric ceiling of r away from zero
+
     Because int() provides a symmetric floor towards zero, just inc int(r) by:
      1 when r - int(r) >  0  (r positive)
     -1 when r - int(r) <  0  (r negative)

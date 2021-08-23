@@ -50,21 +50,23 @@ import stat
 import shutil
 import tempfile
 from contextlib import contextmanager
+from typing import Union
+from collections import abc
 
 import lmdb
+from orderedset import OrderedSet as oset
 
 from hio.base import doing
 
-from  .. import kering
-from  ..help import helping
-from  ..core import coring
+from ..help import helping
+from ..core import coring
 
-
-ProemSize =  33
-MaxProem = int("f"*(ProemSize-1), 16)
-
+ProemSize = 32  # does not include trailing separator
+MaxProem = int("f"*(ProemSize), 16)
 MaxON = int("f"*32, 16)  # largest possible ordinal number, sequence or first seen
 
+SuffixSize = 22  # does not include trailing separator
+MaxSuffix = coring.b64ToInt(coring.B64ChrByIdx[63]*(SuffixSize))
 
 def dgKey(pre, dig):
     """
@@ -91,6 +93,7 @@ def onKey(pre, sn):
 
 snKey = onKey  # alias so intent is clear, sn vs fn
 fnKey = onKey  # alias so intent is clear, sn vs fn
+
 
 def dtKey(pre, dts):
     """
@@ -163,6 +166,50 @@ def splitKeyDT(key):
         dts = dts.decode("utf-8")
     dt = helping.fromIso8601(dts)
     return (pre, dt)
+
+
+def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, str]=b'.'):
+    """
+    Returns:
+       iokey (bytes): actual DB key after concatenating suffix as base64 version
+       of insertion ordering ordinal int ion using separator sep.
+
+    Parameters:
+        key (Union[bytes, str]): apparent effective database key (unsuffixed)
+        ion (int)): insertion ordering ordinal for set of vals
+        sep (bytes): separator character(s) for concatenating suffix
+    """
+    if isinstance(key, memoryview):
+        key = bytes(key)
+    elif hasattr(key, "encode"):
+        key = key.encode("utf-8")  # encode str to bytes
+    if hasattr(sep, "encode"):
+        sep = sep.encode("utf-8")
+    ion = coring.intToB64b(ion, SuffixSize)
+    return sep.join((key, ion))
+
+
+def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: Union[bytes, str]=b'.'):
+    """
+    Returns:
+       result (tuple): (key, ion) by splitting iokey at rightmost separator sep
+            strip off suffix, where key is bytes apparent effective DB key and
+            ion is the insertion ordering int converted from stripped of base64
+            suffix
+
+    Parameters:
+        iokey (Union[bytes, str]): apparent effective database key (unsuffixed)
+        sep (bytes): separator character(s) for concatenating suffix
+    """
+    if isinstance(iokey, memoryview):
+        iokey = bytes(iokey)
+    elif hasattr(iokey, "encode"):
+        iokey = iokey.encode("utf-8")  # encode str to bytes
+    if hasattr(sep, "encode"):
+        sep = sep.encode("utf-8")
+    key, ion = iokey.rsplit(sep=sep, maxsplit=1)
+    ion = coring.b64ToInt(ion)
+    return (key, ion)
 
 
 def clearDatabaserDir(path):
@@ -516,12 +563,16 @@ class LMDBer:
         of returing duple it results tuple with one entry for each key split
         as well as the value.
 
+        Works for both dupsort==False and dupsort==True
+
         Raises StopIteration Error when empty.
 
         Parameters:
             db is opened named sub db with dupsort=False
             key is key location in db to resume replay,
                    If empty then start at first key in database
+            split (bool): True means split key at sep before returning
+            sep (bytes): separator char for key
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
@@ -545,7 +596,7 @@ class LMDBer:
         Appends val in order after last previous key with same pre in db.
         Returns ordinal number in, on, of appended entry. Appended on is 1 greater
         than previous latest on.
-        Uses snKey(pre, on) for entries.
+        Uses onKey(pre, on) for entries.
 
         Append val to end of db entries with same pre but with on incremented by
         1 relative to last preexisting entry at pre.
@@ -557,7 +608,7 @@ class LMDBer:
         """
         # set key with fn at max and then walk backwards to find last entry at pre
         # if any otherwise zeroth entry at pre
-        key = snKey(pre, MaxON)
+        key = onKey(pre, MaxON)
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             on = 0  # unless other cases match then zeroth entry at pre
             cursor = txn.cursor()
@@ -594,7 +645,7 @@ class LMDBer:
         """
         Returns iterator of duple item, (on, dig), at each key over all ordinal
         numbered keys with same prefix, pre, in db. Values are sorted by
-        snKey(pre, on) where on is ordinal number int.
+        onKey(pre, on) where on is ordinal number int.
         Returned items are duples of (on, dig) where on is ordinal number int
         and dig is event digest for lookup in .evts sub db.
 
@@ -622,7 +673,7 @@ class LMDBer:
         """
         Returns iterator of triple item, (pre, on, dig), at each key over all
         ordinal numbered keys for all prefixes in db. Values are sorted by
-        snKey(pre, on) where on is ordinal number int.
+        onKey(pre, on) where on is ordinal number int.
         Each returned item is triple (pre, on, dig) where pre is identifier prefix,
         on is ordinal number int and dig is event digest for lookup in .evts sub db.
 
@@ -641,6 +692,433 @@ class LMDBer:
             for key, val in cursor.iternext():  # return key, val at cursor
                 cpre, cn = splitKeyON(key)
                 yield (cpre, cn, bytes(val))  # (pre, on, dig) of event
+
+
+    # For databases that support set of insertion ordered values with apparent
+    # effective duplicate key but with (dupsort==False). Actual key uses hidden
+    # key suffix ordinal to provide insertion ordering of value members of set
+    # with same effective duplicate key.
+    # Provides dupsort==True like functionality but without the associated value
+    # size limitation of 511 bytes.
+
+
+    def putIoSetVals(self, db, key, vals, *, sep=b'.'):
+        """
+        Add each val in vals to insertion ordered set of values all with the
+        same apparent effective key for each val that is not already in set of
+        vals at key.
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+           result (bool): True is added to set. False if already in set.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            vals (abc.Iterable): serialized values to add to set of vals at key
+
+        """
+        result = False
+        vals = oset(vals)  # make set
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            ion = 0
+            iokey = suffix(key, ion, sep=sep)  # start zeroth entry if any
+            cursor = txn.cursor()
+            if cursor.set_range(iokey):  # move to val at key >= iokey if any
+                pvals = oset()  # pre-existing vals at key
+                for iokey, val in cursor.iternext():  # get iokey, val at cursor
+                    ckey, cion = unsuffix(iokey, sep=sep)
+                    if ckey == key:
+                        pvals.add(val)  # another entry at key
+                        ion = cion + 1 # ion to add at is increment of cion
+                    else:  # prev entry if any was the last entry for key
+                        break  # done
+                vals -= pvals  # remove vals already in pvals
+
+            for i, val in enumerate(vals):
+                iokey = suffix(key, ion+i, sep=sep)  # ion is at add on amount
+                result = cursor.put(iokey,
+                                    val,
+                                    dupdata=False,
+                                    overwrite=False) or result  # not short circuit
+            return result
+
+
+    def addIoSetVal(self, db, key, val, *, sep=b'.'):
+        """
+        Add val to insertion ordered set of values all with the same apparent
+        effective key if val not already in set of vals at key.
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+           result (bool): True is added to set. False if already in set.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            val (bytes): serialized value to add
+
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            vals = oset()
+            ion = 0
+            iokey = suffix(key, ion, sep=sep)  # start zeroth entry if any
+            cursor = txn.cursor()
+            if cursor.set_range(iokey):  # move to val at key >= iokey if any
+                for iokey, cval in cursor.iternext():  # get iokey, val at cursor
+                    ckey, cion = unsuffix(iokey, sep=sep)
+                    if ckey == key:
+                        vals.add(cval)  # another entry at key
+                        ion = cion + 1 # ion to add at is increment of cion
+                    else:  # prev entry if any was the last entry for key
+                        break  # done
+
+            if val in vals:  # already in set
+                return False
+
+            iokey = suffix(key, ion, sep=sep)  # ion is at add on amount
+            return cursor.put(iokey, val, dupdata=False, overwrite=False)
+
+
+    def setIoSetVals(self, db, key, vals, *, sep=b'.'):
+        """
+        Erase all vals at key and then add unique vals as insertion ordered set of
+        values all with the same apparent effective key.
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+           result (bool): True is added to set.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            vals (abc.Iterable): serialized values to add to set of vals at key
+        """
+        self.delIoSetVals(db=db, key=key, sep=sep)
+        result = False
+        vals = oset(vals)  # make set
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            for i, val in enumerate(vals):
+                iokey = suffix(key, i, sep=sep)  # ion is at add on amount
+                result = txn.put(iokey, val, dupdata=False, overwrite=True) or result
+            return result
+
+
+    def appendIoSetVal(self, db, key, val, *, sep=b'.'):
+        """
+        Append val to insertion ordered set of values all with the same apparent
+        effective key. Assumes val is not already in set.
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+           ion (int): hidden insertion ordering ordinal of appended val
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            val (bytes): value to append
+        """
+        ion = 0  # default is zeroth insertion at key
+        iokey = suffix(key, ion=MaxSuffix, sep=sep)  # make iokey at max and walk back
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            cursor = txn.cursor()  # create cursor to walk back
+            if not cursor.set_range(iokey):  # max is past end of database
+                # Three possibilities for max past end of database
+                # 1. last entry in db is for same key
+                # 2. last entry in db is for other key before key
+                # 3. database is empty
+                if cursor.last():  # not 3. empty db, so either 1. or 2.
+                    ckey, cion = unsuffix(cursor.key(), sep=sep)
+                    if ckey == key:  # 1. last is last entry for same key
+                        ion = cion + 1  # so set ion to the increment of cion
+            else:  # max is not past end of database
+                # Two possibilities for max not past end of databseso
+                # 1. cursor at max entry at key
+                # 2. other key after key with entry in database
+                ckey, cion = unsuffix(cursor.key(), sep=sep)
+                if ckey == key:  # 1. last entry for key is already at max
+                    raise ValueError("Number part of key {} at maximum"
+                                     " size.".format(ckey))
+                else:  # 2. other key after key so backup one entry
+                    # Two possibilities: 1. no prior entry 2. prior entry
+                    if cursor.prev():  # prev entry, maybe same or earlier pre
+                        # 2. prior entry with two possiblities:
+                        # 1. same key
+                        # 2. other key before key
+                        ckey, cion = unsuffix(cursor.key(), sep=sep)
+                        if ckey == key:  # prior (last) entry at key
+                            ion = cion + 1  # so set ion to the increment of cion
+
+            iokey = suffix(key, ion=ion, sep=sep)
+            if not cursor.put(iokey, val, overwrite=False):
+                raise  ValueError("Failed appending {} at {}.".format(val, key))
+
+            return ion
+
+
+    def getIoSetVals(self, db, key, *, ion=0, sep=b'.'):
+        """
+        Returns:
+            ioset (oset): the insertion ordered set of values at same apparent
+            effective key.
+            Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is appended and stripped transparently.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            ion (int): starting ordinal value, default 0
+
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            vals = []
+            iokey = suffix(key, ion, sep=sep)  # start ion th value for key zeroth default
+            cursor = txn.cursor()
+            if cursor.set_range(iokey):  # move to val at key >= iokey if any
+                for iokey, val in cursor.iternext():  # get iokey, val at cursor
+                    ckey, cion = unsuffix(iokey, sep=sep)
+                    if ckey != key:  # prev entry if any was the last entry for key
+                        break  # done
+                    vals.append(val)  # another entry at key
+            return vals
+
+
+    def getIoSetValsIter(self, db, key, *, ion=0, sep=b'.'):
+        """
+        Returns:
+            ioset (abc.Iterator): iterator over insertion ordered set of values
+            at same apparent effective key.
+            Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is appended and stripped transparently.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            ion (int): starting ordinal value, default 0
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            iokey = suffix(key, ion, sep=sep)  # start ion th value for key zeroth default
+            cursor = txn.cursor()
+            if cursor.set_range(iokey):  # move to val at key >= iokey if any
+                for iokey, val in cursor.iternext():  # get key, val at cursor
+                    ckey, cion = unsuffix(iokey, sep=sep)
+                    if ckey != key: #  prev entry if any was the last entry for key
+                        break  # done
+                    yield (val)  # another entry at key
+            return  # done raises StopIteration
+
+
+    def getIoSetValLast(self, db, key, *, sep=b'.'):
+        """
+        Returns:
+            val (bytes): last added empty at apparent effective key if any,
+                otherwise None if no entry
+
+        Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is appended and stripped transparently.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+        """
+        val = None
+        ion = None  # no last value
+        iokey = suffix(key, ion=MaxSuffix, sep=sep)  # make iokey at max and walk back
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()  # create cursor to walk back
+            if not cursor.set_range(iokey):  # max is past end of database
+                # Three possibilities for max past end of database
+                # 1. last entry in db is for same key
+                # 2. last entry in db is for other key before key
+                # 3. database is empty
+                if cursor.last():  # not 3. empty db, so either 1. or 2.
+                    ckey, cion = unsuffix(cursor.key(), sep=sep)
+                    if ckey == key:  # 1. last is last entry for same key
+                        ion = cion  # so set ion to cion
+            else:  # max is not past end of database
+                # Two possibilities for max not past end of databseso
+                # 1. cursor at max entry at key
+                # 2. other key after key with entry in database
+                ckey, cion = unsuffix(cursor.key(), sep=sep)
+                if ckey == key:  # 1. last entry for key is already at max
+                    ion = cion
+                else:  # 2. other key after key so backup one entry
+                    # Two possibilities: 1. no prior entry 2. prior entry
+                    if cursor.prev():  # prev entry, maybe same or earlier pre
+                        # 2. prior entry with two possiblities:
+                        # 1. same key
+                        # 2. other key before key
+                        ckey, cion = unsuffix(cursor.key(), sep=sep)
+                        if ckey == key:  # prior (last) entry at key
+                            ion = cion  # so set ion to the cion
+
+            if ion is not None:
+                iokey = suffix(key, ion=ion, sep=sep)
+                val = cursor.get(iokey)
+
+            return val
+
+
+    def cntIoSetVals(self, db, key, *, sep=b'.'):
+        """
+        Count all values with the same apparent effective key.
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+            count (int): count values in set at apparent effective key
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+        """
+        return len(self.getIoSetVals(db=db, key=key, sep=sep))
+
+
+    def delIoSetVals(self, db, key, *, sep=b'.'):
+        """
+        Deletes all values at apparent effective key.
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+            result (bool): True if values were deleted at key. False otherwise
+                if no values at key
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+        """
+        result = False
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            iokey = suffix(key, 0, sep=sep)  # start at zeroth value for key
+            cursor = txn.cursor()
+            if cursor.set_range(iokey):  # move to val at key >= iokey if any
+                iokey, cval = cursor.item()
+                while iokey:  # end of database iokey == b''
+                    ckey, cion = unsuffix(iokey, sep=sep)
+                    if ckey != key:  # past key
+                        break
+                    result = cursor.delete() or result  # delete moves to next item
+                    iokey, cval = cursor.item()
+            return result
+
+
+    def delIoSetVal(self, db, key, val, *, sep=b'.'):
+        """
+        Deletes val at apparent effective key if exists.
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Because the insertion order of val is not provided must perform a linear
+        search over set of values.
+
+        Another problem is that vals may get added and deleted in any order so
+        the max suffix ion may creep up over time. The suffix ordinal max > 2**16
+        is an impossibly large number, however, so the suffix will not max out
+        practically.But its not the most elegant solution.
+
+        In some cases a better approach would be to use getIoSetItemsIter which
+        returns the actual iokey not the apparent effetive key so can delete
+        using the iokey without searching for the value. This is most applicable
+        when processing escrows where all the escrowed items are processed linearly
+        and one needs to delete some of them in stride with their processing.
+
+        Returns:
+            result (bool): True if val was deleted at key. False otherwise
+                if val not found at key
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            val (bytes): value to delete
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            iokey = suffix(key, 0, sep=sep)  # start zeroth value for key
+            cursor = txn.cursor()
+            if cursor.set_range(iokey):  # move to val at key >= iokey if any
+                for iokey, cval in cursor.iternext():  # get iokey, val at cursor
+                    ckey, cion = unsuffix(iokey, sep=sep)
+                    if ckey != key:  # prev entry if any was the last entry for key
+                        break  # done
+                    if val == cval:
+                        return cursor.delete()
+            return False
+
+
+    def getIoSetItems(self, db, key, *, ion=0, sep=b'.'):
+        """
+        Returns:
+            items (list): list of tuples (iokey, val) of entries in set of with
+                same apparent effective key. iokey includes the ordinal key suffix
+            Uses hidden ordinal key suffix for insertion ordering.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            ion (int): starting ordinal value, default 0
+
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            items = []
+            iokey = suffix(key, ion, sep=sep)  # start ion th value for key zeroth default
+            cursor = txn.cursor()
+            if cursor.set_range(iokey):  # move to val at key >= iokey if any
+                for iokey, val in cursor.iternext():  # get iokey, val at cursor
+                    ckey, cion = unsuffix(iokey, sep=sep)
+                    if ckey != key:  # prev entry if any was the last entry for key
+                        break  # done
+                    items.append((iokey, val))  # another entry at key
+            return items
+
+
+    def getIoSetItemsIter(self, db, key, *, ion=0, sep=b'.'):
+        """
+        Returns:
+            items (abc.Iterator): iterator over insertion ordered set of values
+            at same apparent effective key where each iteration returns tuple
+            (iokey, val). iokey includes the ordinal key suffix.
+            Uses hidden ordinal key suffix for insertion ordering.
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            ion (int): starting ordinal value, default 0
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            iokey = suffix(key, ion, sep=sep)  # start ion th value for key zeroth default
+            cursor = txn.cursor()
+            if cursor.set_range(iokey):  # move to val at key >= iokey if any
+                for iokey, val in cursor.iternext():  # get key, val at cursor
+                    ckey, cion = unsuffix(iokey, sep=sep)
+                    if ckey != key: #  prev entry if any was the last entry for key
+                        break  # done
+                    yield (iokey, val)  # another entry at key
+            return  # done raises StopIteration
+
+
+    def delIoSetIokey(self, db, iokey):
+        """
+        Deletes val at at actual iokey that includes ordinal key suffix.
+
+        Returns:
+            result (bool): True if val was deleted at iokey. False otherwise
+                if no val at iokey
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            iokey (bytes): actual key with ordinal key suffix
+        """
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            return txn.delete(iokey)
 
 
     # For subdbs that support duplicates at each key (dupsort==True)
@@ -712,6 +1190,26 @@ class LMDBer:
             if cursor.set_key(key):  # moves to first_dup
                 vals = [val for val in cursor.iternext_dup()]
             return vals
+
+
+    def getValLast(self, db, key):
+        """
+        Return last dup value at key in db in lexicographic order
+        Returns None no entry at key
+        Assumes DB opened with dupsort=True
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+            key is bytes of key within sub db's keyspace
+        """
+
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            val = None
+            if cursor.set_key(key):  # move to first_dup
+                if cursor.last_dup(): # move to last_dup
+                    val = cursor.value()
+            return val
 
 
     def getValsIter(self, db, key):
