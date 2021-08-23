@@ -387,7 +387,7 @@ class Schemer:
         self._raw = raw
         self._sed = sed
         self._kind = kind
-        self._saider = Saider(raw=self._raw, code=self._code, label=ids.dollar)
+        self._saider = Saider(raw=self._raw, code=self._code, label=Ids.dollar)
 
     @property
     def saider(self):
