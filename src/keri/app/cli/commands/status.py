@@ -29,12 +29,23 @@ def handler(args):
 
             displaying.printIdentifier(hab, hab.pre)
 
-            print()
-            for pre in hab.prefixes:
-                if pre == hab.pre:
-                    continue
-                print(f"Additional Prefix:\t\t{pre}")
-            print()
+            if len(hab.prefixes) > 1:
+                print("\nAdditional Prefixes:")
+                for pre in hab.prefixes:
+                    if pre == hab.pre:
+                        continue
+                    print(f"\t{pre}")
+
+            cnt = hab.db.gids.getCnt()
+            if cnt > 0:
+                print()
+                print("Groups:")
+                groups = hab.db.gids.getItemIter()
+                idx = 1
+                for (pre,), group in groups:
+                    print("\t{}. {} ({})".format(idx, group.name, pre))
+                    idx += 1
+                print()
 
             if args.verbose:
                 cloner = hab.db.clonePreIter(pre=hab.pre, fn=0)  # create iterator at 0
@@ -43,6 +54,7 @@ def handler(args):
                     print(srdr.pretty())
                     print()
 
-    except ConfigurationError:
+    except ConfigurationError as e:
+        print(e)
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
         return -1

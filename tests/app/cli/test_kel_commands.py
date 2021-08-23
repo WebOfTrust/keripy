@@ -28,7 +28,7 @@ def test_kel_commands():
         inceptor = CommandDoer()
         doers = wanDoers + wilDoers + wesDoers + [inceptor]
 
-        limit = 1.0
+        limit = 3.0
         tock = 0.03125
         doist = doing.Doist(tock=tock, limit=limit, doers=doers)
         doist.enter()
@@ -78,14 +78,12 @@ class CommandDoer(doing.DoDoer):
         self.remove([sigr])
 
         with habbing.existingHab(name="test") as hab:
-            assert hab.pre == "Ems5zxn7vzINGbPorX0HvS6izl4ittTKTIkcvJLPSNzA"
+            assert hab.pre == "E8c2nLbeYb5OholJTGlUgFD8xG3NJObkn1fdA-qEH8dA"
             assert hab.kever.ilk == "icp"
             assert hab.kever.sn == 0
             assert hab.kever.tholder.sith == "1"
-            assert len(hab.kever.verfers) == 3
+            assert len(hab.kever.verfers) == 1
             assert hab.kever.verfers[0].qb64 == "Df--qltU7JlBgxNouIGQKg6wYCWlRu6S1y1Xf60MzDRs"
-            assert hab.kever.verfers[1].qb64 == "DP1QDQAP1T9yvUXwqiXLyDOP-eXGDAf87DxP9OQTVcVg"
-            assert hab.kever.verfers[2].qb64 == "DdPRgRm99DRSE14UNvOJGpkAC7gxIIP7vEE_Aq2cbkQE"
 
         seal = dict(
             p="EUX0_NKihYcmvuTOSFnLcIf4xhAn0MaAI2FJoCN-gspc",
@@ -101,17 +99,13 @@ class CommandDoer(doing.DoDoer):
         self.remove([rotr])
 
         with habbing.existingHab(name="test") as hab:
-            assert hab.pre == "Ems5zxn7vzINGbPorX0HvS6izl4ittTKTIkcvJLPSNzA"
+            assert hab.pre == "E8c2nLbeYb5OholJTGlUgFD8xG3NJObkn1fdA-qEH8dA"
             assert hab.kever.ilk == "rot"
             assert hab.kever.sn == 1
             assert hab.kever.tholder.sith == "1"
             assert hab.kever.serder.ked["a"] == [seal]
-            assert len(hab.kever.verfers) == 5
-            assert hab.kever.verfers[0].qb64 == "DGoZ_S3Q6EvFWVQIxeJj7mV_RSpZZkXpy4zpD3iBOuPg"
-            assert hab.kever.verfers[1].qb64 == "DwPgRbOOcLcLDOaerqbGLJZr95xvufLbiuBAUsDBBjNI"
-            assert hab.kever.verfers[2].qb64 == "DayE5e3tLMTbzvf2jRItNXGJYRCVobc37r4BV5WYgJMI"
-            assert hab.kever.verfers[3].qb64 == "D6yqQbt-YIHUTa8UN5j8T64vq7hGavt8P4C625RKDuSY"
-            assert hab.kever.verfers[4].qb64 == "DWjoQfaTHufA5Vz-57GyH_hyYJnomADhuMFVjJTDd6Y0"
+            assert len(hab.kever.verfers) == 1
+            assert hab.kever.verfers[0].qb64 == "D8lwmbCKQr78BTgZF9og2o58ZLhR2jiSwkj-QUVi-8o8"
 
         seal1 = dict(
             p="ExvDJbZwXBw1YAQJZlLNxuZXL1vaRnNOulyAqvD4BywU",
@@ -127,14 +121,10 @@ class CommandDoer(doing.DoDoer):
         self.remove([ixnr])
 
         with habbing.existingHab(name="test") as hab:
-            assert hab.pre == "Ems5zxn7vzINGbPorX0HvS6izl4ittTKTIkcvJLPSNzA"
+            assert hab.pre == "E8c2nLbeYb5OholJTGlUgFD8xG3NJObkn1fdA-qEH8dA"
             assert hab.kever.ilk == "ixn"
             assert hab.kever.sn == 2
             assert hab.kever.tholder.sith == "1"
             assert hab.kever.serder.ked["a"] == [seal1]
-            assert len(hab.kever.verfers) == 5
-            assert hab.kever.verfers[0].qb64 == "DGoZ_S3Q6EvFWVQIxeJj7mV_RSpZZkXpy4zpD3iBOuPg"
-            assert hab.kever.verfers[1].qb64 == "DwPgRbOOcLcLDOaerqbGLJZr95xvufLbiuBAUsDBBjNI"
-            assert hab.kever.verfers[2].qb64 == "DayE5e3tLMTbzvf2jRItNXGJYRCVobc37r4BV5WYgJMI"
-            assert hab.kever.verfers[3].qb64 == "D6yqQbt-YIHUTa8UN5j8T64vq7hGavt8P4C625RKDuSY"
-            assert hab.kever.verfers[4].qb64 == "DWjoQfaTHufA5Vz-57GyH_hyYJnomADhuMFVjJTDd6Y0"
+            assert len(hab.kever.verfers) == 1
+            assert hab.kever.verfers[0].qb64 == "D8lwmbCKQr78BTgZF9og2o58ZLhR2jiSwkj-QUVi-8o8"

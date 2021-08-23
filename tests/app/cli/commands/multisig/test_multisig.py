@@ -49,25 +49,10 @@ def test_incept():
         inceptor = InceptingDoer()
         doers = wanDoers + wilDoers + wesDoers + [inceptor]
 
-        limit = 10.0
+        limit = 2.0
         tock = 0.03125
         doist = doing.Doist(tock=tock, limit=limit, doers=doers)
         doist.enter()
-
-        #assert inceptor.members
-        #assert not inceptor.group
-
-        #hab1 = inceptor.members[0].doer.hab
-        #assert hab1.pre == 'Eu_se69BU6tYdF2o-YD411OzwbvImOfu1m023Bu8FM_I'
-        #assert hab1.db.path == '/usr/local/var/keri/db/multisig1'
-
-        #hab2 = inceptor.members[1].doer.hab
-        #assert hab2.pre == 'EEWuHgyO9iTgfz43mtY1IaRH-TrmV-YpcbpPoKKSpz8U'
-        #assert hab2.db.path == '/usr/local/var/keri/db/multisig2'
-
-        #hab3 = inceptor.members[2].doer.hab
-        #assert hab3.pre == 'E5JuUB6iOaKV5-0EeADj0S3KCvvkUZDnuLw8VPK8Qang'
-        #assert hab3.db.path == '/usr/local/var/keri/db/multisig3'
 
         tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
 
@@ -90,70 +75,6 @@ def test_incept():
         # assert len(wigs) == 3
         wigs = wesHab.db.getWigs(dgkey)
         # assert len(wigs) == 3
-
-
-#@dataclass
-#class Member:
-    #"""
-    #Multi-sig group member
-    #"""
-    #name: str  # name of member in group
-    #index: int  # index of member in group
-    #doer: doing.DoDoer  # DoDoer of member  doer.hab for database
-
-#@dataclass
-#class Group:
-    #"""
-    #Multi-sig group id
-    #"""
-    #name: str  # name of group
-    #count: int  # number of members in group
-    #sith: int  # signing threshold
-    #doer: doing.DoDoer  # DoDoer of group doer.hab for database
-
-#class InceptingDoer(doing.DoDoer):
-
-    #def __init__(self, **kwa):
-        #super(InceptingDoer, self).__init__(doers=[doing.doify(self.inceptDo)], **kwa)
-        #self.members = []
-        #self.group = None
-
-
-    #def inceptDo(self, tymth=None, tock=0.0):
-        #"""
-        #Create Member Doers with habitats
-        #Returns:  doifiable Doist compatible generator method
-        #Usage:
-            #add result of doify on this method to doers list
-        #"""
-        ## start enter context
-        #for i in range(1, 4):
-            #name = "multisig" + str(i)
-            #doer = incept.InceptDoer(name=name, proto="tcp", opts=loadInceptOpts(f"multisig-{i}-sample.json"))
-            #self.members.append(Member(index=i, name=name, doer=doer))
-        #self.extend([member.doer for member in self.members])
-
-        #yield self.tock  # finish enter context
-
-        ## start recur context
-        #for member in self.members:
-            #while not member.doer.done:
-                #yield self.tock
-
-            #self.remove([member.doer])
-            #yield self.tock
-
-        #member = self.members[0]
-        #name = "groupby" + member.name
-        #doer = MultiSigInceptDoer(name=name,
-                                 #opts=loadMultiInceptOpts("multisig-sample.json"))
-        #group = Group(name=name, count=len(members), sith=2, doer=doer)
-        #self.extend([group.doer])
-        #while not group.doer.done:
-            #yield self.tock
-
-        #self.remove([group.doer.done])
-        #yield self.tock
 
 
 
@@ -193,7 +114,7 @@ class InceptingDoer(doing.DoDoer):
         for sig in sigs:
             opts = loadMultiInceptOpts("multisig-sample.json")
             kwa = opts.__dict__
-            msd = MultiSigInceptDoer(name=sig, **kwa)
+            msd = MultiSigInceptDoer(name=sig, group=sig + "-g", **kwa)
             self.extend([msd])
 
             while not msd.done:

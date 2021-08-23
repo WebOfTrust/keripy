@@ -10,8 +10,8 @@ from hio import help
 from hio.base import doing
 from hio.help import decking
 from keri import kering
-from keri.app import habbing, keeping, directing, agenting, indirecting
-from keri.app.cli.common import grouping, rotating
+from keri.app import habbing, keeping, directing, agenting, indirecting, forwarding
+from keri.app.cli.common import grouping, rotating, displaying
 from keri.core import coring, eventing
 from keri.db import basing
 from keri.peer import exchanging, httping
@@ -22,9 +22,9 @@ parser = argparse.ArgumentParser(description='Begin or join a rotation of a grou
 parser.set_defaults(handler=lambda args: rotateGroupIdentifier(args),
                     transferable=True)
 parser.add_argument('--name', '-n', help='Human readable reference', required=True)
+parser.add_argument('--group', '-g', help="Human readable environment reference for group identifier", required=True)
 parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
                                           'http)', default="http")
-parser.add_argument('gid', help='group identifier prefix to rotate', action="store")
 rotating.addRotationArgs(parser)
 
 
@@ -42,10 +42,9 @@ def rotateGroupIdentifier(args):
     """
 
     name = args.name
-    gid = args.gid
 
-    rotDoer = MultiSigRotateDoer(name=name, gid=gid, proto=args.proto, wits=args.witnesses, cuts=args.witness_cut,
-                                 adds=args.witness_add, sith=args.sith, toad=args.toad)
+    rotDoer = MultiSigRotateDoer(name=name, groupName=args.group, proto=args.proto, wits=args.witnesses,
+                                 cuts=args.witness_cut, adds=args.witness_add, sith=args.sith, toad=args.toad)
 
     doers = [rotDoer]
     directing.runController(doers=doers, expire=0.0)
@@ -58,7 +57,7 @@ class MultiSigRotateDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, gid, proto, sith=None, toad=None, wits=None, cuts=None, adds=None, data=None):
+    def __init__(self, name, groupName, proto, sith=None, toad=None, wits=None, cuts=None, adds=None, data=None):
         """
         Returns the DoDoer and registers all doers needed for multisig rotation
 
@@ -84,7 +83,7 @@ class MultiSigRotateDoer(doing.DoDoer):
         self.cuts = cuts if cuts is not None else []
         self.adds = adds if adds is not None else []
 
-        self.gid = gid
+        self.groupName = groupName
         self.msgs = decking.Deck()
         ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
@@ -96,11 +95,10 @@ class MultiSigRotateDoer(doing.DoDoer):
         self.habDoer = habbing.HabitatDoer(habitat=self.hab)
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
-        mbx = exchanging.Mailboxer(name=name)
-        rep = httping.Respondant(hab=hab, mbx=mbx)
-        mdir = indirecting.MailboxDirector(hab=hab, rep=rep)
+        mbd = indirecting.MailboxDirector(hab=hab)
+        self.postman = forwarding.Postman(hab=hab)
 
-        self.runningDoers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, rep, mdir]
+        self.runningDoers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, mbd]
 
         doers = self.runningDoers + [doing.doify(self.rotateDo)]
         super(MultiSigRotateDoer, self).__init__(doers=doers)
@@ -116,6 +114,12 @@ class MultiSigRotateDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)  # finish enter context
 
+        group = self.hab.db.gids.get(keys=self.groupName)
+        if group is None or group.lid != self.hab.pre:
+            print("invalid group identifier {}\n".format(self.groupName))
+            return
+
+
         if self.wits:
             if self.adds or self.cuts:
                 raise kering.ConfigurationError("you can only specify witnesses or cuts and add")
@@ -126,33 +130,31 @@ class MultiSigRotateDoer(doing.DoDoer):
             self.adds = set(self.wits) - set(ewits)
 
 
-        self.witq.query(self.gid)
-        while self.gid not in self.hab.kevers:
+        self.witq.query(group.gid)
+        while group.gid not in self.hab.kevers:
             _ = (yield self.tock)
 
-        gkev = self.hab.kevers[self.gid]
+        gkev = self.hab.kevers[group.gid]
         if self.hab.kever.sn == gkev.sn:  # We are equal to the current group identifier, need to rotate
             rot = self.hab.rotate()
-            witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.HTTPWitnesser, msg=rot)
+            witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.HttpWitnesser, msg=rot)
             self.extend(doers=[witDoer])
             self.runningDoers.append(witDoer)
             while not witDoer.done:
                 _ = yield self.tock
 
-        group = self.hab.db.gids.get(keys=self.gid)
-        if group is None or group.lid != self.hab.pre:
-            print("invalid group identifier {}\n".format(self.gid))
-            return
-
+        print("Local identifier rotated, checking other group members:")
         idx = group.aids.index(self.hab.pre)
 
         mskeys = []
         msdigers = []
         for aid in group.aids:
             kever = self.hab.kevers[aid]
-            while kever.sn < self.hab.kever.sn:
-                self.witq.query(aid)
-                _ = (yield self.tock)
+            if aid != self.hab.pre:
+                print("waiting for {} to join rotation...".format(aid))
+                while kever.sn < self.hab.kever.sn:
+                    self.witq.query(aid)
+                    _ = (yield self.tock)
 
             keys = kever.verfers
             if len(keys) > 1:
@@ -175,19 +177,25 @@ class MultiSigRotateDoer(doing.DoDoer):
                                  nxt=coring.Nexter(sith=self.sith,
                                                    digs=[diger.qb64 for diger in msdigers]).qb64)
 
-        sigers = []
-        mine = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
-        sigers.extend(mine)
-
+        # the next digest previous calculated
+        sigers = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
         msg = eventing.messagize(mssrdr, sigers=sigers)
         self.hab.prefixes.add(mssrdr.pre)  # make this prefix one of my own
         self.hab.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
 
-        witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
-        self.extend([witRctDoer])
-        # toRemove.extend([mbx, witRctDoer])
+        witSndDoer = agenting.WitnessPublisher(hab=self.hab, msg=msg, klas=agenting.HttpWitnesser)
+        self.extend([witSndDoer])
+        self.runningDoers.extend([witSndDoer])
 
-        while not witRctDoer.done:
+        while not witSndDoer.done:
             _ = yield self.tock
+
+        while self.hab.kevers[group.gid].sn != mssrdr.sn:
+            self.witq.query(group.gid)
+            _ = (yield self.tock)
+
+        print()
+        print("Group Identifier Rotation Complete:")
+        displaying.printIdentifier(self.hab, mssrdr.pre)
 
         self.remove(self.runningDoers)

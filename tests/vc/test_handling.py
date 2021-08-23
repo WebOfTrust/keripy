@@ -96,7 +96,8 @@ def test_issuing():
 
         # Create the `exn` message for issue credential
         sidExcSrdr = exchanging.exchange(route="/credential/issue", payload=pl)
-        excMsg = sidHab.sanction(sidExcSrdr)
+        excMsg = bytearray(sidExcSrdr.raw)
+        excMsg.extend(sidHab.sanction(sidExcSrdr))
 
         # Parse the exn issue credential message on Red's side
         parsing.Parser().parse(ims=bytearray(excMsg), kvy=redKvy, exc=redExc)
@@ -225,7 +226,8 @@ def test_proving():
 
         # Create the `exn` message for presentation request
         vicExcSrdr = exchanging.exchange(route="/presentation/request", payload=pl)
-        excMsg = vicHab.sanction(vicExcSrdr)
+        excMsg = bytearray(vicExcSrdr.raw)
+        excMsg.extend(vicHab.sanction(vicExcSrdr))
 
         # Parse the exn presentation request message on Han's side
         parsing.Parser().parse(ims=bytearray(excMsg), kvy=hanKvy, exc=hanExc)
@@ -235,7 +237,7 @@ def test_proving():
         resp = hanRequestHandler.cues.popleft()
         assert resp is not None
 
-        respSer = coring.Serder(raw=resp.raw)
+        respSer = coring.Serder(raw=resp["rep"].raw)
         assert respSer.ked['t'] == coring.Ilks.exn
         assert respSer.ked['r'] == "/presentation/proof"
         data = respSer.ked['d']

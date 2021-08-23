@@ -53,11 +53,11 @@ bis = backed vc issue, registry-backed transaction event log credential issuance
 brv = backed vc revoke, registry-backed transaction event log credential revocation
 """
 
-Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn req qry rpy exn '
-                              'vcp vrt iss rev bis brv '))
+Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn req qry rpy exn fwd '
+                               'vcp vrt iss rev bis brv '))
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              ksn='ksn', req='req', qry='qry', rpy='rpy', exn='exn',
+              ksn='ksn', req='req', qry='qry', rpy='rpy', exn='exn', fwd='fwd',
               vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')

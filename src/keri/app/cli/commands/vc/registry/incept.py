@@ -70,7 +70,7 @@ class RegistryInceptDoer(doing.DoDoer):
         tevt = issuer.ianchor
 
         witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
-        witSender = agenting.WitnessSender(hab=self.hab, msg=tevt)
+        witSender = agenting.WitnessPublisher(hab=self.hab, msg=tevt)
         self.extend([witDoer, witSender])
         self.toRemove.extend([witDoer, witSender])
         _ = yield self.tock

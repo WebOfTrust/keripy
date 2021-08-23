@@ -55,7 +55,7 @@ def test_witness_sender(mockGetWitnessByPrefix):
         seal = SealSource(s=palHab.kever.sn, d=palHab.kever.serder.dig)
         msg = issuing.Issuer.messagize(serder=serder, seal=seal)
 
-        witDoer = agenting.WitnessSender(hab=palHab, msg=msg, klas=agenting.TCPWitnesser)
+        witDoer = agenting.WitnessPublisher(hab=palHab, msg=msg, klas=agenting.TCPWitnesser)
 
         limit = 1.0
         tock = 0.03125

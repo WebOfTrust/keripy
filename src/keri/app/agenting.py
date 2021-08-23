@@ -11,6 +11,7 @@ from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
 from keri import kering
+from . import forwarding
 
 from .. import help
 from ..app import obtaining
@@ -48,7 +49,7 @@ class WitnessReceiptor(doing.DoDoer):
         """
         self.hab = hab
         self.msg = msg
-        self.klas = klas if klas is not None else HTTPWitnesser
+        self.klas = klas if klas is not None else HttpWitnesser
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
     def receiptDo(self, tymth=None, tock=0.0, **opts):
@@ -80,8 +81,8 @@ class WitnessReceiptor(doing.DoDoer):
 
             _ = (yield self.tock)
 
+        dgkey = dbing.dgKey(ser.preb, ser.digb)
         while True:
-            dgkey = dbing.dgKey(ser.preb, ser.digb)
             wigs = self.hab.db.getWigs(dgkey)
             if len(wigs) == len(wits):
                 break
@@ -136,7 +137,7 @@ class WitnessInquisitor(doing.DoDoer):
 
         """
         self.hab = hab
-        self.klas = klas if klas is not None else HTTPWitnesser
+        self.klas = klas if klas is not None else HttpWitnesser
         self.msgs = msgs if msgs is not None else decking.Deck()
 
         super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
@@ -179,7 +180,7 @@ class WitnessInquisitor(doing.DoDoer):
         self.msgs.append(msg)
 
 
-class WitnessSender(doing.DoDoer):
+class WitnessPublisher(doing.DoDoer):
     """
     Sends messages to all current witnesses of given identifier (from hab) and exits.
 
@@ -203,8 +204,8 @@ class WitnessSender(doing.DoDoer):
         self.hab = hab
         self.msg = msg
         self.wits = wits if wits is not None else self.hab.kever.wits
-        self.klas = klas if klas is not None else HTTPWitnesser
-        super(WitnessSender, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
+        self.klas = klas if klas is not None else HttpWitnesser
+        super(WitnessPublisher, self).__init__(doers=[doing.doify(self.sendDo)], **kwa)
 
     def sendDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -224,7 +225,7 @@ class WitnessSender(doing.DoDoer):
         for wit in self.wits:
             witer = self.klas(hab=self.hab, wit=wit)
             witers.append(witer)
-            witer.msgs.append(bytearray(self.msg))  # make a copy so every munges their own
+            witer.msgs.append(bytearray(self.msg))  # make a copy so everyone munges their own
             self.extend([witer])
 
             _ = (yield self.tock)
@@ -330,7 +331,7 @@ class TCPWitnesser(doing.DoDoer):
             yield
 
 
-class HTTPWitnesser(doing.DoDoer):
+class HttpWitnesser(doing.DoDoer):
     """
     Interacts with Witnesses on HTTP and SSE for sending events and receiving receipts
 
@@ -364,7 +365,7 @@ class HTTPWitnesser(doing.DoDoer):
 
         doers.extend([clientDoer])
 
-        super(HTTPWitnesser, self).__init__(doers=doers, **kwa)
+        super(HttpWitnesser, self).__init__(doers=doers, **kwa)
 
     def msgDo(self, tymth=None, tock=0.0):
         """
@@ -564,15 +565,15 @@ class CredentialIssueHandler(doing.DoDoer):
                 witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
                 self.extend([witDoer])
 
-                witSender = WitnessSender(hab=self.hab, msg=tevt)
+                witSender = WitnessPublisher(hab=self.hab, msg=tevt)
                 self.extend([witSender])
 
                 pl = dict(
                     vc=[handling.envelope(msg, typ=jsonSchema)]
                 )
 
-                self.cues.append(
-                    exchanging.exchange(route="/credential/issue", payload=pl, recipient=recipientIdentifier))
+                exn = exchanging.exchange(route="/credential/issue", payload=pl)
+                self.cues.append(dict(dest=recipientIdentifier, rep=exn))
                 yield
             yield
 
@@ -647,7 +648,7 @@ class CredentialRevokeHandler(doing.DoDoer):
                 witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
                 self.extend([witDoer])
 
-                witSender = WitnessSender(hab=self.hab, msg=tevt)
+                witSender = WitnessPublisher(hab=self.hab, msg=tevt)
                 self.extend([witSender])
 
 
@@ -696,8 +697,8 @@ class PresentationRequestHandler(doing.DoDoer):
                     ]
                 )
 
-                self.cues.append(
-                    exchanging.exchange(route="/presentation/request", payload=pl, recipient=recipientIdentifier))
+                exn = exchanging.exchange(route="/presentation/request", payload=pl)
+                self.cues.append(dict(dest=recipientIdentifier, rep=exn))
                 yield
 
             yield
@@ -749,8 +750,8 @@ class EchoHandler(doing.DoDoer):
                     echo=msg
                 )
 
-                serder = exchanging.exchange(route="/cmd/message", payload=resp, recipient=rcp.qb64)
-                self.cues.append(serder)
+                serder = exchanging.exchange(route="/cmd/message", payload=resp)
+                self.cues.append(dict(dest=rcp.qb64, rep=serder))
 
                 yield
 

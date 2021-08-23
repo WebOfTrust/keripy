@@ -212,7 +212,6 @@ def test_credential():
                       subject=d, source=s, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 
     assert cred.size == len(cred.raw)
-    print(cred.raw)
     assert cred.raw == (
         b'{"v":"KERI10JSON0002a7_","i":"E-LcFxJ_mwwT6aGipuwfp5WUp1g777UvX8EAE4qhP6ec",'
         b'"x":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","ti":"EYNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",'
