@@ -46,7 +46,8 @@ FALSY = (False, 0, "?0", "no", "false", "False", "off")
 TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
 
 # Signature HTTP header support
-Signage = namedtuple("Signage", "markers indexed signer kind", defaults=(None, None, None))
+Signage = namedtuple("Signage", "markers indexed signer ordinal kind",
+                     defaults=(None, None, None, None))
 
 
 def signature(signages):
@@ -66,7 +67,8 @@ def signature(signages):
         value from each Signature header.
 
     Parameters:
-        signages (list): items are Signage namedtuples,(markers, indexed, indexed)
+        signages (list): items are Signage namedtuples,
+                           (markers, indexed, signer, ordinal, kind)
             where:
                 markers (Union[list, dict]): When dict each item (key, val) has
                     key as str identifier of marker and has val as instance of
@@ -81,6 +83,11 @@ def signature(signages):
                 signer (str): optional identifier of signage. May be a
                     multi-sig group identifier. Default is None. When None or
                     empty signer is not included in header value
+                ordinal (str): optional ordinal hex str of int that is an ordinal
+                               such as sequence number to further identifier the
+                               keys used for the signatures. Usually when indexed
+                               with signer
+                kind (str): serialization kind of the markers and other primitives
 
 
     """
@@ -89,6 +96,7 @@ def signature(signages):
         markers = signage.markers
         indexed = signage.indexed
         signer = signage.signer
+        ordinal = signage.ordinal
         kind = signage.kind
 
         if isinstance(markers, Mapping):
@@ -107,6 +115,10 @@ def signature(signages):
         if signer:
             tag = "signer"
             val = signer
+            items.append(f'{tag}="{val}"')
+        if ordinal:
+            tag = "ordinal"
+            val = ordinal
             items.append(f'{tag}="{val}"')
         if kind:
             tag = "kind"
@@ -153,17 +165,27 @@ def designature(value):
     RFC8941 structured Field Values for HTTP
 
     Returns:
-       signages (list): items are Signage namedtuples,(markers, signer, indexed)
+       signages (list): items are Signage namedtuples,
+                           (markers, indexed, signer, ordinal, kind)
             where:
-                markers (dict): each item (key, val) has key as str identifier
-                    of marker and has val as instance of either coring.Siger or
-                    coring.Cigar. All markers must be of same class
-                signer (str): optional identifier of signage. May be a multi-sig
-                    group identifier
+                markers (Union[list, dict]): When dict each item (key, val) has
+                    key as str identifier of marker and has val as instance of
+                    either coring.Siger or coring.Cigar.
+                    When list each item is instance of either coring.Siger or
+                    coring.Cigar.
+                    All markers must be of same class
                 indexed (bool): True means marker values are indexed signatures
                     using coring.Siger. False means marker values are unindexed
-                    signatures using coring.Cigar.
-
+                    signatures using coring.Cigar. None means auto detect from
+                    first marker value class. All markers must be of same class.
+                signer (str): optional identifier of signage. May be a
+                    multi-sig group identifier. Default is None. When None or
+                    empty signer is not included in header value
+                ordinal (str): optional ordinal hex str of int that is an ordinal
+                               such as sequence number to further identifier the
+                               keys used for the signatures. Usually when indexed
+                               with signer
+                kind (str): serialization kind of the markers and other primitives
 
        signatures (list): Siger or Cigar instances
     """
@@ -186,6 +208,12 @@ def designature(value):
         else:
             signer = None
 
+        if "ordinal" in items:
+            ordinal = items["ordinal"]
+            del items["ordinal"]
+        else:
+            ordinal = None
+
         if "kind" in items:
             kind = items["kind"]
             del items["kind"]
@@ -199,7 +227,8 @@ def designature(value):
                 else:
                     items[key] = coring.Cigar(qb64=val)
 
-        signages.append(Signage(markers=items, indexed=indexed, signer=signer, ))
+        signages.append(Signage(markers=items, indexed=indexed, signer=signer,
+                                ordinal=ordinal, kind=kind))
 
     return signages
 

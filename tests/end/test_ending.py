@@ -92,6 +92,32 @@ def test_signature_designature():
         assert marker.qb64 == sigers[i].qb64
         assert int(tag) == marker.index == sigers[i].index
 
+    # include signer ordinal and kind
+    # test signature with list markers as indexed sigers and defaults for indexed and signer
+    signage = ending.Signage(markers=sigers, indexed=True, signer=hab.pre,
+                             ordinal="0", kind="CESR")
+    header = ending.signature([signage])  # put it in a list
+    assert header == ({'Signature': 'indexed="?1";'
+                        'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
+                        'ordinal="0";'
+                        'kind="CESR";'
+                        '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
+                        '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
+                        '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'}
+)
+
+    # test designature
+    signages = ending.designature(header["Signature"])
+    signage = signages[0]
+    assert signage.indexed
+    assert signage.signer == hab.pre
+    assert signage.ordinal == "0"
+    assert signage.kind == "CESR"
+    markers = signage.markers
+    for i, (tag, marker) in enumerate(markers.items()):
+        assert marker.qb64 == sigers[i].qb64
+        assert int(tag) == marker.index == sigers[i].index
+
     # test signature with list markers as nonindexed cigars and defaults for indexed and signer
     cigars = hab.mgr.sign(ser=text, verfers=hab.kever.verfers, indexed=False)
     signage = ending.Signage(markers=cigars)
@@ -118,9 +144,9 @@ def test_signature_designature():
 
     #  now combine into one header
     signages = []
-    signages.append(ending.Signage(markers=sigers, signer=hab.pre, indexed=True,
+    signages.append(ending.Signage(markers=sigers, indexed=True, signer=hab.pre,
                                    kind="CESR"))
-    signages.append(ending.Signage(markers=cigars, signer=hab.pre, indexed=False,
+    signages.append(ending.Signage(markers=cigars, indexed=False, signer=hab.pre,
                                    kind="CESR"))
 
     header = ending.signature(signages)
@@ -419,4 +445,4 @@ def test_end_demo():
 
 
 if __name__ == '__main__':
-    test_seid_api()
+    test_signature_designature()
