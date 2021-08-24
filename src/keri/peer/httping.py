@@ -14,8 +14,8 @@ from hio.help import helping, Hict, decking
 
 from .. import help
 from .. import kering
-from ..app import obtaining
-from ..core import parsing, coring
+from ..app import obtaining, forwarding
+from ..core import coring
 from ..core.coring import Ilks
 from ..help.helping import nowIso8601
 from ..peer import exchanging
@@ -31,7 +31,6 @@ CESR_RECIPIENT_HEADER = "CESR-RECIPIENT"
 @dataclass
 class CesrRequest:
     resource: str
-    recipient: str
     date: str
     payload: dict
     modifiers: dict
@@ -76,11 +75,9 @@ def parseCesrHttpRequest(req, prefix=None):
                                title="Attachment error",
                                description="Missing required attachment header.")
     attachment = req.headers[CESR_ATTACHMENT_HEADER]
-    recipient = req.headers[CESR_RECIPIENT_HEADER] if CESR_RECIPIENT_HEADER in req.headers else None
 
     cr = CesrRequest(
         resource=resource,
-        recipient=recipient,
         date=dt,
         payload=data,
         modifiers=req.params,
@@ -111,16 +108,19 @@ def createCESRRequest(msg, client, date=None):
     attachments = bytearray(msg)
     query = serder.ked["q"] if "q" in serder.ked else None
 
-    if ilk in (Ilks.exn,):
-        resource = "/" + ilk + serder.ked['r']
-        body = json.dumps(serder.ked["d"]).encode("utf-8")
-        dt = serder.ked["dt"]
+    if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.ksn, Ilks.rct):
+        resource = "/kel"
+        body = serder.raw
     elif ilk in (Ilks.req,):
         resource = "/" + ilk + "/" + serder.ked['r']
         body = serder.raw
-    elif ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.ksn, Ilks.rct):
-        resource = "/kel"
-        body = serder.raw
+    elif ilk in (Ilks.fwd,):
+        resource = "/" + ilk + "/" + serder.ked['r']
+        body = json.dumps(serder.ked["a"]).encode("utf-8")
+    elif ilk in (Ilks.exn,):
+        resource = "/" + ilk + serder.ked['r']
+        body = json.dumps(serder.ked["d"]).encode("utf-8")
+        dt = serder.ked["dt"]
     elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
         resource = "/tel"
         body = serder.raw
@@ -133,9 +133,6 @@ def createCESRRequest(msg, client, date=None):
         (CESR_DATE_HEADER, dt),
         (CESR_ATTACHMENT_HEADER, attachments)
     ])
-
-    if "i" in serder.ked:
-        headers[CESR_RECIPIENT_HEADER] = serder.pre
 
     client.request(
         method="POST",
@@ -274,19 +271,28 @@ class Respondant(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
+
+        # enter context
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
         while True:
             while self.reps:
                 rep = self.reps.popleft()
-                dest = rep["dest"]
-                msg = rep["msg"]
+                recipient = rep["dest"]
+                exn = rep["rep"]
 
-                kever = self.hab.kevers[dest]
+
+                kever = self.hab.kevers[recipient]
                 if kever is None:
-                    logger.Error("unable to reply, dest {} not found".format(dest))
+                    logger.Error("unable to reply, dest {} not found".format(recipient))
                     continue
 
                 if len(kever.wits) == 0:
-                    self.mbx.storeMsg(dest=dest, msg=msg)
+                    msg = bytearray(exn.raw)
+                    msg.extend(self.hab.sanction(exn))
+                    self.mbx.storeMsg(dest=recipient, msg=msg)
                 else:
                     wit = random.choice(kever.wits)
                     loc = obtaining.getwitnessbyprefix(wit)
@@ -295,6 +301,10 @@ class Respondant(doing.DoDoer):
                     clientDoer = http.clienting.ClientDoer(client=client)
 
                     self.extend([clientDoer])
+
+                    fwd = forwarding.forward(pre=recipient, serder=exn)
+                    msg = bytearray(fwd.raw)
+                    msg.extend(self.hab.sanction(exn))
 
                     createCESRRequest(msg, client)
 
@@ -326,8 +336,6 @@ class Respondant(doing.DoDoer):
                 if cueKin in ("receipt",):  # cue to receipt a received event from other pre
                     serder = cue["serder"]  # Serder of received event for other pre
                     msg.extend(self.hab.receipt(serder))
-                    print("storing receipt in", serder.pre)
-
                     self.mbx.storeMsg(dest=serder.preb, msg=msg)
                 elif cueKin in ("replay",):
                     dest = cue["dest"]

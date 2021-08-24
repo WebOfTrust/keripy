@@ -4,17 +4,16 @@ keri.kli.commands.watcher module
 
 """
 import argparse
+import logging
+import sys
 
 import falcon
 from hio.core import http
 from hio.core.tcp import serving
-from keri.app import directing, indirecting
+from keri import help, kering
+from keri.app import directing, indirecting, watching, habbing
 from keri.app.cli.common import existing
-from keri.db import basing
 from keri.peer import exchanging, httping
-from keri import help
-
-logger = help.ogler.getLogger()
 
 
 parser = argparse.ArgumentParser(description='Start watcher')
@@ -31,6 +30,10 @@ parser.add_argument('-n', '--name',
                     action='store',
                     default="watcher",
                     help="Name of controller. Default is watcher.")
+parser.add_argument('-p', '--pre',
+                    action='store',
+                    default="",
+                    help="Identifier prefix of controller of this watcher")
 
 
 
@@ -39,30 +42,43 @@ def startWatcher(args):
     tcpPort = int(args.tcp)
     httpPort = int(args.http)
 
+    help.ogler.level = logging.INFO
+    help.ogler.reopen(name="keri", temp=True, clear=True)
+    logger = help.ogler.getLogger()
+
     logger.info("\n******* Starting Watcher for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.http, args.tcp)
 
-    doers = setupWatcher(name, tcpPort=tcpPort, httpPort=httpPort)
+    doers = setupWatcher(name, controller=args.pre, tcpPort=tcpPort, httpPort=httpPort)
     directing.runController(doers=doers, expire=0.0)
 
     logger.info("\n******* Ended Watcher for %s listening: http/%s, tcp/%s"
                 ".******\n\n", args.name, args.http, args.tcp)
 
 
-def setupWatcher(name="watcher", tcpPort=5651, httpPort=5652):
+def setupWatcher(name="watcher", controller=None, tcpPort=5651, httpPort=5652):
     """
     """
 
-    hab, doers = existing.openHabitat(name=name)
+    try:
+        with habbing.existingHab(name=name, transferable=False) as hab:
+            print("Watcher Identifier: {}".format(hab.pre))
+            if hab.kever.prefixer.transferable:
+                raise kering.ConfigurationError("watchers can only have a non-transferable identifier")
+    except kering.ConfigurationError as e:
+        print(f"identifier prefix for {name} does not exist, incept must be run first", )
+        sys.exit(-1)
+
+    hab, doers = existing.openHabitat(name=name, transferable=False)
     app = falcon.App(cors_enable=True)
 
-    exchanger = exchanging.Exchanger(hab=hab, handlers=[])
-
     mbx = exchanging.Mailboxer(name=name)
-    storeExchanger = exchanging.StoreExchanger(hab=hab, mbx=mbx, exc=exchanger)
-
     rep = httping.Respondant(hab=hab, mbx=mbx)
-    httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep, exchanger=storeExchanger)
+
+    rotateHandler = watching.RotateIdentifierHandler(hab=hab, reps=rep.reps)
+    exchanger = exchanging.Exchanger(hab=hab, controller=controller, handlers=[rotateHandler])
+
+    httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep, exchanger=exchanger)
     mbxer = httping.MailboxServer(app=app, hab=hab, mbx=mbx)
 
     server = http.Server(port=httpPort, app=app)
@@ -71,8 +87,8 @@ def setupWatcher(name="watcher", tcpPort=5651, httpPort=5652):
     server = serving.Server(host="", port=tcpPort)
     serverDoer = serving.ServerDoer(server=server)
 
-    directant = directing.Directant(hab=hab, server=server, exc=storeExchanger)
+    directant = directing.Directant(hab=hab, server=server, exc=exchanger)
 
-    doers.extend([directant, serverDoer, mbxer, httpServerDoer, httpHandler, rep])
+    doers.extend([directant, serverDoer, mbxer, httpServerDoer, httpHandler, rep, exchanger])
 
     return doers

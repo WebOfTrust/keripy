@@ -24,7 +24,7 @@ from ..vdr.eventing import Tevery
 logger = help.ogler.getLogger()
 
 
-def setupWitness(name="witness", hab=None, temp=False, tcpPort=5631, httpPort=5632):
+def setupWitness(name="witness", hab=None, mbx=None, temp=False, tcpPort=5631, httpPort=5632):
     """
     """
     doers = []
@@ -40,16 +40,14 @@ def setupWitness(name="witness", hab=None, temp=False, tcpPort=5631, httpPort=56
         habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
         doers.extend([ksDoer, dbDoer, habDoer])
 
+    print("Witness", name, ":", hab.pre)
     verfer = verifying.Verifier(name=name, hab=hab)
     app = falcon.App(cors_enable=True)
 
-    exchanger = exchanging.Exchanger(hab=hab, handlers=[])
-
-    mbx = exchanging.Mailboxer(name=name)
-    storeExchanger = exchanging.StoreExchanger(hab=hab, mbx=mbx, exc=exchanger)
+    mbx = mbx if mbx is not None else exchanging.Mailboxer(name=name, temp=temp)
 
     rep = httping.Respondant(hab=hab, mbx=mbx)
-    httpHandler = HttpMessageHandler(hab=hab, app=app, rep=rep, verifier=verfer, exchanger=storeExchanger)
+    httpHandler = HttpMessageHandler(hab=hab, app=app, rep=rep, verifier=verfer, mbx=mbx)
     mbxer = httping.MailboxServer(app=app, hab=hab, mbx=mbx)
 
     server = http.Server(port=httpPort, app=app)
@@ -61,7 +59,7 @@ def setupWitness(name="witness", hab=None, temp=False, tcpPort=5631, httpPort=56
     server = serving.Server(host="", port=tcpPort)
     serverDoer = serving.ServerDoer(server=server)
 
-    directant = directing.Directant(hab=hab, server=server, verifier=verfer, exc=storeExchanger)
+    directant = directing.Directant(hab=hab, server=server, verifier=verfer)
 
     doers.extend([regDoer, directant, serverDoer, mbxer, httpServerDoer, httpHandler, rep])
 
@@ -313,7 +311,7 @@ class MailboxDirector(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, verifier=None, exc=None, rep=None, **kwa):
+    def __init__(self, hab, verifier=None, kvy=None, exc=None, rep=None, **kwa):
         """
         Initialize instance.
 
@@ -344,9 +342,9 @@ class MailboxDirector(doing.DoDoer):
                       doing.doify(self.escrowDo)])
 
         #  neeeds unique kevery with ims per remoter connnection
-        self.kevery = eventing.Kevery(db=self.hab.db,
-                                      lax=False,
-                                      local=False)
+        self.kvy = kvy if kvy is not None else eventing.Kevery(db=self.hab.db,
+                                                               lax=False,
+                                                               local=False)
 
         if self.verifier is not None:
             self.tevery = Tevery(tevers=self.verifier.tevers,
@@ -362,7 +360,7 @@ class MailboxDirector(doing.DoDoer):
 
         self.parser = parsing.Parser(ims=self.ims,
                                      framed=True,
-                                     kvy=self.kevery,
+                                     kvy=self.kvy,
                                      tvy=self.tevery,
                                      exc=self.exchanger)
 
@@ -437,9 +435,6 @@ class MailboxDirector(doing.DoDoer):
             add result of doify on this method to doers list
         """
         yield  # enter context
-        if self.parser.ims:
-            logger.info("Server %s: %s received:\n%s\n...\n", self.hab.name,
-                        self.hab.pre, self.parser.ims[:1024])
         done = yield from self.parser.parsator()  # process messages continuously
         return done  # should nover get here except forced close
 
@@ -464,7 +459,7 @@ class MailboxDirector(doing.DoDoer):
         """
         yield  # enter context
         while True:
-            for msg in self.hab.processCuesIter(self.kevery.cues):
+            for msg in self.hab.processCuesIter(self.kvy.cues):
                 # self.sendMessage(msg, label="chit or receipt or replay")
                 yield  # throttle just do one cue at a time
             yield
@@ -490,7 +485,7 @@ class MailboxDirector(doing.DoDoer):
         """
         yield  # enter context
         while True:
-            self.kevery.processEscrows()
+            self.kvy.processEscrows()
             if self.tevery is not None:
                 self.tevery.processEscrows()
 
@@ -619,7 +614,7 @@ class HttpMessageHandler(doing.DoDoer):
     This also handles `req`, `exn` and `tel` messages that respond with a KEL replay.
     """
 
-    def __init__(self, hab: habbing.Habitat, rep, verifier=None, exchanger=None, app=None, **kwa):
+    def __init__(self, hab: habbing.Habitat, rep, verifier=None, exchanger=None, mbx=None, app=None, **kwa):
         """
         Create the KEL HTTP server from the Habitat with an optional Falcon App to
         register the routes with.
@@ -633,26 +628,25 @@ class HttpMessageHandler(doing.DoDoer):
         self.rep = rep
         self.verifier = verifier
         self.exc = exchanger
+        self.mbx = mbx
 
         self.rxbs = bytearray()
 
         self.app = app if app is not None else falcon.App(cors_enable=True)
 
         self.app.add_route("/kel", self)
-        self.app.add_route("/tel", self)
         self.app.add_route("/req/logs", self, suffix="req")
-        self.app.add_route("/req/tels", self, suffix="req")
         self.app.add_route("/req/ksn", self, suffix="req")
-        self.app.add_sink(prefix="/exn", sink=self.on_post_exn)
 
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       lax=False,
                                       local=False)
 
-        doers = [doing.doify(self.msgDo), doing.doify(self.cueDo), doing.doify(self.exchangerDo),
-                 doing.doify(self.escrowDo)]
+        doers = [doing.doify(self.msgDo), doing.doify(self.cueDo), doing.doify(self.escrowDo)]
 
         if self.verifier is not None:
+            self.app.add_route("/tel", self)
+            self.app.add_route("/req/tels", self, suffix="req")
             self.tvy = Tevery(tevers=self.verifier.tevers,
                               reger=self.verifier.reger,
                               db=self.hab.db,
@@ -662,7 +656,11 @@ class HttpMessageHandler(doing.DoDoer):
             self.tvy = None
 
         if self.exc is not None:
+            self.app.add_sink(prefix="/exn", sink=self.on_post_exn)
             doers.extend([doing.doify(self.exchangerDo)])
+
+        if self.mbx is not None:
+            self.app.add_sink(prefix="/fwd", sink=self.on_post_fwd)
 
         self.parser = parsing.Parser(ims=self.rxbs,
                                      framed=True,
@@ -718,11 +716,35 @@ class HttpMessageHandler(doing.DoDoer):
 
         cr = httping.parseCesrHttpRequest(req=req, prefix="/exn")
 
-        serder = exchanging.exchange(route=cr.resource, date=cr.date, payload=cr.payload, recipient=cr.recipient)
+        serder = exchanging.exchange(route=cr.resource, date=cr.date, payload=cr.payload)
         msg = bytearray(serder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
         self.rxbs.extend(msg)
+
+        rep.status = falcon.HTTP_202  # This is the default status
+
+    def on_post_fwd(self, req, rep):
+        """
+        Handles POST for `fwd` messages.  Parses out destination from resource and stores in mailbox
+        Parameters:
+              req (Request) Falcon HTTP request
+              rep (Response) Falcon HTTP response
+
+        """
+        if req.method == "OPTIONS":
+            rep.status = falcon.HTTP_200
+            return
+
+        cr = httping.parseCesrHttpRequest(req=req, prefix="/fwd/")
+
+        # TODO: regenerate the fwd message and verify the SAID signature on it.
+        serder = eventing.Serder(ked=cr.payload, kind=eventing.Serials.json)
+
+        msg = bytearray(serder.raw)
+        msg.extend(cr.attachments.encode("utf-8"))
+
+        self.mbx.storeMsg(dest=cr.resource, msg=msg)
 
         rep.status = falcon.HTTP_202  # This is the default status
 
@@ -735,7 +757,7 @@ class HttpMessageHandler(doing.DoDoer):
         Exchanger.
 
         Parameters:
-              req (Request) Falcon HTTP request
+              cr (Request) Parsed CESR request
               rep (Response) Falcon HTTP response
               cr (CesrRequest) Result of converting HTTP Request to a CESR message
 

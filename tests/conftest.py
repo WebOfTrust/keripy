@@ -48,3 +48,19 @@ def mockGetWitnessByPrefix(monkeypatch):
         return witnesses[qb64]
 
     monkeypatch.setattr(obtaining, "getwitnessbyprefix", getwitnessbyprefix)
+
+
+@pytest.fixture()
+def mockGetWitnessByPrefixOneWitness(monkeypatch):
+    """
+    Replace getwitnessbyprefix universally with fixed cache for testing
+    """
+
+    def getwitnessbyprefix(qb64):
+        """
+        Use predetermined value for now (current time)
+        '2021-01-01T00:00:00.000000+00:00'
+        """
+        return obtaining.Location(ip4="127.0.0.1", tcp=5634, http=5644)
+
+    monkeypatch.setattr(obtaining, "getwitnessbyprefix", getwitnessbyprefix)

@@ -82,7 +82,7 @@ def test_exchanger():
         assert doist.tyme == limit
 
         resp = echo.cues.popleft()
-        respSer = coring.Serder(raw=resp.raw)
+        respSer = coring.Serder(raw=resp['rep'].raw)
         assert respSer.ked['t'] == coring.Ilks.exn
         assert respSer.ked['r'] == "/test/messageResp"
         assert respSer.ked['d'] == dict(req=pl)
@@ -114,7 +114,7 @@ class EchoDoer(doing.Doer):
                 assert verfers[0].qb64 == "Djy1swBRlUIR5m16EUkc-Aj_WFCzAEbs0YpOh5IWt7kM"
                 assert len(sigers) == 1
 
-                self.cues.append(exchanging.exchange(route="/test/messageResp", payload=dict(req=payload)))
+                self.cues.append(dict(rep=exchanging.exchange(route="/test/messageResp", payload=dict(req=payload))))
                 yield
             yield
 

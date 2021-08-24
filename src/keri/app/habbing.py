@@ -57,7 +57,7 @@ def openHab(name="test", salt=b'0123456789abcdef', temp=True, **kwa):
 
 
 @contextmanager
-def existingHab(name="test"):
+def existingHab(name="test", **kwa):
     """
     Context manager wrapper for existing Habitat instance.
     Will raise exception if Habitat and database has not already been created.
@@ -66,12 +66,13 @@ def existingHab(name="test"):
     Parameters:
         name(str): name of habitat to create
 
+
     """
 
     with basing.openDB(name=name, temp=False, reload=True) as db, \
             keeping.openKS(name=name, temp=False) as ks:
 
-        hab = Habitat(name=name, ks=ks, db=db, temp=False, create=False)
+        hab = Habitat(name=name, ks=ks, db=db, temp=False, create=False, **kwa)
         yield hab
 
 
@@ -235,9 +236,18 @@ class Habitat:
         existing = False
         if not self.temp:
             ex = self.db.habs.get(keys=self.name)
-            # found existing habitat, otherwise leave __init__ to incept a new one.
             if ex is not None:  # replace params with persisted values from db
-                prms = self.ks.prms.get(ex.prefix)
+
+                # have to check if we are a group identifier and if so, we need to load the
+                # keys from our local identifier that's in the group, not the group itself.
+                gid = self.db.gids.get(keys=ex.prefix)
+                if gid is not None:
+                    prefix = gid.lid
+                else:
+                    prefix = ex.prefix
+
+                # found existing habitat, otherwise leave __init__ to incept a new one.
+                prms = self.ks.prms.get(prefix)
                 algo = prms.algo
                 salt = prms.salt
                 tier = prms.tier
@@ -246,7 +256,7 @@ class Habitat:
                 existing = True
 
         if not existing and not self.create:
-            raise kering.ConfigurationError("Improper Habitat creating for create False")
+            raise kering.ConfigurationError("Improper Habitat creating for create")
 
         if salt is None:
             salt = coring.Salter(raw=b'0123456789abcdef').qb64
@@ -292,7 +302,7 @@ class Habitat:
 
             # may want db method that updates .habs. and .prefixes together
             self.db.habs.put(keys=self.name,
-                             val=basing.HabitatRecord(prefix=self.pre))
+                             val=basing.HabitatRecord(prefix=self.pre, watchers=[]))
             self.prefixes.add(self.pre)
 
             # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
@@ -320,6 +330,26 @@ class Habitat:
         # ridx for replay may be an issue when loading from existing
         self.ridx = self.ks.sits.get(self.pre).new.ridx
 
+
+    def recreate(self, serder, opre, verfers):
+
+        self.pre = serder.ked["i"]  # new pre
+        self.mgr.move(old=opre, new=self.pre)
+
+        habr = self.db.habs.get(self.name)
+        # may want db method that updates .habs. and .prefixes together
+        self.db.habs.pin(keys=self.name,
+                         val=basing.HabitatRecord(prefix=self.pre, watchers=habr.watchers))
+        self.prefixes.add(self.pre)
+
+        # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
+        # create inception event
+        sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
+        self.kvy.processEvent(serder=serder, sigers=sigers)
+        # self.psr = parsing.Parser(framed=True, kvy=self.kvy)
+        if self.pre not in self.kevers:
+            raise kering.ConfigurationError("Improper Habitat inception for "
+                                            "pre={}.".format(self.pre))
 
     @property
     def iserder(self):
@@ -541,7 +571,7 @@ class Habitat:
         # Sign and messagize the `exn` message with the current signing keys (should be a Habitat method, what name?)
         sigers = self.mgr.sign(ser=serder.raw, verfers=self.kever.verfers)
 
-        msg = bytearray(serder.raw)
+        msg = bytearray()
         msg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
         msg.extend(self.pre.encode("utf-8"))
 
@@ -630,6 +660,30 @@ class Habitat:
         else:
             return False
 
+
+    def verfers(self, pre=None):
+        """
+        Returns the Tholder and Verfers for the provided identifier prefix.
+        Default pre is own .pre
+
+        Parameters:
+            pre(str) is qb64 str of bytes of identifier prefix.
+                      default is own .pre
+
+        """
+        if not pre:
+            pre = self.pre
+
+        prefixer = coring.Prefixer(qb64=pre)
+        if prefixer.transferable:
+            sever = self.kevers[pre]
+            verfers = sever.verfers
+            tholder = sever.tholder
+        else:
+            verfers = [coring.Verfer(qb64=pre)]
+            tholder = coring.Tholder(sith="1")
+
+        return tholder, verfers
 
     def replay(self, pre=None, fn=0):
         """

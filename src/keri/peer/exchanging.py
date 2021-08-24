@@ -87,18 +87,18 @@ class Exchanger(doing.DoDoer):
             raise ValidationError("message received outside time window with delta {} message={}"
                                   "".format(delta, serder.pretty()))
 
-        sever = self.kevers[source.qb64]
+        tholder, verfers = self.hab.verfers(pre=source.qb64)
 
         if self.controller is not None and self.controller != source.qb64:
             raise AuthZError("Message {} is from invalid source {}"
                              "".format(payload, source.qb64))
 
         #  Verify provided sigers using verfers
-        sigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=sever.verfers)
-        if not sever.tholder.satisfy(indices):  # at least one but not enough
+        sigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=verfers)
+        if not tholder.satisfy(indices):  # at least one but not enough
             self.escrowPSEvent(serder=serder, sigers=sigers)
             raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
-                                        " for evt = {}.".format(sever.tholder.sith,
+                                        " for evt = {}.".format(tholder.sith,
                                                                 [siger.qb64 for siger in sigers],
                                                                 serder.ked))
 
@@ -106,7 +106,7 @@ class Exchanger(doing.DoDoer):
             payload=payload,
             pre=source,
             sigers=sigers,
-            verfers=sever.verfers,
+            verfers=verfers,
         )
 
         behavior.msgs.append(msg)
@@ -122,9 +122,8 @@ class Exchanger(doing.DoDoer):
         responses = []
         for _, behavior in self.routes.items():  # get responses from all behaviors
             while behavior.cues:
-                excSrdr = behavior.cues.popleft()
-                msg = self.hab.sanction(excSrdr)
-                responses.append(dict(dest=excSrdr.ked["i"], msg=msg))
+                cue = behavior.cues.popleft()
+                responses.append(cue)
 
         while responses:  # iteratively process each response in responses
             msg = responses.pop(0)
@@ -141,14 +140,13 @@ class Exchanger(doing.DoDoer):
         pass
 
 
-def exchange(route, payload, recipient=None, date=None, modifiers=None, version=coring.Version,
+def exchange(route, payload, date=None, modifiers=None, version=coring.Version,
              kind=coring.Serials.json):
     """
     Create an `exn` message with the specified route and payload
     Parameters:
         route (string) to destination route of the message
         payload (dict) body of message to deliver to route
-        recipient (str) qb64 identifier prefix of target of message
         date (str) Iso8601 formatted date string to use for this request
         modifiers (dict) equivalent of query string of uri, modifiers for the request that are not
                          part of the payload
@@ -162,15 +160,11 @@ def exchange(route, payload, recipient=None, date=None, modifiers=None, version=
 
     ked = dict(v=vs,
                t=ilk,
-               i=recipient,
                dt=dt,
                r=route,
                d=payload,
                q=modifiers
                )
-
-    if recipient is None:
-        del ked["i"]
 
     if modifiers is None:
         del ked["q"]
@@ -178,95 +172,9 @@ def exchange(route, payload, recipient=None, date=None, modifiers=None, version=
     return eventing.Serder(ked=ked)  # return serialized ked
 
 
-class StoreExchanger:
-    """
-    StoreExchanger receives exn messages and stores them indexed by prefix identifier of the target.
-
-    """
-
-    def __init__(self, hab, mbx=None, exc=None):
-        self.hab = hab
-        self.kevers = self.hab.kevers
-        self.db = mbx if mbx is not None else Mailboxer(name=hab.name)
-        self.exc = exc if exc is not None else Exchanger(hab=hab, handlers=[])
-
-
-    @property
-    def routes(self):
-        return self.exc.routes
-
-    def processEvent(self, serder, source, sigers):
-        """
-        Process one serder event with attached indexed signatures representing
-        a Peer to Peer exchange message.
-
-        Parameters:
-            serder (Serder) instance of event to process
-            source (Prefixer) identifier prefix of event sender
-            sigers (list) of Siger instances of attached controller indexed sigs
-
-        """
-
-        sever = self.kevers[source.qb64]
-
-        #  Verify provided sigers using verfers
-        sigers, indices = eventing.verifySigs(serder=serder, sigers=sigers, verfers=sever.verfers)
-        if not sever.tholder.satisfy(indices):  # at least one but not enough
-            self.escrowPSEvent(serder=serder, source=source, sigers=sigers)
-            raise MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
-                                        " for evt = {}.".format(sever.tholder.sith,
-                                                                [siger.qb64 for siger in sigers],
-                                                                serder.ked))
-        if "i" not in serder.ked:
-            raise MissingDestinationError("Failure saving evt = {} from = {} in mailbox, missing destination"
-                                          "".format(serder.ked, source.qb64))
-
-        if serder.pre == self.hab.pre:
-            self.exc.processEvent(serder=serder, source=source, sigers=sigers)
-        elif self.hab.pre in sever.wits:
-            dest = eventing.Prefixer(qb64=serder.pre)
-            msg = self._reconstruct(serder=serder, source=source, sigers=sigers)
-            self.db.storeMsg(dest=dest.qb64b, msg=msg)
-        else:
-            raise ExchangeError("Event recipient {} is neither this witness {} nor a prefix for whom this"
-                                "witness is a witness {}".format(serder.pre, self.hab.pre, sever.wits))
-
-    def processResponseIter(self):
-        yield from self.exc.processResponseIter()
-
-    def escrowPSEvent(self, serder, source, sigers):
-        """
-        Escrow event that does not have enough signatures.
-
-        Parameters:
-            serder is Serder instance of event
-            sigers is list of Siger instances of indexed controller sigs
-        """
-        pass
-
-
-    @staticmethod
-    def _reconstruct(serder, source, sigers):
-        msg = bytearray()  # message
-
-        msg.extend(serder.raw)
-
-        msg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
-        msg.extend(source.qb64b)
-
-        if sigers:
-            msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
-
-            for sig in sigers:
-                msg.extend(sig.qb64b)
-        return msg
-
-
-
 class Mailboxer(dbing.LMDBer):
     """
     Mailboxer stores exn messages in order and provider iterator access at an index.
-
 
     """
     TailDirPath = "keri/mbx"

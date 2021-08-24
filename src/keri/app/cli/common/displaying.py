@@ -53,7 +53,7 @@ def printIdentifier(hab, pre):
     dgkey = dbing.dgKey(ser.preb, ser.digb)
     wigs = hab.db.getWigs(dgkey)
 
-    print("Prefix:\t{}".format(hab.pre))
+    print("Prefix:\t{}".format(pre))
     print("Seq No:\t{}".format(kever.sn))
     print("\nWitnesses:")
     print("Count:\t\t{}".format(len(kever.wits)))

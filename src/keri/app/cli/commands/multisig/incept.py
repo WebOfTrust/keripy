@@ -11,19 +11,24 @@ import sys
 from dataclasses import dataclass
 from json import JSONDecodeError
 
-from hio import help
 from hio.base import doing
-from keri.app import habbing, keeping, directing, agenting, indirecting
+
+from keri import help
+from keri.app import habbing, keeping, directing, agenting, indirecting, forwarding
 from keri.app.cli.common import grouping, displaying
-from keri.core import coring, eventing
-from keri.db import basing
+from keri.core import coring, eventing, parsing
+from keri.db import basing, dbing
 from keri.kering import ConfigurationError
+
+# help.ogler.level = logging.INFO
+# help.ogler.reopen(name="hio", temp=True, clear=True)
 
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a group identifier prefix')
 parser.set_defaults(handler=lambda args: inceptMultisig(args))
-parser.add_argument('--name', '-n', help='Human readable environment reference', required=True)
+parser.add_argument('--name', '-n', help='Human readable environment reference for local identifier', required=True)
+parser.add_argument('--group', '-g', help="Human readable environment reference for group identifier", required=True)
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
 parser.add_argument('--proto', '-p', help='Protocol to use when propagating ICP to witnesses [tcp|http] (defaults '
                                           'http)', default="http")
@@ -57,6 +62,10 @@ def inceptMultisig(args):
         args: Parsed arguments from the command line
 
     """
+
+    # help.ogler.level = logging.INFO
+    # help.ogler.reopen(name=args.name, temp=True, clear=True)
+
     try:
         f = open(args.file)
         config = json.load(f)
@@ -71,9 +80,10 @@ def inceptMultisig(args):
         sys.exit(-1)
 
     name = args.name
+    group = args.group
 
     kwa = opts.__dict__
-    icpDoer = MultiSigInceptDoer(name=name, proto=args.proto, **kwa)
+    icpDoer = MultiSigInceptDoer(name=name, group=group, proto=args.proto, **kwa)
 
     doers = [icpDoer]
     directing.runController(doers=doers, expire=0.0)
@@ -87,7 +97,7 @@ class MultiSigInceptDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, **kwa):
+    def __init__(self, name, group, **kwa):
         """
         Creates the DoDoer needed to incept a multisig group identifier.  Requires the
         name of the environment whose identifier is a member of the group being created.
@@ -99,6 +109,7 @@ class MultiSigInceptDoer(doing.DoDoer):
 
         """
 
+        self.group = group
         ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
         self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
         db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
@@ -106,13 +117,25 @@ class MultiSigInceptDoer(doing.DoDoer):
 
         hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
         self.habDoer = habbing.HabitatDoer(habitat=hab)
+        self.kvy = eventing.Kevery(db=hab.db,
+                                   lax=False,
+                                   local=False)
 
+        mbd = indirecting.MailboxDirector(hab=hab)
+        self.postman = forwarding.Postman(hab=hab)
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
-        doers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, doing.doify(self.inceptDo, **kwa)]
+        doers = [self.ksDoer,
+                 self.dbDoer,
+                 self.habDoer,
+                 mbd, self.postman,
+                 self.witq,
+                 doing.doify(self.inceptDo, **kwa)]
+        self.toRemove: list = [self.ksDoer, self.dbDoer, self.habDoer, mbd, self.postman, self.witq]
+
+
         self.hab = hab
         super(MultiSigInceptDoer, self).__init__(doers=doers)
-
 
     def inceptDo(self, tymth, tock=0.0, **kwa):
         """
@@ -159,38 +182,59 @@ class MultiSigInceptDoer(doing.DoDoer):
                                                    digs=[diger.qb64 for diger in msdigers]).qb64,
                                  code=coring.MtrDex.Blake3_256)
 
-        sigers = []
-        sigers.extend([coring.Siger(qb64=sig) for sig in kwa["sigs"]])
-
-        mine = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
-        sigers.extend(mine)
+        sigers = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
 
         msg = eventing.messagize(mssrdr, sigers=sigers)
-        self.hab.prefixes.add(mssrdr.pre)  # make this prefix one of my own
-        self.hab.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
+        # self.hab.prefixes.add(mssrdr.pre)  # make this prefix one of my own
+        # self.hab.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
+        parsing.Parser().parseOne(ims=bytearray(msg), kvy=self.kvy)
 
-        toRemove = [self.ksDoer, self.dbDoer, self.habDoer, self.witq]
-        if kwa["sigs"]:
+        for aid in aids:
+            if aid == self.hab.pre:
+                continue
+            self.postman.send(recipient=aid, msg=bytearray(msg))
 
-            mbx = indirecting.MailboxDirector(hab=self.hab)
+
+        # First person to get all three sigs...
+        # Fires up a TCP WitnessReceipter and waits til done.
+        # All others just query until they have fully receipted.
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+
+        sigs = self.hab.db.getSigs(dgkey)
+        if len(sigs) == len(aids):  # We are the last to go, so we have to send to witnesses
+            sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+            msg = eventing.messagize(mssrdr, sigers=sigers)
+
             witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
-            self.extend([mbx, witRctDoer])
-            toRemove.extend([mbx, witRctDoer])
+            self.extend([witRctDoer])
+            self.toRemove.extend([witRctDoer])
 
             while not witRctDoer.done:
                 _ = yield self.tock
 
-            displaying.printIdentifier(self.hab, mssrdr.pre)
-
-        else:
-            print(mssrdr.pretty())
-            for siger in sigers:
-                print(siger.qb64)
+        else:  # We are one of the first, so we wait for the last to run and get the receipts
+            while mssrdr.pre not in self.hab.kevers:
+                self.witq.query(mssrdr.pre)
+                _ = (yield self.tock)
 
         #  Add this group identifier prefix to my list of group identifiers I participate in
-        bid = basing.GroupIdentifier(lid=self.hab.pre, aids=aids)
-        self.hab.db.gids.put(mssrdr.pre, bid)
+        bid = basing.GroupIdentifier(lid=self.hab.pre, gid=mssrdr.pre, aids=aids)
+        self.hab.db.gids.put(self.group, bid)
 
-        self.remove(toRemove)
+
+        # Establish a new Habitat for the group identifier but using the primary identifer's
+        # database.  This will allow us to query for messages or receipts sent to
+        # this identifier
+        # self.hab.db.habs.pin(keys=self.group,
+        #                      val=basing.HabitatRecord(prefix=mssrdr.pre, watchers=[]))
+        # ghab = habbing.Habitat(name=self.group, ks=self.hab.ks, db=self.hab.db, temp=False, create=False)
+        #
+        # gmbx = indirecting.MailboxDirector(hab=ghab)
+
+        print()
+        print("Group Identifier Inception Complete:")
+        displaying.printIdentifier(self.hab, mssrdr.pre)
+
+        self.remove(self.toRemove)
 
         return

@@ -76,6 +76,7 @@ class OfferHandler(doing.Doer):
             while self.msgs:
                 msg = self.msgs.popleft()
                 payload = msg["payload"]
+                recipient = msg["pre"]
 
                 issuer = payload["issuer"]
                 descriptors = payload["input_descriptors"]
@@ -93,9 +94,10 @@ class OfferHandler(doing.Doer):
                                 "".format(formats, self.formats))
                     continue
 
-                apply = credential_apply(issuer, schema, format)
+                apply = credential_apply(issuer, schema, fmts)
 
-                self.cues.append(exchanging.exchange(route="/credential/apply", payload=apply))
+                exn = exchanging.exchange(route="/credential/apply", payload=apply)
+                self.cues.append(dict(dest=recipient, rep=exn))
 
                 yield
 
@@ -326,8 +328,8 @@ class RequestHandler(doing.Doer):
 
                 if len(matches) > 0:
                     pe = presentation_exchange(matches)
-                    self.cues.append(exchanging.exchange(route="/presentation/proof", payload=pe,
-                                                         recipient=requestor.qb64))
+                    exn = exchanging.exchange(route="/presentation/proof", payload=pe)
+                    self.cues.append(dict(dest=requestor.qb64, rep=exn))
 
                 yield
 

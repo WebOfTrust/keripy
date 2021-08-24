@@ -296,7 +296,20 @@ class Komer(KomerBase):
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
             yield (self._tokeys(key), self.deserializer(val))
 
+    def getCnt(self):
+        """
+        Return iterator over the all the items in subdb
 
+        Returns:
+            iterator: of tuples of keys tuple and val dataclass instance for
+            each entry in db. Raises StopIteration when done
+
+        Example:
+            if key in database is "a.b" and val is serialization of dataclass
+               with attributes x and y then returns
+               (("a","b"), dataclass(x=1,y=2))
+        """
+        return self.db.cnt(db=self.sdb)
 
 
 class DupKomer(KomerBase):

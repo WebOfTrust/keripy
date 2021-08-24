@@ -7,6 +7,7 @@ tests.peer.httping module
 import falcon
 import pytest
 from falcon.testing import helpers
+
 from keri.app import habbing
 from keri.peer import httping
 from keri.vdr import issuing, verifying
@@ -74,8 +75,6 @@ def test_create_cesr_request():
         msg = verfer.query(issuer.regk,
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            res="tels")
-        print()
-        print(msg)
         client = MockClient()
 
         httping.createCESRRequest(msg, client, date="2021-02-13T19:16:50.750302+00:00")
@@ -85,6 +84,9 @@ def test_create_cesr_request():
         assert client.args["body"] == (
             b'{"v":"KERI10JSON00009b_","t":"req","r":"tels","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",'
             b'"ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT78Tt2r9M4"}}')
+        q = client.args["qargs"]
+        assert q == dict(i='Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4',
+                         ri='EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT78Tt2r9M4')
 
         headers = client.args["headers"]
         assert headers["Content-Type"] == "application/cesr+json"
@@ -113,5 +115,6 @@ def test_create_cesr_request():
             b'-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABAAHAlNsNulD335Dgya4-r5_E_48R4'
             b'-ugG6nLMd62xU2gvEWxTDBMTeob4fR3WwBptL23Ld1qg0rSOfpjDaJ_9mAw')
 
-        if __name__ == '__main__':
-            test_parse_cesr_request()
+
+if __name__ == '__main__':
+    test_parse_cesr_request()

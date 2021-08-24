@@ -89,6 +89,7 @@ class HabitatRecord:  # habs
     Habitat prefixes keyed by habitat name
     """
     prefix: str
+    watchers: list
 
 
 @dataclass
@@ -146,6 +147,7 @@ class GroupIdentifier:  # gids
     Database Key is the identifier prefix of the group identifier
     """
     lid: str  # local identifier that contributes to the group
+    gid: str  # group identifier prefix
     aids: list  # all identifiers participating in the group identity
 
 

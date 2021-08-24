@@ -556,6 +556,21 @@ class LMDBer:
             return (txn.delete(key))
 
 
+    def cnt(self, db):
+        """
+        Return count of values in db, or zero otherwise
+
+        Parameters:
+            db is opened named sub db with dupsort=True
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            count = 0
+            for _, _ in cursor:
+                count += 1
+            return count
+
+
     def getAllItemIter(self, db, key=b'', split=True, sep=b'.'):
         """
         Returns iterator of item duple (key, val), at each key over all

@@ -25,7 +25,7 @@ def extractDig(nexter, tholder):
     limen = tholder.limen
     ldig = blake3.blake3(limen.encode("utf-8")).digest()
     sint = int.from_bytes(ldig, 'big')
-    kint = sint ^ dint
+    kint = dint ^ sint
 
     diger = coring.Diger(raw=kint.to_bytes(coring.Matter._rawSize(coring.MtrDex.Blake3_256), 'big'))
     return diger

@@ -16,7 +16,7 @@ from hio.core.tcp import serving as tcpServing
 from hio.help import decking
 from keri import __version__, kering
 from keri import help
-from keri.app import directing, agenting, indirecting
+from keri.app import directing, agenting, indirecting, forwarding
 from keri.app.cli.common import existing
 from keri.core import scheming
 from keri.peer import httping, exchanging
@@ -203,8 +203,12 @@ class AdminProofHandler(doing.Doer):
 
                 print("STORING VC PROOF FOR MY CONTROLLER", self.controller, pl)
 
-                ser = exchanging.exchange(route="/cmd/presentation/proof", payload=pl, recipient=self.controller)
-                msg = self.hab.sanction(ser)
+                # TODO: Add SAID signature on exn, then sanction `fwd` envelope
+                ser = exchanging.exchange(route="/cmd/presentation/proof", payload=pl)
+                fwd = forwarding.forward(pre=self.controller, serder=ser)
+                msg = bytearray(fwd.raw)
+                msg.extend(self.hab.sanction(ser))
+
                 self.mbx.storeMsg(self.controller, msg)
 
                 yield

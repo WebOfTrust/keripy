@@ -1,3 +1,9 @@
+# -*- encoding: utf-8 -*-
+"""
+tests.app.obtaining module
+
+"""
+
 from keri.app import obtaining
 
 
