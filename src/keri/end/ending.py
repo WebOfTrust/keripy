@@ -46,15 +46,15 @@ FALSY = (False, 0, "?0", "no", "false", "False", "off")
 TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
 
 # Signature HTTP header support
-Signage = namedtuple("Signage", "markers indexed signer ordinal kind",
-                     defaults=(None, None, None, None))
+Signage = namedtuple("Signage", "markers indexed signer ordinal digest kind",
+                     defaults=(None, None, None, None, None))
 
 
 def signature(signages):
     """
     Creates  Signature HTTP header item from signats list
 
-    RFC8941 structured Field Values for HTTP
+    RFC8941 Structured Field Values for HTTP
 
     Returns:
         header (dict): {'Signature': 'value'} where value is RFC8941 compliant
@@ -84,9 +84,12 @@ def signature(signages):
                     multi-sig group identifier. Default is None. When None or
                     empty signer is not included in header value
                 ordinal (str): optional ordinal hex str of int that is an ordinal
-                               such as sequence number to further identifier the
+                               such as sequence number to further identify the
                                keys used for the signatures. Usually when indexed
-                               with signer
+                               with signer and digest
+                digest (str): optional CESR Base64 serialization of a digest to
+                              further identify the keys used for the signatures.
+                              Usually when indexed with signer and ordinal
                 kind (str): serialization kind of the markers and other primitives
 
 
@@ -97,6 +100,7 @@ def signature(signages):
         indexed = signage.indexed
         signer = signage.signer
         ordinal = signage.ordinal
+        digest = signage.digest
         kind = signage.kind
 
         if isinstance(markers, Mapping):
@@ -119,6 +123,10 @@ def signature(signages):
         if ordinal:
             tag = "ordinal"
             val = ordinal
+            items.append(f'{tag}="{val}"')
+        if digest:
+            tag = "digest"
+            val = digest
             items.append(f'{tag}="{val}"')
         if kind:
             tag = "kind"
@@ -182,9 +190,12 @@ def designature(value):
                     multi-sig group identifier. Default is None. When None or
                     empty signer is not included in header value
                 ordinal (str): optional ordinal hex str of int that is an ordinal
-                               such as sequence number to further identifier the
+                               such as sequence number to further identify the
                                keys used for the signatures. Usually when indexed
-                               with signer
+                               with signer and digest
+                digest (str): optional CESR Base64 serialization of a digest to
+                              further identify the keys used for the signatures.
+                              Usually when indexed with signer and ordinal
                 kind (str): serialization kind of the markers and other primitives
 
        signatures (list): Siger or Cigar instances
@@ -214,6 +225,12 @@ def designature(value):
         else:
             ordinal = None
 
+        if "digest" in items:
+            digest = items["digest"]
+            del items["digest"]
+        else:
+            digest = None
+
         if "kind" in items:
             kind = items["kind"]
             del items["kind"]
@@ -228,7 +245,7 @@ def designature(value):
                     items[key] = coring.Cigar(qb64=val)
 
         signages.append(Signage(markers=items, indexed=indexed, signer=signer,
-                                ordinal=ordinal, kind=kind))
+                                ordinal=ordinal, digest=digest, kind=kind))
 
     return signages
 
