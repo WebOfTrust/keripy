@@ -52,7 +52,7 @@ Signage = namedtuple("Signage", "markers indexed signer ordinal digest kind",
 
 def signature(signages):
     """
-    Creates  Signature HTTP header item from signats list
+    Creates  Signature HTTP header item from signages list
 
     RFC8941 Structured Field Values for HTTP
 
