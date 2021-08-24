@@ -79,6 +79,4 @@ class IssueDoer(doing.Doer):
         with open(self.vcfile, "w") as f:
             f.write(json.dumps(cred, indent=4))
 
-        print(f'wrote {self.vcfile}')
-
         return super().do(tymth, tock, **opts)

@@ -148,6 +148,7 @@ class GroupIdentifier:  # gids
     """
     lid: str  # local identifier that contributes to the group
     gid: str  # group identifier prefix
+    cst: str  # group signing threshold of the next key commitment
     aids: list  # all identifiers participating in the group identity
 
 

@@ -6,15 +6,16 @@ keri.kli.commands.multisig module
 
 import argparse
 
+import math
 from hio import help
 from hio.base import doing
 from hio.help import decking
+
 from keri import kering
 from keri.app import habbing, keeping, directing, agenting, indirecting, forwarding
 from keri.app.cli.common import grouping, rotating, displaying
-from keri.core import coring, eventing
-from keri.db import basing
-from keri.peer import exchanging, httping
+from keri.core import coring, eventing, parsing
+from keri.db import basing, dbing
 
 logger = help.ogler.getLogger()
 
@@ -92,18 +93,22 @@ class MultiSigRotateDoer(doing.DoDoer):
 
         hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
         self.hab = hab
+        self.kvy = eventing.Kevery(db=hab.db,
+                                   lax=False,
+                                   local=False)
+
         self.habDoer = habbing.HabitatDoer(habitat=self.hab)
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
         mbd = indirecting.MailboxDirector(hab=hab)
         self.postman = forwarding.Postman(hab=hab)
 
-        self.runningDoers = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, mbd]
+        self.runningDoers: list = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, self.postman, mbd]
 
         doers = self.runningDoers + [doing.doify(self.rotateDo)]
         super(MultiSigRotateDoer, self).__init__(doers=doers)
 
-    def rotateDo(self, tymth, tock=0.0, **kwa):
+    def rotateDo(self, tymth, tock=0.0):
         """
         Main doified method that processes the rotation event for either initiating a rotation
         or participating in an existing rotation proposed by another member of the group
@@ -119,13 +124,14 @@ class MultiSigRotateDoer(doing.DoDoer):
             print("invalid group identifier {}\n".format(self.groupName))
             return
 
+        if self.sith is None:
+            self.sith = "{:x}".format(max(0, math.ceil(len(group.aids) / 2)))
 
         if self.wits:
             if self.adds or self.cuts:
                 raise kering.ConfigurationError("you can only specify witnesses or cuts and add")
             ewits = self.hab.kever.lastEst.wits
 
-            # wits= [a,b,c]  wits=[b, z]
             self.cuts = set(self.wits) & set(ewits)
             self.adds = set(self.wits) - set(ewits)
 
@@ -135,6 +141,8 @@ class MultiSigRotateDoer(doing.DoDoer):
             _ = (yield self.tock)
 
         gkev = self.hab.kevers[group.gid]
+        sno = gkev.sn + 1
+
         if self.hab.kever.sn == gkev.sn:  # We are equal to the current group identifier, need to rotate
             rot = self.hab.rotate()
             witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.HttpWitnesser, msg=rot)
@@ -168,8 +176,9 @@ class MultiSigRotateDoer(doing.DoDoer):
         wits = gkev.wits
         mssrdr = eventing.rotate(pre=gkev.prefixer.qb64,
                                  dig=gkev.serder.dig,
+                                 sn=sno,
                                  keys=[mskey.qb64 for mskey in mskeys],
-                                 sith=self.sith,
+                                 sith=group.cst,  # the previously committed to signing threshold
                                  toad=self.toad,
                                  wits=wits,
                                  cuts=self.cuts,
@@ -180,19 +189,41 @@ class MultiSigRotateDoer(doing.DoDoer):
         # the next digest previous calculated
         sigers = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
         msg = eventing.messagize(mssrdr, sigers=sigers)
-        self.hab.prefixes.add(mssrdr.pre)  # make this prefix one of my own
-        self.hab.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
+        parsing.Parser().parseOne(ims=bytearray(msg), kvy=self.kvy)
 
-        witSndDoer = agenting.WitnessPublisher(hab=self.hab, msg=msg, klas=agenting.HttpWitnesser)
-        self.extend([witSndDoer])
-        self.runningDoers.extend([witSndDoer])
+        for aid in group.aids:
+            if aid == self.hab.pre:
+                continue
+            self.postman.send(recipient=aid, msg=bytearray(msg))
+            yield self.tock
 
-        while not witSndDoer.done:
-            _ = yield self.tock
 
-        while self.hab.kevers[group.gid].sn != mssrdr.sn:
-            self.witq.query(group.gid)
+        # Wait until we receive the multisig rotation event from all parties
+        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
+        sigs = self.hab.db.getSigs(dgkey)
+        while len(sigs) != len(group.aids):
+            sigs = self.hab.db.getSigs(dgkey)
             _ = (yield self.tock)
+
+
+        if idx == 0:  # We are the first in the list, elected to send to witnesses
+            sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
+            msg = eventing.messagize(mssrdr, sigers=sigers)
+
+            witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
+            self.extend([witRctDoer])
+            self.runningDoers.extend([witRctDoer])
+
+            while not witRctDoer.done:
+                _ = yield self.tock
+
+        else:  # We are one of the first, so we wait for the last to run and get the receipts
+            while self.hab.kevers[mssrdr.pre].sn < sno:
+                self.witq.query(mssrdr.pre)
+                _ = (yield self.tock)
+
+        group.cst = self.sith
+        self.hab.db.gids.pin(self.groupName, group)
 
         print()
         print("Group Identifier Rotation Complete:")

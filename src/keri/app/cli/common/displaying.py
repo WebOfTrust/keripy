@@ -17,11 +17,11 @@ def printGroups(hab):
 
     """
     groups = hab.db.gids.getItemIter()
-    for (aid,), group in groups:
-        printGroup(hab, aid, group)
+    for (_,), group in groups:
+        printGroup(hab, group)
 
 
-def printGroup(hab, aid, group):
+def printGroup(hab, group):
     """
     Print identifier and participant information for a specific group
 
@@ -31,7 +31,7 @@ def printGroup(hab, aid, group):
         group (GroupIdentifier): the local identifier and list of participants
 
     """
-    printIdentifier(hab, aid)
+    printIdentifier(hab, group.gid)
 
     aids = group.aids
     parts = "Participants: \n" + ("\t{}\n" * len(aids))

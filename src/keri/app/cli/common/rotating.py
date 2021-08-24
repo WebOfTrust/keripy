@@ -1,7 +1,8 @@
 
 
 def addRotationArgs(parser):
-    parser.add_argument('--sith', '-s', help='', default=None, type=int, required=False)
+    parser.add_argument('--sith', '-s', help='signing threshold for the next rotation event', default=None, type=int,
+                        required=False)
     parser.add_argument('--toad', '-t', help='', default=None, type=int, required=False)
     parser.add_argument('--witnesses', '-w', help='New set of witnesses, replaces all existing witnesses.  Can appear '
                                                   'multiple times', metavar="<prefix>", default=[],
