@@ -174,34 +174,35 @@ class MultiSigInceptDoer(doing.DoDoer):
 
         wits = kwa["witnesses"] if kwa["witnesses"] is not None else self.hab.kever.wits
 
+        nsith = kwa["nsith"]
         mssrdr = eventing.incept(keys=[mskey.qb64 for mskey in mskeys],
                                  sith=kwa["isith"],
                                  toad=kwa["toad"],
                                  wits=wits,
-                                 nxt=coring.Nexter(sith=kwa["nsith"],
+                                 nxt=coring.Nexter(sith=nsith,
                                                    digs=[diger.qb64 for diger in msdigers]).qb64,
                                  code=coring.MtrDex.Blake3_256)
 
         sigers = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
 
         msg = eventing.messagize(mssrdr, sigers=sigers)
-        # self.hab.prefixes.add(mssrdr.pre)  # make this prefix one of my own
-        # self.hab.psr.parseOne(ims=bytearray(msg))  # make copy as kvr deletes
         parsing.Parser().parseOne(ims=bytearray(msg), kvy=self.kvy)
 
         for aid in aids:
             if aid == self.hab.pre:
                 continue
             self.postman.send(recipient=aid, msg=bytearray(msg))
+            _ = yield self.tock
 
-
-        # First person to get all three sigs...
-        # Fires up a TCP WitnessReceipter and waits til done.
-        # All others just query until they have fully receipted.
+        # Wait until we receive the multisig rotation event from all parties
         dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
-
         sigs = self.hab.db.getSigs(dgkey)
-        if len(sigs) == len(aids):  # We are the last to go, so we have to send to witnesses
+        while len(sigs) != len(aids):
+            sigs = self.hab.db.getSigs(dgkey)
+            _ = (yield self.tock)
+
+
+        if idx == 0:  # We are the first in the list, elected to send to witnesses
             sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
             msg = eventing.messagize(mssrdr, sigers=sigers)
 
@@ -218,18 +219,8 @@ class MultiSigInceptDoer(doing.DoDoer):
                 _ = (yield self.tock)
 
         #  Add this group identifier prefix to my list of group identifiers I participate in
-        bid = basing.GroupIdentifier(lid=self.hab.pre, gid=mssrdr.pre, aids=aids)
-        self.hab.db.gids.put(self.group, bid)
-
-
-        # Establish a new Habitat for the group identifier but using the primary identifer's
-        # database.  This will allow us to query for messages or receipts sent to
-        # this identifier
-        # self.hab.db.habs.pin(keys=self.group,
-        #                      val=basing.HabitatRecord(prefix=mssrdr.pre, watchers=[]))
-        # ghab = habbing.Habitat(name=self.group, ks=self.hab.ks, db=self.hab.db, temp=False, create=False)
-        #
-        # gmbx = indirecting.MailboxDirector(hab=ghab)
+        bid = basing.GroupIdentifier(lid=self.hab.pre, gid=mssrdr.pre, cst=nsith, aids=aids)
+        self.hab.db.gids.pin(self.group, bid)
 
         print()
         print("Group Identifier Inception Complete:")
