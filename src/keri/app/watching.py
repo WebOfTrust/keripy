@@ -4,121 +4,139 @@ KERI
 keri.app.agenting module
 
 """
+import json
 
+import falcon
 from hio.base import doing
 from hio.help import decking
+
 from keri.app import keeping, forwarding
 from keri.core import coring, eventing
-from keri.peer import exchanging
-
 from .. import help
+from ..end import ending
 
 logger = help.ogler.getLogger()
 
 
-class RotateIdentifierHandler(doing.DoDoer):
+class KiwiServer(doing.DoDoer):
     """
-        Processor for a performing a identifier rotate in of a Watcher
-        {
-        }
+    Routes for handling UI requests for Watcher Control
+
     """
 
-    resource = "/cmd/watcher/rotate"
-
-    def __init__(self, hab, reps=None, cues=None, **kwa):
+    def __init__(self, hab, controller, cues=None, app=None, **kwa):
         self.hab = hab
-        self.msgs = decking.Deck()
-        self.reps = reps if reps is not None else decking.Deck()
+        self.controller = controller
+        self.app = app if app is not None else falcon.App(cors_enable=True)
+        app.add_middleware(SignatureValidationComponent(hab=self.hab, pre=self.controller))
         self.cues = cues if cues is not None else decking.Deck()
 
-        doers = [doing.doify(self.msgDo)]
+        self.app.add_route("/rotate", self, suffix="rotate")
 
-        super(RotateIdentifierHandler, self).__init__(doers=doers, **kwa)
+        doers = []
 
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Rotate identifier.
+        super(KiwiServer, self).__init__(doers=doers, **kwa)
 
-        Messages:
-            payload is dict representing the body of a /presentation/request message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/request message
-            verfers is list of Verfers of the keys used to sign the message
+    def on_post_rotate(self, req, rep):
+        pre = req.context.pre
+        print(pre)
+        prms = self.hab.ks.prms.get(self.hab.pre)
 
-        Returns doifiable Doist compatible generator method that dumps the Watcher's current identifier and
-        creates a new one.  (doer dog)
+        aeid = self.hab.mgr.aeid
+        cur = self.hab.kever
 
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
+        algo = prms.algo
+        salt = prms.salt
+        tier = prms.tier
+        pidx = prms.pidx
 
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                pre = msg["pre"]
+        ncount = 0  # next count
+        code = coring.MtrDex.Ed25519N
 
-                prms = self.hab.ks.prms.get(self.hab.pre)
+        mgr = keeping.Manager(ks=self.hab.ks, aeid=aeid, pidx=pidx,
+                              algo=algo, salt=salt, tier=tier)
 
-                aeid = self.hab.mgr.aeid
-                cur = self.hab.kever
-
-                algo = prms.algo
-                salt = prms.salt
-                tier = prms.tier
-                pidx = prms.pidx
-
-                ncount = 0  # next count
-                code = coring.MtrDex.Ed25519N
-
-                mgr = keeping.Manager(ks=self.hab.ks, aeid=aeid, pidx=pidx,
-                                      algo=algo, salt=salt, tier=tier)
-
-                verfers, digers, cst, nst = mgr.incept(icount=1,
-                                                       ncount=ncount,
-                                                       isith=cur.tholder.sith,
-                                                       algo=keeping.Algos.randy,
-                                                       transferable=False,
-                                                       temp=False)
+        verfers, digers, cst, nst = mgr.incept(icount=1,
+                                               ncount=ncount,
+                                               isith=cur.tholder.sith,
+                                               algo=keeping.Algos.randy,
+                                               transferable=False,
+                                               temp=False)
 
 
-                opre = verfers[0].qb64  # old pre default move below to new pre from incept
-                if digers:
-                    nxt = coring.Nexter(sith=nst,
-                                        digs=[diger.qb64 for diger in digers]).qb64
-                else:
-                    nxt = ""
+        opre = verfers[0].qb64  # old pre default move below to new pre from incept
+        if digers:
+            nxt = coring.Nexter(sith=nst,
+                                digs=[diger.qb64 for diger in digers]).qb64
+        else:
+            nxt = ""
 
-                serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                                         sith=cst,
-                                         nxt=nxt,
-                                         toad=cur.toad,
-                                         wits=cur.wits,
-                                         code=code)
+        serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                                 sith=cst,
+                                 nxt=nxt,
+                                 toad=cur.toad,
+                                 wits=cur.wits,
+                                 code=code)
 
-                msg = bytearray(serder.raw)
-                sigers = self.hab.mgr.sign(ser=serder.raw, verfers=verfers)
-                msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                          count=len(sigers)).qb64b)  # attach cnt
-                for sig in sigers:
-                    msg.extend(sig.qb64b)  # attach sig
+        icpMsg = bytearray(serder.raw)
+        sigers = mgr.sign(ser=serder.raw, verfers=verfers)
+        icpMsg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                  count=len(sigers)).qb64b)  # attach cnt
+        for sig in sigers:
+            icpMsg.extend(sig.qb64b)  # attach sig
 
 
-                pl = dict(icp=msg.decode("utf-8"))
-                exn = exchanging.exchange("/cmd/watcher/rotate", payload=pl)
-                fwd = forwarding.forward(pre=pre.qb64, serder=exn)
+        sigers = self.hab.mgr.sign(ser=bytes(icpMsg),
+                                   verfers=self.hab.kever.verfers,
+                                   indexed=False)
 
-                # TODO: Add SAID signature on exn, then sanction `fwd` envelope
-                act = self.hab.sanction(exn)
-                msg = bytearray(fwd.raw)
-                msg.extend(act)
+        signage = ending.Signage(markers=sigers, indexed=False)
+        sheaders = ending.signature([signage])
 
-                self.reps.append(dict(dest=pre.qb64, msg=msg))
-                self.hab.recreate(serder, opre, verfers)
+        self.hab.recreate(serder, opre, verfers)
 
-                yield
+        for key, val in sheaders.items():
+            rep.append_header(key, val)
 
-            yield
+        rep.content_type = "application/json+CESR"
+        rep.content_length = len(icpMsg)
+        rep.data = icpMsg
+        rep.status = falcon.HTTP_200
 
+
+class SignatureValidationComponent(object):
+
+    def __init__(self, hab, pre):
+        self.hab = hab
+        self.pre = pre
+
+    def process_request(self, req, resp):
+        sig = req.headers.get("SIGNATURE")
+
+        ser = req.bounded_stream.read()
+        if not self.validate(sig=sig, ser=ser):
+            resp.complete = True
+            resp.status = falcon.HTTP_401
+            return
+        data = json.loads(ser.decode("utf-8"))
+        req.context.pre = data["pre"]
+
+    def validate(self, sig, ser):
+        signages = ending.designature(sig)
+        markers = signages[0].markers
+
+        if self.pre not in self.hab.kevers:
+            return False
+
+        verfers = self.hab.kevers[self.pre].verfers
+        for idx, verfer in enumerate(verfers):
+            key = str(idx)
+            if key not in markers:
+                return False
+            siger = markers[key]
+            siger.verfer = verfer
+
+            if not verfer.verify(siger.raw, ser):
+                return False
+
+        return True

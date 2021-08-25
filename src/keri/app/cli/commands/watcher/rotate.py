@@ -4,15 +4,17 @@ keri.kli.commands.watcher module
 
 """
 import argparse
+import json
 
 from hio.base import doing
+from hio.core.http import clienting
 from hio.help import decking
 
 from keri import help, kering
-from keri.app import directing, agenting, indirecting, forwarding
+from keri.app import directing, obtaining
 from keri.app.cli.common import existing
 from keri.core import eventing, parsing, coring
-from keri.peer import exchanging
+from keri.end import ending
 
 parser = argparse.ArgumentParser(description='Rotate watcher prefix')
 parser.set_defaults(handler=lambda args: rotateWatcher(args))
@@ -39,13 +41,8 @@ class WatcherRotateDoer(doing.DoDoer):
         self.watcher = watcher
         self.reps = decking.Deck()
 
-        rotateHandler = RotateResponseHandler(hab=hab, reps=self.reps, watcher=self.watcher)
-        exchanger = exchanging.Exchanger(hab=hab, handlers=[rotateHandler])
-
-        mbx = indirecting.MailboxDirector(hab=hab, exc=exchanger)
-
-        self.toRemove = doers + [exchanger, mbx]
-        doers.extend([exchanger, mbx, doing.doify(self.rotateDo)])
+        self.toRemove = doers
+        doers.extend([doing.doify(self.rotateDo)])
         super(WatcherRotateDoer, self).__init__(doers=doers, **kwa)
 
 
@@ -66,21 +63,35 @@ class WatcherRotateDoer(doing.DoDoer):
                                          "".format(self.watcher, habr.watchers))
 
 
-        payload = dict()
+        payload = dict(pre=self.hab.pre)
+        raw = json.dumps(payload)
+        sigers = self.hab.mgr.sign(ser=raw.encode("utf-8"),
+                                   verfers=self.hab.kever.verfers,
+                                   indexed=True)
 
-        srdr = exchanging.exchange(route="/cmd/watcher/rotate", payload=payload)
-        fwd = forwarding.forward(serder=srdr, pre=self.watcher)
-        msg = bytearray(fwd.raw)
-        msg.extend(self.hab.sanction(srdr))
+        signage = ending.Signage(markers=sigers, indexed=True)
+        headers = ending.signature([signage])
 
-        witer = agenting.HttpWitnesser(hab=self.hab, wit=self.watcher)
-        witer.msgs.append(bytearray(msg))  # make a copy so every munges their own
-        self.extend([witer])
-        self.toRemove.extend([witer])
+        loc = obtaining.getwitnessbyprefix(self.watcher)
+        client = clienting.Client(hostname=loc.ip4, port=loc.http)
+        clientDoer = clienting.ClientDoer(client=client)
+        self.extend([clientDoer])
+        self.toRemove.extend([clientDoer])
 
-        while not self.reps:
+        client.request(method="POST", path="/rotate", headers=headers, body=raw)
+        while not client.responses:
             yield self.tock
 
+        resp = client.respond()
+        if resp.status != 200:
+            print("Invalid status from watcher:", type(resp.status))
+            return
+
+        if not self.authenticate(resp):
+            print("Invalid response from watcher")
+            return
+
+        self.processWatcherResponse(bytes(resp.body))
 
         habr = self.hab.db.habs.get(self.hab.name)
         print("New Watcher Set:")
@@ -89,77 +100,32 @@ class WatcherRotateDoer(doing.DoDoer):
 
         self.remove(self.toRemove)
 
+    def processWatcherResponse(self, icp):
+        ctrlKvy = eventing.Kevery(db=self.hab.db)
+        parsing.Parser().parse(ims=bytearray(icp), kvy=ctrlKvy)
 
+        srdr = coring.Serder(raw=bytearray(icp))
+        wat = srdr.pre
 
-class RotateResponseHandler(doing.DoDoer):
-    """
-        Processor for a performing a identifier rotate in of a Watcher
-        {
-        }
-    """
+        habr = self.hab.db.habs.get(self.hab.name)
+        ewats = set(habr.watchers)
 
-    resource = "/cmd/watcher/rotate"
+        ewats.remove(self.watcher)
+        ewats.add(wat)
 
-    def __init__(self, hab, watcher, reps=None, cues=None, **kwa):
-        self.hab = hab
-        self.watcher = watcher
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-        self.reps = reps if reps is not None else decking.Deck()
+        habr.watchers = list(ewats)
 
-        doers = [doing.doify(self.msgDo)]
+        self.hab.db.habs.pin(self.hab.name, habr)
 
-        super(RotateResponseHandler, self).__init__(doers=doers, **kwa)
+    def authenticate(self, resp):
+        if "Signature" not in resp.headers:
+            return False
 
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Rotate identifier response.  Swap out the old watcher identifier for the new one.
+        signages = ending.designature(resp.headers["Signature"])
 
-        Messages:
-            payload is dict representing the body of a /presentation/request message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/request message
-            verfers is list of Verfers of the keys used to sign the message
+        cigar = signages[0].markers[self.watcher]
+        verfer = coring.Verfer(qb64=self.watcher)
+        if not verfer.verify(cigar.raw, bytes(resp.body)):
+            return False
 
-        Returns doifiable Doist compatible generator method that dumps the Watcher's current identifier and
-        creates a new one.  (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-                pre = msg["pre"]
-
-                if pre.qb64 != self.watcher:
-                    raise kering.ValidationError("watcher rotation response from {} is from incorrect watcher {}"
-                                                 "".format(pre.qb64, self.watcher))
-
-                icp = payload["icp"]
-
-                ctrlKvy = eventing.Kevery(db=self.hab.db)
-                parsing.Parser().parse(ims=bytearray(icp.encode("utf-8")), kvy=ctrlKvy)
-
-                srdr = coring.Serder(raw=bytearray(icp.encode("utf-8")))
-                wat = srdr.pre
-
-                habr = self.hab.db.habs.get(self.hab.name)
-                ewats = set(habr.watchers)
-
-                ewats.remove(self.watcher)
-                ewats.add(wat)
-
-                habr.watchers = list(ewats)
-
-                self.hab.db.habs.pin(self.hab.name, habr)
-
-                self.reps.append("ok")
-                yield
-            yield
+        return True

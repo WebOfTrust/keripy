@@ -126,7 +126,7 @@ class WitnessInquisitor(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, msgs=None, klas=None, **kwa):
+    def __init__(self, hab, msgs=None, wits=None, klas=None, **kwa):
         """
         For all msgs, select a random witness from Habitat's current set of witnesses
         send the msg and process all responses (KEL replays, RCTs, etc)
@@ -137,6 +137,7 @@ class WitnessInquisitor(doing.DoDoer):
 
         """
         self.hab = hab
+        self.wits = wits
         self.klas = klas if klas is not None else HttpWitnesser
         self.msgs = msgs if msgs is not None else decking.Deck()
 
@@ -153,7 +154,7 @@ class WitnessInquisitor(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        wits = self.hab.kever.wits
+        wits = self.wits if self.wits is not None else self.hab.kever.wits
         if len(wits) == 0:
             raise kering.ConfigurationError("Must be used with an identifier that has witnesses")
 
@@ -176,7 +177,7 @@ class WitnessInquisitor(doing.DoDoer):
             yield
 
     def query(self, pre, res="logs"):
-        msg = self.hab.query(pre, res=res)  # Query for remote pre Event
+        msg = self.hab.query(pre, res=res, query=dict())  # Query for remote pre Event
         self.msgs.append(msg)
 
 

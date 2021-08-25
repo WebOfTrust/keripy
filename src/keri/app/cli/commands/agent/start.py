@@ -16,7 +16,7 @@ from hio.core.tcp import serving as tcpServing
 from hio.help import decking
 from keri import __version__, kering
 from keri import help
-from keri.app import directing, agenting, indirecting, forwarding
+from keri.app import directing, agenting, indirecting, forwarding, storing
 from keri.app.cli.common import existing
 from keri.core import scheming
 from keri.peer import httping, exchanging
@@ -100,7 +100,7 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
     proofHandler = handling.ProofHandler()
     exchanger = exchanging.Exchanger(hab=hab, handlers=[issueHandler, requestHandler, proofHandler])
 
-    mbx = indirecting.MailboxDirector(hab=hab, exc=exchanger, verifier=verifier)
+    mbx = indirecting.MailboxDirector(hab=hab, exc=exchanger, verifier=verifier, topics=["/receipt", "/replay"])
 
     doers.extend([exchanger, directant, tcpServerDoer, mbx])
     doers.extend(adminInterface(controller, hab, proofHandler.proofs, issuer, verifier, adminHttpPort, adminTcpPort))
@@ -133,11 +133,11 @@ def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
 
-    mbx = exchanging.Mailboxer(name=hab.name)
-    rep = httping.Respondant(hab=hab, mbx=mbx)
+    mbx = storing.Mailboxer(name=hab.name)
+    rep = storing.Respondant(hab=hab, mbx=mbx)
 
     httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep, exchanger=exchanger)
-    mbxer = httping.MailboxServer(app=app, hab=hab, mbx=mbx)
+    mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
     wiq = agenting.WitnessInquisitor(hab=hab)
 
     proofHandler = AdminProofHandler(hab=hab, controller=controller, mbx=mbx, verifier=verifier, wiq=wiq, proofs=proofs)

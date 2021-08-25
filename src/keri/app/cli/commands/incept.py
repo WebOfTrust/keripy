@@ -80,7 +80,7 @@ class InceptDoer(doing.DoDoer):
             self.witDoer = agenting.WitnessReceiptor(hab=hab, klas=agenting.TCPWitnesser)
             doers.extend([self.witDoer])
         else:  # "http"
-            self.mbx = indirecting.MailboxDirector(hab=hab)
+            self.mbx = indirecting.MailboxDirector(hab=hab, topics=['/receipt'])
             self.witDoer = agenting.WitnessReceiptor(hab=hab, klas=agenting.HttpWitnesser)
             doers.extend([self.mbx, self.witDoer])
 

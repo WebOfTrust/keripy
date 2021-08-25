@@ -13,6 +13,7 @@ from json import JSONDecodeError
 
 from hio.base import doing
 
+from keri.app.cli.commands import multisig
 from keri import help
 from keri.app import habbing, keeping, directing, agenting, indirecting, forwarding
 from keri.app.cli.common import grouping, displaying
@@ -121,7 +122,7 @@ class MultiSigInceptDoer(doing.DoDoer):
                                    lax=False,
                                    local=False)
 
-        mbd = indirecting.MailboxDirector(hab=hab)
+        mbd = indirecting.MailboxDirector(hab=hab, topics=['/receipt', '/multisig'])
         self.postman = forwarding.Postman(hab=hab)
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
@@ -191,7 +192,7 @@ class MultiSigInceptDoer(doing.DoDoer):
         for aid in aids:
             if aid == self.hab.pre:
                 continue
-            self.postman.send(recipient=aid, msg=bytearray(msg))
+            self.postman.send(recipient=aid, topic='multisig', msg=bytearray(msg))
             _ = yield self.tock
 
         # Wait until we receive the multisig rotation event from all parties

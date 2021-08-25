@@ -13,6 +13,7 @@ from hio.help import decking
 
 from keri import kering
 from keri.app import habbing, keeping, directing, agenting, indirecting, forwarding
+from keri.app.cli.commands import multisig
 from keri.app.cli.common import grouping, rotating, displaying
 from keri.core import coring, eventing, parsing
 from keri.db import basing, dbing
@@ -100,7 +101,7 @@ class MultiSigRotateDoer(doing.DoDoer):
         self.habDoer = habbing.HabitatDoer(habitat=self.hab)
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
-        mbd = indirecting.MailboxDirector(hab=hab)
+        mbd = indirecting.MailboxDirector(hab=hab, topics=['/receipt', '/multisig'])
         self.postman = forwarding.Postman(hab=hab)
 
         self.runningDoers: list = [self.ksDoer, self.dbDoer, self.habDoer, self.witq, self.postman, mbd]
@@ -159,7 +160,8 @@ class MultiSigRotateDoer(doing.DoDoer):
         for aid in group.aids:
             kever = self.hab.kevers[aid]
             if aid != self.hab.pre:
-                print("waiting for {} to join rotation...".format(aid))
+                if kever.sn < self.hab.kever.sn:
+                    print("waiting for {} to join rotation...".format(aid))
                 while kever.sn < self.hab.kever.sn:
                     self.witq.query(aid)
                     _ = (yield self.tock)
@@ -194,7 +196,7 @@ class MultiSigRotateDoer(doing.DoDoer):
         for aid in group.aids:
             if aid == self.hab.pre:
                 continue
-            self.postman.send(recipient=aid, msg=bytearray(msg))
+            self.postman.send(recipient=aid, topic="multisig", msg=bytearray(msg))
             yield self.tock
 
 

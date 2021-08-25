@@ -10,11 +10,12 @@ import sys
 from dataclasses import dataclass
 from json import JSONDecodeError
 
-from hio import help
+from keri import help
 from hio.base import doing
 
+from keri import kering
 from keri.app import directing, keeping, habbing, agenting
-from keri.core import eventing, coring, parsing
+from keri.core import eventing, coring
 from keri.db import basing
 
 logger = help.ogler.getLogger()
@@ -35,6 +36,13 @@ class DelegateOptions:
     """
     delegatorPrefix: str
     delegatorWits: list
+    salt: str
+    transferable: bool
+    wits: list
+    icount: int
+    isith: str
+    ncount: int
+    nsith: str
 
 
 def incept(args):
@@ -83,18 +91,18 @@ class DelegateInceptDoer(doing.DoDoer):
 
         """
 
-        ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
-        self.ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-        db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
-        self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+        self.name = name
+        self.ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
+        self.ksDoer = keeping.KeeperDoer(keeper=self.ks)  # doer do reopens if not opened and closes
+        self.db = basing.Baser(name=name, temp=False, reload=True)  # not opened by default, doer opens
+        self.dbDoer = basing.BaserDoer(baser=self.db)  # doer do reopens if not opened and closes
+        self.kvy = eventing.Kevery(db=self.db, lax=True, local=True)
 
-        hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
-        self.habDoer = habbing.HabitatDoer(habitat=hab)
+        # hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, create=False)
+        # self.habDoer = habbing.HabitatDoer(habitat=hab)
 
-        doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.inceptDo, **kwa)]
-        self.hab = hab
-        self.delegatorWitness = kwa["delegatorWits"]
-        self.delegatorPrefix = kwa["delegatorPrefix"]
+        doers = [self.ksDoer, self.dbDoer, doing.doify(self.inceptDo, **kwa)]
+        # self.hab = hab
         self.sealFile = sealFile
 
         super(DelegateInceptDoer, self).__init__(doers=doers)
@@ -105,14 +113,43 @@ class DelegateInceptDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)  # finish enter context
 
-        verfers, digers, cst, nst = self.hab.mgr.incept(algo=keeping.Algos.randy, temp=True)
+
+        salt = coring.Salter(raw=kwa["salt"].encode("utf-8")).qb64
+        seed = kwa["seed"] if "seed" in kwa else None
+        wits = kwa["wits"] if "wits" in kwa else None
+        toad = kwa["toad"] if "toad" in kwa else None
+        icount = kwa["icount"] if "icount" in kwa else None
+        isith = kwa["isith"] if "isith" in kwa else None
+        ncount = kwa["ncount"] if "ncount" in kwa else None
+        nsith = kwa["nsith"] if "nsith" in kwa else None
+
+        mgr = keeping.Manager(ks=self.ks, seed=seed, salt=salt, tier=None)
+
+        verfers, digers, cst, nst = mgr.incept(salt=salt, icount=icount, isith=isith, ncount=ncount, nsith=nsith)
 
         # build and consume delcept
+        delegatorWitness = kwa["delegatorWits"]
+        delegatorPrefix = kwa["delegatorPrefix"]
         icpSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
-                                   delpre=self.delegatorPrefix,
+                                   delpre=delegatorPrefix, wits=wits, toad=toad,
                                    nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
+        pre = icpSrdr.pre
+        mgr.move(old=verfers[0].qb64, new=pre)
 
-        self.hab.mgr.move(old=verfers[0].qb64, new=icpSrdr.pre)
+        hr = basing.HabitatRecord(prefix=pre, watchers=[])
+        self.db.habs.put(keys=self.name, val=hr)
+
+        sigers = mgr.sign(ser=icpSrdr.raw, verfers=verfers)
+
+        self.db.prefixes.add(pre)
+        self.kvy.processEvent(serder=icpSrdr, sigers=sigers)
+
+        if pre not in self.kvy.kevers:
+            raise kering.ConfigurationError("Improper Delegated inception for "
+                                            "pre={}.".format(pre))
+
+        hab = habbing.Habitat(name=self.name, ks=self.ks, db=self.db, temp=False, create=False)
+        hab.prefixes.add(pre)
 
         seal = dict(i=icpSrdr.pre,
                     s=icpSrdr.ked["s"],
@@ -121,15 +158,21 @@ class DelegateInceptDoer(doing.DoDoer):
         with open(self.sealFile, "w") as f:
             f.write(json.dumps(seal, indent=4))
 
-        witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.TCPWitnesser)
+        witq = agenting.WitnessInquisitor(hab=hab, wits=delegatorWitness, klas=agenting.TCPWitnesser)
         self.extend([witq])
 
         print("Hello, could someone approve my delegated identifier inception, please?")
-        while self.delegatorPrefix not in self.hab.kevers or self.hab.kevers[self.delegatorPrefix].sn < 1:
-            witq.query(self.delegatorPrefix)
+        while True:
+            if delegatorPrefix in hab.kevers:
+                kever = hab.kevers[delegatorPrefix]
+                if "a" in kever.serder.ked:
+                    seals = kever.serder.ked["a"]
+                    if seal in seals:
+                        break
+            witq.query(delegatorPrefix)
             yield self.tock
 
-        sigers = self.hab.mgr.sign(ser=icpSrdr.raw, verfers=verfers)
+
         msg = bytearray(icpSrdr.raw)
         counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
                                  count=len(sigers))
@@ -140,20 +183,24 @@ class DelegateInceptDoer(doing.DoDoer):
                                  count=1)
         msg.extend(counter.qb64b)
 
-        event = self.hab.kevers[self.delegatorPrefix]
+        event = hab.kevers[delegatorPrefix]
         seqner = coring.Seqner(sn=event.sn)
         msg.extend(seqner.qb64b)
         msg.extend(event.serder.diger.qb64b)
 
-        delKvy = eventing.Kevery(db=self.hab.db, lax=True)
-        parsing.Parser().parseOne(ims=bytearray(msg), kvy=delKvy)
+        hab.psr.parseOne(ims=bytearray(msg))
+        while icpSrdr.pre not in hab.kevers:
+            yield self.tock
 
-        while icpSrdr.pre not in delKvy.kevers:
+        witDoer = agenting.WitnessReceiptor(hab=hab, klas=agenting.TCPWitnesser, msg=msg)
+        self.extend([witDoer])
+
+        while not witDoer.done:
             yield self.tock
 
         print("Successfully created delegate identifier", icpSrdr.pre)
         print("Public key", icpSrdr.verfers[0].qb64)
 
-        self.remove([self.ksDoer, self.dbDoer, self.habDoer, witq])
+        self.remove([self.ksDoer, self.dbDoer, witq, witDoer])
 
         return
