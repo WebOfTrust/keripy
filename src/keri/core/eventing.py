@@ -1132,12 +1132,8 @@ def state(pre,
     return Serder(ked=ksd)  # return serialized ksd
 
 
-def query(pre,
-          res,
-          dt=None,
-          dta=None,
-          dtb=None,
-          sn=None,
+def query(res,
+          qry,
           version=Version,
           kind=Serials.json):
 
@@ -1147,9 +1143,8 @@ def query(pre,
 
      Parameters:
         pre is identifier prefix qb64
-        dig is digest of previous event qb64
-        sn is int sequence number
-        data is list of dicts of comitted data such as seals
+        res is str resouce to be queried
+        qry is dict of query parameter specific to the resource
         version is Version instance
         kind is serialization kind
 
@@ -1169,23 +1164,6 @@ def query(pre,
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.req
-
-    qry = dict(
-        i=pre
-    )
-
-    if dt is not None:
-        qry["dt"] = dt
-
-    if dta is not None:
-        qry["dta"] = dt
-
-    if dtb is not None:
-        qry["dtb"] = dt
-
-    if sn is not None:
-        qry["s"] = sn
-
 
     ked = dict(v=vs,  # version string
                t=ilk,
@@ -2030,6 +2008,9 @@ class Kever:
             delegator = serder.ked["di"]
         else:
             delegator = self.delegator
+
+        if self.local:  # if in local mode, accept the delegated events before verifying the delegator
+            return delegator
 
         ssn = self.validateSN(sn=seqner.snh, inceptive=False)
 

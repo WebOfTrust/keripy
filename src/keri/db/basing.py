@@ -137,7 +137,7 @@ class WitnessRecord:  # wits
     Database Key is the identifier prefix of the witness that is storing
     events in a mailbox
     """
-    idx: int
+    topics: dict
 
 
 @dataclass

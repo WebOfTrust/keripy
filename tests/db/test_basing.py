@@ -273,21 +273,6 @@ def test_baser():
         assert db.putFe(keyA0, val=digA) == True
         assert db.putFe(keyC0, val=digC) == True
 
-        items = [item  for item in db.getFelItemAllPreIter()]
-        assert items == [(preA, 0, digA), (preB, 0, digU), (preB, 1, digV),
-                         (preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
-                         (preC, 0, digC)]
-
-
-        # resume replay all starting at preB on=2
-        items = [item for item in db.getFelItemAllPreIter(key=keyB2)]
-        assert items == [(preB, 2, digW), (preB, 3, digX), (preB, 4, digY),
-                             (preC, 0, digC)]
-
-        # resume replay all starting at preC on=1
-        items = [item for item in db.getFelItemAllPreIter(key=onKey(preC, 1))]
-        assert items == []
-
         # Test .dtss datetime stamps
         key = dgKey(preb, digb)
         assert key == (b'DWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.'

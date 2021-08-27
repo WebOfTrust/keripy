@@ -2,7 +2,7 @@ import argparse
 
 from hio import help
 from hio.base import doing
-from keri.app import directing, agenting
+from keri.app import directing, agenting, indirecting
 from keri.app.cli.common import existing
 from keri.vdr import issuing
 
@@ -66,18 +66,21 @@ class RegistryInceptDoer(doing.DoDoer):
         issuer = issuing.Issuer(hab=self.hab, name=self.name, **kwa)
         yield self.tock
 
-        kevt = issuer.incept
-        tevt = issuer.ianchor
+        tevt = issuer.incept
+        kevt = issuer.ianchor
 
+        mbx = indirecting.MailboxDirector(hab=self.hab, topics=["/receipt"])
         witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
         witSender = agenting.WitnessPublisher(hab=self.hab, msg=tevt)
-        self.extend([witDoer, witSender])
-        self.toRemove.extend([witDoer, witSender])
+        self.extend([mbx, witDoer, witSender])
+        self.toRemove.extend([mbx, witDoer, witSender])
         _ = yield self.tock
 
-        while not witDoer.done and not witSender.done:
+        while not witDoer.done:
             _ = yield self.tock
 
+        while not witSender.done:
+            _ = yield self.tock
 
         print("Regsitry:  {} \n\tcreated for Identifier Prefix:  {}".format(issuer.regk, self.hab.pre))
 

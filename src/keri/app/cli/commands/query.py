@@ -40,6 +40,8 @@ class QueryDoer(doing.DoDoer):
         self.wit = wit
         self.pre = pre
 
+        self.toRemove = []
+        self.toRemove.extend(doers)
         doers.extend([doing.doify(self.queryDo)])
         super(QueryDoer, self).__init__(doers=doers, **kwa)
 
@@ -69,9 +71,11 @@ class QueryDoer(doing.DoDoer):
 
         doifiedDoer = doing.doify(self.msgDo)
         self.extend([clientDoer, doifiedDoer])
+        self.toRemove.extend([clientDoer, doifiedDoer])
 
         msg = self.hab.query(self.pre, res="logs")  # Query for remote pre Event
         client.tx(msg)  # send to connected remote
+        yield 2.0
 
         while self.pre not in kevery.kevers:
             yield self.tock
@@ -79,7 +83,7 @@ class QueryDoer(doing.DoDoer):
 
         displaying.printIdentifier(self.hab, self.pre)
 
-        self.remove([self.ksDoer, self.dbDoer, self.habDoer, doifiedDoer, clientDoer])
+        self.remove(self.toRemove)
 
         return
 

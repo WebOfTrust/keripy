@@ -13,6 +13,7 @@ from hio.help import decking
 
 from keri.app import agenting
 from keri.core import coring, eventing
+from keri.db import basing
 
 
 class Postman(doing.DoDoer):
@@ -51,6 +52,7 @@ class Postman(doing.DoDoer):
             while self.evts:
                 evt = self.evts.popleft()
                 recp = evt["recipient"]
+                tpc = evt["topic"]
                 srdr = evt["serder"]
                 act = evt["attachment"]
 
@@ -58,7 +60,7 @@ class Postman(doing.DoDoer):
                 #  combine it with the provided attachments on the envelope
                 #  so the envelope can get verified and opened and this
                 #  message can be extracted and stored.
-                fwd = forward(pre=recp, serder=srdr)
+                fwd = forward(pre=recp, topic=tpc, serder=srdr)
                 ims = bytearray(fwd.raw)
                 ims.extend(act)
 
@@ -76,7 +78,7 @@ class Postman(doing.DoDoer):
 
             yield self.tock
 
-    def send(self, recipient, msg):
+    def send(self, recipient, topic, msg):
         """
         Utility function to queue a msg on the Postman's buffer for
         enveloping and forwarding to a witness
@@ -89,10 +91,10 @@ class Postman(doing.DoDoer):
         serder = coring.Serder(raw=msg)
         del msg[:serder.size]
 
-        self.evts.append(dict(recipient=recipient, serder=serder, attachment=bytearray(msg)))
+        self.evts.append(dict(recipient=recipient, topic=topic, serder=serder, attachment=bytearray(msg)))
 
 
-def forward(pre, serder, version=coring.Version, kind=coring.Serials.json):
+def forward(pre, serder, topic=None, version=coring.Version, kind=coring.Serials.json):
     """
     Returns serder of forward event message.
     Utility function to automate creation of forward events.
@@ -108,11 +110,14 @@ def forward(pre, serder, version=coring.Version, kind=coring.Serials.json):
     vs = coring.Versify(version=version, kind=kind, size=0)
     ilk = eventing.Ilks.fwd
 
+    r = pre + "/" + topic if topic is not None else pre
+
     ked = dict(v=vs,
                t=ilk,
-               r=pre,
+               r=r,
                a=serder.ked,
                )
 
 
     return eventing.Serder(ked=ked)  # return serialized ked
+

@@ -1,5 +1,4 @@
 import argparse
-import os
 
 from keri.app import habbing, indirecting, directing
 

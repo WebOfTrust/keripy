@@ -11,7 +11,7 @@ import logging
 from hio.base import doing
 from keri import __version__, kering
 from keri import help
-from keri.app import indirecting
+from keri.app import indirecting, storing
 from keri.app.cli.common import existing
 from keri.core import scheming
 from keri.peer import httping, exchanging
@@ -60,9 +60,9 @@ def runWallet(name="wallet"):
     requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
     exchanger = exchanging.Exchanger(hab=hab, handlers=[issueHandler, requestHandler])
 
-    mbx = exchanging.Mailboxer(name=name)
-    rep = httping.Respondant(hab=hab, mbx=mbx)
-    mdir = indirecting.MailboxDirector(hab=hab, exc=exchanger, rep=rep)
+    mbx = storing.Mailboxer(name=name)
+    rep = storing.Respondant(hab=hab, mbx=mbx)
+    mdir = indirecting.MailboxDirector(hab=hab, exc=exchanger, rep=rep, topics=["/receipt", "/replay"])
 
     doers.extend([exchanger, mdir, rep])
 

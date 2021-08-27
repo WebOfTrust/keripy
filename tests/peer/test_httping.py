@@ -96,24 +96,24 @@ def test_create_cesr_request():
             b'-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E'
             b'-AABAAhulhMW2RDUCHK5mxHryjlQ0i3HW_6CXbAGjNnHb9U9pq6N0C9DiavUbX6SgDskKIfoQLtV_EqTI_q9AyNAstAQ')
 
-        msg = hab.query(pre=hab.pre, res="mbx", sn=0)
+        msg = hab.query(pre=hab.pre, res="mbx", query=dict(s=0))
         client = MockClient()
 
         httping.createCESRRequest(msg, client, date="2021-02-13T19:16:50.750302+00:00")
 
         assert client.args["method"] == "POST"
         assert client.args["path"] == "/req/mbx"
-        assert client.args["body"] == (
-            b'{"v":"KERI10JSON00006c_","t":"req","r":"mbx","q":{"i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"s":0}}')
+        assert client.args["body"] == (b'{"v":"KERI10JSON00006c_","t":"req","r":"mbx","q":{"s":0,"i":"E4YPqsEOaPNaZxV'
+                                       b'IbY-Gx2bJgP-c7AH_K7pEE-YfcI9E"}}')
 
         headers = client.args["headers"]
         assert headers["Content-Type"] == "application/cesr+json"
         assert headers["Content-Length"] == 108
         assert headers["CESR-DATE"] == "2021-02-13T19:16:50.750302+00:00"
         assert headers["CESR-ATTACHMENT"] == bytearray(
-            b'-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABAAHAlNsNulD335Dgya4-r5_E_48R4'
-            b'-ugG6nLMd62xU2gvEWxTDBMTeob4fR3WwBptL23Ld1qg0rSOfpjDaJ_9mAw')
+            b'-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABAAh4UoPxFt3F'
+            b'uRenCfSFJYlygq92oYqiGanAmzJ6EqHGXM-Y9byNsuhiaBTsl3V5th657-zeK1jG'
+            b'vcmRxFnTdiAg')
 
 
 if __name__ == '__main__':

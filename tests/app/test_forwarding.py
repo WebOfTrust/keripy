@@ -10,7 +10,7 @@ import time
 
 from hio.base import doing, tyming
 
-from keri.app import forwarding, habbing, indirecting
+from keri.app import forwarding, habbing, indirecting, storing
 from keri.core import coring, eventing, parsing
 from keri.peer import exchanging
 
@@ -34,14 +34,14 @@ def test_postman(mockGetWitnessByPrefixOneWitness):
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
-        mbx = exchanging.Mailboxer(name="wes", temp=True)
+        mbx = storing.Mailboxer(name="wes", temp=True)
         wesDoers = indirecting.setupWitness(name="wes", hab=wesHab, mbx=mbx, temp=True, tcpPort=5634, httpPort=5644)
         pman = forwarding.Postman(hab=hab)
 
         exn = exchanging.exchange(route="/echo", payload=dict(msg="test"))
         msg = bytearray(exn.raw)
         msg.extend(hab.sanction(exn))
-        pman.send(recipient=recpHab.pre, msg=msg)
+        pman.send(recipient=recpHab.pre, topic="echo", msg=msg)
 
         doers = wesDoers + [pman]
         limit = 1.0
@@ -60,11 +60,11 @@ def test_postman(mockGetWitnessByPrefixOneWitness):
         doist.exit()
 
         msgs = []
-        for _, msg in mbx.clonePreIter(pre=recpHab.pre.encode("utf-8"), fn=0):
+        for _, topic, msg in mbx.cloneTopicIter(topic=recpHab.pre + "/echo", fn=0):
             msgs.append(msg)
 
         assert len(msgs) == 1
-        serder = coring.Serder(raw=msgs[0].encode("utf-8"))
+        serder = coring.Serder(raw=msgs[0])
         assert serder.ked["t"] == coring.Ilks.exn
         assert serder.ked["r"] == "/echo"
         assert serder.ked["d"] == dict(msg="test")

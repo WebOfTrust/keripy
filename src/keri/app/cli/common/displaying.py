@@ -27,7 +27,6 @@ def printGroup(hab, group):
 
     Parameters:
         hab (Habitat): environment for whom to print groups
-        aid (str): qb64 of the identifier prefix of the group
         group (GroupIdentifier): the local identifier and list of participants
 
     """
@@ -55,6 +54,9 @@ def printIdentifier(hab, pre):
 
     print("Prefix:\t{}".format(pre))
     print("Seq No:\t{}".format(kever.sn))
+    if kever.delegated:
+        print("Delegated Identifier")
+
     print("\nWitnesses:")
     print("Count:\t\t{}".format(len(kever.wits)))
     print("Receipts:\t{}".format(len(wigs)))
