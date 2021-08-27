@@ -6,7 +6,6 @@ keri.kli.witness module
 Witness command line interface
 """
 import argparse
-import json
 import logging
 
 import falcon
@@ -14,6 +13,7 @@ from hio.base import doing
 from hio.core import http
 from hio.core.tcp import serving as tcpServing
 from hio.help import decking
+
 from keri import __version__, kering
 from keri import help
 from keri.app import directing, agenting, indirecting, forwarding, storing
@@ -58,11 +58,9 @@ parser.add_argument('-p', '--pre',
 
 
 def launch(args):
-
     help.ogler.level = logging.INFO
     help.ogler.reopen(name="keri", temp=True, clear=True)
     logger = help.ogler.getLogger()
-
 
     logger.info("\n******* Starting Agent for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.http, args.tcp)
@@ -118,10 +116,7 @@ def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623
     rotateHandler = agenting.RotateHandler(hab=hab)
     issDoer = issuing.IssuerDoer(issuer=issuer)
 
-    issueHandler = agenting.CredentialIssueHandler(hab=hab, issuer=issuer)
-    revokeHandler = agenting.CredentialRevokeHandler(hab=hab, issuer=issueHandler.issuer)
-    requestHandler = agenting.PresentationRequestHandler(hab=hab)
-    handlers = [rotateHandler, issueHandler, revokeHandler, requestHandler, echoHandler]
+    handlers = [rotateHandler, echoHandler]
 
     exchanger = exchanging.Exchanger(hab=hab, controller=controller, handlers=handlers)
 
@@ -137,6 +132,8 @@ def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623
     rep = storing.Respondant(hab=hab, mbx=mbx)
 
     httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep, exchanger=exchanger)
+    kiwiServer = agenting.KiwiServer(hab=hab, issuer=issuer, app=app, rep=rep)
+
     mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
     wiq = agenting.WitnessInquisitor(hab=hab)
 
@@ -144,7 +141,8 @@ def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623
     server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [exchanger, issDoer, tcpServerDoer, directant, httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler]
+    doers = [exchanger, issDoer, tcpServerDoer, directant, httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler,
+             kiwiServer]
 
     return doers
 

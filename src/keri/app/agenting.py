@@ -6,17 +6,18 @@ keri.app.agenting module
 """
 import random
 
+import falcon
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
-from keri import kering
-from . import forwarding
 
+from keri import kering
 from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, scheming, coring
 from ..db import dbing
+from ..help.helping import nowIso8601
 from ..peer import exchanging, httping
 from ..vc import proving, handling
 from ..vdr import issuing
@@ -400,7 +401,6 @@ class HttpWitnesser(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-
         while True:
             while not self.client.responses:
                 rep = self.client.respond()
@@ -503,209 +503,6 @@ class RotateHandler(doing.DoDoer):
             yield
 
 
-class CredentialIssueHandler(doing.DoDoer):
-    """
-        CredentialIssueHandler - exn behavior for issuing a credential
-
-        Validates payload against specified JSON-Schema
-        Receipts KEL event and propagates TEL event to witnesses
-        Errors will be placed in the corresponding issuer
-    """
-
-    resource = "/cmd/credential/issue"
-
-    def __init__(self, hab, issuer=None, cues=None, **kwa):
-        self.hab = hab
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=hab, name=self.hab.name)
-
-        doers = [doing.doify(self.msgDo)]
-
-        super(CredentialIssueHandler, self).__init__(doers=doers, **kwa)
-
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-
-        while not self.issuer.regk:
-            yield self.tock
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-
-                recipientIdentifier = payload["recipient"]
-                credSubject = payload["data"]
-                schema = payload["schema"]
-                # not all credentials have a source
-                source = payload.get("source")
-
-                ref = scheming.jsonSchemaCache.resolve(schema)
-                schemer = scheming.Schemer(raw=ref)
-                jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
-
-                # Build the credential subject and then the Credentialer for the full credential
-                creder = proving.credential(issuer=self.hab.pre,
-                                            schema=schemer.said,
-                                            subject=credSubject,
-                                            typ=jsonSchema,
-                                            source=source,
-                                            status=self.issuer.regk)
-
-                msg = self.hab.endorse(serder=creder)
-
-                tevt, kevt = self.issuer.issue(vcdig=creder.said)
-
-                witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
-                self.extend([witDoer])
-
-                witSender = WitnessPublisher(hab=self.hab, msg=tevt)
-                self.extend([witSender])
-
-                pl = dict(
-                    vc=[handling.envelope(msg, typ=jsonSchema)]
-                )
-
-                exn = exchanging.exchange(route="/credential/issue", payload=pl)
-                self.cues.append(dict(dest=recipientIdentifier, rep=exn))
-                yield
-            yield
-
-
-class CredentialRevokeHandler(doing.DoDoer):
-    """
-        Processor for revoking a credential.  The parameters needed are the SAID of the credential to revoke and the
-        SCID of the revocation registry for the credential. If the identifier of this cloud agent is the issuing
-        party, the credential is revoked by issuing the correct event to the TEL for this credential.
-
-        {
-            regk="<self-certifying identifier of the revocation registry>",
-            said="<self-addressing identifier of the credential to revoke>",
-        }
-
-    """
-
-    resource = "/cmd/credential/revoke"
-
-    def __init__(self, hab, issuer=None, cues=None, **kwa):
-        """
-        Creates an exn handler capable of revoking credentials previous issued by the identifier
-        managed by the passed in Habitat
-
-        Parameters:
-            hab (Hobitat): the environment of the issuing identifier
-
-        """
-        self.hab = hab
-        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=self.hab, name=self.hab.name)
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        doers = [doing.doify(self.msgDo)]
-
-        super(CredentialRevokeHandler, self).__init__(doers=doers, **kwa)
-
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Echo the proviced message back to the sender
-
-        Messages:
-            payload is dict representing the body of a /presentation/request message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/request message
-            verfers is list of Verfers of the keys used to sign the message
-
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                pl = msg["payload"]
-
-                regk = pl["regk"]
-                said = pl["said"]
-
-                if regk != self.issuer.regk:
-                    raise ValueError("provided registry identifier {} does not match our registry {}"
-                                     "".format(regk, self.issuer.regk))
-
-                tevt, kevt = self.issuer.revoke(vcdig=said)
-                (yield self.tock)
-
-                witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
-                self.extend([witDoer])
-
-                witSender = WitnessPublisher(hab=self.hab, msg=tevt)
-                self.extend([witSender])
-
-
-                (yield self.tock)
-
-
-            yield
-
-
-class PresentationRequestHandler(doing.DoDoer):
-    """
-    """
-
-    resource = "/cmd/presentation/request"
-
-    def __init__(self, hab, cues=None, **kwa):
-        self.hab = hab
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        doers = [doing.doify(self.msgDo)]
-
-        super(PresentationRequestHandler, self).__init__(doers=doers, **kwa)
-
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-
-                recipientIdentifier = payload["recipient"]
-                schema = payload["schema"]
-
-                ref = scheming.jsonSchemaCache.resolve(schema)
-                schemer = scheming.Schemer(raw=ref)
-
-                pl = dict(
-                    input_descriptors=[
-                        dict(x=schemer.said)
-                    ]
-                )
-
-                exn = exchanging.exchange(route="/presentation/request", payload=pl)
-                self.cues.append(dict(dest=recipientIdentifier, rep=exn))
-                yield
-
-            yield
-
-
-
 class EchoHandler(doing.DoDoer):
     """
         Processor for testing end to end HTTP with mailbox
@@ -757,3 +554,142 @@ class EchoHandler(doing.DoDoer):
                 yield
 
             yield
+
+
+class SignatureValidationComponent(object):
+    def process_request(self, req, resp):
+        sig = req.headers.get("Signature")
+
+        if not self.validate(sig=sig):
+            resp.complete = True
+            resp.status = falcon.HTTP_400
+            return
+
+        logger.info(f'header {sig}')
+
+    def validate(self, sig):
+        return True
+
+
+class KiwiServer(doing.DoDoer):
+    """
+    Routes for handling UI requests for Credential issuance/revocation and presentation requests
+
+    """
+
+    def __init__(self, hab, issuer, rep, cues=None, app=None, **kwa):
+        self.hab = hab
+        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=self.hab, name=self.hab.name)
+        self.rep = rep
+        self.app = app if app is not None else falcon.App(cors_enable=True)
+        app.add_middleware(SignatureValidationComponent())
+        self.cues = cues if cues is not None else decking.Deck()
+
+        self.app.add_route("/credential/issue", self, suffix="issue")
+        self.app.add_route("/credential/revoke", self, suffix="revoke")
+        self.app.add_route("/presentation/request", self, suffix="request")
+
+        doers = [doing.doify(self.aliveDo)]
+
+        super(KiwiServer, self).__init__(doers=doers, **kwa)
+
+    def aliveDo(self, tymth, tock=0.0, **opts):
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            yield self.tock
+
+    def on_post_issue(self, req, rep):
+        schema = req.media.get("schema")
+        source = req.media.get("source")
+        recipientIdentifier = req.media.get("recipient")
+
+        types = ["VerifiableCredential", req.media.get("type")]
+
+        d = dict(
+            i="",
+            type=types,
+            LEI=req.media.get("LEI"),
+            si=recipientIdentifier,
+            dt=nowIso8601()
+        )
+
+        d |= {"personLegalName": req.media.get("personLegalName")} \
+            if req.media.get("personLegalName") is not None else {}
+        d |= {"officialRole": req.media.get("officialRole")} \
+            if req.media.get("officialRole") is not None else {}
+        d |= {"engagementContextRole": req.media.get("engagementContextRole")} \
+            if req.media.get("engagementContextRole") is not None else {}
+
+        saider = scheming.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.i)
+        d["i"] = saider.qb64
+
+        ref = scheming.jsonSchemaCache.resolve(schema)
+        schemer = scheming.Schemer(raw=ref)
+        jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
+
+        creder = proving.credential(issuer=self.hab.pre,
+                                    schema=schemer.said,
+                                    subject=d,
+                                    typ=jsonSchema,
+                                    source=source,
+                                    status=self.issuer.regk)
+
+        msg = self.hab.endorse(serder=creder)
+
+        tevt, kevt = self.issuer.issue(vcdig=creder.said)
+
+        witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
+        self.extend([witDoer])
+
+        while not witDoer.done:
+            yield self.tock
+
+        self.remove([witDoer])
+
+        witSender = WitnessPublisher(hab=self.hab, msg=tevt)
+        self.extend([witSender])
+
+        pl = dict(
+            vc=[handling.envelope(msg, typ=jsonSchema)]
+        )
+
+        exn = exchanging.exchange(route="/credential/issue", payload=pl)
+        self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn))
+
+        rep.status = falcon.HTTP_200
+        rep.media = creder.pretty().encode("utf-8")
+
+    def on_post_revoke(self, req, rep):
+        said = req.media.get("said")
+
+        tevt, kevt = self.issuer.revoke(vcdig=said)
+        (yield self.tock)
+
+        witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
+        self.extend([witDoer])
+
+        witSender = WitnessPublisher(hab=self.hab, msg=tevt)
+        self.extend([witSender])
+
+        rep.status = falcon.HTTP_202
+
+    def on_post_request(self, req, rep):
+        recipientIdentifier = req.media.get["recipient"]
+        schema = req.media.get["schema"]
+
+        ref = scheming.jsonSchemaCache.resolve(schema)
+        schemer = scheming.Schemer(raw=ref)
+
+        pl = dict(
+            input_descriptors=[
+                dict(x=schemer.said)
+            ]
+        )
+
+        exn = exchanging.exchange(route="/presentation/request", payload=pl)
+        self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn))
+
+        rep.status = falcon.HTTP_202
