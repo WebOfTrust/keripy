@@ -96,10 +96,11 @@ class HabitatRecord:  # habs
 class EndpointRecord:  # ends
     """
     Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by role.
-    Database Keys are (acid, role) where acid is attributable controller identifier
-    of endpoint (qb64 prefix) and role is endpoint role such as watcher, witness etc
+    Database Keys are (cid, role) where cid is attributable controller identifier
+    of endpoint (qb64 prefix) and role is the endpoint role such as watcher,
+    witness etc
     """
-    seid: str  # identifier prefix of service endpoint
+    eid: str  # identifier prefix of service endpoint
     name: str  # user friendly name of endpoint
     said: str # Self-Addressing ID of conveying reply message
     dts: str  # ISO-8601 datetime string of conveying reply message
@@ -113,15 +114,15 @@ class LocationRecord:  # locs
     """
     Service Endpoint Record with fields and keys to compose endpoint location
     and cross reference to entry in Endpoint database.
-    Database Keys are (seid, scheme) where seid is service endpoint identifier
+    Database Keys are (eid, scheme) where eid is service endpoint identifier
     (qb64 prefix) and scheme is the url protocol scheme (tcp, https).
-    The seid is usually a nontransferable identifier (witness, watcher) but may be
+    The eid is usually a nontransferable identifier (witness, watcher) but may be
     transferable (judge, juror, public watcher).
     """
     host: str  # hostname or host ip addresss string
     port: int  # port
     path: str  # path string
-    acid: str  # identifier prefix of controller that authorizes endpoint
+    cid: str  # identifier prefix of controller that authorizes endpoint
     role: str  # endpoint role such as watcher, witness etc
     said: str  # Self-Addressing ID of conveying reply message
     dts: str  # ISO-8601 datetime string of conveying replay message
@@ -359,15 +360,34 @@ class Baser(dbing.LMDBer):
             key is habitat name str
             value is serialized HabitatRecord dataclass
 
-        .ends is named subDB instance of DupKomer that maps Controller prefix
-            and endpoint roles to endpoint prefixes
-            key is (cid, role) as "cid.role"
-            value is serialized EndpointRecord dataclass
+        .sdts is named subDB instance of MatterSuber that that maps SAD said to
+            Dater instance's CESR serialization of ISO-8601 datetime
+            key = said (bytes) of SAD, val = Dater.qb64b
+        .ssgs is named subDB instance of Suber
+            key = said (bytes) of SAD, val =  Siger Quadruple
+        .scgs is named subDB instance of  Suber
+            key = said (bytes of SAD, val = Cigar Couple)
 
-        .locs is named subDB instance of Komer that maps Endpoint prefix
-            and endpoint network location scheme to endpoint location
-            key is (eid, scheme) as "eid.scheme"
-            value is serialized LocationRecord dataclass
+        .rpys is named subDB instance of SerderSuber that maps said of reply SAD
+            to serialization of reply message.
+            key is said bytes, val is Serder.raw bytes of reply 'rpy' message
+
+        .rpes is named subDB instance of MatIoSetSuber that maps routes of reply
+            SAD to its said. Routes such as /end/authn /loc/authn
+            key is route bytes,  val = Saider.qb64b of reply 'rpy' msg SAD
+
+        .eans is named subDB instance of MatterSuber that maps cid.role.eid of
+            reply authn of eid for role by cid to said of reply SAD with route
+            SAD to its said
+            key is cid.role.eid,  val = Saider.qb64b of reply 'rpy' msg SAD
+
+        .ends is named subDB instance of IoSetKomer that maps Controller prefix
+            cid and endpoint role to endpoint prefix and name
+            key is cid.role,  value is serialized EndpointRecord dataclass
+
+        .locs is named subDB instance of Komer that maps endpoint prefix eid
+            and endpoint network location scheme to endpoint location details
+            key is eid.scheme, val is serialized LocationRecord dataclass
 
         .wits is named subDB instance of Komer that maps Witness identifier
             prefix to index of last received mailbox message.
@@ -379,6 +399,7 @@ class Baser(dbing.LMDBer):
             that participate in the group identifier.
             key is group identifier prefix
             value is serialized GroupIdentifier dataclass
+
 
     Properties:
 
@@ -470,15 +491,35 @@ class Baser(dbing.LMDBer):
                                  subkey='habs.',
                                  schema=HabitatRecord, )
 
-        # service endpoint identifer (SEID) prefixes by controller prefixes and roles
+        # SAD support datetime stamps and signatures indexed and not-indexed
+        # all sad  sdts (sad datetime serializations)
+        self.sdts = subing.MatterSuber(db=self, subkey='sdts.', klas=coring.Dater)
+        # all sad  ssgs (sad indexed signature serializations) (Siger quadruples)
+        self.ssgs = subing.Suber(db=self, subkey='ssgs')
+        # all sad scgs  (sad non-indexed signature serializations) (Cigar couples)
+        self.scgs = subing.Suber(db=self, subkey='scgs')
+
+        # all reply messages. All replys are versioned sads so use
+        # .sdts, .ssgs, and .scgs for datetimes and signatures
+        self.rpys = subing.SerderSuber(db=self, subkey='rpys.')
+
+        # all reply escrows indices of partially signed reply messages keyed by
+        # route  such as /end/authn  /loc/authn with val said
+        self.rpes = subing.IoSetSuber(db=self, subkey='rpes.', klas=coring.Saider)
+
+        # eid AuthN reply indices keyed by cid.role.eid with val said
+        self.eans = subing.MatterSuber(db=self, subkey='eans.', klas=coring.Saider)
+
+        # service endpoint identifer (eid) auths keyed by controller prefix.role
         self.ends = koming.IoSetKomer(db=self,
                                     subkey='ends.',
                                     schema=EndpointRecord, )
 
-        # service endpont locations by endpoint identifier prefixes and schemes
+        # service endpont locations keyed by eid.scheme  (endpoint identifier)
         self.locs = koming.Komer(db=self,
                                  subkey='locs.',
                                  schema=LocationRecord, )
+
 
         # index of last retrieved message from witness mailbox
         self.wits = koming.Komer(db=self,
@@ -489,6 +530,9 @@ class Baser(dbing.LMDBer):
         self.gids = koming.Komer(db=self,
                                  subkey='gids.',
                                  schema=GroupIdentifier, )
+
+
+
 
         return self.env
 

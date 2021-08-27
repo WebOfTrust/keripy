@@ -244,6 +244,7 @@ def openLMDB(cls=None, name="test", temp=True, **kwa):
     wl.close(clear=True if wl.temp else False)
 
     """
+    lmdber = None
     if cls is None:
         cls = LMDBer
     try:
@@ -251,7 +252,8 @@ def openLMDB(cls=None, name="test", temp=True, **kwa):
         yield lmdber
 
     finally:
-        lmdber.close(clear=lmdber.temp)  # clears if lmdber.temp
+        if lmdber:
+            lmdber.close(clear=lmdber.temp)  # clears if lmdber.temp
 
 
 class LMDBer:
@@ -292,7 +294,7 @@ class LMDBer:
     TempHeadDir = "/tmp"
     TempPrefix = "keri_lmdb_"
     TempSuffix = "_test"
-    MaxNamedDBs = 32
+    MaxNamedDBs = 64
     DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
 
     def __init__(self, name='main', temp=False, headDirPath=None, dirMode=None,

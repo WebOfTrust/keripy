@@ -63,7 +63,7 @@ class KomerBase():
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
         """
-        super(KomerBase, self).__init__(**kwa)  # Mixin for Multi-inheritance MRO
+        super(KomerBase, self).__init__()
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
         self.schema = schema

@@ -41,7 +41,7 @@ class SuberBase():
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
         """
-        super(SuberBase, self).__init__(**kwa)  # Mixin for Multi-inheritance MRO
+        super(SuberBase, self).__init__()
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
         self.sep = sep if sep is not None else self.Sep
