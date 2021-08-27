@@ -8,8 +8,7 @@ import falcon
 import pytest
 from falcon.testing import helpers
 
-from keri.app import habbing
-from keri.peer import httping
+from keri.app import habbing, httping
 from keri.vdr import issuing, verifying
 
 

@@ -4,9 +4,11 @@ KERI
 keri.app.agenting module
 
 """
+import json
 import random
 
 import falcon
+from falcon import media
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
@@ -18,7 +20,8 @@ from ..app import obtaining
 from ..core import eventing, parsing, scheming, coring
 from ..db import dbing
 from ..help.helping import nowIso8601
-from ..peer import exchanging, httping
+from ..peer import exchanging
+from . import httping
 from ..vc import proving, handling
 from ..vdr import issuing
 
@@ -410,218 +413,94 @@ class HttpWitnesser(doing.DoDoer):
             yield
 
 
-class RotateHandler(doing.DoDoer):
-    """
-        Processor for a performing a key rotate in an agent.
-        {
-            sith=3,
-            count=5,
-            erase=False,
-            toad=1,
-            cuts=[],
-            adds=[],
-            data=[
-               {}
-            ]
-        }
-    """
-
-    resource = "/cmd/rotate"
-
-    def __init__(self, hab, cues=None, **kwa):
-        self.hab = hab
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        doers = [doing.doify(self.msgDo)]
-
-        super(RotateHandler, self).__init__(doers=doers, **kwa)
-
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Rotate identifier.
-
-        Messages:
-            payload is dict representing the body of a /presentation/request message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/request message
-            verfers is list of Verfers of the keys used to sign the message
-
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        self.wind(tymth)
-        self.tock = tock
-        _ = (yield self.tock)
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-
-                if "count" not in payload:
-                    logger.info("unable to rotate without a count of next signing keys")
-                    return
-
-                count = payload["count"]
-
-                sith = payload["sith"] if "sith" in payload else None
-                erase = payload["erase"] if "erase" in payload else None
-                toad = payload["toad"] if "toad" in payload else None
-                cuts = payload["cuts"] if "cuts" in payload else None
-                adds = payload["adds"] if "adds" in payload else None
-                data = payload["data"] if "data" in payload else None
-
-                # start a witnesser to take care of sending receipts
-                witDoer = WitnessReceiptor(hab=self.hab)
-                self.extend([witDoer])
-
-                self.hab.rotate(count=count, sith=sith, erase=erase, toad=toad, cuts=cuts, adds=adds, data=data)
-
-                ser = self.hab.kever.serder
-                wits = self.hab.kever.wits
-
-                while True:
-                    dgkey = dbing.dgKey(ser.preb, ser.digb)
-
-                    rcts = self.hab.db.getWigs(dgkey)
-                    if len(rcts) == len(wits):
-                        break
-                    yield
-
-                self.remove(doers=[witDoer])
-
-                logger.info('Prefix\t\t{%s}', self.hab.pre)
-                for idx, verfer in enumerate(self.hab.kever.verfers):
-                    logger.info('Public key %d:\t%s', idx + 1, verfer.qb64)
-                logger.info("")
-
-                yield
-
-            yield
-
-
-class EchoHandler(doing.DoDoer):
-    """
-        Processor for testing end to end HTTP with mailbox
-        {
-            msg="",
-        }
-    """
-
-    resource = "/cmd/echo"
-
-    def __init__(self, cues=None, **kwa):
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        doers = [doing.doify(self.msgDo)]
-
-        super(EchoHandler, self).__init__(doers=doers, **kwa)
-
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Echo the proviced message back to the sender
-
-        Messages:
-            payload is dict representing the body of a /presentation/request message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/request message
-            verfers is list of Verfers of the keys used to sign the message
-
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-                rcp = msg["pre"]
-
-                msg = payload["msg"]
-
-                resp = dict(
-                    echo=msg
-                )
-
-                serder = exchanging.exchange(route="/cmd/message", payload=resp)
-                self.cues.append(dict(dest=rcp.qb64, rep=serder))
-
-                yield
-
-            yield
-
-
-class SignatureValidationComponent(object):
-    def process_request(self, req, resp):
-        sig = req.headers.get("Signature")
-
-        if not self.validate(sig=sig):
-            resp.complete = True
-            resp.status = falcon.HTTP_400
-            return
-
-        logger.info(f'header {sig}')
-
-    def validate(self, sig):
-        return True
-
-
 class KiwiServer(doing.DoDoer):
     """
     Routes for handling UI requests for Credential issuance/revocation and presentation requests
 
     """
 
-    def __init__(self, hab, issuer, rep, cues=None, app=None, **kwa):
+    def __init__(self, hab, controller, issuer, rep, cues=None, app=None, **kwa):
         self.hab = hab
+        self.controller = controller
         self.issuer = issuer if issuer is not None else issuing.Issuer(hab=self.hab, name=self.hab.name)
         self.rep = rep
+        self.kevts = decking.Deck()
+        self.tevts = decking.Deck()
         self.app = app if app is not None else falcon.App(cors_enable=True)
-        app.add_middleware(SignatureValidationComponent())
+        self.app.add_middleware(httping.SignatureValidationComponent(hab=hab, pre=controller))
+        self.app.req_options.media_handlers.update(media.Handlers())
+        self.app.resp_options.media_handlers.update(media.Handlers())
         self.cues = cues if cues is not None else decking.Deck()
 
         self.app.add_route("/credential/issue", self, suffix="issue")
         self.app.add_route("/credential/revoke", self, suffix="revoke")
         self.app.add_route("/presentation/request", self, suffix="request")
 
-        doers = [doing.doify(self.aliveDo)]
+        doers = [doing.doify(self.receiptDo), doing.doify(self.publishDo)]
 
         super(KiwiServer, self).__init__(doers=doers, **kwa)
 
-    def aliveDo(self, tymth, tock=0.0, **opts):
+    def receiptDo(self, tymth, tock=0.0, **opts):
         self.wind(tymth)
         self.tock = tock
         yield self.tock
 
         while True:
+            while self.kevts:
+                kevt = self.kevts.popleft()
+                witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
+                self.extend([witDoer])
+
+                while not witDoer.done:
+                    yield self.tock
+
+                self.remove([witDoer])
+
+                yield self.tock
             yield self.tock
 
-    def on_post_issue(self, req, rep):
-        schema = req.media.get("schema")
-        source = req.media.get("source")
-        recipientIdentifier = req.media.get("recipient")
+    def publishDo(self, tymth, tock=0.0, **opts):
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
 
-        types = ["VerifiableCredential", req.media.get("type")]
+        while True:
+            while self.tevts:
+                tevt = self.tevts.popleft()
+                witSender = WitnessPublisher(hab=self.hab, msg=tevt)
+                self.extend([witSender])
+
+                while not witSender.done:
+                    _ = yield self.tock
+
+                self.remove([witSender])
+
+                yield self.tock
+            yield self.tock
+
+
+    def on_post_issue(self, req, rep):
+        media = json.loads(req.context.raw)
+        schema = media.get("schema")
+        source = media.get("source")
+        recipientIdentifier = media.get("recipient")
+
+        types = ["VerifiableCredential", media.get("type")]
 
         d = dict(
             i="",
             type=types,
-            LEI=req.media.get("LEI"),
+            LEI=media.get("LEI"),
             si=recipientIdentifier,
             dt=nowIso8601()
         )
 
-        d |= {"personLegalName": req.media.get("personLegalName")} \
-            if req.media.get("personLegalName") is not None else {}
-        d |= {"officialRole": req.media.get("officialRole")} \
-            if req.media.get("officialRole") is not None else {}
-        d |= {"engagementContextRole": req.media.get("engagementContextRole")} \
-            if req.media.get("engagementContextRole") is not None else {}
+        d |= {"personLegalName": media.get("personLegalName")} \
+            if media.get("personLegalName") is not None else {}
+        d |= {"officialRole": media.get("officialRole")} \
+            if media.get("officialRole") is not None else {}
+        d |= {"engagementContextRole": media.get("engagementContextRole")} \
+            if media.get("engagementContextRole") is not None else {}
 
         saider = scheming.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.i)
         d["i"] = saider.qb64
@@ -640,17 +519,8 @@ class KiwiServer(doing.DoDoer):
         msg = self.hab.endorse(serder=creder)
 
         tevt, kevt = self.issuer.issue(vcdig=creder.said)
-
-        witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
-        self.extend([witDoer])
-
-        while not witDoer.done:
-            yield self.tock
-
-        self.remove([witDoer])
-
-        witSender = WitnessPublisher(hab=self.hab, msg=tevt)
-        self.extend([witSender])
+        self.kevts.append(kevt)
+        self.tevts.append(tevt)
 
         pl = dict(
             vc=[handling.envelope(msg, typ=jsonSchema)]
@@ -660,25 +530,23 @@ class KiwiServer(doing.DoDoer):
         self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn))
 
         rep.status = falcon.HTTP_200
-        rep.media = creder.pretty().encode("utf-8")
+        rep.data = creder.pretty().encode("utf-8")
+
 
     def on_post_revoke(self, req, rep):
-        said = req.media.get("said")
+        media = json.loads(req.context.raw)
+        said = media.get("said")
 
         tevt, kevt = self.issuer.revoke(vcdig=said)
-        (yield self.tock)
-
-        witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
-        self.extend([witDoer])
-
-        witSender = WitnessPublisher(hab=self.hab, msg=tevt)
-        self.extend([witSender])
+        self.kevts.append(kevt)
+        self.tevts.append(tevt)
 
         rep.status = falcon.HTTP_202
 
     def on_post_request(self, req, rep):
-        recipientIdentifier = req.media.get["recipient"]
-        schema = req.media.get["schema"]
+        media = json.loads(req.context.raw)
+        recipientIdentifier = media.get("recipient")
+        schema = media.get("schema")
 
         ref = scheming.jsonSchemaCache.resolve(schema)
         schemer = scheming.Schemer(raw=ref)

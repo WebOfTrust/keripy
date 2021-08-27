@@ -10,12 +10,11 @@ from hio.base import doing
 from hio.core import http
 from hio.help import helping, Hict, decking
 
-from . import obtaining, forwarding
+from . import obtaining, forwarding, httping
 from .. import help
 from ..core import coring
 from ..core.coring import MtrDex
 from ..db import dbing, subing
-from ..peer import httping
 
 logger = help.ogler.getLogger()
 
@@ -279,7 +278,6 @@ class Respondant(doing.DoDoer):
                 recipient = rep["dest"]
                 exn = rep["rep"]
 
-
                 kever = self.hab.kevers[recipient]
                 if kever is None:
                     logger.Error("unable to reply, dest {} not found".format(recipient))
@@ -298,7 +296,7 @@ class Respondant(doing.DoDoer):
 
                     self.extend([clientDoer])
 
-                    fwd = forwarding.forward(pre=recipient, serder=exn)
+                    fwd = forwarding.forward(pre=recipient, serder=exn, topic="credential")
                     msg = bytearray(fwd.raw)
                     msg.extend(self.hab.sanction(exn))
 

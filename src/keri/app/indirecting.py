@@ -12,12 +12,12 @@ from hio.core import http
 from hio.core.tcp import serving
 from hio.help import decking
 
-from . import habbing, keeping, directing, storing
+from . import habbing, keeping, directing, storing, httping
 from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, coring
 from ..db import basing
-from ..peer import exchanging, httping
+from ..peer import exchanging
 from ..vdr import verifying
 from ..vdr.eventing import Tevery
 

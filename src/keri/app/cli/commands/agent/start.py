@@ -19,7 +19,7 @@ from keri import help
 from keri.app import directing, agenting, indirecting, forwarding, storing
 from keri.app.cli.common import existing
 from keri.core import scheming
-from keri.peer import httping, exchanging
+from keri.peer import exchanging
 from keri.vc import walleting, handling, proving
 from keri.vdr import issuing, verifying
 
@@ -90,6 +90,7 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
     wallet = walleting.Wallet(hab=hab, name=name)
 
     issuer = issuing.Issuer(hab=hab, name=hab.name, noBackers=True)
+    issuerDoer = issuing.IssuerDoer(issuer=issuer)
     verifier = verifying.Verifier(hab=hab, reger=issuer.reger, tevers=issuer.tevers)
 
     jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
@@ -100,7 +101,7 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
 
     mbx = indirecting.MailboxDirector(hab=hab, exc=exchanger, verifier=verifier, topics=["/receipt", "/replay"])
 
-    doers.extend([exchanger, directant, tcpServerDoer, mbx])
+    doers.extend([exchanger, directant, tcpServerDoer, mbx, issuerDoer])
     doers.extend(adminInterface(controller, hab, proofHandler.proofs, issuer, verifier, adminHttpPort, adminTcpPort))
 
     try:
@@ -112,14 +113,6 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
 
 
 def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623, adminTcpPort=5624):
-    echoHandler = agenting.EchoHandler()
-    rotateHandler = agenting.RotateHandler(hab=hab)
-    issDoer = issuing.IssuerDoer(issuer=issuer)
-
-    handlers = [rotateHandler, echoHandler]
-
-    exchanger = exchanging.Exchanger(hab=hab, controller=controller, handlers=handlers)
-
     server = tcpServing.Server(host="", port=adminTcpPort)
     tcpServerDoer = tcpServing.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server)
@@ -131,8 +124,8 @@ def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623
     mbx = storing.Mailboxer(name=hab.name)
     rep = storing.Respondant(hab=hab, mbx=mbx)
 
-    httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep, exchanger=exchanger)
-    kiwiServer = agenting.KiwiServer(hab=hab, issuer=issuer, app=app, rep=rep)
+    httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep)
+    kiwiServer = agenting.KiwiServer(hab=hab, controller=controller, issuer=issuer, app=app, rep=rep)
 
     mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
     wiq = agenting.WitnessInquisitor(hab=hab)
@@ -141,7 +134,7 @@ def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623
     server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [exchanger, issDoer, tcpServerDoer, directant, httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler,
+    doers = [tcpServerDoer, directant, httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler,
              kiwiServer]
 
     return doers

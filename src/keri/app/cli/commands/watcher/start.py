@@ -13,8 +13,6 @@ from hio.core.tcp import serving
 from keri import help, kering
 from keri.app import directing, indirecting, watching, habbing, storing
 from keri.app.cli.common import existing
-from keri.peer import exchanging, httping
-
 
 parser = argparse.ArgumentParser(description='Start watcher')
 parser.set_defaults(handler=lambda args: startWatcher(args))

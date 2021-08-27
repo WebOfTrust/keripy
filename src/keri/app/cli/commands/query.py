@@ -40,8 +40,7 @@ class QueryDoer(doing.DoDoer):
         self.wit = wit
         self.pre = pre
 
-        self.toRemove = []
-        self.toRemove.extend(doers)
+        self.toRemove = list(doers)
         doers.extend([doing.doify(self.queryDo)])
         super(QueryDoer, self).__init__(doers=doers, **kwa)
 
