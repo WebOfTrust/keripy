@@ -499,8 +499,9 @@ class Baser(dbing.LMDBer):
         # all sad scgs  (sad non-indexed signature serializations) (Cigar couples)
         self.scgs = subing.Suber(db=self, subkey='scgs')
 
-        # all reply messages. All replys are versioned sads so use
-        # .sdts, .ssgs, and .scgs for datetimes and signatures
+        # all reply messages. All replys are versioned sads ( with version string)
+        # so use Serder to deserialize also because reply is SAD
+        # use  .sdts, .ssgs, and .scgs for datetimes and signatures
         self.rpys = subing.SerderSuber(db=self, subkey='rpys.')
 
         # all reply escrows indices of partially signed reply messages keyed by
