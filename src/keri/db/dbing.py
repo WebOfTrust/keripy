@@ -710,7 +710,7 @@ class LMDBer:
                 cpre, cn = splitKeyON(key)
                 if cpre != pre:  # prev is now the last event for pre
                     break  # done
-                yield (cn, val)  # (on, dig) of event  yield (cn, bytes(val))
+                yield (cn, val)  # (on, dig) of event
 
 
     def getAllOrdItemAllPreIter(self, db, key=b''):
@@ -735,7 +735,7 @@ class LMDBer:
 
             for key, val in cursor.iternext():  # return key, val at cursor
                 cpre, cn = splitKeyON(key)
-                yield (cpre, cn, val)  # (pre, on, dig) of event  yield (cpre, cn, bytes(val))
+                yield (cpre, cn, val)  # (pre, on, dig) of event
 
 
     # For databases that support set of insertion ordered values with apparent
