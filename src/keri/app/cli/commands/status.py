@@ -40,7 +40,7 @@ def handler(args):
             if cnt > 0:
                 print()
                 print("Groups:")
-                groups = hab.db.gids.getItemIter()
+                groups = hab.db.gids.getAllItemIter()
                 idx = 1
                 for (pre,), group in groups:
                     print("\t{}. {} ({})".format(idx, group.name, pre))

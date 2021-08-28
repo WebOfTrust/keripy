@@ -49,8 +49,8 @@ class SuberBase():
 
     def _tokey(self, keys: Union[str, bytes, memoryview, Iterable]):
         """
-        Converts key to key str with proper separators and returns key bytes.
-        If key is already str then returns. Else If key is iterable (non-str)
+        Converts keys to key str with proper separators and returns key bytes.
+        If keys is already str then returns. Else If keys is iterable (non-str)
         of strs then joins with separator converts to bytes and returns
 
         Parameters:
@@ -176,7 +176,7 @@ class Suber(SuberBase):
         return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getItemIter(self):
+    def getAllItemIter(self):
         """
         Return iterator over the all the items in subdb
 
@@ -353,7 +353,7 @@ class DupSuber(SuberBase):
         return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
 
 
-    def getItemIter(self):
+    def getAllItemIter(self):
         """
         Return iterator over the all the items in subdb. Each duplicate at a
         given key is yielded as a separate item.
@@ -572,7 +572,7 @@ class IoSetSuber(SuberBase):
     def getAllItemIter(self):
         """
         Return iterator over the all the items in subdb. Each entry at a
-        given key including set members is yielded as a separate item.
+        given key including all io set members is yielded as a separate item.
 
         Returns:
             iterator: of tuples of keys tuple and val str for
@@ -585,8 +585,8 @@ class IoSetSuber(SuberBase):
 
     def getIoItem(self, keys: Union[str, Iterable]):
         """
-        Gets items list at key made from keys where key is apparent effective key
-        and items all have same apparent effective key
+        Gets (iokeys, val) ioitems list at key made from keys where key is
+        apparent effective key  and ioitems all have same apparent effective key
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -606,7 +606,7 @@ class IoSetSuber(SuberBase):
 
     def getIoItemIter(self, keys: Union[str, Iterable]):
         """
-        Gets items iterator Gets items list at key made from keys where key is
+        Gets (iokeys, val) ioitems  iterator at key made from keys where key is
         apparent effective key and items all have same apparent effective key
 
         Parameters:
@@ -742,7 +742,7 @@ class SerderSuber(Suber):
         return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getItemIter(self):
+    def getAllItemIter(self):
         """
         Return iterator over the all the items in subdb
 
@@ -911,7 +911,7 @@ class SerderDupSuber(DupSuber):
         return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
 
 
-    def getItemIter(self):
+    def getAllItemIter(self):
         """
         Return iterator over the all the items in subdb. Each duplicate at a
         given key is yielded as a separate item.
@@ -949,7 +949,7 @@ class MatterSuber(Suber):
 
     def put(self, keys: Union[str, Iterable], val: coring.Matter):
         """
-        Puts qb64 of Matter instance val at key made from keys. Does not overwrite
+        Puts qb64b of Matter instance val at key made from keys. Does not overwrite
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -966,7 +966,7 @@ class MatterSuber(Suber):
 
     def pin(self, keys: Union[str, Iterable], val: coring.Matter):
         """
-        Pins (sets) qb64 of Matter instance val at key made from keys. Overwrites.
+        Pins (sets) qb64b of Matter instance val at key made from keys. Overwrites.
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -1015,17 +1015,158 @@ class MatterSuber(Suber):
         return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getItemIter(self):
+    def getAllItemIter(self):
         """
         Return iterator over the all the items in subdb
 
         Returns:
-            iterator: of tuples of keys tuple and val Serder for
+            iterator: of tuples of keys tuple and val Matter for
             each entry in db
 
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
             yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
+
+
+
+class MultiMatSuber(MatterSuber):
+    """
+    Sub class of MatterSuber where data is concatenation of .qb64b property from
+    one or more Matter subclass instances (qb64b is bytes of fully qualified
+    serialization)
+    Automatically serializes and deserializes from qb64b to/from Matter instances
+
+    """
+
+    def __init__(self, *pa, klases: Iterable = None, **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            klases (Iterable): of Class references to subclasses of Matter, each
+                of to Type[coring.Matter]
+        """
+        if klases is None:
+            klases = (coring.Matter, )  # set default to tuple of single Matter
+        for klas in klases:
+            if not (issubclass(klas, coring.Matter)):
+                raise ValueError("Invalid klas type={}, expected {}."
+                                 "".format(klas, coring.Matter))
+        super(MatterSuber, self).__init__(*pa, **kwa)
+        self.klases = klases
+
+
+    def _toval(self, vals: Iterable):
+        """
+        Converts Matter instances in vals to concatenated val bytes of each
+        instance .qb64b.
+
+        Parameters:
+           vals (Iterable): of Matter subclass instances.
+
+        """
+        return (b''.join(val.qb64b for val in vals))
+
+
+    def _tovals(self, val: Union[bytes, memoryview]):
+        """
+        Converts val bytes to vals tuple of Matter subclass instance by deserializing
+        concatenation in order of each instance .qb64b in val with klas
+        in .klases
+
+        Returns:
+           vals (tuple): Matter subclass instances
+
+        Parameters:
+           val (Union[bytes, memoryview]):  of concatenation of .qb64b
+
+        """
+        if not isinstance(val, bytearray):  # memoryview or bytes
+            val = bytearray(val)  #  so may strip
+        return tuple(klas(qb64b=val, strip=True) for klas in self.klases)
+
+
+
+    def put(self, keys: Union[str, Iterable], vals: Iterable):
+        """
+        Puts concatenation of qb64b of Matter instances in iterable vals
+           at key made from keys. Does not overwrite
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (Iterable): instances in order from self.klases
+
+        Returns:
+            result (bool): True If successful, False otherwise, such as key
+                              already in database.
+        """
+        return (self.db.putVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=self._toval(vals)))
+
+
+    def pin(self, keys: Union[str, Iterable], vals: Iterable):
+        """
+        Pins (sets) qb64 of Matter instance val at key made from keys. Overwrites.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (Iterable): instances in order from self.klases
+
+        Returns:
+            result (bool): True If successful. False otherwise.
+        """
+        return (self.db.setVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=self._toval(vals)))
+
+
+    def get(self, keys: Union[str, Iterable]):
+        """
+        Gets Matter instance at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            vals (Iterable): instances in order from self.klases
+            None if no entry at keys
+
+        Usage:
+            Use walrus operator to catch and raise missing entry
+            if (vals := mydb.get(keys)) is None:
+                raise ExceptionHere
+            use vals here
+
+        """
+        val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
+        return self._tovals(val) if val is not None else None
+
+
+    def rem(self, keys: Union[str, Iterable]):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+        """
+        return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
+
+
+    def getAllItemIter(self):
+        """
+        Return iterator over the all the items in subdb
+
+        Returns:
+            iterator: of tuples of keys tuple and vals Iterable of Matter instances
+                      in order fromfrom self.klases for each entry in db
+
+        """
+        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield (self._tokeys(key), self._tovals(val))
 
 
 
@@ -1190,7 +1331,7 @@ class MatterDupSuber(DupSuber):
         return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
 
 
-    def getItemIter(self):
+    def getAllItemIter(self):
         """
         Return iterator over the all the items in subdb. Each duplicate at a
         given key is yielded as a separate item.
@@ -1260,7 +1401,7 @@ class SignerSuber(MatterSuber):
                 if val is not None else None)
 
 
-    def getItemIter(self):
+    def getAllItemIter(self):
         """
         Return iterator over the all the items in subdb
 
@@ -1367,7 +1508,7 @@ class CryptSignerSuber(SignerSuber):
         return (self.klas(qb64b=bytes(val), transferable=verfer.transferable))
 
 
-    def getItemIter(self, decrypter: coring.Decrypter = None):
+    def getAllItemIter(self, decrypter: coring.Decrypter = None):
         """
         Return iterator over the all the items in subdb. If decrypter then
         assumes values in db were encrypted and so decrypts each before

@@ -775,7 +775,7 @@ class Manager:
         # other secrets
         if self.decrypter:
             # re-encrypt root salt secrets by prefix parameters .prms
-            for keys, data in self.ks.prms.getItemIter():  # keys is tuple of pre qb64
+            for keys, data in self.ks.prms.getAllItemIter():  # keys is tuple of pre qb64
                 if data.salt:
                     salter = self.decrypter.decrypt(ser=data.salt)
                     data.salt = (self.encrypter.encrypt(matter=salter).qb64
@@ -784,7 +784,7 @@ class Manager:
 
             # private signing key seeds
             # keys is tuple == (verkey.qb64,) .pris database auto decrypts
-            for keys, signer in self.ks.pris.getItemIter(decrypter=self.decrypter):
+            for keys, signer in self.ks.pris.getAllItemIter(decrypter=self.decrypter):
                 self.ks.pris.pin(keys, signer, encrypter=self.encrypter)
 
         self.ks.gbls.pin("aeid", aeid)  # set aeid in db

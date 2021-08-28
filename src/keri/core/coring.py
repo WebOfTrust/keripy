@@ -2189,8 +2189,8 @@ class Prefixer(Matter):
 
     def __init__(self, raw=None, code=None, ked=None, allows=None, **kwa):
         """
-        assign ._derive to derive derivatin of aid prefix from ked
-        assign ._verify to verify derivation of aid prefix  from ked
+        assign ._derive to derive aid prefix from ked
+        assign ._verify to verify derivation of aid prefix from ked
 
         Default code is None to force EmptyMaterialError when only raw provided but
         not code.

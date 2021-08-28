@@ -164,7 +164,7 @@ def test_kom_get_item_iter():
         mydb.put(keys=("a","3"), val=y)
         mydb.put(keys=("a","4"), val=z)
 
-        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        items = [(keys, asdict(data)) for keys, data in mydb.getAllItemIter()]
         assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
                         (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
                         (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
@@ -538,7 +538,7 @@ def test_dup_komer():
 
         locs = [wit3loc] + locs
         i = 0
-        for keys, loc in locDB.getItemIter():
+        for keys, loc in locDB.getAllItemIter():
             assert loc == locs[i]
             i += 1
 
@@ -742,7 +742,7 @@ def test_ioset_komer():
 
         locs = [wit3loc] + locs
         i = 0
-        for keys, loc in locDB.getItemIter():
+        for keys, loc in locDB.getAllItemIter():
             assert loc == locs[i]
             i += 1
 

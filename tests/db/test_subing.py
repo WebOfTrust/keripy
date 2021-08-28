@@ -90,11 +90,12 @@ def test_suber():
         sdb.put(keys=("a","3"), val=y)
         sdb.put(keys=("a","4"), val=z)
 
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        items = [(keys, val) for keys, val in sdb.getAllItemIter()]
         assert items == [(('a', '1'), w),
                         (('a', '2'), x),
                         (('a', '3'), y),
                         (('a', '4'), z)]
+
 
     assert not os.path.exists(db.path)
     assert not db.opened
@@ -158,7 +159,7 @@ def test_dup_suber():
         for i, val in enumerate(sdb.getIter(keys=keys1)):
             assert val == actual[i]
 
-        items = [(keys, val) for keys, val in sdb.getItemIter()]
+        items = [(keys, val) for keys, val in sdb.getAllItemIter()]
         assert items == [(('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0002'), 'A real charmer!'),
@@ -381,7 +382,7 @@ def test_serder_suber():
         sdb.put(keys=("a","1"), val=srdr0)
         sdb.put(keys=("a","2"), val=srdr1)
 
-        items = [(keys, srdr.dig) for keys, srdr in sdb.getItemIter()]
+        items = [(keys, srdr.dig) for keys, srdr in sdb.getAllItemIter()]
         assert items == [(('a', '1'), srdr0.dig),
                          (('a', '2'), srdr1.dig)]
 
@@ -464,7 +465,7 @@ def test_serder_dup_suber():
         for i, val in enumerate(sdb.getIter(keys=keys1)):
             assert val.ked == keds[i]
 
-        items = [(keys, val.ked) for keys, val in sdb.getItemIter()]
+        items = [(keys, val.ked) for keys, val in sdb.getAllItemIter()]
         assert items == [(('blue', 'back'),
                         {'v': 'KERI10JSON0000c1_',
                          'i': 'BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y',
@@ -615,7 +616,7 @@ def test_matter_suber():
         sdb.put(keys=("a","1"), val=val0)
         sdb.put(keys=("a","2"), val=val1)
 
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter()]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getAllItemIter()]
         assert items == [(('a', '1'), val0.qb64),
                          (('a', '2'), val1.qb64)]
 
@@ -661,13 +662,132 @@ def test_matter_suber():
         sdb.put(keys=("a","1"), val=val0)
         sdb.put(keys=("a","2"), val=val1)
 
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter()]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getAllItemIter()]
         assert items == [(('a', '1'), val0.qb64),
                          (('a', '2'), val1.qb64)]
 
     assert not os.path.exists(db.path)
     assert not db.opened
     """Done Test"""
+
+
+def test_multi_mat_suber():
+    """
+    Test MultiMatSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        sdb = subing.MultiMatSuber(db=db, subkey='bags.')  # default klases is [Matter]
+        assert isinstance(sdb, subing.MultiMatSuber)
+        assert len(sdb.klases) == 1
+        assert issubclass(sdb.klases[0], coring.Matter)
+        assert not sdb.sdb.flags()["dupsort"]
+
+        matb0 = "BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+        matter0 = coring.Matter(qb64=matb)
+        vals0 = [matter0]
+
+        matb1 = "BHHzqZWzwE-Wk7K0gzQPYGGwTmuupUhPx5_y1x4ejhcc"
+        matter1 = coring.Matter(qb64=pre1)
+        vals1 = [matter1]
+
+        keys = ("alpha", "dog")
+        sdb.put(keys=keys, val=val0)
+        actual = sdb.get(keys=keys)
+        assert isinstance(actual, coring.Matter)
+        assert actual.qb64 == val0.qb64
+
+        sdb.rem(keys)
+        actual = sdb.get(keys=keys)
+        assert actual is None
+
+        sdb.put(keys=keys, val=val0)
+        actual = sdb.get(keys=keys)
+        assert isinstance(actual, coring.Matter)
+        assert actual.qb64 == val0.qb64
+
+
+        result = sdb.put(keys=keys, val=val1)
+        assert not result
+        assert isinstance(actual, coring.Matter)
+        assert actual.qb64 == val0.qb64
+
+        result = sdb.pin(keys=keys, val=val1)
+        assert result
+        actual = sdb.get(keys=keys)
+        assert isinstance(actual, coring.Matter)
+        assert actual.qb64 == val1.qb64
+
+
+        # test with keys as string not tuple
+        keys = "{}.{}".format("beta", "fish")
+
+        sdb.put(keys=keys, val=val1)
+        actual = sdb.get(keys=keys)
+        assert isinstance(actual, coring.Matter)
+        assert actual.qb64 == val1.qb64
+
+        sdb.rem(keys)
+        actual = sdb.get(keys=keys)
+        assert actual is None
+
+        # test missing entry at keys
+        badkey = "badkey"
+        actual = sdb.get(badkey)
+        assert actual is None
+
+        # test iteritems
+        sdb = subing.MatterSuber(db=db, subkey='pugs.')
+        assert isinstance(sdb, subing.MatterSuber)
+        sdb.put(keys=("a","1"), val=val0)
+        sdb.put(keys=("a","2"), val=val1)
+
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getAllItemIter()]
+        assert items == [(('a', '1'), val0.qb64),
+                         (('a', '2'), val1.qb64)]
+
+
+        # Try multiple klases
+        klases = (coring.Dater, coring.Seqner, coring.Diger)
+        sdb = subing.MultiMatSuber(db=db, subkey='bags.', klases=klases)
+        assert isinstance(sdb, subing.MultiMatSuber)
+        for klas, sklas in zip(klases, sdb.klases):
+            assert klas == sklas
+        assert not sdb.sdb.flags()["dupsort"]
+
+
+        # test .toval and tovals
+        dater = coring.Dater(dts="2021-01-01T00:00:00.000000+00:00")
+        datb = dater.qb64b
+        assert datb == b'1AAG2021-01-01T00c00c00d000000p00c00'
+
+        seqner = coring.Seqner(sn=20)
+        seqb = seqner.qb64b
+        assert seqb == b'0AAAAAAAAAAAAAAAAAAAAAFA'
+
+        diger = coring.Diger(ser=b"Hello Me Maties.")
+        digb = diger.qb64b
+        assert digb == b'Eurq5IDrYVpYoBB_atyW3gPXBEB5XBDuEG5wMbjcauwk'
+
+        vals = (dater, seqner, diger)
+        valb = sdb._toval(vals=vals)
+        assert  valb == datb + seqb + digb
+
+        vals = sdb._tovals(val=valb)
+        assert b"".join(val.qb64b for val in vals) == valb
+        for val, klas in zip(vals, sdb.klases):
+            assert isinstance(val, klas)
+
+
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+    """Done Test"""
+
 
 
 def test_matter_dup_suber():
@@ -741,7 +861,7 @@ def test_matter_dup_suber():
         for i, val in enumerate(sdb.getIter(keys=keys1)):
             assert val.qb64 == pres[i]
 
-        items = [(keys, val.qb64) for keys, val in sdb.getItemIter()]
+        items = [(keys, val.qb64) for keys, val in sdb.getAllItemIter()]
         assert items == [(('alpha', 'dog'), 'B7K0gzhcQPYGGwTmuupUhWk1x4ejWzwEHHzqPx5_yZ-w'),
                         (('beta', 'cat'), 'BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y'),
                         (('beta', 'cat'), 'BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'),
@@ -869,7 +989,7 @@ def test_signer_suber():
         assert sdb.put(keys=signer0.verfer.qb64b, val=signer0)
         assert sdb.put(keys=signer1.verfer.qb64b, val=signer1)
 
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter()]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getAllItemIter()]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                          ((signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -995,7 +1115,7 @@ def test_crypt_signer_suber():
         assert sdb.put(keys=signer0.verfer.qb64b, val=signer0)
         assert sdb.put(keys=signer1.verfer.qb64b, val=signer1)
 
-        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getItemIter()]
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getAllItemIter()]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                          ((signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -1035,7 +1155,7 @@ def test_crypt_signer_suber():
         assert sdb.put(keys=signer0.verfer.qb64b, val=signer0, encrypter=encrypter0)
         assert sdb.put(keys=signer1.verfer.qb64b, val=signer1, encrypter=encrypter0)
 
-        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getItemIter(decrypter=decrypter0)]
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getAllItemIter(decrypter=decrypter0)]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                              ((signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -1043,10 +1163,10 @@ def test_crypt_signer_suber():
         # test re-encrypt
         encrypter1 = coring.Encrypter(verkey=cryptsigner1.verfer.qb64)
         decrypter1 = coring.Decrypter(seed=cryptsigner1.qb64b)
-        for keys, sgnr in sdb.getItemIter(decrypter=decrypter0):
+        for keys, sgnr in sdb.getAllItemIter(decrypter=decrypter0):
             sdb.pin(keys, sgnr, encrypter=encrypter1)
 
-        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getItemIter(decrypter=decrypter1)]
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getAllItemIter(decrypter=decrypter1)]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                              ((signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -1080,4 +1200,4 @@ def test_crypt_signer_suber():
 
 
 if __name__ == "__main__":
-    test_ioset_suber()
+    test_suber()

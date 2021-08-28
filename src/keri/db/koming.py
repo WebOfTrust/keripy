@@ -280,7 +280,7 @@ class Komer(KomerBase):
         return (self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getItemIter(self):
+    def getAllItemIter(self):
         """
         Return iterator over the all the items in subdb
 
@@ -657,8 +657,6 @@ class IoSetKomer(KomerBase):
         return val
 
 
-
-
     def getIter(self, keys: Union[str, Iterable]):
         """
         Gets dup vals iterator at key made from keys
@@ -689,8 +687,6 @@ class IoSetKomer(KomerBase):
         return (self.db.cntIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
                                      sep=self.sep))
-
-
 
 
     def rem(self, keys: Union[str, Iterable], val=None):
@@ -739,7 +735,7 @@ class IoSetKomer(KomerBase):
 
     def getIoItem(self, keys: Union[str, Iterable]):
         """
-        Gets items list at key made from keys where key is apparent effective key
+        Gets ioitems list at key made from keys where key is apparent effective key
         and items all have same apparent effective key
 
         Parameters:
@@ -760,7 +756,7 @@ class IoSetKomer(KomerBase):
 
     def getIoItemIter(self, keys: Union[str, Iterable]):
         """
-        Gets items iterator Gets items list at key made from keys where key is
+        Gets ioitems iterator Gets items list at key made from keys where key is
         apparent effective key and items all have same apparent effective key
 
         Parameters:
