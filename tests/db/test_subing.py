@@ -96,6 +96,23 @@ def test_suber():
                         (('a', '3'), y),
                         (('a', '4'), z)]
 
+        sdb.put(keys=("b","1"), val=w)
+        sdb.put(keys=("b","2"), val=x)
+        sdb.put(keys=("c","3"), val=y)
+        sdb.put(keys=("c","4"), val=z)
+
+        items = [(keys, val) for keys, val in sdb.getTopItemIter(keys=("b", ))]
+        assert items == [(('b', '1'), w),
+                         (('b', '2'), x)]
+
+        items = [(keys, val) for keys, val in sdb.getTopItemIter(keys=("a", ))]
+        assert items == [(('a', '1'), w),
+                        (('a', '2'), x),
+                        (('a', '3'), y),
+                        (('a', '4'), z)]
+
+
+
 
     assert not os.path.exists(db.path)
     assert not db.opened
@@ -1200,4 +1217,4 @@ def test_crypt_signer_suber():
 
 
 if __name__ == "__main__":
-    test_suber()
+    test_ioset_suber()

@@ -7,7 +7,8 @@ keri.db.koming module
 import types
 import json
 from dataclasses import dataclass
-from typing import Type, Union, Iterable
+from typing import Type, Union
+from collections.abc import Iterable
 
 import cbor2
 import msgpack
@@ -295,6 +296,7 @@ class Komer(KomerBase):
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
             yield (self._tokeys(key), self.deserializer(val))
+
 
     def getCnt(self):
         """

@@ -4,7 +4,8 @@ KERI
 keri.db.subdbing module
 
 """
-from typing import Type, Union, Iterable
+from typing import Type, Union
+from collections.abc import Iterable
 
 from .. import help
 from ..core import coring
@@ -186,6 +187,24 @@ class Suber(SuberBase):
 
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield (self._tokeys(key), bytes(val).decode("utf-8"))
+
+
+    def getTopItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iteratore: tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+
+        Returns:
+            iterator: of tuples of keys tuple and val bytes for
+            each entry in db whose key startswith keys
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             yield (self._tokeys(key), bytes(val).decode("utf-8"))
 
 
@@ -638,7 +657,7 @@ class IoSetSuber(SuberBase):
         """
         # getAllItemIter converts both key and val memoryviews to bytes
         for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(iokey), self._decode(val))
+            yield (self._tokeys(iokey), self._decode(bytes(val)))
 
 
     def remIokey(self, iokeys: Union[str, bytes, memoryview, Iterable]):
