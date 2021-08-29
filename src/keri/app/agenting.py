@@ -14,16 +14,16 @@ from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
 
-from keri import kering
+from .. import kering
+from . import httping, grouping
 from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, scheming, coring
 from ..db import dbing
+from ..help import helping
 from ..help.helping import nowIso8601
 from ..peer import exchanging
-from . import httping
 from ..vc import proving, handling
-from ..vdr import issuing
 
 logger = help.ogler.getLogger()
 
@@ -419,10 +419,10 @@ class KiwiServer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, controller, issuer, rep, cues=None, app=None, **kwa):
+    def __init__(self, hab, controller, rep, issuer=None, cues=None, app=None, **kwa):
         self.hab = hab
         self.controller = controller
-        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=self.hab, name=self.hab.name)
+        self.issuer = issuer
         self.rep = rep
         self.kevts = decking.Deck()
         self.tevts = decking.Deck()
@@ -432,11 +432,17 @@ class KiwiServer(doing.DoDoer):
         self.app.resp_options.media_handlers.update(media.Handlers())
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.app.add_route("/credential/issue", self, suffix="issue")
-        self.app.add_route("/credential/revoke", self, suffix="revoke")
-        self.app.add_route("/presentation/request", self, suffix="request")
+        if issuer is not None:
+            self.app.add_route("/credential/issue", self, suffix="issue")
+            self.app.add_route("/credential/revoke", self, suffix="revoke")
+            self.app.add_route("/presentation/request", self, suffix="request")
 
-        doers = [doing.doify(self.receiptDo), doing.doify(self.publishDo)]
+        self.app.add_route("/multisig/incept", self, suffix="multisig_incept")
+        self.app.add_route("/multisig/rotate", self, suffix="multisig_rotate")
+        self.gicpr = grouping.MultiSigInceptDoer(hab=hab)
+        self.grotr = grouping.MultiSigRotateDoer(hab=hab)
+
+        doers = [self.grotr, doing.doify(self.receiptDo), doing.doify(self.publishDo)]
 
         super(KiwiServer, self).__init__(doers=doers, **kwa)
 
@@ -478,6 +484,20 @@ class KiwiServer(doing.DoDoer):
                 yield self.tock
             yield self.tock
 
+    def cueDo(self, tymth, tock=0.0, **opts):
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.grotr.cues:
+                cue = self.grotr.cues.popleft()
+                exn = exchanging.exchange(route="/multisig/results", payload=cue, date=helping.nowIso8601())
+                self.rep.reps.append(dict(dest=self.controller, rep=exn))
+
+                yield self.tock
+
+            yield self.tock
 
     def on_post_issue(self, req, rep):
         media = json.loads(req.context.raw)
@@ -532,7 +552,6 @@ class KiwiServer(doing.DoDoer):
         rep.status = falcon.HTTP_200
         rep.data = creder.pretty().encode("utf-8")
 
-
     def on_post_revoke(self, req, rep):
         media = json.loads(req.context.raw)
         said = media.get("said")
@@ -559,5 +578,58 @@ class KiwiServer(doing.DoDoer):
 
         exn = exchanging.exchange(route="/presentation/request", payload=pl)
         self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn))
+
+        rep.status = falcon.HTTP_202
+
+    def on_post_multisig_rotate(self, req, rep):
+        body = json.loads(req.context.raw)
+
+        if "group" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid multisig group rotate request, 'group' is required'"
+
+        msg = dict(
+            sith=None,
+            toad=None,
+            data=None,
+            witnesses=[],
+            witness_cuts=[],
+            witness_adds=[],
+        )
+
+        for key in msg:
+            if key in body:
+                msg[key] = body[key]
+
+        msg["group"] = body["group"]
+
+        self.grotr.msgs.append(msg)
+
+        rep.status = falcon.HTTP_202
+
+    def on_post_multisig_incept(self, req, rep):
+        body = json.loads(req.context.raw)
+
+        if "group" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid multisig group inception request, 'group' is required'"
+
+        msg = dict(
+            aids=None,
+            toad=None,
+            witnesses=[],
+            transferable=True,
+            icount=None,
+            isith=None,
+            ncount=None,
+            nsith=None)
+
+        for key in msg:
+            if key in body:
+                msg[key] = body[key]
+
+        msg["group"] = body["group"]
+
+        self.gicpr.msgs.append(msg)
 
         rep.status = falcon.HTTP_202

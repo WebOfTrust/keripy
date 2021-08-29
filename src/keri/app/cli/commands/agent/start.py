@@ -27,10 +27,6 @@ d = "Runs KERI Agent controller.\n"
 d += "Example:\nagent -t 5621\n"
 parser = argparse.ArgumentParser(description=d)
 parser.set_defaults(handler=lambda args: launch(args))
-parser.add_argument('-V', '--version',
-                    action='version',
-                    version=__version__,
-                    help="Prints out version of script runner.")
 parser.add_argument('-H', '--http',
                     action='store',
                     default=5620,
@@ -43,10 +39,6 @@ parser.add_argument('-a', '--admin-http-port',
                     action='store',
                     default=5623,
                     help="Admin port number the HTTP server listens on. Default is 5623.")
-parser.add_argument('-t', '--admin-tcp-port',
-                    action='store',
-                    default=5624,
-                    help="Admin port number the HTTP server listens on. Default is 5624.")
 parser.add_argument('-n', '--name',
                     action='store',
                     default="agent",
@@ -55,6 +47,10 @@ parser.add_argument('-p', '--pre',
                     action='store',
                     default="",
                     help="Identifier prefix to accept control messages from.")
+parser.add_argument('-i', '--issuer',
+                    action='store_true',
+                    help="Declare this agent as an issuer of credentials.")
+
 
 
 def launch(args):
@@ -65,17 +61,16 @@ def launch(args):
     logger.info("\n******* Starting Agent for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.http, args.tcp)
 
-    runAgent(controller=args.pre, name=args.name,
+    runAgent(controller=args.pre, name=args.name, issuance=args.issuer,
              httpPort=int(args.http),
              tcp=int(args.tcp),
-             adminHttpPort=int(args.admin_http_port),
-             adminTcpPort=int(args.admin_tcp_port))
+             adminHttpPort=int(args.admin_http_port))
 
     logger.info("\n******* Ended Agent for %s listening: http/%s, tcp/%s"
                 ".******\n\n", args.name, args.http, args.tcp)
 
 
-def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=5623, adminTcpPort=5624):
+def runAgent(controller, name="agent", issuance=False, httpPort=5620, tcp=5621, adminHttpPort=5623):
     """
     Setup and run one agent
     """
@@ -89,20 +84,24 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
 
     wallet = walleting.Wallet(hab=hab, name=name)
 
+    handlers = []
     issuer = issuing.Issuer(hab=hab, name=hab.name, noBackers=True)
     issuerDoer = issuing.IssuerDoer(issuer=issuer)
     verifier = verifying.Verifier(hab=hab, reger=issuer.reger, tevers=issuer.tevers)
 
-    jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
-    issueHandler = handling.IssueHandler(wallet=wallet, typ=jsonSchema)
-    requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
-    proofHandler = handling.ProofHandler()
-    exchanger = exchanging.Exchanger(hab=hab, handlers=[issueHandler, requestHandler, proofHandler])
+    proofs = decking.Deck()
+    if issuance:
+        jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
+        issueHandler = handling.IssueHandler(wallet=wallet, typ=jsonSchema)
+        requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
+        proofHandler = handling.ProofHandler(proofs=proofs)
+        handlers.extend([issueHandler, requestHandler, proofHandler])
 
+    exchanger = exchanging.Exchanger(hab=hab, handlers=handlers)
     mbx = indirecting.MailboxDirector(hab=hab, exc=exchanger, verifier=verifier, topics=["/receipt", "/replay"])
 
     doers.extend([exchanger, directant, tcpServerDoer, mbx, issuerDoer])
-    doers.extend(adminInterface(controller, hab, proofHandler.proofs, issuer, verifier, adminHttpPort, adminTcpPort))
+    doers.extend(adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort))
 
     try:
         tock = 0.03125
@@ -112,12 +111,7 @@ def runAgent(controller, name="agent", httpPort=5620, tcp=5621, adminHttpPort=56
         print(f"prefix for {name} does not exist, incept must be run first", )
 
 
-def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623, adminTcpPort=5624):
-    server = tcpServing.Server(host="", port=adminTcpPort)
-    tcpServerDoer = tcpServing.ServerDoer(server=server)
-    directant = directing.Directant(hab=hab, server=server)
-
-    # app = falcon.App(cors_enable=True)
+def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623):
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
 
@@ -134,8 +128,7 @@ def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623
     server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [tcpServerDoer, directant, httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler,
-             kiwiServer]
+    doers = [httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler, kiwiServer]
 
     return doers
 

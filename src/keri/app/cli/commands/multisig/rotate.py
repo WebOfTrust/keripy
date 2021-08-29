@@ -57,7 +57,6 @@ class GroupMultisigRotate(doing.DoDoer):
         self.rotr = grouping.MultiSigRotateDoer(hab=self.hab)
         self.msg = kwa
 
-
         mbd = indirecting.MailboxDirector(hab=self.hab, topics=['/receipt', '/multisig'])
         doers.extend([self.rotr, mbd])
         self.toRemove = list(doers)
