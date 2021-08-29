@@ -170,6 +170,15 @@ def test_kom_get_item_iter():
                         (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
                         (('a', '4'), {'a': 'Eat', 'b': 'White'})]
 
+        mydb.put(keys=("b","1"), val=w)
+        mydb.put(keys=("b","2"), val=x)
+        mydb.put(keys=("c","3"), val=y)
+        mydb.put(keys=("c","4"), val=z)
+
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter(keys=("b", ))]
+        assert items == [(('b', '1'), {'a': 'Big', 'b': 'Blue'}),
+                         (('b', '2'), {'a': 'Tall', 'b': 'Red'})]
+
     assert not os.path.exists(db.path)
     assert not db.opened
 
@@ -536,9 +545,19 @@ def test_dup_komer():
             assert end == ends[i]
             i += 1
 
-        locs = [wit3loc] + locs
+        i = 0
+        for keys, end in endDB.getTopItemIter(keys=(cid0, )):
+            assert end == ends[i]
+            i += 1
+
+        alllocs = [wit3loc] + locs
         i = 0
         for keys, loc in locDB.getAllItemIter():
+            assert loc == alllocs[i]
+            i += 1
+
+        i = 0
+        for keys, loc in locDB.getTopItemIter(keys=(eids[0], )):
             assert loc == locs[i]
             i += 1
 
@@ -740,11 +759,22 @@ def test_ioset_komer():
             assert keys in  (keys0, keys1)
             i += 1
 
-        locs = [wit3loc] + locs
+        i = 0
+        for keys, end in endDB.getTopItemIter(keys=(cid0, )):
+            assert end == ends[i]
+            i += 1
+
+        alllocs = [wit3loc] + locs
         i = 0
         for keys, loc in locDB.getAllItemIter():
+            assert loc == alllocs[i]
+            i += 1
+
+        i = 0
+        for keys, loc in locDB.getTopItemIter(keys=(eids[0], )):
             assert loc == locs[i]
             i += 1
+
 
         # test getAllIoItem
         iokeys1 = [b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E.witness.AAAAAAAAAAAAAAAAAAAAAA']
@@ -762,6 +792,12 @@ def test_ioset_komer():
                                ('EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E',
                                 'witness',
                                 'AAAAAAAAAAAAAAAAAAAAAA')]
+
+        i = 0
+        for iokeys, end in endDB.getTopIoItemIter(keys=(cid0, )):
+            assert end == ends[i]
+            assert iokeys == iokeysall[i]
+            i += 1
 
         i = 0
         for iokeys, end in endDB.getAllIoItemIter():

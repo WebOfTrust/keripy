@@ -28,9 +28,9 @@ class SuberBase():
     Sep = '.'  # separator for combining key iterables
 
     def __init__(self, db: Type[dbing.LMDBer], *,
-                       subkey: str = 'docs.',
-                       dupsort: bool = False,
-                       sep: str = None,
+                       subkey: str='docs.',
+                       dupsort: bool=False,
+                       sep: str=None,
                        **kwa):
         """
         Parameters:
@@ -95,12 +95,46 @@ class SuberBase():
 
 
 
+    def getAllItemIter(self):
+        """
+        Return iterator over the all the items in subdb
+
+        Returns:
+            iterator: of tuples of keys tuple and val bytes for
+            each entry in db
+
+        """
+        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield (self._tokeys(key), bytes(val).decode("utf-8"))
+
+
+    def getTopItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iterator): tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield (self._tokeys(key), bytes(val).decode("utf-8"))
+
+
 class Suber(SuberBase):
     """
     Sub DB of LMDBer. Subclass of SuberBase
     """
 
-    def __init__(self, db: Type[dbing.LMDBer], *, subkey: str = 'docs.', **kwa):
+    def __init__(self, db: Type[dbing.LMDBer], *,
+                       subkey: str = 'docs.',
+                       dupsort: bool=False, **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
@@ -177,36 +211,6 @@ class Suber(SuberBase):
         return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb
-
-        Returns:
-            iterator: of tuples of keys tuple and val bytes for
-            each entry in db
-
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), bytes(val).decode("utf-8"))
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable]):
-        """
-        Returns:
-            iterator (Iteratore: tuple (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
-
-
-        Returns:
-            iterator: of tuples of keys tuple and val bytes for
-            each entry in db whose key startswith keys
-
-        """
-        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(key), bytes(val).decode("utf-8"))
-
 
 class DupSuber(SuberBase):
     """
@@ -217,7 +221,10 @@ class DupSuber(SuberBase):
     This is a limitation of dupsort==True sub dbs in LMDB
     """
 
-    def __init__(self, db: Type[dbing.LMDBer], *, subkey: str = 'docs.', **kwa):
+    def __init__(self, db: Type[dbing.LMDBer], *,
+                       subkey: str='docs.',
+                       dupsort: bool=True,
+                       **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
@@ -370,20 +377,6 @@ class DupSuber(SuberBase):
         else:
             val = b''
         return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
-
-
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb. Each duplicate at a
-        given key is yielded as a separate item.
-
-        Returns:
-            iterator: of tuples of keys tuple and val dataclass instance for
-            each entry in db. Raises StopIteration when done
-
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), self._decode(bytes(val)))
 
 
 class IoSetSuber(SuberBase):
@@ -602,6 +595,27 @@ class IoSetSuber(SuberBase):
             yield (self._tokeys(key), self._decode(bytes(val)))
 
 
+    def getTopItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iterator): tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            key, ion = dbing.unsuffix(iokey, sep=self.sep)
+            yield (self._tokeys(key), self._decode(bytes(val)))
+
+
+
     def getIoItem(self, keys: Union[str, Iterable]):
         """
         Gets (iokeys, val) ioitems list at key made from keys where key is
@@ -657,6 +671,25 @@ class IoSetSuber(SuberBase):
         """
         # getAllItemIter converts both key and val memoryviews to bytes
         for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield (self._tokeys(iokey), self._decode(bytes(val)))
+
+
+    def getTopIoItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iterator): tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             yield (self._tokeys(iokey), self._decode(bytes(val)))
 
 
@@ -772,6 +805,25 @@ class SerderSuber(Suber):
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
             yield (self._tokeys(key), coring.Serder(raw=bytes(val)))
+
+
+    def getTopItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iterator): tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield (self._tokeys(iokey), coring.Serder(raw=bytes(val)))
 
 
 class SerderDupSuber(DupSuber):
@@ -944,6 +996,26 @@ class SerderDupSuber(DupSuber):
             yield (self._tokeys(key), coring.Serder(raw=bytes(val)))
 
 
+    def getTopItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iteratore: tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+       Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield (self._tokeys(key), coring.Serder(raw=bytes(val)))
+
+
+
 class MatterSuber(Suber):
     """
     Sub class of Suber where data is Matter subclass instance .qb64b property
@@ -1044,6 +1116,25 @@ class MatterSuber(Suber):
 
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
+
+
+    def getTopItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iteratore: tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
 
 
@@ -1181,10 +1272,32 @@ class MultiMatSuber(MatterSuber):
 
         Returns:
             iterator: of tuples of keys tuple and vals Iterable of Matter instances
-                      in order fromfrom self.klases for each entry in db
+                      in order from self.klases for each entry in db
 
         """
         for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield (self._tokeys(key), self._tovals(val))
+
+
+    def getTopItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iterator): of tuples of keys tuple and vals Iterable of
+                    Matter instances in order fromfrom self.klases for each entry
+                    in db for each entry in db all
+                      the items in subdb whose key startswith key made from keys.
+                      Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             yield (self._tokeys(key), self._tovals(val))
 
 
@@ -1364,6 +1477,23 @@ class MatterDupSuber(DupSuber):
             yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
 
 
+    def getTopItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iteratore: tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
 
 
 class SignerSuber(MatterSuber):
@@ -1435,9 +1565,33 @@ class SignerSuber(MatterSuber):
                                    transferable=verfer.transferable))
 
 
+
+    def getTopItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iteratore: tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            ikeys = self._tokeys(key)  # verkey is last split if any
+            verfer = coring.Verfer(qb64b=ikeys[-1])   # last split
+            yield (ikeys, self.klas(qb64b=bytes(val),
+                                   transferable=verfer.transferable))
+
+
 class CryptSignerSuber(SignerSuber):
     """
-    Sub class of MatterSuber where data is Signer subclass instance .qb64b propery
+    Sub class of SignerSuber where data is Signer subclass instance .qb64b property
+    that has been encrypted if encrypter provided.
     which is a fully qualified serialization and uses the key which is the qb64b
     of the signer.verfer to get the transferable property of the verfer
     Automatically serializes and deserializes from qb64b to/from Signer instances
@@ -1550,3 +1704,34 @@ class CryptSignerSuber(SignerSuber):
             else:
                 yield (keys, self.klas(qb64b=bytes(val),
                                    transferable=verfer.transferable))
+
+
+
+    def getTopItemIter(self, keys: Union[str, Iterable],
+                       decrypter: coring.Decrypter = None):
+        """
+        Returns:
+            iterator (Iterator): of tuples (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        decrypter (coring.Decrypter): optional. If provided assumes value in
+                db was encrypted and so decrypts before converting to Signer.
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            ikeys = self._tokeys(key)  # verkey is last split if any
+            verfer = coring.Verfer(qb64b=ikeys[-1])   # last split
+            if decrypter:
+                yield (ikeys, decrypter.decrypt(ser=bytes(val),
+                                            transferable=verfer.transferable))
+            else:
+                yield (ikeys, self.klas(qb64b=bytes(val),
+                                            transferable=verfer.transferable))

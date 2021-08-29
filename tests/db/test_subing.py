@@ -118,7 +118,6 @@ def test_suber():
     assert not db.opened
 
 
-
 def test_dup_suber():
     """
     Test DubSuber LMDBer sub database class
@@ -182,6 +181,13 @@ def test_dup_suber():
                         (('test_key', '0002'), 'A real charmer!'),
                         (('test_key', '0002'), 'Hello sailer!'),
                         (('test_key', '0002'), 'Not my type.')]
+
+        sdb.put(keys=("blah", "blue"), vals=[sal, sue, sam])
+
+        items = [(keys, val) for keys, val in sdb.getTopItemIter(keys=("blah", ))]
+        assert items == [(('blah', 'blue'), 'A real charmer!'),
+                        (('blah', 'blue'), 'Hello sailer!'),
+                        (('blah', 'blue'), 'Not my type.')]
 
         # test with keys as string not tuple
         keys2 = "keystr"
@@ -280,6 +286,7 @@ def test_ioset_suber():
                         (('test_key', '0002'), 'Hello sailer!'),
                         (('test_key', '0002'), 'A real charmer!')]
 
+
         items = list(sdb.getAllIoItemIter())
         assert items ==  [(('test_key', '0001', 'AAAAAAAAAAAAAAAAAAAAAA'), 'See ya later.'),
                         (('test_key', '0001', 'AAAAAAAAAAAAAAAAAAAAAB'), 'Hey gorgeous!'),
@@ -295,6 +302,17 @@ def test_ioset_suber():
         items = [(iokeys, val) for iokeys,  val in  sdb.getIoItemIter(keys=keys0)]
         assert items == [(('test_key', '0001', 'AAAAAAAAAAAAAAAAAAAAAA'), 'See ya later.'),
                          (('test_key', '0001', 'AAAAAAAAAAAAAAAAAAAAAB'), 'Hey gorgeous!')]
+
+        sdb.put(keys=("bla", "pop"), vals=[sal, sue, sam])
+        items = [(keys, val) for keys, val in sdb.getTopItemIter(keys=("bla", ))]
+        assert items == [(('bla', 'pop'), 'Not my type.'),
+                         (('bla', 'pop'), 'Hello sailer!'),
+                         (('bla', 'pop'), 'A real charmer!')]
+
+        items = list(sdb.getTopIoItemIter(keys=("bla", )))
+        assert items == [(('bla', 'pop', 'AAAAAAAAAAAAAAAAAAAAAA'), 'Not my type.'),
+                         (('bla', 'pop', 'AAAAAAAAAAAAAAAAAAAAAB'), 'Hello sailer!'),
+                         (('bla', 'pop', 'AAAAAAAAAAAAAAAAAAAAAC'), 'A real charmer!')]
 
         for iokeys, val in sdb.getAllIoItemIter():
             assert sdb.remIokey(iokeys=iokeys)
@@ -402,6 +420,14 @@ def test_serder_suber():
         items = [(keys, srdr.dig) for keys, srdr in sdb.getAllItemIter()]
         assert items == [(('a', '1'), srdr0.dig),
                          (('a', '2'), srdr1.dig)]
+
+        sdb.put(keys=("b","1"), val=srdr0)
+        sdb.put(keys=("b","2"), val=srdr1)
+        sdb.put(keys=("c","1"), val=srdr0)
+
+        items = [(keys, srdr.dig) for keys, srdr in sdb.getTopItemIter(keys=("b", ))]
+        assert items == [(('b', '1'), srdr0.dig),
+                         (('b', '2'), srdr1.dig)]
 
     assert not os.path.exists(db.path)
     assert not db.opened
@@ -526,6 +552,86 @@ def test_serder_dup_suber():
                          't': 'icp',
                          'kt': '1',
                          'k': ['B7K0gzhcQPYGGwTmuupUhWk1x4ejWzwEHHzqPx5_yZ-z'],
+                         'n': '',
+                         'bt': '0',
+                         'b': [],
+                         'c': [],
+                         'a': []})]
+
+
+        keys3 = ("red", "top")
+        sdb.put(keys=keys3, vals=[srdr0, srdr1, srdr2])
+        keys4 = ("red", "side")
+        sdb.put(keys=keys4, vals=[srdr0, srdr1, srdr2])
+
+        items = [(keys, val.ked) for keys, val in sdb.getTopItemIter(keys=("red", ))]
+        assert items == [(('red', 'side'),
+                        {'v': 'KERI10JSON0000c1_',
+                         'i': 'BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y',
+                         's': '0',
+                         't': 'icp',
+                         'kt': '1',
+                         'k': ['BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-b'],
+                         'n': '',
+                         'bt': '0',
+                         'b': [],
+                         'c': [],
+                         'a': []}),
+                       (('red', 'side'),
+                        {'v': 'KERI10JSON0000c1_',
+                         'i': 'BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA',
+                         's': '0',
+                         't': 'icp',
+                         'kt': '1',
+                         'k': ['BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'],
+                         'n': '',
+                         'bt': '0',
+                         'b': [],
+                         'c': [],
+                         'a': []}),
+                       (('red', 'side'),
+                        {'v': 'KERI10JSON0000c1_',
+                         'i': 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',
+                         's': '0',
+                         't': 'icp',
+                         'kt': '1',
+                         'k': ['BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'],
+                         'n': '',
+                         'bt': '0',
+                         'b': [],
+                         'c': [],
+                         'a': []}),
+                       (('red', 'top'),
+                        {'v': 'KERI10JSON0000c1_',
+                         'i': 'BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y',
+                         's': '0',
+                         't': 'icp',
+                         'kt': '1',
+                         'k': ['BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-b'],
+                         'n': '',
+                         'bt': '0',
+                         'b': [],
+                         'c': [],
+                         'a': []}),
+                       (('red', 'top'),
+                        {'v': 'KERI10JSON0000c1_',
+                         'i': 'BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA',
+                         's': '0',
+                         't': 'icp',
+                         'kt': '1',
+                         'k': ['BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'],
+                         'n': '',
+                         'bt': '0',
+                         'b': [],
+                         'c': [],
+                         'a': []}),
+                       (('red', 'top'),
+                        {'v': 'KERI10JSON0000c1_',
+                         'i': 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',
+                         's': '0',
+                         't': 'icp',
+                         'kt': '1',
+                         'k': ['BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'],
                          'n': '',
                          'bt': '0',
                          'b': [],
@@ -683,6 +789,14 @@ def test_matter_suber():
         assert items == [(('a', '1'), val0.qb64),
                          (('a', '2'), val1.qb64)]
 
+        sdb.put(keys=("b","1"), val=val0)
+        sdb.put(keys=("b","2"), val=val1)
+
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getTopItemIter(keys=("b", ))]
+        assert items == [(('b', '1'), val0.qb64),
+                         (('b', '2'), val1.qb64)]
+
+
     assert not os.path.exists(db.path)
     assert not db.opened
     """Done Test"""
@@ -705,28 +819,27 @@ def test_multi_mat_suber():
         assert not sdb.sdb.flags()["dupsort"]
 
         matb0 = "BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
-        matter0 = coring.Matter(qb64=matb)
+        matter0 = coring.Matter(qb64=matb0)
         vals0 = [matter0]
 
         matb1 = "BHHzqZWzwE-Wk7K0gzQPYGGwTmuupUhPx5_y1x4ejhcc"
-        matter1 = coring.Matter(qb64=pre1)
+        matter1 = coring.Matter(qb64=matb1)
         vals1 = [matter1]
 
         keys = ("alpha", "dog")
-        sdb.put(keys=keys, val=val0)
-        actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Matter)
-        assert actual.qb64 == val0.qb64
+        sdb.put(keys=keys, vals=vals0)
+        actuals = sdb.get(keys=keys)
+        assert isinstance(actuals[0], coring.Matter)
+        assert actuals[0].qb64 == vals0[0].qb64
 
         sdb.rem(keys)
-        actual = sdb.get(keys=keys)
-        assert actual is None
+        actuals = sdb.get(keys=keys)
+        assert actuals is None
 
-        sdb.put(keys=keys, val=val0)
-        actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Matter)
-        assert actual.qb64 == val0.qb64
-
+        sdb.put(keys=keys, vals=vals0)
+        actuals = sdb.get(keys=keys)
+        assert isinstance(actuals[0], coring.Matter)
+        assert actuals[0].qb64 == vals0[0].qb64
 
         result = sdb.put(keys=keys, val=val1)
         assert not result
@@ -766,6 +879,15 @@ def test_multi_mat_suber():
         items = [(keys, srdr.qb64) for keys, srdr in sdb.getAllItemIter()]
         assert items == [(('a', '1'), val0.qb64),
                          (('a', '2'), val1.qb64)]
+
+        sdb.put(keys=("b","1"), val=val0)
+        sdb.put(keys=("b","2"), val=val1)
+        sdb.put(keys=("c","1"), val=val0)
+        sdb.put(keys=("c","2"), val=val1)
+
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getTopItemIter(keys=("b", ))]
+        assert items == [(('b', '1'), val0.qb64),
+                         (('b', '2'), val1.qb64)]
 
 
         # Try multiple klases
@@ -884,6 +1006,10 @@ def test_matter_dup_suber():
                         (('beta', 'cat'), 'BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'),
                         (('beta', 'cat'), 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc')]
 
+        items = [(keys, val.qb64) for keys, val in sdb.getTopItemIter(keys=("beta", ))]
+        assert items == [(('beta', 'cat'), 'BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y'),
+                         (('beta', 'cat'), 'BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'),
+                         (('beta', 'cat'), 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc')]
 
         # test with keys as string not tuple
         keys2 = "keystr"
@@ -1009,6 +1135,13 @@ def test_signer_suber():
         items = [(keys, srdr.qb64) for keys, srdr in sdb.getAllItemIter()]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                          ((signer0.verfer.qb64, ), signer0.qb64)]
+
+        assert sdb.put(keys=("a", signer0.verfer.qb64), val=signer0)
+        assert sdb.put(keys=("a", signer1.verfer.qb64), val=signer1)
+
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getTopItemIter(keys=("a", ))]
+        assert items == [(("a", signer1.verfer.qb64), signer1.qb64),
+                         (("a", signer0.verfer.qb64, ), signer0.qb64)]
 
 
     assert not os.path.exists(db.path)
@@ -1176,6 +1309,14 @@ def test_crypt_signer_suber():
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                              ((signer0.verfer.qb64, ), signer0.qb64)]
 
+        assert sdb.put(keys=("a", signer0.verfer.qb64), val=signer0, encrypter=encrypter0)
+        assert sdb.put(keys=("a", signer1.verfer.qb64), val=signer1, encrypter=encrypter0)
+
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getTopItemIter(keys=("a", ),
+                                                            decrypter=decrypter0)]
+        assert items == [(("a", signer1.verfer.qb64 ), signer1.qb64),
+                          (("a", signer0.verfer.qb64 ), signer0.qb64)]
+
 
         # test re-encrypt
         encrypter1 = coring.Encrypter(verkey=cryptsigner1.verfer.qb64)
@@ -1185,7 +1326,9 @@ def test_crypt_signer_suber():
 
         items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getAllItemIter(decrypter=decrypter1)]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
-                             ((signer0.verfer.qb64, ), signer0.qb64)]
+                         ((signer0.verfer.qb64, ), signer0.qb64),
+                         (("a", signer1.verfer.qb64, ), signer1.qb64),
+                         (("a", signer0.verfer.qb64, ), signer0.qb64)                         ]
 
 
         # now test with manager
@@ -1217,4 +1360,4 @@ def test_crypt_signer_suber():
 
 
 if __name__ == "__main__":
-    test_ioset_suber()
+    test_multi_mat_suber()

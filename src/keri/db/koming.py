@@ -110,6 +110,42 @@ class KomerBase():
         return tuple(key.decode("utf-8").split(self.sep))
 
 
+    def getAllItemIter(self):
+        """
+        Return iterator over the all the items in subdb
+
+        Returns:
+            iterator: of tuples of keys tuple and val dataclass instance for
+            each entry in db. Raises StopIteration when done
+
+        Example:
+            if key in database is "a.b" and val is serialization of dataclass
+               with attributes x and y then returns
+               (("a","b"), dataclass(x=1,y=2))
+        """
+        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield (self._tokeys(key), self.deserializer(val))
+
+
+    def getTopItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iteratore: tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield (self._tokeys(key), self.deserializer(val))
+
+
     def _serializer(self, kind):
         """
         Parameters:
@@ -280,22 +316,6 @@ class Komer(KomerBase):
         """
         return (self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
-
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb
-
-        Returns:
-            iterator: of tuples of keys tuple and val dataclass instance for
-            each entry in db. Raises StopIteration when done
-
-        Example:
-            if key in database is "a.b" and val is serialization of dataclass
-               with attributes x and y then returns
-               (("a","b"), dataclass(x=1,y=2))
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), self.deserializer(val))
 
 
     def getCnt(self):
@@ -486,25 +506,6 @@ class DupKomer(KomerBase):
         else:
             val = b''
         return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
-
-
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb. Each duplicate at a
-        given key is yielded as a separate item.
-
-        Returns:
-            iterator: of tuples of keys tuple and val dataclass instance for
-            each entry in db. Raises StopIteration when done
-
-        Example:
-            if key in database is "a.b" and val is serialization of dataclass
-               with attributes x and y then returns
-               (("a","b"), dataclass(x=1,y=2))
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), self.deserializer(val))
-
 
 
 class IoSetKomer(KomerBase):
@@ -735,6 +736,26 @@ class IoSetKomer(KomerBase):
             yield (self._tokeys(key), self.deserializer(val))
 
 
+    def getTopItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iteratore: tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            key, ion = dbing.unsuffix(iokey, sep=self.sep)
+            yield (self._tokeys(key), self.deserializer(val))
+
+
     def getIoItem(self, keys: Union[str, Iterable]):
         """
         Gets ioitems list at key made from keys where key is apparent effective key
@@ -790,6 +811,26 @@ class IoSetKomer(KomerBase):
         """
         for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
             yield (self._tokeys(iokey), self.deserializer(val))
+
+
+    def getTopIoItemIter(self, keys: Union[str, Iterable]):
+        """
+        Returns:
+            iterator (Iterator): tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield (self._tokeys(iokey), self.deserializer(val))
+
 
 
     def remIokey(self, iokeys: Union[str, bytes, memoryview, Iterable]):
