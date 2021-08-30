@@ -45,6 +45,8 @@ ksn = state, key state notice
 qry = query
 rpy = reply
 exn = exchange
+exp = expose, sealed data exposition
+fwd = forward, ??
 vcp = vdr incept, verifiable data registry inception
 vrt = vdr rotate, verifiable data registry rotation
 iss = vc issue, verifiable credential issuance
@@ -53,12 +55,13 @@ bis = backed vc issue, registry-backed transaction event log credential issuance
 brv = backed vc revoke, registry-backed transaction event log credential revocation
 """
 
-Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn req qry rpy exn fwd '
-                               'vcp vrt iss rev bis brv '))
+Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn req qry rpy exn exp '
+                               'fwd vcp vrt iss rev bis brv '))
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              ksn='ksn', req='req', qry='qry', rpy='rpy', exn='exn', fwd='fwd',
-              vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
+              ksn='ksn', req='req', qry='qry', rpy='rpy', exn='exn', exp='exp',
+              fwd='fwd', vcp='vcp', vrt='vrt', iss='iss', rev='rev',
+              bis='bis', brv='brv')
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
@@ -3130,10 +3133,11 @@ class CounterCodex:
     WitnessIdxSigs:                 str =  '-B'  # Qualified Base64 Indexed Signature.
     NonTransReceiptCouples:         str =  '-C'  # Composed Base64 Couple, pre+cig.
     TransReceiptQuadruples:         str =  '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
-    FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fnu + dts.
-    TransIndexedSigGroups:          str =  '-F'  # Composed Base64 Triple, pre+snu+dig+ControllerIdxSigs group.
+    FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fnu+dts.
+    TransIndexedSigGroups:          str =  '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
     SealSourceCouples:              str =  '-G'  # Composed Base64 couple, snu+dig of given delegator's or issuer's event
-    SignerSealCouples:              str =  '-H'  # Composed Base64 couple, pre+ControllerIdxSigs group.
+    SignerSealCouples:              str =  '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
+    SealSourceTriples:              str =  '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
     MessageDataGroups:              str =  '-U'  # Composed Message Data Group or Primitive
     AttachedMaterialQuadlets:       str =  '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     MessageDataMaterialQuadlets:    str =  '-W'  # Composed Grouped Message Data Quadlet (4 char each)
@@ -3210,6 +3214,7 @@ class Counter:
                 '-F': Sizage(hs=2, ss=2, fs=4),
                 '-G': Sizage(hs=2, ss=2, fs=4),
                 '-H': Sizage(hs=2, ss=2, fs=4),
+                '-I': Sizage(hs=2, ss=2, fs=4),
                 '-U': Sizage(hs=2, ss=2, fs=4),
                 '-V': Sizage(hs=2, ss=2, fs=4),
                 '-W': Sizage(hs=2, ss=2, fs=4),

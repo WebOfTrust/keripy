@@ -46,10 +46,13 @@ def test_ilks():
     """
     assert Ilks == Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt',
                           rct='rct', ksn='ksn', req='req', qry='qry', rpy='rpy',
-                          exn='exn', fwd='fwd', vcp='vcp', vrt='vrt',
+                          exn='exn', exp='exp', fwd='fwd', vcp='vcp', vrt='vrt',
                           iss='iss', rev='rev', bis='bis', brv='brv', )
 
     assert isinstance(Ilks, Ilkage)
+
+    for fld in Ilks._fields:
+        assert fld == getattr(Ilks, fld)
 
     assert 'icp' in Ilks
     assert Ilks.icp == 'icp'
@@ -74,6 +77,8 @@ def test_ilks():
     assert Ilks.rpy == 'rpy'
     assert 'exn' in Ilks
     assert Ilks.exn == 'exn'
+    assert 'exp' in Ilks
+    assert Ilks.exp == 'exp'
     assert 'fwd' in Ilks
     assert Ilks.fwd == 'fwd'
 
@@ -1072,6 +1077,7 @@ def test_counter():
                                             'TransIndexedSigGroups': '-F',
                                             'SealSourceCouples':  '-G',
                                             'SignerSealCouples': '-H',
+                                            'SealSourceTriples': '-I',
                                             'MessageDataGroups': '-U',
                                             'AttachedMaterialQuadlets': '-V',
                                             'MessageDataMaterialQuadlets': '-W',
@@ -1120,6 +1126,7 @@ def test_counter():
                                 '-F': Sizage(hs=2, ss=2, fs=4),
                                 '-G': Sizage(hs=2, ss=2, fs=4),
                                 '-H': Sizage(hs=2, ss=2, fs=4),
+                                '-I': Sizage(hs=2, ss=2, fs=4),
                                 '-U': Sizage(hs=2, ss=2, fs=4),
                                 '-V': Sizage(hs=2, ss=2, fs=4),
                                 '-W': Sizage(hs=2, ss=2, fs=4),
@@ -3432,4 +3439,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_saider()
+    test_ilks()

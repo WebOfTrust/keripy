@@ -812,6 +812,7 @@ def test_multi_mat_suber():
         assert db.name == "test"
         assert db.opened
 
+        # Test Single klas
         sdb = subing.MultiMatSuber(db=db, subkey='bags.')  # default klases is [Matter]
         assert isinstance(sdb, subing.MultiMatSuber)
         assert len(sdb.klases) == 1
@@ -826,71 +827,72 @@ def test_multi_mat_suber():
         matter1 = coring.Matter(qb64=matb1)
         vals1 = [matter1]
 
-        keys = ("alpha", "dog")
-        sdb.put(keys=keys, vals=vals0)
-        actuals = sdb.get(keys=keys)
+        keys0 = ("alpha", "dog")
+        sdb.put(keys=keys0, vals=vals0)
+        actuals = sdb.get(keys=keys0)
         assert isinstance(actuals[0], coring.Matter)
-        assert actuals[0].qb64 == vals0[0].qb64
+        assert actuals[0].qb64 == matter0.qb64
 
-        sdb.rem(keys)
-        actuals = sdb.get(keys=keys)
+        sdb.rem(keys0)
+        actuals = sdb.get(keys=keys0)
         assert actuals is None
 
-        sdb.put(keys=keys, vals=vals0)
-        actuals = sdb.get(keys=keys)
+        sdb.put(keys=keys0, vals=vals0)
+        actuals = sdb.get(keys=keys0)
         assert isinstance(actuals[0], coring.Matter)
         assert actuals[0].qb64 == vals0[0].qb64
 
-        result = sdb.put(keys=keys, val=val1)
+        result = sdb.put(keys=keys0, vals=vals1)
         assert not result
-        assert isinstance(actual, coring.Matter)
-        assert actual.qb64 == val0.qb64
 
-        result = sdb.pin(keys=keys, val=val1)
+        result = sdb.pin(keys=keys0, vals=vals1)
         assert result
-        actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Matter)
-        assert actual.qb64 == val1.qb64
+        actuals = sdb.get(keys=keys0)
+        assert isinstance(actuals[0], coring.Matter)
+        assert actuals[0].qb64 == matter1.qb64
 
+        sdb.rem(keys0)
+        actuals = sdb.get(keys=keys0)
+        assert actuals is None
 
         # test with keys as string not tuple
-        keys = "{}.{}".format("beta", "fish")
+        keys1 = "{}.{}".format("beta", "fish")
 
-        sdb.put(keys=keys, val=val1)
-        actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Matter)
-        assert actual.qb64 == val1.qb64
+        sdb.put(keys=keys1, vals=vals1)
+        actuals = sdb.get(keys=keys1)
+        assert isinstance(actuals[0], coring.Matter)
+        assert actuals[0].qb64 == matter1.qb64
 
-        sdb.rem(keys)
-        actual = sdb.get(keys=keys)
-        assert actual is None
+        sdb.rem(keys1)
+        actuals = sdb.get(keys=keys1)
+        assert actuals is None
 
         # test missing entry at keys
         badkey = "badkey"
-        actual = sdb.get(badkey)
-        assert actual is None
+        actuals = sdb.get(badkey)
+        assert actuals is None
 
         # test iteritems
-        sdb = subing.MatterSuber(db=db, subkey='pugs.')
-        assert isinstance(sdb, subing.MatterSuber)
-        sdb.put(keys=("a","1"), val=val0)
-        sdb.put(keys=("a","2"), val=val1)
+        assert sdb.put(keys0, vals0)
+        assert sdb.put(keys1, vals1)
 
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getAllItemIter()]
-        assert items == [(('a', '1'), val0.qb64),
-                         (('a', '2'), val1.qb64)]
+        items = [(keys, [val.qb64 for val in vals])
+                                       for keys, vals in sdb.getAllItemIter()]
+        assert items == [(('alpha', 'dog'), [matter0.qb64]),
+                         (('beta', 'fish'), [matter1.qb64])]
 
-        sdb.put(keys=("b","1"), val=val0)
-        sdb.put(keys=("b","2"), val=val1)
-        sdb.put(keys=("c","1"), val=val0)
-        sdb.put(keys=("c","2"), val=val1)
+        sdb.put(keys=("b","1"), vals=vals0)
+        sdb.put(keys=("b","2"), vals=vals1)
+        sdb.put(keys=("c","1"), vals=vals0)
+        sdb.put(keys=("c","2"), vals=vals1)
 
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getTopItemIter(keys=("b", ))]
+        items = [(keys, [val.qb64 for val in vals])
+                                       for keys, vals in  sdb.getTopItemIter(keys=("b", ))]
         assert items == [(('b', '1'), val0.qb64),
                          (('b', '2'), val1.qb64)]
 
 
-        # Try multiple klases
+        # Test multiple klases
         klases = (coring.Dater, coring.Seqner, coring.Diger)
         sdb = subing.MultiMatSuber(db=db, subkey='bags.', klases=klases)
         assert isinstance(sdb, subing.MultiMatSuber)
