@@ -172,10 +172,11 @@ def test_kom_get_item_iter():
 
         mydb.put(keys=("b","1"), val=w)
         mydb.put(keys=("b","2"), val=x)
-        mydb.put(keys=("c","3"), val=y)
-        mydb.put(keys=("c","4"), val=z)
+        mydb.put(keys=("bc","3"), val=y)
+        mydb.put(keys=("bc","4"), val=z)
 
-        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter(keys=("b", ))]
+        topkeys = ("b", "")  # append empty str to force trailing .sep
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), {'a': 'Big', 'b': 'Blue'}),
                          (('b', '2'), {'a': 'Tall', 'b': 'Red'})]
 
@@ -546,7 +547,7 @@ def test_dup_komer():
             i += 1
 
         i = 0
-        for keys, end in endDB.getTopItemIter(keys=(cid0, )):
+        for keys, end in endDB.getTopItemIter(keys=(cid0, "" )):
             assert end == ends[i]
             i += 1
 
@@ -557,7 +558,7 @@ def test_dup_komer():
             i += 1
 
         i = 0
-        for keys, loc in locDB.getTopItemIter(keys=(eids[0], )):
+        for keys, loc in locDB.getTopItemIter(keys=(eids[0], "" )):
             assert loc == locs[i]
             i += 1
 
@@ -760,7 +761,7 @@ def test_ioset_komer():
             i += 1
 
         i = 0
-        for keys, end in endDB.getTopItemIter(keys=(cid0, )):
+        for keys, end in endDB.getTopItemIter(keys=(cid0, "")):
             assert end == ends[i]
             i += 1
 
@@ -771,7 +772,7 @@ def test_ioset_komer():
             i += 1
 
         i = 0
-        for keys, loc in locDB.getTopItemIter(keys=(eids[0], )):
+        for keys, loc in locDB.getTopItemIter(keys=(eids[0], "")):
             assert loc == locs[i]
             i += 1
 
@@ -794,7 +795,7 @@ def test_ioset_komer():
                                 'AAAAAAAAAAAAAAAAAAAAAA')]
 
         i = 0
-        for iokeys, end in endDB.getTopIoItemIter(keys=(cid0, )):
+        for iokeys, end in endDB.getTopIoItemIter(keys=(cid0, "")):
             assert end == ends[i]
             assert iokeys == iokeysall[i]
             i += 1
@@ -815,4 +816,4 @@ def test_ioset_komer():
 
 
 if __name__ == "__main__":
-    test_ioset_komer()
+    test_kom_get_item_iter()

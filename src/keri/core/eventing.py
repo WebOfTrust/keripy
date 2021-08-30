@@ -1203,14 +1203,16 @@ def reply(route="",
           kind=Serials.json):
 
     """
-    Returns serder of reply  message.
-    Utility function to automate creation of query messages.
+    Returns serder of reply 'rpy' message.
+    Utility function to automate creation of reply messages.
+    Reply 'rpy' message is a SAD item with an associated derived SAID in its
+    'd' field.
 
      Parameters:
-        pre is identifier prefix qb64
-        dig is digest of previous event qb64
-        sn is int sequence number
+        route is route path string that indicates data flow handler (behavior)
+            to processs the reply
         data is list of dicts of comitted data such as seals
+        dts is date-time-stamp of message at time or creation
         version is Version instance
         kind is serialization kind
 
@@ -1225,7 +1227,7 @@ def reply(route="",
          "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
          "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
          "name": "John Jones",
-        "role": "Founder",
+         "role": "Founder",
       }
     }
     """
@@ -1238,7 +1240,58 @@ def reply(route="",
                d="",
                dt=dts if dts is not None else helping.nowIso8601(),
                r=route if route is not None else "",  # route
-               a=data,
+               a=data if data else {},  # attributes
+               )
+
+    _, sad = coring.Saider.saidify(sad=sad)
+
+    return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
+
+
+def expose(route="",
+           data=None,
+           version=Version,
+           kind=Serials.json):
+
+    """
+    Returns serder of exposure 'exp' message.
+    Utility function to automate creation of exposure messages for disclosure of
+    sealed data associated with anchored seals in a KEL. Reference to anchoring
+    seal is provided as an attachment to exposure message.
+    Exposure 'exp' message is a SAD item with an associated derived SAID in its
+    'd' field.
+
+     Parameters:
+        route is route path string that indicates data flow handler (behavior)
+            to processs the exposure
+        data is list of dicts of comitted data such as seals
+        version is Version instance
+        kind is serialization kind
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "exp",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "r" : "sealed/processor",
+      "a" :
+      {
+         "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "name": "John Jones",
+         "role": "Founder",
+      }
+    }
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    if data is None:
+        data = {}
+
+    sad = dict(v=vs,  # version string
+               t=Ilks.exp,
+               d="",
+               r=route if route is not None else "",  # route
+               a=data if data else {},  # attributes
                )
 
     _, sad = coring.Saider.saidify(sad=sad)

@@ -48,14 +48,24 @@ class SuberBase():
         self.sep = sep if sep is not None else self.Sep
 
 
-    def _tokey(self, keys: Union[str, bytes, memoryview, Iterable]):
+    def _tokey(self, keys: Union[str, bytes, memoryview, Iterable],
+                top: bool=False):
         """
         Converts keys to key str with proper separators and returns key bytes.
         If keys is already str then returns. Else If keys is iterable (non-str)
-        of strs then joins with separator converts to bytes and returns
+        of strs then joins with separator converts to bytes and returns.
+        top allows partial key from top branch of key space given by partial keys
+
+        Returns:
+           key (bytes): each element of keys is joined by .sep. If top then last
+                        char of key is also .sep
 
         Parameters:
            keys (Union[str, bytes, Iterable]): str, bytes, or Iterable of str.
+           top (bool): True means treat as partial key tuple from top branch of
+                       key space given by partial keys. Resultant key ends in .sep.
+                       False means treat as full branch in key space. Resultant key
+                       does not end in .sep
 
         """
         if isinstance(keys, memoryview):  # memoryview of bytes
@@ -64,7 +74,7 @@ class SuberBase():
             return keys.encode("utf-8")
         elif hasattr(keys, "decode"): # bytes
             return keys
-        return (self.sep.join(keys).encode("utf-8"))  # iterable
+        return (self.sep.join(keys).encode("utf-8"))
 
 
     def _tokeys(self, key: Union[str, bytes, memoryview]):
