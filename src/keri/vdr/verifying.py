@@ -87,7 +87,7 @@ class Verifier:
         sigers = self.hab.mgr.sign(ser=serder.raw, verfers=kever.verfers)
         msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
 
-        msg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
+        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
         msg.extend(self.hab.pre.encode("utf-8"))
 
         counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,

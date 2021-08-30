@@ -71,7 +71,7 @@ def test_proving():
         assert len(proof) == pags
 
         ctr = Counter(qb64b=proof, strip=True)
-        assert ctr.code == CtrDex.TransIndexedSigGroups
+        assert ctr.code == CtrDex.TransIdxSigGroups
         assert ctr.count == 1
 
         prefixer = Prefixer(qb64b=proof, strip=True)

@@ -661,7 +661,7 @@ class Parser:
                                                                abort=pipelined)
                             trqs.append((prefixer, seqner, diger, siger))
 
-                    elif ctr.code == CtrDex.TransIndexedSigGroups:
+                    elif ctr.code == CtrDex.TransIdxSigGroups:
                         # extract attaced trans indexed sig groups each made of
                         # triple pre+snu+dig plus indexed sig group
                         # pre is pre of signer (endorser) of msg
@@ -699,7 +699,7 @@ class Parser:
                                 isigers.append(isiger)
                             tsgs.append((prefixer, seqner, diger, isigers))
 
-                    elif ctr.code == CtrDex.SignerSealCouples:
+                    elif ctr.code == CtrDex.TransLastIdxSigGroups:
                         # extract attaced signer seal indexed sig groups each made of
                         # identifier pre plus indexed sig group
                         # pre is pre of signer (endorser) of msg

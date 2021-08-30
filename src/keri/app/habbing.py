@@ -490,7 +490,7 @@ class Habitat:
         sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
         msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
 
-        msg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
+        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
         msg.extend(pre.encode("utf-8"))
 
         counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
@@ -572,7 +572,7 @@ class Habitat:
         sigers = self.mgr.sign(ser=serder.raw, verfers=self.kever.verfers)
 
         msg = bytearray()
-        msg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
+        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
         msg.extend(self.pre.encode("utf-8"))
 
         counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,

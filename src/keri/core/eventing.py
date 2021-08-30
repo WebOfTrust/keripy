@@ -1273,7 +1273,7 @@ def messagize(serder, sigers=None, seal=None, wigers=None, cigars=None, pipeline
 
     if sigers:
         if seal is not None:
-            atc.extend(Counter(CtrDex.TransIndexedSigGroups, count=1).qb64b)
+            atc.extend(Counter(CtrDex.TransIdxSigGroups, count=1).qb64b)
             atc.extend(seal.i.encode("utf-8"))
             atc.extend(Seqner(snh=seal.s).qb64b)
             atc.extend(seal.d.encode("utf-8"))

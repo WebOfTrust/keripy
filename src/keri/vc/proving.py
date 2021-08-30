@@ -104,9 +104,9 @@ def parseProof(ims=b''):
         raise ColdStartError("unable to parse VC, attachments expected")
 
     ctr = Parser.extract(ims=ims, klas=Counter, cold=cold)
-    if ctr.code != CtrDex.TransIndexedSigGroups or ctr.count != 1:
+    if ctr.code != CtrDex.TransIdxSigGroups or ctr.count != 1:
         raise ExtractionError("Invalid attachment to VC {}, expected one {}"
-                              "".format(ctr.code, CtrDex.TransIndexedSigGroups))
+                              "".format(ctr.code, CtrDex.TransIdxSigGroups))
 
     prefixer = Parser.extract(ims=ims, klas=Prefixer)
     seqner = Parser.extract(ims=ims, klas=Seqner)
@@ -137,7 +137,7 @@ def buildProof(prefixer, seqner, diger, sigers):
     """
 
     prf = bytearray()
-    prf.extend(Counter(CtrDex.TransIndexedSigGroups, count=1).qb64b)
+    prf.extend(Counter(CtrDex.TransIdxSigGroups, count=1).qb64b)
     prf.extend(prefixer.qb64b)
     prf.extend(seqner.qb64b)
     prf.extend(diger.qb64b)
