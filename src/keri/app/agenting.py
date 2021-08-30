@@ -550,7 +550,7 @@ class KiwiServer(doing.DoDoer):
         self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn))
 
         rep.status = falcon.HTTP_200
-        rep.data = creder.pretty().encode("utf-8")
+        rep.data = creder.crd
 
     def on_post_revoke(self, req, rep):
         media = json.loads(req.context.raw)
