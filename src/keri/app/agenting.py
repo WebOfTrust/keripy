@@ -24,6 +24,7 @@ from ..help import helping
 from ..help.helping import nowIso8601
 from ..peer import exchanging
 from ..vc import proving, handling
+from ..vdr import registering, viring, issuing
 
 logger = help.ogler.getLogger()
 
@@ -419,10 +420,9 @@ class KiwiServer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, controller, rep, issuer=None, cues=None, app=None, **kwa):
+    def __init__(self, hab, controller, rep, cues=None, app=None, **kwa):
         self.hab = hab
         self.controller = controller
-        self.issuer = issuer
         self.rep = rep
         self.kevts = decking.Deck()
         self.tevts = decking.Deck()
@@ -432,17 +432,18 @@ class KiwiServer(doing.DoDoer):
         self.app.resp_options.media_handlers.update(media.Handlers())
         self.cues = cues if cues is not None else decking.Deck()
 
-        if issuer is not None:
-            self.app.add_route("/credential/issue", self, suffix="issue")
-            self.app.add_route("/credential/revoke", self, suffix="revoke")
-            self.app.add_route("/presentation/request", self, suffix="request")
+        self.app.add_route("/registry/incept", self, suffix="registry_incept")
+        self.registryIcpr = registering.RegistryInceptDoer(hab=hab)
+        self.app.add_route("/credential/issue", self, suffix="issue")
+        self.app.add_route("/credential/revoke", self, suffix="revoke")
+        self.app.add_route("/presentation/request", self, suffix="request")
 
         self.app.add_route("/multisig/incept", self, suffix="multisig_incept")
         self.app.add_route("/multisig/rotate", self, suffix="multisig_rotate")
         self.gicpr = grouping.MultiSigInceptDoer(hab=hab)
         self.grotr = grouping.MultiSigRotateDoer(hab=hab)
 
-        doers = [self.grotr, doing.doify(self.receiptDo), doing.doify(self.publishDo)]
+        doers = [self.registryIcpr, self.gicpr, self.grotr, doing.doify(self.receiptDo), doing.doify(self.publishDo)]
 
         super(KiwiServer, self).__init__(doers=doers, **kwa)
 
@@ -500,27 +501,45 @@ class KiwiServer(doing.DoDoer):
             yield self.tock
 
     def on_post_issue(self, req, rep):
-        media = json.loads(req.context.raw)
-        schema = media.get("schema")
-        source = media.get("source")
-        recipientIdentifier = media.get("recipient")
+        """
 
-        types = ["VerifiableCredential", media.get("type")]
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
+        body = json.loads(req.context.raw)
+        registry = body.get("registry")
+        schema = body.get("schema")
+        source = body.get("source")
+        recipientIdentifier = body.get("recipient")
+
+        issuer = self.getIssuer(name=registry)
+        if issuer is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Credential registry {} does not exist.  It must be created before issuing " \
+                       "credentials".format(registry)
+            return
+
+        types = ["VerifiableCredential", body.get("type")]
 
         d = dict(
             i="",
             type=types,
-            LEI=media.get("LEI"),
+            LEI=body.get("LEI"),
             si=recipientIdentifier,
             dt=nowIso8601()
         )
 
-        d |= {"personLegalName": media.get("personLegalName")} \
-            if media.get("personLegalName") is not None else {}
-        d |= {"officialRole": media.get("officialRole")} \
-            if media.get("officialRole") is not None else {}
-        d |= {"engagementContextRole": media.get("engagementContextRole")} \
-            if media.get("engagementContextRole") is not None else {}
+        d |= {"personLegalName": body.get("personLegalName")} \
+            if body.get("personLegalName") is not None else {}
+        d |= {"officialRole": body.get("officialRole")} \
+            if body.get("officialRole") is not None else {}
+        d |= {"engagementContextRole": body.get("engagementContextRole")} \
+            if body.get("engagementContextRole") is not None else {}
 
         saider = scheming.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.i)
         d["i"] = saider.qb64
@@ -534,11 +553,11 @@ class KiwiServer(doing.DoDoer):
                                     subject=d,
                                     typ=jsonSchema,
                                     source=source,
-                                    status=self.issuer.regk)
+                                    status=issuer.regk)
 
         msg = self.hab.endorse(serder=creder)
 
-        tevt, kevt = self.issuer.issue(vcdig=creder.said)
+        tevt, kevt = issuer.issue(vcdig=creder.said)
         self.kevts.append(kevt)
         self.tevts.append(tevt)
 
@@ -552,20 +571,50 @@ class KiwiServer(doing.DoDoer):
         rep.status = falcon.HTTP_200
         rep.data = creder.crd
 
-    def on_post_revoke(self, req, rep):
-        media = json.loads(req.context.raw)
-        said = media.get("said")
 
-        tevt, kevt = self.issuer.revoke(vcdig=said)
+    def on_post_revoke(self, req, rep):
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
+        body = json.loads(req.context.raw)
+        registry = body.get("registry")
+        said = body.get("said")
+
+        issuer = self.getIssuer(name=registry)
+        if issuer is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Credential registry {} does not exist.  It must be created before issuing " \
+                       "credentials".format(registry)
+            return
+
+
+        tevt, kevt = issuer.revoke(vcdig=said)
         self.kevts.append(kevt)
         self.tevts.append(tevt)
 
         rep.status = falcon.HTTP_202
 
     def on_post_request(self, req, rep):
-        media = json.loads(req.context.raw)
-        recipientIdentifier = media.get("recipient")
-        schema = media.get("schema")
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
+        body = json.loads(req.context.raw)
+        recipientIdentifier = body.get("recipient")
+        schema = body.get("schema")
 
         ref = scheming.jsonSchemaCache.resolve(schema)
         schemer = scheming.Schemer(raw=ref)
@@ -582,11 +631,22 @@ class KiwiServer(doing.DoDoer):
         rep.status = falcon.HTTP_202
 
     def on_post_multisig_rotate(self, req, rep):
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
         body = json.loads(req.context.raw)
 
         if "group" not in body:
             rep.status = falcon.HTTP_400
             rep.text = "Invalid multisig group rotate request, 'group' is required'"
+            return
 
         msg = dict(
             sith=None,
@@ -608,11 +668,22 @@ class KiwiServer(doing.DoDoer):
         rep.status = falcon.HTTP_202
 
     def on_post_multisig_incept(self, req, rep):
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
         body = json.loads(req.context.raw)
 
         if "group" not in body:
             rep.status = falcon.HTTP_400
             rep.text = "Invalid multisig group inception request, 'group' is required'"
+            return
 
         msg = dict(
             aids=None,
@@ -633,3 +704,36 @@ class KiwiServer(doing.DoDoer):
         self.gicpr.msgs.append(msg)
 
         rep.status = falcon.HTTP_202
+
+
+    def on_post_registry_incept(self, req, rep):
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
+        body = json.loads(req.context.raw)
+
+        if "name" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "name is a required parameter to create a verifiable credential registry"
+            return
+
+        msg = dict(name=body["name"])
+        self.registryIcpr.msgs.append(msg)
+
+        rep.status = falcon.HTTP_202
+
+
+    def getIssuer(self, name):
+        reger = viring.Registry(name=name)
+        regr = reger.regs.get(name)
+        if regr is None:
+            return None
+
+        return issuing.Issuer(hab=self.hab, name=name, reger=reger)

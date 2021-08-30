@@ -14,14 +14,14 @@ from hio.core import http
 from hio.core.tcp import serving as tcpServing
 from hio.help import decking
 
-from keri import __version__, kering
 from keri import help
+from keri import kering
 from keri.app import directing, agenting, indirecting, forwarding, storing
 from keri.app.cli.common import existing
 from keri.core import scheming
 from keri.peer import exchanging
 from keri.vc import walleting, handling, proving
-from keri.vdr import issuing, verifying
+from keri.vdr import verifying
 
 d = "Runs KERI Agent controller.\n"
 d += "Example:\nagent -t 5621\n"
@@ -85,9 +85,7 @@ def runAgent(controller, name="agent", issuance=False, httpPort=5620, tcp=5621, 
     wallet = walleting.Wallet(hab=hab, name=name)
 
     handlers = []
-    issuer = issuing.Issuer(hab=hab, name=hab.name, noBackers=True)
-    issuerDoer = issuing.IssuerDoer(issuer=issuer)
-    verifier = verifying.Verifier(hab=hab, reger=issuer.reger, tevers=issuer.tevers)
+    verifier = verifying.Verifier(hab=hab)
 
     proofs = decking.Deck()
     if issuance:
@@ -100,8 +98,8 @@ def runAgent(controller, name="agent", issuance=False, httpPort=5620, tcp=5621, 
     exchanger = exchanging.Exchanger(hab=hab, handlers=handlers)
     mbx = indirecting.MailboxDirector(hab=hab, exc=exchanger, verifier=verifier, topics=["/receipt", "/replay"])
 
-    doers.extend([exchanger, directant, tcpServerDoer, mbx, issuerDoer])
-    doers.extend(adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort))
+    doers.extend([exchanger, directant, tcpServerDoer, mbx])
+    doers.extend(adminInterface(controller, hab, proofs, verifier, adminHttpPort))
 
     try:
         tock = 0.03125
@@ -111,7 +109,7 @@ def runAgent(controller, name="agent", issuance=False, httpPort=5620, tcp=5621, 
         print(f"prefix for {name} does not exist, incept must be run first", )
 
 
-def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623):
+def adminInterface(controller, hab, proofs, verifier, adminHttpPort=5623):
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
 
@@ -119,7 +117,7 @@ def adminInterface(controller, hab, proofs, issuer, verifier, adminHttpPort=5623
     rep = storing.Respondant(hab=hab, mbx=mbx)
 
     httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep)
-    kiwiServer = agenting.KiwiServer(hab=hab, controller=controller, issuer=issuer, app=app, rep=rep)
+    kiwiServer = agenting.KiwiServer(hab=hab, controller=controller, app=app, rep=rep)
 
     mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
     wiq = agenting.WitnessInquisitor(hab=hab)

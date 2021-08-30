@@ -184,9 +184,6 @@ class MultiSigRotateDoer(doing.DoDoer):
             data is list of dicts of committed data such as seals
        """
 
-        # groupName=args.group, proto=args.proto, wits=args.witnesses,
-        #                                                 cuts=args.witness_cut, adds=args.witness_add, sith=args.sith,
-        #                                                 toad=args.toad
         self.hab = hab
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
@@ -295,6 +292,7 @@ class MultiSigRotateDoer(doing.DoDoer):
                                          wits=wits,
                                          cuts=cuts,
                                          adds=adds,
+                                         data=data,
                                          nxt=coring.Nexter(sith=sith,
                                                            digs=[diger.qb64 for diger in msdigers]).qb64)
 
