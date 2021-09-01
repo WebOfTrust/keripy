@@ -99,11 +99,47 @@ class EndpointRecord:  # ends
     Database Keys are (cid, role) where cid is attributable controller identifier
     of endpoint (qb64 prefix) and role is the endpoint role such as watcher,
     witness etc
+
+    An end authorization reply message is required from which the field values
+    for this record are extracted. A routes of /end/role/eid/add  /end/role/eid/cut
+    Uses add-cut model with allow field
+    allow==True eid is allowed (add) as endpoint provider for cid at role and name
+    allow==False eid is disallowed (cut) as endpoint provider for cid at role and name
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rep",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/end/role/add",
+      "a" :
+      {
+         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "role": "watcher",  # one of eventing.Roles
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+      }
+    }
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rep",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/end/role/cut",
+      "a" :
+      {
+         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "role": "watcher",  # one of eventing.Roles
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+      }
+    }
+
     """
     eid: str  # identifier prefix of service endpoint
-    name: str  # user friendly name of endpoint
+    allow: bool  # True eid allowed (add), False eid disallowed (cut)
     said: str # Self-Addressing ID of conveying reply message
     dts: str  # ISO-8601 datetime string of conveying reply message
+    name: str = ""  # optional user friendly name of endpoint
 
     def __iter__(self):
         return iter(asdict(self))
@@ -112,16 +148,60 @@ class EndpointRecord:  # ends
 @dataclass
 class LocationRecord:  # locs
     """
-    Service Endpoint Record with fields and keys to compose endpoint location
-    and cross reference to entry in Endpoint database.
+    Service Endpoint Record with url for endpoint of a given scheme and
+    fields to compose cross reference to entry in end authN database
+    (cid.role.eid) where cid is the authorizing controller for the eid (endpoint id)
+    at a given role. The cid is usually a transferable identifer with a KEL
+    but may be non-trans. The eid is usually a nontransferable identifier
+    (witness, watcher) but may be transferable (judge, juror, public watcher,
+    registrar).
+
     Database Keys are (eid, scheme) where eid is service endpoint identifier
     (qb64 prefix) and scheme is the url protocol scheme (tcp, https).
-    The eid is usually a nontransferable identifier (witness, watcher) but may be
-    transferable (judge, juror, public watcher).
+
+    A loc reply message is required from which the values of this
+    database record are extracted. route is /loc/scheme Uses enact-anul model
+    To nullify endpoint set url field to empty.
+
+    An end authorization reply message is also required to authorize the eid as
+    endpoint provider for cid at role. See EndpointRecord
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rep",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/loc/scheme",
+      "a" :
+      {
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+         "scheme": "http",  # one of eventing.Schemes
+         "url":  "http://localhost:8080/watcher/wilma",
+         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "role": "watcher",  # one of eventing.Roles
+
+      }
+    }
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rep",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/loc/scheme",
+      "a" :
+      {
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+         "scheme": "http",  # one of eventing.Schemes
+         "url":  "",
+         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "role": "watcher",  # one of eventing.Roles
+
+      }
+    }
+
     """
-    host: str  # hostname or host ip addresss string
-    port: int  # port
-    path: str  # path string
+    url: str  # full url including host:port/path?query scheme is optional
     cid: str  # identifier prefix of controller that authorizes endpoint
     role: str  # endpoint role such as watcher, witness etc
     said: str  # Self-Addressing ID of conveying reply message
@@ -394,7 +474,7 @@ class Baser(dbing.LMDBer):
             key is cid.role.eid,  val = saider.qb64b of reply 'rpy' msg SAD
 
         .ends is named subDB instance of IoSetKomer that maps Controller prefix
-            cid and endpoint role to endpoint prefix and name
+            cid and endpoint role to endpoint prefix
             key is cid.role,  value is serialized EndpointRecord dataclass
 
         .locs is named subDB instance of Komer that maps endpoint prefix eid
@@ -530,7 +610,7 @@ class Baser(dbing.LMDBer):
         # eid AuthN reply indices maps key cid.role.eid to val said of end reply
         self.eans = subing.CesrSuber(db=self, subkey='eans.', klas=coring.Saider)
 
-        # service endpoint identifer (eid) auths keyed by controller prefix.role
+        # service endpoint identifer (eid) auths keyed by controller cid.role
         # data extracted from reply end
         self.ends = koming.IoSetKomer(db=self,
                                       subkey='ends.',

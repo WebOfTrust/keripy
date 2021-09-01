@@ -7,6 +7,8 @@ keri.db.subdbing module
 from typing import Type, Union
 from collections.abc import Iterable, Iterator
 
+from hio.help.helping import nonStringIterable
+
 from .. import help
 from ..core import coring
 from . import dbing
@@ -1181,6 +1183,8 @@ class CatSuberBase(SuberBase):
         """
         if klas is None:
             klas = (coring.Matter, )  # set default to tuple of single Matter
+        if not nonStringIterable(klas):  # not iterable
+            klas = (klas, )  # make it so
         for k in klas:
             if not (issubclass(k, coring.Matter) or
                     issubclass(k, coring.Indexer) or
