@@ -275,6 +275,9 @@ def test_ioset_suber():
         actuals = sdb.get(keys=keys1)
         assert actuals == [sal, sue, sam]
 
+        #  Need test of remove with a specific val not just remove all.
+        # XXX
+
         for i, val in enumerate(sdb.getIter(keys=keys1)):
             assert val == actuals[i]
 
@@ -932,6 +935,197 @@ def test_multi_mat_suber():
     """Done Test"""
 
 
+def test_multimat_ioset_suber():
+    """
+    Test MultiMatIoSetSuber LMDBer sub database class
+    """
+
+    with dbing.openLMDB() as db:
+        assert isinstance(db, dbing.LMDBer)
+        assert db.name == "test"
+        assert db.opened
+
+        sdb = subing.MultiMatIoSetSuber(db=db, subkey='bags.')
+        assert isinstance(sdb, subing.IoSetSuber)
+        assert not sdb.sdb.flags()["dupsort"]
+
+        klases = (coring.Seqner, coring.Diger)
+        sdb = subing.MultiMatIoSetSuber(db=db, subkey='bags.', klases=klases)
+        assert isinstance(sdb, subing.MultiMatIoSetSuber)
+        for klas, sklas in zip(klases, sdb.klases):
+            assert klas == sklas
+        assert not sdb.sdb.flags()["dupsort"]
+
+        # test .toval and tovals  needs .klases to work
+        sqr0 = coring.Seqner(sn=20)
+        sqr0.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAFA'
+
+        dgr0 = coring.Diger(ser=b"Hello Me Maties.")
+        assert dgr0.qb64b == b'Eurq5IDrYVpYoBB_atyW3gPXBEB5XBDuEG5wMbjcauwk'
+
+        vals0 = (sqr0, dgr0)
+
+        val0b = sdb._toval(vals=vals0)
+        assert val0b == sqr0.qb64b + dgr0.qb64b
+        vals = sdb._tovals(val=val0b)
+        assert b"".join(val.qb64b for val in vals0) == val0b
+        for val, klas in zip(vals, sdb.klases):
+            assert isinstance(val, klas)
+
+        sqr1 = coring.Seqner(sn=32)
+        sqr1.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAIA'
+
+        dgr1 = coring.Diger(ser=b"Hi Guy.")
+        assert dgr1.qb64b == b'EB1-ycv6SjyV3Ehn0kv4oFMPh4wKoACQTDgeYoWxPjkI'
+
+        vals1 = (sqr1, dgr1)
+
+        sqr2 = coring.Seqner(sn=1534)
+        sqr2.qb64b == b'0AAAAAAAAAAAAAAAAAAAAF_g'
+
+        dgr2 = coring.Diger(ser=b"Bye Bye Birdie.")
+        assert dgr2.qb64b == b'EA7hRVxJ-9-gadLMnJwyKKHKQnJg6yGzK9T-XxTlOs7Y'
+
+        vals2 = (sqr2, dgr2)
+
+        keys0 = ("a", "front")
+        keys1 = ("ab", "side")
+        keys2 = ("ac", "back")
+
+        assert sdb.put(keys=keys0, vals=[vals0, vals1])
+        assert sdb.cnt(keys0) == 2
+        actuals = sdb.get(keys=keys0)
+        valss = [[val.qb64 for val in actual] for actual in actuals]
+        assert valss == [
+                        [sqr0.qb64, dgr0.qb64],
+                        [sqr1.qb64, dgr1.qb64],
+                       ]
+
+        actual = sdb.getLast(keys=keys0)
+        assert [actual[0].qb64, actual[1].qb64] == [sqr1.qb64, dgr1.qb64]
+
+        sdb.rem(keys0)
+        assert sdb.get(keys=keys0) == []
+        assert sdb.cnt(keys0) == 0
+
+        sdb.put(keys=keys0, vals=[vals1, vals0])
+        actuals = sdb.get(keys=keys0)
+        valss = [[val.qb64 for val in actual] for actual in actuals]
+        assert valss == [
+                        [sqr1.qb64, dgr1.qb64],
+                        [sqr0.qb64, dgr0.qb64],
+                       ]
+        actual = sdb.getLast(keys=keys0)
+        assert [actual[0].qb64, actual[1].qb64] == [sqr0.qb64, dgr0.qb64]
+
+
+        assert sdb.add(keys=keys0, val=vals2)
+        assert sdb.cnt(keys0) == 3
+        actuals = sdb.get(keys=keys0)
+        valss = [[val.qb64 for val in actual] for actual in actuals]
+        assert valss == [
+                        [sqr1.qb64, dgr1.qb64],
+                        [sqr0.qb64, dgr0.qb64],
+                        [sqr2.qb64, dgr2.qb64],
+            ]
+        actual = sdb.getLast(keys=keys0)
+        assert [actual[0].qb64, actual[1].qb64] == [sqr2.qb64, dgr2.qb64]
+
+
+        assert sdb.pin(keys=keys0, vals=[vals0, vals1])
+        assert sdb.cnt(keys0) == 2
+        actuals = sdb.get(keys=keys0)
+        valss = [[val.qb64 for val in actual] for actual in actuals]
+        assert valss == [
+                        [sqr0.qb64, dgr0.qb64],
+                        [sqr1.qb64, dgr1.qb64],
+                       ]
+
+        assert sdb.put(keys=keys1, vals=[vals2, vals1])
+        assert sdb.cnt(keys1) == 2
+        actuals = sdb.get(keys=keys1)
+        valss = [[val.qb64 for val in actual] for actual in actuals]
+        assert valss == [
+                        [sqr2.qb64, dgr2.qb64],
+                        [sqr1.qb64, dgr1.qb64],
+                       ]
+
+        valss = [[val.qb64 for val in vals] for vals in sdb.getIter(keys=keys1)]
+        assert valss == [
+                          [sqr2.qb64, dgr2.qb64],
+                          [sqr1.qb64, dgr1.qb64],
+                        ]
+
+        #  test remove with a specific val not just remove all.
+        assert sdb.rem(keys=keys1, val=vals1)
+        assert sdb.cnt(keys1) == 1
+        actuals = sdb.get(keys=keys1)
+        vals = [[val.qb64 for val in actual] for actual in actuals]
+        assert vals == [
+                        [sqr2.qb64, dgr2.qb64],
+                       ]
+
+        assert sdb.put(keys=keys2, vals=[vals0, vals2])
+
+        items = [(keys, [val.qb64 for val in  vals])
+                                         for keys, vals in sdb.getAllItemIter()]
+        assert items == [
+                         (keys0, [sqr0.qb64, dgr0.qb64]),
+                         (keys0, [sqr1.qb64, dgr1.qb64]),
+                         (keys1, [sqr2.qb64, dgr2.qb64]),
+                         (keys2, [sqr0.qb64, dgr0.qb64]),
+                         (keys2, [sqr2.qb64, dgr2.qb64])
+                        ]
+
+        items = [(iokeys, [val.qb64 for val in  vals])
+                                      for iokeys, vals in sdb.getAllIoItemIter()]
+        assert items ==  [
+                          (keys0 + ('AAAAAAAAAAAAAAAAAAAAAA', ), [sqr0.qb64, dgr0.qb64]),
+                          (keys0 + ('AAAAAAAAAAAAAAAAAAAAAB', ), [sqr1.qb64, dgr1.qb64]),
+                          (keys1 + ('AAAAAAAAAAAAAAAAAAAAAA', ), [sqr2.qb64, dgr2.qb64]),
+                          (keys2 + ('AAAAAAAAAAAAAAAAAAAAAA', ), [sqr0.qb64, dgr0.qb64]),
+                          (keys2 + ('AAAAAAAAAAAAAAAAAAAAAB', ), [sqr2.qb64, dgr2.qb64])
+                         ]
+
+        items = [(iokeys, [val.qb64 for val in vals])
+                                 for iokeys, vals in sdb.getIoItem(keys=keys1)]
+        assert items == [(keys1 +  ('AAAAAAAAAAAAAAAAAAAAAA', ), [sqr2.qb64, dgr2.qb64])]
+
+        items = [(iokeys, [val.qb64 for val in vals])
+                             for iokeys, vals in  sdb.getIoItemIter(keys=keys0)]
+        assert items == [
+                        (keys0 + ('AAAAAAAAAAAAAAAAAAAAAA', ), [sqr0.qb64, dgr0.qb64]),
+                        (keys0 + ('AAAAAAAAAAAAAAAAAAAAAB', ), [sqr1.qb64, dgr1.qb64]),
+                        ]
+
+
+        topkeys = ("a", "")
+        items = [(keys, [val.qb64 for val in vals])
+                            for keys, vals in sdb.getTopItemIter(keys=topkeys)]
+        assert items == [
+                          (keys0, [sqr0.qb64, dgr0.qb64]),
+                          (keys0, [sqr1.qb64, dgr1.qb64]),
+                        ]
+
+        items = [(iokeys, [val.qb64 for val in vals])
+                             for iokeys, vals in sdb.getTopIoItemIter(keys=topkeys)]
+
+        assert items == [
+                        (keys0 + ('AAAAAAAAAAAAAAAAAAAAAA', ), [sqr0.qb64, dgr0.qb64]),
+                        (keys0 + ('AAAAAAAAAAAAAAAAAAAAAB', ), [sqr1.qb64, dgr1.qb64]),
+                        ]
+
+        for iokeys, val in sdb.getAllIoItemIter():
+            assert sdb.remIokey(iokeys=iokeys)
+
+        assert sdb.cnt(keys=keys0) == 0
+        assert sdb.cnt(keys=keys1) == 0
+        assert sdb.cnt(keys=keys2) == 0
+
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+
 
 def test_matter_dup_suber():
     """
@@ -1383,4 +1577,4 @@ def test_crypt_signer_suber():
 
 
 if __name__ == "__main__":
-    test_crypt_signer_suber()
+    test_multimat_ioset_suber()
