@@ -2635,7 +2635,6 @@ def test_siger():
     assert siger.qb64 == qsig64
     assert siger.verfer == None
 
-
     siger = Siger(qb64=qsig64)
     assert siger.code == IdrDex.Ed25519_Sig
     assert siger.index == 0

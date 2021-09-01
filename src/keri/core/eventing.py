@@ -382,7 +382,8 @@ def deTransReceiptQuadruple(data, strip=False):
     Returns tuple (quadruple) of (prefixer, seqner, diger, siger) from
     concatenated bytes or bytearray of quadruple made up of qb64 or qb64b
     versions of spre+ssnu+sdig+sig.
-    Quadruple is used for receipts signed by transferable prefix keys
+    Quadruple is used for receipts signed by transferable prefix keys. Recept
+    for event that is in kel where event is given by context or key
 
     Parameters:
         quadruple is bytes concatenation of pre+snu+dig+sig from receipt
@@ -413,7 +414,8 @@ def deTransReceiptQuintuple(data, strip=False):
     from concatenated bytes or bytearray of quintuple made up of qb64 or qb64b
     versions of quntipuple given by  concatenation of  edig+spre+ssnu+sdig+sig.
     Quintuple is used for unverified escrows of validator receipts signed
-    by transferable prefix keys
+    by transferable prefix keys. Receipt for event that is not yet in KEL where
+    event is given by event digest (ediger)
 
     Parameters:
         quintuple is bytes concatenation of edig+spre+ssnu+sdig+sig from receipt

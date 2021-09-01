@@ -360,26 +360,38 @@ class Baser(dbing.LMDBer):
             key is habitat name str
             value is serialized HabitatRecord dataclass
 
-        .sdts is named subDB instance of MatterSuber that that maps SAD said to
-            Dater instance's CESR serialization of ISO-8601 datetime
-            key = said (bytes) of SAD, val = Dater.qb64b
-        .ssgs is named subDB instance of Suber
-            key = said (bytes) of SAD, val =  Siger Quadruple
-        .scgs is named subDB instance of  Suber
-            key = said (bytes of SAD, val = Cigar Couple)
+        .sdts (sad date-time-stamp) named subDB instance of MatterSuber that
+            that maps SAD SAID to Dater instance's CESR serialization of
+            ISO-8601 datetime
+            key = said (bytes) of sad, val = dater.qb64b
 
-        .rpys is named subDB instance of SerderSuber that maps said of reply SAD
-            to serialization of reply message.
+        .ssgs (sad trans indexed sigs) named subDB instance of MulMatIoSetSuber
+            that maps said of SAD to quadruple (Prefixer, Seqner, Diger, Siger)
+            of est event for signer's key state when signed SAD. Each key may
+            have a set of vals in insertion order one for each signer of the sad.
+            key = said (bytes) of SAD, val = cat of (prefixer.qb64b, seqner.qb64b,
+            diger.qb64b, siger.qb64b)
+
+        .scgs (sad nontrans cigs) named subDB instance of MulMatIoSetSuber
+            that maps said of SAD to couple (Prefixer, Cigar) for nontrans signer.
+            Each key may have a set of vals in insertion order one for each
+            nontrans signer of the sad.
+            key = said (bytes of SAD, val = cat of (prefixer.qb64b, cigar.qb64b)
+
+        .rpys (replys) named subDB instance of SerderSuber that maps said of
+            reply message (versioned SAD) to serialization of that reply message.
             key is said bytes, val is Serder.raw bytes of reply 'rpy' message
 
-        .rpes is named subDB instance of MatIoSetSuber that maps routes of reply
-            SAD to its said. Routes such as /end/authn /loc/authn
-            key is route bytes,  val = Saider.qb64b of reply 'rpy' msg SAD
+        .rpes (reply escrows) named subDB instance of MulMatIoSetSuber that
+            maps routes of reply (versioned SAD) to single (Saider,) of that
+            reply msg.
+            Routes such as '/end/role/add' '/end/role/cut' '/loc/scheme'
+            key is route bytes,  val = cat of (saider.qb64b,) of reply 'rpy' msg
 
         .eans is named subDB instance of MatterSuber that maps cid.role.eid of
             reply authn of eid for role by cid to said of reply SAD with route
             SAD to its said
-            key is cid.role.eid,  val = Saider.qb64b of reply 'rpy' msg SAD
+            key is cid.role.eid,  val = saider.qb64b of reply 'rpy' msg SAD
 
         .ends is named subDB instance of IoSetKomer that maps Controller prefix
             cid and endpoint role to endpoint prefix and name
@@ -483,7 +495,7 @@ class Baser(dbing.LMDBer):
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
-        self.firsts = subing.MatterSuber(db=self, subkey='fons.', klas=coring.Seqner)
+        self.firsts = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
         self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
 
         # habitat prefixes keyed by habitat name
@@ -493,30 +505,39 @@ class Baser(dbing.LMDBer):
 
         # SAD support datetime stamps and signatures indexed and not-indexed
         # all sad  sdts (sad datetime serializations)
-        self.sdts = subing.MatterSuber(db=self, subkey='sdts.', klas=coring.Dater)
-        # all sad  ssgs (sad indexed signature serializations) (Siger quadruples)
-        self.ssgs = subing.Suber(db=self, subkey='ssgs')
-        # all sad scgs  (sad non-indexed signature serializations) (Cigar couples)
-        self.scgs = subing.Suber(db=self, subkey='scgs')
+        self.sdts = subing.CesrSuber(db=self, subkey='sdts.', klas=coring.Dater)
+        # all sad ssgs (sad indexed signature serializations) maps SAD SAID to
+        # quadruple (Prefixer, Seqner, Diger, Siger) of trans signer's est evt
+        # for key state of signature in Siger
+        self.ssgs = subing.CatIoSetSuber(db=self, subkey='ssgs',
+            klas=(coring.Prefixer, coring.Seqner, coring.Diger, coring.Siger))
+        # all sad scgs  (sad non-indexed signature serializations) maps SAD SAID
+        # to couple (Prefixer, Cigar) of nontrans signer of signature in Cigar
+        self.scgs = subing.CatIoSetSuber(db=self, subkey='scgs',
+                                        klas=(coring.Prefixer, coring.Cigar))
 
-        # all reply messages. All replys are versioned sads ( with version string)
-        # so use Serder to deserialize also because reply is SAD
+        # all reply messages. Maps reply said to serialization. Replys are
+        # versioned sads ( with version string) so use Serder to deserialize and
         # use  .sdts, .ssgs, and .scgs for datetimes and signatures
         self.rpys = subing.SerderSuber(db=self, subkey='rpys.')
 
-        # all reply escrows indices of partially signed reply messages keyed by
-        # route  such as /end/authn  /loc/authn with val said
-        self.rpes = subing.IoSetSuber(db=self, subkey='rpes.', klas=coring.Saider)
+        # all reply escrows indices of partially signed reply messages. Maps
+        # route in reply to single (Saider,)  of escrowed reply.
+        # Routes such as /end/role/add end/role/cut /loc/schema
+        self.rpes = subing.CatIoSetSuber(db=self, subkey='rpes.',
+                                                      klas=(coring.Saider, ))
 
-        # eid AuthN reply indices keyed by cid.role.eid with val said
-        self.eans = subing.MatterSuber(db=self, subkey='eans.', klas=coring.Saider)
+        # eid AuthN reply indices maps key cid.role.eid to val said of end reply
+        self.eans = subing.CesrSuber(db=self, subkey='eans.', klas=coring.Saider)
 
         # service endpoint identifer (eid) auths keyed by controller prefix.role
+        # data extracted from reply end
         self.ends = koming.IoSetKomer(db=self,
-                                    subkey='ends.',
-                                    schema=EndpointRecord, )
+                                      subkey='ends.',
+                                      schema=EndpointRecord, )
 
         # service endpont locations keyed by eid.scheme  (endpoint identifier)
+        # data extracted from reply loc
         self.locs = koming.Komer(db=self,
                                  subkey='locs.',
                                  schema=LocationRecord, )

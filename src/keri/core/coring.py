@@ -2651,9 +2651,6 @@ class Saider(Matter):
         return True
 
 
-
-
-
 @dataclass(frozen=True)
 class IndexerCodex:
     """
