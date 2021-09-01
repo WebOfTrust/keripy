@@ -8,7 +8,8 @@ then
 else
   echo "Identifier prefix does not exist, running incept"
   kli incept --name gleif --file tests/app/cli/gleif-sample.json
+  kli vc registry incept --name gleif
 fi
 
-kli agent start --name gleif --pre E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM
+kli agent start --name gleif --pre E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM --insecure
 

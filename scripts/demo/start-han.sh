@@ -9,7 +9,7 @@ then
 else
   echo "Identifier prefix does not exist, running incept"
   kli incept --name han --file tests/app/cli/holder-sample.json
-  kli send --name han --target 5624
+  kli send --name han --target 5621
   kli query --name han --witness Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c --prefix EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg
 fi
 

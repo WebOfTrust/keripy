@@ -10,7 +10,7 @@ from hio.base import doing
 from hio.core import http
 from hio.help import helping, Hict, decking
 
-from . import obtaining, forwarding, httping
+from . import obtaining, forwarding, httping, agenting
 from .. import help
 from ..core import coring
 from ..core.coring import MtrDex
@@ -173,7 +173,15 @@ class MailboxServer(doing.DoDoer):
               rep (Response) Falcon HTTP response
 
         """
-        rep.stream = self.mailboxGenerator(query=req.params, resp=rep)
+        pre = req.params["i"]
+        pt = req.params["topics"]
+
+        topics = dict()
+        for t in pt:
+            key, val = t.split("=")
+            topics[key] = int(val)
+
+        rep.stream = self.mailboxGenerator(pre=pre, topics=topics, resp=rep)
 
     def on_post(self, req, rep):
         """
@@ -277,6 +285,10 @@ class Respondant(doing.DoDoer):
                 rep = self.reps.popleft()
                 recipient = rep["dest"]
                 exn = rep["rep"]
+                topic = rep["topic"]
+
+                while recipient not in self.hab.kevers:
+                    yield self.tock
 
                 kever = self.hab.kevers[recipient]
                 if kever is None:
@@ -296,11 +308,11 @@ class Respondant(doing.DoDoer):
 
                     self.extend([clientDoer])
 
-                    fwd = forwarding.forward(pre=recipient, serder=exn, topic="credential")
+                    fwd = forwarding.forward(pre=recipient, serder=exn, topic=topic)
                     msg = bytearray(fwd.raw)
                     msg.extend(self.hab.sanction(exn))
 
-                    httping.createCESRRequest(msg, client)
+                    httping.createCESRRequest(msg, client, date=exn.ked["dt"])
 
                     while not client.responses:
                         yield self.tock
@@ -334,7 +346,7 @@ class Respondant(doing.DoDoer):
                 elif cueKin in ("replay",):
                     dest = cue["dest"]
                     msgs = cue["msgs"]
-                    self.mbx.storeMsg(topic=dest+b'/replay', msg=msgs)
+                    self.mbx.storeMsg(topic=dest+'/replay', msg=msgs)
 
                 yield self.tock
 

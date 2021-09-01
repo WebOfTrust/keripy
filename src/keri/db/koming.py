@@ -264,7 +264,7 @@ class Komer(KomerBase):
             use val here
         """
         return (self.deserializer(self.db.getVal(db=self.sdb,
-                                key=self._tokey(keys))))
+                                  key=self._tokey(keys))))
 
 
     def rem(self, keys: Union[str, Iterable]):

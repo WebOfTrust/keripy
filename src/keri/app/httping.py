@@ -177,3 +177,10 @@ def createCESRRequest(msg, client, date=None):
         headers=headers,
         body=body
     )
+
+
+class InsecureSignatureComponent(object):
+
+    def process_request(self, req, resp):
+        ser = req.bounded_stream.read()
+        req.context.raw = ser

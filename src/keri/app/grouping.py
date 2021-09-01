@@ -46,11 +46,10 @@ class MultiSigInceptDoer(doing.DoDoer):
                                    lax=False,
                                    local=False)
 
-        mbd = indirecting.MailboxDirector(hab=hab, topics=['/receipt', '/multisig'])
         self.postman = forwarding.Postman(hab=hab)
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
-        doers = [mbd, self.postman,
+        doers = [self.postman,
                  self.witq,
                  doing.doify(self.inceptDo)]
 
@@ -61,6 +60,16 @@ class MultiSigInceptDoer(doing.DoDoer):
         Returns:  doifiable Doist compatible generator method
         Usage:
             add result of doify on this method to doers list
+
+        Message Parameters:
+            group: str group name
+            aids: list of qb64 identifier prefixes of participants in the group
+            witnesses: list of qb64 identifier prefixes of witnesses for the group
+            toad: str of witness receipt threshold for group KEL
+            isith str of current signing threshold for group
+            nsith str of next signing threshold for group
+            data is list of dicts or anchors for the inception event of the group KEL
+
         """
         # start enter context
         self.wind(tymth)
@@ -103,13 +112,17 @@ class MultiSigInceptDoer(doing.DoDoer):
                 wits = msg["witnesses"] if msg["witnesses"] is not None else self.hab.kever.wits
 
                 nsith = msg["nsith"]
+
+                data = msg["data"] if "data" in msg else None
+
                 mssrdr = eventing.incept(keys=[mskey.qb64 for mskey in mskeys],
                                          sith=msg["isith"],
                                          toad=msg["toad"],
                                          wits=wits,
                                          nxt=coring.Nexter(sith=nsith,
                                                            digs=[diger.qb64 for diger in msdigers]).qb64,
-                                         code=coring.MtrDex.Blake3_256)
+                                         code=coring.MtrDex.Blake3_256,
+                                         data=data)
 
                 sigers = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
 
@@ -218,12 +231,9 @@ class MultiSigRotateDoer(doing.DoDoer):
                 sith = msg["sith"]
                 toad = msg["toad"]
                 data = msg["data"]
-                wits = msg["witnesses"]
-                cuts = msg["witness_cut"]
-                adds = msg["witness_add"]
-                wits = wits if wits is not None else []
-                cuts = cuts if cuts is not None else []
-                adds = adds if adds is not None else []
+                wits = msg["witnesses"] if "witnesses" in msg else []
+                cuts = msg["witness_cut"] if "witnesse_cut" in msg else []
+                adds = msg["witness_add"] if "witnesse_add" in msg else []
 
                 group = self.hab.db.gids.get(keys=groupName)
                 if group is None or group.lid != self.hab.pre:
@@ -251,12 +261,19 @@ class MultiSigRotateDoer(doing.DoDoer):
 
                 if self.hab.kever.sn == gkev.sn:  # We are equal to the current group identifier, need to rotate
                     rot = self.hab.rotate()
-                    witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.HttpWitnesser, msg=rot)
+                    witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.HttpWitnesser, msg=bytearray(rot))
                     self.extend([witDoer])
                     while not witDoer.done:
                         _ = yield self.tock
 
                     self.remove([witDoer])
+
+                    for aid in group.aids:
+                        if aid == self.hab.pre:
+                            continue
+                        self.postman.send(recipient=aid, topic="multisig", msg=bytearray(rot))
+                        yield self.tock
+
 
                 print("Local identifier rotated, checking other group members:")
                 idx = group.aids.index(self.hab.pre)

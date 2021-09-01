@@ -420,14 +420,20 @@ class KiwiServer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, controller, rep, cues=None, app=None, **kwa):
+    def __init__(self, hab, controller, rep, cues=None, app=None, insecure=False, **kwa):
         self.hab = hab
         self.controller = controller
         self.rep = rep
         self.kevts = decking.Deck()
         self.tevts = decking.Deck()
         self.app = app if app is not None else falcon.App(cors_enable=True)
-        self.app.add_middleware(httping.SignatureValidationComponent(hab=hab, pre=controller))
+        self.issuers = dict()
+
+        if insecure:
+            self.app.add_middleware(httping.InsecureSignatureComponent())
+        else:
+            self.app.add_middleware(httping.SignatureValidationComponent(hab=hab, pre=controller))
+
         self.app.req_options.media_handlers.update(media.Handlers())
         self.app.resp_options.media_handlers.update(media.Handlers())
         self.cues = cues if cues is not None else decking.Deck()
@@ -443,7 +449,10 @@ class KiwiServer(doing.DoDoer):
         self.gicpr = grouping.MultiSigInceptDoer(hab=hab)
         self.grotr = grouping.MultiSigRotateDoer(hab=hab)
 
-        doers = [self.registryIcpr, self.gicpr, self.grotr, doing.doify(self.receiptDo), doing.doify(self.publishDo)]
+        self.witq = WitnessInquisitor(hab=hab, klas=TCPWitnesser)
+
+        doers = [self.witq, self.registryIcpr, self.gicpr, self.grotr, doing.doify(self.receiptDo), doing.doify(
+            self.publishDo)]
 
         super(KiwiServer, self).__init__(doers=doers, **kwa)
 
@@ -494,7 +503,7 @@ class KiwiServer(doing.DoDoer):
             while self.grotr.cues:
                 cue = self.grotr.cues.popleft()
                 exn = exchanging.exchange(route="/multisig/results", payload=cue, date=helping.nowIso8601())
-                self.rep.reps.append(dict(dest=self.controller, rep=exn))
+                self.rep.reps.append(dict(dest=self.controller, rep=exn, topic="multisig"))
 
                 yield self.tock
 
@@ -566,10 +575,10 @@ class KiwiServer(doing.DoDoer):
         )
 
         exn = exchanging.exchange(route="/credential/issue", payload=pl)
-        self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn))
+        self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn, topic="credential"))
 
         rep.status = falcon.HTTP_200
-        rep.data = creder.crd
+        rep.data = creder.pretty().encode("utf-8")
 
 
     def on_post_revoke(self, req, rep):
@@ -609,7 +618,8 @@ class KiwiServer(doing.DoDoer):
             rep: falcon.Response HTTP response
 
         Body:
-            name: The human readable name of the new registry to create
+            recipient: SCID of recipient of credential to request
+            schema:  SAID of schema
 
         """
         body = json.loads(req.context.raw)
@@ -626,7 +636,7 @@ class KiwiServer(doing.DoDoer):
         )
 
         exn = exchanging.exchange(route="/presentation/request", payload=pl)
-        self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn))
+        self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn, topic="credential"))
 
         rep.status = falcon.HTTP_202
 
@@ -685,11 +695,16 @@ class KiwiServer(doing.DoDoer):
             rep.text = "Invalid multisig group inception request, 'group' is required'"
             return
 
+        if "aids" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid multisig group inception request, 'aids' is required'"
+            return
+
+        aids = body["aids"]
         msg = dict(
-            aids=None,
+            aids=aids,
             toad=None,
             witnesses=[],
-            transferable=True,
             icount=None,
             isith=None,
             ncount=None,
@@ -699,9 +714,16 @@ class KiwiServer(doing.DoDoer):
             if key in body:
                 msg[key] = body[key]
 
+        for aid in aids:
+            if aid != self.hab.pre:
+                if aid not in self.hab.kevers:
+                    self.witq.query(aid)
+                exn = exchanging.exchange(route="/multisig/incept", payload=dict(msg), date=helping.nowIso8601())
+                self.rep.reps.append(dict(dest=aid, rep=exn, topic="multisig"))
+
         msg["group"] = body["group"]
 
-        self.gicpr.msgs.append(msg)
+        # self.gicpr.msgs.append(msg)
 
         rep.status = falcon.HTTP_202
 
@@ -731,9 +753,14 @@ class KiwiServer(doing.DoDoer):
 
 
     def getIssuer(self, name):
-        reger = viring.Registry(name=name)
-        regr = reger.regs.get(name)
-        if regr is None:
-            return None
+        if name in self.issuers:
+            issuer = self.issuers[name]
+        else:
+            reger = viring.Registry(name=name)
+            regr = reger.regs.get(name)
+            if regr is None:
+                return None
 
-        return issuing.Issuer(hab=self.hab, name=name, reger=reger)
+            issuer = issuing.Issuer(hab=self.hab, name=name, reger=reger)
+            self.issuers[name] = issuer
+        return issuer

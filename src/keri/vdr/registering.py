@@ -38,7 +38,7 @@ class RegistryInceptDoer(doing.DoDoer):
                 msg = self.msgs.popleft()
                 name = msg["name"]
 
-                issuer = issuing.Issuer(hab=self.hab, name=name, **kwa)
+                issuer = issuing.Issuer(hab=self.hab, name=name, noBackers=True, **kwa)
                 yield self.tock
 
                 tevt = issuer.incept

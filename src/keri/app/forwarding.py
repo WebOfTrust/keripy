@@ -13,7 +13,6 @@ from hio.help import decking
 
 from keri.app import agenting
 from keri.core import coring, eventing
-from keri.db import basing
 
 
 class Postman(doing.DoDoer):

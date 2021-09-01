@@ -6,6 +6,7 @@ keri.kli.witness module
 Witness command line interface
 """
 import argparse
+import json
 import logging
 
 import falcon
@@ -18,7 +19,7 @@ from keri import help
 from keri import kering
 from keri.app import directing, agenting, indirecting, forwarding, storing
 from keri.app.cli.common import existing
-from keri.core import scheming
+from keri.core import scheming, coring
 from keri.peer import exchanging
 from keri.vc import walleting, handling, proving
 from keri.vdr import verifying
@@ -45,11 +46,11 @@ parser.add_argument('-n', '--name',
                     help="Name of controller. Default is agent.")
 parser.add_argument('-p', '--pre',
                     action='store',
-                    default="",
+                    default=None,
                     help="Identifier prefix to accept control messages from.")
-parser.add_argument('-i', '--issuer',
+parser.add_argument("-I", '--insecure',
                     action='store_true',
-                    help="Declare this agent as an issuer of credentials.")
+                    help="Run admin HTTP server without checking signatures on controlling requests")
 
 
 
@@ -61,7 +62,7 @@ def launch(args):
     logger.info("\n******* Starting Agent for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.http, args.tcp)
 
-    runAgent(controller=args.pre, name=args.name, issuance=args.issuer,
+    runAgent(controller=args.pre, name=args.name, insecure=args.insecure,
              httpPort=int(args.http),
              tcp=int(args.tcp),
              adminHttpPort=int(args.admin_http_port))
@@ -70,7 +71,7 @@ def launch(args):
                 ".******\n\n", args.name, args.http, args.tcp)
 
 
-def runAgent(controller, name="agent", issuance=False, httpPort=5620, tcp=5621, adminHttpPort=5623):
+def runAgent(controller, name="agent", insecure=False, httpPort=5620, tcp=5621, adminHttpPort=5623):
     """
     Setup and run one agent
     """
@@ -85,21 +86,35 @@ def runAgent(controller, name="agent", issuance=False, httpPort=5620, tcp=5621, 
     wallet = walleting.Wallet(hab=hab, name=name)
 
     handlers = []
-    verifier = verifying.Verifier(hab=hab)
+    verifier = verifying.Verifier(hab=hab, name="verifier")
 
     proofs = decking.Deck()
-    if issuance:
-        jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
-        issueHandler = handling.IssueHandler(wallet=wallet, typ=jsonSchema)
-        requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
-        proofHandler = handling.ProofHandler(proofs=proofs)
-        handlers.extend([issueHandler, requestHandler, proofHandler])
+    jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
+    issueHandler = handling.IssueHandler(wallet=wallet, typ=jsonSchema)
+    requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
+    proofHandler = handling.ProofHandler(proofs=proofs)
+
+    mbx = storing.Mailboxer(name=hab.name)
+    mih = MultisigInceptHandler(hab=hab, controller=controller, mbx=mbx)
+
+    handlers.extend([issueHandler, requestHandler, proofHandler, mih])
 
     exchanger = exchanging.Exchanger(hab=hab, handlers=handlers)
-    mbx = indirecting.MailboxDirector(hab=hab, exc=exchanger, verifier=verifier, topics=["/receipt", "/replay"])
 
-    doers.extend([exchanger, directant, tcpServerDoer, mbx])
-    doers.extend(adminInterface(controller, hab, proofs, verifier, adminHttpPort))
+    cues = decking.Deck()
+    mbd = indirecting.MailboxDirector(hab=hab, exc=exchanger, verifier=verifier, topics=["/receipt", "/replay",
+                                                                                         "/multisig", "/credential"],
+                                      cues=cues)
+
+    doers.extend([exchanger, directant, tcpServerDoer, mbd])
+    doers.extend(adminInterface(controller=controller,
+                                hab=hab,
+                                insecure=insecure,
+                                proofs=proofs,
+                                cues=cues,
+                                verifier=verifier,
+                                mbx=mbx,
+                                adminHttpPort=adminHttpPort))
 
     try:
         tock = 0.03125
@@ -109,24 +124,24 @@ def runAgent(controller, name="agent", issuance=False, httpPort=5620, tcp=5621, 
         print(f"prefix for {name} does not exist, incept must be run first", )
 
 
-def adminInterface(controller, hab, proofs, verifier, adminHttpPort=5623):
+def adminInterface(controller, hab, insecure, proofs, cues, mbx, verifier, adminHttpPort=5623):
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
 
-    mbx = storing.Mailboxer(name=hab.name)
     rep = storing.Respondant(hab=hab, mbx=mbx)
 
     httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep)
-    kiwiServer = agenting.KiwiServer(hab=hab, controller=controller, app=app, rep=rep)
+    kiwiServer = agenting.KiwiServer(hab=hab, controller=controller, app=app, rep=rep, insecure=insecure)
 
     mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
     wiq = agenting.WitnessInquisitor(hab=hab)
 
     proofHandler = AdminProofHandler(hab=hab, controller=controller, mbx=mbx, verifier=verifier, wiq=wiq, proofs=proofs)
+    cueHandler = AdminCueHandler(hab=hab, controller=controller, mbx=mbx, msgs=cues)
     server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler, kiwiServer]
+    doers = [httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler, cueHandler, kiwiServer]
 
     return doers
 
@@ -153,6 +168,8 @@ class AdminProofHandler(doing.Doer):
             verfers is list of Verfers of the keys used to sign the message
 
         """
+        yield  # enter context
+
         logger = help.ogler.getLogger()
 
         while True:
@@ -187,12 +204,119 @@ class AdminProofHandler(doing.Doer):
 
                 # TODO: Add SAID signature on exn, then sanction `fwd` envelope
                 ser = exchanging.exchange(route="/cmd/presentation/proof", payload=pl)
-                fwd = forwarding.forward(pre=self.controller, serder=ser)
-                msg = bytearray(fwd.raw)
+                msg = bytearray(ser.raw)
                 msg.extend(self.hab.sanction(ser))
 
-                self.mbx.storeMsg(self.controller, msg)
+                self.mbx.storeMsg(self.controller+"/credential", msg)
 
                 yield
 
+            yield
+
+
+class AdminCueHandler(doing.DoDoer):
+    """
+
+    """
+
+    def __init__(self, controller, hab, mbx, cues=None, **kwa):
+        """
+
+        Parameters:
+            mbx is Mailboxer for saving messages for controller
+            cues is cues Deck from external mailbox to process
+
+        """
+        self.controller = controller
+        self.hab = hab
+        self.mbx = mbx
+        self.cues = cues if cues is not None else decking.Deck()
+
+        super(AdminCueHandler, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle cues coming out of our external Mailbox listener and forward to controller
+        mailbox if appropriate
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.cues:
+                cue = self.cues.popleft()
+                cueKin = cue["kin"]  # type or kind of cue
+                if cueKin in ("notice", ):
+                    serder = cue["serder"]
+
+                    ilk = serder.kex["t"]
+
+                    if ilk in (coring.Ilks.rot, ):
+                        pre = serder.pre
+                        for keys, group in self.hab.db.gids.getItemIter():
+                            if pre in group.aids:
+                                payload = dict(name=keys, lid=group.lid, gid=group.gid, rot=serder.ked)
+                                ser = exchanging.exchange(route="/cmd/multisig/rotate", payload=payload)
+                                fwd = forwarding.forward(pre=self.controller, serder=ser)
+                                msg = bytearray(fwd.raw)
+                                msg.extend(self.hab.sanction(ser))
+
+                                self.mbx.storeMsg(self.controller, msg)
+
+
+                yield
+
+            yield
+
+
+class MultisigInceptHandler(doing.DoDoer):
+    """
+
+    """
+    resource = "/multisig/incept"
+
+
+    def __init__(self, controller, mbx, cues=None, **kwa):
+        """
+
+        Parameters:
+            wallet (Wallet) credential wallet that will hold the issued credentials
+            formats (list) of format str names accepted for offers
+            typ (JSONSchema) credential type to accept
+        """
+        self.controller = controller
+        self.mbx = mbx
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
+        super(MultisigInceptHandler, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+
+        Parameters:
+            payload is dict representing the body of a multisig/incept message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /credential/issue message
+            verfers is list of Verfers of the keys used to sign the message
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                pl = msg["payload"]
+                pl["r"] = "/incept"
+                raw = json.dumps(pl).encode("utf-8")
+                self.mbx.storeMsg(self.controller+"/multisig", raw)
+
+                yield
             yield
