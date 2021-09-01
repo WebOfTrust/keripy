@@ -228,8 +228,9 @@ class MailboxServer(doing.DoDoer):
                     data = bytearray("id: {}\nevent: {}\ndata: ".format(fn, topic).encode("utf-8"))
                     data.extend(msg)
                     data.extend(b'\n\n')
-                    topics[topic] = idx + 1
+                    idx = idx + 1
                     yield data
+                topics[topic] = idx
 
             yield b''
 
