@@ -440,7 +440,7 @@ class Baser(dbing.LMDBer):
             key is habitat name str
             value is serialized HabitatRecord dataclass
 
-        .sdts (sad date-time-stamp) named subDB instance of MatterSuber that
+        .sdts (sad date-time-stamp) named subDB instance of CesrSuber that
             that maps SAD SAID to Dater instance's CESR serialization of
             ISO-8601 datetime
             key = said (bytes) of sad, val = dater.qb64b
@@ -468,9 +468,9 @@ class Baser(dbing.LMDBer):
             Routes such as '/end/role/add' '/end/role/cut' '/loc/scheme'
             key is route bytes,  val = cat of (saider.qb64b,) of reply 'rpy' msg
 
-        .eans is named subDB instance of MatterSuber that maps cid.role.eid of
-            reply authn of eid for role by cid to said of reply SAD with route
-            SAD to its said
+        .eans is named subDB instance of CesrSuber with klas=Saider that maps
+            cid.role.eid of reply authn SAD to said of reply SAD with
+            routes /end/role/add or /end/role/cut
             key is cid.role.eid,  val = saider.qb64b of reply 'rpy' msg SAD
 
         .ends is named subDB instance of IoSetKomer that maps Controller prefix
@@ -584,7 +584,7 @@ class Baser(dbing.LMDBer):
                                  schema=HabitatRecord, )
 
         # SAD support datetime stamps and signatures indexed and not-indexed
-        # all sad  sdts (sad datetime serializations)
+        # all sad  sdts (sad datetime serializations) maps said to date-time
         self.sdts = subing.CesrSuber(db=self, subkey='sdts.', klas=coring.Dater)
         # all sad ssgs (sad indexed signature serializations) maps SAD SAID to
         # quadruple (Prefixer, Seqner, Diger, Siger) of trans signer's est evt

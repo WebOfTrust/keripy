@@ -1107,7 +1107,7 @@ class Dater(Matter):
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.Salt_128, dts=None, **kwa):
         """
-        Inhereited Parameters:  (see Matter)
+        Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
@@ -1136,7 +1136,7 @@ class Dater(Matter):
     @property
     def dts(self):
         """
-        Property sn:
+        Property dts:
         Returns .qb64 translated to ISO 8601 DateTime str
         """
         return self.qb64[self.Codes[self.code].hs:].translate(self.FromB64)
@@ -1144,7 +1144,7 @@ class Dater(Matter):
     @property
     def dtsb(self):
         """
-        Property sn:
+        Property dtsb:
         Returns .qb64 translated to ISO 8601 DateTime bytes
         """
         return self.qb64[self.Codes[self.code].hs:].translate(self.FromB64).encode("utf-8")
@@ -2628,12 +2628,12 @@ class Saider(Matter):
         """
         Returns:
             result (bool): True means derivation from sad for ._code matches
-                .qb64 and if prefixed also verifies match of id field denoted by label
-                .qb64. False otherwise
+                .qb64 and if prefixed also verifies match to .qb64 of id field
+                denoted by label. False otherwise
 
         Parameters:
             sad (dict): self addressed data to be serialized
-            prefixed (boolean): indicates whether to verify ID value matched .qb64
+            prefixed (boolean): indicates whether to verify ID value matches .qb64
         """
         try:
             # override ensure code is self.code
@@ -3796,6 +3796,7 @@ class Serder:
         preb (identifier prefix) property getter
         """
         return self.pre.encode("utf-8")
+
 
     def pretty(self):
         """

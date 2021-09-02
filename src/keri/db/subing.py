@@ -7,9 +7,8 @@ keri.db.subdbing module
 from typing import Type, Union
 from collections.abc import Iterable, Iterator
 
-from hio.help.helping import nonStringIterable
-
 from .. import help
+from ..help.helping import nonStringIterable
 from ..core import coring
 from . import dbing
 
@@ -1906,7 +1905,7 @@ class CesrDupSuber(DupSuber):
 
 class SignerSuber(CesrSuber):
     """
-    Sub class of MatterSuber where data is Signer subclass instance .qb64b propery
+    Sub class of CesrSuber where data is Signer subclass instance .qb64b propery
     which is a fully qualified serialization and uses the key which is the qb64b
     of the signer.verfer to get the transferable property of the verfer
     Automatically serializes and deserializes from qb64b to/from Signer instances

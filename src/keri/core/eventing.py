@@ -50,6 +50,8 @@ IXN_LABELS = ["v", "i", "s", "t", "p", "a"]
 KSN_LABELS = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "k", "n",
               "bt", "b", "c", "ee", "di", "r"]
 
+RPY_LABELS = ["v", "t", "d", "dt", "r", "a"]
+
 
 
 Schemage = namedtuple("Schemage", 'tcp http https')
@@ -3010,8 +3012,8 @@ class Kevery:
         """
         for k in KSN_LABELS:
             if k not in serder.ked:
-                raise ValidationError("Missing element = {} from {} event."
-                                      " evt = {}.".format(k, Ilks.ksn,
+                raise ValidationError("Missing element = {} from {} msg."
+                                      " ksn = {}.".format(k, Ilks.ksn,
                                                           serder.pretty()))
         # fetch from serder to process
         ked = serder.ked
@@ -3173,6 +3175,317 @@ class Kevery:
                                       #"missing associated event for transferable "
                                       #"validator receipt quadruple for event={}."
                                       #"".format(ked))
+
+
+    def processReply(self, serder, cigars=None, tsgs=None):
+        """
+        Process one reply message with either attached nontrans receipt couples
+        in cigars or attached trans indexed sig groups in tsgs. Process logic
+        is route dependent and dispatched by route.
+
+        Parameters:
+            serder is receipt serder
+            cigars is list of Cigar instances that contain receipt couple
+                signature in .raw and public key in .verfer
+            tsgs is list of tuples (quadruples) of form
+                (prefixer, seqner, diger, [sigers]) where
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
+                [sigers] is list of indexed sigs from trans endorser's keys from est evt
+
+        BADA (Best Available Data Acceptance) model for each reply message.
+        Latest-Seen-Signed Pairwise comparison of new update reply compared to
+        old already accepted reply from same source for same route (same data).
+        Accept new reply (update) if new reply is later than old reply where:
+            1) Later means date-time-stamp of new is greater than old
+        If non-trans signer then also (AND)
+            2) Later means sn (sequence number) of last (if forked) Est evt that
+               provides keys for signature(s) of new is greater than or equal to
+               sn of last Est evt that provides keys for signature(s) of new.
+
+        If nontrans and last Est Evt is not yet accepted then escrow.
+        If nontrans and partially signed then escrow.
+
+        Escrow process logic is route dependent and is dispatched by route,
+        i.e. route is address of buffer with route specific handler of escrow.
+        """
+        for k in RPY_LABELS:
+            if k not in serder.ked:
+                raise ValidationError("Missing element={} from {} msg={}."
+                                      "".format(k, Ilks.rpy, serder.ked))
+        # fetch from serder to process
+        ked = serder.ked
+
+        # verify said of reply
+        saider = coring.Saider(qb64=ked["d"])
+        if not saider.verify(sad=ked, prefixed=True):
+            raise ValidationError("Invalid said = {} for reply msg={}."
+                                  "".format(saider.qb64, ked))
+
+        # get date-time raises error if empty or invalid format
+        dater = coring.Dater(dts=ked["dt"])
+
+        # Dispatch based on route
+        route = ked["r"]
+        if route.startswith("/end/role/add") or route.startwith("/end/role/cut"):
+            self.processReplyEndRole(saider=saider, dater=dater, serder=serder,
+                                        cigars=cigars, tsgs=tsgs)
+        elif route.startwith("/loc/scheme"):
+            self.processReplyLocScheme(saider=saider, dater=dater,serder=serder,
+                                       cigars=cigars, tsgs=tsgs)
+        else:  # unsupported route
+            raise ValidationError("Usupported route={} in {} msg={}."
+                                  "".format(route, Ilks.rpy, serder.ked))
+
+
+
+    def processReplyEndRole(self, *, saider, dater, serder, cigars=None, tsgs=None):
+        """
+        Process one reply message for route = /end/role/add with either
+        attached nontrans receipt couples in cigars or attached trans indexed
+        sig groups in tsgs. Assumes already validated saider, dater, and route
+        from serder.ked
+
+        Parameters:
+            saider is Saider instance  from said in serder (SAD)
+            dater is Dater instance from date-time in serder (SAD)
+            serder is Serder instance of reply msg (SAD)
+            cigars is list of Cigar instances that contain receipt couple
+                signature in .raw and public key in .verfer
+            tsgs is list of tuples (quadruples) of form
+                (prefixer, seqner, diger, [sigers]) where
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
+                [sigers] is list of indexed sigs from trans endorser's keys from est evt
+
+        {
+          "v" : "KERI10JSON00011c_",
+          "t" : "rep",
+          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+          "dt": "2020-08-22T17:50:12.988921+00:00",
+          "r" : "/end/role/add",
+          "a" :
+          {
+             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+             "role": "watcher",  # one of eventing.Roles
+             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+          }
+        }
+
+        BADA (Best Available Data Acceptance) model for each reply message.
+        Latest-Seen-Signed Pairwise comparison of new update reply compared to
+        old already accepted reply from same source for same route (same data).
+        Accept new reply (update) if new reply is later than old reply where:
+            1) Later means date-time-stamp of new is greater than old
+        If non-trans signer then also (AND)
+            2) Later means sn (sequence number) of last (if forked) Est evt that
+               provides keys for signature(s) of new is greater than or equal to
+               sn of last Est evt that provides keys for signature(s) of new.
+
+        If nontrans and last Est Evt is not yet accepted then escrow.
+        If nontrans and partially signed then escrow.
+
+        Escrow process logic is route dependent and is dispatched by route,
+        i.e. route is address of buffer with route specific handler of escrow.
+        """
+        ked = serder.ked
+        role = ked["r"]
+        allow = True if role.startswith("/end/role/add") else False
+        data = ked["a"]
+        for k in ("cid", "role", "end"):
+            if k not in data:
+                raise ValidationError("Missing element={} from attributes in {} "
+                                      "msg={}.".format(k, Ilks.rpy, serder.ked))
+
+        role = data["role"]
+        if role not in Roles:
+            raise ValidationError("Invalid role={} from attributes in {} "
+                                  "msg={}.".format(role, Ilks.rpy, serder.ked))
+        cid = data["cid"]  # controller authorizing role
+        cider = coring.Prefixer(qb64=cid)  # raises error if unsupported code
+        eid = data["eid"]
+        eider = coring.Prefixer(qb64=eid)  # raises error if unsupported code
+        # BADA logic.
+        # Is new later than old if old?
+        osaider = self.db.eans.get(keys=(cid, role, eid))  # get old said if any
+        if osaider:  # get old
+            if (odater := self.db.sdts.get(keys=osaider.qb64b)):
+                if helping.fromIso8601(dater.dts) <= helping.fromIso8601(odater.dts):
+                    raise ValidationError("Stale update of cid.role.eid from {} "
+                                          "msg={}.".format(role, Ilks.rpy, serder.ked))
+
+        for cigar in cigars:  # process each couple to verify sig and write to db
+            if cigar.verfer.transferable:  # ignore invalid transferable verfers
+                continue  # skip invalid transferable
+
+            if not self.lax and cigar.verfer.qb64 in self.prefixes:  # own cig
+                if not self.local:  # own cig when not local so ignore
+                    logger.info("Kevery process: skipped own attachment"
+                            " on nonlocal reply msg=\n%s\n", serder.pretty())
+                    continue  # skip own cig attachment on non-local reply msg
+
+            if cid != cigar.verfer.qb64:  # cig not by cid=controller
+                continue  # skip invalid cig's verfer is not cid
+
+            if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
+                logger.info("Kevery process: skipped nonverifying cig from "
+                        "{} on reply msg=\n%s\n", cigar.verfer.qb64, serder.pretty())
+                continue  # skip if cig not verify
+
+            # All constraints satisfied so Save reply SAD and its dts and cigar
+            self.saveSad(saider=saider, dater=dater, serder=serder, cigar=cigar)
+            # update .eans and .ends
+            # delete now obsolete reply SAD and its dts and cigar
+            break  # first valid cigar sufficient ignore any duplicates in cigars
+
+        #for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
+            #if not self.lax and sprefixer.qb64 in self.prefixes:  # own endorsed ksn
+                #if pre in self.prefixes:  # skip own endorsed ksn
+                    #raise ValidationError("Own endorsement pre={} of own key"
+                        #" state notifiction {}.".format(self.prefixes, serder.pretty()))
+                #if not self.local:  # skip own nonlocal ksn
+                    #raise ValidationError("Own endorsement pre={}  "
+                                          #"of nonlocal key state notification "
+                                    #"{}.".format(self.prefixes, serder.pretty()))
+
+            #if ldig is not None and sprefixer.qb64 in self.kevers:
+                ## both key state event and endorser in database so retreive
+                #if isinstance(ldig, memoryview):
+                    #ldig = bytes(ldig).decode("utf-8")
+
+                #if not serder.compare(dig=ldig):  # mismatch events problem with replay
+                    #raise ValidationError("Mismatch replay event at sn = {} with db."
+                                          #"".format(ked["s"]))
+
+                ## retrieve dig of last event at sn of endorser.
+                #sdig = self.db.getKeLast(key=snKey(pre=sprefixer.qb64b,
+                                                      #sn=sseqner.sn))
+                #if sdig is None:
+                    ## endorser's est event not yet in endorser's KEL
+                    ##  do we escrow key state notifications ?
+                    #pass
+                    ##self.escrowVRQuadruple(serder, sprefixer, sseqner, sdiger, siger)
+                    ##raise UnverifiedTransferableReceiptError("Unverified receipt: "
+                                        ##"missing establishment event of transferable "
+                                        ##"validator receipt quadruple for event={}."
+                                        ##"".format(ked))
+
+                ## retrieve last event itself of endorser
+                #sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
+                ## assumes db ensures that sraw must not be none because sdig was in KE
+                #sserder = Serder(raw=bytes(sraw))
+                #if not sserder.compare(diger=sdiger):  # endorser's dig not match event
+                    #raise ValidationError("Bad trans indexed sig group at sn = {}"
+                                          #" for ksn = {}."
+                                          #"".format(sseqner.sn, sserder.ked))
+
+                ##verify sigs and if so write keystate to database
+                #sverfers = sserder.verfers
+                #if not sverfers:
+                    #raise ValidationError("Invalid key state endorser's est. event"
+                                          #" dig = {} for ksn from pre ={}, "
+                                          #"no keys."
+                                          #"".format(sdiger.qb64, sprefixer.qb64))
+
+
+
+                #for siger in sigers:
+                    #if siger.index >= len(sverfers):
+                        #raise ValidationError("Index = {} to large for keys."
+                                                  #"".format(siger.index))
+                    #siger.verfer = sverfers[siger.index]  # assign verfer
+                    #if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
+                        #logger.info("Kevery unescrow error: Bad trans receipt sig."
+                                 #"pre=%s sn=%x receipter=%s\n", pre, sn, sprefixer.qb64)
+
+                        #raise ValidationError("Bad escrowed trans receipt sig at "
+                                              #"pre={} sn={:x} receipter={}."
+                                              #"".format(pre, sn, sprefixer.qb64))
+
+                    ## good sig so write ksn to database
+
+                    ## Set up quadruple
+                    ##quadruple = sprefixer.qb64b + sseqner.qb64b + sdiger.qb64b + siger.qb64b
+                    ##self.db.addVrc(key=dgKey(pre, serder.dig), val=quadruple)
+
+
+                    ## Only accept key state if for last seen version of event at sn
+                    #ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
+
+
+                    #if ldig is None:  # escrow because event does not yet exist in database
+                        ## # take advantage of fact that receipt and event have same pre, sn fields
+                        #pass
+
+                        ##self.escrowUREvent(serder, cigars, dig=serder.dig)  # digest in receipt
+                        ##raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
+
+                    #ldig = bytes(ldig).decode("utf-8")  # verify digs match
+                    ## retrieve event by dig assumes if ldig is not None that event exists at ldig
+
+                    #if not serder.compare(dig=ldig):  # mismatch events problem with replay
+                        #raise ValidationError("Mismatch keystate at sn = {} with db."
+                                              #"".format(ked["s"]))
+
+
+            #else:  # escrow  either endorser or key stated event not yet in database
+                #pass
+                ##self.escrowVRQuadruple(serder, sprefixer, sseqner, sdiger, siger)
+                ##raise UnverifiedTransferableReceiptError("Unverified receipt: "
+                                      ##"missing associated event for transferable "
+                                      ##"validator receipt quadruple for event={}."
+                                      ##"".format(ked))
+
+    def saveSad(self, *, saider, dater, serder, cigar=None, quad=None):
+        """
+        Save SAD given by serder and attached cig couple or sig quadruple in
+        associated databases. Overwrites val at key if already exists.
+
+        Parameters:
+            saider is Saider instance  from said in serder (SAD)
+            dater is Dater instance from date-time in serder (SAD)
+            serder is Serder instance of reply msg (SAD)
+            cigar is Cigar instance that contains receipt couple
+                signature in .raw and public key in .verfer
+            quad is quadruple of form (prefixer, seqner, diger, siger) where:
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
+                siger is indexed sig from trans endorser's key from est evt
+        """
+        fn = None
+        dgkey = dgKey(serder.preb, serder.digb)
+        dtsb = helping.nowIso8601().encode("utf-8")
+        self.db.putDts(dgkey, dtsb)  #  idempotent do not change dts if already
+        if sigers:
+            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])  # idempotent
+        if wigers:
+            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
+        self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
+        if first:  # append event dig to first seen database in order
+            if seqner and diger: # authorized delegated or issued event
+                couple = seqner.qb64b + diger.qb64b
+                self.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
+            fn = self.db.appendFe(serder.preb, serder.digb)
+            if firner and fn != firner.sn:  # cloned replay but replay fn not match
+                if self.cues is not None:
+                    self.cues.append(dict(kin="noticeBadCloneFN", serder=serder,
+                                          fn=fn, firner=firner, dater=dater))
+                logger.info("Kever Mismatch Cloned Replay FN: %s First seen "
+                            "ordinal fn %s and clone fn %s \nEvent=\n%s\n",
+                            serder.preb, fn, firner.sn, serder.pretty())
+            if dater:  # cloned replay use original's dts from dater
+                dtsb = dater.dtsb
+            self.db.setDts(dgkey, dtsb)  # first seen so set dts to now
+            self.db.firsts.pin(keys=dgkey, val=Seqner(sn=fn))
+            logger.info("Kever state: %s First seen ordinal %s at %s\nEvent=\n%s\n",
+                        serder.preb, fn, dtsb.decode("utf-8"), serder.pretty())
+        self.db.addKe(snKey(serder.preb, serder.sn), serder.digb)
+        logger.info("Kever state: %s Added to KEL valid event=\n%s\n",
+                    serder.preb, serder.pretty())
+        return (fn, dtsb.decode("utf-8"))  #  (fn int, dts str) if first else (None, dts str)
 
     def processQuery(self, serder, src=None, sigers=None):
         """
