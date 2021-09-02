@@ -95,10 +95,19 @@ class HabitatRecord:  # habs
 @dataclass
 class EndpointRecord:  # ends
     """
-    Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by role.
-    Database Keys are (cid, role) where cid is attributable controller identifier
-    of endpoint (qb64 prefix) and role is the endpoint role such as watcher,
-    witness etc
+    Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by
+    cid,role, and eid. The namespace is a tree of branches with each leaf at a
+    specific (cid, role, eid). Retrieval by branch returns groups of leaves as
+    appropriate for a cid braanch or cid.role branch.
+    Database Keys are (cid, role, eid) where cid is attributable controller identifier
+    (qb64 prefix) that has role(s) such as watcher, witness etc and eid is the
+    identifier of the controller acting in a role i.e. watcher identifier.
+
+    Attributes:
+        allow (bool):  True means eid is allowed as controller of endpoint in role
+                       False means eid is disallowed as conroller of endpint in role
+        name (str): user fieldly name for eid in role
+
 
     An end authorization reply message is required from which the field values
     for this record are extracted. A routes of /end/role/eid/add  /end/role/eid/cut
@@ -135,10 +144,7 @@ class EndpointRecord:  # ends
     }
 
     """
-    eid: str  # identifier prefix of service endpoint
-    allow: bool  # True eid allowed (add), False eid disallowed (cut)
-    said: str # Self-Addressing ID of conveying reply message
-    dts: str  # ISO-8601 datetime string of conveying reply message
+    allow: bool = False  # True eid allowed (add), False eid disallowed (cut)
     name: str = ""  # optional user friendly name of endpoint
 
     def __iter__(self):
@@ -473,9 +479,11 @@ class Baser(dbing.LMDBer):
             routes /end/role/add or /end/role/cut
             key is cid.role.eid,  val = saider.qb64b of reply 'rpy' msg SAD
 
-        .ends is named subDB instance of IoSetKomer that maps Controller prefix
-            cid and endpoint role to endpoint prefix
-            key is cid.role,  value is serialized EndpointRecord dataclass
+        .ends is named subDB instance of Komer that maps (cid, role, eid)
+            to attributes about endpoint authorization where:
+            cid is controller prefix, role is endpoint role, watcher etc, and
+            eid is controller prefix of endpoint controller watcher etc.
+            key is cid.role.eid,  value is serialized EndpointRecord dataclass
 
         .locs is named subDB instance of Komer that maps endpoint prefix eid
             and endpoint network location scheme to endpoint location details
@@ -610,10 +618,9 @@ class Baser(dbing.LMDBer):
         # eid AuthN reply indices maps key cid.role.eid to val said of end reply
         self.eans = subing.CesrSuber(db=self, subkey='eans.', klas=coring.Saider)
 
-        # service endpoint identifer (eid) auths keyed by controller cid.role
-        # data extracted from reply end
-        self.ends = koming.IoSetKomer(db=self,
-                                      subkey='ends.',
+        # service endpoint identifer (eid) auths keyed by controller cid.role.eid
+        # data extracted from reply /end/role/add or /end/role/cut
+        self.ends = koming.Komer(db=self, subkey='ends.',
                                       schema=EndpointRecord, )
 
         # service endpont locations keyed by eid.scheme  (endpoint identifier)

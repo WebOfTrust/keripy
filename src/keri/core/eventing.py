@@ -3228,7 +3228,7 @@ class Kevery:
 
         # Dispatch based on route
         route = ked["r"]
-        if route.startswith("/end/role/add") or route.startwith("/end/role/cut"):
+        if route.startswith("/end/role/"):
             self.processReplyEndRole(saider=saider, dater=dater, serder=serder,
                                         cigars=cigars, tsgs=tsgs)
         elif route.startwith("/loc/scheme"):
@@ -3291,8 +3291,14 @@ class Kevery:
         i.e. route is address of buffer with route specific handler of escrow.
         """
         ked = serder.ked
-        role = ked["r"]
-        allow = True if role.startswith("/end/role/add") else False
+        route = ked["r"]
+        if route.startswith("/end/role/add"):
+            allow = True
+        elif route.startswith("/end/role/cut"):
+            allow = False
+        else:  # unsupported route
+            raise ValidationError("Usupported route={} in {} msg={}."
+                                  "".format(route, Ilks.rpy, serder.ked))
         data = ked["a"]
         for k in ("cid", "role", "end"):
             if k not in data:
@@ -3307,9 +3313,10 @@ class Kevery:
         cider = coring.Prefixer(qb64=cid)  # raises error if unsupported code
         eid = data["eid"]
         eider = coring.Prefixer(qb64=eid)  # raises error if unsupported code
+        keys = (cid, role, eid)
         # BADA logic.
         # Is new later than old if old?
-        osaider = self.db.eans.get(keys=(cid, role, eid))  # get old said if any
+        osaider = self.db.eans.get(keys=keys)  # get old said if any
         if osaider:  # get old
             if (odater := self.db.sdts.get(keys=osaider.qb64b)):
                 if helping.fromIso8601(dater.dts) <= helping.fromIso8601(odater.dts):
@@ -3337,7 +3344,14 @@ class Kevery:
             # All constraints satisfied so Save reply SAD and its dts and cigar
             self.saveSad(saider=saider, dater=dater, serder=serder, cigar=cigar)
             # update .eans and .ends
-            # delete now obsolete reply SAD and its dts and cigar
+            if not (ender := self.db.ends.get(keys=keys)):
+                ender = basing.EndpointRecord()  # create new default record
+            ender.allow = allow  # update allow status
+            self.db.ends.pin(keys=keys, val=ender)
+            self.db.eans.pin(keys=(cid, role, eid), val=saider)
+            # remove now obsolete reply SAD and its dts and cigar
+            self.removeSad(saider=saider)
+
             break  # first valid cigar sufficient ignore any duplicates in cigars
 
         #for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
@@ -3455,37 +3469,27 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 siger is indexed sig from trans endorser's key from est evt
         """
-        fn = None
-        dgkey = dgKey(serder.preb, serder.digb)
-        dtsb = helping.nowIso8601().encode("utf-8")
-        self.db.putDts(dgkey, dtsb)  #  idempotent do not change dts if already
-        if sigers:
-            self.db.putSigs(dgkey, [siger.qb64b for siger in sigers])  # idempotent
-        if wigers:
-            self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
-        self.db.putEvt(dgkey, serder.raw)  # idempotent (maybe already excrowed)
-        if first:  # append event dig to first seen database in order
-            if seqner and diger: # authorized delegated or issued event
-                couple = seqner.qb64b + diger.qb64b
-                self.db.setAes(dgkey, couple)  # authorizer event seal (delegator/issuer)
-            fn = self.db.appendFe(serder.preb, serder.digb)
-            if firner and fn != firner.sn:  # cloned replay but replay fn not match
-                if self.cues is not None:
-                    self.cues.append(dict(kin="noticeBadCloneFN", serder=serder,
-                                          fn=fn, firner=firner, dater=dater))
-                logger.info("Kever Mismatch Cloned Replay FN: %s First seen "
-                            "ordinal fn %s and clone fn %s \nEvent=\n%s\n",
-                            serder.preb, fn, firner.sn, serder.pretty())
-            if dater:  # cloned replay use original's dts from dater
-                dtsb = dater.dtsb
-            self.db.setDts(dgkey, dtsb)  # first seen so set dts to now
-            self.db.firsts.pin(keys=dgkey, val=Seqner(sn=fn))
-            logger.info("Kever state: %s First seen ordinal %s at %s\nEvent=\n%s\n",
-                        serder.preb, fn, dtsb.decode("utf-8"), serder.pretty())
-        self.db.addKe(snKey(serder.preb, serder.sn), serder.digb)
-        logger.info("Kever state: %s Added to KEL valid event=\n%s\n",
-                    serder.preb, serder.pretty())
-        return (fn, dtsb.decode("utf-8"))  #  (fn int, dts str) if first else (None, dts str)
+        return True
+
+
+    def removeSad(self, saider):
+        """
+        Save SAD given by serder and attached cig couple or sig quadruple in
+        associated databases. Overwrites val at key if already exists.
+
+        Parameters:
+            saider is Saider instance  from said in serder (SAD)
+            dater is Dater instance from date-time in serder (SAD)
+            serder is Serder instance of reply msg (SAD)
+            cigar is Cigar instance that contains receipt couple
+                signature in .raw and public key in .verfer
+            quad is quadruple of form (prefixer, seqner, diger, siger) where:
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
+                siger is indexed sig from trans endorser's key from est evt
+        """
+        return True
 
     def processQuery(self, serder, src=None, sigers=None):
         """
