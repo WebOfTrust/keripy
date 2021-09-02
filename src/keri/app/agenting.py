@@ -438,6 +438,7 @@ class KiwiServer(doing.DoDoer):
         self.app.resp_options.media_handlers.update(media.Handlers())
         self.cues = cues if cues is not None else decking.Deck()
 
+        self.app.add_route("/id", self, suffix="id")
         self.app.add_route("/registry/incept", self, suffix="registry_incept")
         self.registryIcpr = registering.RegistryInceptDoer(hab=hab)
         self.app.add_route("/credential/issue", self, suffix="issue")
@@ -446,6 +447,7 @@ class KiwiServer(doing.DoDoer):
 
         self.app.add_route("/multisig/incept", self, suffix="multisig_incept")
         self.app.add_route("/multisig/rotate", self, suffix="multisig_rotate")
+        self.app.add_route("/multisig", self, suffix="multisig")
         self.gicpr = grouping.MultiSigInceptDoer(hab=hab)
         self.grotr = grouping.MultiSigRotateDoer(hab=hab)
 
@@ -701,6 +703,9 @@ class KiwiServer(doing.DoDoer):
             return
 
         aids = body["aids"]
+
+        notify = body["notify"] if "notify" in body else True
+
         msg = dict(
             aids=aids,
             toad=None,
@@ -714,18 +719,59 @@ class KiwiServer(doing.DoDoer):
             if key in body:
                 msg[key] = body[key]
 
-        for aid in aids:
-            if aid != self.hab.pre:
-                if aid not in self.hab.kevers:
-                    self.witq.query(aid)
-                exn = exchanging.exchange(route="/multisig/incept", payload=dict(msg), date=helping.nowIso8601())
-                self.rep.reps.append(dict(dest=aid, rep=exn, topic="multisig"))
+
+        if notify:
+            for aid in aids:
+                if aid != self.hab.pre:
+                    if aid not in self.hab.kevers:
+                        self.witq.query(aid)
+                    exn = exchanging.exchange(route="/multisig/incept", payload=dict(msg), date=helping.nowIso8601())
+                    self.rep.reps.append(dict(dest=aid, rep=exn, topic="multisig"))
 
         msg["group"] = body["group"]
 
-        # self.gicpr.msgs.append(msg)
+        self.gicpr.msgs.append(msg)
 
         rep.status = falcon.HTTP_202
+
+    def on_get_multisig(self, req, rep):
+        """
+        Return the groups this environment is a part of
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        """
+        res = []
+
+        groups = self.hab.db.gids.getItemIter()
+        for (name,), group in groups:
+            kever = self.hab.kevers[group.gid]
+            ser = kever.serder
+            dgkey = dbing.dgKey(ser.preb, ser.digb)
+            wigs = self.hab.db.getWigs(dgkey)
+
+
+            gd = dict(
+                name=name,
+                prefix=group.gid,
+                seq_no=kever.sn,
+                aids=group.aids,
+                witnesses=kever.wits,
+                public_keys=[verfer.qb64 for verfer in kever.verfers],
+                toad=kever.toad,
+                isith=kever.tholder.sith,
+                receipts=len(wigs)
+            )
+
+            res.append(gd)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(res).encode("utf-8")
+
+
 
 
     def on_post_registry_incept(self, req, rep):
@@ -764,3 +810,44 @@ class KiwiServer(doing.DoDoer):
             issuer = issuing.Issuer(hab=self.hab, name=name, reger=reger)
             self.issuers[name] = issuer
         return issuer
+
+
+    def on_get_id(self, req, rep):
+        """
+        Return the groups this environment is a part of
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        """
+        res = []
+
+        habs = self.hab.db.habs.getItemIter()
+        for (name,), habr in habs:
+            kever = self.hab.kevers[habr.prefix]
+            ser = kever.serder
+            dgkey = dbing.dgKey(ser.preb, ser.digb)
+            wigs = self.hab.db.getWigs(dgkey)
+
+
+            gd = dict(
+                name=name,
+                prefix=habr.prefix,
+                seq_no=kever.sn,
+                witnesses=kever.wits,
+                public_keys=[verfer.qb64 for verfer in kever.verfers],
+                toad=kever.toad,
+                isith=kever.tholder.sith,
+                receipts=len(wigs)
+            )
+
+            res.append(gd)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(res).encode("utf-8")
+
+
+
+

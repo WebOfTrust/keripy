@@ -259,12 +259,11 @@ class AdminCueHandler(doing.DoDoer):
                         for keys, group in self.hab.db.gids.getItemIter():
                             if pre in group.aids:
                                 payload = dict(name=keys, lid=group.lid, gid=group.gid, rot=serder.ked)
-                                ser = exchanging.exchange(route="/cmd/multisig/rotate", payload=payload)
-                                fwd = forwarding.forward(pre=self.controller, serder=ser)
-                                msg = bytearray(fwd.raw)
+                                ser = exchanging.exchange(route="/rotate", payload=payload)
+                                msg = bytearray(ser.raw)
                                 msg.extend(self.hab.sanction(ser))
 
-                                self.mbx.storeMsg(self.controller, msg)
+                                self.mbx.storeMsg(self.controller+"/multisig", msg)
 
 
                 yield
