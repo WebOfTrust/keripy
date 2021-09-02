@@ -3309,10 +3309,10 @@ class Kevery:
         if role not in Roles:
             raise ValidationError("Invalid role={} from attributes in {} "
                                   "msg={}.".format(role, Ilks.rpy, serder.ked))
-        cid = data["cid"]  # controller authorizing role
-        cider = coring.Prefixer(qb64=cid)  # raises error if unsupported code
-        eid = data["eid"]
-        eider = coring.Prefixer(qb64=eid)  # raises error if unsupported code
+        cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
+        cid = cider.qb64  # controller authorizing eid at role
+        eider = coring.Prefixer(qb64=data["eid"] )  # raises error if unsupported code
+        eid = eider.qb64  # controller of endpoint at role
         keys = (cid, role, eid)
         # BADA logic.
         # Is new later than old if old?
@@ -3474,20 +3474,11 @@ class Kevery:
 
     def removeSad(self, saider):
         """
-        Save SAD given by serder and attached cig couple or sig quadruple in
-        associated databases. Overwrites val at key if already exists.
+        Remove SAD artifacts given by saider.
 
         Parameters:
             saider is Saider instance  from said in serder (SAD)
-            dater is Dater instance from date-time in serder (SAD)
-            serder is Serder instance of reply msg (SAD)
-            cigar is Cigar instance that contains receipt couple
-                signature in .raw and public key in .verfer
-            quad is quadruple of form (prefixer, seqner, diger, siger) where:
-                prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
-                diger is digest of trans endorser's est evt for keys for sigs
-                siger is indexed sig from trans endorser's key from est evt
+
         """
         return True
 
