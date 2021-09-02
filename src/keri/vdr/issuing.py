@@ -6,8 +6,8 @@ keri.vdr.issuing module
 VC issuer support
 """
 from hio.base import doing
-from keri.vdr import viring
 
+from keri.vdr import viring
 from .. import kering
 from ..core import parsing
 from ..core.coring import Counter, Seqner, CtrDex, MtrDex, Serder

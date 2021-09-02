@@ -11,6 +11,8 @@ import json
 import logging
 from collections import deque, namedtuple
 
+import pysodium
+
 from keri.core import coring
 from orderedset import OrderedSet as oset
 
@@ -95,6 +97,9 @@ def incept(
         if toad != 0:  # invalid toad
             raise ValueError("Invalid toad = {} for baks = {}".format(toad, baks))
 
+    preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seedqb64 = coring.Matter(raw=preseed, code=MtrDex.Ed25519_Seed).qb64
+
     ked = dict(v=vs,  # version string
                i="",  # qb64 prefix
                ii=pre,
@@ -102,7 +107,8 @@ def incept(
                t=ilk,
                c=cnfg,
                bt="{:x}".format(toad),  # hex string no leading zeros lowercase
-               b=baks  # list of qb64 may be empty
+               b=baks,  # list of qb64 may be empty
+               # n=seedqb64  # nonce of random bytes to make each registry unique
                )
 
     prefixer = Prefixer(ked=ked, code=code, allows=[MtrDex.Blake3_256])  # Derive AID from ked and code

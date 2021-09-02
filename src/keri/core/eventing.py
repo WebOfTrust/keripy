@@ -2479,6 +2479,8 @@ class Kevery:
                         # create cue for receipt   direct mode for now
                         #  receipt of actual type is dependent on own type of identifier
                         self.cues.push(dict(kin="receipt", serder=serder))
+                    elif not self.direct:
+                        self.cues.push(dict(kin="notice", serder=serder))
 
                 else:  # maybe duplicitous
                     # check if duplicate of existing valid accepted event

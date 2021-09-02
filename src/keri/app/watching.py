@@ -11,7 +11,7 @@ from hio.base import doing
 from hio.core.http import clienting
 from hio.help import decking
 
-from keri.app import keeping, obtaining
+from keri.app import keeping, obtaining, httping
 from keri.core import coring, eventing, parsing
 from .. import help, kering
 from ..end import ending
@@ -29,7 +29,7 @@ class KiwiServer(doing.DoDoer):
         self.hab = hab
         self.controller = controller
         self.app = app if app is not None else falcon.App(cors_enable=True)
-        self.app.add_middleware(SignatureValidationComponent(hab=self.hab, pre=self.controller))
+        self.app.add_middleware(httping.SignatureValidationComponent(hab=self.hab, pre=self.controller))
         self.cues = cues if cues is not None else decking.Deck()
 
         self.app.add_route("/rotate", self, suffix="rotate")
@@ -39,8 +39,7 @@ class KiwiServer(doing.DoDoer):
         super(KiwiServer, self).__init__(doers=doers, **kwa)
 
     def on_post_rotate(self, req, rep):
-        pre = req.context.pre
-        print(pre)
+        pre = self.controller
         prms = self.hab.ks.prms.get(self.hab.pre)
 
         aeid = self.hab.mgr.aeid
@@ -103,44 +102,6 @@ class KiwiServer(doing.DoDoer):
         rep.content_length = len(icpMsg)
         rep.data = icpMsg
         rep.status = falcon.HTTP_200
-
-
-class SignatureValidationComponent(object):
-
-    def __init__(self, hab, pre):
-        self.hab = hab
-        self.pre = pre
-
-    def process_request(self, req, resp):
-        sig = req.headers.get("SIGNATURE")
-
-        ser = req.bounded_stream.read()
-        if not self.validate(sig=sig, ser=ser):
-            resp.complete = True
-            resp.status = falcon.HTTP_401
-            return
-        data = json.loads(ser.decode("utf-8"))
-        req.context.pre = data["pre"]
-
-    def validate(self, sig, ser):
-        signages = ending.designature(sig)
-        markers = signages[0].markers
-
-        if self.pre not in self.hab.kevers:
-            return False
-
-        verfers = self.hab.kevers[self.pre].verfers
-        for idx, verfer in enumerate(verfers):
-            key = str(idx)
-            if key not in markers:
-                return False
-            siger = markers[key]
-            siger.verfer = verfer
-
-            if not verfer.verify(siger.raw, ser):
-                return False
-
-        return True
 
 
 class WatcherClientRotateDoer(doing.DoDoer):

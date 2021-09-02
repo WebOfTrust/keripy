@@ -329,7 +329,8 @@ class RequestHandler(doing.Doer):
                 if len(matches) > 0:
                     pe = presentation_exchange(matches)
                     exn = exchanging.exchange(route="/presentation/proof", payload=pe)
-                    self.cues.append(dict(dest=requestor.qb64, rep=exn))
+                    print(exn.pretty())
+                    self.cues.append(dict(dest=requestor.qb64, rep=exn, topic="credential"))
 
                 yield
 

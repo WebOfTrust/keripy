@@ -14,7 +14,7 @@ from keri import help
 from keri.app import indirecting, storing
 from keri.app.cli.common import existing
 from keri.core import scheming
-from keri.peer import httping, exchanging
+from keri.peer import exchanging
 from keri.vc import walleting, handling
 
 d = "Runs KERI Agent controller.\n"
@@ -62,7 +62,7 @@ def runWallet(name="wallet"):
 
     mbx = storing.Mailboxer(name=name)
     rep = storing.Respondant(hab=hab, mbx=mbx)
-    mdir = indirecting.MailboxDirector(hab=hab, exc=exchanger, rep=rep, topics=["/receipt", "/replay"])
+    mdir = indirecting.MailboxDirector(hab=hab, exc=exchanger, rep=rep, topics=["/receipt", "/replay", "/credential"])
 
     doers.extend([exchanger, mdir, rep])
 

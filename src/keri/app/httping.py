@@ -9,11 +9,12 @@ from dataclasses import dataclass
 import falcon
 from hio.help import Hict
 
-from .. import help
-from .. import kering
-from ..core import coring
-from ..core.coring import Ilks
-from ..help.helping import nowIso8601
+from keri import help
+from keri import kering
+from keri.core import coring
+from keri.core.coring import Ilks
+from keri.end import ending
+from keri.help.helping import nowIso8601
 
 logger = help.ogler.getLogger()
 
@@ -21,6 +22,45 @@ CESR_CONTENT_TYPE = "application/cesr+json"
 CESR_ATTACHMENT_HEADER = "CESR-ATTACHMENT"
 CESR_DATE_HEADER = "CESR-DATE"
 CESR_RECIPIENT_HEADER = "CESR-RECIPIENT"
+
+
+class SignatureValidationComponent(object):
+
+    def __init__(self, hab, pre):
+        self.hab = hab
+        self.pre = pre
+
+    def process_request(self, req, resp):
+        sig = req.headers.get("SIGNATURE")
+
+        ser = req.bounded_stream.read()
+        if not self.validate(sig=sig, ser=ser):
+            resp.complete = True
+            resp.status = falcon.HTTP_401
+            return
+        req.context.raw = ser
+
+    def validate(self, sig, ser):
+        signages = ending.designature(sig)
+        markers = signages[0].markers
+
+        if self.pre not in self.hab.kevers:
+            return False
+
+        verfers = self.hab.kevers[self.pre].verfers
+        for idx, verfer in enumerate(verfers):
+            key = str(idx)
+            if key not in markers:
+                return False
+            siger = markers[key]
+            siger.verfer = verfer
+
+            if not verfer.verify(siger.raw, ser):
+                return False
+
+        return True
+
+
 
 
 @dataclass
@@ -137,3 +177,10 @@ def createCESRRequest(msg, client, date=None):
         headers=headers,
         body=body
     )
+
+
+class InsecureSignatureComponent(object):
+
+    def process_request(self, req, resp):
+        ser = req.bounded_stream.read()
+        req.context.raw = ser

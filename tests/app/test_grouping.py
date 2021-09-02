@@ -1,4 +1,4 @@
-from keri.app.cli.common import grouping
+from keri.app import grouping
 from keri.core import coring
 
 

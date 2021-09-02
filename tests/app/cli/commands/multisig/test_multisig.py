@@ -13,12 +13,10 @@ from hio.base import doing, tyming
 
 from keri.app import indirecting, habbing
 from keri.app.cli.commands import incept
-from keri.app.cli.commands.multisig.incept import MultiSigInceptOptions, MultiSigInceptDoer
+from keri.app.cli.commands.multisig.incept import GroupMultisigIncept
 from keri.db import dbing
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# logger = help.ogler.getLogger()
 
 
 def test_incept():
@@ -113,8 +111,7 @@ class InceptingDoer(doing.DoDoer):
 
         for sig in sigs:
             opts = loadMultiInceptOpts("multisig-sample.json")
-            kwa = opts.__dict__
-            msd = MultiSigInceptDoer(name=sig, group=sig + "-g", **kwa)
+            msd = GroupMultisigIncept(name=sig, group=sig + "-g", **opts)
             self.extend([msd])
 
             while not msd.done:
@@ -135,7 +132,7 @@ def loadMultiInceptOpts(filename):
     filepath = os.path.join(TEST_DIR, filename)
     with open(filepath) as f:
         config = json.load(f)
-        return MultiSigInceptOptions(**config)
+        return config
 
 
 if __name__ == '__main__':

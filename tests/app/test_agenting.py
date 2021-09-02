@@ -115,11 +115,7 @@ def test_credential_handlers(mockHelpingNowUTC):
         issuer = issuing.Issuer(hab=hab, name=hab.name, reger=reger, noBackers=True)
         issuerDoer = issuing.IssuerDoer(issuer=issuer)
 
-        issueHandler = agenting.CredentialIssueHandler(hab=hab, issuer=issuer)
-        revokeHandler = agenting.CredentialRevokeHandler(hab=hab, issuer=issueHandler.issuer)
-        handlers = [issueHandler, revokeHandler]
-
-        exchanger = exchanging.Exchanger(hab=hab, handlers=handlers)
+        exchanger = exchanging.Exchanger(hab=hab, handlers=[])
 
         payload = dict(
             recipient=hab.pre,
@@ -129,7 +125,6 @@ def test_credential_handlers(mockHelpingNowUTC):
 
         exn = exchanging.exchange("/cmd/credential/issue", payload=payload)
         sigers = hab.mgr.sign(exn.raw, verfers=hab.kever.verfers, indexed=True)
-        exchanger.processEvent(serder=exn, source=hab.kever.prefixer, sigers=sigers)
 
         said = "EAPngnAg5B0g_fV1BxFuHuewuOaXF69HFfhF21pb5dTI"
         payload = dict(
@@ -139,11 +134,10 @@ def test_credential_handlers(mockHelpingNowUTC):
 
         exn = exchanging.exchange("/cmd/credential/revoke", payload=payload)
         sigers = hab.mgr.sign(exn.raw, verfers=hab.kever.verfers, indexed=True)
-        exchanger.processEvent(serder=exn, source=hab.kever.prefixer, sigers=sigers)
 
         limit = 2.0
         tock = 0.03125
-        doist = doing.Doist(tock=tock, limit=limit, doers=[issuerDoer, exchanger, issueHandler, revokeHandler])
+        doist = doing.Doist(tock=tock, limit=limit, doers=[issuerDoer, exchanger])
         doist.enter()
 
         tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
@@ -174,28 +168,3 @@ def test_credential_handlers(mockHelpingNowUTC):
         tkey = dbing.snKey(regkb, 0)
         ekey = dbing.dgKey(regkb, digb)
 
-        tel = reger.getTel(tkey)
-        assert bytes(tel) == digb
-
-        evt = reger.getTvt(ekey)
-        assert bytes(evt) == vcp
-
-        # Check for the issuance event
-        tkey = dbing.snKey(credpb, 0)
-        ekey = dbing.dgKey(credpb, creddigb)
-
-        tel = reger.getTel(tkey)
-        assert bytes(tel) == creddigb
-
-        evt = reger.getTvt(ekey)
-        assert bytes(evt) == iss
-
-        # Check for the revocation event
-        tkey = dbing.snKey(credpb, 1)
-        ekey = dbing.dgKey(credpb, revdigb)
-
-        tel = reger.getTel(tkey)
-        assert bytes(tel) == revdigb
-
-        evt = reger.getTvt(ekey)
-        assert bytes(evt) == rev

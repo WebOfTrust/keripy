@@ -5,6 +5,7 @@ keri.app.indirecting module
 
 simple indirect mode demo support classes
 """
+import json
 
 import falcon
 from hio.base import doing
@@ -12,12 +13,12 @@ from hio.core import http
 from hio.core.tcp import serving
 from hio.help import decking
 
-from . import habbing, keeping, directing, storing
+from . import habbing, keeping, directing, storing, httping
 from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, coring
 from ..db import basing
-from ..peer import exchanging, httping
+from ..peer import exchanging
 from ..vdr import verifying
 from ..vdr.eventing import Tevery
 
@@ -311,7 +312,7 @@ class MailboxDirector(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, topics, verifier=None, kvy=None, exc=None, rep=None, **kwa):
+    def __init__(self, hab, topics, verifier=None, kvy=None, exc=None, rep=None, cues=None, **kwa):
         """
         Initialize instance.
 
@@ -333,6 +334,7 @@ class MailboxDirector(doing.DoDoer):
         self.rep = rep
         self.topics = topics
         self.pollers = []
+        self.cues = cues if cues is not None else decking.Deck()
 
         self.ims = bytearray()
 
@@ -345,7 +347,8 @@ class MailboxDirector(doing.DoDoer):
         #  neeeds unique kevery with ims per remoter connnection
         self.kvy = kvy if kvy is not None else eventing.Kevery(db=self.hab.db,
                                                                lax=False,
-                                                               local=False)
+                                                               local=False,
+                                                               direct=False)
 
         if self.verifier is not None:
             self.tevery = Tevery(tevers=self.verifier.tevers,
@@ -460,8 +463,9 @@ class MailboxDirector(doing.DoDoer):
         """
         yield  # enter context
         while True:
-            for msg in self.hab.processCuesIter(self.kvy.cues):
-                # self.sendMessage(msg, label="chit or receipt or replay")
+            while self.kvy.cues:
+                cue = self.kvy.cues.popleft()
+                self.cues.append(cue)
                 yield  # throttle just do one cue at a time
             yield
 
@@ -609,7 +613,8 @@ class Poller(doing.DoDoer):
                 idx = evt["id"]
                 msg = evt["data"]
                 tpc = evt["name"]
-                ser = coring.Serder(raw=msg.encode("utf-8"))
+                # ser = coring.Serder(raw=msg.encode("utf-8"))
+
                 self.msgs.append(msg.encode("utf=8"))
 
                 witrec.topics[tpc] = int(idx)

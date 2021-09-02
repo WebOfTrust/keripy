@@ -4,22 +4,27 @@ KERI
 keri.app.agenting module
 
 """
+import json
 import random
 
+import falcon
+from falcon import media
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
-from keri import kering
-from . import forwarding
 
+from .. import kering
+from . import httping, grouping
 from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, scheming, coring
 from ..db import dbing
-from ..peer import exchanging, httping
+from ..help import helping
+from ..help.helping import nowIso8601
+from ..peer import exchanging
 from ..vc import proving, handling
-from ..vdr import issuing
+from ..vdr import registering, viring, issuing
 
 logger = help.ogler.getLogger()
 
@@ -400,7 +405,6 @@ class HttpWitnesser(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-
         while True:
             while not self.client.responses:
                 rep = self.client.respond()
@@ -410,350 +414,440 @@ class HttpWitnesser(doing.DoDoer):
             yield
 
 
-class RotateHandler(doing.DoDoer):
+class KiwiServer(doing.DoDoer):
     """
-        Processor for a performing a key rotate in an agent.
-        {
-            sith=3,
-            count=5,
-            erase=False,
-            toad=1,
-            cuts=[],
-            adds=[],
-            data=[
-               {}
-            ]
-        }
+    Routes for handling UI requests for Credential issuance/revocation and presentation requests
+
     """
 
-    resource = "/cmd/rotate"
-
-    def __init__(self, hab, cues=None, **kwa):
+    def __init__(self, hab, controller, rep, cues=None, app=None, insecure=False, **kwa):
         self.hab = hab
-        self.msgs = decking.Deck()
+        self.controller = controller
+        self.rep = rep
+        self.kevts = decking.Deck()
+        self.tevts = decking.Deck()
+        self.app = app if app is not None else falcon.App(cors_enable=True)
+        self.issuers = dict()
+
+        if insecure:
+            self.app.add_middleware(httping.InsecureSignatureComponent())
+        else:
+            self.app.add_middleware(httping.SignatureValidationComponent(hab=hab, pre=controller))
+
+        self.app.req_options.media_handlers.update(media.Handlers())
+        self.app.resp_options.media_handlers.update(media.Handlers())
         self.cues = cues if cues is not None else decking.Deck()
 
-        doers = [doing.doify(self.msgDo)]
+        self.app.add_route("/id", self, suffix="id")
+        self.app.add_route("/registry/incept", self, suffix="registry_incept")
+        self.registryIcpr = registering.RegistryInceptDoer(hab=hab)
+        self.app.add_route("/credential/issue", self, suffix="issue")
+        self.app.add_route("/credential/revoke", self, suffix="revoke")
+        self.app.add_route("/presentation/request", self, suffix="request")
 
-        super(RotateHandler, self).__init__(doers=doers, **kwa)
+        self.app.add_route("/multisig/incept", self, suffix="multisig_incept")
+        self.app.add_route("/multisig/rotate", self, suffix="multisig_rotate")
+        self.app.add_route("/multisig", self, suffix="multisig")
+        self.gicpr = grouping.MultiSigInceptDoer(hab=hab)
+        self.grotr = grouping.MultiSigRotateDoer(hab=hab)
 
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Rotate identifier.
+        self.witq = WitnessInquisitor(hab=hab, klas=TCPWitnesser)
 
-        Messages:
-            payload is dict representing the body of a /presentation/request message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/request message
-            verfers is list of Verfers of the keys used to sign the message
+        doers = [self.witq, self.registryIcpr, self.gicpr, self.grotr, doing.doify(self.receiptDo), doing.doify(
+            self.publishDo)]
 
-        Returns doifiable Doist compatible generator method (doer dog)
+        super(KiwiServer, self).__init__(doers=doers, **kwa)
 
-        Usage:
-            add result of doify on this method to doers list
-        """
+    def receiptDo(self, tymth, tock=0.0, **opts):
         self.wind(tymth)
         self.tock = tock
-        _ = (yield self.tock)
+        yield self.tock
 
         while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-
-                if "count" not in payload:
-                    logger.info("unable to rotate without a count of next signing keys")
-                    return
-
-                count = payload["count"]
-
-                sith = payload["sith"] if "sith" in payload else None
-                erase = payload["erase"] if "erase" in payload else None
-                toad = payload["toad"] if "toad" in payload else None
-                cuts = payload["cuts"] if "cuts" in payload else None
-                adds = payload["adds"] if "adds" in payload else None
-                data = payload["data"] if "data" in payload else None
-
-                # start a witnesser to take care of sending receipts
-                witDoer = WitnessReceiptor(hab=self.hab)
+            while self.kevts:
+                kevt = self.kevts.popleft()
+                witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
                 self.extend([witDoer])
 
-                self.hab.rotate(count=count, sith=sith, erase=erase, toad=toad, cuts=cuts, adds=adds, data=data)
+                while not witDoer.done:
+                    yield self.tock
 
-                ser = self.hab.kever.serder
-                wits = self.hab.kever.wits
+                self.remove([witDoer])
 
-                while True:
-                    dgkey = dbing.dgKey(ser.preb, ser.digb)
-
-                    rcts = self.hab.db.getWigs(dgkey)
-                    if len(rcts) == len(wits):
-                        break
-                    yield
-
-                self.remove(doers=[witDoer])
-
-                logger.info('Prefix\t\t{%s}', self.hab.pre)
-                for idx, verfer in enumerate(self.hab.kever.verfers):
-                    logger.info('Public key %d:\t%s', idx + 1, verfer.qb64)
-                logger.info("")
-
-                yield
-
-            yield
-
-
-class CredentialIssueHandler(doing.DoDoer):
-    """
-        CredentialIssueHandler - exn behavior for issuing a credential
-
-        Validates payload against specified JSON-Schema
-        Receipts KEL event and propagates TEL event to witnesses
-        Errors will be placed in the corresponding issuer
-    """
-
-    resource = "/cmd/credential/issue"
-
-    def __init__(self, hab, issuer=None, cues=None, **kwa):
-        self.hab = hab
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=hab, name=self.hab.name)
-
-        doers = [doing.doify(self.msgDo)]
-
-        super(CredentialIssueHandler, self).__init__(doers=doers, **kwa)
-
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
-
-        while not self.issuer.regk:
+                yield self.tock
             yield self.tock
 
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-
-                recipientIdentifier = payload["recipient"]
-                credSubject = payload["data"]
-                schema = payload["schema"]
-                # not all credentials have a source
-                source = payload.get("source")
-
-                ref = scheming.jsonSchemaCache.resolve(schema)
-                schemer = scheming.Schemer(raw=ref)
-                jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
-
-                # Build the credential subject and then the Credentialer for the full credential
-                creder = proving.credential(issuer=self.hab.pre,
-                                            schema=schemer.said,
-                                            subject=credSubject,
-                                            typ=jsonSchema,
-                                            source=source,
-                                            status=self.issuer.regk)
-
-                msg = self.hab.endorse(serder=creder)
-
-                tevt, kevt = self.issuer.issue(vcdig=creder.said)
-
-                witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
-                self.extend([witDoer])
-
-                witSender = WitnessPublisher(hab=self.hab, msg=tevt)
-                self.extend([witSender])
-
-                pl = dict(
-                    vc=[handling.envelope(msg, typ=jsonSchema)]
-                )
-
-                exn = exchanging.exchange(route="/credential/issue", payload=pl)
-                self.cues.append(dict(dest=recipientIdentifier, rep=exn))
-                yield
-            yield
-
-
-class CredentialRevokeHandler(doing.DoDoer):
-    """
-        Processor for revoking a credential.  The parameters needed are the SAID of the credential to revoke and the
-        SCID of the revocation registry for the credential. If the identifier of this cloud agent is the issuing
-        party, the credential is revoked by issuing the correct event to the TEL for this credential.
-
-        {
-            regk="<self-certifying identifier of the revocation registry>",
-            said="<self-addressing identifier of the credential to revoke>",
-        }
-
-    """
-
-    resource = "/cmd/credential/revoke"
-
-    def __init__(self, hab, issuer=None, cues=None, **kwa):
-        """
-        Creates an exn handler capable of revoking credentials previous issued by the identifier
-        managed by the passed in Habitat
-
-        Parameters:
-            hab (Hobitat): the environment of the issuing identifier
-
-        """
-        self.hab = hab
-        self.issuer = issuer if issuer is not None else issuing.Issuer(hab=self.hab, name=self.hab.name)
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        doers = [doing.doify(self.msgDo)]
-
-        super(CredentialRevokeHandler, self).__init__(doers=doers, **kwa)
-
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Echo the proviced message back to the sender
-
-        Messages:
-            payload is dict representing the body of a /presentation/request message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/request message
-            verfers is list of Verfers of the keys used to sign the message
-
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
+    def publishDo(self, tymth, tock=0.0, **opts):
         self.wind(tymth)
         self.tock = tock
-        _ = (yield self.tock)
+        yield self.tock
 
         while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                pl = msg["payload"]
-
-                regk = pl["regk"]
-                said = pl["said"]
-
-                if regk != self.issuer.regk:
-                    raise ValueError("provided registry identifier {} does not match our registry {}"
-                                     "".format(regk, self.issuer.regk))
-
-                tevt, kevt = self.issuer.revoke(vcdig=said)
-                (yield self.tock)
-
-                witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
-                self.extend([witDoer])
-
+            while self.tevts:
+                tevt = self.tevts.popleft()
                 witSender = WitnessPublisher(hab=self.hab, msg=tevt)
                 self.extend([witSender])
 
+                while not witSender.done:
+                    _ = yield self.tock
 
-                (yield self.tock)
+                self.remove([witSender])
 
+                yield self.tock
+            yield self.tock
 
-            yield
+    def cueDo(self, tymth, tock=0.0, **opts):
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
 
-
-class PresentationRequestHandler(doing.DoDoer):
-    """
-    """
-
-    resource = "/cmd/presentation/request"
-
-    def __init__(self, hab, cues=None, **kwa):
-        self.hab = hab
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        doers = [doing.doify(self.msgDo)]
-
-        super(PresentationRequestHandler, self).__init__(doers=doers, **kwa)
-
-    def msgDo(self, tymth=None, tock=0.0, **opts):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
-
-        Usage:
-            add result of doify on this method to doers list
-        """
         while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
+            while self.grotr.cues:
+                cue = self.grotr.cues.popleft()
+                exn = exchanging.exchange(route="/multisig/results", payload=cue, date=helping.nowIso8601())
+                self.rep.reps.append(dict(dest=self.controller, rep=exn, topic="multisig"))
 
-                recipientIdentifier = payload["recipient"]
-                schema = payload["schema"]
+                yield self.tock
 
-                ref = scheming.jsonSchemaCache.resolve(schema)
-                schemer = scheming.Schemer(raw=ref)
+            yield self.tock
 
-                pl = dict(
-                    input_descriptors=[
-                        dict(x=schemer.said)
-                    ]
-                )
-
-                exn = exchanging.exchange(route="/presentation/request", payload=pl)
-                self.cues.append(dict(dest=recipientIdentifier, rep=exn))
-                yield
-
-            yield
-
-
-
-class EchoHandler(doing.DoDoer):
-    """
-        Processor for testing end to end HTTP with mailbox
-        {
-            msg="",
-        }
-    """
-
-    resource = "/cmd/echo"
-
-    def __init__(self, cues=None, **kwa):
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        doers = [doing.doify(self.msgDo)]
-
-        super(EchoHandler, self).__init__(doers=doers, **kwa)
-
-    def msgDo(self, tymth=None, tock=0.0, **opts):
+    def on_post_issue(self, req, rep):
         """
-        Echo the proviced message back to the sender
 
-        Messages:
-            payload is dict representing the body of a /presentation/request message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /presentation/request message
-            verfers is list of Verfers of the keys used to sign the message
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
 
-        Returns doifiable Doist compatible generator method (doer dog)
+        Body:
+            name: The human readable name of the new registry to create
 
-        Usage:
-            add result of doify on this method to doers list
         """
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-                rcp = msg["pre"]
+        body = json.loads(req.context.raw)
+        registry = body.get("registry")
+        schema = body.get("schema")
+        source = body.get("source")
+        recipientIdentifier = body.get("recipient")
 
-                msg = payload["msg"]
+        issuer = self.getIssuer(name=registry)
+        if issuer is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Credential registry {} does not exist.  It must be created before issuing " \
+                       "credentials".format(registry)
+            return
 
-                resp = dict(
-                    echo=msg
-                )
+        types = ["VerifiableCredential", body.get("type")]
 
-                serder = exchanging.exchange(route="/cmd/message", payload=resp)
-                self.cues.append(dict(dest=rcp.qb64, rep=serder))
+        d = dict(
+            i="",
+            type=types,
+            LEI=body.get("LEI"),
+            si=recipientIdentifier,
+            dt=nowIso8601()
+        )
 
-                yield
+        d |= {"personLegalName": body.get("personLegalName")} \
+            if body.get("personLegalName") is not None else {}
+        d |= {"officialRole": body.get("officialRole")} \
+            if body.get("officialRole") is not None else {}
+        d |= {"engagementContextRole": body.get("engagementContextRole")} \
+            if body.get("engagementContextRole") is not None else {}
 
-            yield
+        saider = scheming.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.i)
+        d["i"] = saider.qb64
+
+        ref = scheming.jsonSchemaCache.resolve(schema)
+        schemer = scheming.Schemer(raw=ref)
+        jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
+
+        creder = proving.credential(issuer=self.hab.pre,
+                                    schema=schemer.said,
+                                    subject=d,
+                                    typ=jsonSchema,
+                                    source=source,
+                                    status=issuer.regk)
+
+        msg = self.hab.endorse(serder=creder)
+
+        tevt, kevt = issuer.issue(vcdig=creder.said)
+        self.kevts.append(kevt)
+        self.tevts.append(tevt)
+
+        pl = dict(
+            vc=[handling.envelope(msg, typ=jsonSchema)]
+        )
+
+        exn = exchanging.exchange(route="/credential/issue", payload=pl)
+        self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn, topic="credential"))
+
+        rep.status = falcon.HTTP_200
+        rep.data = creder.pretty().encode("utf-8")
+
+
+    def on_post_revoke(self, req, rep):
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
+        body = json.loads(req.context.raw)
+        registry = body.get("registry")
+        said = body.get("said")
+
+        issuer = self.getIssuer(name=registry)
+        if issuer is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "Credential registry {} does not exist.  It must be created before issuing " \
+                       "credentials".format(registry)
+            return
+
+
+        tevt, kevt = issuer.revoke(vcdig=said)
+        self.kevts.append(kevt)
+        self.tevts.append(tevt)
+
+        rep.status = falcon.HTTP_202
+
+    def on_post_request(self, req, rep):
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            recipient: SCID of recipient of credential to request
+            schema:  SAID of schema
+
+        """
+        body = json.loads(req.context.raw)
+        recipientIdentifier = body.get("recipient")
+        schema = body.get("schema")
+
+        ref = scheming.jsonSchemaCache.resolve(schema)
+        schemer = scheming.Schemer(raw=ref)
+
+        pl = dict(
+            input_descriptors=[
+                dict(x=schemer.said)
+            ]
+        )
+
+        exn = exchanging.exchange(route="/presentation/request", payload=pl)
+        self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn, topic="credential"))
+
+        rep.status = falcon.HTTP_202
+
+    def on_post_multisig_rotate(self, req, rep):
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
+        body = json.loads(req.context.raw)
+
+        if "group" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid multisig group rotate request, 'group' is required'"
+            return
+
+        msg = dict(
+            sith=None,
+            toad=None,
+            data=None,
+            witnesses=[],
+            witness_cuts=[],
+            witness_adds=[],
+        )
+
+        for key in msg:
+            if key in body:
+                msg[key] = body[key]
+
+        msg["group"] = body["group"]
+
+        self.grotr.msgs.append(msg)
+
+        rep.status = falcon.HTTP_202
+
+    def on_post_multisig_incept(self, req, rep):
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
+        body = json.loads(req.context.raw)
+
+        if "group" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid multisig group inception request, 'group' is required'"
+            return
+
+        if "aids" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "Invalid multisig group inception request, 'aids' is required'"
+            return
+
+        aids = body["aids"]
+
+        notify = body["notify"] if "notify" in body else True
+
+        msg = dict(
+            aids=aids,
+            toad=None,
+            witnesses=[],
+            icount=None,
+            isith=None,
+            ncount=None,
+            nsith=None)
+
+        for key in msg:
+            if key in body:
+                msg[key] = body[key]
+
+
+        if notify:
+            for aid in aids:
+                if aid != self.hab.pre:
+                    if aid not in self.hab.kevers:
+                        self.witq.query(aid)
+                    exn = exchanging.exchange(route="/multisig/incept", payload=dict(msg), date=helping.nowIso8601())
+                    self.rep.reps.append(dict(dest=aid, rep=exn, topic="multisig"))
+
+        msg["group"] = body["group"]
+
+        self.gicpr.msgs.append(msg)
+
+        rep.status = falcon.HTTP_202
+
+    def on_get_multisig(self, req, rep):
+        """
+        Return the groups this environment is a part of
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        """
+        res = []
+
+        groups = self.hab.db.gids.getItemIter()
+        for (name,), group in groups:
+            kever = self.hab.kevers[group.gid]
+            ser = kever.serder
+            dgkey = dbing.dgKey(ser.preb, ser.digb)
+            wigs = self.hab.db.getWigs(dgkey)
+
+
+            gd = dict(
+                name=name,
+                prefix=group.gid,
+                seq_no=kever.sn,
+                aids=group.aids,
+                witnesses=kever.wits,
+                public_keys=[verfer.qb64 for verfer in kever.verfers],
+                toad=kever.toad,
+                isith=kever.tholder.sith,
+                receipts=len(wigs)
+            )
+
+            res.append(gd)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(res).encode("utf-8")
+
+
+
+
+    def on_post_registry_incept(self, req, rep):
+        """
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
+        body = json.loads(req.context.raw)
+
+        if "name" not in body:
+            rep.status = falcon.HTTP_400
+            rep.text = "name is a required parameter to create a verifiable credential registry"
+            return
+
+        msg = dict(name=body["name"])
+        self.registryIcpr.msgs.append(msg)
+
+        rep.status = falcon.HTTP_202
+
+
+    def getIssuer(self, name):
+        if name in self.issuers:
+            issuer = self.issuers[name]
+        else:
+            reger = viring.Registry(name=name)
+            regr = reger.regs.get(name)
+            if regr is None:
+                return None
+
+            issuer = issuing.Issuer(hab=self.hab, name=name, reger=reger)
+            self.issuers[name] = issuer
+        return issuer
+
+
+    def on_get_id(self, req, rep):
+        """
+        Return the groups this environment is a part of
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        """
+        res = []
+
+        habs = self.hab.db.habs.getItemIter()
+        for (name,), habr in habs:
+            kever = self.hab.kevers[habr.prefix]
+            ser = kever.serder
+            dgkey = dbing.dgKey(ser.preb, ser.digb)
+            wigs = self.hab.db.getWigs(dgkey)
+
+
+            gd = dict(
+                name=name,
+                prefix=habr.prefix,
+                seq_no=kever.sn,
+                witnesses=kever.wits,
+                public_keys=[verfer.qb64 for verfer in kever.verfers],
+                toad=kever.toad,
+                isith=kever.tholder.sith,
+                receipts=len(wigs)
+            )
+
+            res.append(gd)
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(res).encode("utf-8")
+
+
+
+
