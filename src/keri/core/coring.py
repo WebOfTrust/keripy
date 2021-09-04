@@ -2524,7 +2524,7 @@ class Saider(Matter):
 
 
     @classmethod
-    def serialize(clas, sad: dict, kind: None):
+    def _ser(clas, sad: dict, kind: None):
         """
         Serialize sad with serialization kind if provided else use
             use embedded 'v', version string if provided else use default
@@ -2611,7 +2611,7 @@ class Saider(Matter):
             sad = Serder(ked=sad, kind=kind).ked  # version string now has correct size
         klas, size, length = clas.Digests[code]
         # sad as 'v' verision string then use its kind otherwise passed in kind
-        cpa = [clas.serialize(sad, kind=kind)]  # raw pos arg class
+        cpa = [clas._ser(sad, kind=kind)]  # raw pos arg class
         ckwa = dict()  # class keyword args
         if size:
             ckwa.update(digest_size=size)  # optional digest_size
