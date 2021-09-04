@@ -2788,12 +2788,18 @@ def test_saider():
     saider = Saider(sad=sad4)  # default version string code, kind, and label
     assert saider.code == code == MtrDex.Blake3_256
     assert saider.qb64 == 'EG_Sps9RzkJ3BWczwDNTnsf3UigMIoL5iGH9lF5ArqEs'
-    assert saider.verify(sad4, prefixed=False) is True  # kind and label default
-    assert saider.verify(sad4, prefixed=True) is False  # kind and label default
+    assert saider.verify(sad4, prefixed=False, versioned=False)  # kind and label default
+    assert not saider.verify(sad4, prefixed=False)  # kind and label default
+    assert not saider.verify(sad4, prefixed=True, versioned=False)  # kind and label default
 
     sad5 = dict(sad4)
     sad5[label] = saider.qb64  # assign said to label field
-    assert saider.verify(sad5, prefixed=True)   # default kind label
+    assert saider.verify(sad5, prefixed=True, versioned=False)   # default kind label
+
+    sad6 = dict(sad5)
+    _, dsad = saider.derive(sad=sad4)
+    sad6['v'] = dsad['v']
+    assert saider.verify(sad6, prefixed=True)
 
     said3 = saider.qb64
     saider = Saider(qb64=said3)
@@ -2808,12 +2814,13 @@ def test_saider():
                     b'S6baU6JR2nmwyZ-i0d8JZ5CM","name":"John Jones","role":"Founder"}}')
 
     sad3 = coring.loads(ser5)
-    assert saider.verify(sad3, prefixed=True)   # default kind label
+    assert not saider.verify(sad3, prefixed=True)
+    assert saider.verify(sad3, prefixed=True, versioned=False)# default kind label
 
     # saidify copy of sad4
     assert not sad4[label]
     assert sad4['v'] == 'KERI10JSON000000_'
-    saider, sad = Saider.saidify(sad=dict(sad4))  # vaccuous size default code kind label
+    saider, sad = Saider.saidify(sad=sad4)  # vaccuous size default code kind label
     assert saider.code == code == MtrDex.Blake3_256
     assert saider.qb64 == said3
     assert sad != sad4
@@ -2821,31 +2828,43 @@ def test_saider():
     assert sad[label] == said3
 
     assert saider.verify(sad, prefixed=True)  # default kind label
-    assert saider.verify(sad4, prefixed=False) is True  # kind and label default
-    assert saider.verify(sad4, prefixed=True) is False  # kind and label default
-    assert saider.verify(sad3, prefixed=True)   # default kind label
+    assert not saider.verify(sad4, prefixed=True) # kind and label default
+    assert not saider.verify(sad4, prefixed=False) # kind and label default
+    assert saider.verify(sad4, prefixed=False, versioned=False) # kind and label default
+    assert saider.verify(sad3, prefixed=True, versioned=False)   # default kind label
 
     # verify code  not default
     saider = Saider(sad=sad3, code=MtrDex.Blake2b_256)  # default label
     assert saider.code == MtrDex.Blake2b_256 != code
     assert saider.qb64 != said3
-    assert saider.verify(sad3, prefixed=False)
+    assert saider.verify(sad3, prefixed=False, versioned=False)
     assert not saider.verify(sad3, prefixed=True)
-    assert saider.verify(sad4, prefixed=False)   # kind and label default
+    saider, sad7 = Saider.saidify(sad=sad3, code=MtrDex.Blake2b_256)
+    assert saider.qb64 != said3
+    assert saider.verify(sad7, prefixed=True)
+
+    assert saider.verify(sad4, prefixed=False, versioned=False)   # kind and label default
     assert not saider.verify(sad4, prefixed=True)   # kind and label default
+    saider, sad8 = Saider.saidify(sad=sad4, code=MtrDex.Blake2b_256)
+    assert saider.qb64 != said3
+    assert saider.verify(sad8, prefixed=True)
 
     # verify gets kind from version string if provided when loading from dict
     vs = Versify(version=Version, kind=Serials.mgpk, size=0)  # vaccuous size == 0
     assert vs == 'KERI10MGPK000000_'
-    sad6 = dict(sad4)
-    sad6['v'] = vs
-    saider = Saider(sad=sad6)  # default code and label not default kind
+    sad9 = dict(sad4)
+    sad9['v'] = vs
+    saider = Saider(sad=sad9)  # default code and label not default kind
     assert saider.code == code == MtrDex.Blake3_256
-    assert saider.qb64 == 'EG6Dn_o1YwiZrY8fFvrpiHcoUBTR95Nnq3BxdaO2lBmM' != said3
-    assert saider.verify(sad6, prefixed=False) is True
-    assert saider.verify(sad6, prefixed=True) is False
+    said9 = saider.qb64
+    assert said9 == 'EG6Dn_o1YwiZrY8fFvrpiHcoUBTR95Nnq3BxdaO2lBmM' != said3
+    assert saider.verify(sad9, prefixed=False, versioned=False)
+    assert not saider.verify(sad9, prefixed=True)
     assert not saider.verify(sad3, prefixed=False)
     assert not saider.verify(sad3, prefixed=True)
+    saider, sad10 = Saider.saidify(sad=sad9)
+    assert saider.qb64 == said9
+    assert saider.verify(sad10, prefixed=True)
 
 
 

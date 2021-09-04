@@ -2515,7 +2515,7 @@ class Saider(Matter):
                 raise ValueError("Unsupported digest code = {}.".format(code))
 
             # re-derive said raw bytes from sad and code, so code overrides label
-            raw = self.derive(sad=sad, code=code, kind=kind, label=label)
+            raw, sad = self.derive(sad=dict(sad), code=code, kind=kind, label=label)
             super(Saider, self).__init__(raw=raw, code=code, **kwa)
 
         if not self.digestive:
@@ -2556,14 +2556,14 @@ class Saider(Matter):
                 kind: str=None,
                 label: str=Ids.d, **kwa):
         """
-        Derives said for sad and injects it into copy of sad
+        Derives said from sad and injects it into copy of sad and said and
+        injected sad
 
         Returns:
             result (tuple): of the form (saider, sad) where saider is Saider
                     instance generated from sad using code and sad is copy of
                     parameter sad but with its label id field filled
                     in with generated said from saider
-
 
         Parameters:
             sad (dict): serializable dict
@@ -2576,7 +2576,7 @@ class Saider(Matter):
         """
         if label not in sad:
             raise KeyError("Missing id field labeled={} in sad.".format(label))
-        raw = clas._derive(sad=sad, code=code, kind=kind, label=label)
+        raw, sad = clas._derive(sad=sad, code=code, kind=kind, label=label)
         saider = clas(raw=raw, code=code, kind=kind, label=label, **kwa)
         sad[label] = saider.qb64
         return (saider, sad)
@@ -2618,13 +2618,14 @@ class Saider(Matter):
         dkwa = dict() # digest keyword args
         if length:
             dkwa.update(length=length)
-        return klas(*cpa, **ckwa).digest(**dkwa)  # raw digest
+        return (klas(*cpa, **ckwa).digest(**dkwa),sad)  # raw digest and sad
 
 
     def derive(self, sad, code=None, **kwa):
         """
         Returns:
-            result (bytes): raw said as derived from serialized dict sad.
+            result (tuple): (raw, sad) raw said as derived from serialized dict
+                            and modified sad during derivation.
 
         Parameters:
             sad (dict): self addressed data to be serialized
@@ -2638,17 +2639,25 @@ class Saider(Matter):
         return self._derive(sad=sad, code=code, **kwa)
 
 
-    def verify(self, sad, *, prefixed=False, code=None,
+    def verify(self, sad, *, prefixed=False, versioned=True, code=None,
                kind=None, label=Ids.d, **kwa):
         """
         Returns:
-            result (bool): True means derivation from sad for ._code matches
-                .qb64 and if prefixed also verifies match to .qb64 of id field
-                denoted by label. False otherwise
+            result (bool): True means derivation from sad with dummy label
+                field value replacement for ._code matches .qb64. False otherwise
+                If prefixed is True then also validates that label field of
+                provided sad also matches .qb64. False otherwise
+                If versioned is True and provided sad includes version field 'v'
+                then also validates that version field 'v' of provided
+                sad matches the version field of modified sad that results from
+                the derivation process. The size chars in the version field
+                are set to the size of the sad during derivation. False otherwise.
 
         Parameters:
             sad (dict): self addressed data to be serialized
-            prefixed (boolean): indicates whether to verify ID value matches .qb64
+            prefixed (bool): True means also verify if labeled field in
+                sad matches own .qb64
+            versioned (bool):
             code (str): digest type code from DigDex.
             kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
@@ -2657,10 +2666,14 @@ class Saider(Matter):
         """
         try:
             # override ensure code is self.code
-            raw = self._derive(sad=sad, code=self.code, kind=kind, label=label)
+            raw, dsad = self._derive(sad=sad, code=self.code, kind=kind, label=label)
             saider = Saider(raw=raw, code=self.code, **kwa)
             if self.qb64b != saider.qb64b:
                 return False  # not match .qb64b
+
+            if 'v' in sad and versioned:
+                if sad['v'] != dsad['v']:
+                    return False  # version fields not match
 
             if prefixed and sad[label] != self.qb64:  # check label field
                 return False  # label id field not match .qb64
