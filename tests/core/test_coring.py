@@ -2768,24 +2768,14 @@ def test_saider():
     label = Ids.d
     code = MtrDex.Blake3_256  # back to default code
 
-    said3 = 'EvSTDeocSMKO5bIccfpNBIYZr_jzzWkXtt_UbBA75aFA'
-    saider = Saider(qb64=said3)
-    assert saider.code == code == MtrDex.Blake3_256
-    assert saider.qb64 == said3
-
-    ser3 = (b'{"v":"KERI10JSON00011c_","t":"rep","d":"EvSTDeocSMKO5bIccfpNBIYZr_jzzWkXtt_U'
-             b'bBA75aFA","dt":"2020-08-22T17:50:12.988921+00:00","r":"logs/processor","a":{'
-             b'"d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM","i":"EAoTNZH3ULvYAfSVPzhz'
-             b'S6baU6JR2nmwyZ-i0d8JZ5CM","name":"John Jones","role":"Founder"}}')
-
-    sad3 = json.loads(ser3)
-    assert saider.verify(sad3, prefixed=True)   # default kind label
-
     # Load from vaccuous dict
+    label = Ids.d
+    vs = Versify(version=Version, kind=kind, size=0)  # vaccuous size == 0
+    assert vs == 'KERI10JSON000000_'
     sad4 = dict(
-                   v= "KERI10JSON00011c_",
+                   v= vs,
                    t="rep",
-                   d= "",
+                   d= "",  # vacuous said
                    dt="2020-08-22T17:50:12.988921+00:00",
                    r="logs/processor",
                    a=dict(
@@ -2795,41 +2785,69 @@ def test_saider():
                             role= "Founder",
                          ),
                )
-    saider = Saider(sad=sad4)  # default code, kind, and label
+    saider = Saider(sad=sad4)  # default version string code, kind, and label
     assert saider.code == code == MtrDex.Blake3_256
-    assert saider.qb64 == said3
+    assert saider.qb64 == 'EG_Sps9RzkJ3BWczwDNTnsf3UigMIoL5iGH9lF5ArqEs'
     assert saider.verify(sad4, prefixed=False) is True  # kind and label default
     assert saider.verify(sad4, prefixed=True) is False  # kind and label default
+
+    sad5 = dict(sad4)
+    sad5[label] = saider.qb64  # assign said to label field
+    assert saider.verify(sad5, prefixed=True)   # default kind label
+
+    said3 = saider.qb64
+    saider = Saider(qb64=said3)
+    assert saider.code == code == MtrDex.Blake3_256
+    assert saider.qb64 == said3
+
+    ser5 = coring.dumps(ked=sad5, kind=kind)
+
+    assert ser5 == (b'{"v":"KERI10JSON000000_","t":"rep","d":"EG_Sps9RzkJ3BWczwDNTnsf3UigMIoL5iGH9'
+                    b'lF5ArqEs","dt":"2020-08-22T17:50:12.988921+00:00","r":"logs/processor","a":{'
+                    b'"d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM","i":"EAoTNZH3ULvYAfSVPzhz'
+                    b'S6baU6JR2nmwyZ-i0d8JZ5CM","name":"John Jones","role":"Founder"}}')
+
+    sad3 = coring.loads(ser5)
     assert saider.verify(sad3, prefixed=True)   # default kind label
 
-    # saidify copy of sad1
-    saider, sad = Saider.saidify(sad=dict(sad4))  # default code kind label
+    # saidify copy of sad4
+    assert not sad4[label]
+    assert sad4['v'] == 'KERI10JSON000000_'
+    saider, sad = Saider.saidify(sad=dict(sad4))  # vaccuous size default code kind label
     assert saider.code == code == MtrDex.Blake3_256
     assert saider.qb64 == said3
     assert sad != sad4
     assert not sad4[label]
     assert sad[label] == said3
+
     assert saider.verify(sad, prefixed=True)  # default kind label
     assert saider.verify(sad4, prefixed=False) is True  # kind and label default
     assert saider.verify(sad4, prefixed=True) is False  # kind and label default
     assert saider.verify(sad3, prefixed=True)   # default kind label
 
-    # verify gets kind from version string if provided when loading from dict
-    saider = Saider(sad=sad4, kind=Serials.mgpk)  # default code and label
-    assert saider.code == code == MtrDex.Blake3_256
-    assert saider.qb64 == said3
-    assert saider.verify(sad4, prefixed=False) is True  # kind and label default
-    assert saider.verify(sad4, prefixed=True) is False  # kind and label default
-    assert saider.verify(sad3, prefixed=True)   # default kind label
-
-    # verify code overrides label field if both provided when loading from dict
-    saider = Saider(sad=sad3, code=MtrDex.Blake2b_256, kind=Serials.mgpk)  # default label
+    # verify code  not default
+    saider = Saider(sad=sad3, code=MtrDex.Blake2b_256)  # default label
     assert saider.code == MtrDex.Blake2b_256 != code
     assert saider.qb64 != said3
     assert saider.verify(sad3, prefixed=False)
     assert not saider.verify(sad3, prefixed=True)
     assert saider.verify(sad4, prefixed=False)   # kind and label default
     assert not saider.verify(sad4, prefixed=True)   # kind and label default
+
+    # verify gets kind from version string if provided when loading from dict
+    vs = Versify(version=Version, kind=Serials.mgpk, size=0)  # vaccuous size == 0
+    assert vs == 'KERI10MGPK000000_'
+    sad6 = dict(sad4)
+    sad6['v'] = vs
+    saider = Saider(sad=sad6)  # default code and label not default kind
+    assert saider.code == code == MtrDex.Blake3_256
+    assert saider.qb64 == 'EG6Dn_o1YwiZrY8fFvrpiHcoUBTR95Nnq3BxdaO2lBmM' != said3
+    assert saider.verify(sad6, prefixed=False) is True
+    assert saider.verify(sad6, prefixed=True) is False
+    assert not saider.verify(sad3, prefixed=False)
+    assert not saider.verify(sad3, prefixed=True)
+
+
 
     """Done Test"""
 
@@ -3457,4 +3475,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_ilks()
+    test_saider()

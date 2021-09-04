@@ -279,7 +279,7 @@ def dumps(ked, kind=Serials.json):
     return raw
 
 
-def loads(raw, size, kind=Serials.json):
+def loads(raw, size=None, kind=Serials.json):
     """
     utility function to handle deserialization by kind
 
@@ -288,7 +288,8 @@ def loads(raw, size, kind=Serials.json):
 
     Parameters:
        raw (Union[bytes,bytearray]): raw serialization to deserialze as dict
-       size (int): number of bytes to consume for the deserialization
+       size (int): number of bytes to consume for the deserialization. If None
+                   then consume all bytes
        kind (str): serialization kind (JSON, MGPK, CBOR)
     """
     if kind == Serials.json:
@@ -2399,7 +2400,7 @@ class Prefixer(Matter):
 
         # put in dummy pre to get size correct
         ked["i"] = self.Dummy * Matter.Codes[MtrDex.Blake3_256].fs
-        serder = Serder(ked=ked)  # serder with dummy for 'i'
+        serder = Serder(ked=ked)  # serder with dummy for 'i' also updates version size
         ked = serder.ked  # use updated ked with valid 'v' version string field
         dig =  blake3.blake3(serder.raw).digest()  # digest with dummy 'i'
         return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i'
@@ -2484,13 +2485,15 @@ class Saider(Matter):
 
 
     def __init__(self, raw=None, *, code=None, sad=None,
-                 kind=Serials.json, label=Ids.d, **kwa):
+                 kind=None, label=Ids.d, **kwa):
         """
         See Matter.__init__ for inherited parameters
 
         Parameters:
             sad (dict): self addressed data to serialize and inject said
             kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
             label (str): id field label, one of Ids
         """
         try:
@@ -2521,21 +2524,28 @@ class Saider(Matter):
 
 
     @classmethod
-    def serialize(clas, sad: dict, kind: str=Serials.json):
+    def serialize(clas, sad: dict, kind: None):
         """
-        Serialize sad with serialization kind from embedded 'v', version string
-            if present, else use kind
+        Serialize sad with serialization kind if provided else use
+            use embedded 'v', version string if provided else use default
+            Serials.json
 
         Returns:
            ser (bytes): raw serialization of sad
 
         Parameters:
            sad (dict): serializable dict
-           kind (str): serialization type, one of Serials
+           kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
 
         """
+        knd = Serials.json
         if 'v' in sad:  # versioned sad
-            kind, _, _ = Deversify(sad['v'])
+            knd, _, _ = Deversify(sad['v'])
+
+        if not kind:  # match logic of Serder for kind
+            kind = knd
 
         return dumps(sad, kind=kind)
 
@@ -2543,7 +2553,7 @@ class Saider(Matter):
     @classmethod
     def saidify(clas, sad: dict, *,
                 code: str=MtrDex.Blake3_256,
-                kind: str=Serials.json,
+                kind: str=None,
                 label: str=Ids.d, **kwa):
         """
         Derives said for sad and injects it into copy of sad
@@ -2558,8 +2568,9 @@ class Saider(Matter):
         Parameters:
             sad (dict): serializable dict
             code (str): digest type code from DigDex
-            kind (str): default serialization kind from Serials when sad does
-                        not include 'v' field
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
             label (str): id field label from Ids in which to inject said
 
         """
@@ -2574,7 +2585,7 @@ class Saider(Matter):
     @classmethod
     def _derive(clas, sad: dict, *,
                 code:str=MtrDex.Blake3_256,
-                kind:str=Serials.json,
+                kind:str=None,
                 label:str=Ids.d,):
         """
         Derives raw said from sad with .Dummy filled sad[label]
@@ -2585,8 +2596,9 @@ class Saider(Matter):
         Parameters:
             sad (dict): self addressed data to be injected with dummy and serialized
             code (str): digest type code from DigDex
-            kind (str): default serialization kind from Serials when sad does
-                        not include 'v' field
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
             label (str): id field label from Ids in which to inject dummy
         """
         if code not in DigDex or code not  in clas.Digests:
@@ -2595,6 +2607,8 @@ class Saider(Matter):
         sad = dict(sad)  # make shallow copy so don't clobber original sad
         # fill id field denoted by label with dummy chars to get size correct
         sad[label] = clas.Dummy * Matter.Codes[code].fs
+        if 'v' in sad:  # if versioned then need to set size in version string
+            sad = Serder(ked=sad, kind=kind).ked  # version string now has correct size
         klas, size, length = clas.Digests[code]
         # sad as 'v' verision string then use its kind otherwise passed in kind
         cpa = [clas.serialize(sad, kind=kind)]  # raw pos arg class
@@ -2615,8 +2629,9 @@ class Saider(Matter):
         Parameters:
             sad (dict): self addressed data to be serialized
             code (str): digest type code from DigDex.
-            kind (str): default serialization kind from Serials when sad does
-                        not include 'v' field
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
             label (str): id field label from Ids in which to inject dummy
         """
         code = code if code is not None else self.code
@@ -2624,7 +2639,7 @@ class Saider(Matter):
 
 
     def verify(self, sad, *, prefixed=False, code=None,
-               kind=Serials.json, label=Ids.d, **kwa):
+               kind=None, label=Ids.d, **kwa):
         """
         Returns:
             result (bool): True means derivation from sad for ._code matches
@@ -2634,6 +2649,11 @@ class Saider(Matter):
         Parameters:
             sad (dict): self addressed data to be serialized
             prefixed (boolean): indicates whether to verify ID value matches .qb64
+            code (str): digest type code from DigDex.
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
+            label (str): id field label from Ids in which to inject dummy
         """
         try:
             # override ensure code is self.code

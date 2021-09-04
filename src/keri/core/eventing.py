@@ -570,7 +570,10 @@ def incept(keys,
                )
 
     if code is None and len(keys) == 1:
-        prefixer = Prefixer(qb64=keys[0])
+        prefixer = Prefixer(qb64=keys[0])  # not self-addressing code
+        if prefixer.digestive:
+            raise  ValueError("Invalid code, digestive={}, must be derived from"
+                              " ked.".format(prefixer.code))
     else:
         # raises derivation error if non-empty nxt but ephemeral code
         prefixer = Prefixer(ked=ked, code=code)  # Derive AID from ked and code
@@ -1235,6 +1238,7 @@ def reply(route="",
       }
     }
     """
+    label = coring.Ids.d
     vs = Versify(version=version, kind=kind, size=0)
     if data is None:
         data = {}
@@ -1247,7 +1251,12 @@ def reply(route="",
                a=data if data else {},  # attributes
                )
 
-    _, sad = coring.Saider.saidify(sad=sad)
+    _, sad = coring.Saider.saidify(sad=sad, kind=kind, label=label)
+
+    saider = coring.Saider(qb64=sad[label])
+    if not saider.verify(sad=sad, kind=kind, label=label, prefixed=True):
+        raise ValidationError("Invalid said = {} for reply msg={}."
+                              "".format(saider.qb64, sad))
 
     return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
 

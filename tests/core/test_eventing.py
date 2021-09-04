@@ -1318,28 +1318,28 @@ def test_reply(mockHelpingNowUTC):
                                  data=data,
                                 )
 
-        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"E6rGjDl2sVB7pw6SfUZE1tInBtZyx-cYtYKR'
-                               b'BPTemWDc","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/add","a":{"'
-                               b'cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI","role":"watcher","eid":"'
-                               b'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"El8evbsys_Z2gIEluLw6pr31EYpH6Cu52fjn'
+                            b'RN8X8mKc","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/add","a":{"'
+                            b'cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI","role":"watcher","eid":"'
+                            b'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs"}}')
 
-        assert serderR.said == 'E6rGjDl2sVB7pw6SfUZE1tInBtZyx-cYtYKRBPTemWDc'
+        assert serderR.said == 'El8evbsys_Z2gIEluLw6pr31EYpH6Cu52fjnRN8X8mKc'
 
         # Sign Reply
         msg = nelHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"E6rGjDl2sVB7pw6SfUZE1tIn'
-                    b'BtZyx-cYtYKRBPTemWDc","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                    b'":"/end/role/add","a":{"cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-'
-                    b'v_FTApyPvI","role":"watcher","eid":"BXphIkYC1U2ardvt2kGLThDRh2q9'
-                    b'N-yT08WSRlpHwtGs"}}-VAi-CABBsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_F'
-                    b'TApyPvI0BhyAEXLi2bK3fa6y1otPW8_8O3fsoh4EsArCa-gUaQdSZRdYvNj5LqJx'
-                    b'wV_bO7vAblbo-7nchJCQD83im_D3HDw')
+        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"El8evbsys_Z2gIEluLw6pr31'
+                       b'EYpH6Cu52fjnRN8X8mKc","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                       b'":"/end/role/add","a":{"cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-'
+                       b'v_FTApyPvI","role":"watcher","eid":"BXphIkYC1U2ardvt2kGLThDRh2q9'
+                       b'N-yT08WSRlpHwtGs"}}-VAi-CABBsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_F'
+                       b'TApyPvI0BaLjdO2H6j7Z8g3UpGGRwKQJ0Lz_sngwxLLPM72bGajVeIVXiqRAB0Eo'
+                       b'yweFc3wzUfgECAksyvsB9wyqdeXGJAA')
 
         # create non-local parer for Tam to process non-local msgs
         tamPrs = parsing.Parser(kvy=tamKvy)
 
         # use Tam's parser and kevery to process
-        tamPrs.parse(ims=bytearray(msg))
+        # tamPrs.parse(ims=bytearray(msg))
 
 
         ## create key pairs for witnesses of KEL
@@ -1497,12 +1497,13 @@ def test_expose():
                              data=data,
                             )
 
-    assert serderE.raw == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EZ5ZqEaEZ0Kv18qDZvG6lVg7n32qjZCmOynG'
-                           b'kKuAkSuw","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqW'
-                           b'VK9ZBNZk0","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ'
-                           b'5CM","name":"besty"}}')
+    assert serderE.raw == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EWcQzVYR26plzL6foNKGD2T4MnNMwjuVy8hh'
+                        b'Ke25a_Z0","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqW'
+                        b'VK9ZBNZk0","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ'
+                        b'5CM","name":"besty"}}')
 
-    assert serderE.ked["d"] == 'EZ5ZqEaEZ0Kv18qDZvG6lVg7n32qjZCmOynGkKuAkSuw'
+
+    assert serderE.ked["d"] == 'EWcQzVYR26plzL6foNKGD2T4MnNMwjuVy8hhKe25a_Z0'
 
     # create SealEvent for endorsers est evt whose keys use to sign
 
@@ -1516,14 +1517,14 @@ def test_expose():
                      s='0',
                      d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
     msg = messagize(serderE, sigers=[sigerC], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EZ5ZqEaEZ0Kv18qDZvG6lVg7'
-                   b'n32qjZCmOynGkKuAkSuw","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
-                   b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
-                   b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABD3p'
-                   b'YGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk00AAAAAAAAAAAAAAAAAAAAAA'
-                   b'AEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAsW0C5294HO0Uw'
-                   b't2-bN17YfSurlhWKh7g6JzzErImaHeFnXWu8AlH5Yhh39zqycBT88afc091Cppgq'
-                   b'wRir12VDg')
+    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EWcQzVYR26plzL6foNKGD2T4'
+                    b'MnNMwjuVy8hhKe25a_Z0","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
+                    b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
+                    b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABD3p'
+                    b'YGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk00AAAAAAAAAAAAAAAAAAAAAA'
+                    b'AEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAt_KQsGz2VO83a'
+                    b'tmF-1yfwJ676NnzrS9z6g-qytJrEumx78lcNLZr77IVOUotfO-yP1vrQnEcOgbW9'
+                    b'YVsyIr5Bw')
 
     # create endorsed rpy with trans endorser
     # create trans key pair for endorder
@@ -1540,14 +1541,14 @@ def test_expose():
                      s='0',
                      d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
     msg = messagize(serderE, sigers=[sigerE], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EZ5ZqEaEZ0Kv18qDZvG6lVg7'
-                   b'n32qjZCmOynGkKuAkSuw","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
-                   b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
-                   b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDyv'
-                   b'CLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAAAAA'
-                   b'AEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAChCh-8xuo7Lx_'
-                   b'b8yp166PkH8H8IcyiO4_btlmczcXgxJCHLn8S0HvbqiZgPpMTDCaL897EQBar_1M'
-                   b'BtsATR_DQ')
+    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EWcQzVYR26plzL6foNKGD2T4'
+                b'MnNMwjuVy8hhKe25a_Z0","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
+                b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
+                b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDyv'
+                b'CLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAAAAA'
+                b'AEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAw0Jer1I2BUxYX'
+                b'YEJ_GpiddpoXBsTp9qs3RXR8QrcL_Nt9YYlTvbc8yjqV-9r0UDAU_K6l-tGXwrp3'
+                b'k0koeYDDw')
 
     # create endorsed rpy with nontrans endorser
     # create nontrans key pair for endorder
@@ -1559,12 +1560,12 @@ def test_expose():
     cigarE = signerE.sign(ser=serderE.raw)  # no index so Cigar
     assert signerE.verfer.verify(sig=cigarE.raw, ser=serderE.raw)
     msg = messagize(serderE, cigars=[cigarE])
-    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EZ5ZqEaEZ0Kv18qDZvG6lVg7'
-                   b'n32qjZCmOynGkKuAkSuw","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
-                   b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
-                   b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-CABByv'
-                   b'CLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0BChCh-8xuo7Lx_b8yp166P'
-                   b'kH8H8IcyiO4_btlmczcXgxJCHLn8S0HvbqiZgPpMTDCaL897EQBar_1MBtsATR_DQ')
+    assert msg == (b'{"v":"KERI10JSON0000f9_","t":"exp","d":"EWcQzVYR26plzL6foNKGD2T4'
+                b'MnNMwjuVy8hhKe25a_Z0","r":"/to/the/moon","a":{"cid":"D3pYGFaqnrA'
+                b'LTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","eid":"EAoTN'
+                b'ZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-CABByv'
+                b'CLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0Bw0Jer1I2BUxYXYEJ_Gpid'
+                b'dpoXBsTp9qs3RXR8QrcL_Nt9YYlTvbc8yjqV-9r0UDAU_K6l-tGXwrp3k0koeYDDw')
 
     """Done Test"""
 
