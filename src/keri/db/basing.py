@@ -459,10 +459,11 @@ class Baser(dbing.LMDBer):
             diger.qb64b, siger.qb64b)
 
         .scgs (sad nontrans cigs) named subDB instance of MulMatIoSetSuber
-            that maps said of SAD to couple (Prefixer, Cigar) for nontrans signer.
+            that maps said of SAD to couple (Verfer, Cigar) for nontrans signer.
+            For nontrans qb64 of Verfer is same as Prefixer.
             Each key may have a set of vals in insertion order one for each
             nontrans signer of the sad.
-            key = said (bytes of SAD, val = cat of (prefixer.qb64b, cigar.qb64b)
+            key = said (bytes of SAD, val = cat of (verfer.qb64, cigar.qb64b)
 
         .rpys (replys) named subDB instance of SerderSuber that maps said of
             reply message (versioned SAD) to serialization of that reply message.
@@ -600,9 +601,10 @@ class Baser(dbing.LMDBer):
         self.ssgs = subing.CatIoSetSuber(db=self, subkey='ssgs',
             klas=(coring.Prefixer, coring.Seqner, coring.Diger, coring.Siger))
         # all sad scgs  (sad non-indexed signature serializations) maps SAD SAID
-        # to couple (Prefixer, Cigar) of nontrans signer of signature in Cigar
+        # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
+        # nontrans qb64 of Prefixer is same as Verfer
         self.scgs = subing.CatIoSetSuber(db=self, subkey='scgs',
-                                        klas=(coring.Prefixer, coring.Cigar))
+                                        klas=(coring.Verfer, coring.Cigar))
 
         # all reply messages. Maps reply said to serialization. Replys are
         # versioned sads ( with version string) so use Serder to deserialize and

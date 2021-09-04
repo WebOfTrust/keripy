@@ -1045,12 +1045,12 @@ class LMDBer:
             cursor = txn.cursor()
             if cursor.set_range(iokey):  # move to val at key >= iokey if any
                 iokey, cval = cursor.item()
-                while iokey:  # end of database iokey == b''
+                while iokey:  # end of database iokey == b'' cant internext.
                     ckey, cion = unsuffix(iokey, sep=sep)
                     if ckey != key:  # past key
                         break
-                    result = cursor.delete() or result  # delete moves to next item
-                    iokey, cval = cursor.item()
+                    result = cursor.delete() or result  # delete moves cursor to next item
+                    iokey, cval = cursor.item()  # cursor now at next item after deleted
             return result
 
 
@@ -1092,7 +1092,7 @@ class LMDBer:
                     if ckey != key:  # prev entry if any was the last entry for key
                         break  # done
                     if val == cval:
-                        return cursor.delete()
+                        return cursor.delete()  # delete also moves to next so doubly moved
             return False
 
 

@@ -1204,140 +1204,223 @@ def test_reply(mockHelpingNowUTC):
       "t" : "rep",
       "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
       "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs/processor",
+      "r" : "/end/role/add",
       "a" :
       {
-         "cid": "D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0",
-         "role": "watcher",
-         "eid": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-         "name": "John Jones",
+         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "role": "watcher",  # one of eventing.Roles
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
       }
     }
+
 
     """
     # use same salter for all but different path
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    salt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = Salter(raw=salt)
+    raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+    salter = Salter(raw=raw)
+    salt = salter.qb64
+    assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
 
-    # create transferable key pair for controller of service endpoint designation
-    signerC = salter.signer(path="C", temp=True)
-    assert signerC.code == MtrDex.Ed25519_Seed
-    assert signerC.verfer.code == MtrDex.Ed25519  # transferable
-    preC = signerC.verfer.qb64  # use public key verfer.qb64 trans pre
-    assert preC == 'D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
-    sith = '1'
-    keys = [signerC.verfer.qb64]
-    nexter = Nexter(keys=keys)  # compute nxt digest (dummy reuse keys)
-    nxt = nexter.qb64
-    assert nxt == 'E9GdMuF9rZZ9uwTjqgiCGA8r2mRsC5SQDHCyOpsW5AqQ'
+    with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS, \
+         basing.openDB(name="wok") as wokDB, keeping.openKS(name="wok") as wokKS, \
+         basing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
+         basing.openDB(name="tam") as tamDB, keeping.openKS(name="tam") as tamKS, \
+         basing.openDB(name="wat") as watDB, keeping.openKS(name="wat") as watKS, \
+         basing.openDB(name="nel") as nelDB, keeping.openKS(name="nel") as nelKS:
 
-    # create key pairs for witnesses of KEL
-    signerW0 = salter.signer(path="W0", transferable=False, temp=True)
-    assert signerW0.verfer.code == MtrDex.Ed25519N  # non-transferable
-    preW0 = signerW0.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW0 == 'BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0'
+        # witnesses first so can setup inception event for tam
+        wsith = 1
 
-    signerW1 = salter.signer(path="W1", transferable=False, temp=True)
-    assert signerW1.verfer.code == MtrDex.Ed25519N  # non-transferable
-    preW1 = signerW1.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW1 == 'BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU'
+        # setup Wes's habitat nontrans
+        wesHab = habbing.Habitat(name='wes', ks=wesKS, db=wesDB,
+                                   isith=wsith, icount=1,
+                                   salt=salt, transferable=False, temp=True)  # stem is .name
+        assert wesHab.ks == wesKS
+        assert wesHab.db == wesDB
+        assert not wesHab.kever.prefixer.transferable
+        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
 
-    signerW2 = salter.signer(path="W2", transferable=False, temp=True)
-    assert signerW2.verfer.code == MtrDex.Ed25519N  # non-transferable
-    preW2 = signerW2.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW2 == 'B7vHpy1IDsWWUnHf2GU5ud62LMYWO5lPWOrSB6ejQ1Eo'
+        # setup Wok's habitat nontrans
+        wokHab = habbing.Habitat(name='wok',ks=wokKS, db=wokDB,
+                                   isith=wsith, icount=1,
+                                   salt=salt, transferable=False, temp=True)  # stem is .name
+        assert wokHab.ks == wokKS
+        assert wokHab.db == wokDB
+        assert not wokHab.kever.prefixer.transferable
+        wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
 
-    signerW3 = salter.signer(path="W3", transferable=False, temp=True)
-    assert signerW3.verfer.code == MtrDex.Ed25519N  # non-transferable
-    preW3 = signerW3.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preW3 == 'BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y'
+        # setup Wam's habitat nontrans
+        wamHab = habbing.Habitat(name='wam', ks=wamKS, db=wamDB,
+                                   isith=wsith, icount=1,
+                                   salt=salt, transferable=False, temp=True)  # stem is .name
+        assert wamHab.ks == wamKS
+        assert wamHab.db == wamDB
+        assert not wamHab.kever.prefixer.transferable
+        wamKvy = eventing.Kevery(db=wamHab.db, lax=False, local=False)
 
-    wits = [preW1, preW2, preW3]
-    toad = 2
+        # setup Tam's habitat trans multisig
+        wits = [wesHab.pre, wokHab.pre, wamHab.pre]
+        tsith = 2  # hex str of threshold int
+        tamHab = habbing.Habitat(name='cam', ks=tamKS, db=tamDB,
+                                   isith=tsith, icount=3,
+                                   toad=2, wits=wits,
+                                   salt=salt, temp=True)  # stem is .name
+        assert tamHab.ks == tamKS
+        assert tamHab.db == tamDB
+        assert tamHab.kever.prefixer.transferable
+        assert len(tamHab.iserder.werfers) == len(wits)
+        for werfer in tamHab.iserder.werfers:
+            assert werfer.qb64 in wits
+        assert tamHab.kever.wits == wits
+        assert tamHab.kever.toad == 2
+        assert tamHab.kever.sn == 0
+        assert tamHab.kever.tholder.thold == tsith == 2
+        # create non-local kevery for Tam to process non-local msgs
+        tamKvy = eventing.Kevery(db=tamHab.db, lax=False, local=False)
 
-    role = eventing.Roles.watcher
+        # setup Wat's habitat nontrans
+        watHab = habbing.Habitat(name='wat', ks=watKS, db=watDB,
+                                   isith=wsith, icount=1,
+                                   salt=salt, transferable=False, temp=True)  # stem is .name
+        assert watHab.ks == watKS
+        assert watHab.db == watDB
+        assert not watHab.kever.prefixer.transferable
+        watKvy = eventing.Kevery(db=watHab.db, lax=False, local=False)
 
-    data = dict( acid=preC,
-                 role=role,
-                 seid="EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-                 name="besty",
-               )
+        # setup Nel's habitat nontrans
+        nelHab = habbing.Habitat(name='nel', ks=nelKS, db=nelDB,
+                                   isith=wsith, icount=1,
+                                   salt=salt, transferable=False, temp=True)  # stem is .name
+        assert nelHab.ks == nelKS
+        assert nelHab.db == nelDB
+        assert not nelHab.kever.prefixer.transferable
+        nelKvy = eventing.Kevery(db=nelHab.db, lax=False, local=False)
+
+        assert nelHab.pre == 'Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI'
+        assert nelHab.kever.prefixer.code == MtrDex.Ed25519N
+        assert nelHab.kever.verfers[0].qb64 == nelHab.pre
+
+        # test endpoint reply route
+        route = "/end/role/add"
+
+        # with watcher role
+        role = eventing.Roles.watcher
+
+        # with trans cid and eid
+        data = dict( cid=nelHab.pre,
+                     role=role,
+                     eid=watHab.pre,
+                   )
+
+        serderR = eventing.reply(
+                                 route=route,
+                                 data=data,
+                                )
+
+        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"E6rGjDl2sVB7pw6SfUZE1tInBtZyx-cYtYKR'
+                               b'BPTemWDc","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/add","a":{"'
+                               b'cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI","role":"watcher","eid":"'
+                               b'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs"}}')
+
+        assert serderR.said == 'E6rGjDl2sVB7pw6SfUZE1tInBtZyx-cYtYKRBPTemWDc'
+
+        # Sign Reply
+        msg = nelHab.endorse(serder=serderR)
+        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"E6rGjDl2sVB7pw6SfUZE1tIn'
+                    b'BtZyx-cYtYKRBPTemWDc","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/end/role/add","a":{"cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-'
+                    b'v_FTApyPvI","role":"watcher","eid":"BXphIkYC1U2ardvt2kGLThDRh2q9'
+                    b'N-yT08WSRlpHwtGs"}}-VAi-CABBsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_F'
+                    b'TApyPvI0BhyAEXLi2bK3fa6y1otPW8_8O3fsoh4EsArCa-gUaQdSZRdYvNj5LqJx'
+                    b'wV_bO7vAblbo-7nchJCQD83im_D3HDw')
+
+        # create non-local parer for Tam to process non-local msgs
+        tamPrs = parsing.Parser(kvy=tamKvy)
+
+        # use Tam's parser and kevery to process
+        tamPrs.parse(ims=bytearray(msg))
 
 
-    serderR = eventing.reply(route="/to/the/moon",
-                             data=data,
-                            )
+        ## create key pairs for witnesses of KEL
+        #signerW0 = salter.signer(path="W0", transferable=False, temp=True)
+        #assert signerW0.verfer.code == MtrDex.Ed25519N  # non-transferable
+        #preW0 = signerW0.verfer.qb64  # use public key verfer.qb64 as pre
+        #assert preW0 == 'BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0'
 
-    assert serderR.raw == (b'{"v":"KERI10JSON000123_","t":"rpy","d":"EAOChnlT17KgJh4J3Lm2e5U9r2fc3SultM8T'
-                           b'K0EA3ZKU","dt":"2021-01-01T00:00:00.000000+00:00","r":"/to/the/moon","a":{"a'
-                           b'cid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","role":"watcher","seid":'
-                           b'"EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}')
+        #signerW1 = salter.signer(path="W1", transferable=False, temp=True)
+        #assert signerW1.verfer.code == MtrDex.Ed25519N  # non-transferable
+        #preW1 = signerW1.verfer.qb64  # use public key verfer.qb64 as pre
+        #assert preW1 == 'BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU'
 
-    assert serderR.ked["d"] == "EAOChnlT17KgJh4J3Lm2e5U9r2fc3SultM8TK0EA3ZKU"
+        #signerW2 = salter.signer(path="W2", transferable=False, temp=True)
+        #assert signerW2.verfer.code == MtrDex.Ed25519N  # non-transferable
+        #preW2 = signerW2.verfer.qb64  # use public key verfer.qb64 as pre
+        #assert preW2 == 'B7vHpy1IDsWWUnHf2GU5ud62LMYWO5lPWOrSB6ejQ1Eo'
 
+        #signerW3 = salter.signer(path="W3", transferable=False, temp=True)
+        #assert signerW3.verfer.code == MtrDex.Ed25519N  # non-transferable
+        #preW3 = signerW3.verfer.qb64  # use public key verfer.qb64 as pre
+        #assert preW3 == 'BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y'
 
-    # Sign reply
-    sigerC = signerC.sign(ser=serderR.raw, index=0)
-    assert signerC.verfer.verify(sig=sigerC.raw, ser=serderR.raw)
-    # create SealEvent for endorsers est evt whose keys use to sign
-    seal = SealEvent(i=preC,
-                     s='0',
-                     d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-    msg = messagize(serderR, sigers=[sigerC], seal=seal)
-    assert msg == (b'{"v":"KERI10JSON000123_","t":"rpy","d":"EAOChnlT17KgJh4J3Lm2e5U9'
-                    b'r2fc3SultM8TK0EA3ZKU","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                    b'":"/to/the/moon","a":{"acid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                    b'WVK9ZBNZk0","role":"watcher","seid":"EAoTNZH3ULvYAfSVPzhzS6baU6J'
-                    b'R2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABD3pYGFaqnrALTyejaJaGAVhNp'
-                    b'SCtqyerPqWVK9ZBNZk00AAAAAAAAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1j'
-                    b'n2DXfrEaqN7zhqTEhkeDZ2z-AABAAMQgAkXhlOTDRSpZZpVRkHHXiiSDvy85b2eK'
-                    b'sACSzKMhiGnLVMAjhq5pyR0ikrK7Zv1rtnlCpUi61FOt3JQHlBw')
-
-
-    # create endorsed rpy with trans endorser
-    # create trans key pair for endorder
-    signerE = salter.signer(path="E", temp=True)
-    assert signerE.verfer.code == MtrDex.Ed25519  # transferable
-    preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preE == 'DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+        ## create transferable endpoint authorizer key pair
+        #signerT = salter.signer(path="T", temp=True)
+        #assert signerT.code == MtrDex.Ed25519_Seed
+        #assert signerT.verfer.code == MtrDex.Ed25519  # transferable
+        #preT = signerT.verfer.qb64  # use public key verfer.qb64 trans pre
+        #assert preT == 'DPN8SjoPMQNiv0qksDd2EfnnrTepizrELX--Qao8Vtn0'
+        #sith = '1'
+        #keys = [signerT.verfer.qb64]
+        #nexter = Nexter(keys=keys)  # compute nxt digest (dummy reuse keys)
+        #nxt = nexter.qb64
+        #assert nxt == 'EgA2zOGNQ8eSfX2xPReYHi4QxpBhvpI3ue6kTDjg3iSs'
 
 
-    # create endorsed ksn
-    sigerE = signerE.sign(ser=serderR.raw, index=0)
-    assert signerE.verfer.verify(sig=sigerE.raw, ser=serderR.raw)
-    # create SealEvent for endorsers est evt whose keys use to sign
-    seal = SealEvent(i=preE,
-                     s='0',
-                     d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-    msg = messagize(serderR, sigers=[sigerE], seal=seal)
-    assert msg == bytearray(b'{"v":"KERI10JSON000123_","t":"rpy","d":"EAOChnlT17KgJh4J3Lm2e5U9'
-                            b'r2fc3SultM8TK0EA3ZKU","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                            b'":"/to/the/moon","a":{"acid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                            b'WVK9ZBNZk0","role":"watcher","seid":"EAoTNZH3ULvYAfSVPzhzS6baU6J'
-                            b'R2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDyvCLRr5luWmp7keDvDuLP0kI'
-                            b'qcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1j'
-                            b'n2DXfrEaqN7zhqTEhkeDZ2z-AABAAmR9XyfaFsBw8Z6tO0KuV3erRIb3XgoSAvEW'
-                            b'BzNi3YUbF5wakjarrVidoM-hh7kbhkUECragqjhNVckka5WQVAA')
+        # with trans cid and nontrans eid
+        #data = dict( cid=preT,
+                     #role=role,
+                     #eid=preW0,
+                   #)
 
-    # create endorsed rpy with nontrans endorser
-    # create nontrans key pair for endorder
-    signerE = salter.signer(path="E", transferable=False, temp=True)
-    assert signerE.verfer.code == MtrDex.Ed25519N  # non-transferable
-    preE = signerE.verfer.qb64  # use public key verfer.qb64 as pre
-    assert preE == 'ByvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+        #serderR = eventing.reply(
+                                 #route=route,
+                                 #data=data,
+                                 #dts=DTS_BASE_0,
+                                #)
 
-    cigarE = signerE.sign(ser=serderR.raw)  # no index so Cigar
-    assert signerE.verfer.verify(sig=cigarE.raw, ser=serderR.raw)
-    msg = messagize(serderR, cigars=[cigarE])
-    assert msg == (b'{"v":"KERI10JSON000123_","t":"rpy","d":"EAOChnlT17KgJh4J3Lm2e5U9'
-                    b'r2fc3SultM8TK0EA3ZKU","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                    b'":"/to/the/moon","a":{"acid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                    b'WVK9ZBNZk0","role":"watcher","seid":"EAoTNZH3ULvYAfSVPzhzS6baU6J'
-                    b'R2nmwyZ-i0d8JZ5CM","name":"besty"}}-CABByvCLRr5luWmp7keDvDuLP0kI'
-                    b'qcyBYq79b3Dho1QvrjI0BmR9XyfaFsBw8Z6tO0KuV3erRIb3XgoSAvEWBzNi3YUb'
-                    b'F5wakjarrVidoM-hh7kbhkUECragqjhNVckka5WQVAA')
+        ## Sign reply
+        #sigerT = signerT.sign(ser=serderR.raw, index=0)
+        #assert signerT.verfer.verify(sig=sigerT.raw, ser=serderR.raw)
+        ## create SealEvent for endorsers est evt whose keys use to sign
+        #seal = SealEvent(i=preT,
+                         #s='0',
+                         #d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        #msg = messagize(serderR, sigers=[sigerT], seal=seal)
+        #assert msg == (b'{"v":"KERI10JSON000123_","t":"rpy","d":"EAOChnlT17KgJh4J3Lm2e5U9'
+                        #b'r2fc3SultM8TK0EA3ZKU","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                        #b'":"/to/the/moon","a":{"acid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
+                        #b'WVK9ZBNZk0","role":"watcher","seid":"EAoTNZH3ULvYAfSVPzhzS6baU6J'
+                        #b'R2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABD3pYGFaqnrALTyejaJaGAVhNp'
+                        #b'SCtqyerPqWVK9ZBNZk00AAAAAAAAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1j'
+                        #b'n2DXfrEaqN7zhqTEhkeDZ2z-AABAAMQgAkXhlOTDRSpZZpVRkHHXiiSDvy85b2eK'
+                        #b'sACSzKMhiGnLVMAjhq5pyR0ikrK7Zv1rtnlCpUi61FOt3JQHlBw')
 
+
+        ## create endorsed rpy with trans endorser
+        ## create trans key pair for endorder
+        #signerN = salter.signer(path="E", temp=True)
+        #assert signerN.verfer.code == MtrDex.Ed25519  # transferable
+        #preN = signerN.verfer.qb64  # use public key verfer.qb64 as pre
+        #assert preN == 'DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+
+    assert not os.path.exists(wamKS.path)
+    assert not os.path.exists(wamDB.path)
+    assert not os.path.exists(wokKS.path)
+    assert not os.path.exists(wokDB.path)
+    assert not os.path.exists(wesKS.path)
+    assert not os.path.exists(wesDB.path)
+    assert not os.path.exists(tamKS.path)
+    assert not os.path.exists(tamDB.path)
     """Done Test"""
 
 

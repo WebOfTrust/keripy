@@ -3301,6 +3301,25 @@ def test_serder():
     assert [verfer.qb64 for verfer in srdr.verfers] == [pre0]
     assert [werfer.qb64 for werfer in srdr.werfers] == [wit0, wit1]
 
+    # test .said and .saidb properties
+    ked = {
+            "v" : "KERI10JSON00011c_",
+            "t" : "rep",
+            "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+            "dt": "2020-08-22T17:50:12.988921+00:00",
+            "r" : "logs/processor",
+            "a" :
+            {
+               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+               "name": "John Jones",
+               "role": "Founder",
+            }
+          }
+    srdr = Serder(ked=ked)
+    assert srdr.said == "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
+    assert srdr.saidb == b"EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
+
     """Done Test """
 
 

@@ -661,7 +661,7 @@ class Habitat:
             return False
 
 
-    def verfers(self, pre=None):
+    def verifiage(self, pre=None):
         """
         Returns the Tholder and Verfers for the provided identifier prefix.
         Default pre is own .pre
@@ -684,6 +684,7 @@ class Habitat:
             tholder = coring.Tholder(sith="1")
 
         return tholder, verfers
+
 
     def replay(self, pre=None, fn=0):
         """

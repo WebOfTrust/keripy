@@ -3797,12 +3797,32 @@ class Serder:
         """
         return self.pre.encode("utf-8")
 
+    @property
+    def said(self):
+        """
+        Returns str qb64  of .ked["d"] (said when ked is SAD)
+        said (self-addressing identifier) property getter
+        """
+        return self.ked["d"]
 
-    def pretty(self):
+
+    @property
+    def saidb(self):
+        """
+        Returns bytes qb64b of .ked["d"] (said when ked is SAD)
+        said (self-addressing identifier) property getter
+        """
+        return self.said.encode("utf-8")
+
+
+    def pretty(self, *, size=1024):
         """
         Returns str JSON of .ked with pretty formatting
+
+        ToDo: add default size limit on pretty when used for syslog UDP MCU
+        like 1024 for ogler.logger
         """
-        return json.dumps(self.ked, indent=1)
+        return json.dumps(self.ked, indent=1)[:size if size is not None else None]
 
 
 class Tholder:

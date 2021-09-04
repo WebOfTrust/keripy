@@ -1042,10 +1042,10 @@ class CesrSuber(Suber):
             subkey (str):  LMDB sub database key
             klas (Type[coring.Matter]): Class reference to subclass of Matter
         """
-        if not (issubclass(klas, coring.Matter) or
-                issubclass(klas, coring.Indexer) or
-                issubclass(kas, coring.Counter)):
-            raise ValueError("Invalid klas type={}.".format(klas))
+        #if not (issubclass(klas, coring.Matter) or
+                #issubclass(klas, coring.Indexer) or
+                #issubclass(kas, coring.Counter)):
+            #raise ValueError("Invalid klas type={}.".format(klas))
         super(CesrSuber, self).__init__(*pa, **kwa)
         self.klas = klas
 
@@ -1184,11 +1184,11 @@ class CatSuberBase(SuberBase):
             klas = (coring.Matter, )  # set default to tuple of single Matter
         if not nonStringIterable(klas):  # not iterable
             klas = (klas, )  # make it so
-        for k in klas:
-            if not (issubclass(k, coring.Matter) or
-                    issubclass(k, coring.Indexer) or
-                     issubclass(k, coring.Counter)):
-                raise ValueError("Invalid klas type={}".format(k))
+        #for k in klas:
+            #if not (issubclass(k, coring.Matter) or
+                    #issubclass(k, coring.Indexer) or
+                     #issubclass(k, coring.Counter)):
+                #raise ValueError("Invalid klas type={}".format(k))
         super(CatSuberBase, self).__init__(*pa, **kwa)
         self.klas = klas
 
@@ -1569,8 +1569,8 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
                                        sep=self.sep)
         else:
             return self.db.delIoSetVals(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       sep=self.sep)
+                                        key=self._tokey(keys),
+                                        sep=self.sep)
 
 
     def getAllItemIter(self):

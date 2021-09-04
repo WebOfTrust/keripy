@@ -106,7 +106,7 @@ class Exchanger(doing.DoDoer):
             payload=payload,
             pre=source,
             sigers=sigers,
-            verfers=verfers,
+            verfers=verifiage,
         )
 
         behavior.msgs.append(msg)

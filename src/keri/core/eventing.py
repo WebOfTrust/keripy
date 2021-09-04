@@ -3341,16 +3341,18 @@ class Kevery:
                         "{} on reply msg=\n%s\n", cigar.verfer.qb64, serder.pretty())
                 continue  # skip if cig not verify
 
-            # All constraints satisfied so Save reply SAD and its dts and cigar
-            self.saveSad(saider=saider, dater=dater, serder=serder, cigar=cigar)
+            # All constraints satisfied so update new reply SAD and its dts and cigar
+            # and remove old replay==y
+            self.updateReply(saider=saider, dater=dater, serder=serder, cigar=cigar)
             # update .eans and .ends
             if not (ender := self.db.ends.get(keys=keys)):
                 ender = basing.EndpointRecord()  # create new default record
             ender.allow = allow  # update allow status
-            self.db.ends.pin(keys=keys, val=ender)
-            self.db.eans.pin(keys=(cid, role, eid), val=saider)
+            self.db.ends.pin(keys=keys, val=ender)  # overwrite
+            self.db.eans.pin(keys=(cid, role, eid), val=saider)  # overwrite
             # remove now obsolete reply SAD and its dts and cigar
-            self.removeSad(saider=saider)
+            if osaider:
+                self.removeReply(saider=osaider)
 
             break  # first valid cigar sufficient ignore any duplicates in cigars
 
@@ -3452,9 +3454,9 @@ class Kevery:
                                       ##"validator receipt quadruple for event={}."
                                       ##"".format(ked))
 
-    def saveSad(self, *, saider, dater, serder, cigar=None, quad=None):
+    def updateReply(self, *, saider, dater, serder, cigar=None, quad=None):
         """
-        Save SAD given by serder and attached cig couple or sig quadruple in
+        Save Reply SAD given by serder and attached cig couple or sig quadruple in
         associated databases. Overwrites val at key if already exists.
 
         Parameters:
@@ -3469,18 +3471,30 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 siger is indexed sig from trans endorser's key from est evt
         """
-        return True
+        keys = (saider.qb64, )
+        self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
+        self.db.rpys.put(keys=keys, val=serder) # first one idempotent
+        if cigar:
+            self.db.scgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
+        if quad:
+            self.db.ssgs.put(keys=keys, vals=[(*quad, )])
 
 
-    def removeSad(self, saider):
+    def removeReply(self, saider):
         """
-        Remove SAD artifacts given by saider.
+        Remove Reply SAD artifacts given by saider.
 
         Parameters:
             saider is Saider instance  from said in serder (SAD)
 
         """
-        return True
+        keys = (saider.qb64, )
+
+        self.db.ssgs.rem(keys=keys)
+        self.db.scgs.rem(keys=keys)
+        self.db.rpys.rem(keys=keys)
+        self.db.sdts.rem(keys=keys)
+
 
     def processQuery(self, serder, src=None, sigers=None):
         """
