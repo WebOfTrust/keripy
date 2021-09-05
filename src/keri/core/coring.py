@@ -1150,6 +1150,14 @@ class Dater(Matter):
         """
         return self.qb64[self.Codes[self.code].hs:].translate(self.FromB64).encode("utf-8")
 
+    @property
+    def datetime(self):
+        """
+        Property datetime:
+        Returns datetime.datetime instance converted from .dts ISO 8601 DateTime str
+        """
+        return helping.fromIso8601(self.dts)
+
 
 class Verfer(Matter):
     """

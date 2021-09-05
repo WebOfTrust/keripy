@@ -3309,7 +3309,7 @@ class Kevery:
             raise ValidationError("Usupported route={} in {} msg={}."
                                   "".format(route, Ilks.rpy, serder.ked))
         data = ked["a"]
-        for k in ("cid", "role", "end"):
+        for k in ("cid", "role", "eid"):
             if k not in data:
                 raise ValidationError("Missing element={} from attributes in {} "
                                       "msg={}.".format(k, Ilks.rpy, serder.ked))
@@ -3328,7 +3328,7 @@ class Kevery:
         osaider = self.db.eans.get(keys=keys)  # get old said if any
         if osaider:  # get old
             if (odater := self.db.sdts.get(keys=osaider.qb64b)):
-                if helping.fromIso8601(dater.dts) <= helping.fromIso8601(odater.dts):
+                if dater.datetime <= odater.datetime:
                     raise ValidationError("Stale update of cid.role.eid from {} "
                                           "msg={}.".format(role, Ilks.rpy, serder.ked))
 
@@ -3354,11 +3354,11 @@ class Kevery:
             # and remove old replay==y
             self.updateReply(saider=saider, dater=dater, serder=serder, cigar=cigar)
             # update .eans and .ends
+            self.db.eans.pin(keys=keys, val=saider)  # overwrite
             if not (ender := self.db.ends.get(keys=keys)):
                 ender = basing.EndpointRecord()  # create new default record
             ender.allow = allow  # update allow status
             self.db.ends.pin(keys=keys, val=ender)  # overwrite
-            self.db.eans.pin(keys=(cid, role, eid), val=saider)  # overwrite
             # remove now obsolete reply SAD and its dts and cigar
             if osaider:
                 self.removeReply(saider=osaider)

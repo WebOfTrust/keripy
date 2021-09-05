@@ -22,6 +22,7 @@ from keri.kering import Version, Versionage
 from keri.kering import (EmptyMaterialError,  RawMaterialError, DerivationError,
                          ValidationError, ShortageError)
 
+from keri.help import helping
 from keri.help.helping import sceil
 
 from keri.core import coring
@@ -1662,6 +1663,15 @@ def test_dater():
     assert dater.qb64 == dt1qb64
     assert dater.qb64b == dt1qb64b
     assert dater.qb2 == dt1qb2
+
+    # datetime property and datetime math
+    dater1 = Dater(dts=dts1)
+    dater2 = Dater(dts=dts2)
+    dater3 = Dater(dts=helping.DTS_BASE_0)
+    dater4 = Dater(dts=helping.DTS_BASE_1)
+
+    assert dater1.datetime < dater2.datetime
+    assert dater4.datetime > dater3.datetime
 
     """ Done Test """
 

@@ -1227,6 +1227,7 @@ def test_reply(mockHelpingNowUTC):
          basing.openDB(name="wam") as wamDB, keeping.openKS(name="wam") as wamKS, \
          basing.openDB(name="tam") as tamDB, keeping.openKS(name="tam") as tamKS, \
          basing.openDB(name="wat") as watDB, keeping.openKS(name="wat") as watKS, \
+         basing.openDB(name="wel") as welDB, keeping.openKS(name="wel") as welKS, \
          basing.openDB(name="nel") as nelDB, keeping.openKS(name="nel") as nelKS:
 
         # witnesses first so can setup inception event for tam
@@ -1278,6 +1279,8 @@ def test_reply(mockHelpingNowUTC):
         assert tamHab.kever.tholder.thold == tsith == 2
         # create non-local kevery for Tam to process non-local msgs
         tamKvy = eventing.Kevery(db=tamHab.db, lax=False, local=False)
+        # create non-local parer for Tam to process non-local msgs
+        tamPrs = parsing.Parser(kvy=tamKvy)
 
         # setup Wat's habitat nontrans
         watHab = habbing.Habitat(name='wat', ks=watKS, db=watDB,
@@ -1287,6 +1290,15 @@ def test_reply(mockHelpingNowUTC):
         assert watHab.db == watDB
         assert not watHab.kever.prefixer.transferable
         watKvy = eventing.Kevery(db=watHab.db, lax=False, local=False)
+
+        # setup Wel's habitat nontrans
+        welHab = habbing.Habitat(name='wel', ks=welKS, db=welDB,
+                                   isith=wsith, icount=1,
+                                   salt=salt, transferable=False, temp=True)  # stem is .name
+        assert welHab.ks == welKS
+        assert welHab.db == welDB
+        assert not welHab.kever.prefixer.transferable
+        welKvy = eventing.Kevery(db=welHab.db, lax=False, local=False)
 
         # setup Nel's habitat nontrans
         nelHab = habbing.Habitat(name='nel', ks=nelKS, db=nelDB,
@@ -1301,10 +1313,10 @@ def test_reply(mockHelpingNowUTC):
         assert nelHab.kever.prefixer.code == MtrDex.Ed25519N
         assert nelHab.kever.verfers[0].qb64 == nelHab.pre
 
-        # test endpoint reply route
+        # add endpoint with reply route add
         route = "/end/role/add"
 
-        # with watcher role
+        # watcher role
         role = eventing.Roles.watcher
 
         # with trans cid and eid
@@ -1313,10 +1325,8 @@ def test_reply(mockHelpingNowUTC):
                      eid=watHab.pre,
                    )
 
-        serderR = eventing.reply(
-                                 route=route,
-                                 data=data,
-                                )
+        serderR = eventing.reply(route=route, data=data,)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
         assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"El8evbsys_Z2gIEluLw6pr31EYpH6Cu52fjn'
                             b'RN8X8mKc","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/add","a":{"'
@@ -1335,12 +1345,119 @@ def test_reply(mockHelpingNowUTC):
                        b'TApyPvI0BaLjdO2H6j7Z8g3UpGGRwKQJ0Lz_sngwxLLPM72bGajVeIVXiqRAB0Eo'
                        b'yweFc3wzUfgECAksyvsB9wyqdeXGJAA')
 
-        # create non-local parer for Tam to process non-local msgs
-        tamPrs = parsing.Parser(kvy=tamKvy)
+        # use Tam's parser and kevery to process
+        tamPrs.parse(ims=bytearray(msg))
+
+        saidkeys = (serderR.said, )
+        dater = tamHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = tamHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serderR.dig
+        couples = tamHab.db.scgs.get(keys=saidkeys)
+        assert len(couples) == 1
+        verfer, cigar = couples[0]
+        cigar.verfer = verfer
+        assert verfer.qb64 == nelHab.pre
+
+        endkeys = (nelHab.pre, role, watHab.pre)
+        saider = tamHab.db.eans.get(keys=endkeys)
+        assert saider.qb64 == serder.said
+        ender = tamHab.db.ends.get(keys=endkeys)
+        assert ender.allow == True
+        assert ender.name == ""
+
+        # cut endpoint with reply route
+        route = "/end/role/cut"
+
+        # stale datetime
+        serderR = eventing.reply(route=route, data=data, )
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
+
+        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EKrW_70GQTYiBMjZYQGDE68eDMLaOOuBlY78'
+                               b'pW1HRPbg","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/cut","a":{"'
+                               b'cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI","role":"watcher","eid":"'
+                               b'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs"}}')
+
+        assert serderR.said == 'EKrW_70GQTYiBMjZYQGDE68eDMLaOOuBlY78pW1HRPbg'
+
+        # Sign Reply
+        msg = nelHab.endorse(serder=serderR)
+        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EKrW_70GQTYiBMjZYQGDE68e'
+                    b'DMLaOOuBlY78pW1HRPbg","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/end/role/cut","a":{"cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-'
+                    b'v_FTApyPvI","role":"watcher","eid":"BXphIkYC1U2ardvt2kGLThDRh2q9'
+                    b'N-yT08WSRlpHwtGs"}}-VAi-CABBsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_F'
+                    b'TApyPvI0Bgq_j5W7FeoD3JeSEUjgNlF3iwKMNeX2244CPp0hmWYl8roNvC0vSeyt'
+                    b'84rm5l_OwA63X5sR_y_S_zgfEtJF_Cw')
 
         # use Tam's parser and kevery to process
-        # tamPrs.parse(ims=bytearray(msg))
+        tamPrs.parse(ims=bytearray(msg))
 
+        # Verify no change because stale update
+        dater = tamHab.db.sdts.get(keys=saidkeys)  # old saidkeys
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = tamHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig != serderR.dig  # old serderR
+        couples = tamHab.db.scgs.get(keys=saidkeys)
+        assert len(couples) == 1
+        verfer, cigar = couples[0]
+        cigar.verfer = verfer
+        assert verfer.qb64 == nelHab.pre
+
+        endkeys = (nelHab.pre, role, watHab.pre)
+        saider = tamHab.db.eans.get(keys=endkeys)
+        assert saider.qb64 == serder.said
+        ender = tamHab.db.ends.get(keys=endkeys)
+        assert ender.allow == True
+        assert ender.name == ""
+
+        # Redo with Updated not stale datetime
+        serderR = eventing.reply(route=route, data=data, dts=help.helping.DTS_BASE_1)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_1
+
+        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EwZH6wJVwwqb2tmhYKYa-GyiO75k4MqkuMKy'
+                               b'G2XWpP7Y","dt":"2021-01-01T00:00:01.000000+00:00","r":"/end/role/cut","a":{"'
+                               b'cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI","role":"watcher","eid":"'
+                               b'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs"}}')
+
+        assert serderR.said == 'EwZH6wJVwwqb2tmhYKYa-GyiO75k4MqkuMKyG2XWpP7Y'
+
+        # Sign Reply
+        msg = nelHab.endorse(serder=serderR)
+        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EwZH6wJVwwqb2tmhYKYa-Gyi'
+                    b'O75k4MqkuMKyG2XWpP7Y","dt":"2021-01-01T00:00:01.000000+00:00","r'
+                    b'":"/end/role/cut","a":{"cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-'
+                    b'v_FTApyPvI","role":"watcher","eid":"BXphIkYC1U2ardvt2kGLThDRh2q9'
+                    b'N-yT08WSRlpHwtGs"}}-VAi-CABBsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_F'
+                    b'TApyPvI0BUrzk2jcq5YtdMuW4s4U6FuGrfHNZZAn4pzfzzsEcfIsgfMbhJ1ozpWl'
+                    b'YPYdR3wbryWUkxfWqtbNwDWlBdTblAQ')
+
+        # use Tam's parser and kevery to process
+        tamPrs.parse(ims=bytearray(msg))
+
+        # verify old reply artifacts at old said removed
+        assert not tamHab.db.sdts.get(keys=saidkeys)  # old old saidkeys
+        assert not tamHab.db.rpys.get(keys=saidkeys)
+        assert tamHab.db.scgs.cnt(keys=saidkeys) == 0
+        assert tamHab.db.ssgs.cnt(keys=saidkeys) == 0
+
+        saidkeys = (serderR.said, )
+        dater = tamHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_1
+        serder = tamHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serderR.dig
+        couples = tamHab.db.scgs.get(keys=saidkeys)
+        assert len(couples) == 1
+        verfer, cigar = couples[0]
+        cigar.verfer = verfer
+        assert verfer.qb64 == nelHab.pre
+
+        endkeys = (nelHab.pre, role, watHab.pre)
+        saider = tamHab.db.eans.get(keys=endkeys)
+        assert saider.qb64 == serder.said
+        ender = tamHab.db.ends.get(keys=endkeys)
+        assert ender.allow == False
+        assert ender.name == ""
 
         ## create key pairs for witnesses of KEL
         #signerW0 = salter.signer(path="W0", transferable=False, temp=True)
