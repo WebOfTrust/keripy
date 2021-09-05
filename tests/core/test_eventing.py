@@ -1319,7 +1319,7 @@ def test_reply(mockHelpingNowUTC):
         # watcher role
         role = eventing.Roles.watcher
 
-        # with trans cid and eid
+        # with trans cid for nel and eid for wat
         data = dict( cid=nelHab.pre,
                      role=role,
                      eid=watHab.pre,
@@ -1457,6 +1457,70 @@ def test_reply(mockHelpingNowUTC):
         assert saider.qb64 == serder.said
         ender = tamHab.db.ends.get(keys=endkeys)
         assert ender.allow == False
+        assert ender.name == ""
+
+        # add antoher watcher for wel
+        # endpoint with reply route add
+        route = "/end/role/add"
+
+        # watcher role
+        role = eventing.Roles.watcher
+
+        # with trans cid and eid
+        data = dict( cid=nelHab.pre,
+                     role=role,
+                     eid=welHab.pre,
+                   )
+
+        serderR = eventing.reply(route=route, data=data,)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_0  # independent datetimes for each eid
+        msg = nelHab.endorse(serder=serderR)
+        tamPrs.parse(ims=bytearray(msg))
+
+        saidkeys = (serderR.said, )
+        dater = tamHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = tamHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serderR.dig
+        couples = tamHab.db.scgs.get(keys=saidkeys)
+        assert len(couples) == 1
+        verfer, cigar = couples[0]
+        cigar.verfer = verfer
+        assert verfer.qb64 == nelHab.pre
+
+        endkeys = (nelHab.pre, role, welHab.pre)
+        saider = tamHab.db.eans.get(keys=endkeys)
+        assert saider.qb64 == serder.said
+        ender = tamHab.db.ends.get(keys=endkeys)
+        assert ender.allow == True
+        assert ender.name == ""
+
+        # get all watchers in ends
+        items = [ (keys, ender.allow) for keys,  ender
+                  in tamHab.db.ends.getTopItemIter(keys=(nelHab.pre, role))]
+        assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
+                            'watcher',
+                            'BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI'),
+                           True),
+                          (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
+                            'watcher',
+                            'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs'),
+                           False)]
+
+        # restore wat as watcher
+        data = dict( cid=nelHab.pre,
+                         role=role,
+                         eid=watHab.pre,
+                         )
+
+        serderR = eventing.reply(route=route, data=data, dts=help.helping.DTS_BASE_2)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_2
+        msg = nelHab.endorse(serder=serderR)
+        tamPrs.parse(ims=bytearray(msg))
+
+        endkeys = (nelHab.pre, role, watHab.pre)
+        ender = tamHab.db.ends.get(keys=endkeys)
+        assert ender.allow == True
         assert ender.name == ""
 
         ## create key pairs for witnesses of KEL
