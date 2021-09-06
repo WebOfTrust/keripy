@@ -1037,7 +1037,7 @@ class Seqner(Matter):
     @property
     def sn(self):
         """
-        Property sn:
+        Property sn: sequence number as int
         Returns .raw converted to int
         """
         return int.from_bytes(self.raw, 'big')
@@ -1045,8 +1045,8 @@ class Seqner(Matter):
     @property
     def snh(self):
         """
-        Property snh:
-        Returns .raw converted to hex str
+        Property snh:  sequence number as hex
+        Returns .sn int converted to hex str
         """
         return "{:x}".format(self.sn)
 
@@ -3827,10 +3827,20 @@ class Serder:
     @property
     def sn(self):
         """
-        Returns int of .ked["s"] (sequence number)
         sn (sequence number) property getter
+        Returns:
+            sn (int): converts hex str .ked["s"] to non neg int
         """
-        return int(self.ked["s"], 16)
+        sn = self.ked["s"]
+
+        if len(sn) > 32:
+            raise ValueError("Invalid sn = {} too large.".format(sn))
+
+        sn = int(sn, 16)
+        if sn < 0:
+                raise ValueError("Negative sn={}.".format(sn))
+
+        return (sn)
 
 
     @property
