@@ -842,6 +842,7 @@ class Tever:
         logger.info("Tever state: %s Added to TEL valid event=\n%s\n",
                     pre, json.dumps(serder.ked, indent=1))
 
+
     def valAnchorBigs(self, serder, seqner, diger, bigers, toad, baks):
         """
         Returns double (bigers) where:
@@ -899,6 +900,7 @@ class Tever:
                                                                                                   in bigers],
                                                                                                  serder.ked))
         return bigers
+
 
     def verifyAnchor(self, serder, seqner, diger):
         """

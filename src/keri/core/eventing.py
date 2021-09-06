@@ -486,8 +486,7 @@ def verifySigs(serder, sigers, verfers):
     # verfer to each siger
     for siger in usigers:
         if siger.index >= len(verfers):
-            raise ValidationError("Index = {} to large for keys for evt = "
-                                  "{}.".format(siger.index, serder.ked))
+            logger.info("Skipped sig: Index=%s to large.\n", siger.index)
         siger.verfer = verfers[siger.index]  # assign verfer
 
     # create lists of unique verified signatures and indices
@@ -3390,6 +3389,8 @@ class Kevery:
                     continue  # skip own cig attachment on non-local reply msg
 
             if cid != cigar.verfer.qb64:  # cig not by cid=controller
+                logger.info("Kevery process: skipped cig not from cid="
+                        "{} on reply msg=\n%s\n", cid, serder.pretty())
                 continue  # skip invalid cig's verfer is not cid
 
             if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
@@ -3422,6 +3423,8 @@ class Kevery:
             spre = sprefixer.qb64
 
             if cid != spre:  # sig not by cid=controller
+                logger.info("Kevery process: skipped sig not from cid="
+                        "{} on reply msg=\n%s\n", cid, serder.pretty())
                 continue  # skip invalid sig is not from cid
 
             # retrieve sdig of last event at sn of signer.
@@ -3444,7 +3447,13 @@ class Kevery:
             #verify sigs
             if not (sverfers := sserder.verfers):
                 raise ValidationError("Invalid reply from signer={}, no keys at"
-                                " est. event sn={}.".format(spre, sseqner.sn))
+                         "signer's est. event sn={}.".format(spre, sseqner.sn))
+
+            sigers, valid = validateSigs(serder=serder,
+                                         sigers=sigers,
+                                         verfers=sverfers,
+                                         tholder=sserder.tholder)
+
 
             for siger in sigers:
                 if siger.index >= len(sverfers):
