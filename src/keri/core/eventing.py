@@ -416,17 +416,24 @@ def deTransReceiptQuintuple(data, strip=False):
     return (ediger, sprefixer, sseqner, sdiger, siger)
 
 
-
-def validateSN(sn, inceptive=False):
+def validateSN(sn, inceptive=None):
     """
-    Returns int of sn, raises ValueError if invalid sn
+    Returns:
+        sn (int): converted from sn hex str
+
+    Raises ValueError if invalid sn
 
     Parameters:
-       sn is hex char sequence number of event or seal in an event
+       sn (str): hex char sequence number of event or seal in an event
+       inceptive(bool): Check sn value and raise ValueError if invalid
+                        None means check for sn < 0
+                        True means check for sn != 0
+                        False means check for sn < 1
+
     """
     if len(sn) > 32:
-        raise ValueError("Invalid sn = {} too large."
-                              "".format(sn))
+        raise ValueError("Invalid sn = {} too large.".format(sn))
+
     try:
         sn = int(sn, 16)
     except Exception as ex:
@@ -2509,7 +2516,7 @@ class Kevery:
                                   "".format(serder.pre, ked))
         pre = serder.pre
         ked = serder.ked
-        sn = self.validateSN(ked)
+        sn = validateSN(sn=ked["s"], inceptive=None) # self.validateSN(ked)
         ilk = ked["t"]
         dig = serder.dig
 
@@ -2662,7 +2669,8 @@ class Kevery:
         # fetch  pre dig to process
         ked = serder.ked
         pre = serder.pre
-        sn = self.validateSN(ked)
+
+        sn = validateSN(sn=ked["s"], inceptive=None)  # self.validateSN(ked)
 
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)
@@ -2731,7 +2739,7 @@ class Kevery:
         # fetch  pre dig to process
         ked = serder.ked
         pre = serder.pre
-        sn = self.validateSN(ked)
+        sn = validateSN(sn=ked["s"], inceptive=None) # self.validateSN(ked)
 
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)
@@ -2798,7 +2806,7 @@ class Kevery:
         # fetch  pre dig to process
         ked = serder.ked
         pre = serder.pre
-        sn = self.validateSN(ked)
+        sn = validateSN(sn=ked["s"], inceptive=None) # self.validateSN(ked)
 
         # Only accept receipt if event is latest event at sn. Means its been
         # first seen and is the most recent first seen with that sn
@@ -2867,7 +2875,7 @@ class Kevery:
         # fetch  pre, dig,seal to process
         ked = serder.ked
         pre = serder.pre
-        sn = self.validateSN(ked)
+        sn = validateSN(sn=ked["s"], inceptive=None) # self.validateSN(ked)
 
         # Only accept receipt if for last seen version of event at sn
         ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
@@ -2956,7 +2964,7 @@ class Kevery:
         # fetch  pre, dig,seal to process
         ked = serder.ked
         pre = serder.pre
-        sn = self.validateSN(ked)
+        sn = validateSN(sn=ked["s"], inceptive=None) # self.validateSN(ked)
 
         if firner:  # retrieve last event by fn ordinal
             ldig = self.db.getFe(key=fnKey(pre=pre, sn=firner.sn))
@@ -3066,7 +3074,7 @@ class Kevery:
         # fetch from serder to process
         ked = serder.ked
         pre = serder.pre
-        sn = self.validateSN(ked)
+        sn = validateSN(sn=ked["s"], inceptive=None)  # self.validateSN(ked)
 
         """
         Discussion
@@ -3521,26 +3529,6 @@ class Kevery:
             self.cues.push(dict(kin="replay", msgs=msgs, dest=src))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
-
-
-    def validateSN(self, ked):
-        """
-        Returns int validated from hex str sn in ked
-
-        Parameters:
-           sn is hex char sequence number of event or seal in an event
-           ked is key event dict of associated event
-        """
-        sn = ked["s"]
-        if len(sn) > 32:
-            raise ValidationError("Invalid sn = {} too large for evt = {}."
-                                  "".format(sn, ked))
-        try:
-            sn = int(sn, 16)
-        except Exception as ex:
-            raise ValidationError("Invalid sn = {} for evt = {}.".format(sn, ked))
-
-        return sn
 
 
     def fetchEstEvent(self, pre, sn):
