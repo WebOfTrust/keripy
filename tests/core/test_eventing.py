@@ -1308,6 +1308,8 @@ def test_reply(mockHelpingNowUTC):
         assert nelHab.db == nelDB
         assert not nelHab.kever.prefixer.transferable
         nelKvy = eventing.Kevery(db=nelHab.db, lax=False, local=False)
+        # create non-local parer for Nel to process non-local msgs
+        nelPrs = parsing.Parser(kvy=nelKvy)
 
         assert nelHab.pre == 'Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI'
         assert nelHab.kever.prefixer.code == MtrDex.Ed25519N
@@ -1523,41 +1525,49 @@ def test_reply(mockHelpingNowUTC):
         assert ender.allow == True
         assert ender.name == ""
 
-        ## create key pairs for witnesses of KEL
-        #signerW0 = salter.signer(path="W0", transferable=False, temp=True)
-        #assert signerW0.verfer.code == MtrDex.Ed25519N  # non-transferable
-        #preW0 = signerW0.verfer.qb64  # use public key verfer.qb64 as pre
-        #assert preW0 == 'BNTkstUfFBJv0R1IoNNjKpWK6zEZPxjgMc7KS2Q6_lG0'
+        # Tam as trans authZ for witnesses
+        # add endpoint with reply route add
+        route = "/end/role/add"
 
-        #signerW1 = salter.signer(path="W1", transferable=False, temp=True)
-        #assert signerW1.verfer.code == MtrDex.Ed25519N  # non-transferable
-        #preW1 = signerW1.verfer.qb64  # use public key verfer.qb64 as pre
-        #assert preW1 == 'BaEI1ytEFHqaUF26Fu4JgvsHBzeBu7Joaj2ilmx3QPwU'
+        # witness role
+        role = eventing.Roles.witness
 
-        #signerW2 = salter.signer(path="W2", transferable=False, temp=True)
-        #assert signerW2.verfer.code == MtrDex.Ed25519N  # non-transferable
-        #preW2 = signerW2.verfer.qb64  # use public key verfer.qb64 as pre
-        #assert preW2 == 'B7vHpy1IDsWWUnHf2GU5ud62LMYWO5lPWOrSB6ejQ1Eo'
+        # with trans cid for tam and eid for wes
+        data = dict( cid=tamHab.pre,
+                     role=role,
+                     eid=wesHab.pre,
+                   )
 
-        #signerW3 = salter.signer(path="W3", transferable=False, temp=True)
-        #assert signerW3.verfer.code == MtrDex.Ed25519N  # non-transferable
-        #preW3 = signerW3.verfer.qb64  # use public key verfer.qb64 as pre
-        #assert preW3 == 'BruKyL_b4D5ETo9u12DtLU1J6Kc1CQnigIUBKrBFz_1Y'
+        serderR = eventing.reply(route=route, data=data,)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
-        ## create transferable endpoint authorizer key pair
-        #signerT = salter.signer(path="T", temp=True)
-        #assert signerT.code == MtrDex.Ed25519_Seed
-        #assert signerT.verfer.code == MtrDex.Ed25519  # transferable
-        #preT = signerT.verfer.qb64  # use public key verfer.qb64 trans pre
-        #assert preT == 'DPN8SjoPMQNiv0qksDd2EfnnrTepizrELX--Qao8Vtn0'
-        #sith = '1'
-        #keys = [signerT.verfer.qb64]
-        #nexter = Nexter(keys=keys)  # compute nxt digest (dummy reuse keys)
-        #nxt = nexter.qb64
-        #assert nxt == 'EgA2zOGNQ8eSfX2xPReYHi4QxpBhvpI3ue6kTDjg3iSs'
+        assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"ErMaG30t2WhCS7VbMEtN6uTjfztlkbESh1vM'
+                            b'HrGyjY0Q","dt":"2021-01-01T00:00:00.000000+00:00","r":"/end/role/add","a":{"'
+                            b'cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","role":"witness","eid":"'
+                            b'BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY"}}')
+
+        assert serderR.said == 'ErMaG30t2WhCS7VbMEtN6uTjfztlkbESh1vMHrGyjY0Q'
+
+        # Sign Reply
+        msg = tamHab.endorse(serder=serderR)
+        assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"ErMaG30t2WhCS7VbMEtN6uTj'
+                    b'fztlkbESh1vMHrGyjY0Q","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/end/role/add","a":{"cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BL'
+                    b'aRMirZ4I8M","role":"witness","eid":"BFUOWBaJz-sB_6b-_u_P9W8hgBQ8'
+                    b'Su9mAtN9cY2sVGiY"}}-VBg-FABEQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRM'
+                    b'irZ4I8M0AAAAAAAAAAAAAAAAAAAAAAAETbIi40gakUBXSBVi55Vnadttn4A-GKsH'
+                    b'IAeZxnfn_zg-AADAAffDL_OJLC_At3P-U9SQJmejYjgU-q7TwsiWln4_hDNoMNv_'
+                    b'-clEHl1A1UAzFIi2WiPU9SGu6b3dMnEW4cwcoAwAB81_Nph4W2ru0dYOPKMyGTvI'
+                    b'Fhcl_xIPZYQXkIEz2Y1OHr6_mXkqRDvkexxf8iag8VsuyadvS_FlJq8wthDCgAQA'
+                    b'CmJDe4G2PCrsn9x2hZoPFGtHPw1qWaWSyItKNZyeoqQqAFbJ_HWzHz28pyDunxYH'
+                    b'lQxVTjq5UqIthmi2vH-aWDg')
+
+        # use Nel's parser and kevery to process
+        # nelPrs.parse(ims=bytearray(msg))
 
 
         # with trans cid and nontrans eid
+
         #data = dict( cid=preT,
                      #role=role,
                      #eid=preW0,

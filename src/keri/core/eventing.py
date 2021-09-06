@@ -2854,47 +2854,44 @@ class Kevery:
                     raise ValidationError("Own pre={} receipter of nonlocal event "
                                           "{}.".format(self.prefixes, serder.pretty()))
 
-            if sprefixer.qb64 in self.kevers:
-                # receipted event and receipter in database so get receipter est evt
-                # retrieve dig of last event at sn of est evt of receipter.
-                sdig = self.db.getKeLast(key=snKey(pre=sprefixer.qb64b,
-                                                      sn=sseqner.sn))
-                if sdig is None:
-                    # receipter's est event not yet in receipters's KEL
-                    self.escrowTReceipts(serder, sprefixer, sseqner, sdiger, sigers)
-                    raise UnverifiedTransferableReceiptError("Unverified receipt: "
-                                        "missing establishment event of transferable "
-                                        "receipter for event={}."
-                                        "".format(ked))
+            # receipted event in db so attempt to get receipter est evt
+            # retrieve dig of last event at sn of est evt of receipter.
+            sdig = self.db.getKeLast(key=snKey(pre=sprefixer.qb64b, sn=sseqner.sn))
+            if sdig is None:
+                # receipter's est event not yet in receipters's KEL
+                # so need cue to discover est evt KEL for receipter from watcher etc
+                self.escrowTReceipts(serder, sprefixer, sseqner, sdiger, sigers)
+                raise UnverifiedTransferableReceiptError("Unverified receipt: "
+                                    "missing establishment event of transferable "
+                                    "receipter for event={}."
+                                    "".format(ked))
 
+            # retrieve last event itself of receipter est evt from sdig.
+            sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
+            # assumes db ensures that sraw must not be none because sdig was in KE
+            sserder = Serder(raw=bytes(sraw))
+            if not sserder.compare(diger=sdiger):  # endorser's dig not match event
+                raise ValidationError("Bad trans indexed sig group at sn = {}"
+                                      " for ksn = {}."
+                                      "".format(sseqner.sn, sserder.ked))
 
-                # retrieve last event itself of receipter est evt from sdig
-                sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
-                # assumes db ensures that sraw must not be none because sdig was in KE
-                sserder = Serder(raw=bytes(sraw))
-                if not sserder.compare(diger=sdiger):  # endorser's dig not match event
-                    raise ValidationError("Bad trans indexed sig group at sn = {}"
-                                          " for ksn = {}."
-                                          "".format(sseqner.sn, sserder.ked))
+            #verify sigs and if so write receipt to database
+            sverfers = sserder.verfers
+            if not sverfers:
+                raise ValidationError("Invalid receipter's est. event"
+                                      " dig = {}  from pre ={}, no keys."
+                                      "".format(sdiger.qb64, sprefixer.qb64))
 
-                #verify sigs and if so write receipt to database
-                sverfers = sserder.verfers
-                if not sverfers:
-                    raise ValidationError("Invalid key state endorser's est. event"
-                                          " dig = {} for ksn from pre ={}, "
-                                          "no keys."
-                                          "".format(sdiger.qb64, sprefixer.qb64))
-
-                for siger in sigers:
-                    if siger.index >= len(sverfers):
-                        raise ValidationError("Index = {} to large for keys."
-                                                  "".format(siger.index))
-                    siger.verfer = sverfers[siger.index]  # assign verfer
-                    if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
-                        # good sig so write receipt quadruple to database
-                        quadruple = sprefixer.qb64b + sseqner.qb64b + sdiger.qb64b + siger.qb64b
-                        self.db.addVrc(key=dgKey(pre=pre, dig=ldig),
-                                       val=quadruple)  # dups kept
+            for siger in sigers:
+                if siger.index >= len(sverfers):
+                    raise ValidationError("Index = {} to large for keys."
+                                              "".format(siger.index))
+                siger.verfer = sverfers[siger.index]  # assign verfer
+                if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
+                    # good sig so write receipt quadruple to database
+                    quadruple = sprefixer.qb64b + sseqner.qb64b + sdiger.qb64b + siger.qb64b
+                    self.db.addVrc(key=dgKey(pre=pre, dig=ldig),
+                                   val=quadruple)  # dups kept
 
 
     def processReceiptQuadruples(self, serder, trqs, firner=None):
@@ -3365,103 +3362,53 @@ class Kevery:
 
             break  # first valid cigar sufficient ignore any duplicates in cigars
 
-        #for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
-            #if not self.lax and sprefixer.qb64 in self.prefixes:  # own endorsed ksn
-                #if pre in self.prefixes:  # skip own endorsed ksn
-                    #raise ValidationError("Own endorsement pre={} of own key"
-                        #" state notifiction {}.".format(self.prefixes, serder.pretty()))
-                #if not self.local:  # skip own nonlocal ksn
-                    #raise ValidationError("Own endorsement pre={}  "
-                                          #"of nonlocal key state notification "
-                                    #"{}.".format(self.prefixes, serder.pretty()))
+        for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
+            if not self.lax and sprefixer.qb64 in self.prefixes:  # own sig
+                if not self.local:  # own sig when not local so ignore
+                    logger.info("Kevery process: skipped own attachment"
+                            " on nonlocal reply msg=\n%s\n", serder.pretty())
+                    continue  # skip own sig attachment on non-local reply msg
 
-            #if ldig is not None and sprefixer.qb64 in self.kevers:
-                ## both key state event and endorser in database so retreive
-                #if isinstance(ldig, memoryview):
-                    #ldig = bytes(ldig).decode("utf-8")
+            spre = sprefixer.qb64
 
-                #if not serder.compare(dig=ldig):  # mismatch events problem with replay
-                    #raise ValidationError("Mismatch replay event at sn = {} with db."
-                                          #"".format(ked["s"]))
+            if cid != spre:  # sig not by cid=controller
+                continue  # skip invalid sig is not from cid
 
-                ## retrieve dig of last event at sn of endorser.
-                #sdig = self.db.getKeLast(key=snKey(pre=sprefixer.qb64b,
-                                                      #sn=sseqner.sn))
-                #if sdig is None:
-                    ## endorser's est event not yet in endorser's KEL
-                    ##  do we escrow key state notifications ?
-                    #pass
-                    ##self.escrowVRQuadruple(serder, sprefixer, sseqner, sdiger, siger)
-                    ##raise UnverifiedTransferableReceiptError("Unverified receipt: "
-                                        ##"missing establishment event of transferable "
-                                        ##"validator receipt quadruple for event={}."
-                                        ##"".format(ked))
+            # retrieve sdig of last event at sn of signer.
+            sdig = self.db.getKeLast(key=snKey(pre=spre, sn=sseqner.sn))
+            if sdig is None:
+                # should create cue here to request key state for sprefixer signer
+                # signer's est event not yet in signer's KEL
+                # escrow here
+                continue
 
-                ## retrieve last event itself of endorser
-                #sraw = self.db.getEvt(key=dgKey(pre=sprefixer.qb64b, dig=bytes(sdig)))
-                ## assumes db ensures that sraw must not be none because sdig was in KE
-                #sserder = Serder(raw=bytes(sraw))
-                #if not sserder.compare(diger=sdiger):  # endorser's dig not match event
-                    #raise ValidationError("Bad trans indexed sig group at sn = {}"
-                                          #" for ksn = {}."
-                                          #"".format(sseqner.sn, sserder.ked))
+            # retrieve last event itself of signer given sdig
+            sraw = self.db.getEvt(key=dgKey(pre=spre, dig=bytes(sdig)))
+            # assumes db ensures that sraw must not be none because sdig was in KE
+            sserder = Serder(raw=bytes(sraw))
+            if not sserder.compare(diger=sdiger):  # signer's dig not match est evt
+                raise ValidationError("Bad trans indexed sig group at sn = {}"
+                                      " for reply = {}."
+                                      "".format(sseqner.sn, serder.ked))
 
-                ##verify sigs and if so write keystate to database
-                #sverfers = sserder.verfers
-                #if not sverfers:
-                    #raise ValidationError("Invalid key state endorser's est. event"
-                                          #" dig = {} for ksn from pre ={}, "
-                                          #"no keys."
-                                          #"".format(sdiger.qb64, sprefixer.qb64))
+            #verify sigs
+            if not (sverfers := sserder.verfers):
+                raise ValidationError("Invalid reply from signer={}, no keys at"
+                                " est. event sn={}.".format(spre, sseqner.sn))
+
+            for siger in sigers:
+                if siger.index >= len(sverfers):
+                    raise ValidationError("Index = {} to large for keys."
+                                              "".format(siger.index))
+                siger.verfer = sverfers[siger.index]  # assign verfer
+                if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
+                    logger.info("Kevery process error: Bad trans reply sig."
+                             "pre=%s sn=%x\n", spre, sseqner.sn)
+
+                    raise ValidationError("Bad reply sig from pre={} sn={:x}."
+                                          "".format(pre, sseqner.sn))
 
 
-
-                #for siger in sigers:
-                    #if siger.index >= len(sverfers):
-                        #raise ValidationError("Index = {} to large for keys."
-                                                  #"".format(siger.index))
-                    #siger.verfer = sverfers[siger.index]  # assign verfer
-                    #if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
-                        #logger.info("Kevery unescrow error: Bad trans receipt sig."
-                                 #"pre=%s sn=%x receipter=%s\n", pre, sn, sprefixer.qb64)
-
-                        #raise ValidationError("Bad escrowed trans receipt sig at "
-                                              #"pre={} sn={:x} receipter={}."
-                                              #"".format(pre, sn, sprefixer.qb64))
-
-                    ## good sig so write ksn to database
-
-                    ## Set up quadruple
-                    ##quadruple = sprefixer.qb64b + sseqner.qb64b + sdiger.qb64b + siger.qb64b
-                    ##self.db.addVrc(key=dgKey(pre, serder.dig), val=quadruple)
-
-
-                    ## Only accept key state if for last seen version of event at sn
-                    #ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
-
-
-                    #if ldig is None:  # escrow because event does not yet exist in database
-                        ## # take advantage of fact that receipt and event have same pre, sn fields
-                        #pass
-
-                        ##self.escrowUREvent(serder, cigars, dig=serder.dig)  # digest in receipt
-                        ##raise UnverifiedReceiptError("Unverified receipt={}.".format(ked))
-
-                    #ldig = bytes(ldig).decode("utf-8")  # verify digs match
-                    ## retrieve event by dig assumes if ldig is not None that event exists at ldig
-
-                    #if not serder.compare(dig=ldig):  # mismatch events problem with replay
-                        #raise ValidationError("Mismatch keystate at sn = {} with db."
-                                              #"".format(ked["s"]))
-
-
-            #else:  # escrow  either endorser or key stated event not yet in database
-                #pass
-                ##self.escrowVRQuadruple(serder, sprefixer, sseqner, sdiger, siger)
-                ##raise UnverifiedTransferableReceiptError("Unverified receipt: "
-                                      ##"missing associated event for transferable "
-                                      ##"validator receipt quadruple for event={}."
-                                      ##"".format(ked))
 
     def updateReply(self, *, saider, dater, serder, cigar=None, quad=None):
         """
