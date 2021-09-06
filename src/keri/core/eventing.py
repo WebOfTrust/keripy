@@ -173,36 +173,6 @@ Colds = Coldage(msg='msg', txt='txt', bny='bny')
 # to/from dicts easily  example: dict(kin="receipt", serder=serder)
 
 
-def validateSN(sn, inceptive=False):
-    """
-    Returns int of sn, raises ValueError if invalid sn
-
-    Parameters:
-       sn is hex char sequence number of event or seal in an event
-    """
-    if len(sn) > 32:
-        raise ValueError("Invalid sn = {} too large."
-                              "".format(sn))
-    try:
-        sn = int(sn, 16)
-    except Exception as ex:
-        raise ValueError("Invalid sn = {}.".format(sn))
-
-    if inceptive is not None:
-        if inceptive:
-            if sn != 0:
-                raise ValidationError("Nonzero sn = {} for inception evt."
-                                      "".format(sn))
-        else:
-            if sn < 1:
-                raise ValidationError("Zero or less sn = {} for non-inception evt."
-                                      "".format(sn))
-    else:
-        if sn < 0:
-            raise ValidationError("Negative sn = {} for event.".format(sn))
-
-    return sn
-
 
 def simple(n):
     """
@@ -446,6 +416,39 @@ def deTransReceiptQuintuple(data, strip=False):
     return (ediger, sprefixer, sseqner, sdiger, siger)
 
 
+
+def validateSN(sn, inceptive=False):
+    """
+    Returns int of sn, raises ValueError if invalid sn
+
+    Parameters:
+       sn is hex char sequence number of event or seal in an event
+    """
+    if len(sn) > 32:
+        raise ValueError("Invalid sn = {} too large."
+                              "".format(sn))
+    try:
+        sn = int(sn, 16)
+    except Exception as ex:
+        raise ValueError("Invalid sn = {}.".format(sn))
+
+    if inceptive is not None:
+        if inceptive:
+            if sn != 0:
+                raise ValidationError("Nonzero sn = {} for inception evt."
+                                      "".format(sn))
+        else:
+            if sn < 1:
+                raise ValidationError("Zero or less sn = {} for non-inception evt."
+                                      "".format(sn))
+    else:
+        if sn < 0:
+            raise ValidationError("Negative sn = {} for event.".format(sn))
+
+    return sn
+
+
+
 def verifySigs(serder, sigers, verfers):
     """
     Returns tuple of (vsigers, vindices) where:
@@ -490,6 +493,51 @@ def verifySigs(serder, sigers, verfers):
 
     return (vsigers, vindices)
 
+
+def validateSigs(serder, sigers, verfers, tholder):
+    """
+    Validates signatures given by sigers using keys given by verfers on msg
+    given by serder subject to threshold given by tholder. Returns subset of
+    valid signatures for storage.
+
+    Returns:
+        result (tuple): (sigers, valid) where:
+            sigers (list): subset of of provided sigers of verified signatures
+                on serder using verfers
+            valid (bool): True means threshold from tholder satisfied by sigers,
+                          False otherwise.
+
+    Parameters:
+        serder (coring.Serder): instance of message
+        sigers (Iterable): Siger instances of indexed signatures.
+            Index is offset into verfers list each providing verification key
+        verfers (Iterable): Verfer instances of keys
+        tholder (Tholder): instance of signing threshold (sith)
+
+        seqner is Seqner instance of delegating event sequence number.
+            If this event is not delegated then seqner is ignored
+        diger is Diger instance of of delegating event digest.
+            If this event is not delegated then diger is ignored
+
+    """
+    valid = False
+    if len(verfers) < tholder.size:
+        raise ValidationError("Invalid sith = {} for keys = {}."
+                         "".format(tholder.sith,
+                                   [verfer.qb64 for verfer in verfers]))
+
+    # get unique verified sigers and indices lists from sigers list
+    sigers, indices = verifySigs(serder=serder, sigers=sigers, verfers=verfers)
+    # sigers  now have .verfer assigned
+
+    # check if satisfies threshold for fully signed
+    if not indices:  # must have a least one verified sig
+        raise ValidationError("No verified signatures for message={}."
+                              "".format(serder.ked))
+
+    valid = tholder.satisfy(indices)
+
+    return (sigers, valid)
 
 
 def incept(keys,
@@ -1613,7 +1661,7 @@ class Kever:
         ked = serder.ked
 
         self.verfers = serder.verfers  # converts keys to verifiers
-        self.tholder = Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
+        self.tholder = serder.tholder  #  Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
         if len(self.verfers) < self.tholder.size:
             raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
                              "".format(ked["kt"],
@@ -1904,7 +1952,7 @@ class Kever:
                                   " prefix = {} for evt = {}."
                                   "".format(self.prefixer.qb64, ked))
 
-        tholder = Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
+        tholder = serder.tholder  #  Tholder(sith=ked["kt"])  #  parse sith into Tholder instance
         if len(serder.verfers) < tholder.size:
             raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
                              "".format(ked["kt"],
@@ -1969,6 +2017,7 @@ class Kever:
 
         return (tholder, toad, wits, cuts, adds)
 
+
     def validateSN(self, sn=None, ked=None, inceptive=False):
         """
         Returns int validated from hex str sn in ked
@@ -2015,7 +2064,7 @@ class Kever:
                 If this event is not delegated then diger is ignored
 
         """
-        if len(verfers) < self.tholder.size:
+        if len(verfers) < tholder.size:
             raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
                              "".format(tholder.sith,
                                        [verfer.qb64 for verfer in verfers],
@@ -2156,9 +2205,9 @@ class Kever:
             raise ValidationError("Missing delegation from {} in {} for evt = {}."
                                   "".format(delegator, dserder.ked["a"], serder.ked))
 
-        # should we reverify signatures or trust the database?
+        # re-verify signatures or trust the database?
         # if database is loaded into memory fresh and reverified each bootup
-        # then we can trust it otherwise we can't
+        # when custody of disc is in question then trustable otherwise not
 
         return delegator  # return delegator prefix
 
@@ -2224,7 +2273,7 @@ class Kever:
     def escrowPSEvent(self, serder, sigers, wigers=None):
         """
         Update associated logs for escrow of partially signed event
-        or fully signed delegated event but not yet verified delegation
+        or fully signed delegated event but not yet verified delegation.
 
         Parameters:
             serder is Serder instance of event
@@ -2238,13 +2287,20 @@ class Kever:
             self.db.putWigs(dgkey, [siger.qb64b for siger in wigers])
         self.db.putEvt(dgkey, serder.raw)
         self.db.addPse(snKey(serder.preb, serder.sn), serder.digb)
-        logger.info("Kever state: Escrowed partially signed "
+        logger.info("Kever state: Escrowed partially signed or delegated "
                      "event = %s\n", serder.ked)
+
 
     def escrowPACouple(self, serder, seqner, diger):
         """
-        Update associated logs for escrow of partially signed event
-        or fully signed delegated event but not yet verified delegation
+        Update associated logs for escrow of partially authenticated issued event.
+        Assuming signatures are provided elseqhere. Partial authentication results
+        from either a partially signed event or a fully signed delegated event
+        but whose delegation is not yet verified.
+
+        Escrow allows escrow processor to retrieve serder from key and source
+        couple from val in order to to re-verify authentication status. Sigs
+        are escrowed elsewhere.
 
         Parameters:
             serder is Serder instance of delegated or issued event
@@ -2254,8 +2310,8 @@ class Kever:
         dgkey = dgKey(serder.preb, serder.digb)
         couple = seqner.qb64b + diger.qb64b
         self.db.putPde(dgkey, couple)   # idempotent
-        logger.info("Kever state: Escrowed partially delegated "
-                     "event = %s\n", serder.ked)
+        logger.info("Kever state: Escrowed source couple for partially signed "
+                    "or delegated event = %s\n", serder.ked)
 
 
     def escrowPWEvent(self, serder, wigers, sigers=None):
@@ -3479,7 +3535,6 @@ class Kevery:
             self.cues.push(dict(kin="replay", msgs=msgs, dest=src))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
-
 
 
     def validateSN(self, ked):

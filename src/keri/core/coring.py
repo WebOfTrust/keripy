@@ -3540,9 +3540,12 @@ class Serder:
         .digb is qb64b digest from .diger
         .verfers is list of Verfers converted from .ked["k"]
         .werfers is list of Verfers converted from .ked["b"]
+        .tholder is Tholder instance from .ked["kt'] else None
         .sn is int sequence number converted from .ked["s"]
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
+        .said is qb64 of .ked['d'] if present
+        .saidb is qb64b of .ked['d'] of present
 
     Hidden Attributes:
           ._raw is bytes of serialized event only
@@ -3813,6 +3816,15 @@ class Serder:
 
 
     @property
+    def tholder(self):
+        """
+        Returns Tholder instance as converted from .ked['kt'] or None if missing.
+
+        """
+        return (Tholder(sith=self.ked["kt"]) if "kt" in self.ked else None)
+
+
+    @property
     def sn(self):
         """
         Returns int of .ked["s"] (sequence number)
@@ -3837,6 +3849,7 @@ class Serder:
         preb (identifier prefix) property getter
         """
         return self.pre.encode("utf-8")
+
 
     @property
     def said(self):

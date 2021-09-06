@@ -3367,6 +3367,23 @@ def test_serder():
     assert srdr.said == "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
     assert srdr.saidb == b"EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
 
+    #test tholder
+    ked = dict(v="KERI10JSON000000_",  # version string
+               i="BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc",  # qb64 prefix
+               s="0",  # hex string no leading zeros lowercase
+               t="icp",
+               kt="1", # hex string no leading zeros lowercase
+               k=["BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"],  # list of qb64
+               n="",  # hash qual Base64
+               bt="0",  # hex string no leading zeros lowercase
+               b=[],  # list of qb64 may be empty
+               c=[],  # list of config ordered mappings may be empty
+               a=[],  # list of seal dicts
+               )
+    srdr = Serder(ked=ked)
+    assert srdr.tholder.sith == "1"
+    assert srdr.tholder.thold == 1
+
     """Done Test """
 
 
@@ -3504,4 +3521,4 @@ def test_tholder():
 
 
 if __name__ == "__main__":
-    test_saider()
+    test_serder()
