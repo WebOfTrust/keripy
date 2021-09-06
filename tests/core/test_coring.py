@@ -3384,6 +3384,22 @@ def test_serder():
     assert srdr.tholder.sith == "1"
     assert srdr.tholder.thold == 1
 
+    # test validation in Serder.sn property
+    ked["s"] = "-1"
+    srdr = Serder(ked=ked)
+    with pytest.raises(ValueError):
+        sn = srdr.sn
+
+    ked["s"] = "0" * 33
+    srdr = Serder(ked=ked)
+    with pytest.raises(ValueError):
+        sn = srdr.sn
+
+    ked["s"] = "15.34"
+    srdr = Serder(ked=ked)
+    with pytest.raises(ValueError):
+        sn = srdr.sn
+
     """Done Test """
 
 
