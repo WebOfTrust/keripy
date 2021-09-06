@@ -1674,7 +1674,7 @@ class Kever:
                                   "".format(self.prefixer.qb64, ked))
 
 
-        self.sn = self.validateSN(ked=ked, inceptive=True)
+        self.sn = validateSN(sn=ked["s"], inceptive=True)
         self.serder = serder  # need whole serder for digest agility comparisons
 
         nxt = ked["n"]
@@ -1764,7 +1764,7 @@ class Kever:
                                                                self.prefixer.qb64,
                                                                ked))
 
-        sn = self.validateSN(ked=ked, inceptive=False)
+        sn = validateSN(sn=ked["s"], inceptive=False)
         ilk = ked["t"]
 
         if ilk in (Ilks.rot, Ilks.drt):  # rotation (or delegated rotation) event
@@ -2018,20 +2018,6 @@ class Kever:
         return (tholder, toad, wits, cuts, adds)
 
 
-    def validateSN(self, sn=None, ked=None, inceptive=False):
-        """
-        Returns int validated from hex str sn in ked
-
-        Parameters:
-           sn (str): is str hex of sequence number
-           ked (dict): is key event dict of associated event or message such as seal
-        """
-        if sn is None:
-            sn = ked["s"]
-
-        return validateSN(sn, inceptive=inceptive)
-
-
     def valSigsDelWigs(self, serder, sigers, verfers, tholder,
                        wigers, toad, wits, seqner=None, diger=None):
         """
@@ -2147,7 +2133,7 @@ class Kever:
         else:
             delegator = self.delegator
 
-        ssn = self.validateSN(sn=seqner.snh, inceptive=False)
+        ssn = validateSN(sn=seqner.snh, inceptive=False)
 
         # get the dig of the delegating event
         key = snKey(pre=delegator, sn=ssn)
@@ -2158,7 +2144,7 @@ class Kever:
 
             #  escrow event here
             inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
-            sn = self.validateSN(sn=serder.ked["s"], inceptive=inceptive)
+            sn = validateSN(sn=serder.ked["s"], inceptive=inceptive)
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
             self.escrowPACouple(serder=serder, seqner=seqner, diger=diger)
             raise MissingDelegationError("No delegating event from {} at {} for "
