@@ -2516,7 +2516,7 @@ class Kevery:
                                   "".format(serder.pre, ked))
         pre = serder.pre
         ked = serder.ked
-        sn = validateSN(sn=ked["s"], inceptive=None) # self.validateSN(ked)
+        sn = serder.sn
         ilk = ked["t"]
         dig = serder.dig
 
@@ -2670,7 +2670,7 @@ class Kevery:
         ked = serder.ked
         pre = serder.pre
 
-        sn = validateSN(sn=ked["s"], inceptive=None)  # self.validateSN(ked)
+        sn = serder.sn
 
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)
@@ -2739,7 +2739,7 @@ class Kevery:
         # fetch  pre dig to process
         ked = serder.ked
         pre = serder.pre
-        sn = validateSN(sn=ked["s"], inceptive=None) # self.validateSN(ked)
+        sn = serder.sn
 
         # Only accept receipt if for last seen version of event at sn
         snkey = snKey(pre=pre, sn=sn)
@@ -2806,7 +2806,7 @@ class Kevery:
         # fetch  pre dig to process
         ked = serder.ked
         pre = serder.pre
-        sn = validateSN(sn=ked["s"], inceptive=None) # self.validateSN(ked)
+        sn = serder.sn
 
         # Only accept receipt if event is latest event at sn. Means its been
         # first seen and is the most recent first seen with that sn
@@ -2875,7 +2875,7 @@ class Kevery:
         # fetch  pre, dig,seal to process
         ked = serder.ked
         pre = serder.pre
-        sn = validateSN(sn=ked["s"], inceptive=None) # self.validateSN(ked)
+        sn = serder.sn
 
         # Only accept receipt if for last seen version of event at sn
         ldig = self.db.getKeLast(key=snKey(pre=pre, sn=sn))  # retrieve dig of last event at sn.
@@ -2964,7 +2964,7 @@ class Kevery:
         # fetch  pre, dig,seal to process
         ked = serder.ked
         pre = serder.pre
-        sn = validateSN(sn=ked["s"], inceptive=None) # self.validateSN(ked)
+        sn = serder.sn
 
         if firner:  # retrieve last event by fn ordinal
             ldig = self.db.getFe(key=fnKey(pre=pre, sn=firner.sn))
@@ -3074,7 +3074,7 @@ class Kevery:
         # fetch from serder to process
         ked = serder.ked
         pre = serder.pre
-        sn = validateSN(sn=ked["s"], inceptive=None)  # self.validateSN(ked)
+        sn = serder.sn
 
         """
         Discussion
