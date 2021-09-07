@@ -1565,8 +1565,11 @@ def test_reply(mockHelpingNowUTC):
                     b'CmJDe4G2PCrsn9x2hZoPFGtHPw1qWaWSyItKNZyeoqQqAFbJ_HWzHz28pyDunxYH'
                     b'lQxVTjq5UqIthmi2vH-aWDg')
 
-        # use Nel's parser and kevery to process
+        # use Nel's parser and kevery to authZ wes as tam end witness
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
+
+
+
 
 
         # add tam kel to nel
@@ -1587,6 +1590,21 @@ def test_reply(mockHelpingNowUTC):
         nelPrs.parse(bytearray(wittamicp))
         nelKvy.processEscrows()
         assert tamHab.pre in nelHab.kevers
+
+        # do wok as witness for tam
+        # with trans cid for tam and eid for wok
+        data = dict( cid=tamHab.pre,
+                         role=role,
+                         eid=wokHab.pre,
+                         )
+
+        serderR = eventing.reply(route=route, data=data,)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
+
+        # Sign Reply
+        msg = tamHab.endorse(serder=serderR)
+
+        # use Nel's parser and kevery to authZ wok as tam end witness
         nelPrs.parse(ims=bytearray(msg))
 
         saidkeys = (serderR.said, )
@@ -1599,12 +1617,18 @@ def test_reply(mockHelpingNowUTC):
         prefixer, seqner, diger, siger = quadruples[0]
         assert prefixer.qb64 == tamHab.pre
 
-        endkeys = (tamHab.pre, role, wesHab.pre)
+        endkeys = (tamHab.pre, role, wokHab.pre)
         saider = nelHab.db.eans.get(keys=endkeys)
         assert saider.qb64 == serder.said
         ender = nelHab.db.ends.get(keys=endkeys)
         assert ender.allow == True
         assert ender.name == ""
+
+        # deauthorize wok
+
+
+        # use Nel's parser and kevery to authZ wok as tam end witness
+        # nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
 
 
 
