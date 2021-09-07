@@ -3345,6 +3345,9 @@ class Kevery:
         Escrow process logic is route dependent and is dispatched by route,
         i.e. route is address of buffer with route specific handler of escrow.
         """
+        cigars = cigars if cigars is not None else []
+        tsgs = tsgs if  tsgs is not None else []
+
         ked = serder.ked
         route = ked["r"]
         if route.startswith("/end/role/add"):
@@ -3399,7 +3402,7 @@ class Kevery:
                 continue  # skip if cig not verify
 
             # All constraints satisfied so update new reply SAD and its dts and cigar
-            # and remove old replay==y
+            # and remove old reply
             self.updateReply(saider=saider, dater=dater, serder=serder, cigar=cigar)
             # update .eans and .ends
             self.db.eans.pin(keys=keys, val=saider)  # overwrite
@@ -3453,23 +3456,29 @@ class Kevery:
                                          sigers=sigers,
                                          verfers=sverfers,
                                          tholder=sserder.tholder)
+            # no error so at least one verified siger
+            quads = [(sprefixer, sseqner, sdiger, siger) for  siger in  sigers]
+
+            if valid:  # meet threshold so save
+                # All constraints satisfied so update new reply SAD and its dts and cigar
+                # and remove old reply
+                self.updateReply(saider=saider, dater=dater, serder=serder, quads=quads)
+                # update .eans and .ends
+                self.db.eans.pin(keys=keys, val=saider)  # overwrite
+                if not (ender := self.db.ends.get(keys=keys)):
+                    ender = basing.EndpointRecord()  # create new default record
+                ender.allow = allow  # update allow status
+                self.db.ends.pin(keys=keys, val=ender)  # overwrite
+                # remove now obsolete reply SAD and its dts and cigar
+                if osaider:
+                    self.removeReply(saider=osaider)
+
+            else:  # not meet threshodl so escrow quads
+                pass
 
 
-            for siger in sigers:
-                if siger.index >= len(sverfers):
-                    raise ValidationError("Index = {} to large for keys."
-                                              "".format(siger.index))
-                siger.verfer = sverfers[siger.index]  # assign verfer
-                if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
-                    logger.info("Kevery process error: Bad trans reply sig."
-                             "pre=%s sn=%x\n", spre, sseqner.sn)
 
-                    raise ValidationError("Bad reply sig from pre={} sn={:x}."
-                                          "".format(pre, sseqner.sn))
-
-
-
-    def updateReply(self, *, saider, dater, serder, cigar=None, quad=None):
+    def updateReply(self, *, saider, dater, serder, cigar=None, quads=None):
         """
         Save Reply SAD given by serder and attached cig couple or sig quadruple in
         associated databases. Overwrites val at key if already exists.
@@ -3480,18 +3489,19 @@ class Kevery:
             serder is Serder instance of reply msg (SAD)
             cigar is Cigar instance that contains receipt couple
                 signature in .raw and public key in .verfer
-            quad is quadruple of form (prefixer, seqner, diger, siger) where:
+            quads (Iterable): of quadruples of form (prefixer, seqner, diger, siger) where:
                 prefixer is pre of trans endorser
                 seqner is sequence number of trans endorser's est evt for keys for sigs
                 diger is digest of trans endorser's est evt for keys for sigs
                 siger is indexed sig from trans endorser's key from est evt
         """
+        quads = quads if quads is not None else []
         keys = (saider.qb64, )
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder) # first one idempotent
         if cigar:
             self.db.scgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
-        if quad:
+        for quad in quads:
             self.db.ssgs.put(keys=keys, vals=[(*quad, )])
 
 

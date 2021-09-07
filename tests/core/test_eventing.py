@@ -1241,6 +1241,7 @@ def test_reply(mockHelpingNowUTC):
         assert wesHab.db == wesDB
         assert not wesHab.kever.prefixer.transferable
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
+        wesPrs = parsing.Parser(kvy=wesKvy)
 
         # setup Wok's habitat nontrans
         wokHab = habbing.Habitat(name='wok',ks=wokKS, db=wokDB,
@@ -1250,6 +1251,7 @@ def test_reply(mockHelpingNowUTC):
         assert wokHab.db == wokDB
         assert not wokHab.kever.prefixer.transferable
         wokKvy = eventing.Kevery(db=wokHab.db, lax=False, local=False)
+        wokPrs = parsing.Parser(kvy=wokKvy)
 
         # setup Wam's habitat nontrans
         wamHab = habbing.Habitat(name='wam', ks=wamKS, db=wamDB,
@@ -1259,6 +1261,7 @@ def test_reply(mockHelpingNowUTC):
         assert wamHab.db == wamDB
         assert not wamHab.kever.prefixer.transferable
         wamKvy = eventing.Kevery(db=wamHab.db, lax=False, local=False)
+        wamPrs = parsing.Parser(kvy=wamKvy)
 
         # setup Tam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
@@ -1563,46 +1566,47 @@ def test_reply(mockHelpingNowUTC):
                     b'lQxVTjq5UqIthmi2vH-aWDg')
 
         # use Nel's parser and kevery to process
-        # nelPrs.parse(ims=bytearray(msg))
+        nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
 
 
-        # with trans cid and nontrans eid
+        # add tam kel to nel
+        tamicp = tamHab.makeOwnInception()
+        nelPrs.parse(bytearray(tamicp))
+        assert tamHab.pre not in nelKvy.kevers
+        wesPrs.parse(bytearray(tamicp))
+        assert tamHab.pre in wesKvy.kevers
+        wokPrs.parse(bytearray(tamicp))
+        assert tamHab.pre in wokKvy.kevers
+        wamPrs.parse(bytearray(tamicp))
+        assert tamHab.pre in wamKvy.kevers
+        wittamicp = wesHab.witness(tamHab.iserder)
+        nelPrs.parse(bytearray(wittamicp))
+        wittamicp = wokHab.witness(tamHab.iserder)
+        nelPrs.parse(bytearray(wittamicp))
+        wittamicp = wamHab.witness(tamHab.iserder)
+        nelPrs.parse(bytearray(wittamicp))
+        nelKvy.processEscrows()
+        assert tamHab.pre in nelHab.kevers
+        nelPrs.parse(ims=bytearray(msg))
 
-        #data = dict( cid=preT,
-                     #role=role,
-                     #eid=preW0,
-                   #)
+        saidkeys = (serderR.said, )
+        dater = nelHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = nelHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serderR.dig
+        quadruples = nelHab.db.ssgs.get(keys=saidkeys)
+        assert len(quadruples) == 3
+        prefixer, seqner, diger, siger = quadruples[0]
+        assert prefixer.qb64 == tamHab.pre
 
-        #serderR = eventing.reply(
-                                 #route=route,
-                                 #data=data,
-                                 #dts=DTS_BASE_0,
-                                #)
-
-        ## Sign reply
-        #sigerT = signerT.sign(ser=serderR.raw, index=0)
-        #assert signerT.verfer.verify(sig=sigerT.raw, ser=serderR.raw)
-        ## create SealEvent for endorsers est evt whose keys use to sign
-        #seal = SealEvent(i=preT,
-                         #s='0',
-                         #d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        #msg = messagize(serderR, sigers=[sigerT], seal=seal)
-        #assert msg == (b'{"v":"KERI10JSON000123_","t":"rpy","d":"EAOChnlT17KgJh4J3Lm2e5U9'
-                        #b'r2fc3SultM8TK0EA3ZKU","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                        #b'":"/to/the/moon","a":{"acid":"D3pYGFaqnrALTyejaJaGAVhNpSCtqyerPq'
-                        #b'WVK9ZBNZk0","role":"watcher","seid":"EAoTNZH3ULvYAfSVPzhzS6baU6J'
-                        #b'R2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABD3pYGFaqnrALTyejaJaGAVhNp'
-                        #b'SCtqyerPqWVK9ZBNZk00AAAAAAAAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1j'
-                        #b'n2DXfrEaqN7zhqTEhkeDZ2z-AABAAMQgAkXhlOTDRSpZZpVRkHHXiiSDvy85b2eK'
-                        #b'sACSzKMhiGnLVMAjhq5pyR0ikrK7Zv1rtnlCpUi61FOt3JQHlBw')
+        endkeys = (tamHab.pre, role, wesHab.pre)
+        saider = nelHab.db.eans.get(keys=endkeys)
+        assert saider.qb64 == serder.said
+        ender = nelHab.db.ends.get(keys=endkeys)
+        assert ender.allow == True
+        assert ender.name == ""
 
 
-        ## create endorsed rpy with trans endorser
-        ## create trans key pair for endorder
-        #signerN = salter.signer(path="E", temp=True)
-        #assert signerN.verfer.code == MtrDex.Ed25519  # transferable
-        #preN = signerN.verfer.qb64  # use public key verfer.qb64 as pre
-        #assert preN == 'DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
 
     assert not os.path.exists(wamKS.path)
     assert not os.path.exists(wamDB.path)
