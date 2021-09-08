@@ -2117,8 +2117,8 @@ class Kever:
         else:
             delegator = self.delegator
 
-        #if self.local:  # if in local mode, accept the delegated events before verifying the delegator
-            #return delegator
+        if self.local:  # if in local mode, accept the delegated events before verifying the delegator
+            return delegator
 
         ssn = self.validateSN(sn=seqner.snh, inceptive=False)
 
