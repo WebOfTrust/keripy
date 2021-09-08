@@ -1318,6 +1318,7 @@ def test_reply(mockHelpingNowUTC):
         assert nelHab.kever.prefixer.code == MtrDex.Ed25519N
         assert nelHab.kever.verfers[0].qb64 == nelHab.pre
 
+        # add watcher for wat
         # add endpoint with reply route add
         route = "/end/role/add"
 
@@ -1464,7 +1465,7 @@ def test_reply(mockHelpingNowUTC):
         assert ender.allow == False
         assert ender.name == ""
 
-        # add antoher watcher for wel
+        # add watcher for wel
         # endpoint with reply route add
         route = "/end/role/add"
 
@@ -1528,6 +1529,71 @@ def test_reply(mockHelpingNowUTC):
         assert ender.allow == True
         assert ender.name == ""
 
+
+        # Provide wat location
+        # add endpoint with reply route add
+        route = "/loc/scheme"
+
+        # watcher role
+        role = eventing.Roles.watcher
+
+        scheme = eventing.Schemes.http
+        url = "http://localhost:8080/watcher/wat"
+
+        # with trans cid for nel and eid for wat
+        data = dict(
+                     eid=watHab.pre,
+                     scheme=scheme,
+                     url=url,
+                     cid=nelHab.pre,
+                     role=role,
+                   )
+
+        serderR = eventing.reply(route=route, data=data,)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
+
+        assert serderR.raw == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EtHzjdySIhGK51eicEgxm1ucv3dJd4v4puio'
+                            b'ObDASJJ0","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
+                            b'd":"BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs","scheme":"http","url":"htt'
+                            b'p://localhost:8080/watcher/wat","cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_F'
+                            b'TApyPvI","role":"watcher"}}')
+
+        assert serderR.said == 'EtHzjdySIhGK51eicEgxm1ucv3dJd4v4puioObDASJJ0'
+
+        # Sign Reply
+        msg = watHab.endorse(serder=serderR)
+        assert msg == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EtHzjdySIhGK51eicEgxm1uc'
+                    b'v3dJd4v4puioObDASJJ0","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/loc/scheme","a":{"eid":"BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WS'
+                    b'RlpHwtGs","scheme":"http","url":"http://localhost:8080/watcher/w'
+                    b'at","cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI","role":'
+                    b'"watcher"}}-VAi-CABBXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs0'
+                    b'BRMSv-HOG62F8LA4ja6sY9M-KQWyBSJXCyYZWqkmuRuEJRWoGR7HtwOuo3aBJMtr'
+                    b'GjffUGD3ff1qiy4wjID_6Cg')
+
+        # use Tam's parser and kevery to process
+        tamPrs.parse(ims=bytearray(msg))
+
+        saidkeys = (serderR.said, )
+        dater = tamHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = tamHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serderR.dig
+        couples = tamHab.db.scgs.get(keys=saidkeys)
+        assert len(couples) == 1
+        verfer, cigar = couples[0]
+        cigar.verfer = verfer
+        assert verfer.qb64 == watHab.pre
+
+        lockeys = (watHab.pre, scheme)
+        saider = tamHab.db.lans.get(keys=lockeys)
+        assert saider.qb64 == serder.said
+        locer = tamHab.db.locs.get(keys=lockeys)
+        assert locer.url == url
+        assert locer.cid == nelHab.pre
+        assert locer.role == role == eventing.Roles.watcher
+
+
         # Tam as trans authZ for witnesses
         # add endpoint with reply route add
         route = "/end/role/add"
@@ -1567,9 +1633,6 @@ def test_reply(mockHelpingNowUTC):
 
         # use Nel's parser and kevery to authZ wes as tam end witness
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
-
-
-
 
 
         # add tam kel to nel
@@ -1627,9 +1690,136 @@ def test_reply(mockHelpingNowUTC):
         # deauthorize wok
 
 
-        # use Nel's parser and kevery to authZ wok as tam end witness
-        # nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
+        # use Nel's parser and kevery for wok to provide its url as witness for tam
+        # Provide wat location
+        # add endpoint with reply route add
+        route = "/loc/scheme"
 
+        # watcher role
+        role = eventing.Roles.witness
+
+        scheme = eventing.Schemes.http
+        url = "http://localhost:8080/witness/wok"
+
+        # with trans cid for nel and eid for wat
+        data = dict(
+                     eid=wokHab.pre,
+                     scheme=scheme,
+                     url=url,
+                     cid=tamHab.pre,
+                     role=role,
+                   )
+
+        serderR = eventing.reply(route=route, data=data,)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
+
+        assert serderR.raw == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EjGjaV_vQQCeLpbTWiuiEeU3-_iKe4vJ4U4I'
+                            b'VFLQ5VOQ","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
+                            b'd":"BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc","scheme":"http","url":"htt'
+                            b'p://localhost:8080/witness/wok","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRM'
+                            b'irZ4I8M","role":"witness"}}')
+
+        assert serderR.said == 'EjGjaV_vQQCeLpbTWiuiEeU3-_iKe4vJ4U4IVFLQ5VOQ'
+
+        # Sign Reply
+        msg = wokHab.endorse(serder=serderR)
+        assert msg == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EjGjaV_vQQCeLpbTWiuiEeU3'
+                    b'-_iKe4vJ4U4IVFLQ5VOQ","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/loc/scheme","a":{"eid":"BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE'
+                    b'-hgg4Stc","scheme":"http","url":"http://localhost:8080/witness/w'
+                    b'ok","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","role":'
+                    b'"witness"}}-VAi-CABBpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc0'
+                    b'B0ODrtNEEWKtQq_yOar0ct_QUNcMlsjVWGrIKvTjPIrG0AVYn4PEEDUTlL7KUCKs'
+                    b'da8TMFhGTKIwIHN11H2TmCQ')
+
+        # use Tam's parser and kevery to process
+        nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
+
+        saidkeys = (serderR.said, )
+        dater = nelHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = nelHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serderR.dig
+        couples = nelHab.db.scgs.get(keys=saidkeys)
+        assert len(couples) == 1
+        verfer, cigar = couples[0]
+        cigar.verfer = verfer
+        assert verfer.qb64 == wokHab.pre
+
+        lockeys = (wokHab.pre, scheme)
+        saider = nelHab.db.lans.get(keys=lockeys)
+        assert saider.qb64 == serder.said
+        locer = nelHab.db.locs.get(keys=lockeys)
+        assert locer.url == url
+        assert locer.cid == tamHab.pre
+        assert locer.role == role == eventing.Roles.witness
+
+        # use Nel's parser and kevery for tam to provide its url as witness for itself
+        # Provide wat location
+        # add endpoint with reply route add
+        route = "/loc/scheme"
+
+        # watcher role
+        role = eventing.Roles.witness
+
+        scheme = eventing.Schemes.http
+        url = "http://localhost:8080/witness/tam"
+
+        # with trans cid for nel and eid for wat
+        data = dict(
+                     eid=tamHab.pre,
+                     scheme=scheme,
+                     url=url,
+                     cid=tamHab.pre,
+                     role=role,
+                   )
+
+        serderR = eventing.reply(route=route, data=data,)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
+
+        assert serderR.raw == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EinayWgTgsBH2O--UogJpxzIHOVTek94YDrb'
+                        b'sPaU4q2s","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
+                        b'd":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","scheme":"http","url":"htt'
+                        b'p://localhost:8080/witness/tam","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRM'
+                        b'irZ4I8M","role":"witness"}}')
+
+        assert serderR.said == 'EinayWgTgsBH2O--UogJpxzIHOVTek94YDrbsPaU4q2s'
+
+        # Sign Reply
+        msg = tamHab.endorse(serder=serderR)
+        assert msg == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EinayWgTgsBH2O--UogJpxzI'
+                    b'HOVTek94YDrbsPaU4q2s","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/loc/scheme","a":{"eid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaR'
+                    b'MirZ4I8M","scheme":"http","url":"http://localhost:8080/witness/t'
+                    b'am","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","role":'
+                    b'"witness"}}-VBg-FABEQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M0'
+                    b'AAAAAAAAAAAAAAAAAAAAAAAETbIi40gakUBXSBVi55Vnadttn4A-GKsHIAeZxnfn'
+                    b'_zg-AADAAzDRfHIzv_nYoZ4I7-TfCrh87Q8xk2SrImsKYLH-t9aXNX8WPcOVVo8f'
+                    b'dkttToFazseLioY_TkbKQHmE1gDt_DAABOsnBuYNTrI2GR_dBGLKwCPs_RjP9s0T'
+                    b'aCG16Ofvh9f0BmuubG17rTihGvF8fxdm2elE6MmdhV3k_sNbyUyDwAAACwsQtCkZ'
+                    b'iPYmelSC_rfhxUGofffti7Oe2DxGCmhugijxRCx9S9kTDImYfBg2GsmljapiAnSx'
+                    b'3pZTMwwaC9WcFBw')
+
+        # use Tam's parser and kevery to process
+        nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
+
+        saidkeys = (serderR.said, )
+        dater = nelHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = nelHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serderR.dig
+        quadruples = nelHab.db.ssgs.get(keys=saidkeys)
+        assert len(quadruples) == 3
+        prefixer, seqner, diger, siger = quadruples[0]
+        assert prefixer.qb64 == tamHab.pre
+
+        lockeys = (tamHab.pre, scheme)
+        saider = nelHab.db.lans.get(keys=lockeys)
+        assert saider.qb64 == serder.said
+        locer = nelHab.db.locs.get(keys=lockeys)
+        assert locer.url == url
+        assert locer.cid == tamHab.pre
+        assert locer.role == role == eventing.Roles.witness
 
 
     assert not os.path.exists(wamKS.path)

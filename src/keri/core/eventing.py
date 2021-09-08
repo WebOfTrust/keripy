@@ -3287,8 +3287,8 @@ class Kevery:
         if route.startswith("/end/role/"):
             self.processReplyEndRole(saider=saider, dater=dater, serder=serder,
                                         cigars=cigars, tsgs=tsgs)
-        elif route.startwith("/loc/scheme"):
-            self.processReplyLocScheme(saider=saider, dater=dater,serder=serder,
+        elif route.startswith("/loc/scheme"):
+            self.processReplyLocScheme(saider=saider, dater=dater, serder=serder,
                                        cigars=cigars, tsgs=tsgs)
         else:  # unsupported route
             raise ValidationError("Usupported route={} in {} msg={}."
@@ -3316,12 +3316,31 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
+        EndpointRecord:
+            allow: bool = False  # True eid allowed (add), False eid disallowed (cut)
+            name: str = ""  # optional user friendly name of endpoint
+
+        Reply Message:
         {
           "v" : "KERI10JSON00011c_",
           "t" : "rep",
           "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
           "dt": "2020-08-22T17:50:12.988921+00:00",
           "r" : "/end/role/add",
+          "a" :
+          {
+             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+             "role": "watcher",  # one of eventing.Roles
+             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+          }
+        }
+
+        {
+          "v" : "KERI10JSON00011c_",
+          "t" : "rep",
+          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+          "dt": "2020-08-22T17:50:12.988921+00:00",
+          "r" : "/end/role/cut",
           "a" :
           {
              "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
@@ -3379,8 +3398,8 @@ class Kevery:
         if osaider:  # get old
             if (odater := self.db.sdts.get(keys=osaider.qb64b)):
                 if dater.datetime <= odater.datetime:
-                    raise ValidationError("Stale update of cid.role.eid from {} "
-                                          "msg={}.".format(role, Ilks.rpy, serder.ked))
+                    raise ValidationError("Stale update of {} from {} via {}={}."
+                                    "".format(route, cid, Ilks.rpy, serder.ked))
 
         for cigar in cigars:  # process each couple to verify sig and write to db
             if cigar.verfer.transferable:  # ignore invalid transferable verfers
@@ -3489,6 +3508,13 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
+        LocationRecord:
+            url: str  # full url including host:port/path?query scheme is optional
+            cid: str  # identifier prefix of controller that authorizes endpoint
+            role: str  # endpoint role such as watcher, witness etc
+
+        Reply Message:
+
         {
           "v" : "KERI10JSON00011c_",
           "t" : "rep",
@@ -3577,8 +3603,8 @@ class Kevery:
         if osaider:  # get old
             if (odater := self.db.sdts.get(keys=osaider.qb64b)):
                 if dater.datetime <= odater.datetime:
-                    raise ValidationError("Stale update of cid.role.eid from {} "
-                                          "msg={}.".format(role, Ilks.rpy, serder.ked))
+                    raise ValidationError("Stale update of {} from {} via {}={}."
+                                    "".format(route, eid, Ilks.rpy, serder.ked))
 
         for cigar in cigars:  # process each couple to verify sig and write to db
             if cigar.verfer.transferable:  # ignore invalid transferable verfers
@@ -3590,10 +3616,10 @@ class Kevery:
                             " on nonlocal reply msg=\n%s\n", serder.pretty())
                     continue  # skip own cig attachment on non-local reply msg
 
-            if cid != cigar.verfer.qb64:  # cig not by cid=controller
-                logger.info("Kevery process: skipped cig not from cid="
-                        "{} on reply msg=\n%s\n", cid, serder.pretty())
-                continue  # skip invalid cig's verfer is not cid
+            if eid != cigar.verfer.qb64:  # cig not by eid endpoint provider
+                logger.info("Kevery process: skipped cig not from eid="
+                        "{} on reply msg=\n%s\n", eid, serder.pretty())
+                continue  # skip invalid cig's verfer is not eid
 
             if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
                 logger.info("Kevery process: skipped nonverifying cig from "
@@ -3617,10 +3643,10 @@ class Kevery:
 
             spre = sprefixer.qb64
 
-            if cid != spre:  # sig not by cid=controller
-                logger.info("Kevery process: skipped sig not from cid="
-                        "{} on reply msg=\n%s\n", cid, serder.pretty())
-                continue  # skip invalid sig is not from cid
+            if eid != spre:  # sig not by cid=controller
+                logger.info("Kevery process: skipped sig not from eid="
+                        "{} on reply msg=\n%s\n", eid, serder.pretty())
+                continue  # skip invalid sig is not from eid
 
             # retrieve sdig of last event at sn of signer.
             sdig = self.db.getKeLast(key=snKey(pre=spre, sn=sseqner.sn))
