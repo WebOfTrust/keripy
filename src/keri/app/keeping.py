@@ -775,7 +775,7 @@ class Manager:
         # other secrets
         if self.decrypter:
             # re-encrypt root salt secrets by prefix parameters .prms
-            for keys, data in self.ks.prms.getAllItemIter():  # keys is tuple of pre qb64
+            for keys, data in self.ks.prms.getItemIter():  # keys is tuple of pre qb64
                 if data.salt:
                     salter = self.decrypter.decrypt(ser=data.salt)
                     data.salt = (self.encrypter.encrypt(matter=salter).qb64

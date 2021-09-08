@@ -1503,7 +1503,7 @@ def test_reply(mockHelpingNowUTC):
 
         # get all watchers in ends
         items = [ (keys, ender.allow) for keys,  ender
-                  in tamHab.db.ends.getTopItemIter(keys=(nelHab.pre, role))]
+                  in tamHab.db.ends.getItemIter(keys=(nelHab.pre, role))]
         assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
                             'watcher',
                             'BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI'),

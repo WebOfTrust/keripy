@@ -662,7 +662,7 @@ class Baser(dbing.LMDBer):
         make .kevers a read through cache
         """
         removes = []
-        for keys, data in self.habs.getAllItemIter():
+        for keys, data in self.habs.getItemIter():
             if (state := self.states.get(keys=data.prefix)) is not None:
                 try:
                     kever = eventing.Kever(state=state, db=self, prefixes=self.prefixes, local=True)
@@ -711,7 +711,7 @@ class Baser(dbing.LMDBer):
 
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
-                for keys, val in self.habs.getAllItemIter():
+                for keys, val in self.habs.getItemIter():
                     if val.prefix in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, val=val)
                         copy.prefixes.add(val.prefix)
@@ -721,7 +721,7 @@ class Baser(dbing.LMDBer):
                                      "".format(self.name))
 
                 # clone .ends and .locs databases
-                for keys, val in self.ends.getAllItemIter():
+                for keys, val in self.ends.getItemIter():
                     exists = False  # only copy if entries in both .ends and .locs
                     for scheme in ("https", "http", "tcp"):  # all supported schemes
                         lval = self.locs.get(keys=(val.eid, scheme))

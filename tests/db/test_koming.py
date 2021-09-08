@@ -164,7 +164,7 @@ def test_kom_get_item_iter():
         mydb.put(keys=("a","3"), val=y)
         mydb.put(keys=("a","4"), val=z)
 
-        items = [(keys, asdict(data)) for keys, data in mydb.getAllItemIter()]
+        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
         assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
                         (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
                         (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
@@ -176,7 +176,7 @@ def test_kom_get_item_iter():
         mydb.put(keys=("bc","4"), val=z)
 
         topkeys = ("b", "")  # append empty str to force trailing .sep
-        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter(keys=topkeys)]
+        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter(keys=topkeys)]
         assert items == [(('b', '1'), {'a': 'Big', 'b': 'Blue'}),
                          (('b', '2'), {'a': 'Tall', 'b': 'Red'})]
 
@@ -542,23 +542,23 @@ def test_dup_komer():
 
         ends = ends + [wit3end]
         i = 0
-        for keys, end in endDB.getAllItemIter():
+        for keys, end in endDB.getItemIter():
             assert end == ends[i]
             i += 1
 
         i = 0
-        for keys, end in endDB.getTopItemIter(keys=(cid0, "" )):
+        for keys, end in endDB.getItemIter(keys=(cid0, "" )):
             assert end == ends[i]
             i += 1
 
         alllocs = [wit3loc] + locs
         i = 0
-        for keys, loc in locDB.getAllItemIter():
+        for keys, loc in locDB.getItemIter():
             assert loc == alllocs[i]
             i += 1
 
         i = 0
-        for keys, loc in locDB.getTopItemIter(keys=(eids[0], "" )):
+        for keys, loc in locDB.getItemIter(keys=(eids[0], "" )):
             assert loc == locs[i]
             i += 1
 
@@ -741,13 +741,13 @@ def test_ioset_komer():
                             'AAAAAAAAAAAAAAAAAAAAAC')]
 
         i = 0
-        for iokeys, end in endDB.getIoItem(keys=keys0):
+        for iokeys, end in endDB.getIoSetItem(keys=keys0):
             assert end == ends[i]
             assert iokeys == iokeys0[i]
             i += 1
 
         i = 0
-        for iokeys, end in endDB.getIoItemIter(keys=keys0):
+        for iokeys, end in endDB.getIoSetItemIter(keys=keys0):
             assert end == ends[i]
             assert iokeys == iokeys0[i]
             i += 1
@@ -761,18 +761,18 @@ def test_ioset_komer():
             i += 1
 
         i = 0
-        for keys, end in endDB.getTopItemIter(keys=(cid0, "")):
+        for keys, end in endDB.getAllItemIter(keys=(cid0, "")):
             assert end == ends[i]
             i += 1
 
         alllocs = [wit3loc] + locs
         i = 0
-        for keys, loc in locDB.getAllItemIter():
+        for keys, loc in locDB.getItemIter():
             assert loc == alllocs[i]
             i += 1
 
         i = 0
-        for keys, loc in locDB.getTopItemIter(keys=(eids[0], "")):
+        for keys, loc in locDB.getItemIter(keys=(eids[0], "")):
             assert loc == locs[i]
             i += 1
 
@@ -795,7 +795,7 @@ def test_ioset_komer():
                                 'AAAAAAAAAAAAAAAAAAAAAA')]
 
         i = 0
-        for iokeys, end in endDB.getTopIoItemIter(keys=(cid0, "")):
+        for iokeys, end in endDB.getAllIoItemIter(keys=(cid0, "")):
             assert end == ends[i]
             assert iokeys == iokeysall[i]
             i += 1

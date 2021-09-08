@@ -16,7 +16,7 @@ def printGroups(hab):
         hab (Habitat): environment for whom to print groups
 
     """
-    groups = hab.db.gids.getAllItemIter()
+    groups = hab.db.gids.getItemIter()
     for (aid,), group in groups:
         printGroup(hab, aid, group)
 
