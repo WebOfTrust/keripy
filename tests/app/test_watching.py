@@ -47,6 +47,8 @@ def test_watcher_rotate_handler(mockGetWitnessByPrefixOneWitness):
 
         assert doist.limit == limit
 
+        doist.exit()
+
         assert len(rotateDoer.cues) == 1
         cue = rotateDoer.cues.popleft()
 
