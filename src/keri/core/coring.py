@@ -2532,7 +2532,7 @@ class Saider(Matter):
 
 
     @classmethod
-    def _serialize(clas, sad: dict, kind: None):
+    def _serialize(clas, sad: dict, kind: str=None):
         """
         Serialize sad with serialization kind if provided else use
             use embedded 'v', version string if provided else use default

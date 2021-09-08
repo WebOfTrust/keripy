@@ -185,7 +185,6 @@ class LocationRecord:  # locs
          "url":  "http://localhost:8080/watcher/wilma",
          "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
          "role": "watcher",  # one of eventing.Roles
-
       }
     }
 
@@ -202,7 +201,6 @@ class LocationRecord:  # locs
          "url":  "",
          "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
          "role": "watcher",  # one of eventing.Roles
-
       }
     }
 
@@ -210,8 +208,6 @@ class LocationRecord:  # locs
     url: str  # full url including host:port/path?query scheme is optional
     cid: str  # identifier prefix of controller that authorizes endpoint
     role: str  # endpoint role such as watcher, witness etc
-    said: str  # Self-Addressing ID of conveying reply message
-    dts: str  # ISO-8601 datetime string of conveying replay message
 
     def __iter__(self):
         return iter(asdict(self))
@@ -476,9 +472,16 @@ class Baser(dbing.LMDBer):
             key is route bytes,  val = cat of (saider.qb64b,) of reply 'rpy' msg
 
         .eans is named subDB instance of CesrSuber with klas=Saider that maps
-            cid.role.eid of reply authn SAD to said of reply SAD with
-            routes /end/role/add or /end/role/cut
+            cid.role.eid to said of reply SAD as auth:  authN by controller cid
+            of authZ that designates endpoint provider eid in role
+            routes /end/role/add and /end/role/cut to nullify
             key is cid.role.eid,  val = saider.qb64b of reply 'rpy' msg SAD
+
+        .lans is named subDB instance of CesrSuber with klas=Saider that maps
+            eid.scheme to said of reply SAD as auth: authN by endpoint provider
+            eid that designates scheme for url
+            route /loc/scheme   use null url to nullify
+            key is eid.scheme,  val = saider.qb64b of reply 'rpy' msg SAD
 
         .ends is named subDB instance of Komer that maps (cid, role, eid)
             to attributes about endpoint authorization where:
@@ -617,8 +620,13 @@ class Baser(dbing.LMDBer):
         self.rpes = subing.CatIoSetSuber(db=self, subkey='rpes.',
                                                       klas=(coring.Saider, ))
 
-        # eid AuthN reply indices maps key cid.role.eid to val said of end reply
+        # auth AuthN/AuthZ by controller at cid of endpoint provider at eid
+        # maps key=cid.role.eid to val=said of end reply
         self.eans = subing.CesrSuber(db=self, subkey='eans.', klas=coring.Saider)
+
+        # auth AuthN/AuthZ by endpoint provider at eid of location at scheme url
+        # maps key=cid.role.eid to val=said of end reply
+        self.lans = subing.CesrSuber(db=self, subkey='lans.', klas=coring.Saider)
 
         # service endpoint identifer (eid) auths keyed by controller cid.role.eid
         # data extracted from reply /end/role/add or /end/role/cut
