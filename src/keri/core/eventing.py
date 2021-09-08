@@ -1194,12 +1194,8 @@ def state(pre,
     return Serder(ked=ksd)  # return serialized ksd
 
 
-def query(pre,
-          res,
-          dt=None,
-          dta=None,
-          dtb=None,
-          sn=None,
+def query(res,
+          qry,
           version=Version,
           kind=Serials.json):
 
@@ -1209,9 +1205,8 @@ def query(pre,
 
      Parameters:
         pre is identifier prefix qb64
-        dig is digest of previous event qb64
-        sn is int sequence number
-        data is list of dicts of comitted data such as seals
+        res is str resouce to be queried
+        qry is dict of query parameter specific to the resource
         version is Version instance
         kind is serialization kind
 
@@ -1231,23 +1226,6 @@ def query(pre,
     """
     vs = Versify(version=version, kind=kind, size=0)
     ilk = Ilks.req
-
-    qry = dict(
-        i=pre
-    )
-
-    if dt is not None:
-        qry["dt"] = dt
-
-    if dta is not None:
-        qry["dta"] = dt
-
-    if dtb is not None:
-        qry["dtb"] = dt
-
-    if sn is not None:
-        qry["s"] = sn
-
 
     ked = dict(v=vs,  # version string
                t=ilk,
@@ -1969,7 +1947,6 @@ class Kever:
         # verify nxt from prior
         keys = ked["k"]
         if not self.nexter.verify(limen=tholder.limen, keys=keys):
-            print(keys)
             raise ValidationError("Mismatch nxt digest = {} with rotation"
                                   " sith = {}, keys = {} for evt = {}."
                                   "".format(self.nexter.qb64, tholder.thold, keys, ked))
@@ -2140,7 +2117,10 @@ class Kever:
         else:
             delegator = self.delegator
 
-        ssn = validateSN(sn=seqner.snh, inceptive=False)
+        #if self.local:  # if in local mode, accept the delegated events before verifying the delegator
+            #return delegator
+
+        ssn = self.validateSN(sn=seqner.snh, inceptive=False)
 
         # get the dig of the delegating event
         key = snKey(pre=delegator, sn=ssn)
@@ -2614,6 +2594,8 @@ class Kevery:
                         # create cue for receipt   direct mode for now
                         #  receipt of actual type is dependent on own type of identifier
                         self.cues.push(dict(kin="receipt", serder=serder))
+                    elif not self.direct:
+                        self.cues.push(dict(kin="notice", serder=serder))
 
                 else:  # maybe duplicitous
                     # check if duplicate of existing valid accepted event

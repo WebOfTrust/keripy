@@ -17,21 +17,22 @@ def printGroups(hab):
 
     """
     groups = hab.db.gids.getItemIter()
-    for (aid,), group in groups:
-        printGroup(hab, aid, group)
+    for (name,), group in groups:
+        printGroup(hab, name, group)
 
 
-def printGroup(hab, aid, group):
+def printGroup(hab, name, group):
     """
     Print identifier and participant information for a specific group
 
     Parameters:
         hab (Habitat): environment for whom to print groups
-        aid (str): qb64 of the identifier prefix of the group
+        name (str): human readable name for group identifier
         group (GroupIdentifier): the local identifier and list of participants
 
     """
-    printIdentifier(hab, aid)
+    print("Group: ", name)
+    printIdentifier(hab, group.gid)
 
     aids = group.aids
     parts = "Participants: \n" + ("\t{}\n" * len(aids))
@@ -55,6 +56,9 @@ def printIdentifier(hab, pre):
 
     print("Prefix:\t{}".format(pre))
     print("Seq No:\t{}".format(kever.sn))
+    if kever.delegated:
+        print("Delegated Identifier")
+
     print("\nWitnesses:")
     print("Count:\t\t{}".format(len(kever.wits)))
     print("Receipts:\t{}".format(len(wigs)))

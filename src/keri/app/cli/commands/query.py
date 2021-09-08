@@ -11,8 +11,8 @@ from hio.core.tcp import clienting
 
 from keri.app import directing, obtaining
 from keri.app.cli.common import displaying
-from keri.core import eventing, parsing
 from keri.app.cli.common import existing
+from keri.core import eventing, parsing
 
 logger = help.ogler.getLogger()
 
@@ -40,9 +40,9 @@ class QueryDoer(doing.DoDoer):
         self.wit = wit
         self.pre = pre
 
+        self.toRemove = list(doers)
         doers.extend([doing.doify(self.queryDo)])
         super(QueryDoer, self).__init__(doers=doers, **kwa)
-
 
     def queryDo(self, tymth, tock=0.0, **opts):
         """
@@ -69,20 +69,20 @@ class QueryDoer(doing.DoDoer):
 
         doifiedDoer = doing.doify(self.msgDo)
         self.extend([clientDoer, doifiedDoer])
+        self.toRemove.extend([clientDoer, doifiedDoer])
 
         msg = self.hab.query(self.pre, res="logs")  # Query for remote pre Event
         client.tx(msg)  # send to connected remote
+        yield 2.0
 
         while self.pre not in kevery.kevers:
             yield self.tock
 
-
         displaying.printIdentifier(self.hab, self.pre)
 
-        self.remove([self.ksDoer, self.dbDoer, self.habDoer, doifiedDoer, clientDoer])
+        self.remove(self.toRemove)
 
         return
-
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """

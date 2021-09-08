@@ -298,6 +298,9 @@ class Registry(dbing.LMDBer):
             pre is bytes of itdentifier prefix
             fn is int fn to resume replay. Earliset is fn=0
         """
+        if hasattr(pre, "encode"):
+            pre = pre.encode("utf-8")  # convert str to bytes
+
         return self.cntValsAllPre(db=self.tels, pre=pre, on=fn)
 
     def getTibs(self, key):

@@ -5,6 +5,7 @@ keri.app.indirecting module
 
 simple indirect mode demo support classes
 """
+import json
 
 import falcon
 from hio.base import doing
@@ -12,12 +13,12 @@ from hio.core import http
 from hio.core.tcp import serving
 from hio.help import decking
 
-from . import habbing, keeping, directing
+from . import habbing, keeping, directing, storing, httping
 from .. import help
 from ..app import obtaining
 from ..core import eventing, parsing, coring
 from ..db import basing
-from ..peer import exchanging, httping
+from ..peer import exchanging
 from ..vdr import verifying
 from ..vdr.eventing import Tevery
 
@@ -44,11 +45,11 @@ def setupWitness(name="witness", hab=None, mbx=None, temp=False, tcpPort=5631, h
     verfer = verifying.Verifier(name=name, hab=hab)
     app = falcon.App(cors_enable=True)
 
-    mbx = mbx if mbx is not None else exchanging.Mailboxer(name=name, temp=temp)
+    mbx = mbx if mbx is not None else storing.Mailboxer(name=name, temp=temp)
 
-    rep = httping.Respondant(hab=hab, mbx=mbx)
+    rep = storing.Respondant(hab=hab, mbx=mbx)
     httpHandler = HttpMessageHandler(hab=hab, app=app, rep=rep, verifier=verfer, mbx=mbx)
-    mbxer = httping.MailboxServer(app=app, hab=hab, mbx=mbx)
+    mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
 
     server = http.Server(port=httpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
@@ -311,7 +312,7 @@ class MailboxDirector(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, verifier=None, kvy=None, exc=None, rep=None, **kwa):
+    def __init__(self, hab, topics, verifier=None, kvy=None, exc=None, rep=None, cues=None, **kwa):
         """
         Initialize instance.
 
@@ -331,7 +332,9 @@ class MailboxDirector(doing.DoDoer):
         self.verifier = verifier
         self.exchanger = exc
         self.rep = rep
+        self.topics = topics
         self.pollers = []
+        self.cues = cues if cues is not None else decking.Deck()
 
         self.ims = bytearray()
 
@@ -344,7 +347,8 @@ class MailboxDirector(doing.DoDoer):
         #  neeeds unique kevery with ims per remoter connnection
         self.kvy = kvy if kvy is not None else eventing.Kevery(db=self.hab.db,
                                                                lax=False,
-                                                               local=False)
+                                                               local=False,
+                                                               direct=False)
 
         if self.verifier is not None:
             self.tevery = Tevery(tevers=self.verifier.tevers,
@@ -386,7 +390,7 @@ class MailboxDirector(doing.DoDoer):
         wits = self.hab.kever.wits
 
         for wit in wits:
-            poller = Poller(hab=self.hab, witness=wit)
+            poller = Poller(hab=self.hab, topics=self.topics, witness=wit)
             self.pollers.append(poller)
             self.extend([poller])
             _ = (yield self.tock)
@@ -459,8 +463,9 @@ class MailboxDirector(doing.DoDoer):
         """
         yield  # enter context
         while True:
-            for msg in self.hab.processCuesIter(self.kvy.cues):
-                # self.sendMessage(msg, label="chit or receipt or replay")
+            while self.kvy.cues:
+                cue = self.kvy.cues.popleft()
+                self.cues.append(cue)
                 yield  # throttle just do one cue at a time
             yield
 
@@ -550,15 +555,21 @@ class Poller(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, witness, msgs=None, **kwa):
+    def __init__(self, hab, witness, topics, msgs=None, **kwa):
         """
+        Returns doist compatible doing.Doer that polls a witness for mailbox messages
+        as SSE events
 
         Parameters:
-            client: http client from which to poll for SSE KERI event messages
-        """
+            hab:
+            witness:
+            topics:
+            msgs:
 
+        """
         self.hab = hab
         self.witness = witness
+        self.topics = topics
         self.msgs = None if msgs is not None else decking.Deck()
         doers = [doing.doify(self.eventDo)]
 
@@ -580,12 +591,17 @@ class Poller(doing.DoDoer):
 
         witrec = self.hab.db.wits.get(self.witness)
         if witrec is None:
-            witrec = basing.WitnessRecord(idx=0)
-        else:
-            witrec.idx += 1
+            witrec = basing.WitnessRecord(topics=dict())
 
-        msg = self.hab.query(pre=self.hab.pre, res="mbx", sn=witrec.idx)
+        topics = dict()
+        q = dict(pre=self.hab.pre, topics=topics)
+        for topic in self.topics:
+            if topic in witrec.topics:
+                topics[topic] = witrec.topics[topic] + 1
+            else:
+                topics[topic] = 0
 
+        msg = self.hab.query(pre=self.hab.pre, res="mbx", query=q)
         httping.createCESRRequest(msg, client)
 
         while client.requests:
@@ -596,10 +612,12 @@ class Poller(doing.DoDoer):
                 evt = client.events.popleft()
                 idx = evt["id"]
                 msg = evt["data"]
-                ser = coring.Serder(raw=msg.encode("utf-8"))
+                tpc = evt["name"]
+                # ser = coring.Serder(raw=msg.encode("utf-8"))
+
                 self.msgs.append(msg.encode("utf=8"))
 
-                witrec.idx = int(idx)
+                witrec.topics[tpc] = int(idx)
                 self.hab.db.wits.pin(self.witness, witrec)
                 yield
             yield
@@ -744,7 +762,7 @@ class HttpMessageHandler(doing.DoDoer):
         msg = bytearray(serder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
-        self.mbx.storeMsg(dest=cr.resource, msg=msg)
+        self.mbx.storeMsg(topic=cr.resource, msg=msg)
 
         rep.status = falcon.HTTP_202  # This is the default status
 

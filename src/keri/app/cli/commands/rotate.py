@@ -139,7 +139,7 @@ class RotateDoer(doing.DoDoer):
             self.extend(doers=[witDoer])
             yield self.tock
         else:  # "http"
-            mbx = indirecting.MailboxDirector(hab=self.hab)
+            mbx = indirecting.MailboxDirector(hab=self.hab, topics="/receipt")
             witDoer = agenting.WitnessReceiptor(hab=self.hab, klas=agenting.HttpWitnesser, msg=msg)
             self.extend(doers=[mbx, witDoer])
             yield self.tock

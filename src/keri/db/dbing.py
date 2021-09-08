@@ -1307,10 +1307,10 @@ class LMDBer:
             key = onKey(pre, on)  # start replay at this enty 0 is earliest
             count = 0
             if not cursor.set_range(key):  #  moves to val at key >= key
-                return count # no values end of db
+                return count  # no values end of db
 
             for val in cursor.iternext(values=False):  # get key, val at cursor
-                cpre, cn = splitKeyON(key)
+                cpre, cn = splitKeyON(val)
                 if cpre != pre:  # prev is now the last event for pre
                     break  # done
                 count = count+1

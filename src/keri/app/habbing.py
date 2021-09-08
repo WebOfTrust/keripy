@@ -480,12 +480,14 @@ class Habitat:
         return msg
 
 
-    def query(self, pre, res, dt=None, dta=None, dtb=None, sn=None):
+    def query(self, pre, res, query=None):
         """
         Returns query message for querying for a single element of type res
         """
         kever = self.kever
-        serder = eventing.query(pre=pre, res=res, dt=dt, dta=dta, dtb=dtb, sn=sn)
+        query = query if query is not None else dict()
+        query['i'] = pre
+        serder = eventing.query(res=res, qry=query)
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
         msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted

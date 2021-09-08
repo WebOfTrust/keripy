@@ -67,6 +67,7 @@ class Verifier:
 
         state = self.tevers[regk].vcState(vcid)
         if state is None or state is VcStates.revoked:
+            print("tever state", state, regk, vcid)
             return False
 
         # we don't know about this issuer

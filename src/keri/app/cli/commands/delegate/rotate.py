@@ -122,8 +122,6 @@ class DelegateRotateDoer(doing.DoDoer):
                                    sn=delK.sn + 1,
                                    nxt=coring.Nexter(digs=[diger.qb64 for diger in digers]).qb64)
 
-        print(rotSrdr.pretty())
-
         seal = dict(i=rotSrdr.pre,
                     s=rotSrdr.ked["s"],
                     d=rotSrdr.dig)

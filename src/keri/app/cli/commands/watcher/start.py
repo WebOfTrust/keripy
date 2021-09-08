@@ -11,10 +11,8 @@ import falcon
 from hio.core import http
 from hio.core.tcp import serving
 from keri import help, kering
-from keri.app import directing, indirecting, watching, habbing
+from keri.app import directing, indirecting, watching, habbing, storing
 from keri.app.cli.common import existing
-from keri.peer import exchanging, httping
-
 
 parser = argparse.ArgumentParser(description='Start watcher')
 parser.set_defaults(handler=lambda args: startWatcher(args))
@@ -72,14 +70,13 @@ def setupWatcher(name="watcher", controller=None, tcpPort=5651, httpPort=5652):
     hab, doers = existing.openHabitat(name=name, transferable=False)
     app = falcon.App(cors_enable=True)
 
-    mbx = exchanging.Mailboxer(name=name)
-    rep = httping.Respondant(hab=hab, mbx=mbx)
+    mbx = storing.Mailboxer(name=name)
+    rep = storing.Respondant(hab=hab, mbx=mbx)
 
-    rotateHandler = watching.RotateIdentifierHandler(hab=hab, reps=rep.reps)
-    exchanger = exchanging.Exchanger(hab=hab, controller=controller, handlers=[rotateHandler])
+    kiwiServer = watching.KiwiServer(hab=hab, app=app, rep=rep, controller=controller)
 
-    httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep, exchanger=exchanger)
-    mbxer = httping.MailboxServer(app=app, hab=hab, mbx=mbx)
+    httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep)
+    mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
 
     server = http.Server(port=httpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
@@ -87,8 +84,8 @@ def setupWatcher(name="watcher", controller=None, tcpPort=5651, httpPort=5652):
     server = serving.Server(host="", port=tcpPort)
     serverDoer = serving.ServerDoer(server=server)
 
-    directant = directing.Directant(hab=hab, server=server, exc=exchanger)
+    directant = directing.Directant(hab=hab, server=server)
 
-    doers.extend([directant, serverDoer, mbxer, httpServerDoer, httpHandler, rep, exchanger])
+    doers.extend([directant, serverDoer, mbxer, httpServerDoer, httpHandler, rep, kiwiServer])
 
     return doers

@@ -1,146 +1,140 @@
 # -*- encoding: utf-8 -*-
 """
-keri.peer.httping module
+keri.app.storing module
 
 """
-import json
 import random
-from dataclasses import dataclass
 
 import falcon
 from hio.base import doing
 from hio.core import http
 from hio.help import helping, Hict, decking
 
+from . import obtaining, forwarding, httping, agenting
 from .. import help
-from .. import kering
-from ..app import obtaining, forwarding
 from ..core import coring
-from ..core.coring import Ilks
-from ..help.helping import nowIso8601
-from ..peer import exchanging
+from ..core.coring import MtrDex
+from ..db import dbing, subing
 
 logger = help.ogler.getLogger()
 
-CESR_CONTENT_TYPE = "application/cesr+json"
-CESR_ATTACHMENT_HEADER = "CESR-ATTACHMENT"
-CESR_DATE_HEADER = "CESR-DATE"
-CESR_RECIPIENT_HEADER = "CESR-RECIPIENT"
 
 
-@dataclass
-class CesrRequest:
-    resource: str
-    date: str
-    payload: dict
-    modifiers: dict
-    attachments: str
-
-
-def parseCesrHttpRequest(req, prefix=None):
+class Mailboxer(dbing.LMDBer):
     """
-    Parse Falcon HTTP request and create a CESR message from the body of the request and the two
-    CESR HTTP headers (Date, Attachment).
-
-    Parameters
-        req (falcon.Request) http request object in CESR format:
+    Mailboxer stores exn messages in order and provider iterator access at an index.
 
     """
-    if req.content_type != CESR_CONTENT_TYPE:
-        raise falcon.HTTPError(falcon.HTTP_NOT_ACCEPTABLE,
-                               title="Content type error",
-                               description="Unacceptable content type.")
+    TailDirPath = "keri/mbx"
+    AltTailDirPath = ".keri/mbx"
+    TempPrefix = "keri_mbx_"
 
-    try:
-        data = json.load(req.bounded_stream)
-    except ValueError:
-        raise falcon.HTTPError(falcon.HTTP_400,
-                               title="Malformed JSON",
-                               description="Could not decode the request body. The "
-                                           "JSON was incorrect.")
+    def __init__(self, name="mbx", headDirPath=None, reopen=True, **kwa):
+        """
 
-    resource = req.path
-    if prefix is not None:
-        resource = resource.removeprefix(prefix)
+        Parameters:
+            headDirPath:
+            dirMode:
+            reopen:
+            kwa:
+        """
+        self.tpcs = None
+        self.msgs = None
 
-    if CESR_DATE_HEADER not in req.headers:
-        raise falcon.HTTPError(falcon.HTTP_UNAUTHORIZED,
-                               title="Date error",
-                               description="Missing required date header.")
+        super(Mailboxer, self).__init__(name=name, headDirPath=headDirPath, reopen=reopen, **kwa)
 
-    dt = req.headers[CESR_DATE_HEADER]
+    def reopen(self, **kwa):
+        """
 
-    if CESR_ATTACHMENT_HEADER not in req.headers:
-        raise falcon.HTTPError(falcon.HTTP_PRECONDITION_FAILED,
-                               title="Attachment error",
-                               description="Missing required attachment header.")
-    attachment = req.headers[CESR_ATTACHMENT_HEADER]
+        :param kwa:
+        :return:
+        """
+        super(Mailboxer, self).reopen(**kwa)
 
-    cr = CesrRequest(
-        resource=resource,
-        date=dt,
-        payload=data,
-        modifiers=req.params,
-        attachments=attachment)
+        self.tpcs = self.env.open_db(key=b'tpcs.', dupsort=True)
+        self.msgs = subing.Suber(db=self, subkey='msgs.')  # key states
 
-    return cr
+        return self.env
+
+    def delTopic(self, key):
+        """
+        Use snKey()
+        Deletes value at key.
+        Returns True If key exists in database Else False
+        """
+        return self.delIoSetVals(self.tpcs, key)
+
+    def appendToTopic(self, topic, val):
+        """
+        Return first seen order number int, fn, of appended entry.
+        Computes fn as next fn after last entry.
+
+        Append val to end of db entries with same topic but with fn incremented by
+        1 relative to last preexisting entry at pre.
+
+        Parameters:
+            topic is bytes identifier prefix/topic for message
+            val is event digest
+        """
+        return self.appendIoSetVal(db=self.tpcs, key=topic, val=val)
+
+    def getTopicMsgs(self, topic, fn=0):
+        """
+        Returns:
+             ioset (oset): the insertion ordered set of values at same apparent
+             effective key.
+             Uses hidden ordinal key suffix for insertion ordering.
+             The suffix is appended and stripped transparently.
+
+         Parameters:
+             topic (bytes): Apparent effective key
+             fn (int) starting index
+        """
+        if hasattr(topic, "encode"):
+            topic = topic.encode("utf-8")
+
+        digs = self.getIoSetVals(db=self.tpcs, key=topic, ion=fn)
+        msgs = []
+        for dig in digs:
+            if msg := self.msgs.get(keys=dig):
+                msgs.append(msg.encode("utf-8"))
+        return msgs
+
+    def storeMsg(self, topic, msg):
+        """
+        Add exn event to mailbox of dest identifier
+
+        Parameters:
+            msg (bytes):
+            topic (qb64b):
+
+        """
+        if hasattr(topic, "encode"):
+            topic = topic.encode("utf-8")
+
+        if hasattr(msg, "encode"):
+            msg = msg.encode("utf-8")
 
 
-def createCESRRequest(msg, client, date=None):
-    """
-    Turns a KERI message into a CESR http request against the provided hio http Client
+        digb = coring.Diger(ser=msg, code=MtrDex.Blake3_256).qb64b
+        self.appendToTopic(topic=topic, val=digb)
+        return self.msgs.pin(keys=digb, val=msg)
 
-    Parameters
-       msg:  KERI message parsable as Serder.raw
-       client: hio http Client that will send the message as a CESR request
 
-    """
+    def cloneTopicIter(self, topic, fn=0):
+        """
+        Returns iterator of first seen exn messages with attachments for the
+        identifier prefix pre starting at first seen order number, fn.
 
-    dt = date if date is not None else nowIso8601()
-    try:
-        serder = coring.Serder(raw=msg)
-    except kering.ShortageError as ex:  # need more bytes
-        raise kering.ExtractionError("unable to extract a valid message to send as HTTP")
-    else:  # extracted successfully
-        del msg[:serder.size]  # strip off event from front of ims
+        """
+        if hasattr(topic, 'encode'):
+            topic = topic.encode("utf-8")
 
-    ilk = serder.ked["t"]
-    attachments = bytearray(msg)
-    query = serder.ked["q"] if "q" in serder.ked else None
+        for (key, dig) in self.getIoSetItemsIter(self.tpcs, key=topic, ion=fn):
+            topic, ion = dbing.unsuffix(key)
+            if msg := self.msgs.get(keys=dig):
+                yield ion, topic, msg.encode("utf-8")
 
-    if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.ksn, Ilks.rct):
-        resource = "/kel"
-        body = serder.raw
-    elif ilk in (Ilks.req,):
-        resource = "/" + ilk + "/" + serder.ked['r']
-        body = serder.raw
-    elif ilk in (Ilks.fwd,):
-        resource = "/" + ilk + "/" + serder.ked['r']
-        body = json.dumps(serder.ked["a"]).encode("utf-8")
-    elif ilk in (Ilks.exn,):
-        resource = "/" + ilk + serder.ked['r']
-        body = json.dumps(serder.ked["d"]).encode("utf-8")
-        dt = serder.ked["dt"]
-    elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
-        resource = "/tel"
-        body = serder.raw
-    else:
-        raise kering.InvalidEventTypeError("Event type {} is not handled by http clients".format(ilk))
-
-    headers = Hict([
-        ("Content-Type", CESR_CONTENT_TYPE),
-        ("Content-Length", len(body)),
-        (CESR_DATE_HEADER, dt),
-        (CESR_ATTACHMENT_HEADER, attachments)
-    ])
-
-    client.request(
-        method="POST",
-        path=resource,
-        qargs=query,
-        headers=headers,
-        body=body
-    )
 
 
 class MailboxServer(doing.DoDoer):
@@ -149,7 +143,7 @@ class MailboxServer(doing.DoDoer):
 
     """
 
-    def __init__(self, mbx: exchanging.Mailboxer, app=None, **kwa):
+    def __init__(self, mbx: Mailboxer, app=None, **kwa):
         """
         Create Mailbox server for storing messages on a Witness for a witnessed
         identifier.
@@ -179,7 +173,15 @@ class MailboxServer(doing.DoDoer):
               rep (Response) Falcon HTTP response
 
         """
-        rep.stream = self.mailboxGenerator(query=req.params, resp=rep)
+        pre = req.params["i"]
+        pt = req.params["topics"]
+
+        topics = dict()
+        for t in pt:
+            key, val = t.split("=")
+            topics[key] = int(val)
+
+        rep.stream = self.mailboxGenerator(pre=pre, topics=topics, resp=rep)
 
     def on_post(self, req, rep):
         """
@@ -190,26 +192,26 @@ class MailboxServer(doing.DoDoer):
               rep (Response) Falcon HTTP response
 
         """
-        cr = parseCesrHttpRequest(req=req)
+        cr = httping.parseCesrHttpRequest(req=req)
 
-        q = cr.payload['q']
+        query = cr.payload['q']
+        topics = query['topics']
+        pre = query["pre"]
 
-        rep.stream = self.mailboxGenerator(query=q, resp=rep)
+        rep.stream = self.mailboxGenerator(pre=pre, topics=topics, resp=rep)
 
 
     @helping.attributize
-    def mailboxGenerator(self, me, query=None, resp=None):
+    def mailboxGenerator(self, me, pre=None, topics=None, resp=None):
         """
 
         Parameters:
             me:
-            query:
+            pre:
+            topics:
             resp:
 
         """
-        pre = coring.Prefixer(qb64=query["i"])
-        idx = int(query["s"]) if "s" in query else 0
-
         me._status = http.httping.OK
 
         headers = Hict()
@@ -219,14 +221,16 @@ class MailboxServer(doing.DoDoer):
         me._headers = headers
 
         yield b'retry: 1000\n'
-
         while True:
-            for fn, msg in self.mbx.clonePreIter(pre.qb64b, idx):
-                data = bytearray("id: {}\nevent: data\ndata: ".format(fn).encode("utf-8"))
-                data.extend(msg.encode("utf-8"))
-                data.extend(b'\n\n')
-                idx += 1
-                yield data
+            for topic, idx in topics.items():
+                key = pre + topic
+                for fn, _, msg in self.mbx.cloneTopicIter(key, idx):
+                    data = bytearray("id: {}\nevent: {}\ndata: ".format(fn, topic).encode("utf-8"))
+                    data.extend(msg)
+                    data.extend(b'\n\n')
+                    idx = idx + 1
+                    yield data
+                topics[topic] = idx
 
             yield b''
 
@@ -254,7 +258,7 @@ class Respondant(doing.DoDoer):
         self.cues = cues if cues is not None else decking.Deck()
 
         self.hab = hab
-        self.mbx = mbx if mbx is not None else exchanging.Mailboxer(name=hab.name)
+        self.mbx = mbx if mbx is not None else Mailboxer(name=hab.name)
 
         doers = [doing.doify(self.responseDo), doing.doify(self.cueDo)]
         super(Respondant, self).__init__(doers=doers, **kwa)
@@ -282,7 +286,10 @@ class Respondant(doing.DoDoer):
                 rep = self.reps.popleft()
                 recipient = rep["dest"]
                 exn = rep["rep"]
+                topic = rep["topic"]
 
+                while recipient not in self.hab.kevers:
+                    yield self.tock
 
                 kever = self.hab.kevers[recipient]
                 if kever is None:
@@ -292,7 +299,7 @@ class Respondant(doing.DoDoer):
                 if len(kever.wits) == 0:
                     msg = bytearray(exn.raw)
                     msg.extend(self.hab.sanction(exn))
-                    self.mbx.storeMsg(dest=recipient, msg=msg)
+                    self.mbx.storeMsg(topic=recipient, msg=msg)
                 else:
                     wit = random.choice(kever.wits)
                     loc = obtaining.getwitnessbyprefix(wit)
@@ -302,11 +309,11 @@ class Respondant(doing.DoDoer):
 
                     self.extend([clientDoer])
 
-                    fwd = forwarding.forward(pre=recipient, serder=exn)
+                    fwd = forwarding.forward(pre=recipient, serder=exn, topic=topic)
                     msg = bytearray(fwd.raw)
                     msg.extend(self.hab.sanction(exn))
 
-                    createCESRRequest(msg, client)
+                    httping.createCESRRequest(msg, client, date=exn.ked["dt"])
 
                     while not client.responses:
                         yield self.tock
@@ -336,11 +343,11 @@ class Respondant(doing.DoDoer):
                 if cueKin in ("receipt",):  # cue to receipt a received event from other pre
                     serder = cue["serder"]  # Serder of received event for other pre
                     msg.extend(self.hab.receipt(serder))
-                    self.mbx.storeMsg(dest=serder.preb, msg=msg)
+                    self.mbx.storeMsg(topic=serder.preb+b'/receipt', msg=msg)
                 elif cueKin in ("replay",):
                     dest = cue["dest"]
                     msgs = cue["msgs"]
-                    self.mbx.storeMsg(dest=dest.encode("utf-8"), msg=msgs)
+                    self.mbx.storeMsg(topic=dest+'/replay', msg=msgs)
 
                 yield self.tock
 
