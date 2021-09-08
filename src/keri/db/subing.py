@@ -1585,10 +1585,6 @@ class CesrDupSuber(DupSuber):
             subkey (str):  LMDB sub database key
             klas (Type[coring.Matter]): Class reference to subclass of Matter
         """
-        if not (issubclass(klas, coring.Matter) or
-                issubclass(klas, coring.Indexer) or
-                issubclass(kas, coring.Counter)):
-            raise ValueError("Invalid klas type={}".format(klas))
         super(CesrDupSuber, self).__init__(*pa, **kwa)
         self.klas = klas
 
