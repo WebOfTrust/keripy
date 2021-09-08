@@ -90,7 +90,7 @@ def test_suber():
         sdb.put(keys=("a","3"), val=y)
         sdb.put(keys=("a","4"), val=z)
 
-        items = [(keys, val) for keys, val in sdb.getAllItemIter()]
+        items = [(keys, val) for keys, val in sdb.getItemIter()]
         assert items == [(('a', '1'), w),
                         (('a', '2'), x),
                         (('a', '3'), y),
@@ -102,12 +102,12 @@ def test_suber():
         sdb.put(keys=("ac","4"), val=z)
 
         topkeys = ("b","")  # last element empty to force trailing separator
-        items = [(keys, val) for keys, val in sdb.getTopItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in sdb.getItemIter(keys=topkeys)]
         assert items == [(('b', '1'), w),
                          (('b', '2'), x)]
 
         topkeys = ("a","")  # last element empty to force trailing separator
-        items = [(keys, val) for keys, val in sdb.getTopItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in sdb.getItemIter(keys=topkeys)]
         assert items == [(('a', '1'), w),
                         (('a', '2'), x),
                         (('a', '3'), y),
@@ -174,7 +174,7 @@ def test_dup_suber():
         for i, val in enumerate(sdb.getIter(keys=keys1)):
             assert val == actual[i]
 
-        items = [(keys, val) for keys, val in sdb.getAllItemIter()]
+        items = [(keys, val) for keys, val in sdb.getItemIter()]
         assert items == [(('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0002'), 'A real charmer!'),
@@ -184,7 +184,7 @@ def test_dup_suber():
 
         assert sdb.put(keys=("test", "blue"), vals=[sal, sue, sam])
         topkeys = ("test", "")
-        items = [(keys, val) for keys, val in sdb.getTopItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in sdb.getItemIter(keys=topkeys)]
         assert items == [(('test', 'blue'), 'A real charmer!'),
                          (('test', 'blue'), 'Hello sailer!'),
                          (('test', 'blue'), 'Not my type.')]
@@ -281,7 +281,7 @@ def test_ioset_suber():
         for i, val in enumerate(sdb.getIter(keys=keys1)):
             assert val == actuals[i]
 
-        items = [(keys, val) for keys, val in sdb.getAllItemIter()]
+        items = [(keys, val) for keys, val in sdb.getItemIter()]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0002'), 'Not my type.'),
@@ -289,35 +289,35 @@ def test_ioset_suber():
                         (('test_key', '0002'), 'A real charmer!')]
 
 
-        items = list(sdb.getAllIoItemIter())
+        items = list(sdb.getIoItemIter())
         assert items ==  [(('test_key', '0001', 'AAAAAAAAAAAAAAAAAAAAAA'), 'See ya later.'),
                         (('test_key', '0001', 'AAAAAAAAAAAAAAAAAAAAAB'), 'Hey gorgeous!'),
                         (('test_key', '0002', 'AAAAAAAAAAAAAAAAAAAAAA'), 'Not my type.'),
                         (('test_key', '0002', 'AAAAAAAAAAAAAAAAAAAAAB'), 'Hello sailer!'),
                         (('test_key', '0002', 'AAAAAAAAAAAAAAAAAAAAAC'), 'A real charmer!')]
 
-        items = sdb.getIoItem(keys=keys1)
+        items = sdb.getIoSetItem(keys=keys1)
         assert items == [(('test_key', '0002', 'AAAAAAAAAAAAAAAAAAAAAA'), 'Not my type.'),
                          (('test_key', '0002', 'AAAAAAAAAAAAAAAAAAAAAB'), 'Hello sailer!'),
                          (('test_key', '0002', 'AAAAAAAAAAAAAAAAAAAAAC'), 'A real charmer!')]
 
-        items = [(iokeys, val) for iokeys,  val in  sdb.getIoItemIter(keys=keys0)]
+        items = [(iokeys, val) for iokeys,  val in  sdb.getIoSetItemIter(keys=keys0)]
         assert items == [(('test_key', '0001', 'AAAAAAAAAAAAAAAAAAAAAA'), 'See ya later.'),
                          (('test_key', '0001', 'AAAAAAAAAAAAAAAAAAAAAB'), 'Hey gorgeous!')]
 
         assert sdb.put(keys=("test", "pop"), vals=[sal, sue, sam])
         topkeys = ("test", "")
-        items = [(keys, val) for keys, val in sdb.getTopItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in sdb.getItemIter(keys=topkeys)]
         assert items == [(('test', 'pop'), 'Not my type.'),
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
 
-        items = list(sdb.getTopIoItemIter(keys=topkeys))
+        items = list(sdb.getIoItemIter(keys=topkeys))
         assert items == [(('test', 'pop', 'AAAAAAAAAAAAAAAAAAAAAA'), 'Not my type.'),
                          (('test', 'pop', 'AAAAAAAAAAAAAAAAAAAAAB'), 'Hello sailer!'),
                          (('test', 'pop', 'AAAAAAAAAAAAAAAAAAAAAC'), 'A real charmer!')]
 
-        for iokeys, val in sdb.getAllIoItemIter():
+        for iokeys, val in sdb.getIoItemIter():
             assert sdb.remIokey(iokeys=iokeys)
 
         assert sdb.cnt(keys=keys0) == 0
@@ -420,7 +420,7 @@ def test_serder_suber():
         sdb.put(keys=("a","1"), val=srdr0)
         sdb.put(keys=("a","2"), val=srdr1)
 
-        items = [(keys, srdr.dig) for keys, srdr in sdb.getAllItemIter()]
+        items = [(keys, srdr.dig) for keys, srdr in sdb.getItemIter()]
         assert items == [(('a', '1'), srdr0.dig),
                          (('a', '2'), srdr1.dig)]
 
@@ -429,7 +429,7 @@ def test_serder_suber():
         assert sdb.put(keys=("bc","1"), val=srdr0)
 
         topkeys =  ("b", "")  # append empty str to force trailing .sep
-        items = [(keys, srdr.dig) for keys, srdr in sdb.getTopItemIter(keys=topkeys)]
+        items = [(keys, srdr.dig) for keys, srdr in sdb.getItemIter(keys=topkeys)]
         assert items == [(('b', '1'), srdr0.dig),
                          (('b', '2'), srdr1.dig)]
 
@@ -512,7 +512,7 @@ def test_serder_dup_suber():
         for i, val in enumerate(sdb.getIter(keys=keys1)):
             assert val.ked == keds[i]
 
-        items = [(keys, val.ked) for keys, val in sdb.getAllItemIter()]
+        items = [(keys, val.ked) for keys, val in sdb.getItemIter()]
         assert items == [(('blue', 'back'),
                         {'v': 'KERI10JSON0000c1_',
                          'i': 'BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y',
@@ -569,7 +569,7 @@ def test_serder_dup_suber():
         assert sdb.put(keys=keys4, vals=[srdr0, srdr1, srdr2])
 
         topkeys =  ("red", "")  # append empty str to force trailing .sep
-        items = [(keys, val.ked) for keys, val in sdb.getTopItemIter(keys=topkeys)]
+        items = [(keys, val.ked) for keys, val in sdb.getItemIter(keys=topkeys)]
         assert items == [(('red', 'side'),
                         {'v': 'KERI10JSON0000c1_',
                          'i': 'BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y',
@@ -742,7 +742,7 @@ def test_cesr_suber():
         assert sdb.put(keys=("a","1"), val=val0)
         assert sdb.put(keys=("a","2"), val=val1)
 
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getAllItemIter()]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter()]
         assert items == [(('a', '1'), val0.qb64),
                          (('a', '2'), val1.qb64)]
 
@@ -787,7 +787,7 @@ def test_cesr_suber():
         assert sdb.put(keys=("a","1"), val=val0)
         assert sdb.put(keys=("a","2"), val=val1)
 
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getAllItemIter()]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter()]
         assert items == [(('a', '1'), val0.qb64),
                          (('a', '2'), val1.qb64)]
 
@@ -796,7 +796,7 @@ def test_cesr_suber():
         assert sdb.put(keys=("bc","1"), val=val0)
 
         topkeys =  ("b", "")  # append empty str to force trailing .sep
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getTopItemIter(keys=topkeys)]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter(keys=topkeys)]
         assert items == [(('b', '1'), val0.qb64),
                          (('b', '2'), val1.qb64)]
 
@@ -818,9 +818,9 @@ def test_cesr_suber():
     """Done Test"""
 
 
-def test_multi_suber():
+def test_cat_suber():
     """
-    Test MultiSuber LMDBer sub database class
+    Test CatSuber LMDBer sub database class
     """
 
     with dbing.openLMDB() as db:
@@ -893,7 +893,7 @@ def test_multi_suber():
         assert sdb.put(keys1, vals1)
 
         items = [(keys, [val.qb64 for val in vals])
-                                       for keys, vals in sdb.getAllItemIter()]
+                                       for keys, vals in sdb.getItemIter()]
         assert items == [(('alpha', 'dog'), [matter0.qb64]),
                          (('beta', 'fish'), [matter1.qb64])]
 
@@ -904,7 +904,7 @@ def test_multi_suber():
 
         topkeys = ("b","")  # last element empty to force trailing separator
         items = [(keys, [val.qb64 for val in vals])
-                            for keys, vals in  sdb.getTopItemIter(keys=topkeys)]
+                            for keys, vals in  sdb.getItemIter(keys=topkeys)]
         assert items == [(('b', '1'), [matter0.qb64]),
                          (('b', '2'), [matter1.qb64])]
 
@@ -1091,7 +1091,7 @@ def test_cat_ioset_suber():
         assert sdb.put(keys=keys2, vals=[vals0, vals2])
 
         items = [(keys, [val.qb64 for val in  vals])
-                                         for keys, vals in sdb.getAllItemIter()]
+                                         for keys, vals in sdb.getItemIter()]
         assert items == [
                          (keys0, [sqr0.qb64, dgr0.qb64]),
                          (keys0, [sqr1.qb64, dgr1.qb64]),
@@ -1101,7 +1101,7 @@ def test_cat_ioset_suber():
                         ]
 
         items = [(iokeys, [val.qb64 for val in  vals])
-                                      for iokeys, vals in sdb.getAllIoItemIter()]
+                                      for iokeys, vals in sdb.getIoItemIter()]
         assert items ==  [
                           (keys0 + ('AAAAAAAAAAAAAAAAAAAAAA', ), [sqr0.qb64, dgr0.qb64]),
                           (keys0 + ('AAAAAAAAAAAAAAAAAAAAAB', ), [sqr1.qb64, dgr1.qb64]),
@@ -1111,11 +1111,11 @@ def test_cat_ioset_suber():
                          ]
 
         items = [(iokeys, [val.qb64 for val in vals])
-                                 for iokeys, vals in sdb.getIoItem(keys=keys1)]
+                                 for iokeys, vals in sdb.getIoSetItem(keys=keys1)]
         assert items == [(keys1 +  ('AAAAAAAAAAAAAAAAAAAAAA', ), [sqr2.qb64, dgr2.qb64])]
 
         items = [(iokeys, [val.qb64 for val in vals])
-                             for iokeys, vals in  sdb.getIoItemIter(keys=keys0)]
+                             for iokeys, vals in  sdb.getIoSetItemIter(keys=keys0)]
         assert items == [
                         (keys0 + ('AAAAAAAAAAAAAAAAAAAAAA', ), [sqr0.qb64, dgr0.qb64]),
                         (keys0 + ('AAAAAAAAAAAAAAAAAAAAAB', ), [sqr1.qb64, dgr1.qb64]),
@@ -1124,21 +1124,21 @@ def test_cat_ioset_suber():
 
         topkeys = ("a", "")
         items = [(keys, [val.qb64 for val in vals])
-                            for keys, vals in sdb.getTopItemIter(keys=topkeys)]
+                            for keys, vals in sdb.getItemIter(keys=topkeys)]
         assert items == [
                           (keys0, [sqr0.qb64, dgr0.qb64]),
                           (keys0, [sqr1.qb64, dgr1.qb64]),
                         ]
 
         items = [(iokeys, [val.qb64 for val in vals])
-                             for iokeys, vals in sdb.getTopIoItemIter(keys=topkeys)]
+                             for iokeys, vals in sdb.getIoItemIter(keys=topkeys)]
 
         assert items == [
                         (keys0 + ('AAAAAAAAAAAAAAAAAAAAAA', ), [sqr0.qb64, dgr0.qb64]),
                         (keys0 + ('AAAAAAAAAAAAAAAAAAAAAB', ), [sqr1.qb64, dgr1.qb64]),
                         ]
 
-        for iokeys, val in sdb.getAllIoItemIter():
+        for iokeys, val in sdb.getIoItemIter():
             assert sdb.remIokey(iokeys=iokeys)
 
         assert sdb.cnt(keys=keys0) == 0
@@ -1240,7 +1240,7 @@ def test_cesr_dup_suber():
         assert pres == [val3.qb64] == [pre3]  # lexicographic order
 
 
-        items = [(keys, val.qb64) for keys, val in sdb.getAllItemIter()]
+        items = [(keys, val.qb64) for keys, val in sdb.getItemIter()]
         assert items == [(('alpha', 'dog'), 'B7K0gzhcQPYGGwTmuupUhWk1x4ejWzwEHHzqPx5_yZ-w'),
                          (('beta', 'cat'), 'BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y'),
                          (('beta', 'cat'), 'BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'),
@@ -1249,7 +1249,7 @@ def test_cesr_dup_suber():
 
 
         topkeys = ("beta", "")  # append empty str to force trailing .sep
-        items = [(keys, val.qb64) for keys, val in sdb.getTopItemIter(keys=topkeys)]
+        items = [(keys, val.qb64) for keys, val in sdb.getItemIter(keys=topkeys)]
         assert items == [(('beta', 'cat'), 'BGzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y'),
                          (('beta', 'cat'), 'BQPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'),
                          (('beta', 'cat'), 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc')]
@@ -1388,7 +1388,7 @@ def test_signer_suber():
         assert sdb.put(keys=signer0.verfer.qb64b, val=signer0)
         assert sdb.put(keys=signer1.verfer.qb64b, val=signer1)
 
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getAllItemIter()]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter()]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                          ((signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -1398,7 +1398,7 @@ def test_signer_suber():
         assert sdb.put(keys=("ab", signer1.verfer.qb64), val=signer1)
 
         topkeys = ("a", "")  # append empty str to force trailing .sep
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getTopItemIter(keys=topkeys)]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter(keys=topkeys)]
         assert items == [(("a", signer1.verfer.qb64), signer1.qb64),
                          (("a", signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -1523,7 +1523,7 @@ def test_crypt_signer_suber():
         assert sdb.put(keys=signer0.verfer.qb64b, val=signer0)
         assert sdb.put(keys=signer1.verfer.qb64b, val=signer1)
 
-        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getAllItemIter()]
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getItemIter()]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                          ((signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -1563,7 +1563,7 @@ def test_crypt_signer_suber():
         assert sdb.put(keys=signer0.verfer.qb64b, val=signer0, encrypter=encrypter0)
         assert sdb.put(keys=signer1.verfer.qb64b, val=signer1, encrypter=encrypter0)
 
-        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getAllItemIter(decrypter=decrypter0)]
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getItemIter(decrypter=decrypter0)]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                              ((signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -1573,7 +1573,7 @@ def test_crypt_signer_suber():
         assert sdb.put(keys=("ab", signer1.verfer.qb64), val=signer1, encrypter=encrypter0)
 
         topkeys = ("a", "")  # append empty str to force trailing .sep
-        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getTopItemIter(keys=topkeys,
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getItemIter(keys=topkeys,
                                                             decrypter=decrypter0)]
         assert items == [(("a", signer1.verfer.qb64 ), signer1.qb64),
                           (("a", signer0.verfer.qb64 ), signer0.qb64)]
@@ -1582,10 +1582,10 @@ def test_crypt_signer_suber():
         # test re-encrypt
         encrypter1 = coring.Encrypter(verkey=cryptsigner1.verfer.qb64)
         decrypter1 = coring.Decrypter(seed=cryptsigner1.qb64b)
-        for keys, sgnr in sdb.getAllItemIter(decrypter=decrypter0):
+        for keys, sgnr in sdb.getItemIter(decrypter=decrypter0):
             sdb.pin(keys, sgnr, encrypter=encrypter1)
 
-        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getAllItemIter(decrypter=decrypter1)]
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getItemIter(decrypter=decrypter1)]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                          ((signer0.verfer.qb64, ), signer0.qb64),
                          (("a", signer1.verfer.qb64, ), signer1.qb64),

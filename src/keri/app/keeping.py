@@ -784,7 +784,7 @@ class Manager:
 
             # private signing key seeds
             # keys is tuple == (verkey.qb64,) .pris database auto decrypts
-            for keys, signer in self.ks.pris.getAllItemIter(decrypter=self.decrypter):
+            for keys, signer in self.ks.pris.getItemIter(decrypter=self.decrypter):
                 self.ks.pris.pin(keys, signer, encrypter=self.encrypter)
 
         self.ks.gbls.pin("aeid", aeid)  # set aeid in db

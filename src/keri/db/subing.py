@@ -105,21 +105,7 @@ class SuberBase():
         return (val.decode("utf-8") if hasattr(val, "decode") else val)
 
 
-
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb
-
-        Returns:
-            iterator: of tuples of keys tuple and val bytes for
-            each entry in db
-
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), bytes(val).decode("utf-8"))
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable]):
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
             iterator (Iterator): tuple (key, val) over the all the items in
@@ -587,21 +573,7 @@ class IoSetSuber(SuberBase):
                                        sep=self.sep)
 
 
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb. Each entry at a
-        given key including all io set members is yielded as a separate item.
-
-        Returns:
-            iterator (Iterator): of tuples of keys tuple and val str for
-                           each entry in db. Raises StopIteration when done
-        """
-        for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            key, ion = dbing.unsuffix(iokey, sep=self.sep)
-            yield (self._tokeys(key), self._decode(bytes(val)))
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable]):
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Return iterator over all the items in top branch defined by keys where
         keys may be truncation of full branch.
@@ -625,8 +597,7 @@ class IoSetSuber(SuberBase):
             yield (self._tokeys(key), self._decode(bytes(val)))
 
 
-
-    def getIoItem(self, keys: Union[str, Iterable]):
+    def getIoSetItem(self, keys: Union[str, Iterable]):
         """
         Gets (iokeys, val) ioitems list at key made from keys where key is
         apparent effective key  and ioitems all have same apparent effective key
@@ -635,7 +606,7 @@ class IoSetSuber(SuberBase):
             keys (Iterable): of key strs to be combined in order to form key
 
         Returns:
-            items (Itearable):  each item in list is tuple (iokeys, val) where each
+            items (Iterable):  each item in list is tuple (iokeys, val) where each
                     iokeys is actual key tuple with hidden suffix and
                     each val is str
                     empty list if no entry at keys
@@ -647,7 +618,7 @@ class IoSetSuber(SuberBase):
                                                   sep=self.sep)])
 
 
-    def getIoItemIter(self, keys: Union[str, Iterable]):
+    def getIoSetItemIter(self, keys: Union[str, Iterable]):
         """
         Gets (iokeys, val) ioitems  iterator at key made from keys where key is
         apparent effective key and items all have same apparent effective key
@@ -669,22 +640,7 @@ class IoSetSuber(SuberBase):
             yield (self._tokeys(iokey), self._decode(bytes(val)))
 
 
-    def getAllIoItemIter(self):
-        """
-        Return iterator over the all the items in subdb. Each entry at a
-        given key including set members is yielded as a separate item.
-
-        Returns:
-            iterator (Iterator): of tuples of (iokey, val) where iokey is actual key with
-            ion ordinal and val is str for each entry in db.
-            Raises StopIteration when done
-        """
-        # getAllItemIter converts both key and val memoryviews to bytes
-        for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(iokey), self._decode(bytes(val)))
-
-
-    def getTopIoItemIter(self, keys: Union[str, Iterable]):
+    def getIoItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
             iterator (Iterator): tuple (key, val) over the all the items in
@@ -804,20 +760,7 @@ class SerderSuber(Suber):
         return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb
-
-        Returns:
-            iterator: of tuples of keys tuple and val coring.Serder for
-            each entry in db
-
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), coring.Serder(raw=bytes(val)))
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable]):
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
             iterator (Iterator): tuple (key, val) over the all the items in
@@ -992,21 +935,7 @@ class SerderDupSuber(DupSuber):
         return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
 
 
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb. Each duplicate at a
-        given key is yielded as a separate item.
-
-        Returns:
-            iterator: of tuples of keys tuple and val coring.Serder instance for
-            each entry in db. Raises StopIteration when done
-
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), coring.Serder(raw=bytes(val)))
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable]):
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
             iterator (Iteratore: tuple (key, val) over the all the items in
@@ -1025,7 +954,6 @@ class SerderDupSuber(DupSuber):
             yield (self._tokeys(key), coring.Serder(raw=bytes(val)))
 
 
-
 class CesrSuber(Suber):
     """
     Sub class of Suber where data is CESR encode/decode ducktyped subclass
@@ -1042,10 +970,6 @@ class CesrSuber(Suber):
             subkey (str):  LMDB sub database key
             klas (Type[coring.Matter]): Class reference to subclass of Matter
         """
-        #if not (issubclass(klas, coring.Matter) or
-                #issubclass(klas, coring.Indexer) or
-                #issubclass(kas, coring.Counter)):
-            #raise ValueError("Invalid klas type={}.".format(klas))
         super(CesrSuber, self).__init__(*pa, **kwa)
         self.klas = klas
 
@@ -1118,20 +1042,7 @@ class CesrSuber(Suber):
         return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb
-
-        Returns:
-            iterator: of tuples of keys tuple and val Matter for
-            each entry in db
-
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable]):
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
             iterator (Iteratore: tuple (key, val) over the all the items in
@@ -1184,11 +1095,6 @@ class CatSuberBase(SuberBase):
             klas = (coring.Matter, )  # set default to tuple of single Matter
         if not nonStringIterable(klas):  # not iterable
             klas = (klas, )  # make it so
-        #for k in klas:
-            #if not (issubclass(k, coring.Matter) or
-                    #issubclass(k, coring.Indexer) or
-                     #issubclass(k, coring.Counter)):
-                #raise ValueError("Invalid klas type={}".format(k))
         super(CatSuberBase, self).__init__(*pa, **kwa)
         self.klas = klas
 
@@ -1224,20 +1130,7 @@ class CatSuberBase(SuberBase):
         return tuple(klas(qb64b=val, strip=True) for klas in self.klas)
 
 
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb
-
-        Returns:
-            iterator: of tuples of keys tuple and vals Iterable of Matter instances
-                      in order from self.klas for each entry in db
-
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), self._uncat(val))
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable]):
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
             iterator (Iterator): of tuples of keys tuple and vals Iterable of
@@ -1573,23 +1466,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
                                         sep=self.sep)
 
 
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb. Each entry at a
-        given key including all io set members is yielded as a separate item.
-
-        Returns:
-            iterator (Iterator):  of tuple (keys, vals) of  keys Iterable and
-                vals Iterable for each entry in db.
-
-        Raises StopIteration when done
-        """
-        for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            key, ion = dbing.unsuffix(iokey, sep=self.sep)
-            yield (self._tokeys(key), self._uncat(val))
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable]):
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
             iterator (Iterator): tuple (keys, vals) over the all the items in
@@ -1609,8 +1486,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
             yield (self._tokeys(key), self._uncat(val))
 
 
-
-    def getIoItem(self, keys: Union[str, Iterable]):
+    def getIoSetItem(self, keys: Union[str, Iterable]):
         """
         Gets (iokeys, vals) ioitems list at key made from keys where key is
         apparent effective key  and ioitems all have same apparent effective key
@@ -1631,7 +1507,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
                                                   sep=self.sep)])
 
 
-    def getIoItemIter(self, keys: Union[str, Iterable]):
+    def getIoSetItemIter(self, keys: Union[str, Iterable]):
         """
         Gets (iokeys, val) ioitems  iterator at key made from keys where key is
         apparent effective key and items all have same apparent effective key
@@ -1654,23 +1530,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
             yield (self._tokeys(iokey), self._uncat(val))
 
 
-    def getAllIoItemIter(self):
-        """
-        Return iterator over the all the items in subdb. Each entry at a
-        given key including set members is yielded as a separate item.
-
-        Returns:
-            iterator (Iterator):  each item iterated is tuple (iokeys, vals)
-                    each item in list is tuple (iokeys, vals) where each
-                    iokeys is actual key tuple with hidden suffix and
-                    each vals is Iterable of Matter subclass instances.
-            Raises StopIteration when done
-        """
-        for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(iokey), self._uncat(val))
-
-
-    def getTopIoItemIter(self, keys: Union[str, Iterable]):
+    def getIoItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
             iterator (Iterator): each item iterated is tuple (iokeys, vals)
@@ -1870,21 +1730,7 @@ class CesrDupSuber(DupSuber):
         return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
 
 
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb. Each duplicate at a
-        given key is yielded as a separate item.
-
-        Returns:
-            iterator: of tuples of keys tuple and val self.klas instance for
-            each entry in db. Raises StopIteration when done
-
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable]):
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
             iterator (Iteratore: tuple (key, val) over the all the items in
@@ -1957,23 +1803,7 @@ class SignerSuber(CesrSuber):
                 if val is not None else None)
 
 
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb
-
-        Returns:
-            iterator: of tuples of keys tuple and val Signer for
-                each entry in db
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            keys = self._tokeys(key)  # verkey is last split if any
-            verfer = coring.Verfer(qb64b=keys[-1])   # last split
-            yield (keys, self.klas(qb64b=bytes(val),
-                                   transferable=verfer.transferable))
-
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable]):
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
             iterator (Iteratore: tuple (key, val) over the all the items in
@@ -2088,33 +1918,8 @@ class CryptSignerSuber(SignerSuber):
         return (self.klas(qb64b=bytes(val), transferable=verfer.transferable))
 
 
-    def getAllItemIter(self, decrypter: coring.Decrypter = None):
-        """
-        Return iterator over the all the items in subdb. If decrypter then
-        assumes values in db were encrypted and so decrypts each before
-        converting to Signer.
 
-        Returns:
-            iterator: of tuples of keys tuple and val Signer for each entry in db
-
-        Parameters:
-            decrypter (coring.Decrypter): optional. If provided assumes value in
-                db was encrypted and so decrypts before converting to Signer.
-
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            keys = self._tokeys(key)  # verkey is last split if any
-            verfer = coring.Verfer(qb64b=keys[-1])   # last split
-            if decrypter:
-                yield (keys, decrypter.decrypt(ser=bytes(val),
-                                               transferable=verfer.transferable))
-            else:
-                yield (keys, self.klas(qb64b=bytes(val),
-                                   transferable=verfer.transferable))
-
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable],
+    def getItemIter(self, keys: Union[str, Iterable]=b"",
                        decrypter: coring.Decrypter = None):
         """
         Returns:
@@ -2142,3 +1947,4 @@ class CryptSignerSuber(SignerSuber):
             else:
                 yield (ikeys, self.klas(qb64b=bytes(val),
                                             transferable=verfer.transferable))
+
