@@ -45,6 +45,8 @@ ksn = state, key state notice
 qry = query
 rpy = reply
 exn = exchange
+exp = expose, sealed data exposition
+fwd = forward, ??
 vcp = vdr incept, verifiable data registry inception
 vrt = vdr rotate, verifiable data registry rotation
 iss = vc issue, verifiable credential issuance
@@ -53,12 +55,13 @@ bis = backed vc issue, registry-backed transaction event log credential issuance
 brv = backed vc revoke, registry-backed transaction event log credential revocation
 """
 
-Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn req qry rpy exn fwd '
-                               'vcp vrt iss rev bis brv '))
+Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn req qry rpy exn exp '
+                               'fwd vcp vrt iss rev bis brv '))
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              ksn='ksn', req='req', qry='qry', rpy='rpy', exn='exn', fwd='fwd',
-              vcp='vcp', vrt='vrt', iss='iss', rev='rev', bis='bis', brv='brv')
+              ksn='ksn', req='req', qry='qry', rpy='rpy', exn='exn', exp='exp',
+              fwd='fwd', vcp='vcp', vrt='vrt', iss='iss', rev='rev',
+              bis='bis', brv='brv')
 
 Serialage = namedtuple("Serialage", 'json mgpk cbor')
 
@@ -276,7 +279,7 @@ def dumps(ked, kind=Serials.json):
     return raw
 
 
-def loads(raw, size, kind=Serials.json):
+def loads(raw, size=None, kind=Serials.json):
     """
     utility function to handle deserialization by kind
 
@@ -285,7 +288,8 @@ def loads(raw, size, kind=Serials.json):
 
     Parameters:
        raw (Union[bytes,bytearray]): raw serialization to deserialze as dict
-       size (int): number of bytes to consume for the deserialization
+       size (int): number of bytes to consume for the deserialization. If None
+                   then consume all bytes
        kind (str): serialization kind (JSON, MGPK, CBOR)
     """
     if kind == Serials.json:
@@ -1033,7 +1037,7 @@ class Seqner(Matter):
     @property
     def sn(self):
         """
-        Property sn:
+        Property sn: sequence number as int
         Returns .raw converted to int
         """
         return int.from_bytes(self.raw, 'big')
@@ -1041,8 +1045,8 @@ class Seqner(Matter):
     @property
     def snh(self):
         """
-        Property snh:
-        Returns .raw converted to hex str
+        Property snh:  sequence number as hex
+        Returns .sn int converted to hex str
         """
         return "{:x}".format(self.sn)
 
@@ -1104,7 +1108,7 @@ class Dater(Matter):
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.Salt_128, dts=None, **kwa):
         """
-        Inhereited Parameters:  (see Matter)
+        Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
             qb64b is bytes of fully qualified crypto material
             qb64 is str or bytes  of fully qualified crypto material
@@ -1133,7 +1137,7 @@ class Dater(Matter):
     @property
     def dts(self):
         """
-        Property sn:
+        Property dts:
         Returns .qb64 translated to ISO 8601 DateTime str
         """
         return self.qb64[self.Codes[self.code].hs:].translate(self.FromB64)
@@ -1141,10 +1145,18 @@ class Dater(Matter):
     @property
     def dtsb(self):
         """
-        Property sn:
+        Property dtsb:
         Returns .qb64 translated to ISO 8601 DateTime bytes
         """
         return self.qb64[self.Codes[self.code].hs:].translate(self.FromB64).encode("utf-8")
+
+    @property
+    def datetime(self):
+        """
+        Property datetime:
+        Returns datetime.datetime instance converted from .dts ISO 8601 DateTime str
+        """
+        return helping.fromIso8601(self.dts)
 
 
 class Verfer(Matter):
@@ -2189,8 +2201,8 @@ class Prefixer(Matter):
 
     def __init__(self, raw=None, code=None, ked=None, allows=None, **kwa):
         """
-        assign ._derive to derive derivatin of aid prefix from ked
-        assign ._verify to verify derivation of aid prefix  from ked
+        assign ._derive to derive aid prefix from ked
+        assign ._verify to verify derivation of aid prefix from ked
 
         Default code is None to force EmptyMaterialError when only raw provided but
         not code.
@@ -2396,7 +2408,7 @@ class Prefixer(Matter):
 
         # put in dummy pre to get size correct
         ked["i"] = self.Dummy * Matter.Codes[MtrDex.Blake3_256].fs
-        serder = Serder(ked=ked)  # serder with dummy for 'i'
+        serder = Serder(ked=ked)  # serder with dummy for 'i' also updates version size
         ked = serder.ked  # use updated ked with valid 'v' version string field
         dig =  blake3.blake3(serder.raw).digest()  # digest with dummy 'i'
         return (dig, MtrDex.Blake3_256)  # dig is derived correct new 'i'
@@ -2481,13 +2493,15 @@ class Saider(Matter):
 
 
     def __init__(self, raw=None, *, code=None, sad=None,
-                 kind=Serials.json, label=Ids.d, **kwa):
+                 kind=None, label=Ids.d, **kwa):
         """
         See Matter.__init__ for inherited parameters
 
         Parameters:
             sad (dict): self addressed data to serialize and inject said
             kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
             label (str): id field label, one of Ids
         """
         try:
@@ -2509,7 +2523,7 @@ class Saider(Matter):
                 raise ValueError("Unsupported digest code = {}.".format(code))
 
             # re-derive said raw bytes from sad and code, so code overrides label
-            raw = self.derive(sad=sad, code=code, kind=kind, label=label)
+            raw, sad = self.derive(sad=dict(sad), code=code, kind=kind, label=label)
             super(Saider, self).__init__(raw=raw, code=code, **kwa)
 
         if not self.digestive:
@@ -2518,21 +2532,28 @@ class Saider(Matter):
 
 
     @classmethod
-    def serialize(clas, sad: dict, kind: str=Serials.json):
+    def _serialize(clas, sad: dict, kind: str=None):
         """
-        Serialize sad with serialization kind from embedded 'v', version string
-            if present, else use kind
+        Serialize sad with serialization kind if provided else use
+            use embedded 'v', version string if provided else use default
+            Serials.json
 
         Returns:
            ser (bytes): raw serialization of sad
 
         Parameters:
            sad (dict): serializable dict
-           kind (str): serialization type, one of Serials
+           kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
 
         """
+        knd = Serials.json
         if 'v' in sad:  # versioned sad
-            kind, _, _ = Deversify(sad['v'])
+            knd, _, _ = Deversify(sad['v'])
+
+        if not kind:  # match logic of Serder for kind
+            kind = knd
 
         return dumps(sad, kind=kind)
 
@@ -2540,10 +2561,11 @@ class Saider(Matter):
     @classmethod
     def saidify(clas, sad: dict, *,
                 code: str=MtrDex.Blake3_256,
-                kind: str=Serials.json,
+                kind: str=None,
                 label: str=Ids.d, **kwa):
         """
-        Derives said for sad and injects it into copy of sad
+        Derives said from sad and injects it into copy of sad and said and
+        injected sad
 
         Returns:
             result (tuple): of the form (saider, sad) where saider is Saider
@@ -2551,18 +2573,18 @@ class Saider(Matter):
                     parameter sad but with its label id field filled
                     in with generated said from saider
 
-
         Parameters:
             sad (dict): serializable dict
             code (str): digest type code from DigDex
-            kind (str): default serialization kind from Serials when sad does
-                        not include 'v' field
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
             label (str): id field label from Ids in which to inject said
 
         """
         if label not in sad:
             raise KeyError("Missing id field labeled={} in sad.".format(label))
-        raw = clas._derive(sad=sad, code=code, kind=kind, label=label)
+        raw, sad = clas._derive(sad=sad, code=code, kind=kind, label=label)
         saider = clas(raw=raw, code=code, kind=kind, label=label, **kwa)
         sad[label] = saider.qb64
         return (saider, sad)
@@ -2571,7 +2593,7 @@ class Saider(Matter):
     @classmethod
     def _derive(clas, sad: dict, *,
                 code:str=MtrDex.Blake3_256,
-                kind:str=Serials.json,
+                kind:str=None,
                 label:str=Ids.d,):
         """
         Derives raw said from sad with .Dummy filled sad[label]
@@ -2582,8 +2604,9 @@ class Saider(Matter):
         Parameters:
             sad (dict): self addressed data to be injected with dummy and serialized
             code (str): digest type code from DigDex
-            kind (str): default serialization kind from Serials when sad does
-                        not include 'v' field
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
             label (str): id field label from Ids in which to inject dummy
         """
         if code not in DigDex or code not  in clas.Digests:
@@ -2592,52 +2615,73 @@ class Saider(Matter):
         sad = dict(sad)  # make shallow copy so don't clobber original sad
         # fill id field denoted by label with dummy chars to get size correct
         sad[label] = clas.Dummy * Matter.Codes[code].fs
+        if 'v' in sad:  # if versioned then need to set size in version string
+            sad = Serder(ked=sad, kind=kind).ked  # version string now has correct size
         klas, size, length = clas.Digests[code]
         # sad as 'v' verision string then use its kind otherwise passed in kind
-        cpa = [clas.serialize(sad, kind=kind)]  # raw pos arg class
+        cpa = [clas._serialize(sad, kind=kind)]  # raw pos arg class
         ckwa = dict()  # class keyword args
         if size:
             ckwa.update(digest_size=size)  # optional digest_size
         dkwa = dict() # digest keyword args
         if length:
             dkwa.update(length=length)
-        return klas(*cpa, **ckwa).digest(**dkwa)  # raw digest
+        return (klas(*cpa, **ckwa).digest(**dkwa),sad)  # raw digest and sad
 
 
     def derive(self, sad, code=None, **kwa):
         """
         Returns:
-            result (bytes): raw said as derived from serialized dict sad.
+            result (tuple): (raw, sad) raw said as derived from serialized dict
+                            and modified sad during derivation.
 
         Parameters:
             sad (dict): self addressed data to be serialized
             code (str): digest type code from DigDex.
-            kind (str): default serialization kind from Serials when sad does
-                        not include 'v' field
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
             label (str): id field label from Ids in which to inject dummy
         """
         code = code if code is not None else self.code
         return self._derive(sad=sad, code=code, **kwa)
 
 
-    def verify(self, sad, *, prefixed=False, code=None,
-               kind=Serials.json, label=Ids.d, **kwa):
+    def verify(self, sad, *, prefixed=False, versioned=True, code=None,
+               kind=None, label=Ids.d, **kwa):
         """
         Returns:
-            result (bool): True means derivation from sad for ._code matches
-                .qb64 and if prefixed also verifies match of id field denoted by label
-                .qb64. False otherwise
+            result (bool): True means derivation from sad with dummy label
+                field value replacement for ._code matches .qb64. False otherwise
+                If prefixed is True then also validates that label field of
+                provided sad also matches .qb64. False otherwise
+                If versioned is True and provided sad includes version field 'v'
+                then also validates that version field 'v' of provided
+                sad matches the version field of modified sad that results from
+                the derivation process. The size chars in the version field
+                are set to the size of the sad during derivation. False otherwise.
 
         Parameters:
             sad (dict): self addressed data to be serialized
-            prefixed (boolean): indicates whether to verify ID value matched .qb64
+            prefixed (bool): True means also verify if labeled field in
+                sad matches own .qb64
+            versioned (bool):
+            code (str): digest type code from DigDex.
+            kind (str): serialization algorithm of sad, one of Serials
+                        used to override that given by 'v' field if any in sad
+                        otherwise default is Serials.json
+            label (str): id field label from Ids in which to inject dummy
         """
         try:
             # override ensure code is self.code
-            raw = self._derive(sad=sad, code=self.code, kind=kind, label=label)
+            raw, dsad = self._derive(sad=sad, code=self.code, kind=kind, label=label)
             saider = Saider(raw=raw, code=self.code, **kwa)
             if self.qb64b != saider.qb64b:
                 return False  # not match .qb64b
+
+            if 'v' in sad and versioned:
+                if sad['v'] != dsad['v']:
+                    return False  # version fields not match
 
             if prefixed and sad[label] != self.qb64:  # check label field
                 return False  # label id field not match .qb64
@@ -2646,9 +2690,6 @@ class Saider(Matter):
             return False
 
         return True
-
-
-
 
 
 @dataclass(frozen=True)
@@ -3130,10 +3171,11 @@ class CounterCodex:
     WitnessIdxSigs:                 str =  '-B'  # Qualified Base64 Indexed Signature.
     NonTransReceiptCouples:         str =  '-C'  # Composed Base64 Couple, pre+cig.
     TransReceiptQuadruples:         str =  '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
-    FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fnu + dts.
-    TransIndexedSigGroups:          str =  '-F'  # Composed Base64 Triple, pre+snu+dig+ControllerIdxSigs group.
+    FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fnu+dts.
+    TransIdxSigGroups:          str =  '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
     SealSourceCouples:              str =  '-G'  # Composed Base64 couple, snu+dig of given delegator's or issuer's event
-    SignerSealCouples:              str =  '-H'  # Composed Base64 couple, pre+ControllerIdxSigs group.
+    TransLastIdxSigGroups:          str =  '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
+    SealSourceTriples:              str =  '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
     MessageDataGroups:              str =  '-U'  # Composed Message Data Group or Primitive
     AttachedMaterialQuadlets:       str =  '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     MessageDataMaterialQuadlets:    str =  '-W'  # Composed Grouped Message Data Quadlet (4 char each)
@@ -3210,6 +3252,7 @@ class Counter:
                 '-F': Sizage(hs=2, ss=2, fs=4),
                 '-G': Sizage(hs=2, ss=2, fs=4),
                 '-H': Sizage(hs=2, ss=2, fs=4),
+                '-I': Sizage(hs=2, ss=2, fs=4),
                 '-U': Sizage(hs=2, ss=2, fs=4),
                 '-V': Sizage(hs=2, ss=2, fs=4),
                 '-W': Sizage(hs=2, ss=2, fs=4),
@@ -3497,9 +3540,12 @@ class Serder:
         .digb is qb64b digest from .diger
         .verfers is list of Verfers converted from .ked["k"]
         .werfers is list of Verfers converted from .ked["b"]
+        .tholder is Tholder instance from .ked["kt'] else None
         .sn is int sequence number converted from .ked["s"]
         .pre is qb64 str of identifier prefix from .ked["i"]
         .preb is qb64b bytes of identifier prefix from .ked["i"]
+        .said is qb64 of .ked['d'] if present
+        .saidb is qb64b of .ked['d'] of present
 
     Hidden Attributes:
           ._raw is bytes of serialized event only
@@ -3770,12 +3816,31 @@ class Serder:
 
 
     @property
+    def tholder(self):
+        """
+        Returns Tholder instance as converted from .ked['kt'] or None if missing.
+
+        """
+        return (Tholder(sith=self.ked["kt"]) if "kt" in self.ked else None)
+
+
+    @property
     def sn(self):
         """
-        Returns int of .ked["s"] (sequence number)
         sn (sequence number) property getter
+        Returns:
+            sn (int): converts hex str .ked["s"] to non neg int
         """
-        return int(self.ked["s"], 16)
+        sn = self.ked["s"]
+
+        if len(sn) > 32:
+            raise ValueError("Invalid sn = {} too large.".format(sn))
+
+        sn = int(sn, 16)
+        if sn < 0:
+                raise ValueError("Negative sn={}.".format(sn))
+
+        return (sn)
 
 
     @property
@@ -3795,11 +3860,33 @@ class Serder:
         """
         return self.pre.encode("utf-8")
 
-    def pretty(self):
+
+    @property
+    def said(self):
+        """
+        Returns str qb64  of .ked["d"] (said when ked is SAD)
+        said (self-addressing identifier) property getter
+        """
+        return self.ked["d"]
+
+
+    @property
+    def saidb(self):
+        """
+        Returns bytes qb64b of .ked["d"] (said when ked is SAD)
+        said (self-addressing identifier) property getter
+        """
+        return self.said.encode("utf-8")
+
+
+    def pretty(self, *, size=1024):
         """
         Returns str JSON of .ked with pretty formatting
+
+        ToDo: add default size limit on pretty when used for syslog UDP MCU
+        like 1024 for ogler.logger
         """
-        return json.dumps(self.ked, indent=1)
+        return json.dumps(self.ked, indent=1)[:size if size is not None else None]
 
 
 class Tholder:

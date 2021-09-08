@@ -661,7 +661,7 @@ class Parser:
                                                                abort=pipelined)
                             trqs.append((prefixer, seqner, diger, siger))
 
-                    elif ctr.code == CtrDex.TransIndexedSigGroups:
+                    elif ctr.code == CtrDex.TransIdxSigGroups:
                         # extract attaced trans indexed sig groups each made of
                         # triple pre+snu+dig plus indexed sig group
                         # pre is pre of signer (endorser) of msg
@@ -699,7 +699,7 @@ class Parser:
                                 isigers.append(isiger)
                             tsgs.append((prefixer, seqner, diger, isigers))
 
-                    elif ctr.code == CtrDex.SignerSealCouples:
+                    elif ctr.code == CtrDex.TransLastIdxSigGroups:
                         # extract attaced signer seal indexed sig groups each made of
                         # identifier pre plus indexed sig group
                         # pre is pre of signer (endorser) of msg
@@ -851,7 +851,25 @@ class Parser:
             except AttributeError:
                 raise kering.ValidationError("No kevery to process so dropped msg"
                                       "= {}.".format(serder.pretty()))
-        elif ilk in (Ilks.req, ):
+
+        elif ilk in (Ilks.rpy, ):  # reply message
+            if not (cigars or tsgs):
+                raise kering.ValidationError("Missing attached endorser signature(s) "
+                       "to reply msg = {}.".format(serder.pretty()))
+
+            try:
+                if cigars:  # process separately so do not clash on errors
+                    kvy.processReply(serder, cigars=cigars)  # nontrans
+
+                if tsgs:  # process separately so do not clash on errors
+                    kvy.processReply(serder, tsgs=tsgs)  #  trans
+
+            except AttributeError:
+                raise kering.ValidationError("No kevery to process so dropped msg"
+                                      "= {}.".format(serder.pretty()))
+
+
+        elif ilk in (Ilks.req, ):  # query message
             args = dict(serder=serder)
             if ssgs:
                 pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one

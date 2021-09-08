@@ -95,14 +95,57 @@ class HabitatRecord:  # habs
 @dataclass
 class EndpointRecord:  # ends
     """
-    Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by role.
-    Database Keys are (acid, role) where acid is attributable controller identifier
-    of endpoint (qb64 prefix) and role is endpoint role such as watcher, witness etc
+    Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by
+    cid,role, and eid. The namespace is a tree of branches with each leaf at a
+    specific (cid, role, eid). Retrieval by branch returns groups of leaves as
+    appropriate for a cid braanch or cid.role branch.
+    Database Keys are (cid, role, eid) where cid is attributable controller identifier
+    (qb64 prefix) that has role(s) such as watcher, witness etc and eid is the
+    identifier of the controller acting in a role i.e. watcher identifier.
+
+    Attributes:
+        allow (bool):  True means eid is allowed as controller of endpoint in role
+                       False means eid is disallowed as conroller of endpint in role
+        name (str): user fieldly name for eid in role
+
+
+    An end authorization reply message is required from which the field values
+    for this record are extracted. A routes of /end/role/eid/add  /end/role/eid/cut
+    Uses add-cut model with allow field
+    allow==True eid is allowed (add) as endpoint provider for cid at role and name
+    allow==False eid is disallowed (cut) as endpoint provider for cid at role and name
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rep",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/end/role/add",
+      "a" :
+      {
+         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "role": "watcher",  # one of eventing.Roles
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+      }
+    }
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rep",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/end/role/cut",
+      "a" :
+      {
+         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "role": "watcher",  # one of eventing.Roles
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+      }
+    }
+
     """
-    seid: str  # identifier prefix of service endpoint
-    name: str  # user friendly name of endpoint
-    said: str # Self-Addressing ID of conveying reply message
-    dts: str  # ISO-8601 datetime string of conveying reply message
+    allow: bool = False  # True eid allowed (add), False eid disallowed (cut)
+    name: str = ""  # optional user friendly name of endpoint
 
     def __iter__(self):
         return iter(asdict(self))
@@ -111,20 +154,60 @@ class EndpointRecord:  # ends
 @dataclass
 class LocationRecord:  # locs
     """
-    Service Endpoint Record with fields and keys to compose endpoint location
-    and cross reference to entry in Endpoint database.
-    Database Keys are (seid, scheme) where seid is service endpoint identifier
+    Service Endpoint Record with url for endpoint of a given scheme and
+    fields to compose cross reference to entry in end authN database
+    (cid.role.eid) where cid is the authorizing controller for the eid (endpoint id)
+    at a given role. The cid is usually a transferable identifer with a KEL
+    but may be non-trans. The eid is usually a nontransferable identifier
+    (witness, watcher) but may be transferable (judge, juror, public watcher,
+    registrar).
+
+    Database Keys are (eid, scheme) where eid is service endpoint identifier
     (qb64 prefix) and scheme is the url protocol scheme (tcp, https).
-    The seid is usually a nontransferable identifier (witness, watcher) but may be
-    transferable (judge, juror, public watcher).
+
+    A loc reply message is required from which the values of this
+    database record are extracted. route is /loc/scheme Uses enact-anul model
+    To nullify endpoint set url field to empty.
+
+    An end authorization reply message is also required to authorize the eid as
+    endpoint provider for cid at role. See EndpointRecord
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rep",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/loc/scheme",
+      "a" :
+      {
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+         "scheme": "http",  # one of eventing.Schemes
+         "url":  "http://localhost:8080/watcher/wilma",
+         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "role": "watcher",  # one of eventing.Roles
+      }
+    }
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rep",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/loc/scheme",
+      "a" :
+      {
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+         "scheme": "http",  # one of eventing.Schemes
+         "url":  "",
+         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "role": "watcher",  # one of eventing.Roles
+      }
+    }
+
     """
-    host: str  # hostname or host ip addresss string
-    port: int  # port
-    path: str  # path string
-    acid: str  # identifier prefix of controller that authorizes endpoint
+    url: str  # full url including host:port/path?query scheme is optional
+    cid: str  # identifier prefix of controller that authorizes endpoint
     role: str  # endpoint role such as watcher, witness etc
-    said: str  # Self-Addressing ID of conveying reply message
-    dts: str  # ISO-8601 datetime string of conveying replay message
 
     def __iter__(self):
         return iter(asdict(self))
@@ -360,15 +443,56 @@ class Baser(dbing.LMDBer):
             key is habitat name str
             value is serialized HabitatRecord dataclass
 
-        .ends is named subDB instance of DupKomer that maps Controller prefix
-            and endpoint roles to endpoint prefixes
-            key is (cid, role) as "cid.role"
-            value is serialized EndpointRecord dataclass
+        .sdts (sad date-time-stamp) named subDB instance of CesrSuber that
+            that maps SAD SAID to Dater instance's CESR serialization of
+            ISO-8601 datetime
+            key = said (bytes) of sad, val = dater.qb64b
 
-        .locs is named subDB instance of Komer that maps Endpoint prefix
-            and endpoint network location scheme to endpoint location
-            key is (eid, scheme) as "eid.scheme"
-            value is serialized LocationRecord dataclass
+        .ssgs (sad trans indexed sigs) named subDB instance of MulMatIoSetSuber
+            that maps said of SAD to quadruple (Prefixer, Seqner, Diger, Siger)
+            of est event for signer's key state when signed SAD. Each key may
+            have a set of vals in insertion order one for each signer of the sad.
+            key = said (bytes) of SAD, val = cat of (prefixer.qb64b, seqner.qb64b,
+            diger.qb64b, siger.qb64b)
+
+        .scgs (sad nontrans cigs) named subDB instance of MulMatIoSetSuber
+            that maps said of SAD to couple (Verfer, Cigar) for nontrans signer.
+            For nontrans qb64 of Verfer is same as Prefixer.
+            Each key may have a set of vals in insertion order one for each
+            nontrans signer of the sad.
+            key = said (bytes of SAD, val = cat of (verfer.qb64, cigar.qb64b)
+
+        .rpys (replys) named subDB instance of SerderSuber that maps said of
+            reply message (versioned SAD) to serialization of that reply message.
+            key is said bytes, val is Serder.raw bytes of reply 'rpy' message
+
+        .rpes (reply escrows) named subDB instance of MulMatIoSetSuber that
+            maps routes of reply (versioned SAD) to single (Saider,) of that
+            reply msg.
+            Routes such as '/end/role/add' '/end/role/cut' '/loc/scheme'
+            key is route bytes,  val = cat of (saider.qb64b,) of reply 'rpy' msg
+
+        .eans is named subDB instance of CesrSuber with klas=Saider that maps
+            cid.role.eid to said of reply SAD as auth:  authN by controller cid
+            of authZ that designates endpoint provider eid in role
+            routes /end/role/add and /end/role/cut to nullify
+            key is cid.role.eid,  val = saider.qb64b of reply 'rpy' msg SAD
+
+        .lans is named subDB instance of CesrSuber with klas=Saider that maps
+            eid.scheme to said of reply SAD as auth: authN by endpoint provider
+            eid that designates scheme for url
+            route /loc/scheme   use null url to nullify
+            key is eid.scheme,  val = saider.qb64b of reply 'rpy' msg SAD
+
+        .ends is named subDB instance of Komer that maps (cid, role, eid)
+            to attributes about endpoint authorization where:
+            cid is controller prefix, role is endpoint role, watcher etc, and
+            eid is controller prefix of endpoint controller watcher etc.
+            key is cid.role.eid,  value is serialized EndpointRecord dataclass
+
+        .locs is named subDB instance of Komer that maps endpoint prefix eid
+            and endpoint network location scheme to endpoint location details
+            key is eid.scheme, val is serialized LocationRecord dataclass
 
         .wits is named subDB instance of Komer that maps Witness identifier
             prefix to index of last received mailbox message.
@@ -380,6 +504,7 @@ class Baser(dbing.LMDBer):
             that participate in the group identifier.
             key is group identifier prefix
             value is serialized GroupIdentifier dataclass
+
 
     Properties:
 
@@ -463,7 +588,7 @@ class Baser(dbing.LMDBer):
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
 
-        self.firsts = subing.MatterSuber(db=self, subkey='fons.', klas=coring.Seqner)
+        self.firsts = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Seqner)
         self.states = subing.SerderSuber(db=self, subkey='stts.')  # key states
 
         # habitat prefixes keyed by habitat name
@@ -471,15 +596,50 @@ class Baser(dbing.LMDBer):
                                  subkey='habs.',
                                  schema=HabitatRecord, )
 
-        # service endpoint identifer (SEID) prefixes by controller prefixes and roles
-        self.ends = koming.IoSetKomer(db=self,
-                                    subkey='ends.',
-                                    schema=EndpointRecord, )
+        # SAD support datetime stamps and signatures indexed and not-indexed
+        # all sad  sdts (sad datetime serializations) maps said to date-time
+        self.sdts = subing.CesrSuber(db=self, subkey='sdts.', klas=coring.Dater)
+        # all sad ssgs (sad indexed signature serializations) maps SAD SAID to
+        # quadruple (Prefixer, Seqner, Diger, Siger) of trans signer's est evt
+        # for key state of signature in Siger
+        self.ssgs = subing.CatIoSetSuber(db=self, subkey='ssgs',
+            klas=(coring.Prefixer, coring.Seqner, coring.Diger, coring.Siger))
+        # all sad scgs  (sad non-indexed signature serializations) maps SAD SAID
+        # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
+        # nontrans qb64 of Prefixer is same as Verfer
+        self.scgs = subing.CatIoSetSuber(db=self, subkey='scgs',
+                                        klas=(coring.Verfer, coring.Cigar))
 
-        # service endpont locations by endpoint identifier prefixes and schemes
+        # all reply messages. Maps reply said to serialization. Replys are
+        # versioned sads ( with version string) so use Serder to deserialize and
+        # use  .sdts, .ssgs, and .scgs for datetimes and signatures
+        self.rpys = subing.SerderSuber(db=self, subkey='rpys.')
+
+        # all reply escrows indices of partially signed reply messages. Maps
+        # route in reply to single (Saider,)  of escrowed reply.
+        # Routes such as /end/role/add end/role/cut /loc/schema
+        self.rpes = subing.CatIoSetSuber(db=self, subkey='rpes.',
+                                                      klas=(coring.Saider, ))
+
+        # auth AuthN/AuthZ by controller at cid of endpoint provider at eid
+        # maps key=cid.role.eid to val=said of end reply
+        self.eans = subing.CesrSuber(db=self, subkey='eans.', klas=coring.Saider)
+
+        # auth AuthN/AuthZ by endpoint provider at eid of location at scheme url
+        # maps key=cid.role.eid to val=said of end reply
+        self.lans = subing.CesrSuber(db=self, subkey='lans.', klas=coring.Saider)
+
+        # service endpoint identifer (eid) auths keyed by controller cid.role.eid
+        # data extracted from reply /end/role/add or /end/role/cut
+        self.ends = koming.Komer(db=self, subkey='ends.',
+                                      schema=EndpointRecord, )
+
+        # service endpont locations keyed by eid.scheme  (endpoint identifier)
+        # data extracted from reply loc
         self.locs = koming.Komer(db=self,
                                  subkey='locs.',
                                  schema=LocationRecord, )
+
 
         # index of last retrieved message from witness mailbox
         self.wits = koming.Komer(db=self,
@@ -490,6 +650,9 @@ class Baser(dbing.LMDBer):
         self.gids = koming.Komer(db=self,
                                  subkey='gids.',
                                  schema=GroupIdentifier, )
+
+
+
 
         return self.env
 
@@ -559,7 +722,7 @@ class Baser(dbing.LMDBer):
                                      "".format(self.name))
 
                 # clone .ends and .locs databases
-                for keys, val in self.ends.getAllItemIter():
+                for keys, val in self.ends.getItemIter():
                     exists = False  # only copy if entries in both .ends and .locs
                     for scheme in ("https", "http", "tcp"):  # all supported schemes
                         lval = self.locs.get(keys=(val.eid, scheme))

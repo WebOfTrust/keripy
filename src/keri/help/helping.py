@@ -196,6 +196,11 @@ def extractValues(ked, labels):
 
     return values
 
+DTS_BASE_0 = "2021-01-01T00:00:00.000000+00:00"
+DTS_BASE_1 = "2021-01-01T00:00:01.000000+00:00"
+DTS_BASE_2 = "2021-01-01T00:01:00.000000+00:00"
+DTS_BASE_3 = "2021-01-01T01:00:00.000000+00:00"
+
 def nowUTC():
     """
     Returns timezone aware datetime of current UTC time

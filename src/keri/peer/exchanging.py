@@ -85,7 +85,7 @@ class Exchanger(doing.DoDoer):
             raise ValidationError("message received outside time window with delta {} message={}"
                                   "".format(delta, serder.pretty()))
 
-        tholder, verfers = self.hab.verfers(pre=source.qb64)
+        tholder, verfers = self.hab.verifiage(pre=source.qb64)
 
         if self.controller is not None and self.controller != source.qb64:
             raise AuthZError("Message {} is from invalid source {}"

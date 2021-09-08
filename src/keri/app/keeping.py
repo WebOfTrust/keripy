@@ -273,7 +273,7 @@ class Keeper(dbing.LMDBer):
 
         self.gbls = subing.Suber(db=self, subkey='gbls.')
         self.pris = subing.CryptSignerSuber(db=self, subkey='pris.')
-        self.pres = subing.MatterSuber(db=self,
+        self.pres = subing.CesrSuber(db=self,
                                        subkey='pres.',
                                        klas=coring.Prefixer)
         self.prms = koming.Komer(db=self,

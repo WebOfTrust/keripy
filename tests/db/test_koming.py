@@ -170,6 +170,16 @@ def test_kom_get_item_iter():
                         (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
                         (('a', '4'), {'a': 'Eat', 'b': 'White'})]
 
+        mydb.put(keys=("b","1"), val=w)
+        mydb.put(keys=("b","2"), val=x)
+        mydb.put(keys=("bc","3"), val=y)
+        mydb.put(keys=("bc","4"), val=z)
+
+        topkeys = ("b", "")  # append empty str to force trailing .sep
+        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter(keys=topkeys)]
+        assert items == [(('b', '1'), {'a': 'Big', 'b': 'Blue'}),
+                         (('b', '2'), {'a': 'Tall', 'b': 'Red'})]
+
     assert not os.path.exists(db.path)
     assert not db.opened
 
@@ -532,13 +542,23 @@ def test_dup_komer():
 
         ends = ends + [wit3end]
         i = 0
-        for keys, end in endDB.getAllItemIter():
+        for keys, end in endDB.getItemIter():
             assert end == ends[i]
             i += 1
 
-        locs = [wit3loc] + locs
+        i = 0
+        for keys, end in endDB.getItemIter(keys=(cid0, "" )):
+            assert end == ends[i]
+            i += 1
+
+        alllocs = [wit3loc] + locs
         i = 0
         for keys, loc in locDB.getItemIter():
+            assert loc == alllocs[i]
+            i += 1
+
+        i = 0
+        for keys, loc in locDB.getItemIter(keys=(eids[0], "" )):
             assert loc == locs[i]
             i += 1
 
@@ -721,13 +741,13 @@ def test_ioset_komer():
                             'AAAAAAAAAAAAAAAAAAAAAC')]
 
         i = 0
-        for iokeys, end in endDB.getIoItem(keys=keys0):
+        for iokeys, end in endDB.getIoSetItem(keys=keys0):
             assert end == ends[i]
             assert iokeys == iokeys0[i]
             i += 1
 
         i = 0
-        for iokeys, end in endDB.getIoItemIter(keys=keys0):
+        for iokeys, end in endDB.getIoSetItemIter(keys=keys0):
             assert end == ends[i]
             assert iokeys == iokeys0[i]
             i += 1
@@ -740,11 +760,22 @@ def test_ioset_komer():
             assert keys in  (keys0, keys1)
             i += 1
 
-        locs = [wit3loc] + locs
+        i = 0
+        for keys, end in endDB.getAllItemIter(keys=(cid0, "")):
+            assert end == ends[i]
+            i += 1
+
+        alllocs = [wit3loc] + locs
         i = 0
         for keys, loc in locDB.getItemIter():
+            assert loc == alllocs[i]
+            i += 1
+
+        i = 0
+        for keys, loc in locDB.getItemIter(keys=(eids[0], "")):
             assert loc == locs[i]
             i += 1
+
 
         # test getAllIoItem
         iokeys1 = [b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E.witness.AAAAAAAAAAAAAAAAAAAAAA']
@@ -764,6 +795,12 @@ def test_ioset_komer():
                                 'AAAAAAAAAAAAAAAAAAAAAA')]
 
         i = 0
+        for iokeys, end in endDB.getAllIoItemIter(keys=(cid0, "")):
+            assert end == ends[i]
+            assert iokeys == iokeysall[i]
+            i += 1
+
+        i = 0
         for iokeys, end in endDB.getAllIoItemIter():
             assert end == ends[i]
             assert iokeys == iokeysall[i]
@@ -779,4 +816,4 @@ def test_ioset_komer():
 
 
 if __name__ == "__main__":
-    test_ioset_komer()
+    test_kom_get_item_iter()

@@ -409,7 +409,7 @@ def test_nonindexed_witness_receipts():
         assert camHab.kever.toad == 2
         assert camHab.kever.sn == 0
 
-        # create non-local kevery for Cam to process onlocal msgs
+        # create non-local kevery for Cam to process non-local msgs
         camKvy = eventing.Kevery(db=camHab.db, lax=False, local=False)
 
         # setup Van's habitat trans multisig

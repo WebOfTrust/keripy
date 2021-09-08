@@ -67,7 +67,7 @@ def test_exchanger():
         sigers = sidMgr.sign(ser=sidExcSrdr.raw, verfers=verfers)
 
         excMsg = bytearray(sidExcSrdr.raw)
-        excMsg.extend(coring.Counter(coring.CtrDex.SignerSealCouples, count=1).qb64b)
+        excMsg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
         excMsg.extend(sidPre.encode("utf-8"))
 
         counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,

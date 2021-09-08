@@ -7,7 +7,8 @@ keri.db.koming module
 import types
 import json
 from dataclasses import dataclass
-from typing import Type, Union, Iterable
+from typing import Type, Union
+from collections.abc import Iterable
 
 import cbor2
 import msgpack
@@ -63,7 +64,7 @@ class KomerBase():
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
         """
-        super(KomerBase, self).__init__(**kwa)  # Mixin for Multi-inheritance MRO
+        super(KomerBase, self).__init__()
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
         self.schema = schema
@@ -107,6 +108,25 @@ class KomerBase():
         if isinstance(key, memoryview):  # memoryview of bytes
             key = bytes(key)
         return tuple(key.decode("utf-8").split(self.sep))
+
+
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
+        """
+        Returns:
+            iterator (Iteratore: tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield (self._tokeys(key), self.deserializer(val))
 
 
     def _serializer(self, kind):
@@ -280,21 +300,6 @@ class Komer(KomerBase):
         return (self.db.delVal(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getItemIter(self):
-        """
-        Return iterator over the all the items in subdb
-
-        Returns:
-            iterator: of tuples of keys tuple and val dataclass instance for
-            each entry in db. Raises StopIteration when done
-
-        Example:
-            if key in database is "a.b" and val is serialization of dataclass
-               with attributes x and y then returns
-               (("a","b"), dataclass(x=1,y=2))
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), self.deserializer(val))
 
     def getCnt(self):
         """
@@ -486,25 +491,6 @@ class DupKomer(KomerBase):
         return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
 
 
-    def getAllItemIter(self):
-        """
-        Return iterator over the all the items in subdb. Each duplicate at a
-        given key is yielded as a separate item.
-
-        Returns:
-            iterator: of tuples of keys tuple and val dataclass instance for
-            each entry in db. Raises StopIteration when done
-
-        Example:
-            if key in database is "a.b" and val is serialization of dataclass
-               with attributes x and y then returns
-               (("a","b"), dataclass(x=1,y=2))
-        """
-        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
-            yield (self._tokeys(key), self.deserializer(val))
-
-
-
 class IoSetKomer(KomerBase):
     """
     Insertion Ordered Set Keyspace Object Mapper factory class that supports
@@ -657,8 +643,6 @@ class IoSetKomer(KomerBase):
         return val
 
 
-
-
     def getIter(self, keys: Union[str, Iterable]):
         """
         Gets dup vals iterator at key made from keys
@@ -691,8 +675,6 @@ class IoSetKomer(KomerBase):
                                      sep=self.sep))
 
 
-
-
     def rem(self, keys: Union[str, Iterable], val=None):
         """
         Removes entry at keys
@@ -718,28 +700,29 @@ class IoSetKomer(KomerBase):
                                        sep=self.sep)
 
 
-    def getAllItemIter(self):
+    def getAllItemIter(self, keys: Union[str, Iterable]=b""):
         """
-        Return iterator over the all the items in subdb. Each entry at a
-        given key including set members is yielded as a separate item.
-
         Returns:
-            iterator: of tuples of keys tuple and val dataclass instance for
-            each entry in db. Raises StopIteration when done
+            iterator (Iteratore: tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
 
-        Example:
-            if key in database is "a.b" and val is serialization of dataclass
-               with attributes x and y then returns
-               (("a","b"), dataclass(x=1,y=2))
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
         """
-        for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
+        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             key, ion = dbing.unsuffix(iokey, sep=self.sep)
             yield (self._tokeys(key), self.deserializer(val))
 
 
-    def getIoItem(self, keys: Union[str, Iterable]):
+    def getIoSetItem(self, keys: Union[str, Iterable]):
         """
-        Gets items list at key made from keys where key is apparent effective key
+        Gets ioitems list at key made from keys where key is apparent effective key
         and items all have same apparent effective key
 
         Parameters:
@@ -758,9 +741,9 @@ class IoSetKomer(KomerBase):
                                              sep=self.sep)])
 
 
-    def getIoItemIter(self, keys: Union[str, Iterable]):
+    def getIoSetItemIter(self, keys: Union[str, Iterable]):
         """
-        Gets items iterator Gets items list at key made from keys where key is
+        Gets ioitems iterator Gets items list at key made from keys where key is
         apparent effective key and items all have same apparent effective key
 
         Parameters:
@@ -780,17 +763,22 @@ class IoSetKomer(KomerBase):
             yield (self._tokeys(iokey), self.deserializer(val))
 
 
-    def getAllIoItemIter(self):
+    def getAllIoItemIter(self, keys: Union[str, Iterable]=b""):
         """
-        Return iterator over the all the items in subdb. Each entry at a
-        given key including set members is yielded as a separate item.
-
         Returns:
-            iterator: of tuples of (iokey, val) where iokey is actual key with
-            ion ordinal and val is dataclass instance for
-            each entry in db. Raises StopIteration when done
+            iterator (Iterator): tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
         """
-        for iokey, val in self.db.getAllItemIter(db=self.sdb, split=False):
+        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             yield (self._tokeys(iokey), self.deserializer(val))
 
 

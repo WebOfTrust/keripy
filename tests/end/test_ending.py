@@ -65,6 +65,8 @@ def test_signature_designature():
     # setup habitat
     hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, icount=3)
     assert hab.pre == 'EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY'
+    digest = hab.kever.serder.dig
+    assert digest == 'EbsKIirK4vRK4vBDiKoDFsfvzD3vQVbMf6Hj9MqYTPac'
 
     # example body text
     text = (b'{"seid":"B389hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
@@ -92,19 +94,24 @@ def test_signature_designature():
         assert marker.qb64 == sigers[i].qb64
         assert int(tag) == marker.index == sigers[i].index
 
-    # include signer ordinal and kind
+    # include signer ordinal digest and kind
     # test signature with list markers as indexed sigers and defaults for indexed and signer
-    signage = ending.Signage(markers=sigers, indexed=True, signer=hab.pre,
-                             ordinal="0", kind="CESR")
+    signage = ending.Signage(markers=sigers,
+                             indexed=True,
+                             signer=hab.pre,
+                             ordinal="0",
+                             digest=digest,
+                             kind="CESR")
     header = ending.signature([signage])  # put it in a list
-    assert header == ({'Signature': 'indexed="?1";'
-                        'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
-                        'ordinal="0";'
-                        'kind="CESR";'
-                        '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
-                        '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
-                        '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'}
-)
+    assert header == ({'Signature':
+                       'indexed="?1";'
+                       'signer="EtYMHu5HrMx2yidEhtb0w_1FGtp4W4WNHB6FrYlACTYY";'
+                       'ordinal="0";'
+                       'digest="EbsKIirK4vRK4vBDiKoDFsfvzD3vQVbMf6Hj9MqYTPac";'
+                       'kind="CESR";'
+                       '0="AA9ag025o3YY8TAWRQhkEDwnt5Vh1Q4O7-F2x_UcXQkWpu32OxKGmCVgw0KvyD3YGvtXUMJf8cteY8tsJku-2jAQ";'
+                       '1="ABqyC_jrRNyGZ6desKYAGDxjnEAPXGypyMtT8C8EykIMm49KVadKwNF9-vOuwM7ZpFitLOd20vMZIGUW9CwPlKDQ";'
+                       '2="ACcB8zH46Xwi1EyoVPaRxftt0oypIJy0POl_vLEK_RmDIlV834CC3t8tVE0GF1onO1cwo27nn8ngoFhsrqoL7oDQ"'})
 
     # test designature
     signages = ending.designature(header["Signature"])
@@ -112,6 +119,7 @@ def test_signature_designature():
     assert signage.indexed
     assert signage.signer == hab.pre
     assert signage.ordinal == "0"
+    assert signage.digest == digest
     assert signage.kind == "CESR"
     markers = signage.markers
     for i, (tag, marker) in enumerate(markers.items()):

@@ -244,6 +244,7 @@ def openLMDB(cls=None, name="test", temp=True, **kwa):
     wl.close(clear=True if wl.temp else False)
 
     """
+    lmdber = None
     if cls is None:
         cls = LMDBer
     try:
@@ -251,7 +252,8 @@ def openLMDB(cls=None, name="test", temp=True, **kwa):
         yield lmdber
 
     finally:
-        lmdber.close(clear=lmdber.temp)  # clears if lmdber.temp
+        if lmdber:
+            lmdber.close(clear=lmdber.temp)  # clears if lmdber.temp
 
 
 class LMDBer:
@@ -292,7 +294,7 @@ class LMDBer:
     TempHeadDir = "/tmp"
     TempPrefix = "keri_lmdb_"
     TempSuffix = "_test"
-    MaxNamedDBs = 32
+    MaxNamedDBs = 64
     DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
 
     def __init__(self, name='main', temp=False, headDirPath=None, dirMode=None,
@@ -597,10 +599,37 @@ class LMDBer:
             for key, val in cursor.iternext():  # return key, val at cursor
                 if split:
                     splits = bytes(key).split(sep)
-                    splits.append(bytes(val))
+                    splits.append(val)
                 else:
-                    splits = (bytes(key), bytes(val))
+                    splits = (bytes(key), val)
                 yield tuple(splits)
+
+
+    def getTopItemIter(self, db, key=b''):
+        """
+        Returns:
+            items (abc.Iterator): iterator over (full key, val) tuples where
+                full key is full database key for val not truncated prefix top key
+
+        Works for both dupsort==False and dupsort==True
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): truncated top key, a key space prefix to get all the items
+                        from multiple branches of the key space. If top key is
+                        empty then gets all items in database
+        """
+        with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()
+            if cursor.set_range(key):  # move to val at key >= key if any
+                for ckey, cval in cursor.iternext():  # get key, val at cursor
+                    ckey = bytes(ckey)
+                    if not ckey.startswith(key): #  prev entry if any last in branch
+                        break  # done
+                    yield (ckey, cval)  # another entry in branch startswith key
+            return  # done raises StopIteration
 
 
     # For subdbs with no duplicate values allowed at each key. (dupsort==False)
@@ -681,7 +710,7 @@ class LMDBer:
                 cpre, cn = splitKeyON(key)
                 if cpre != pre:  # prev is now the last event for pre
                     break  # done
-                yield (cn, bytes(val))  # (on, dig) of event
+                yield (cn, val)  # (on, dig) of event
 
 
     def getAllOrdItemAllPreIter(self, db, key=b''):
@@ -706,7 +735,7 @@ class LMDBer:
 
             for key, val in cursor.iternext():  # return key, val at cursor
                 cpre, cn = splitKeyON(key)
-                yield (cpre, cn, bytes(val))  # (pre, on, dig) of event
+                yield (cpre, cn, val)  # (pre, on, dig) of event
 
 
     # For databases that support set of insertion ordered values with apparent
@@ -1016,12 +1045,12 @@ class LMDBer:
             cursor = txn.cursor()
             if cursor.set_range(iokey):  # move to val at key >= iokey if any
                 iokey, cval = cursor.item()
-                while iokey:  # end of database iokey == b''
+                while iokey:  # end of database iokey == b'' cant internext.
                     ckey, cion = unsuffix(iokey, sep=sep)
                     if ckey != key:  # past key
                         break
-                    result = cursor.delete() or result  # delete moves to next item
-                    iokey, cval = cursor.item()
+                    result = cursor.delete() or result  # delete moves cursor to next item
+                    iokey, cval = cursor.item()  # cursor now at next item after deleted
             return result
 
 
@@ -1063,7 +1092,7 @@ class LMDBer:
                     if ckey != key:  # prev entry if any was the last entry for key
                         break  # done
                     if val == cval:
-                        return cursor.delete()
+                        return cursor.delete()  # delete also moves to next so doubly moved
             return False
 
 
