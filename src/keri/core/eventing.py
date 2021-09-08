@@ -3601,19 +3601,10 @@ class Kevery:
                 continue  # skip if cig not verify
 
             # All constraints satisfied so update new reply SAD and its dts and cigar
-            # and remove old reply
             self.updateReply(saider=saider, dater=dater, serder=serder, cigar=cigar)
             # update .lans and .locs
-            self.db.lans.pin(keys=keys, val=saider)  # overwrite
-            if not (locer := self.db.locs.get(keys=keys)):
-                locer = basing.LocationRecord()  # create new default record
-            locer.url = url
-            locer.cid = cid
-            locer.role = role
-            self.db.locs.pin(keys=keys, val=locer)  # overwrite
-            # remove now obsolete reply SAD and its dts and cigar
-            if osaider:
-                self.removeReply(saider=osaider)
+            self.updateLoc(keys=keys, saider=saider, url=url, cid=cid, role=role)
+            self.removeReply(saider=osaider)
 
             break  # first valid cigar sufficient ignore any duplicates in cigars
 
@@ -3662,19 +3653,11 @@ class Kevery:
 
             if valid:  # meet threshold so save
                 # All constraints satisfied so update new reply SAD and its dts and cigar
-                # and remove old reply
                 self.updateReply(saider=saider, dater=dater, serder=serder, quads=quads)
                 # update .lans and .locs
-                self.db.lans.pin(keys=keys, val=saider)  # overwrite
-                if not (locer := self.db.locs.get(keys=keys)):
-                    locer = basing.LocationRecord()  # create new default record
-                locer.url = url
-                locer.cid = cid
-                locer.role = role
-                self.db.locs.pin(keys=keys, val=locer)  # overwrite
+                self.updateLoc(keys=keys, saider=saider, url=url, cid=cid, role=role)
                 # remove now obsolete reply SAD and its dts and cigar
-                if osaider:
-                    self.removeReply(saider=osaider)
+                self.removeReply(saider=osaider)
 
             else:  # not meet threshold so escrow quads
                 pass
@@ -3727,7 +3710,7 @@ class Kevery:
 
     def updateEnd(self, keys, saider, allow=None):
         """
-        Update end auth database ,eabs and end database .ends.
+        Update end auth database .eans and end database .ends.
 
         Parameters:
             keys (tuple): of key strs for databases (cid, role, eid)
@@ -3743,6 +3726,20 @@ class Kevery:
         self.db.ends.pin(keys=keys, val=ender)  # overwrite
 
 
+    def updateLoc(self, keys, saider, url, cid, role):
+        """
+        Update loc auth database .lans and loc database .locs.
+
+        Parameters:
+            keys (tuple): of key strs for databases (eid, scheme)
+            saider (Saider): instance from said in reply serder (SAD)
+            url (str): endpoint url
+            cid (str): authorizing controller identifier qb64
+            role (str): authorized role
+        """
+        self.db.lans.pin(keys=keys, val=saider)  # overwrite
+        locer = basing.LocationRecord(url=url, cid=cid, role=role)
+        self.db.locs.pin(keys=keys, val=locer)  # overwrite
 
 
     def processQuery(self, serder, src=None, sigers=None):
