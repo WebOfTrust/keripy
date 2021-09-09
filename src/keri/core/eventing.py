@@ -3499,10 +3499,13 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
+        EndAuthRecord
+             cid: str = ""  # identifier prefix of controller that authorizes endpoint
+             roles: list[str] = field(default_factory=list)  # str endpoint roles such as watcher, witness etc
+
         LocationRecord:
             url: str  # full url including host:port/path?query scheme is optional
-            cid: str  # identifier prefix of controller that authorizes endpoint
-            role: str  # endpoint role such as watcher, witness etc
+            cids: list[EndAuthRecord] = field(default_factory=list)  # optional authorization record references
 
         Reply Message:
 
@@ -3517,8 +3520,6 @@ class Kevery:
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
              "scheme": "http",  # one of eventing.Schemes
              "url":  "http://localhost:8080/watcher/wilma",
-             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of eventing.Roles
           }
         }
 
@@ -3533,8 +3534,6 @@ class Kevery:
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
              "scheme": "http",  # one of eventing.Schemes
              "url":  "",  # Nullifies
-             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of eventing.Roles
           }
         }
 
@@ -3563,7 +3562,7 @@ class Kevery:
         route = "/loc/scheme"  # escrow based on route base
 
         data = serder.ked["a"]
-        for k in ("eid", "scheme", "url", "cid", "role"):
+        for k in ("eid", "scheme", "url"):
             if k not in data:
                 raise ValidationError("Missing element={} from attributes in {} "
                                       "msg={}.".format(k, Ilks.rpy, serder.ked))
@@ -3580,12 +3579,6 @@ class Kevery:
             raise ValidationError("Invalid url={} for scheme={} from attributes in {} "
                                 "msg={}.".format(url, scheme, Ilks.rpy, serder.ked))
         # empty host port allowed will use default localhost:8080
-        cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
-        cid = cider.qb64  # controller authorizing eid at role
-        role = data["role"]
-        if role not in Roles:
-            raise ValidationError("Invalid role={} from attributes in {} "
-                                  "msg={}.".format(role, Ilks.rpy, serder.ked))
 
         keys = (eid, scheme)
         # BADA logic.
@@ -3620,7 +3613,7 @@ class Kevery:
             # All constraints satisfied so update new reply SAD and its dts and cigar
             self.updateReply(saider=saider, dater=dater, serder=serder, cigar=cigar)
             # update .lans and .locs
-            self.updateLoc(keys=keys, saider=saider, url=url, cid=cid, role=role)
+            self.updateLoc(keys=keys, saider=saider, url=url)
             self.removeReply(saider=osaider)
 
             break  # first valid cigar sufficient ignore any duplicates in cigars
@@ -3681,7 +3674,7 @@ class Kevery:
                                  prefixer=prefixer, seqner=seqner, diger=diger,
                                  sigers=sigers)
                 # update .lans and .locs
-                self.updateLoc(keys=keys, saider=saider, url=url, cid=cid, role=role)
+                self.updateLoc(keys=keys, saider=saider, url=url)
                 # remove now obsolete reply SAD and its dts and cigar
                 self.removeReply(saider=osaider)
 
@@ -3786,7 +3779,7 @@ class Kevery:
         self.db.ends.pin(keys=keys, val=ender)  # overwrite
 
 
-    def updateLoc(self, keys, saider, url, cid, role):
+    def updateLoc(self, keys, saider, url):
         """
         Update loc auth database .lans and loc database .locs.
 
@@ -3794,11 +3787,12 @@ class Kevery:
             keys (tuple): of key strs for databases (eid, scheme)
             saider (Saider): instance from said in reply serder (SAD)
             url (str): endpoint url
-            cid (str): authorizing controller identifier qb64
-            role (str): authorized role
         """
         self.db.lans.pin(keys=keys, val=saider)  # overwrite
-        locer = basing.LocationRecord(url=url, cid=cid, role=role)
+        if not (locer := self.db.locs.get(keys=keys)):
+            locer = basing.LocationRecord(url=url)  # update existing record
+        else:
+            locer = basing.LocationRecord(url=url)  # create new record
         self.db.locs.pin(keys=keys, val=locer)  # overwrite
 
 
