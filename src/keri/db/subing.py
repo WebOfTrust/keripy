@@ -418,7 +418,7 @@ class IoSetSuber(SuberBase):
     def put(self, keys: Union[str, Iterable], vals: list):
         """
         Puts all vals at effective key made from keys and hidden ordinal suffix.
-        Does not overwrite.
+        that are not already in set of vals at key. Does not overwrite.
 
         Parameters:
             keys (Iterable): of key strs to be combined in order to form key
@@ -437,7 +437,7 @@ class IoSetSuber(SuberBase):
     def add(self, keys: Union[str, Iterable], val: Union[bytes, str]):
         """
         Add val to vals at effective key made from keys and hidden ordinal suffix.
-        Does not overwrite.
+        that is not already in set of vals at key. Does not overwrite.
 
         Parameters:
             keys (Iterable): of key strs to be combined in order to form key
@@ -1296,12 +1296,13 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
     def put(self, keys: Union[str, Iterable], vals: Iterable):
         """
         Puts concatenation of qb64b of Matter instances in iterable of iterable
-        vals at effecive key made from keys and hidden ordinal suffix.
+        vals at effecive key made from keys and hidden ordinal suffix that are
+        not already in set of vals at key.
         Does not overwrite.
 
         Parameters:
             keys (Iterable): of key strs to be combined in order to form effective key
-            vals (Iterable): of iterables of Matter subclass instances in order
+            vals (Iterable): of iterables of CESR subclass instances in order
                              of .klas.
 
         Returns:
@@ -1317,7 +1318,8 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
 
     def add(self, keys: Union[str, Iterable], val: Iterable):
         """
-        Add val to vals at effective key made from keys and hidden ordinal suffix.
+        Add val to vals at effective key made from keys and hidden ordinal suffix
+        that is not already in set of vals at key.
         Does not overwrite.
 
         Parameters:
@@ -1337,7 +1339,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
     def pin(self, keys: Union[str, Iterable], vals: Iterable):
         """
         Pins (sets) qb64 of concatenation of Matter instances vals at key
-        made from keys. Overwrites.
+        made from keys. Replaces pre-existing values at key. Overwrites.
 
         Parameters:
             keys (Iterable): of key strs to be combined in order to form effective key

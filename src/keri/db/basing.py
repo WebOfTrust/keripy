@@ -617,7 +617,7 @@ class Baser(dbing.LMDBer):
 
         # all reply escrows indices of partially signed reply messages. Maps
         # route in reply to single (Saider,)  of escrowed reply.
-        # Routes such as /end/role/add end/role/cut /loc/schema
+        # Routes such as /end/role  /loc/schema
         self.rpes = subing.CatIoSetSuber(db=self, subkey='rpes.',
                                                       klas=(coring.Saider, ))
 

@@ -54,13 +54,12 @@ KSN_LABELS = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "k", "n",
 RPY_LABELS = ["v", "t", "d", "dt", "r", "a"]
 
 
-
 Schemage = namedtuple("Schemage", 'tcp http https')
 Schemes = Schemage(tcp='tcp', http='http', https='https')
 
-Rolage = namedtuple("Rolage", 'witness registrar watcher judge juror')
-Roles = Rolage(witness='witness', registrar='registrar', watcher='watcher',
-               judge='judge', juror='juror')
+Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror')
+Roles = Rolage(controller='controller', witness='witness', registrar='registrar',
+               watcher='watcher', judge='judge', juror='juror')
 
 
 @dataclass(frozen=True)
@@ -3214,16 +3213,16 @@ class Kevery:
 
     def processReply(self, serder, cigars=None, tsgs=None):
         """
-        Process one reply message with either attached nontrans receipt couples
+        Process one reply message with either attached nontrans signing couples
         in cigars or attached trans indexed sig groups in tsgs. Process logic
         is route dependent and dispatched by route.
 
         Parameters:
-            serder is receipt serder
-            cigars is list of Cigar instances that contain receipt couple
-                signature in .raw and public key in .verfer
-            tsgs is list of tuples (quadruples) of form
-                (prefixer, seqner, diger, [sigers]) where
+            serder (Serder): instance of reply message
+            cigars (list): of Cigar instances that contain nontrans signing couple
+                          signature in .raw and public key in .verfer
+            tsgs (list): tuples (quadruples) of form
+                (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
                 seqner is sequence number of trans endorser's est evt for keys for sigs
                 diger is digest of trans endorser's est evt for keys for sigs
@@ -3264,18 +3263,19 @@ class Kevery:
         # Dispatch based on route
         route = ked["r"]
         if route.startswith("/end/role/"):
-            self.processReplyEndRole(saider=saider, dater=dater, serder=serder,
-                                        cigars=cigars, tsgs=tsgs)
+            self.processReplyEndRole(serder=serder, saider=saider, dater=dater,
+                                     route=route, cigars=cigars, tsgs=tsgs)
         elif route.startswith("/loc/scheme"):
-            self.processReplyLocScheme(saider=saider, dater=dater, serder=serder,
-                                       cigars=cigars, tsgs=tsgs)
+            self.processReplyLocScheme(serder=serder, saider=saider, dater=dater,
+                                       route=route, cigars=cigars, tsgs=tsgs)
         else:  # unsupported route
             raise ValidationError("Usupported route={} in {} msg={}."
                                   "".format(route, Ilks.rpy, serder.ked))
 
 
 
-    def processReplyEndRole(self, *, saider, dater, serder, cigars=None, tsgs=None):
+    def processReplyEndRole(self, *, serder, saider, dater, route,
+                            cigars=None, tsgs=None):
         """
         Process one reply message for route = /end/role/add or /end/role/cut
         with either attached nontrans receipt couples in cigars or attached trans
@@ -3283,13 +3283,14 @@ class Kevery:
         Assumes already validated saider, dater, and route from serder.ked
 
         Parameters:
-            saider is Saider instance  from said in serder (SAD)
-            dater is Dater instance from date-time in serder (SAD)
-            serder is Serder instance of reply msg (SAD)
-            cigars is list of Cigar instances that contain receipt couple
-                signature in .raw and public key in .verfer
-            tsgs is list of tuples (quadruples) of form
-                (prefixer, seqner, diger, [sigers]) where
+            serder (Serder): instance of reply msg (SAD)
+            saider (Saider): instance  from said in serder (SAD)
+            dater (Dater): instance from date-time in serder (SAD)
+            route (str): reply route
+            cigars (list): of Cigar instances that contain nontrans signing couple
+                          signature in .raw and public key in .verfer
+            tsgs (list): tuples (quadruples) of form
+                (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
                 seqner is sequence number of trans endorser's est evt for keys for sigs
                 diger is digest of trans endorser's est evt for keys for sigs
@@ -3347,8 +3348,6 @@ class Kevery:
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if  tsgs is not None else []
 
-        ked = serder.ked
-        route = ked["r"]
         if route.startswith("/end/role/add"):
             allow = True
         elif route.startswith("/end/role/cut"):
@@ -3356,7 +3355,9 @@ class Kevery:
         else:  # unsupported route
             raise ValidationError("Usupported route={} in {} msg={}."
                                   "".format(route, Ilks.rpy, serder.ked))
-        data = ked["a"]
+        route = "/end/role"  # escrow based on route base
+
+        data = serder.ked["a"]
         for k in ("cid", "role", "eid"):
             if k not in data:
                 raise ValidationError("Missing element={} from attributes in {} "
@@ -3410,14 +3411,14 @@ class Kevery:
 
             break  # first valid cigar sufficient ignore any duplicates in cigars
 
-        for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
-            if not self.lax and sprefixer.qb64 in self.prefixes:  # own sig
+        for prefixer, seqner, diger, sigers in tsgs:  # iterate over each tsg
+            if not self.lax and prefixer.qb64 in self.prefixes:  # own sig
                 if not self.local:  # own sig when not local so ignore
                     logger.info("Kevery process: skipped own attachment"
                             " on nonlocal reply msg=\n%s\n", serder.pretty())
                     continue  # skip own sig attachment on non-local reply msg
 
-            spre = sprefixer.qb64
+            spre = prefixer.qb64
 
             if cid != spre:  # sig not by cid=controller
                 logger.info("Kevery process: skipped sig not from cid="
@@ -3425,49 +3426,59 @@ class Kevery:
                 continue  # skip invalid sig is not from cid
 
             # retrieve sdig of last event at sn of signer.
-            sdig = self.db.getKeLast(key=snKey(pre=spre, sn=sseqner.sn))
+            sdig = self.db.getKeLast(key=snKey(pre=spre, sn=seqner.sn))
             if sdig is None:
                 # should create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL
-                # escrow here
+                self.escrowReply(serder=serder, saider=saider, dater=dater,
+                                 route=route, prefixer=prefixer, seqner=seqner,
+                                 diger=diger, sigers=sigers)
                 continue
 
             # retrieve last event itself of signer given sdig
             sraw = self.db.getEvt(key=dgKey(pre=spre, dig=bytes(sdig)))
             # assumes db ensures that sraw must not be none because sdig was in KE
             sserder = Serder(raw=bytes(sraw))
-            if not sserder.compare(diger=sdiger):  # signer's dig not match est evt
+            if not sserder.compare(diger=diger):  # signer's dig not match est evt
                 raise ValidationError("Bad trans indexed sig group at sn = {}"
                                       " for reply = {}."
-                                      "".format(sseqner.sn, serder.ked))
+                                      "".format(seqner.sn, serder.ked))
 
             #verify sigs
             if not (sverfers := sserder.verfers):
                 raise ValidationError("Invalid reply from signer={}, no keys at"
-                         "signer's est. event sn={}.".format(spre, sseqner.sn))
+                         "signer's est. event sn={}.".format(spre, seqner.sn))
+
+            # fetch any escrowed sigs, extract just the siger from each quad
+            esigers = [siger for _, _, _, siger in
+                               self.db.ssgs.get(keys=(saider.qb64, ))]
+            sigers.extend(esigers)
 
             sigers, valid = validateSigs(serder=serder,
                                          sigers=sigers,
                                          verfers=sverfers,
                                          tholder=sserder.tholder)
             # no error so at least one verified siger
-            quads = [(sprefixer, sseqner, sdiger, siger) for  siger in  sigers]
-
             if valid:  # meet threshold so save
                 # All constraints satisfied so update new reply SAD and its dts and cigar
                 # and remove old reply
-                self.updateReply(saider=saider, dater=dater, serder=serder, quads=quads)
+                self.updateReply(serder=serder, saider=saider, dater=dater,
+                                 prefixer=prefixer, seqner=seqner, diger=diger,
+                                 sigers=sigers)
                 # update .eans and .ends
                 self.updateEnd(keys=keys, saider=saider, allow=allow)
                 # remove now obsolete reply SAD and its dts and cigar
                 self.removeReply(saider=osaider)
 
-            else:  # not meet threshold so escrow quads
-                pass
+            else:  # not meet threshold so escrow
+                self.escrowReply(serder=serder, saider=saider, dater=dater,
+                                 route=route, prefixer=prefixer, seqner=seqner,
+                                 diger=diger, sigers=sigers)
 
 
 
-    def processReplyLocScheme(self, *, saider, dater, serder, cigars=None, tsgs=None):
+    def processReplyLocScheme(self, *, serder, saider, dater, route,
+                              cigars=None, tsgs=None):
         """
         Process one reply message for route = /loc/scheme with either
         attached nontrans receipt couples in cigars or attached trans indexed
@@ -3475,13 +3486,14 @@ class Kevery:
         Assumes already validated saider, dater, and route from serder.ked
 
         Parameters:
-            saider is Saider instance  from said in serder (SAD)
-            dater is Dater instance from date-time in serder (SAD)
-            serder is Serder instance of reply msg (SAD)
-            cigars is list of Cigar instances that contain receipt couple
-                signature in .raw and public key in .verfer
-            tsgs is list of tuples (quadruples) of form
-                (prefixer, seqner, diger, [sigers]) where
+            serder (Serder): instance of reply msg (SAD)
+            saider (Saider): instance  from said in serder (SAD)
+            dater (Dater): instance from date-time in serder (SAD)
+            route (str): reply route
+            cigars (list): of Cigar instances that contain nontrans signing couple
+                          signature in .raw and public key in .verfer
+            tsgs (list): tuples (quadruples) of form
+                (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
                 seqner is sequence number of trans endorser's est evt for keys for sigs
                 diger is digest of trans endorser's est evt for keys for sigs
@@ -3545,12 +3557,12 @@ class Kevery:
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if  tsgs is not None else []
 
-        ked = serder.ked
-        route = ked["r"]
         if not route.startswith("/loc/scheme"):
             raise ValidationError("Usupported route={} in {} msg={}."
                                   "".format(route, Ilks.rpy, serder.ked))
-        data = ked["a"]
+        route = "/loc/scheme"  # escrow based on route base
+
+        data = serder.ked["a"]
         for k in ("eid", "scheme", "url", "cid", "role"):
             if k not in data:
                 raise ValidationError("Missing element={} from attributes in {} "
@@ -3613,14 +3625,14 @@ class Kevery:
 
             break  # first valid cigar sufficient ignore any duplicates in cigars
 
-        for sprefixer, sseqner, sdiger, sigers in tsgs:  # iterate over each tsg
-            if not self.lax and sprefixer.qb64 in self.prefixes:  # own sig
+        for prefixer, seqner, diger, sigers in tsgs:  # iterate over each tsg
+            if not self.lax and prefixer.qb64 in self.prefixes:  # own sig
                 if not self.local:  # own sig when not local so ignore
                     logger.info("Kevery process: skipped own attachment"
                             " on nonlocal reply msg=\n%s\n", serder.pretty())
                     continue  # skip own sig attachment on non-local reply msg
 
-            spre = sprefixer.qb64
+            spre = prefixer.qb64
 
             if eid != spre:  # sig not by cid=controller
                 logger.info("Kevery process: skipped sig not from eid="
@@ -3628,71 +3640,86 @@ class Kevery:
                 continue  # skip invalid sig is not from eid
 
             # retrieve sdig of last event at sn of signer.
-            sdig = self.db.getKeLast(key=snKey(pre=spre, sn=sseqner.sn))
+            sdig = self.db.getKeLast(key=snKey(pre=spre, sn=seqner.sn))
             if sdig is None:
                 # should create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL
-                # escrow here
+                self.escrowReply(serder=serder, saider=saider, dater=dater,
+                                 route=route, prefixer=prefixer, seqner=seqner,
+                                 diger=diger, sigers=sigers)
                 continue
 
             # retrieve last event itself of signer given sdig
             sraw = self.db.getEvt(key=dgKey(pre=spre, dig=bytes(sdig)))
             # assumes db ensures that sraw must not be none because sdig was in KE
             sserder = Serder(raw=bytes(sraw))
-            if not sserder.compare(diger=sdiger):  # signer's dig not match est evt
+            if not sserder.compare(diger=diger):  # signer's dig not match est evt
                 raise ValidationError("Bad trans indexed sig group at sn = {}"
                                       " for reply = {}."
-                                      "".format(sseqner.sn, serder.ked))
+                                      "".format(seqner.sn, serder.ked))
 
             #verify sigs
             if not (sverfers := sserder.verfers):
                 raise ValidationError("Invalid reply from signer={}, no keys at"
-                         "signer's est. event sn={}.".format(spre, sseqner.sn))
+                         "signer's est. event sn={}.".format(spre, seqner.sn))
+
+            # fetch any escrowed sigs, extract just the siger from each quad
+            esigers = [siger for _, _, _, siger in
+                                         self.db.ssgs.get(keys=(saider.qb64, ))]
+            sigers.extend(esigers)
 
             sigers, valid = validateSigs(serder=serder,
                                          sigers=sigers,
                                          verfers=sverfers,
                                          tholder=sserder.tholder)
             # no error so at least one verified siger
-            quads = [(sprefixer, sseqner, sdiger, siger) for  siger in  sigers]
+
 
             if valid:  # meet threshold so save
                 # All constraints satisfied so update new reply SAD and its dts and cigar
-                self.updateReply(saider=saider, dater=dater, serder=serder, quads=quads)
+                self.updateReply(serder=serder, saider=saider, dater=dater,
+                                 prefixer=prefixer, seqner=seqner, diger=diger,
+                                 sigers=sigers)
                 # update .lans and .locs
                 self.updateLoc(keys=keys, saider=saider, url=url, cid=cid, role=role)
                 # remove now obsolete reply SAD and its dts and cigar
                 self.removeReply(saider=osaider)
 
-            else:  # not meet threshold so escrow quads
-                pass
+            else:  # not meet threshold so escrow
+                self.escrowReply(serder=serder, saider=saider, dater=dater,
+                                 route=route, prefixer=prefixer, seqner=seqner,
+                                 diger=diger, sigers=sigers)
 
 
-    def updateReply(self, *, saider, dater, serder, cigar=None, quads=None):
+    def updateReply(self, *, serder, saider, dater, cigar=None, prefixer=None,
+                    seqner=None, diger=None, sigers=None):
         """
         Update Reply SAD in database given by by serder and associated databases
         for attached cig couple or sig quadruple.
         Overwrites val at key if already exists.
 
         Parameters:
-            saider is Saider instance  from said in serder (SAD)
-            dater is Dater instance from date-time in serder (SAD)
-            serder is Serder instance of reply msg (SAD)
-            cigar is Cigar instance that contains receipt couple
-                signature in .raw and public key in .verfer
-            quads (Iterable): of quadruples of form (prefixer, seqner, diger, siger) where:
+            serder (Serder): instance of reply msg (SAD)
+            saider (Saider): instance  from said in serder (SAD)
+            dater (Dater): instance from date-time in serder (SAD)
+            cigars (list): of Cigar instances that contain nontrans signing couple
+                          signature in .raw and public key in .verfer
+            quads (Iterable): of quadruples of form
+                (prefixer, seqner, diger, siger) where:
                 prefixer is pre of trans endorser
                 seqner is sequence number of trans endorser's est evt for keys for sigs
                 diger is digest of trans endorser's est evt for keys for sigs
                 siger is indexed sig from trans endorser's key from est evt
         """
-        quads = quads if quads is not None else []
+        if sigers is None:
+            sigers = []
         keys = (saider.qb64, )
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder) # first one idempotent
         if cigar:
             self.db.scgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
-        for quad in quads:
+        for siger in sigers:
+            quad = (prefixer, seqner, diger, siger)
             self.db.ssgs.put(keys=keys, vals=[(*quad, )])
 
 
@@ -3701,7 +3728,7 @@ class Kevery:
         Remove Reply SAD artifacts given by saider.
 
         Parameters:
-            saider is Saider instance  from said in serder (SAD)
+            saider (Saider): instance from said in serder (SAD)
 
         """
         if saider:
@@ -3711,6 +3738,34 @@ class Kevery:
             self.db.scgs.rem(keys=keys)
             self.db.rpys.rem(keys=keys)
             self.db.sdts.rem(keys=keys)
+
+
+    def escrowReply(self, *, serder, saider, dater, route, prefixer, seqner,
+                    diger, sigers):
+        """
+        Escrow reply by route
+
+        Parameters:
+            serder (Serder): instance of reply msg (SAD)
+            saider (Saider): instance  from said in serder (SAD)
+            dater (Dater): instance from date-time in serder (SAD)
+            route (str): reply route
+
+            quads (Iterable): of quadruples of form (prefixer, seqner, diger, siger) where:
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
+                siger is indexed sig from trans endorser's key from est evt
+        """
+        if not sigers:
+            return   # nothing to escrow
+        keys = (saider.qb64, )
+        self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
+        self.db.rpys.put(keys=keys, val=serder) # first one idempotent
+        for siger in sigers:
+            quad = (prefixer, seqner, diger, siger)
+            self.db.ssgs.put(keys=keys, vals=[(*quad, )])
+        self.db.rpes.put(keys=(route, ), vals=[(saider,)])  # unpack y, = (x,)
 
 
     def updateEnd(self, keys, saider, allow=None):
