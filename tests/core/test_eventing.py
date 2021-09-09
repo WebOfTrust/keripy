@@ -1732,7 +1732,7 @@ def test_reply(mockHelpingNowUTC):
                     b'B0ODrtNEEWKtQq_yOar0ct_QUNcMlsjVWGrIKvTjPIrG0AVYn4PEEDUTlL7KUCKs'
                     b'da8TMFhGTKIwIHN11H2TmCQ')
 
-        # use Tam's parser and kevery to process
+        # use Nels's parser and kevery to process
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
 
         saidkeys = (serderR.said, )
@@ -1754,16 +1754,16 @@ def test_reply(mockHelpingNowUTC):
         assert locer.cid == tamHab.pre
         assert locer.role == role == eventing.Roles.witness
 
-        # use Nel's parser and kevery for tam to provide its url as witness for itself
-        # Provide wat location
+        # use Nel's parser and kevery for tam to provide its url as controller role
+        # for itself at its own location
         # add endpoint with reply route add
         route = "/loc/scheme"
 
         # watcher role
-        role = eventing.Roles.witness
+        role = eventing.Roles.controller
 
         scheme = eventing.Schemes.http
-        url = "http://localhost:8080/witness/tam"
+        url = "http://localhost:8080/controller/tam"
 
         # with trans cid for nel and eid for wat
         data = dict(
@@ -1777,28 +1777,29 @@ def test_reply(mockHelpingNowUTC):
         serderR = eventing.reply(route=route, data=data,)
         assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
-        assert serderR.raw == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EinayWgTgsBH2O--UogJpxzIHOVTek94YDrb'
-                        b'sPaU4q2s","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
-                        b'd":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","scheme":"http","url":"htt'
-                        b'p://localhost:8080/witness/tam","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRM'
-                        b'irZ4I8M","role":"witness"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000151_","t":"rpy","d":"EqjruS0XL4HKs9e13oWH5Clzy-hjcZIx7Vmr'
+                    b'iXZy4-Bs","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
+                    b'd":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","scheme":"http","url":"htt'
+                    b'p://localhost:8080/controller/tam","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BL'
+                    b'aRMirZ4I8M","role":"controller"}}')
 
-        assert serderR.said == 'EinayWgTgsBH2O--UogJpxzIHOVTek94YDrbsPaU4q2s'
+
+        assert serderR.said == 'EqjruS0XL4HKs9e13oWH5Clzy-hjcZIx7VmriXZy4-Bs'
 
         # Sign Reply
         msg = tamHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EinayWgTgsBH2O--UogJpxzI'
-                    b'HOVTek94YDrbsPaU4q2s","dt":"2021-01-01T00:00:00.000000+00:00","r'
+        assert msg == (b'{"v":"KERI10JSON000151_","t":"rpy","d":"EqjruS0XL4HKs9e13oWH5Clz'
+                    b'y-hjcZIx7VmriXZy4-Bs","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/loc/scheme","a":{"eid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaR'
-                    b'MirZ4I8M","scheme":"http","url":"http://localhost:8080/witness/t'
-                    b'am","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","role":'
-                    b'"witness"}}-VBg-FABEQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M0'
-                    b'AAAAAAAAAAAAAAAAAAAAAAAETbIi40gakUBXSBVi55Vnadttn4A-GKsHIAeZxnfn'
-                    b'_zg-AADAAzDRfHIzv_nYoZ4I7-TfCrh87Q8xk2SrImsKYLH-t9aXNX8WPcOVVo8f'
-                    b'dkttToFazseLioY_TkbKQHmE1gDt_DAABOsnBuYNTrI2GR_dBGLKwCPs_RjP9s0T'
-                    b'aCG16Ofvh9f0BmuubG17rTihGvF8fxdm2elE6MmdhV3k_sNbyUyDwAAACwsQtCkZ'
-                    b'iPYmelSC_rfhxUGofffti7Oe2DxGCmhugijxRCx9S9kTDImYfBg2GsmljapiAnSx'
-                    b'3pZTMwwaC9WcFBw')
+                    b'MirZ4I8M","scheme":"http","url":"http://localhost:8080/controlle'
+                    b'r/tam","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","rol'
+                    b'e":"controller"}}-VBg-FABEQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMir'
+                    b'Z4I8M0AAAAAAAAAAAAAAAAAAAAAAAETbIi40gakUBXSBVi55Vnadttn4A-GKsHIA'
+                    b'eZxnfn_zg-AADAAjLyw2bw1JuZJsEqUHUpPDUqge2t0xOcjpI15GT29fG7GOb_1Y'
+                    b'ENydQaW_hKA5wzcKQVNpXW-b3QosLoh_UJ_DgABsFp5r_axQYNg_Fkjm3d9Zd0jx'
+                    b'J0-CsGGgvWsTT8UH4R_SmTFhVOKD9CWmPXVjIQI4JUWEqg-EEdAZfuyZbdCAgACa'
+                    b'12h31JUpkWxOGyHWac5ianJ3VYZkDUFABTI-MCCbNsyJb7ACq3vloiLtmDMbOkrI'
+                    b'JCOZYPu7_TEMz_hD_KaDg')
 
         # use Tam's parser and kevery to process
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
@@ -1819,7 +1820,7 @@ def test_reply(mockHelpingNowUTC):
         locer = nelHab.db.locs.get(keys=lockeys)
         assert locer.url == url
         assert locer.cid == tamHab.pre
-        assert locer.role == role == eventing.Roles.witness
+        assert locer.role == role == eventing.Roles.controller
 
 
     assert not os.path.exists(wamKS.path)

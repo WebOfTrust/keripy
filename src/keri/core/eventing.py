@@ -54,13 +54,12 @@ KSN_LABELS = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "k", "n",
 RPY_LABELS = ["v", "t", "d", "dt", "r", "a"]
 
 
-
 Schemage = namedtuple("Schemage", 'tcp http https')
 Schemes = Schemage(tcp='tcp', http='http', https='https')
 
-Rolage = namedtuple("Rolage", 'witness registrar watcher judge juror')
-Roles = Rolage(witness='witness', registrar='registrar', watcher='watcher',
-               judge='judge', juror='juror')
+Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror')
+Roles = Rolage(controller='controller', witness='witness', registrar='registrar',
+               watcher='watcher', judge='judge', juror='juror')
 
 
 @dataclass(frozen=True)
