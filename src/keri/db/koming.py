@@ -697,7 +697,7 @@ class IoSetKomer(KomerBase):
     def getAllItemIter(self, keys: Union[str, Iterable]=b""):
         """
         Returns:
-            iterator (Iteratore: tuple (key, val) over the all the items in
+            iterator (Iterator): tuple (key, val) over the all the items in
             subdb whose key startswith key made from keys. Keys may be keyspace
             prefix to return branches of key space. When keys is empty then
             returns all items in subdb
