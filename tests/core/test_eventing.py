@@ -1633,7 +1633,19 @@ def test_reply(mockHelpingNowUTC):
 
         # use Nel's parser and kevery to authZ wes as tam end witness
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
-
+        # check escrow
+        saidkeys = (serderR.said, )
+        dater = nelHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = nelHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serderR.dig
+        quadruples = nelHab.db.ssgs.get(keys=saidkeys)
+        assert len(quadruples) == 3
+        prefixer, seqner, diger, siger = quadruples[0]
+        assert prefixer.qb64 == tamHab.pre
+        escrowkeys = ("/end/role", )  # escrow route base not full route
+        [(saider,)] = nelHab.db.rpes.get(keys=escrowkeys)
+        assert saider.qb64 == serder.said
 
         # add tam kel to nel
         tamicp = tamHab.makeOwnInception()

@@ -1301,7 +1301,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
 
         Parameters:
             keys (Iterable): of key strs to be combined in order to form effective key
-            vals (Iterable): of iterables of Matter subclass instances in order
+            vals (Iterable): of iterables of CESR subclass instances in order
                              of .klas.
 
         Returns:
