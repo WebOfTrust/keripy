@@ -3445,6 +3445,11 @@ class Kevery:
                 raise ValidationError("Invalid reply from signer={}, no keys at"
                          "signer's est. event sn={}.".format(spre, sseqner.sn))
 
+            # fetch any escrowed sigs, extract just the siger from each quad
+            esigers = [siger for _, _, _, siger in
+                               self.db.ssgs.get(keys=(saider.qb64, ))]
+            sigers.extend(esigers)
+
             sigers, valid = validateSigs(serder=serder,
                                          sigers=sigers,
                                          verfers=sverfers,
@@ -3647,6 +3652,11 @@ class Kevery:
             if not (sverfers := sserder.verfers):
                 raise ValidationError("Invalid reply from signer={}, no keys at"
                          "signer's est. event sn={}.".format(spre, sseqner.sn))
+
+            # fetch any escrowed sigs, extract just the siger from each quad
+            esigers = [siger for _, _, _, siger in
+                                         self.db.ssgs.get(keys=(saider.qb64, ))]
+            sigers.extend(esigers)
 
             sigers, valid = validateSigs(serder=serder,
                                          sigers=sigers,
