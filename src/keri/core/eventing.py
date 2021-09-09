@@ -3211,6 +3211,53 @@ class Kevery:
                                       #"".format(ked))
 
 
+    def processEscrowReply(self):
+        """
+        Process escrows for reply messages. Escrows are keyed by reply route
+        and val is reply said
+
+
+        """
+        for (route, ion), (saider,) in self.db.rpes.getIoItemIter():
+            try:
+
+                keys = (saider.qb64, )
+                dater = self.db.sdts.get(keys=keys)
+                serder = self.db.rpys.get(keys=keys)
+                couples = self.db.scgs.get(keys=keys)
+                quadruples = self.db.ssgs.get(keys=keys)
+
+                if not (dater and serder and (couples or quadruples)):
+                    raise ValueError(f"Missing escrow artifacts at said={saider.qb64}"
+                                     f"for route={route}.")
+
+                # do date math for stale escrow
+
+                # self.processReply(serder=serder,cigars=cigars,tsgs=tsgs)
+
+            except Exception as ex:
+                pass
+
+            else:
+                pass
+                # self.db.rpes.remIokey(iokeys=(route, ion))
+
+
+    def processEscrowReplyEndRole(self, saider):
+        """
+        Process reply escrow at saider for route "/end/role"
+        """
+        pass
+
+
+    def processEscrowReplyLocScheme(self, saider):
+        """
+        Process reply escrow at saider for route "/loc/scheme"
+        """
+        pass
+
+
+
     def processReply(self, serder, cigars=None, tsgs=None):
         """
         Process one reply message with either attached nontrans signing couples
@@ -3246,16 +3293,16 @@ class Kevery:
         """
         for k in RPY_LABELS:
             if k not in serder.ked:
-                raise ValidationError("Missing element={} from {} msg={}."
-                                      "".format(k, Ilks.rpy, serder.ked))
+                raise ValidationError(f"Missing element={k} from {Ilks.rpy}"
+                                      f" msg={serder.ked}.")
         # fetch from serder to process
         ked = serder.ked
 
         # verify said of reply
         saider = coring.Saider(qb64=ked["d"])
         if not saider.verify(sad=ked, prefixed=True):
-            raise ValidationError("Invalid said = {} for reply msg={}."
-                                  "".format(saider.qb64, ked))
+            raise ValidationError(f"Invalid said = {saider.qb64} for reply "
+                                  f"msg={ked}.")
 
         # get date-time raises error if empty or invalid format
         dater = coring.Dater(dts=ked["dt"])
@@ -3269,8 +3316,8 @@ class Kevery:
             self.processReplyLocScheme(serder=serder, saider=saider, dater=dater,
                                        route=route, cigars=cigars, tsgs=tsgs)
         else:  # unsupported route
-            raise ValidationError("Usupported route={} in {} msg={}."
-                                  "".format(route, Ilks.rpy, serder.ked))
+            raise ValidationError(f"Usupported route={route} in {Ilks.rpy}"
+                                  f" msg={serder.ked}.")
 
 
 
@@ -3353,22 +3400,22 @@ class Kevery:
         elif route.startswith("/end/role/cut"):
             allow = False
         else:  # unsupported route
-            raise ValidationError("Usupported route={} in {} msg={}."
-                                  "".format(route, Ilks.rpy, serder.ked))
+            raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
+                                  f"msg={serder.ked}.")
         route = "/end/role"  # escrow based on route base
 
         data = serder.ked["a"]
         for k in ("cid", "role", "eid"):
             if k not in data:
-                raise ValidationError("Missing element={} from attributes in {} "
-                                      "msg={}.".format(k, Ilks.rpy, serder.ked))
+                raise ValidationError(f"Missing element={d} from attributes in"
+                                      f" {Ilks.rpy} msg={serder.ked}.")
 
         cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
         cid = cider.qb64  # controller authorizing eid at role
         role = data["role"]
         if role not in Roles:
-            raise ValidationError("Invalid role={} from attributes in {} "
-                                  "msg={}.".format(role, Ilks.rpy, serder.ked))
+            raise ValidationError(f"Invalid role={role} from attributes in "
+                                  f"{Ilks.rpy} msg={serder.ked}.")
         eider = coring.Prefixer(qb64=data["eid"] )  # raises error if unsupported code
         eid = eider.qb64  # controller of endpoint at role
         keys = (cid, role, eid)
@@ -3378,8 +3425,8 @@ class Kevery:
         if osaider:  # get old
             if (odater := self.db.sdts.get(keys=osaider.qb64b)):
                 if dater.datetime <= odater.datetime:
-                    raise ValidationError("Stale update of {} from {} via {}={}."
-                                    "".format(route, cid, Ilks.rpy, serder.ked))
+                    raise ValidationError(f"Stale update of {route} from {cid} "
+                                          f"via {Ilks.rpy}={serder.ked}.")
 
         for cigar in cigars:  # process each couple to verify sig and write to db
             if cigar.verfer.transferable:  # ignore invalid transferable verfers
@@ -3393,12 +3440,12 @@ class Kevery:
 
             if cid != cigar.verfer.qb64:  # cig not by cid=controller
                 logger.info("Kevery process: skipped cig not from cid="
-                        "{} on reply msg=\n%s\n", cid, serder.pretty())
+                        "%s on reply msg=\n%s\n", cid, serder.pretty())
                 continue  # skip invalid cig's verfer is not cid
 
             if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
                 logger.info("Kevery process: skipped nonverifying cig from "
-                        "{} on reply msg=\n%s\n", cigar.verfer.qb64, serder.pretty())
+                        "%s on reply msg=\n%s\n", cigar.verfer.qb64, serder.pretty())
                 continue  # skip if cig not verify
 
             # All constraints satisfied so update new reply SAD and its dts and cigar
@@ -3422,7 +3469,7 @@ class Kevery:
 
             if cid != spre:  # sig not by cid=controller
                 logger.info("Kevery process: skipped sig not from cid="
-                        "{} on reply msg=\n%s\n", cid, serder.pretty())
+                        "%s on reply msg=\n%s\n", cid, serder.pretty())
                 continue  # skip invalid sig is not from cid
 
             # retrieve sdig of last event at sn of signer.
@@ -3440,14 +3487,13 @@ class Kevery:
             # assumes db ensures that sraw must not be none because sdig was in KE
             sserder = Serder(raw=bytes(sraw))
             if not sserder.compare(diger=diger):  # signer's dig not match est evt
-                raise ValidationError("Bad trans indexed sig group at sn = {}"
-                                      " for reply = {}."
-                                      "".format(seqner.sn, serder.ked))
+                raise ValidationError(f"Bad trans indexed sig group at sn = "
+                                      f"{seqner.sn} for reply = {serder.ked}.")
 
             #verify sigs
             if not (sverfers := sserder.verfers):
-                raise ValidationError("Invalid reply from signer={}, no keys at"
-                         "signer's est. event sn={}.".format(spre, seqner.sn))
+                raise ValidationError(f"Invalid reply from signer={spre}, no "
+                                f"keys at signer's est. event sn={seqner.sn}.")
 
             # fetch any escrowed sigs, extract just the siger from each quad
             esigers = [siger for _, _, _, siger in

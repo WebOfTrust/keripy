@@ -1656,7 +1656,7 @@ def test_reply(mockHelpingNowUTC):
         [(saider,)] = nelHab.db.rpes.get(keys=escrowkeys)
         assert saider.qb64 == serder.said
 
-        # add tam kel to nel
+        # add tam kel to nel and process escrows
         tamicp = tamHab.makeOwnInception()
         nelPrs.parse(bytearray(tamicp))
         assert tamHab.pre not in nelKvy.kevers
@@ -1674,6 +1674,26 @@ def test_reply(mockHelpingNowUTC):
         nelPrs.parse(bytearray(wittamicp))
         nelKvy.processEscrows()
         assert tamHab.pre in nelHab.kevers
+
+        # process escrow reply
+        nelKvy.processEscrowReply()
+        #saidkeys = (serderR.said, )
+        #dater = nelHab.db.sdts.get(keys=saidkeys)
+        #assert dater.dts == help.helping.DTS_BASE_0
+        #serder = nelHab.db.rpys.get(keys=saidkeys)
+        #assert serder.dig == serderR.dig
+        #quadruples = nelHab.db.ssgs.get(keys=saidkeys)
+        #assert len(quadruples) == 3
+        #prefixer, seqner, diger, siger = quadruples[0]
+        #assert prefixer.qb64 == tamHab.pre
+
+        #endkeys = (tamHab.pre, role, wesHab.pre)
+        #saider = nelHab.db.eans.get(keys=endkeys)
+        #assert saider.qb64 == serder.said
+        #ender = nelHab.db.ends.get(keys=endkeys)
+        #assert ender.allow == True
+        #assert ender.name == ""
+
 
         # do wok as witness for tam
         # with trans cid for tam and eid for wok
@@ -1750,7 +1770,7 @@ def test_reply(mockHelpingNowUTC):
                     b't83I09EXiKocZKYBg')
 
         # use Nels's parser and kevery to process
-        nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
+        nelPrs.parse(ims=bytearray(msg))
 
         saidkeys = (serderR.said, )
         dater = nelHab.db.sdts.get(keys=saidkeys)

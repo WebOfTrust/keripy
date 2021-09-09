@@ -612,6 +612,8 @@ class LMDBer:
                 full key is full database key for val not truncated prefix top key
 
         Works for both dupsort==False and dupsort==True
+        Because cursor.iternext() advances cursor after returning item its safe
+        to delete the item within the iteration loop.
 
         Raises StopIteration Error when empty.
 
