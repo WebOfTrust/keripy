@@ -537,11 +537,9 @@ class IoSetKomer(KomerBase):
 
     def put(self, keys: Union[str, Iterable], vals: list):
         """
-        Puts all vals at key made from keys. Does not overwrite. Adds to existing
-        dup values at key if any. Duplicate means another entry at the same key
-        but the entry is still a unique value. Duplicates are inserted in
-        lexocographic order not insertion order. Lmdb does not insert a duplicate
-        unless it is a unique value for that key.
+        Puts all vals at key made from keys. Does not overwrite. Puts all vals
+        at effective key made from keys and hidden ordinal suffix.
+        that are not already in set of vals at key. Does not overwrite.
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -562,11 +560,8 @@ class IoSetKomer(KomerBase):
 
     def add(self, keys: Union[str, Iterable], val: dataclass):
         """
-        Add val to vals at key made from keys. Does not overwrite. Adds to existing
-        dup values at key if any. Duplicate means another entry at the same key
-        but the entry is still a unique value. Duplicates are inserted in
-        lexocographic order not insertion order. Lmdb does not insert a duplicate
-        unless it is a unique value for that key.
+        Add val to vals at effective key made from keys and hidden ordinal suffix.
+        that is not already in set of vals at key. Does not overwrite.
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -585,8 +580,9 @@ class IoSetKomer(KomerBase):
 
     def pin(self, keys: Union[str, Iterable], vals: list):
         """
-        Pins (sets) vals at key made from keys. Overwrites. Removes all
-        pre-existing dup vals and replaces them with vals
+        Pins (sets) vals at effective key made from keys and hidden ordinal suffix.
+        Overwrites. Removes all pre-existing vals that share same effective keys
+        and replaces them with vals
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -603,8 +599,6 @@ class IoSetKomer(KomerBase):
                                      key=key,
                                      vals=vals,
                                      sep=self.sep))
-
-
 
 
     def get(self, keys: Union[str, Iterable]):
