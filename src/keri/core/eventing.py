@@ -28,7 +28,7 @@ from ..kering import (MissingEntryError,
                       ExtractionError, ShortageError, ColdStartError,
                       SizedGroupError, UnexpectedCountCodeError,
                       ValidationError, MissingSignatureError,
-                      MissingWitnessSignatureError,
+                      MissingWitnessSignatureError, UnverifiedReplyError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError)
@@ -2392,6 +2392,7 @@ class Kevery:
     TimeoutUWE = 3600  # seconds to timeout unverified receipt escrows
     TimeoutURE = 3600  # seconds to timeout unverified receipt escrows
     TimeoutVRE = 3600  # seconds to timeout unverified transferable receipt escrows
+    TimeoutRPE = 3600  # seconds to timeout reply message escrows
 
 
     def __init__(self, *, evts=None, cues=None, db=None,
@@ -3220,37 +3221,59 @@ class Kevery:
         """
         for (route, ion), (saider,) in self.db.rpes.getIoItemIter():
             try:
-
+                # val=(saider, prefixer, seqner, diger)
                 keys = (saider.qb64, )
                 dater = self.db.sdts.get(keys=keys)
                 serder = self.db.rpys.get(keys=keys)
-                couples = self.db.scgs.get(keys=keys)
+                #quadkeys=(saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+                #sigers= [siger for (siger, ) in self.db.ssgs.get(keys=quadkeys)]
                 quadruples = self.db.ssgs.get(keys=keys)
 
-                if not (dater and serder and (couples or quadruples)):
+                if not (dater and serder and quadruples):
                     raise ValueError(f"Missing escrow artifacts at said={saider.qb64}"
                                      f"for route={route}.")
 
                 # do date math for stale escrow
+                if (helping.nowUTC() - dater) > datetime.timedelta(seconds=self.TimeoutRPE):
+                    # escrow stale so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Stale reply escrow "
+                                " at route = %s\n", route)
 
-                # self.processReply(serder=serder,cigars=cigars,tsgs=tsgs)
+                    raise ValidationError(f"Stale reply escrow at route = {route}.")
+                tsgs = []  #
+                # self.processReply(serder=serder,tsgs=tsgs)
 
-            except Exception as ex:
-                pass
+            except UnverifiedReplyError as ex:
+                # still waiting on missing prior event to validate
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery unescrow attempt failed: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery unescrow attempt failed: %s\n", ex.args[0])
 
-            else:
-                pass
+            except Exception as ex:  # log diagnostics errors etc
+                # other error so remove from reply escrow
+                # remove escrow artifacts
+
                 # self.db.rpes.remIokey(iokeys=(route, ion))
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
+
+            else:  # unescrow succeded
+                # self.db.rpes.remIokey(iokeys=(route, ion))
+                logger.info("Kevery unescrow succeeded for reply=\n%s\n",
+                            serder.pretty())
 
 
-    def processEscrowReplyEndRole(self, saider):
+    def removeStaleReplyEndRole(self, saider):
         """
         Process reply escrow at saider for route "/end/role"
         """
         pass
 
 
-    def processEscrowReplyLocScheme(self, saider):
+    def removeStaleReplyLocScheme(self, saider):
         """
         Process reply escrow at saider for route "/loc/scheme"
         """
@@ -3392,6 +3415,8 @@ class Kevery:
         Escrow process logic is route dependent and is dispatched by route,
         i.e. route is address of buffer with route specific handler of escrow.
         """
+        escrowed = False  # flag to raise UnverifiedReplyError is escrowed tsg
+
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if  tsgs is not None else []
 
@@ -3480,6 +3505,7 @@ class Kevery:
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
                                  diger=diger, sigers=sigers)
+                escrowed = True
                 continue
 
             # retrieve last event itself of signer given sdig
@@ -3496,6 +3522,8 @@ class Kevery:
                                 f"keys at signer's est. event sn={seqner.sn}.")
 
             # fetch any escrowed sigs, extract just the siger from each quad
+            # quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+            # esigers = [siger for (siger, ) in self.db.ssgs.get(keys=quadkeys)]
             esigers = [siger for _, _, _, siger in
                                self.db.ssgs.get(keys=(saider.qb64, ))]
             sigers.extend(esigers)
@@ -3520,6 +3548,10 @@ class Kevery:
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
                                  diger=diger, sigers=sigers)
+                escrowed = True
+
+        if escrowed == True:
+            raise UnverifiedReplyError(f"Unverified reply.")
 
 
 
@@ -3599,6 +3631,8 @@ class Kevery:
         Escrow process logic is route dependent and is dispatched by route,
         i.e. route is address of buffer with route specific handler of escrow.
         """
+        escrowed = False  # flag to raise UnverifiedReplyError is escrowed tsg
+
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if  tsgs is not None else []
 
@@ -3686,6 +3720,7 @@ class Kevery:
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
                                  diger=diger, sigers=sigers)
+                escrowed = True
                 continue
 
             # retrieve last event itself of signer given sdig
@@ -3703,6 +3738,8 @@ class Kevery:
                          "signer's est. event sn={}.".format(spre, seqner.sn))
 
             # fetch any escrowed sigs, extract just the siger from each quad
+            # quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+            # esigers = [siger for (siger, ) in self.db.ssgs.get(keys=quadkeys)]
             esigers = [siger for _, _, _, siger in
                                          self.db.ssgs.get(keys=(saider.qb64, ))]
             sigers.extend(esigers)
@@ -3728,6 +3765,10 @@ class Kevery:
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
                                  diger=diger, sigers=sigers)
+                escrowed = True
+
+        if escrowed == True:
+            raise UnverifiedReplyError(f"Unverified reply.")
 
 
     def updateReply(self, *, serder, saider, dater, cigar=None, prefixer=None,
@@ -3758,6 +3799,8 @@ class Kevery:
         if cigar:
             self.db.scgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
         for siger in sigers:
+            # quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+            # self.db.ssgs.put(keys=keys, vals=[(siger, ) for siger in sigers])
             quad = (prefixer, seqner, diger, siger)
             self.db.ssgs.put(keys=keys, vals=[(*quad, )])
 

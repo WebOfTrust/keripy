@@ -231,6 +231,13 @@ class DerivationError(ValidationError):
         raise DerivationError("error message")
     """
 
+class UnverifiedReplyError(ValidationError):
+    """
+    Error Reply message not verified usually missing sigs
+    Usage:
+        raise UnverifiedReplyError("error message")
+    """
+
 
 # Stream Parsing and Extraction Errors
 class ExtractionError(KeriError):
