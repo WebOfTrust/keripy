@@ -693,10 +693,10 @@ def test_cat_suber():
         assert digb == b'Eurq5IDrYVpYoBB_atyW3gPXBEB5XBDuEG5wMbjcauwk'
 
         vals = (dater, seqner, diger)
-        valb = sdb._cat(objs=vals)
+        valb = sdb._ser(val=vals)
         assert  valb == datb + seqb + digb
 
-        vals = sdb._uncat(val=valb)
+        vals = sdb._des(val=valb)
         assert b"".join(val.qb64b for val in vals) == valb
         for val, klas in zip(vals, sdb.klas):
             assert isinstance(val, klas)
@@ -751,9 +751,9 @@ def test_cat_ioset_suber():
 
         vals0 = (sqr0, dgr0)
 
-        val0b = sdb._cat(objs=vals0)
+        val0b = sdb._ser(val=vals0)
         assert val0b == sqr0.qb64b + dgr0.qb64b
-        vals = sdb._uncat(val=val0b)
+        vals = sdb._des(val=val0b)
         assert b"".join(val.qb64b for val in vals0) == val0b
         for val, klas in zip(vals, sdb.klas):
             assert isinstance(val, klas)

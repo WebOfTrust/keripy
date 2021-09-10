@@ -15,6 +15,21 @@ from . import dbing
 
 logger = help.ogler.getLogger()
 
+
+def klasify(sers: Iterable, klases: Iterable):
+    """
+    Convert each qb64 serialization in sers in instance of corresponding klas in
+    klases.
+    Useful for converting iterable of CESR serializations to associated iterable
+    of CESR subclass instances
+
+    Parameters:
+        sers (Iterable): of serialized CESR subclass, str .qb64 or bytes .qb64b
+        klases (Iterable): of class reference of CESR subclass
+    """
+    return tuple(klas(qb64=ser) for ser, klas in zip(sers, klases))
+
+
 class SuberBase():
     """
     Base class for Sub DBs of LMDBer
@@ -69,10 +84,10 @@ class SuberBase():
                        does not end in .sep
 
         """
-        if isinstance(keys, memoryview):  # memoryview of bytes
-            return bytes(keys)  # return bytes
         if hasattr(keys, "encode"):  # str
             return keys.encode("utf-8")
+        if isinstance(keys, memoryview):  # memoryview of bytes
+            return bytes(keys)  # return bytes
         elif hasattr(keys, "decode"): # bytes
             return keys
         return (self.sep.join(keys).encode("utf-8"))
@@ -92,18 +107,28 @@ class SuberBase():
         """
         if isinstance(key, memoryview):  # memoryview of bytes
             key = bytes(key)
-        return tuple(key.decode("utf-8").split(self.sep))
+        if hasattr(key, "decode"):  # bytes
+            key = key.decode("utf-8")  # convert to str
+        return tuple(key.split(self.sep))
 
 
-    @staticmethod
-    def _ser(val):
+    def _ser(self, val: Union[str, memoryview, bytes]):
+        """
+        Serialize value to bytes to store in db
+        Parameters:
+            val (Union[str, memoryview, bytes]): encodable as bytes
+        """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # return bytes
         return (val.encode("utf-8") if hasattr(val, "encode") else val)
 
 
-    @staticmethod
-    def _des(val):
+    def _des(self, val: Union[str, memoryview, bytes]):
+        """
+        Deserialize val to str
+        Parameters:
+            val (Union[str, memoryview, bytes]): decodable as str
+        """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
         return (val.decode("utf-8") if hasattr(val, "decode") else val)
@@ -222,25 +247,31 @@ class CesrSuber(Suber):
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
-            klas (Type[coring.Matter]): Class reference to subclass of Matter
+            klas (Type[coring.Matter]): Class reference to subclass of Matter or
+                Indexer or Counter or any ducktyped class of Matter
         """
         super(CesrSuber, self).__init__(*pa, **kwa)
         self.klas = klas
 
 
-    @staticmethod
-    def _ser(val):
-        if isinstance(val, memoryview):  # memoryview is always bytes
-            val = bytes(val)  # return bytes
-        return (val.encode("utf-8") if hasattr(val, "encode") else val)
+    def _ser(self, val: coring.Matter):
+        """
+        Serialize value to bytes to store in db
+        Parameters:
+            val (coring.Matter): instance Matter ducktype with .qb64b attribute
+        """
+        return val.qb64b
 
 
-    @staticmethod
-    def _des(val):
+    def _des(self, val: Union[str, memoryview, bytes]):
+        """
+        Deserialize val to str
+        Parameters:
+            val (Union[str, memoryview, bytes]): convertable to coring.matter
+        """
         if isinstance(val, memoryview):  # memoryview is always bytes
             val = bytes(val)  # convert to bytes
-        return (val.decode("utf-8") if hasattr(val, "decode") else val)
-
+        return self.klas(qb64b=val)  # converts to bytes
 
 
     def put(self, keys: Union[str, Iterable], val: coring.Matter):
@@ -257,7 +288,7 @@ class CesrSuber(Suber):
         """
         return (self.db.putVal(db=self.sdb,
                                key=self._tokey(keys),
-                               val=val.qb64b))
+                               val=self._ser(val)))
 
 
     def pin(self, keys: Union[str, Iterable], val: coring.Matter):
@@ -273,7 +304,7 @@ class CesrSuber(Suber):
         """
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
-                               val=val.qb64b))
+                               val=self._ser(val)))
 
 
     def get(self, keys: Union[str, Iterable]):
@@ -295,7 +326,7 @@ class CesrSuber(Suber):
 
         """
         val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return self.klas(qb64b=bytes(val)) if val is not None else None
+        return self._des(val) if val is not None else None
 
 
     def rem(self, keys: Union[str, Iterable]):
@@ -327,7 +358,7 @@ class CesrSuber(Suber):
 
         """
         for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
+            yield (self._tokeys(key), self._des(val))
 
 
 class CatSuberBase(SuberBase):
@@ -368,21 +399,24 @@ class CatSuberBase(SuberBase):
         self.klas = klas
 
 
-    def _cat(self, objs: Iterable):
+    def _ser(self, val: Union[Iterable, coring.Matter]):
         """
+        Serialize val to bytes to store in db
         Concatenates .qb64b of each instance in objs and returns val bytes
 
         Returns:
            val (bytes): concatenation of .qb64b of each object instance in vals
 
         Parameters:
-           subs (Iterable): of subclass instances.
+           subs (Union[Iterable, coring.Matter]): of subclass instances.
 
         """
-        return (b''.join(val.qb64b for val in objs))
+        if not nonStringIterable(val):  # not iterable
+            val = (val, )  # make iterable
+        return (b''.join(obj.qb64b for obj in val))
 
 
-    def _uncat(self, val: Union[bytes, memoryview]):
+    def _des(self, val: Union[str, memoryview, bytes]):
         """
         Converts val bytes to vals tuple of subclass instances by deserializing
         .qb64b  concatenation in order of each instance in .klas
@@ -394,8 +428,8 @@ class CatSuberBase(SuberBase):
            val (Union[bytes, memoryview]):  of concatenation of .qb64b
 
         """
-        if not isinstance(val, bytearray):  # memoryview or bytes
-            val = bytearray(val)  #  so may strip
+        if not isinstance(val, bytearray):  # is memoryview or bytes
+            val = bytearray(val)  # convert so may strip
         return tuple(klas(qb64b=val, strip=True) for klas in self.klas)
 
 
@@ -418,7 +452,7 @@ class CatSuberBase(SuberBase):
 
         """
         for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(key), self._uncat(val))
+            yield (self._tokeys(key), self._des(val))
 
 
 class CatSuber(CatSuberBase):
@@ -469,7 +503,7 @@ class CatSuber(CatSuberBase):
         """
         return (self.db.putVal(db=self.sdb,
                                key=self._tokey(keys),
-                               val=self._cat(val)))
+                               val=self._ser(val)))
 
 
     def pin(self, keys: Union[str, Iterable], val: Iterable):
@@ -486,7 +520,7 @@ class CatSuber(CatSuberBase):
         """
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
-                               val=self._cat(val)))
+                               val=self._ser(val)))
 
 
     def get(self, keys: Union[str, Iterable]):
@@ -502,7 +536,7 @@ class CatSuber(CatSuberBase):
 
         """
         val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return self._uncat(val) if val is not None else None
+        return self._des(val) if val is not None else None
 
 
     def rem(self, keys: Union[str, Iterable]):
@@ -882,7 +916,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
         """
         return (self.db.putIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
-                                     vals=[self._cat(mvals) for mvals in vals],
+                                     vals=[self._ser(mvals) for mvals in vals],
                                      sep=self.sep))
 
 
@@ -902,7 +936,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
         """
         return (self.db.addIoSetVal(db=self.sdb,
                                     key=self._tokey(keys),
-                                    val=self._cat(val),
+                                    val=self._ser(val),
                                     sep=self.sep))
 
 
@@ -928,7 +962,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
         self.db.delIoSetVals(db=self.sdb, key=key)  # delete all values
         return (self.db.setIoSetVals(db=self.sdb,
                                      key=key,
-                                     vals=[self._cat(mvals) for mvals in vals],
+                                     vals=[self._ser(mvals) for mvals in vals],
                                      sep=self.sep))
 
 
@@ -947,7 +981,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
 
 
         """
-        return ([self._uncat(val) for val in
+        return ([self._des(val) for val in
                     self.db.getIoSetValsIter(db=self.sdb,
                                              key=self._tokey(keys),
                                              sep=self.sep)])
@@ -968,7 +1002,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
 
         """
         val = self.db.getIoSetValLast(db=self.sdb, key=self._tokey(keys))
-        return (self._uncat(val) if val is not None else val)
+        return (self._des(val) if val is not None else val)
 
 
 
@@ -991,7 +1025,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
         for val in self.db.getIoSetValsIter(db=self.sdb,
                                             key=self._tokey(keys),
                                             sep=self.sep):
-            yield self._uncat(val)
+            yield self._des(val)
 
 
 
@@ -1027,7 +1061,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
 
         """
         if val is not None:
-            val = self._cat(val)
+            val = self._ser(val)
             return self.db.delIoSetVal(db=self.sdb,
                                        key=self._tokey(keys),
                                        val=val,
@@ -1055,7 +1089,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
         """
         for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             key, ion = dbing.unsuffix(iokey, sep=self.sep)
-            yield (self._tokeys(key), self._uncat(val))
+            yield (self._tokeys(key), self._des(val))
 
 
     def getIoSetItem(self, keys: Union[str, Iterable]):
@@ -1073,7 +1107,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
                     empty list if no entry at keys
 
         """
-        return ([(self._tokeys(iokey), self._uncat(val)) for iokey, val in
+        return ([(self._tokeys(iokey), self._des(val)) for iokey, val in
                         self.db.getIoSetItemsIter(db=self.sdb,
                                                   key=self._tokey(keys),
                                                   sep=self.sep)])
@@ -1099,7 +1133,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
         for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
                                                     key=self._tokey(keys),
                                                     sep=self.sep):
-            yield (self._tokeys(iokey), self._uncat(val))
+            yield (self._tokeys(iokey), self._des(val))
 
 
     def getIoItemIter(self, keys: Union[str, Iterable]=b""):
@@ -1122,7 +1156,7 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
 
         """
         for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(iokey), self._uncat(val))
+            yield (self._tokeys(iokey), self._des(val))
 
 
     def remIokey(self, iokeys: Union[str, bytes, memoryview, Iterable]):
