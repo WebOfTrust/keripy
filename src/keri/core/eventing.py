@@ -3432,7 +3432,7 @@ class Kevery:
         data = serder.ked["a"]
         for k in ("cid", "role", "eid"):
             if k not in data:
-                raise ValidationError(f"Missing element={d} from attributes in"
+                raise ValidationError(f"Missing element={k} from attributes in"
                                       f" {Ilks.rpy} msg={serder.ked}.")
 
         cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
