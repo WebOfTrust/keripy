@@ -24,7 +24,7 @@ import stat
 import shutil
 import tempfile
 from contextlib import contextmanager
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 import typing
 import functools
 
@@ -152,15 +152,34 @@ class EndpointRecord:  # ends
 
 
 @dataclass
+class EndAuthRecord:  # nested in locs
+    """
+    Service Endpoint Authorization Record provides cross reference field for search
+    purposes to find authorization for endpoint provider eid. The default is
+    controller id, cid, and a role. used to lookup authorization in end authN
+    database with keyspace given by (cid.role.eid) where cid is the authorizing
+    controller for the eid (endpoint id) at the given role.
+    The cid is usually a transferable identifer with a KEL but may be non-trans.
+    The eid is usually a nontransferable identifier when its used for roles
+    witness or watcher but may be transferable for other roles such as controller,
+    judge, juror, public watcher, or registrar.
+
+    This is an embedded record type in a LocationRecord in the cids field
+
+    """
+    cid: str = ""  # identifier prefix of controller that authorizes endpoint
+    roles: list[str] = field(default_factory=list)  # str endpoint roles such as watcher, witness etc
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+@dataclass
 class LocationRecord:  # locs
     """
-    Service Endpoint Record with url for endpoint of a given scheme and
-    fields to compose cross reference to entry in end authN database
-    (cid.role.eid) where cid is the authorizing controller for the eid (endpoint id)
-    at a given role. The cid is usually a transferable identifer with a KEL
-    but may be non-trans. The eid is usually a nontransferable identifier
-    (witness, watcher) but may be transferable (judge, juror, public watcher,
-    registrar).
+    Service Endpoint Record with url for endpoint of a given scheme  The eid is
+    usually a nontransferable identifier when its used for roles witness or watcher
+    but may be transferable for other roles such as controller, judge, juror,
+    public watcher, or registrar.
 
     Database Keys are (eid, scheme) where eid is service endpoint identifier
     (qb64 prefix) and scheme is the url protocol scheme (tcp, https).
@@ -183,8 +202,6 @@ class LocationRecord:  # locs
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
          "scheme": "http",  # one of eventing.Schemes
          "url":  "http://localhost:8080/watcher/wilma",
-         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "role": "watcher",  # one of eventing.Roles
       }
     }
 
@@ -199,15 +216,12 @@ class LocationRecord:  # locs
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
          "scheme": "http",  # one of eventing.Schemes
          "url":  "",
-         "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "role": "watcher",  # one of eventing.Roles
       }
     }
 
     """
     url: str  # full url including host:port/path?query scheme is optional
-    cid: str  # identifier prefix of controller that authorizes endpoint
-    role: str  # endpoint role such as watcher, witness etc
+    cids: list[EndAuthRecord] = field(default_factory=list)  # optional authorization record references
 
     def __iter__(self):
         return iter(asdict(self))
@@ -602,12 +616,12 @@ class Baser(dbing.LMDBer):
         # all sad ssgs (sad indexed signature serializations) maps SAD SAID to
         # quadruple (Prefixer, Seqner, Diger, Siger) of trans signer's est evt
         # for key state of signature in Siger
-        self.ssgs = subing.CatIoSetSuber(db=self, subkey='ssgs',
+        self.ssgs = subing.CatCesrIoSetSuber(db=self, subkey='ssgs',
             klas=(coring.Prefixer, coring.Seqner, coring.Diger, coring.Siger))
         # all sad scgs  (sad non-indexed signature serializations) maps SAD SAID
         # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
         # nontrans qb64 of Prefixer is same as Verfer
-        self.scgs = subing.CatIoSetSuber(db=self, subkey='scgs',
+        self.scgs = subing.CatCesrIoSetSuber(db=self, subkey='scgs',
                                         klas=(coring.Verfer, coring.Cigar))
 
         # all reply messages. Maps reply said to serialization. Replys are
@@ -618,7 +632,7 @@ class Baser(dbing.LMDBer):
         # all reply escrows indices of partially signed reply messages. Maps
         # route in reply to single (Saider,)  of escrowed reply.
         # Routes such as /end/role  /loc/schema
-        self.rpes = subing.CatIoSetSuber(db=self, subkey='rpes.',
+        self.rpes = subing.CatCesrIoSetSuber(db=self, subkey='rpes.',
                                                       klas=(coring.Saider, ))
 
         # auth AuthN/AuthZ by controller at cid of endpoint provider at eid

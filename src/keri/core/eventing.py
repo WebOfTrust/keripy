@@ -28,7 +28,7 @@ from ..kering import (MissingEntryError,
                       ExtractionError, ShortageError, ColdStartError,
                       SizedGroupError, UnexpectedCountCodeError,
                       ValidationError, MissingSignatureError,
-                      MissingWitnessSignatureError,
+                      MissingWitnessSignatureError, UnverifiedReplyError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError)
@@ -2392,6 +2392,7 @@ class Kevery:
     TimeoutUWE = 3600  # seconds to timeout unverified receipt escrows
     TimeoutURE = 3600  # seconds to timeout unverified receipt escrows
     TimeoutVRE = 3600  # seconds to timeout unverified transferable receipt escrows
+    TimeoutRPE = 3600  # seconds to timeout reply message escrows
 
 
     def __init__(self, *, evts=None, cues=None, db=None,
@@ -3211,6 +3212,75 @@ class Kevery:
                                       #"".format(ked))
 
 
+    def processEscrowReply(self):
+        """
+        Process escrows for reply messages. Escrows are keyed by reply route
+        and val is reply said
+
+
+        """
+        for (route, ion), (saider,) in self.db.rpes.getIoItemIter():
+            try:
+                # val=(saider, prefixer, seqner, diger)
+                keys = (saider.qb64, )
+                dater = self.db.sdts.get(keys=keys)
+                serder = self.db.rpys.get(keys=keys)
+                #quadkeys=(saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+                #sigers= [siger for (siger, ) in self.db.ssgs.get(keys=quadkeys)]
+                quadruples = self.db.ssgs.get(keys=keys)
+
+                if not (dater and serder and quadruples):
+                    raise ValueError(f"Missing escrow artifacts at said={saider.qb64}"
+                                     f"for route={route}.")
+
+                # do date math for stale escrow
+                if (helping.nowUTC() - dater) > datetime.timedelta(seconds=self.TimeoutRPE):
+                    # escrow stale so raise ValidationError which unescrows below
+                    logger.info("Kevery unescrow error: Stale reply escrow "
+                                " at route = %s\n", route)
+
+                    raise ValidationError(f"Stale reply escrow at route = {route}.")
+                tsgs = []  #
+                # self.processReply(serder=serder,tsgs=tsgs)
+
+            except UnverifiedReplyError as ex:
+                # still waiting on missing prior event to validate
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery unescrow attempt failed: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery unescrow attempt failed: %s\n", ex.args[0])
+
+            except Exception as ex:  # log diagnostics errors etc
+                # other error so remove from reply escrow
+                # remove escrow artifacts
+
+                # self.db.rpes.remIokey(iokeys=(route, ion))
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
+                else:
+                    logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
+
+            else:  # unescrow succeded
+                # self.db.rpes.remIokey(iokeys=(route, ion))
+                logger.info("Kevery unescrow succeeded for reply=\n%s\n",
+                            serder.pretty())
+
+
+    def removeStaleReplyEndRole(self, saider):
+        """
+        Process reply escrow at saider for route "/end/role"
+        """
+        pass
+
+
+    def removeStaleReplyLocScheme(self, saider):
+        """
+        Process reply escrow at saider for route "/loc/scheme"
+        """
+        pass
+
+
+
     def processReply(self, serder, cigars=None, tsgs=None):
         """
         Process one reply message with either attached nontrans signing couples
@@ -3246,16 +3316,16 @@ class Kevery:
         """
         for k in RPY_LABELS:
             if k not in serder.ked:
-                raise ValidationError("Missing element={} from {} msg={}."
-                                      "".format(k, Ilks.rpy, serder.ked))
+                raise ValidationError(f"Missing element={k} from {Ilks.rpy}"
+                                      f" msg={serder.ked}.")
         # fetch from serder to process
         ked = serder.ked
 
         # verify said of reply
         saider = coring.Saider(qb64=ked["d"])
         if not saider.verify(sad=ked, prefixed=True):
-            raise ValidationError("Invalid said = {} for reply msg={}."
-                                  "".format(saider.qb64, ked))
+            raise ValidationError(f"Invalid said = {saider.qb64} for reply "
+                                  f"msg={ked}.")
 
         # get date-time raises error if empty or invalid format
         dater = coring.Dater(dts=ked["dt"])
@@ -3269,8 +3339,8 @@ class Kevery:
             self.processReplyLocScheme(serder=serder, saider=saider, dater=dater,
                                        route=route, cigars=cigars, tsgs=tsgs)
         else:  # unsupported route
-            raise ValidationError("Usupported route={} in {} msg={}."
-                                  "".format(route, Ilks.rpy, serder.ked))
+            raise ValidationError(f"Usupported route={route} in {Ilks.rpy}"
+                                  f" msg={serder.ked}.")
 
 
 
@@ -3345,6 +3415,8 @@ class Kevery:
         Escrow process logic is route dependent and is dispatched by route,
         i.e. route is address of buffer with route specific handler of escrow.
         """
+        escrowed = False  # flag to raise UnverifiedReplyError is escrowed tsg
+
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if  tsgs is not None else []
 
@@ -3353,22 +3425,22 @@ class Kevery:
         elif route.startswith("/end/role/cut"):
             allow = False
         else:  # unsupported route
-            raise ValidationError("Usupported route={} in {} msg={}."
-                                  "".format(route, Ilks.rpy, serder.ked))
+            raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
+                                  f"msg={serder.ked}.")
         route = "/end/role"  # escrow based on route base
 
         data = serder.ked["a"]
         for k in ("cid", "role", "eid"):
             if k not in data:
-                raise ValidationError("Missing element={} from attributes in {} "
-                                      "msg={}.".format(k, Ilks.rpy, serder.ked))
+                raise ValidationError(f"Missing element={k} from attributes in"
+                                      f" {Ilks.rpy} msg={serder.ked}.")
 
         cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
         cid = cider.qb64  # controller authorizing eid at role
         role = data["role"]
         if role not in Roles:
-            raise ValidationError("Invalid role={} from attributes in {} "
-                                  "msg={}.".format(role, Ilks.rpy, serder.ked))
+            raise ValidationError(f"Invalid role={role} from attributes in "
+                                  f"{Ilks.rpy} msg={serder.ked}.")
         eider = coring.Prefixer(qb64=data["eid"] )  # raises error if unsupported code
         eid = eider.qb64  # controller of endpoint at role
         keys = (cid, role, eid)
@@ -3378,8 +3450,8 @@ class Kevery:
         if osaider:  # get old
             if (odater := self.db.sdts.get(keys=osaider.qb64b)):
                 if dater.datetime <= odater.datetime:
-                    raise ValidationError("Stale update of {} from {} via {}={}."
-                                    "".format(route, cid, Ilks.rpy, serder.ked))
+                    raise ValidationError(f"Stale update of {route} from {cid} "
+                                          f"via {Ilks.rpy}={serder.ked}.")
 
         for cigar in cigars:  # process each couple to verify sig and write to db
             if cigar.verfer.transferable:  # ignore invalid transferable verfers
@@ -3393,12 +3465,12 @@ class Kevery:
 
             if cid != cigar.verfer.qb64:  # cig not by cid=controller
                 logger.info("Kevery process: skipped cig not from cid="
-                        "{} on reply msg=\n%s\n", cid, serder.pretty())
+                        "%s on reply msg=\n%s\n", cid, serder.pretty())
                 continue  # skip invalid cig's verfer is not cid
 
             if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
                 logger.info("Kevery process: skipped nonverifying cig from "
-                        "{} on reply msg=\n%s\n", cigar.verfer.qb64, serder.pretty())
+                        "%s on reply msg=\n%s\n", cigar.verfer.qb64, serder.pretty())
                 continue  # skip if cig not verify
 
             # All constraints satisfied so update new reply SAD and its dts and cigar
@@ -3422,7 +3494,7 @@ class Kevery:
 
             if cid != spre:  # sig not by cid=controller
                 logger.info("Kevery process: skipped sig not from cid="
-                        "{} on reply msg=\n%s\n", cid, serder.pretty())
+                        "%s on reply msg=\n%s\n", cid, serder.pretty())
                 continue  # skip invalid sig is not from cid
 
             # retrieve sdig of last event at sn of signer.
@@ -3433,6 +3505,7 @@ class Kevery:
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
                                  diger=diger, sigers=sigers)
+                escrowed = True
                 continue
 
             # retrieve last event itself of signer given sdig
@@ -3440,16 +3513,17 @@ class Kevery:
             # assumes db ensures that sraw must not be none because sdig was in KE
             sserder = Serder(raw=bytes(sraw))
             if not sserder.compare(diger=diger):  # signer's dig not match est evt
-                raise ValidationError("Bad trans indexed sig group at sn = {}"
-                                      " for reply = {}."
-                                      "".format(seqner.sn, serder.ked))
+                raise ValidationError(f"Bad trans indexed sig group at sn = "
+                                      f"{seqner.sn} for reply = {serder.ked}.")
 
             #verify sigs
             if not (sverfers := sserder.verfers):
-                raise ValidationError("Invalid reply from signer={}, no keys at"
-                         "signer's est. event sn={}.".format(spre, seqner.sn))
+                raise ValidationError(f"Invalid reply from signer={spre}, no "
+                                f"keys at signer's est. event sn={seqner.sn}.")
 
             # fetch any escrowed sigs, extract just the siger from each quad
+            # quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+            # esigers = [siger for (siger, ) in self.db.ssgs.get(keys=quadkeys)]
             esigers = [siger for _, _, _, siger in
                                self.db.ssgs.get(keys=(saider.qb64, ))]
             sigers.extend(esigers)
@@ -3474,6 +3548,10 @@ class Kevery:
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
                                  diger=diger, sigers=sigers)
+                escrowed = True
+
+        if escrowed == True:
+            raise UnverifiedReplyError(f"Unverified reply.")
 
 
 
@@ -3499,10 +3577,13 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
+        EndAuthRecord
+             cid: str = ""  # identifier prefix of controller that authorizes endpoint
+             roles: list[str] = field(default_factory=list)  # str endpoint roles such as watcher, witness etc
+
         LocationRecord:
             url: str  # full url including host:port/path?query scheme is optional
-            cid: str  # identifier prefix of controller that authorizes endpoint
-            role: str  # endpoint role such as watcher, witness etc
+            cids: list[EndAuthRecord] = field(default_factory=list)  # optional authorization record references
 
         Reply Message:
 
@@ -3517,8 +3598,6 @@ class Kevery:
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
              "scheme": "http",  # one of eventing.Schemes
              "url":  "http://localhost:8080/watcher/wilma",
-             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of eventing.Roles
           }
         }
 
@@ -3533,8 +3612,6 @@ class Kevery:
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
              "scheme": "http",  # one of eventing.Schemes
              "url":  "",  # Nullifies
-             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of eventing.Roles
           }
         }
 
@@ -3554,6 +3631,8 @@ class Kevery:
         Escrow process logic is route dependent and is dispatched by route,
         i.e. route is address of buffer with route specific handler of escrow.
         """
+        escrowed = False  # flag to raise UnverifiedReplyError is escrowed tsg
+
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if  tsgs is not None else []
 
@@ -3563,7 +3642,7 @@ class Kevery:
         route = "/loc/scheme"  # escrow based on route base
 
         data = serder.ked["a"]
-        for k in ("eid", "scheme", "url", "cid", "role"):
+        for k in ("eid", "scheme", "url"):
             if k not in data:
                 raise ValidationError("Missing element={} from attributes in {} "
                                       "msg={}.".format(k, Ilks.rpy, serder.ked))
@@ -3580,12 +3659,6 @@ class Kevery:
             raise ValidationError("Invalid url={} for scheme={} from attributes in {} "
                                 "msg={}.".format(url, scheme, Ilks.rpy, serder.ked))
         # empty host port allowed will use default localhost:8080
-        cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
-        cid = cider.qb64  # controller authorizing eid at role
-        role = data["role"]
-        if role not in Roles:
-            raise ValidationError("Invalid role={} from attributes in {} "
-                                  "msg={}.".format(role, Ilks.rpy, serder.ked))
 
         keys = (eid, scheme)
         # BADA logic.
@@ -3620,7 +3693,7 @@ class Kevery:
             # All constraints satisfied so update new reply SAD and its dts and cigar
             self.updateReply(saider=saider, dater=dater, serder=serder, cigar=cigar)
             # update .lans and .locs
-            self.updateLoc(keys=keys, saider=saider, url=url, cid=cid, role=role)
+            self.updateLoc(keys=keys, saider=saider, url=url)
             self.removeReply(saider=osaider)
 
             break  # first valid cigar sufficient ignore any duplicates in cigars
@@ -3647,6 +3720,7 @@ class Kevery:
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
                                  diger=diger, sigers=sigers)
+                escrowed = True
                 continue
 
             # retrieve last event itself of signer given sdig
@@ -3664,6 +3738,8 @@ class Kevery:
                          "signer's est. event sn={}.".format(spre, seqner.sn))
 
             # fetch any escrowed sigs, extract just the siger from each quad
+            # quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+            # esigers = [siger for (siger, ) in self.db.ssgs.get(keys=quadkeys)]
             esigers = [siger for _, _, _, siger in
                                          self.db.ssgs.get(keys=(saider.qb64, ))]
             sigers.extend(esigers)
@@ -3681,7 +3757,7 @@ class Kevery:
                                  prefixer=prefixer, seqner=seqner, diger=diger,
                                  sigers=sigers)
                 # update .lans and .locs
-                self.updateLoc(keys=keys, saider=saider, url=url, cid=cid, role=role)
+                self.updateLoc(keys=keys, saider=saider, url=url)
                 # remove now obsolete reply SAD and its dts and cigar
                 self.removeReply(saider=osaider)
 
@@ -3689,6 +3765,10 @@ class Kevery:
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
                                  route=route, prefixer=prefixer, seqner=seqner,
                                  diger=diger, sigers=sigers)
+                escrowed = True
+
+        if escrowed == True:
+            raise UnverifiedReplyError(f"Unverified reply.")
 
 
     def updateReply(self, *, serder, saider, dater, cigar=None, prefixer=None,
@@ -3719,6 +3799,8 @@ class Kevery:
         if cigar:
             self.db.scgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
         for siger in sigers:
+            # quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+            # self.db.ssgs.put(keys=keys, vals=[(siger, ) for siger in sigers])
             quad = (prefixer, seqner, diger, siger)
             self.db.ssgs.put(keys=keys, vals=[(*quad, )])
 
@@ -3786,7 +3868,7 @@ class Kevery:
         self.db.ends.pin(keys=keys, val=ender)  # overwrite
 
 
-    def updateLoc(self, keys, saider, url, cid, role):
+    def updateLoc(self, keys, saider, url):
         """
         Update loc auth database .lans and loc database .locs.
 
@@ -3794,11 +3876,12 @@ class Kevery:
             keys (tuple): of key strs for databases (eid, scheme)
             saider (Saider): instance from said in reply serder (SAD)
             url (str): endpoint url
-            cid (str): authorizing controller identifier qb64
-            role (str): authorized role
         """
         self.db.lans.pin(keys=keys, val=saider)  # overwrite
-        locer = basing.LocationRecord(url=url, cid=cid, role=role)
+        if not (locer := self.db.locs.get(keys=keys)):
+            locer = basing.LocationRecord(url=url)  # update existing record
+        else:
+            locer = basing.LocationRecord(url=url)  # create new record
         self.db.locs.pin(keys=keys, val=locer)  # overwrite
 
 

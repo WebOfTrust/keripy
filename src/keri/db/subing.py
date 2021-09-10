@@ -1,7 +1,41 @@
 # -*- encoding: utf-8 -*-
 """
 KERI
-keri.db.subdbing module
+keri.db.subing module
+
+Provide variety of mixin classes for LMDB sub-dbs with various behaviors.
+
+Principally:
+
+Suber class provides put, pin, get, rem and getItemIter method for managing
+a serialized value in a sub db with an iterable set of keys defining the key space
+
+CesrSuber class extends Suber for values that are serializations of CESR serializable
+object instances. Ducktyped subclasses of Matter, Indexer, and Counter or the like.
+
+IoSetSuber class extends Suber to allow a set of values to be stored in insertion
+order at each effective key. Only one copy of a unique value is allowed in the
+set at a given effective key. The effective key suffixes an ordinal to the key
+space to track insertion ordering. IoSetSuber adds additional methods to manage
+IoSets of values.
+
+CatCesrSuber adds the ability to store multiple concatenated serializations at
+a value
+
+CatCesrIoSetSuber combines the capabilities
+
+Other special classer for special values
+
+SerderSuber stores Serialized Serder Instances of in JSON, CBOR, or MGPK
+
+Also for Secrets private keys
+SignerSuber
+CryptSignerSuber
+
+Also for using the dupsort==true mechanism is
+DupSuber
+CesrDupSuber
+
 
 """
 from typing import Type, Union
@@ -14,6 +48,21 @@ from . import dbing
 
 
 logger = help.ogler.getLogger()
+
+
+def klasify(sers: Iterable, klases: Iterable):
+    """
+    Convert each qb64 serialization in sers in instance of corresponding klas in
+    klases.
+    Useful for converting iterable of CESR serializations to associated iterable
+    of CESR subclass instances
+
+    Parameters:
+        sers (Iterable): of serialized CESR subclass, str .qb64 or bytes .qb64b
+        klases (Iterable): of class reference of CESR subclass
+    """
+    return tuple(klas(qb64=ser) for ser, klas in zip(sers, klases))
+
 
 class SuberBase():
     """
@@ -69,10 +118,10 @@ class SuberBase():
                        does not end in .sep
 
         """
-        if isinstance(keys, memoryview):  # memoryview of bytes
-            return bytes(keys)  # return bytes
         if hasattr(keys, "encode"):  # str
             return keys.encode("utf-8")
+        if isinstance(keys, memoryview):  # memoryview of bytes
+            return bytes(keys)  # return bytes
         elif hasattr(keys, "decode"): # bytes
             return keys
         return (self.sep.join(keys).encode("utf-8"))
@@ -92,16 +141,30 @@ class SuberBase():
         """
         if isinstance(key, memoryview):  # memoryview of bytes
             key = bytes(key)
-        return tuple(key.decode("utf-8").split(self.sep))
+        if hasattr(key, "decode"):  # bytes
+            key = key.decode("utf-8")  # convert to str
+        return tuple(key.split(self.sep))
 
 
-    @staticmethod
-    def _encode(val):
+    def _ser(self, val: Union[str, memoryview, bytes]):
+        """
+        Serialize value to bytes to store in db
+        Parameters:
+            val (Union[str, memoryview, bytes]): encodable as bytes
+        """
+        if isinstance(val, memoryview):  # memoryview is always bytes
+            val = bytes(val)  # return bytes
         return (val.encode("utf-8") if hasattr(val, "encode") else val)
 
 
-    @staticmethod
-    def _decode(val):
+    def _des(self, val: Union[str, memoryview, bytes]):
+        """
+        Deserialize val to str
+        Parameters:
+            val (Union[str, memoryview, bytes]): decodable as str
+        """
+        if isinstance(val, memoryview):  # memoryview is always bytes
+            val = bytes(val)  # convert to bytes
         return (val.decode("utf-8") if hasattr(val, "decode") else val)
 
 
@@ -121,7 +184,8 @@ class SuberBase():
 
         """
         for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(key), bytes(val).decode("utf-8"))
+            yield (self._tokeys(key), self._des(val))
+
 
 
 class Suber(SuberBase):
@@ -152,9 +216,9 @@ class Suber(SuberBase):
             result (bool): True If successful, False otherwise, such as key
                               already in database.
         """
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")
-        return (self.db.putVal(db=self.sdb, key=self._tokey(keys), val=val))
+        return (self.db.putVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=self._ser(val)))
 
 
     def pin(self, keys: Union[str, Iterable], val: Union[bytes, str]):
@@ -168,9 +232,9 @@ class Suber(SuberBase):
         Returns:
             result (bool): True If successful. False otherwise.
         """
-        if hasattr(val, "encode"):
-            val = val.encode("utf-8")
-        return (self.db.setVal(db=self.sdb, key=self._tokey(keys), val=val))
+        return (self.db.setVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=self._ser(val)))
 
 
     def get(self, keys: Union[str, Iterable]):
@@ -191,8 +255,8 @@ class Suber(SuberBase):
             use data here
 
         """
-        data = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return bytes(data).decode("utf=8") if data is not None else None
+        val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
+        return (self._des(val) if val is not None else None)
 
 
     def rem(self, keys: Union[str, Iterable]):
@@ -209,171 +273,172 @@ class Suber(SuberBase):
 
 
 
-class DupSuber(SuberBase):
+class CesrSuberBase(SuberBase):
     """
-    Sub DB of LMDBer. Subclass of SuberBase that supports multiple entries at
-    each key (duplicates) with dupsort==True
+    Sub class of Suber where data is CESR encode/decode ducktyped subclass
+    instance such as Matter, Indexer, Counter with .qb64b property when provided
+    as fully qualified serialization
+    Automatically serializes and deserializes from qb64b to/from CESR instances
 
-    Do not use if  serialized value is greater than 511 bytes.
-    This is a limitation of dupsort==True sub dbs in LMDB
     """
 
-    def __init__(self, db: Type[dbing.LMDBer], *,
-                       subkey: str='docs.',
-                       dupsort: bool=True,
-                       **kwa):
+    def __init__(self, *pa, klas: Type[coring.Matter] = coring.Matter, **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
+            klas (Type[coring.Matter]): Class reference to subclass of Matter or
+                Indexer or Counter or any ducktyped class of Matter
         """
-        super(DupSuber, self).__init__(db=db, subkey=subkey, dupsort=True, **kwa)
+        super(CesrSuberBase, self).__init__(*pa, **kwa)
+        self.klas = klas
 
 
-    def put(self, keys: Union[str, Iterable], vals: list):
+    def _ser(self, val: coring.Matter):
         """
-        Puts all vals at key made from keys. Does not overwrite. Adds to existing
-        dup values at key if any. Duplicate means another entry at the same key
-        but the entry is still a unique value. Duplicates are inserted in
-        lexocographic order not insertion order. Lmdb does not insert a duplicate
-        unless it is a unique value for that key.
-
+        Serialize value to bytes to store in db
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            vals (list): str or bytes of each value to be written at key
+            val (coring.Matter): instance Matter ducktype with .qb64b attribute
+        """
+        return val.qb64b
+
+
+    def _des(self, val: Union[str, memoryview, bytes]):
+        """
+        Deserialize val to str
+        Parameters:
+            val (Union[str, memoryview, bytes]): convertable to coring.matter
+        """
+        if isinstance(val, memoryview):  # memoryview is always bytes
+            val = bytes(val)  # convert to bytes
+        return self.klas(qb64b=val)  # converts to bytes
+
+
+class CesrSuber(CesrSuberBase, Suber):
+    """
+    Sub class of Suber where data is CESR encode/decode ducktyped subclass
+    instance such as Matter, Indexer, Counter with .qb64b property when provided
+    as fully qualified serialization.
+    Extents Suber to support val that are ducktyped CESR serializable .qb64 .qb64b
+    subclasses such as coring.Matter, coring.Indexer, coring.Counter.
+    Automatically serializes and deserializes from qb64b to/from CESR instances
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            klas (Type[coring.Matter]): Class reference to subclass of Matter or
+                Indexer or Counter or any ducktyped class of Matter
+        """
+        super(CesrSuber, self).__init__(*pa, **kwa)
+
+
+class CatCesrSuberBase(CesrSuberBase):
+    """
+    Base Class whose values stored in db are a concatenation of the  .qb64b property
+    from one or more  subclass instances (qb64b is bytes of fully qualified
+    serialization) that support CESR encode/decode ducktyped subclass instance
+    such as Matter, Indexer, Counter
+    Automatically serializes and deserializes from qb64b to/from CESR instances
+
+     Attributes:
+        db (dbing.LMDBer): base LMDB db
+        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        sep (str): separator for combining keys tuple of strs into key bytes
+        klas (Iterable): of Class references to subclasses of CESR compatible
+                , each of to Type[coring.Matter etc]
+    """
+
+    def __init__(self, *pa, klas: Iterable = None, **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            klas (Iterable): of Class references to subclasses of Matter, each
+                of to Type[coring.Matter]
+
+        """
+        if klas is None:
+            klas = (coring.Matter, )  # set default to tuple of single Matter
+        if not nonStringIterable(klas):  # not iterable
+            klas = (klas, )  # make it so
+        super(CatCesrSuberBase, self).__init__(*pa, klas=klas, **kwa)
+        # self.klas = klas
+
+
+    def _ser(self, val: Union[Iterable, coring.Matter]):
+        """
+        Serialize val to bytes to store in db
+        Concatenates .qb64b of each instance in objs and returns val bytes
 
         Returns:
-            result (bool): True If successful, False otherwise.
-
-        Apparently always returns True (how .put works with dupsort=True)
-
-        """
-        return (self.db.putVals(db=self.sdb,
-                                key=self._tokey(keys),
-                                vals=[self._encode(val) for val in vals]))
-
-
-    def add(self, keys: Union[str, Iterable], val: Union[bytes, str]):
-        """
-        Add val to vals at key made from keys. Does not overwrite. Adds to existing
-        dup values at key if any. Duplicate means another entry at the same key
-        but the entry is still a unique value. Duplicates are inserted in
-        lexocographic order not insertion order. Lmdb does not insert a duplicate
-        unless it is a unique value for that key.
+           val (bytes): concatenation of .qb64b of each object instance in vals
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Union[str, bytes]): value
+           subs (Union[Iterable, coring.Matter]): of subclass instances.
+
+        """
+        if not nonStringIterable(val):  # not iterable
+            val = (val, )  # make iterable
+        return (b''.join(obj.qb64b for obj in val))
+
+
+    def _des(self, val: Union[str, memoryview, bytes]):
+        """
+        Converts val bytes to vals tuple of subclass instances by deserializing
+        .qb64b  concatenation in order of each instance in .klas
 
         Returns:
-            result (bool): True means unique value among duplications,
-                              False means duplicte of same value already exists.
-
-        """
-        return (self.db.addVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=self._encode(val)))
-
-
-    def pin(self, keys: Union[str, Iterable], vals: list):
-        """
-        Pins (sets) vals at key made from keys. Overwrites. Removes all
-        pre-existing dup vals and replaces them with vals
+           vals (tuple): subclass instances
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            vals (list): str or bytes values
-
-        Returns:
-            result (bool): True If successful, False otherwise.
+           val (Union[bytes, memoryview]):  of concatenation of .qb64b
 
         """
-        key = self._tokey(keys)
-        self.db.delVals(db=self.sdb, key=key)  # delete all values
-        return (self.db.putVals(db=self.sdb,
-                                key=key,
-                                vals=[self._encode(val) for val in vals]))
+        if not isinstance(val, bytearray):  # is memoryview or bytes
+            val = bytearray(val)  # convert so may strip
+        return tuple(klas(qb64b=val, strip=True) for klas in self.klas)
 
 
+class CatCesrSuber(CatCesrSuberBase, Suber):
+    """
+    Class whose values stored in db are a concatenation of the  .qb64b property
+    from one or more  subclass instances (qb64b is bytes of fully qualified
+    serialization) that support CESR encode/decode ducktyped subclass instance
+    such as Matter, Indexer, Counter
+    Automatically serializes and deserializes from qb64b to/from CESR instances
 
-    def get(self, keys: Union[str, Iterable]):
+     Attributes:
+        db (dbing.LMDBer): base LMDB db
+        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
+        sep (str): separator for combining keys tuple of strs into key bytes
+        klas (Iterable): of Class references to subclasses of CESR compatible
+                , each of to Type[coring.Matter etc]
+    """
+
+    def __init__(self, *pa, **kwa):
         """
-        Gets dup vals list at key made from keys
-
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            vals (list):  each item in list is str
-                          empty list if no entry at keys
-
-        """
-        return [self._decode(bytes(val)) for val in
-                        self.db.getValsIter(db=self.sdb, key=self._tokey(keys))]
-
-
-    def getLast(self, keys: Union[str, Iterable]):
-        """
-        Gets last dup val at key made from keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            val (str):  value else None if no value at key
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            dupsort (bool): True means enable duplicates at each key
+                               False (default) means do not enable duplicates at
+                               each key
+            sep (str): separator to convert keys iterator to key bytes for db key
+                       default is self.Sep == '.'
+            klas (Iterable): of Class references to subclasses of Matter, each
+                of to Type[coring.Matter]
 
         """
-        val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
-        if val is not None:
-            val = self._decode(bytes(val))
-        return val
-
-
-    def getIter(self, keys: Union[str, Iterable]):
-        """
-        Gets dup vals iterator at key made from keys
-
-        Duplicates are retrieved in lexocographic order not insertion order.
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            iterator:  vals each of str. Raises StopIteration when done
-
-        """
-        for val in self.db.getValsIter(db=self.sdb, key=self._tokey(keys)):
-            yield self._decode(bytes(val))
-
-
-    def cnt(self, keys: Union[str, Iterable]):
-        """
-        Return count of dup values at key made from keys, zero otherwise
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-        """
-        return (self.db.cntVals(db=self.sdb, key=self._tokey(keys)))
-
-
-    def rem(self, keys: Union[str, Iterable], val=None):
-        """
-        Removes entry at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Union[str, bytes]):  instance of dup val at key to delete
-                              if val is None then remove all values at key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-
-        """
-        if val is not None:
-            val = self._encode(val)
-        else:
-            val = b''
-        return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
+        super(CatCesrSuber, self).__init__(*pa, **kwa)
 
 
 class IoSetSuber(SuberBase):
@@ -415,7 +480,7 @@ class IoSetSuber(SuberBase):
         super(IoSetSuber, self).__init__(db=db, subkey=subkey, dupsort=False, **kwa)
 
 
-    def put(self, keys: Union[str, Iterable], vals: list):
+    def put(self, keys: Union[str, Iterable], vals: Iterable):
         """
         Puts all vals at effective key made from keys and hidden ordinal suffix.
         that are not already in set of vals at key. Does not overwrite.
@@ -430,11 +495,11 @@ class IoSetSuber(SuberBase):
         """
         return (self.db.putIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
-                                     vals=[self._encode(val) for val in vals],
+                                     vals=[self._ser(val) for val in vals],
                                      sep=self.sep))
 
 
-    def add(self, keys: Union[str, Iterable], val: Union[bytes, str]):
+    def add(self, keys: Union[str, Iterable], val: Union[bytes, str, memoryview]):
         """
         Add val to vals at effective key made from keys and hidden ordinal suffix.
         that is not already in set of vals at key. Does not overwrite.
@@ -450,11 +515,11 @@ class IoSetSuber(SuberBase):
         """
         return (self.db.addIoSetVal(db=self.sdb,
                                     key=self._tokey(keys),
-                                    val=self._encode(val),
+                                    val=self._ser(val),
                                     sep=self.sep))
 
 
-    def pin(self, keys: Union[str, Iterable], vals: list):
+    def pin(self, keys: Union[str, Iterable], vals: Iterable):
         """
         Pins (sets) vals at effective key made from keys and hidden ordinal suffix.
         Overwrites. Removes all pre-existing vals that share same effective keys
@@ -472,7 +537,7 @@ class IoSetSuber(SuberBase):
         self.db.delIoSetVals(db=self.sdb, key=key)  # delete all values
         return (self.db.setIoSetVals(db=self.sdb,
                                      key=key,
-                                     vals=[self._encode(val) for val in vals],
+                                     vals=[self._ser(val) for val in vals],
                                      sep=self.sep))
 
 
@@ -488,7 +553,7 @@ class IoSetSuber(SuberBase):
                           empty list if no entry at keys
 
         """
-        return ([self._decode(bytes(val)) for val in
+        return ([self._des(val) for val in
                     self.db.getIoSetValsIter(db=self.sdb,
                                              key=self._tokey(keys),
                                              sep=self.sep)])
@@ -507,9 +572,7 @@ class IoSetSuber(SuberBase):
 
         """
         val = self.db.getIoSetValLast(db=self.sdb, key=self._tokey(keys))
-        if val is not None:
-            val = self._decode(bytes(val))
-        return val
+        return (self._des(val) if val is not None else val)
 
 
 
@@ -529,7 +592,7 @@ class IoSetSuber(SuberBase):
         for val in self.db.getIoSetValsIter(db=self.sdb,
                                             key=self._tokey(keys),
                                             sep=self.sep):
-            yield self._decode(bytes(val))
+            yield self._des(val)
 
 
 
@@ -546,7 +609,7 @@ class IoSetSuber(SuberBase):
                                      sep=self.sep))
 
 
-    def rem(self, keys: Union[str, Iterable], val=None):
+    def rem(self, keys: Union[str, Iterable], val: Union[str, bytes, memoryview]=b''):
         """
         Removes entry at effective key made from keys and hidden ordinal suffix
         that matches val is any. Otherwise delets all values at effective key.
@@ -554,18 +617,17 @@ class IoSetSuber(SuberBase):
         Parameters:
             keys (Iterable): of key strs to be combined in order to form key
             val (str):  value at key to delete
-                              if val is None then remove all values at key
+                              if val is empty then remove all values at key
 
         Returns:
            result (bool): True if effective key with val exists so delete successful.
                            False otherwise
 
         """
-        if val is not None:
-            val = self._encode(val)
+        if val:
             return self.db.delIoSetVal(db=self.sdb,
                                        key=self._tokey(keys),
-                                       val=val,
+                                       val=self._ser(val),
                                        sep=self.sep)
         else:
             return self.db.delIoSetVals(db=self.sdb,
@@ -594,7 +656,7 @@ class IoSetSuber(SuberBase):
         """
         for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             key, ion = dbing.unsuffix(iokey, sep=self.sep)
-            yield (self._tokeys(key), self._decode(bytes(val)))
+            yield (self._tokeys(key), self._des(val))
 
 
     def getIoSetItem(self, keys: Union[str, Iterable]):
@@ -612,7 +674,7 @@ class IoSetSuber(SuberBase):
                     empty list if no entry at keys
 
         """
-        return ([(self._tokeys(iokey), self._decode(bytes(val))) for iokey, val in
+        return ([(self._tokeys(iokey), self._des(val)) for iokey, val in
                         self.db.getIoSetItemsIter(db=self.sdb,
                                                   key=self._tokey(keys),
                                                   sep=self.sep)])
@@ -637,7 +699,7 @@ class IoSetSuber(SuberBase):
         for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
                                                     key=self._tokey(keys),
                                                     sep=self.sep):
-            yield (self._tokeys(iokey), self._decode(bytes(val)))
+            yield (self._tokeys(iokey), self._des(val))
 
 
     def getIoItemIter(self, keys: Union[str, Iterable]=b""):
@@ -658,7 +720,7 @@ class IoSetSuber(SuberBase):
 
         """
         for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(iokey), self._decode(bytes(val)))
+            yield (self._tokeys(iokey), self._des(val))
 
 
     def remIokey(self, iokeys: Union[str, bytes, memoryview, Iterable]):
@@ -676,490 +738,30 @@ class IoSetSuber(SuberBase):
         return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
 
 
-class SerderSuber(Suber):
+class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
     """
-    Sub class of Suber where data is serialized Serder instance
-    Automatically serializes and deserializes using Serder methods
-
-    """
-
-    def __init__(self, *pa, **kwa):
-        """
-        Parameters:
-            db (dbing.LMDBer): base db
-            subkey (str):  LMDB sub database key
-        """
-        super(SerderSuber, self).__init__(*pa, **kwa)
-
-
-    def put(self, keys: Union[str, Iterable], val: coring.Serder):
-        """
-        Puts val at key made from keys. Does not overwrite
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Serder): instance
-
-        Returns:
-            result (bool): True If successful, False otherwise, such as key
-                              already in database.
-        """
-        return (self.db.putVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=val.raw))
-
-
-    def pin(self, keys: Union[str, Iterable], val: coring.Serder):
-        """
-        Pins (sets) val at key made from keys. Overwrites.
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Serder): instance
-
-        Returns:
-            result (bool): True If successful. False otherwise.
-        """
-        return (self.db.setVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=val.raw))
-
-
-    def get(self, keys: Union[str, Iterable]):
-        """
-        Gets Serder at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            Serder:
-            None: if no entry at keys
-
-        Usage:
-            Use walrus operator to catch and raise missing entry
-            if (srder := mydb.get(keys)) is None:
-                raise ExceptionHere
-            use srdr here
-
-        """
-        val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return coring.Serder(raw=bytes(val)) if val is not None else None
-
-
-    def rem(self, keys: Union[str, Iterable]):
-        """
-        Removes entry at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-        """
-        return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
-
-
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
-        """
-        Returns:
-            iterator (Iterator): tuple (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
-
-        Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database.
-
-        """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(iokey), coring.Serder(raw=bytes(val)))
-
-
-class SerderDupSuber(DupSuber):
-    """
-    Sub class of DupSuber that supports multiple entries at each key (duplicates)
-    with dupsort==True, where data is serialized Serder instance.
-    Automatically serializes and deserializes using Serder methods
-
-    Do not use if  serialized value is greater than 511 bytes.
-    This is a limitation of dupsort==True sub dbs in LMDB
-
-    """
-
-    def __init__(self, *pa, **kwa):
-        """
-        Parameters:
-            db (dbing.LMDBer): base db
-            subkey (str):  LMDB sub database key
-        """
-        super(SerderDupSuber, self).__init__(*pa, **kwa)
-
-
-    def put(self, keys: Union[str, Iterable], vals: list):
-        """
-        Puts all vals at key made from keys. Does not overwrite. Adds to existing
-        dup values at key if any. Duplicate means another entry at the same key
-        but the entry is still a unique value. Duplicates are inserted in
-        lexocographic order not insertion order. Lmdb does not insert a duplicate
-        unless it is a unique value for that key.
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            vals (list): instances of coring.Serder
-
-        Returns:
-            result (bool): True If successful, False otherwise.
-
-        Apparently always returns True (how .put works with dupsort=True)
-
-        """
-        return (self.db.putVals(db=self.sdb,
-                                key=self._tokey(keys),
-                                vals=[val.raw for val in vals]))
-
-
-    def add(self, keys: Union[str, Iterable], val: coring.Serder):
-        """
-        Add val to vals at key made from keys. Does not overwrite. Adds to existing
-        dup values at key if any. Duplicate means another entry at the same key
-        but the entry is still a unique value. Duplicates are inserted in
-        lexocographic order not insertion order. Lmdb does not insert a duplicate
-        unless it is a unique value for that key.
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (coring.Serder): value
-
-        Returns:
-            result (bool): True means unique value among duplications,
-                              False means duplicte of same value already exists.
-
-        """
-        return (self.db.addVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=val.raw))
-
-
-    def pin(self, keys: Union[str, Iterable], vals: list):
-        """
-        Pins (sets) vals at key made from keys. Overwrites. Removes all
-        pre-existing dup vals and replaces them with vals
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            vals (list): instances of coring.Serder
-
-        Returns:
-            result (bool): True If successful, False otherwise.
-
-        """
-        key = self._tokey(keys)
-        self.db.delVals(db=self.sdb, key=key)  # delete all values
-        return (self.db.putVals(db=self.sdb,
-                                key=key,
-                                vals=[val.raw for val in vals]))
-
-
-    def get(self, keys: Union[str, Iterable]):
-        """
-        Gets dup vals list at key made from keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            vals (list):  each item in list is instance of coring.Serder
-                          empty list if no entry at keys
-
-        """
-        return [coring.Serder(raw=bytes(val)) for val in
-                        self.db.getValsIter(db=self.sdb, key=self._tokey(keys))]
-
-
-    def getLast(self, keys: Union[str, Iterable]):
-        """
-        Gets last dup val at key made from keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            val (coring.Serder):  instance of Serder else None if no value at key
-
-        """
-        val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
-        if val is not None:
-            val = coring.Serder(raw=bytes(val))
-        return val
-
-
-
-    def getIter(self, keys: Union[str, Iterable]):
-        """
-        Gets dup vals iterator at key made from keys
-
-        Duplicates are retrieved in lexocographic order not insertion order.
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            iterator:  vals each of coring.Serder. Raises StopIteration when done
-
-        """
-        for val in self.db.getValsIter(db=self.sdb, key=self._tokey(keys)):
-            yield coring.Serder(raw=bytes(val))
-
-
-    def rem(self, keys: Union[str, Iterable], val=None):
-        """
-        Removes entry at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (coring.Serder):  instance of coring.Serder dup val at key to delete
-                              if val is None then remove all values at key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-
-        """
-        if val is not None:
-            val = val.raw
-        else:
-            val = b''
-        return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
-
-
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
-        """
-        Returns:
-            iterator (Iteratore: tuple (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
-
-       Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database.
-
-        """
-        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(key), coring.Serder(raw=bytes(val)))
-
-
-class CesrSuber(Suber):
-    """
-    Sub class of Suber where data is CESR encode/decode ducktyped subclass
-    instance such as Matter, Indexer, Counter with .qb64b property when provided
-    as fully qualified serialization
-    Automatically serializes and deserializes from qb64b to/from CESR instances
-
-    """
-
-    def __init__(self, *pa, klas: Type[coring.Matter] = coring.Matter, **kwa):
-        """
-        Parameters:
-            db (dbing.LMDBer): base db
-            subkey (str):  LMDB sub database key
-            klas (Type[coring.Matter]): Class reference to subclass of Matter
-        """
-        super(CesrSuber, self).__init__(*pa, **kwa)
-        self.klas = klas
-
-
-    def put(self, keys: Union[str, Iterable], val: coring.Matter):
-        """
-        Puts qb64b of Matter instance val at key made from keys. Does not overwrite
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Matter): instance of self.klas
-
-        Returns:
-            result (bool): True If successful, False otherwise, such as key
-                              already in database.
-        """
-        return (self.db.putVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=val.qb64b))
-
-
-    def pin(self, keys: Union[str, Iterable], val: coring.Matter):
-        """
-        Pins (sets) qb64b of Matter instance val at key made from keys. Overwrites.
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Matter): instance of self.klas
-
-        Returns:
-            result (bool): True If successful. False otherwise.
-        """
-        return (self.db.setVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=val.qb64b))
-
-
-    def get(self, keys: Union[str, Iterable]):
-        """
-        Gets Matter instance at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            val (Matter): instance of self.klas
-            None if no entry at keys
-
-        Usage:
-            Use walrus operator to catch and raise missing entry
-            if (matter := mydb.get(keys)) is None:
-                raise ExceptionHere
-            use matter here
-
-        """
-        val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return self.klas(qb64b=bytes(val)) if val is not None else None
-
-
-    def rem(self, keys: Union[str, Iterable]):
-        """
-        Removes entry at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-        """
-        return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
-
-
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
-        """
-        Returns:
-            iterator (Iteratore: tuple (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
-
-        Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database.
-
-        """
-        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
-
-
-class CatSuberBase(SuberBase):
-    """
-    Base Class whose values stored in db are a concatenation of the  .qb64b property
-    from one or more  subclass instances (qb64b is bytes of fully qualified
-    serialization) that support CESR encode/decode ducktyped subclass instance
-    such as Matter, Indexer, Counter
-    Automatically serializes and deserializes from qb64b to/from CESR instances
-
-     Attributes:
-        db (dbing.LMDBer): base LMDB db
-        sdb (lmdb._Database): instance of lmdb named sub db for this Suber
-        sep (str): separator for combining keys tuple of strs into key bytes
-        klas (Iterable): of Class references to subclasses of CESR compatible
-                , each of to Type[coring.Matter etc]
-    """
-
-    def __init__(self, *pa, klas: Iterable = None, **kwa):
-        """
-        Parameters:
-            db (dbing.LMDBer): base db
-            subkey (str):  LMDB sub database key
-            dupsort (bool): True means enable duplicates at each key
-                               False (default) means do not enable duplicates at
-                               each key
-            sep (str): separator to convert keys iterator to key bytes for db key
-                       default is self.Sep == '.'
-            klas (Iterable): of Class references to subclasses of Matter, each
-                of to Type[coring.Matter]
-
-        """
-        if klas is None:
-            klas = (coring.Matter, )  # set default to tuple of single Matter
-        if not nonStringIterable(klas):  # not iterable
-            klas = (klas, )  # make it so
-        super(CatSuberBase, self).__init__(*pa, **kwa)
-        self.klas = klas
-
-
-    def _cat(self, objs: Iterable):
-        """
-        Concatenates .qb64b of each instance in objs and returns val bytes
-
-        Returns:
-           val (bytes): concatenation of .qb64b of each object instance in vals
-
-        Parameters:
-           subs (Iterable): of subclass instances.
-
-        """
-        return (b''.join(val.qb64b for val in objs))
-
-
-    def _uncat(self, val: Union[bytes, memoryview]):
-        """
-        Converts val bytes to vals tuple of subclass instances by deserializing
-        .qb64b  concatenation in order of each instance in .klas
-
-        Returns:
-           vals (tuple): subclass instances
-
-        Parameters:
-           val (Union[bytes, memoryview]):  of concatenation of .qb64b
-
-        """
-        if not isinstance(val, bytearray):  # memoryview or bytes
-            val = bytearray(val)  #  so may strip
-        return tuple(klas(qb64b=val, strip=True) for klas in self.klas)
-
-
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
-        """
-        Returns:
-            iterator (Iterator): of tuples of keys tuple and vals Iterable of
-                    Matter instances in order fromfrom .klas for each entry
-                    in db for each entry in db all
-                      the items in subdb whose key startswith key made from keys.
-                      Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
-
-        Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database.
-
-        """
-        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(key), self._uncat(val))
-
-
-class CatSuber(CatSuberBase):
-    """
+    Subclass of CesrSuber and IoSetSuber.
     Class whose values stored in db are a concatenation of the  .qb64b property
     from one or more  subclass instances (qb64b is bytes of fully qualified
     serialization) that support CESR encode/decode ducktyped subclass instance
     such as Matter, Indexer, Counter
     Automatically serializes and deserializes from qb64b to/from CESR instances
 
+    Extends IoSetSuber with mixin methods ._ser and ._des from CesrSuberBase
+    so that all IoSetSuber methods now work with CESR subclass for each val.
+
+    IoSetSuber stores at each effective key a set of distinct values that
+    share that same effective key where each member of the set is retrieved in
+    insertion order (dupsort==False)
+    The methods allows an Iterable (set valued) of Iterables of Matter subclass
+    instances to be stored at a given effective key in insertion order.
+
+    Actual keys include a hidden ordinal key suffix that tracks insertion order.
+    The suffix is appended and stripped transparently from the keys. The set of
+    items with duplicate effective keys are retrieved in insertion order when
+    iterating or as a list of the set elements. The actual iokey for any item
+    includes the ordinal suffix.
+
      Attributes:
         db (dbing.LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
@@ -1182,80 +784,22 @@ class CatSuber(CatSuberBase):
                 of to Type[coring.Matter]
 
         """
-        super(CatSuber, self).__init__(*pa, **kwa)
+        super(CesrIoSetSuber, self).__init__(*pa, **kwa)
 
 
-    def put(self, keys: Union[str, Iterable], val: Iterable):
-        """
-        Puts concatenation of qb64b of Matter instances in iterable val
-           at key made from keys. Does not overwrite
 
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Iterable): instances in order from .klas
-
-        Returns:
-            result (bool): True If successful, False otherwise, such as key
-                              already in database.
-        """
-        return (self.db.putVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=self._cat(val)))
-
-
-    def pin(self, keys: Union[str, Iterable], val: Iterable):
-        """
-        Pins (sets) qb64 of concatenation of Matter instances vals at key
-        made from keys. Overwrites.
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Iterable): instances in order from .klas
-
-        Returns:
-            result (bool): True If successful. False otherwise.
-        """
-        return (self.db.setVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=self._cat(val)))
-
-
-    def get(self, keys: Union[str, Iterable]):
-        """
-        Gets Iterable of Matter instances at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            val (Iterable): instances in order from self.klas
-            None if no entry at keys
-
-        """
-        val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
-        return self._uncat(val) if val is not None else None
-
-
-    def rem(self, keys: Union[str, Iterable]):
-        """
-        Removes entry at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-        """
-        return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
-
-
-class CatIoSetSuber(CatSuberBase, IoSetSuber):
+class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
     """
     Sub class of CatSuberBase and IoSetSuber where values stored in db are a
     concatenation of .qb64b property from one or more Cesr compatible subclass
     instances that automatically serializes and deserializes to/from qb64b .
-    (qb64b is bytes of fully qualified serialization)
-    In addition stored at each effective key may be a set of distinct values that
+    (qb64b is bytes of fully qualified serialization).
+
+    Extends IoSetSuber with mixin methods ._ser and ._des from CatSuberBase
+    so that all IoSetSuber methods now work with an Iterable of CESR subclass
+    for each val.
+
+    IoSetSuber stores at each effective key a set of distinct values that
     share that same effective key where each member of the set is retrieved in
     insertion order (dupsort==False)
     The methods allows an Iterable (set valued) of Iterables of Matter subclass
@@ -1290,461 +834,8 @@ class CatIoSetSuber(CatSuberBase, IoSetSuber):
                 of to Type[coring.Matter]
 
         """
-        super(CatIoSetSuber, self).__init__(*pa, **kwa)
+        super(CatCesrIoSetSuber, self).__init__(*pa, **kwa)
 
-
-    def put(self, keys: Union[str, Iterable], vals: Iterable):
-        """
-        Puts concatenation of qb64b of Matter instances in iterable of iterable
-        vals at effecive key made from keys and hidden ordinal suffix that are
-        not already in set of vals at key.
-        Does not overwrite.
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form effective key
-            vals (Iterable): of iterables of CESR subclass instances in order
-                             of .klas.
-
-        Returns:
-            result (bool): True If successful, False otherwise.
-
-
-        """
-        return (self.db.putIoSetVals(db=self.sdb,
-                                     key=self._tokey(keys),
-                                     vals=[self._cat(mvals) for mvals in vals],
-                                     sep=self.sep))
-
-
-    def add(self, keys: Union[str, Iterable], val: Iterable):
-        """
-        Add val to vals at effective key made from keys and hidden ordinal suffix
-        that is not already in set of vals at key.
-        Does not overwrite.
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form effective key
-            val (Iterable): of Matter subclass instances
-
-        Returns:
-            result (bool): True means unique value among duplications,
-                              False means duplicte of same value already exists.
-        """
-        return (self.db.addIoSetVal(db=self.sdb,
-                                    key=self._tokey(keys),
-                                    val=self._cat(val),
-                                    sep=self.sep))
-
-
-    def pin(self, keys: Union[str, Iterable], vals: Iterable):
-        """
-        Pins (sets) qb64 of concatenation of Matter instances vals at key
-        made from keys. Replaces pre-existing values at key. Overwrites.
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form effective key
-            vals (Iterable): of iterables of Matter subclass instances in order
-                             of .klas.
-
-        Pins (sets) vals at effective key made from keys and hidden ordinal suffix.
-        Overwrites. Each val in vals is Iterable of instances of Matter subclasses
-        in order of .klas. Removes all pre-existing vals that share same effective keys
-        and replaces them with vals
-
-        Returns:
-            result (bool): True If successful, False otherwise.
-        """
-        key = self._tokey(keys)
-        self.db.delIoSetVals(db=self.sdb, key=key)  # delete all values
-        return (self.db.setIoSetVals(db=self.sdb,
-                                     key=key,
-                                     vals=[self._cat(mvals) for mvals in vals],
-                                     sep=self.sep))
-
-
-    def get(self, keys: Union[str, Iterable]):
-        """
-        Gets Iterable of Iterable of Matter subclass instances at keys
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form effective key
-
-        Returns:
-            vals (Iterable): of iterables of Matter subclass instances in order
-                             of .klas.
-                             Empty Iterable if no entry at keys
-
-
-
-        """
-        return ([self._uncat(val) for val in
-                    self.db.getIoSetValsIter(db=self.sdb,
-                                             key=self._tokey(keys),
-                                             sep=self.sep)])
-
-
-    def getLast(self, keys: Union[str, Iterable]):
-        """
-        Gets last Iterable of vals inserted at effecive key made from keys and
-        hidden ordinal suffix.
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form effective key
-
-        Returns:
-            vals (Iterable): of Matter subclass instances in order
-                             of .klas.
-                             None if no entry at keys
-
-        """
-        val = self.db.getIoSetValLast(db=self.sdb, key=self._tokey(keys))
-        return (self._uncat(val) if val is not None else val)
-
-
-
-    def getIter(self, keys: Union[str, Iterable]):
-        """
-        Gets vals Iterator of Iteratables at effecive key made from keys and
-        hidden ordinal suffix. All vals in set of vals that share same effecive
-        key are retrieved in insertion order. Each val in set is Iterable of
-        Matter subclass instances.
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form effective key
-
-        Returns:
-            vals (Iterator): of iterables of Matter subclass instances in order
-                             of .klas.
-                             Raises StopIteration when done
-
-        """
-        for val in self.db.getIoSetValsIter(db=self.sdb,
-                                            key=self._tokey(keys),
-                                            sep=self.sep):
-            yield self._uncat(val)
-
-
-
-    def cnt(self, keys: Union[str, Iterable]):
-        """
-        Return count of  values at effective key made from keys and hidden ordinal
-        suffix. Zero otherwise
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-        """
-        return (self.db.cntIoSetVals(db=self.sdb,
-                                     key=self._tokey(keys),
-                                     sep=self.sep))
-
-
-
-
-    def rem(self, keys: Union[str, Iterable], val=None):
-        """
-        Removes entry at effective key made from keys and hidden ordinal suffix
-        that matches val is any. Otherwise delets all values at effective key.
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-            val (Iterable):  at key to delete where val is Iterable
-                              of Matter subclass instances.
-                              if val is None then remove all values at key
-
-        Returns:
-           result (bool): True if effective key with val exists so delete successful.
-                           False otherwise
-
-        """
-        if val is not None:
-            val = self._cat(val)
-            return self.db.delIoSetVal(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       val=val,
-                                       sep=self.sep)
-        else:
-            return self.db.delIoSetVals(db=self.sdb,
-                                        key=self._tokey(keys),
-                                        sep=self.sep)
-
-
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
-        """
-        Returns:
-            iterator (Iterator): tuple (keys, vals) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb. Vals is Iterable of vals.
-
-        Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database.
-
-        """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            key, ion = dbing.unsuffix(iokey, sep=self.sep)
-            yield (self._tokeys(key), self._uncat(val))
-
-
-    def getIoSetItem(self, keys: Union[str, Iterable]):
-        """
-        Gets (iokeys, vals) ioitems list at key made from keys where key is
-        apparent effective key  and ioitems all have same apparent effective key
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-
-        Returns:
-            items (Iterable):  each item in list is tuple (iokeys, vals) where each
-                    iokeys is actual key tuple with hidden suffix and
-                    each vals is Iterable of Matter subclass instances.
-                    empty list if no entry at keys
-
-        """
-        return ([(self._tokeys(iokey), self._uncat(val)) for iokey, val in
-                        self.db.getIoSetItemsIter(db=self.sdb,
-                                                  key=self._tokey(keys),
-                                                  sep=self.sep)])
-
-
-    def getIoSetItemIter(self, keys: Union[str, Iterable]):
-        """
-        Gets (iokeys, val) ioitems  iterator at key made from keys where key is
-        apparent effective key and items all have same apparent effective key
-
-        Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
-
-        Returns:
-            iterator (Iterator):  each item iterated is tuple (iokeys, vals)
-                    each item in list is tuple (iokeys, vals) where each
-                    iokeys is actual key tuple with hidden suffix and
-                    each vals is Iterable of Matter subclass instances.
-
-                    Raises StopIteration when done
-
-        """
-        for iokey, val in self.db.getIoSetItemsIter(db=self.sdb,
-                                                    key=self._tokey(keys),
-                                                    sep=self.sep):
-            yield (self._tokeys(iokey), self._uncat(val))
-
-
-    def getIoItemIter(self, keys: Union[str, Iterable]=b""):
-        """
-        Returns:
-            iterator (Iterator): each item iterated is tuple (iokeys, vals)
-                    each item in list is tuple (iokeys, vals) where each
-                    iokeys is actual key tuple with hidden suffix and
-                    each vals is Iterable of Matter subclass instances.
-                    Keys may be key space trancation of top branch of key space.
-                    When keys is empty then returns all items in subdb
-
-            Raises StopIteration when done
-
-        Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database.
-
-        """
-        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(iokey), self._uncat(val))
-
-
-    def remIokey(self, iokeys: Union[str, bytes, memoryview, Iterable]):
-        """
-        Removes entry at keys
-
-        Parameters:
-            iokeys (tuple): of key str or tuple of key strs to be combined
-                            in order to form key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-
-        """
-        return self.db.delIoSetIokey(db=self.sdb, iokey=self._tokey(iokeys))
-
-
-class CesrDupSuber(DupSuber):
-    """
-    Sub class of DupSuber that supports multiple entries at each key (duplicates)
-    with dupsort==True, where data where data is Matter.qb64b property
-    which is a fully qualified serialization of matter subclass instance
-    Automatically serializes and deserializes from qb64b to/from Matter instances
-
-    Do not use if  serialized value is greater than 511 bytes.
-    This is a limitation of dupsort==True sub dbs in LMDB
-    """
-    def __init__(self, *pa, klas: Type[coring.Matter] = coring.Matter, **kwa):
-        """
-        Parameters:
-            db (dbing.LMDBer): base db
-            subkey (str):  LMDB sub database key
-            klas (Type[coring.Matter]): Class reference to subclass of Matter
-        """
-        super(CesrDupSuber, self).__init__(*pa, **kwa)
-        self.klas = klas
-
-
-    def put(self, keys: Union[str, Iterable], vals: list):
-        """
-        Puts all vals at key made from keys. Does not overwrite. Adds to existing
-        dup values at key if any. Duplicate means another entry at the same key
-        but the entry is still a unique value. Duplicates are inserted in
-        lexocographic order not insertion order. Lmdb does not insert a duplicate
-        unless it is a unique value for that key.
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            vals (list): instances of coring.Matter (subclass)
-
-        Returns:
-            result (bool): True If successful, False otherwise.
-
-        Apparently always returns True (how .put works with dupsort=True)
-
-        """
-        return (self.db.putVals(db=self.sdb,
-                                key=self._tokey(keys),
-                                vals=[val.qb64b for val in vals]))
-
-
-    def add(self, keys: Union[str, Iterable], val: coring.Matter):
-        """
-        Add val to vals at key made from keys. Does not overwrite. Adds to existing
-        dup values at key if any. Duplicate means another entry at the same key
-        but the entry is still a unique value. Duplicates are inserted in
-        lexocographic order not insertion order. Lmdb does not insert a duplicate
-        unless it is a unique value for that key.
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (coring.Matter): instance (subclass)
-
-        Returns:
-            result (bool): True means unique value among duplications,
-                              False means duplicte of same value already exists.
-
-        """
-        return (self.db.addVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=val.qb64b))
-
-
-    def pin(self, keys: Union[str, Iterable], vals: list):
-        """
-        Pins (sets) vals at key made from keys. Overwrites. Removes all
-        pre-existing dup vals and replaces them with vals
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            vals (list): instances of coring.Matter (subclass)
-
-        Returns:
-            result (bool): True If successful, False otherwise.
-
-        """
-        key = self._tokey(keys)
-        self.db.delVals(db=self.sdb, key=key)  # delete all values
-        return (self.db.putVals(db=self.sdb,
-                                key=key,
-                                vals=[val.qb64b for val in vals]))
-
-
-    def get(self, keys: Union[str, Iterable]):
-        """
-        Gets dup vals list at key made from keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            vals (list):  each item in list is instance of self.klas
-                          empty list if no entry at keys
-
-        """
-        return [self.klas(qb64b=bytes(val)) for val in
-                        self.db.getValsIter(db=self.sdb, key=self._tokey(keys))]
-
-
-    def getLast(self, keys: Union[str, Iterable]):
-        """
-        Gets last dup val at key made from keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            val (str):  instance of self.klas else None if no value at key
-
-        """
-        val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
-        if val is not None:
-            val = self.klas(qb64b=bytes(val))
-        return val
-
-
-
-    def getIter(self, keys: Union[str, Iterable]):
-        """
-        Gets dup vals iterator at key made from keys
-
-        Duplicates are retrieved in lexocographic order not insertion order.
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-            iterator:  vals each of self.klas. Raises StopIteration when done
-
-        """
-        for val in self.db.getValsIter(db=self.sdb, key=self._tokey(keys)):
-            yield self.klas(qb64b=bytes(val))
-
-
-    def rem(self, keys: Union[str, Iterable], val=None):
-        """
-        Removes entry at keys
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (coring.Matter):  instance of coring.Matter subclass dup val
-                at key to delete
-                if val is None then remove all values at key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-
-        """
-        if val is not None:
-            val = val.qb64b
-        else:
-            val = b''
-        return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
-
-
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
-        """
-        Returns:
-            iterator (Iteratore: tuple (key, val) over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
-
-        Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database.
-
-        """
-        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
-            yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
 
 
 class SignerSuber(CesrSuber):
@@ -1945,4 +1036,446 @@ class CryptSignerSuber(SignerSuber):
             else:
                 yield (ikeys, self.klas(qb64b=bytes(val),
                                             transferable=verfer.transferable))
+
+
+class SerderSuber(Suber):
+    """
+    Sub class of Suber where data is serialized Serder instance
+    Automatically serializes and deserializes using Serder methods
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+        """
+        super(SerderSuber, self).__init__(*pa, **kwa)
+
+
+    def put(self, keys: Union[str, Iterable], val: coring.Serder):
+        """
+        Puts val at key made from keys. Does not overwrite
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Serder): instance
+
+        Returns:
+            result (bool): True If successful, False otherwise, such as key
+                              already in database.
+        """
+        return (self.db.putVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.raw))
+
+
+    def pin(self, keys: Union[str, Iterable], val: coring.Serder):
+        """
+        Pins (sets) val at key made from keys. Overwrites.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Serder): instance
+
+        Returns:
+            result (bool): True If successful. False otherwise.
+        """
+        return (self.db.setVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.raw))
+
+
+    def get(self, keys: Union[str, Iterable]):
+        """
+        Gets Serder at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            Serder:
+            None: if no entry at keys
+
+        Usage:
+            Use walrus operator to catch and raise missing entry
+            if (srder := mydb.get(keys)) is None:
+                raise ExceptionHere
+            use srdr here
+
+        """
+        val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
+        return coring.Serder(raw=bytes(val)) if val is not None else None
+
+
+    def rem(self, keys: Union[str, Iterable]):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+        """
+        return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
+
+
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
+        """
+        Returns:
+            iterator (Iterator): tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for iokey, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield (self._tokeys(iokey), coring.Serder(raw=bytes(val)))
+
+
+
+class DupSuber(SuberBase):
+    """
+    Sub DB of LMDBer. Subclass of SuberBase that supports multiple entries at
+    each key (duplicates) with dupsort==True
+
+    Do not use if  serialized value is greater than 511 bytes.
+    This is a limitation of dupsort==True sub dbs in LMDB
+    """
+
+    def __init__(self, db: Type[dbing.LMDBer], *,
+                       subkey: str='docs.',
+                       dupsort: bool=True,
+                       **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+        """
+        super(DupSuber, self).__init__(db=db, subkey=subkey, dupsort=True, **kwa)
+
+
+    def put(self, keys: Union[str, Iterable], vals: list):
+        """
+        Puts all vals at key made from keys. Does not overwrite. Adds to existing
+        dup values at key if any. Duplicate means another entry at the same key
+        but the entry is still a unique value. Duplicates are inserted in
+        lexocographic order not insertion order. Lmdb does not insert a duplicate
+        unless it is a unique value for that key.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (list): str or bytes of each value to be written at key
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        Apparently always returns True (how .put works with dupsort=True)
+
+        """
+        return (self.db.putVals(db=self.sdb,
+                                key=self._tokey(keys),
+                                vals=[self._ser(val) for val in vals]))
+
+
+    def add(self, keys: Union[str, Iterable], val: Union[bytes, str]):
+        """
+        Add val to vals at key made from keys. Does not overwrite. Adds to existing
+        dup values at key if any. Duplicate means another entry at the same key
+        but the entry is still a unique value. Duplicates are inserted in
+        lexocographic order not insertion order. Lmdb does not insert a duplicate
+        unless it is a unique value for that key.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Union[str, bytes]): value
+
+        Returns:
+            result (bool): True means unique value among duplications,
+                              False means duplicte of same value already exists.
+
+        """
+        return (self.db.addVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=self._ser(val)))
+
+
+    def pin(self, keys: Union[str, Iterable], vals: list):
+        """
+        Pins (sets) vals at key made from keys. Overwrites. Removes all
+        pre-existing dup vals and replaces them with vals
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (list): str or bytes values
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        """
+        key = self._tokey(keys)
+        self.db.delVals(db=self.sdb, key=key)  # delete all values
+        return (self.db.putVals(db=self.sdb,
+                                key=key,
+                                vals=[self._ser(val) for val in vals]))
+
+
+
+    def get(self, keys: Union[str, Iterable]):
+        """
+        Gets dup vals list at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            vals (list):  each item in list is str
+                          empty list if no entry at keys
+
+        """
+        return [self._des(val) for val in
+                        self.db.getValsIter(db=self.sdb, key=self._tokey(keys))]
+
+
+    def getLast(self, keys: Union[str, Iterable]):
+        """
+        Gets last dup val at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            val (str):  value else None if no value at key
+
+        """
+        val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
+        return self._des(val) if val is not None else val
+
+
+    def getIter(self, keys: Union[str, Iterable]):
+        """
+        Gets dup vals iterator at key made from keys
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            iterator:  vals each of str. Raises StopIteration when done
+
+        """
+        for val in self.db.getValsIter(db=self.sdb, key=self._tokey(keys)):
+            yield self._des(val)
+
+
+    def cnt(self, keys: Union[str, Iterable]):
+        """
+        Return count of dup values at key made from keys, zero otherwise
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+        """
+        return (self.db.cntVals(db=self.sdb, key=self._tokey(keys)))
+
+
+    def rem(self, keys: Union[str, Iterable], val=b''):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Union[str, bytes]):  instance of dup val at key to delete
+                              if val is None then remove all values at key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+
+        """
+        return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=self._ser(val)))
+
+
+class CesrDupSuber(DupSuber):
+    """
+    Sub class of DupSuber that supports multiple entries at each key (duplicates)
+    with dupsort==True, where data where data is Matter.qb64b property
+    which is a fully qualified serialization of matter subclass instance
+    Automatically serializes and deserializes from qb64b to/from Matter instances
+
+    Do not use if  serialized value is greater than 511 bytes.
+    This is a limitation of dupsort==True sub dbs in LMDB
+    """
+    def __init__(self, *pa, klas: Type[coring.Matter] = coring.Matter, **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+            klas (Type[coring.Matter]): Class reference to subclass of Matter
+        """
+        super(CesrDupSuber, self).__init__(*pa, **kwa)
+        self.klas = klas
+
+
+    def put(self, keys: Union[str, Iterable], vals: list):
+        """
+        Puts all vals at key made from keys. Does not overwrite. Adds to existing
+        dup values at key if any. Duplicate means another entry at the same key
+        but the entry is still a unique value. Duplicates are inserted in
+        lexocographic order not insertion order. Lmdb does not insert a duplicate
+        unless it is a unique value for that key.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (list): instances of coring.Matter (subclass)
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        Apparently always returns True (how .put works with dupsort=True)
+
+        """
+        return (self.db.putVals(db=self.sdb,
+                                key=self._tokey(keys),
+                                vals=[val.qb64b for val in vals]))
+
+
+    def add(self, keys: Union[str, Iterable], val: coring.Matter):
+        """
+        Add val to vals at key made from keys. Does not overwrite. Adds to existing
+        dup values at key if any. Duplicate means another entry at the same key
+        but the entry is still a unique value. Duplicates are inserted in
+        lexocographic order not insertion order. Lmdb does not insert a duplicate
+        unless it is a unique value for that key.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (coring.Matter): instance (subclass)
+
+        Returns:
+            result (bool): True means unique value among duplications,
+                              False means duplicte of same value already exists.
+
+        """
+        return (self.db.addVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.qb64b))
+
+
+    def pin(self, keys: Union[str, Iterable], vals: list):
+        """
+        Pins (sets) vals at key made from keys. Overwrites. Removes all
+        pre-existing dup vals and replaces them with vals
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            vals (list): instances of coring.Matter (subclass)
+
+        Returns:
+            result (bool): True If successful, False otherwise.
+
+        """
+        key = self._tokey(keys)
+        self.db.delVals(db=self.sdb, key=key)  # delete all values
+        return (self.db.putVals(db=self.sdb,
+                                key=key,
+                                vals=[val.qb64b for val in vals]))
+
+
+    def get(self, keys: Union[str, Iterable]):
+        """
+        Gets dup vals list at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            vals (list):  each item in list is instance of self.klas
+                          empty list if no entry at keys
+
+        """
+        return [self.klas(qb64b=bytes(val)) for val in
+                        self.db.getValsIter(db=self.sdb, key=self._tokey(keys))]
+
+
+    def getLast(self, keys: Union[str, Iterable]):
+        """
+        Gets last dup val at key made from keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            val (str):  instance of self.klas else None if no value at key
+
+        """
+        val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
+        if val is not None:
+            val = self.klas(qb64b=bytes(val))
+        return val
+
+
+
+    def getIter(self, keys: Union[str, Iterable]):
+        """
+        Gets dup vals iterator at key made from keys
+
+        Duplicates are retrieved in lexocographic order not insertion order.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            iterator:  vals each of self.klas. Raises StopIteration when done
+
+        """
+        for val in self.db.getValsIter(db=self.sdb, key=self._tokey(keys)):
+            yield self.klas(qb64b=bytes(val))
+
+
+    def rem(self, keys: Union[str, Iterable], val=None):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (coring.Matter):  instance of coring.Matter subclass dup val
+                at key to delete
+                if val is None then remove all values at key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+
+        """
+        if val is not None:
+            val = val.qb64b
+        else:
+            val = b''
+        return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
+
+
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
+        """
+        Returns:
+            iterator (Iteratore: tuple (key, val) over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
 

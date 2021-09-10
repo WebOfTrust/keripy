@@ -1197,7 +1197,8 @@ def test_state(mockHelpingNowUTC):
 
 def test_reply(mockHelpingNowUTC):
     """
-    Test reply message 'rpy'
+    Test reply message 'rpy' for both endpoint /end/role auth records and
+    endpoint /loc/scheme url records.
 
     {
       "v" : "KERI10JSON00011c_",
@@ -1210,6 +1211,20 @@ def test_reply(mockHelpingNowUTC):
          "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
          "role": "watcher",  # one of eventing.Roles
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+      }
+    }
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "rep",
+      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "/loc/scheme",
+      "a" :
+      {
+         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+         "scheme": "http",  # one of eventing.Schemes
+         "url":  "http://localhost:8080/watcher/wilma",
       }
     }
 
@@ -1545,31 +1560,27 @@ def test_reply(mockHelpingNowUTC):
                      eid=watHab.pre,
                      scheme=scheme,
                      url=url,
-                     cid=nelHab.pre,
-                     role=role,
                    )
 
         serderR = eventing.reply(route=route, data=data,)
         assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
-        assert serderR.raw == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EtHzjdySIhGK51eicEgxm1ucv3dJd4v4puio'
-                            b'ObDASJJ0","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
-                            b'd":"BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs","scheme":"http","url":"htt'
-                            b'p://localhost:8080/watcher/wat","cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_F'
-                            b'TApyPvI","role":"watcher"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"EuAfTbTUnkflpg3jRS6UZ4_KoSCVQ6_hpOjo'
+                                b'sEpeiXWU","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
+                                b'd":"BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs","scheme":"http","url":"htt'
+                                b'p://localhost:8080/watcher/wat"}}')
 
-        assert serderR.said == 'EtHzjdySIhGK51eicEgxm1ucv3dJd4v4puioObDASJJ0'
+        assert serderR.said == 'EuAfTbTUnkflpg3jRS6UZ4_KoSCVQ6_hpOjosEpeiXWU'
 
         # Sign Reply
         msg = watHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EtHzjdySIhGK51eicEgxm1uc'
-                    b'v3dJd4v4puioObDASJJ0","dt":"2021-01-01T00:00:00.000000+00:00","r'
+        assert msg == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"EuAfTbTUnkflpg3jRS6UZ4_K'
+                    b'oSCVQ6_hpOjosEpeiXWU","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/loc/scheme","a":{"eid":"BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WS'
                     b'RlpHwtGs","scheme":"http","url":"http://localhost:8080/watcher/w'
-                    b'at","cid":"Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI","role":'
-                    b'"watcher"}}-VAi-CABBXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs0'
-                    b'BRMSv-HOG62F8LA4ja6sY9M-KQWyBSJXCyYZWqkmuRuEJRWoGR7HtwOuo3aBJMtr'
-                    b'GjffUGD3ff1qiy4wjID_6Cg')
+                    b'at"}}-VAi-CABBXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs0BwAeTU'
+                    b'CYDXu4RYWGcOWeRvcUrIeM2XL4z2Uvzl16A4RZ60xKuis92kTaMxRYcwg-qbZuya'
+                    b'FNgzthKfSY03VomDg')
 
         # use Tam's parser and kevery to process
         tamPrs.parse(ims=bytearray(msg))
@@ -1590,9 +1601,7 @@ def test_reply(mockHelpingNowUTC):
         assert saider.qb64 == serder.said
         locer = tamHab.db.locs.get(keys=lockeys)
         assert locer.url == url
-        assert locer.cid == nelHab.pre
-        assert locer.role == role == eventing.Roles.watcher
-
+        assert locer.cids == []
 
         # Tam as trans authZ for witnesses
         # add endpoint with reply route add
@@ -1647,7 +1656,7 @@ def test_reply(mockHelpingNowUTC):
         [(saider,)] = nelHab.db.rpes.get(keys=escrowkeys)
         assert saider.qb64 == serder.said
 
-        # add tam kel to nel
+        # add tam kel to nel and process escrows
         tamicp = tamHab.makeOwnInception()
         nelPrs.parse(bytearray(tamicp))
         assert tamHab.pre not in nelKvy.kevers
@@ -1665,6 +1674,26 @@ def test_reply(mockHelpingNowUTC):
         nelPrs.parse(bytearray(wittamicp))
         nelKvy.processEscrows()
         assert tamHab.pre in nelHab.kevers
+
+        # process escrow reply
+        nelKvy.processEscrowReply()
+        #saidkeys = (serderR.said, )
+        #dater = nelHab.db.sdts.get(keys=saidkeys)
+        #assert dater.dts == help.helping.DTS_BASE_0
+        #serder = nelHab.db.rpys.get(keys=saidkeys)
+        #assert serder.dig == serderR.dig
+        #quadruples = nelHab.db.ssgs.get(keys=saidkeys)
+        #assert len(quadruples) == 3
+        #prefixer, seqner, diger, siger = quadruples[0]
+        #assert prefixer.qb64 == tamHab.pre
+
+        #endkeys = (tamHab.pre, role, wesHab.pre)
+        #saider = nelHab.db.eans.get(keys=endkeys)
+        #assert saider.qb64 == serder.said
+        #ender = nelHab.db.ends.get(keys=endkeys)
+        #assert ender.allow == True
+        #assert ender.name == ""
+
 
         # do wok as witness for tam
         # with trans cid for tam and eid for wok
@@ -1718,34 +1747,30 @@ def test_reply(mockHelpingNowUTC):
                      eid=wokHab.pre,
                      scheme=scheme,
                      url=url,
-                     cid=tamHab.pre,
-                     role=role,
                    )
 
         serderR = eventing.reply(route=route, data=data,)
         assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
-        assert serderR.raw == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EjGjaV_vQQCeLpbTWiuiEeU3-_iKe4vJ4U4I'
-                            b'VFLQ5VOQ","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
-                            b'd":"BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc","scheme":"http","url":"htt'
-                            b'p://localhost:8080/witness/wok","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRM'
-                            b'irZ4I8M","role":"witness"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"ESlxGHZLKc8yZHI1y4xiUNCRDy3dwjaGsHaD'
+                               b'UccwnjGM","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
+                               b'd":"BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc","scheme":"http","url":"htt'
+                               b'p://localhost:8080/witness/wok"}}')
 
-        assert serderR.said == 'EjGjaV_vQQCeLpbTWiuiEeU3-_iKe4vJ4U4IVFLQ5VOQ'
+        assert serderR.said == 'ESlxGHZLKc8yZHI1y4xiUNCRDy3dwjaGsHaDUccwnjGM'
 
         # Sign Reply
         msg = wokHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON00014b_","t":"rpy","d":"EjGjaV_vQQCeLpbTWiuiEeU3'
-                    b'-_iKe4vJ4U4IVFLQ5VOQ","dt":"2021-01-01T00:00:00.000000+00:00","r'
+        assert msg == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"ESlxGHZLKc8yZHI1y4xiUNCR'
+                    b'Dy3dwjaGsHaDUccwnjGM","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/loc/scheme","a":{"eid":"BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE'
                     b'-hgg4Stc","scheme":"http","url":"http://localhost:8080/witness/w'
-                    b'ok","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","role":'
-                    b'"witness"}}-VAi-CABBpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc0'
-                    b'B0ODrtNEEWKtQq_yOar0ct_QUNcMlsjVWGrIKvTjPIrG0AVYn4PEEDUTlL7KUCKs'
-                    b'da8TMFhGTKIwIHN11H2TmCQ')
+                    b'ok"}}-VAi-CABBpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc0BLjgDI'
+                    b'JDF1vJc3Nh1pmUGU0kfil2jXICFjfHwo0T7nM0sPfioWhhVf3legivO2q1RSUSCh'
+                    b't83I09EXiKocZKYBg')
 
         # use Nels's parser and kevery to process
-        nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
+        nelPrs.parse(ims=bytearray(msg))
 
         saidkeys = (serderR.said, )
         dater = nelHab.db.sdts.get(keys=saidkeys)
@@ -1763,8 +1788,7 @@ def test_reply(mockHelpingNowUTC):
         assert saider.qb64 == serder.said
         locer = nelHab.db.locs.get(keys=lockeys)
         assert locer.url == url
-        assert locer.cid == tamHab.pre
-        assert locer.role == role == eventing.Roles.witness
+        assert locer.cids == []
 
         # use Nel's parser and kevery for tam to provide its url as controller role
         # for itself at its own location
@@ -1782,36 +1806,32 @@ def test_reply(mockHelpingNowUTC):
                      eid=tamHab.pre,
                      scheme=scheme,
                      url=url,
-                     cid=tamHab.pre,
-                     role=role,
                    )
 
         serderR = eventing.reply(route=route, data=data,)
         assert serderR.ked['dt'] == help.helping.DTS_BASE_0
 
-        assert serderR.raw == (b'{"v":"KERI10JSON000151_","t":"rpy","d":"EqjruS0XL4HKs9e13oWH5Clzy-hjcZIx7Vmr'
-                    b'iXZy4-Bs","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
-                    b'd":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","scheme":"http","url":"htt'
-                    b'p://localhost:8080/controller/tam","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BL'
-                    b'aRMirZ4I8M","role":"controller"}}')
+        assert serderR.raw == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ECdQJkLqcnjoH_yXlb-wTLFARLmtWQ07v8IQ'
+                            b'8uQlsrNA","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
+                            b'd":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","scheme":"http","url":"htt'
+                            b'p://localhost:8080/controller/tam"}}')
 
 
-        assert serderR.said == 'EqjruS0XL4HKs9e13oWH5Clzy-hjcZIx7VmriXZy4-Bs'
+        assert serderR.said == 'ECdQJkLqcnjoH_yXlb-wTLFARLmtWQ07v8IQ8uQlsrNA'
 
         # Sign Reply
         msg = tamHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON000151_","t":"rpy","d":"EqjruS0XL4HKs9e13oWH5Clz'
-                    b'y-hjcZIx7VmriXZy4-Bs","dt":"2021-01-01T00:00:00.000000+00:00","r'
+        assert msg == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ECdQJkLqcnjoH_yXlb-wTLFA'
+                    b'RLmtWQ07v8IQ8uQlsrNA","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/loc/scheme","a":{"eid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaR'
                     b'MirZ4I8M","scheme":"http","url":"http://localhost:8080/controlle'
-                    b'r/tam","cid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","rol'
-                    b'e":"controller"}}-VBg-FABEQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMir'
-                    b'Z4I8M0AAAAAAAAAAAAAAAAAAAAAAAETbIi40gakUBXSBVi55Vnadttn4A-GKsHIA'
-                    b'eZxnfn_zg-AADAAjLyw2bw1JuZJsEqUHUpPDUqge2t0xOcjpI15GT29fG7GOb_1Y'
-                    b'ENydQaW_hKA5wzcKQVNpXW-b3QosLoh_UJ_DgABsFp5r_axQYNg_Fkjm3d9Zd0jx'
-                    b'J0-CsGGgvWsTT8UH4R_SmTFhVOKD9CWmPXVjIQI4JUWEqg-EEdAZfuyZbdCAgACa'
-                    b'12h31JUpkWxOGyHWac5ianJ3VYZkDUFABTI-MCCbNsyJb7ACq3vloiLtmDMbOkrI'
-                    b'JCOZYPu7_TEMz_hD_KaDg')
+                    b'r/tam"}}-VBg-FABEQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M0AAA'
+                    b'AAAAAAAAAAAAAAAAAAAAETbIi40gakUBXSBVi55Vnadttn4A-GKsHIAeZxnfn_zg'
+                    b'-AADAAXE8h9aPJ9iOCbUUs--RjL_f0xdZKlzbRJES2OAXEPgXi0dksszbBs19Sws'
+                    b'jD7VxKf69_YmcPToGodogaMLjlCgABuzSoDI9BvkG4T8WDPeHBy9aFDImSJRb9Kd'
+                    b'uHScC8-r6x-qR7CZYUMIV6iR73b3SAH78uEBy20o8MROn97dT9DAACQfC_3ySkKT'
+                    b'z6XBIWwVQ8KwXXlalWqOxjPVq8C2QSd8Eo-dVcEQe3bfVd9jM9HygM0y4ZWhL81e'
+                    b'aa_za_DVWWDw')
 
         # use Tam's parser and kevery to process
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
@@ -1831,8 +1851,7 @@ def test_reply(mockHelpingNowUTC):
         assert saider.qb64 == serder.said
         locer = nelHab.db.locs.get(keys=lockeys)
         assert locer.url == url
-        assert locer.cid == tamHab.pre
-        assert locer.role == role == eventing.Roles.controller
+        assert locer.cids == []
 
 
     assert not os.path.exists(wamKS.path)
