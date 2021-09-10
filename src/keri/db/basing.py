@@ -616,12 +616,12 @@ class Baser(dbing.LMDBer):
         # all sad ssgs (sad indexed signature serializations) maps SAD SAID to
         # quadruple (Prefixer, Seqner, Diger, Siger) of trans signer's est evt
         # for key state of signature in Siger
-        self.ssgs = subing.CatIoSetSuber(db=self, subkey='ssgs',
+        self.ssgs = subing.CatCesrIoSetSuber(db=self, subkey='ssgs',
             klas=(coring.Prefixer, coring.Seqner, coring.Diger, coring.Siger))
         # all sad scgs  (sad non-indexed signature serializations) maps SAD SAID
         # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
         # nontrans qb64 of Prefixer is same as Verfer
-        self.scgs = subing.CatIoSetSuber(db=self, subkey='scgs',
+        self.scgs = subing.CatCesrIoSetSuber(db=self, subkey='scgs',
                                         klas=(coring.Verfer, coring.Cigar))
 
         # all reply messages. Maps reply said to serialization. Replys are
@@ -632,7 +632,7 @@ class Baser(dbing.LMDBer):
         # all reply escrows indices of partially signed reply messages. Maps
         # route in reply to single (Saider,)  of escrowed reply.
         # Routes such as /end/role  /loc/schema
-        self.rpes = subing.CatIoSetSuber(db=self, subkey='rpes.',
+        self.rpes = subing.CatCesrIoSetSuber(db=self, subkey='rpes.',
                                                       klas=(coring.Saider, ))
 
         # auth AuthN/AuthZ by controller at cid of endpoint provider at eid
