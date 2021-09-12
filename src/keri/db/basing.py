@@ -632,8 +632,8 @@ class Baser(dbing.LMDBer):
         # all reply escrows indices of partially signed reply messages. Maps
         # route in reply to single (Saider,)  of escrowed reply.
         # Routes such as /end/role  /loc/schema
-        self.rpes = subing.CatCesrIoSetSuber(db=self, subkey='rpes.',
-                                                      klas=(coring.Saider, ))
+        self.rpes = subing.CesrIoSetSuber(db=self, subkey='rpes.',
+                                                      klas=coring.Saider)
 
         # auth AuthN/AuthZ by controller at cid of endpoint provider at eid
         # maps key=cid.role.eid to val=said of end reply

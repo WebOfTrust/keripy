@@ -3219,7 +3219,7 @@ class Kevery:
 
 
         """
-        for (route, ion), (saider,) in self.db.rpes.getIoItemIter():
+        for (route, ion), saider in self.db.rpes.getIoItemIter():
             try:
                 # val=(saider, prefixer, seqner, diger)
                 keys = (saider.qb64, )
@@ -3490,12 +3490,17 @@ class Kevery:
                             " on nonlocal reply msg=\n%s\n", serder.pretty())
                     continue  # skip own sig attachment on non-local reply msg
 
+
             spre = prefixer.qb64
 
             if cid != spre:  # sig not by cid=controller
                 logger.info("Kevery process: skipped sig not from cid="
                         "%s on reply msg=\n%s\n", cid, serder.pretty())
                 continue  # skip invalid sig is not from cid
+
+            if osaider:  # check that sn of est evt is also >= existing
+                pass
+
 
             # retrieve sdig of last event at sn of signer.
             sdig = self.db.getKeLast(key=snKey(pre=spre, sn=seqner.sn))
@@ -3847,7 +3852,7 @@ class Kevery:
         for siger in sigers:
             quad = (prefixer, seqner, diger, siger)
             self.db.ssgs.put(keys=keys, vals=[(*quad, )])
-        self.db.rpes.put(keys=(route, ), vals=[(saider,)])  # unpack y, = (x,)
+        self.db.rpes.put(keys=(route, ), vals=[saider])  # unpack y, = (x,)
 
 
     def updateEnd(self, keys, saider, allow=None):

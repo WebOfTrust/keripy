@@ -1653,7 +1653,7 @@ def test_reply(mockHelpingNowUTC):
         prefixer, seqner, diger, siger = quadruples[0]
         assert prefixer.qb64 == tamHab.pre
         escrowkeys = ("/end/role", )  # escrow route base not full route
-        [(saider,)] = nelHab.db.rpes.get(keys=escrowkeys)
+        [saider] = nelHab.db.rpes.get(keys=escrowkeys)
         assert saider.qb64 == serder.said
 
         # add tam kel to nel and process escrows
