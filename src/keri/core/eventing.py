@@ -3547,8 +3547,6 @@ class Kevery:
             # fetch any escrowed sigs, extract just the siger from each quad
             quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
             esigers = self.db.ssgs.get(keys=quadkeys)
-            #esigers = [siger for _, _, _, siger in
-                               #self.db.ssgs.get(keys=(saider.qb64, ))]
             sigers.extend(esigers)
             sigers, valid = validateSigs(serder=serder,
                                          sigers=sigers,
@@ -3728,11 +3726,13 @@ class Kevery:
                     continue  # skip own sig attachment on non-local reply msg
 
             spre = prefixer.qb64
-
             if eid != spre:  # sig not by cid=controller
                 logger.info("Kevery process: skipped sig not from eid="
                         "{} on reply msg=\n%s\n", eid, serder.pretty())
                 continue  # skip invalid sig is not from eid
+
+            if osaider:  # check that sn of est evt is also >= existing
+                pass
 
             # retrieve sdig of last event at sn of signer.
             sdig = self.db.getKeLast(key=snKey(pre=spre, sn=seqner.sn))
@@ -3753,7 +3753,6 @@ class Kevery:
                 raise ValidationError("Bad trans indexed sig group at sn = {}"
                                       " for reply = {}."
                                       "".format(seqner.sn, serder.ked))
-
             #verify sigs
             if not (sverfers := sserder.verfers):
                 raise ValidationError("Invalid reply from signer={}, no keys at"
@@ -3762,10 +3761,7 @@ class Kevery:
             # fetch any escrowed sigs, extract just the siger from each quad
             quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
             esigers = self.db.ssgs.get(keys=quadkeys)
-            #esigers = [siger for _, _, _, siger in
-                                         #self.db.ssgs.get(keys=(saider.qb64, ))]
             sigers.extend(esigers)
-
             sigers, valid = validateSigs(serder=serder,
                                          sigers=sigers,
                                          verfers=sverfers,
