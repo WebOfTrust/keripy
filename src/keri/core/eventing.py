@@ -3461,7 +3461,7 @@ class Kevery:
         keys = (aid, role, eid)
         osaider = self.db.eans.get(keys=keys)  # get old said if any
         # BADA Logic
-        accepted = self.replyAccept(serder=serder, saider=saider, route=route,
+        accepted = self.acceptReply(serder=serder, saider=saider, route=route,
                                     aid=aid, osaider=osaider, cigars=cigars,
                                     tsgs=tsgs)
         if not accepted:
@@ -3573,7 +3573,7 @@ class Kevery:
         keys = (aid, scheme)
         osaider = self.db.lans.get(keys=keys)  # get old said if any
         # BADA Logic
-        accepted = self.replyAccept(serder=serder, saider=saider, route=route,
+        accepted = self.acceptReply(serder=serder, saider=saider, route=route,
                                     aid=aid, osaider=osaider, cigars=cigars,
                                     tsgs=tsgs)
         if not accepted:
@@ -3582,7 +3582,7 @@ class Kevery:
         self.updateLoc(keys=keys, saider=saider, url=url)  # update .lans and .locs
 
 
-    def replyAccept(self, serder, saider, route, aid, osaider=None,
+    def acceptReply(self, serder, saider, route, aid, osaider=None,
                     cigars=None, tsgs=None):
         """
         Applies Best Available Data Acceptance policy to reply and signatures
