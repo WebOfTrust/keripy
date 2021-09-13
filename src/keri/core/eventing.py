@@ -3437,11 +3437,7 @@ class Kevery:
         Escrow process logic is route dependent and is dispatched by route,
         i.e. route is address of buffer with route specific handler of escrow.
         """
-        escrowed = False  # flag to raise UnverifiedReplyError is escrowed tsg
-
-        cigars = cigars if cigars is not None else []
-        tsgs = tsgs if  tsgs is not None else []
-
+        # reply specific logic
         if route.startswith("/end/role/add"):
             allow = True
         elif route.startswith("/end/role/cut"):
@@ -3465,14 +3461,20 @@ class Kevery:
                                   f"{Ilks.rpy} msg={serder.ked}.")
         eider = coring.Prefixer(qb64=data["eid"] )  # raises error if unsupported code
         eid = eider.qb64  # controller of endpoint at role
-        keys = (cid, role, eid)
+        aid = cid  # authorizing attribution id
+        keys = (aid, role, eid)
+
         # BADA logic.
+        escrowed = False  # flag to raise UnverifiedReplyError is escrowed tsg
+        cigars = cigars if cigars is not None else []
+        tsgs = tsgs if  tsgs is not None else []
+
         # Is new later than old if old?
         osaider = self.db.eans.get(keys=keys)  # get old said if any
         if osaider:  # get old
             if (odater := self.db.sdts.get(keys=osaider.qb64b)):
                 if dater.datetime <= odater.datetime:
-                    raise ValidationError(f"Stale update of {route} from {cid} "
+                    raise ValidationError(f"Stale update of {route} from {aid} "
                                           f"via {Ilks.rpy}={serder.ked}.")
 
         for cigar in cigars:  # process each couple to verify sig and write to db
@@ -3485,23 +3487,21 @@ class Kevery:
                             " on nonlocal reply msg=\n%s\n", serder.pretty())
                     continue  # skip own cig attachment on non-local reply msg
 
-            if cid != cigar.verfer.qb64:  # cig not by cid=controller
-                logger.info("Kevery process: skipped cig not from cid="
-                        "%s on reply msg=\n%s\n", cid, serder.pretty())
-                continue  # skip invalid cig's verfer is not cid
+            if aid != cigar.verfer.qb64:  # cig not by aid
+                logger.info("Kevery process: skipped cig not from aid="
+                        "%s on reply msg=\n%s\n", aid, serder.pretty())
+                continue  # skip invalid cig's verfer is not aid
 
             if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
                 logger.info("Kevery process: skipped nonverifying cig from "
                         "%s on reply msg=\n%s\n", cigar.verfer.qb64, serder.pretty())
                 continue  # skip if cig not verify
 
-            # All constraints satisfied so update new reply SAD and its dts and cigar
-            # and remove old reply
+            # All constraints satisfied so update
             self.updateReply(saider=saider, dater=dater, serder=serder, cigar=cigar)
+            self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
             # update .eans and .ends
             self.updateEnd(keys=keys, saider=saider, allow=allow)
-            # remove now obsolete reply SAD and its dts and cigar
-            self.removeReply(saider=osaider)
 
             break  # first valid cigar sufficient ignore any duplicates in cigars
 
@@ -3513,10 +3513,10 @@ class Kevery:
                     continue  # skip own sig attachment on non-local reply msg
 
             spre = prefixer.qb64
-            if cid != spre:  # sig not by cid=controller
-                logger.info("Kevery process: skipped sig not from cid="
-                        "%s on reply msg=\n%s\n", cid, serder.pretty())
-                continue  # skip invalid sig is not from cid
+            if aid != spre:  # sig not by aid
+                logger.info("Kevery process: skipped signature not from aid="
+                        "%s on reply msg=\n%s\n", aid, serder.pretty())
+                continue  # skip invalid signature is not from aid
 
             if osaider:  # check that sn of est evt is also >= existing
                 pass
@@ -3554,15 +3554,13 @@ class Kevery:
                                          tholder=sserder.tholder)
             # no error so at least one verified siger
             if valid:  # meet threshold so save
-                # All constraints satisfied so update new reply SAD and its dts and cigar
-                # and remove old reply
+                # All constraints satisfied so update
                 self.updateReply(serder=serder, saider=saider, dater=dater,
                                  prefixer=prefixer, seqner=seqner, diger=diger,
                                  sigers=sigers)
+                self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
                 # update .eans and .ends
                 self.updateEnd(keys=keys, saider=saider, allow=allow)
-                # remove now obsolete reply SAD and its dts and cigar
-                self.removeReply(saider=osaider)
 
             else:  # not meet threshold so escrow
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
@@ -3651,11 +3649,7 @@ class Kevery:
         Escrow process logic is route dependent and is dispatched by route,
         i.e. route is address of buffer with route specific handler of escrow.
         """
-        escrowed = False  # flag to raise UnverifiedReplyError is escrowed tsg
-
-        cigars = cigars if cigars is not None else []
-        tsgs = tsgs if  tsgs is not None else []
-
+        # reply specific logic
         if not route.startswith("/loc/scheme"):
             raise ValidationError("Usupported route={} in {} msg={}."
                                   "".format(route, Ilks.rpy, serder.ked))
@@ -3679,16 +3673,21 @@ class Kevery:
             raise ValidationError("Invalid url={} for scheme={} from attributes in {} "
                                 "msg={}.".format(url, scheme, Ilks.rpy, serder.ked))
         # empty host port allowed will use default localhost:8080
+        aid = eid  # authorizing attribution id
+        keys = (aid, scheme)
 
-        keys = (eid, scheme)
         # BADA logic.
+        escrowed = False  # flag to raise UnverifiedReplyError is escrowed tsg
+        cigars = cigars if cigars is not None else []
+        tsgs = tsgs if  tsgs is not None else []
+
         # Is new later than old if old?
         osaider = self.db.lans.get(keys=keys)  # get old said if any
         if osaider:  # get old
             if (odater := self.db.sdts.get(keys=osaider.qb64b)):
                 if dater.datetime <= odater.datetime:
-                    raise ValidationError("Stale update of {} from {} via {}={}."
-                                    "".format(route, eid, Ilks.rpy, serder.ked))
+                    raise ValidationError(f"Stale update of {route} from {aid} "
+                                      f"via {Ilks.rpy}={serder.ked}.")
 
         for cigar in cigars:  # process each couple to verify sig and write to db
             if cigar.verfer.transferable:  # ignore invalid transferable verfers
@@ -3700,10 +3699,10 @@ class Kevery:
                             " on nonlocal reply msg=\n%s\n", serder.pretty())
                     continue  # skip own cig attachment on non-local reply msg
 
-            if eid != cigar.verfer.qb64:  # cig not by eid endpoint provider
-                logger.info("Kevery process: skipped cig not from eid="
-                        "{} on reply msg=\n%s\n", eid, serder.pretty())
-                continue  # skip invalid cig's verfer is not eid
+            if aid != cigar.verfer.qb64:  # cig not by aid provider
+                logger.info("Kevery process: skipped signature not from aid="
+                        "%s on reply msg=\n%s\n", aid, serder.pretty())
+                continue  # skip invalid signature is not from aid
 
             if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
                 logger.info("Kevery process: skipped nonverifying cig from "
@@ -3712,9 +3711,8 @@ class Kevery:
 
             # All constraints satisfied so update new reply SAD and its dts and cigar
             self.updateReply(saider=saider, dater=dater, serder=serder, cigar=cigar)
-            # update .lans and .locs
-            self.updateLoc(keys=keys, saider=saider, url=url)
-            self.removeReply(saider=osaider)
+            self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
+            self.updateLoc(keys=keys, saider=saider, url=url)  # update .lans and .locs
 
             break  # first valid cigar sufficient ignore any duplicates in cigars
 
@@ -3726,10 +3724,10 @@ class Kevery:
                     continue  # skip own sig attachment on non-local reply msg
 
             spre = prefixer.qb64
-            if eid != spre:  # sig not by cid=controller
-                logger.info("Kevery process: skipped sig not from eid="
-                        "{} on reply msg=\n%s\n", eid, serder.pretty())
-                continue  # skip invalid sig is not from eid
+            if aid != spre:  # sig not by cid=controller
+                logger.info("Kevery process: skipped signature not from aid="
+                        "%s on reply msg=\n%s\n", aid, serder.pretty())
+                continue  # skip invalid signature is not from aid
 
             if osaider:  # check that sn of est evt is also >= existing
                 pass
@@ -3772,10 +3770,8 @@ class Kevery:
                 self.updateReply(serder=serder, saider=saider, dater=dater,
                                  prefixer=prefixer, seqner=seqner, diger=diger,
                                  sigers=sigers)
-                # update .lans and .locs
-                self.updateLoc(keys=keys, saider=saider, url=url)
-                # remove now obsolete reply SAD and its dts and cigar
-                self.removeReply(saider=osaider)
+                self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
+                self.updateLoc(keys=keys, saider=saider, url=url)  # update .lans and .locs
 
             else:  # not meet threshold so escrow
                 self.escrowReply(serder=serder, saider=saider, dater=dater,
