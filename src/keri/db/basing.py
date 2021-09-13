@@ -462,14 +462,16 @@ class Baser(dbing.LMDBer):
             ISO-8601 datetime
             key = said (bytes) of sad, val = dater.qb64b
 
-        .ssgs (sad trans indexed sigs) named subDB instance of MulMatIoSetSuber
-            that maps said of SAD to quadruple (Prefixer, Seqner, Diger, Siger)
-            of est event for signer's key state when signed SAD. Each key may
+        .ssgs (sad trans indexed sigs) named subDB instance of CesrIoSetSuber
+            that maps keys quadruple (saider.qb64, prefixer.qb64, seqner.q64,
+            diger.qb64) to val Siger of trans id siganture. Where: saider is
+            said of SAD and prefixer, seqner, and diger indicate the key state
+            est event for signer or reply SAD. Each key may
             have a set of vals in insertion order one for each signer of the sad.
-            key = said (bytes) of SAD, val = cat of (prefixer.qb64b, seqner.qb64b,
-            diger.qb64b, siger.qb64b)
+            key = join (saider.qb64b, prefixer.qb64b, seqner.qb64b, diger.qb64b)
+            (bytes)  val = siger.qb64b
 
-        .scgs (sad nontrans cigs) named subDB instance of MulMatIoSetSuber
+        .scgs (sad nontrans cigs) named subDB instance of CatCesrIoSetSuber
             that maps said of SAD to couple (Verfer, Cigar) for nontrans signer.
             For nontrans qb64 of Verfer is same as Prefixer.
             Each key may have a set of vals in insertion order one for each
@@ -480,11 +482,11 @@ class Baser(dbing.LMDBer):
             reply message (versioned SAD) to serialization of that reply message.
             key is said bytes, val is Serder.raw bytes of reply 'rpy' message
 
-        .rpes (reply escrows) named subDB instance of MulMatIoSetSuber that
-            maps routes of reply (versioned SAD) to single (Saider,) of that
+        .rpes (reply escrows) named subDB instance of CesrIoSetSuber that
+            maps routes of reply (versioned SAD) to single Saider of that
             reply msg.
-            Routes such as '/end/role/add' '/end/role/cut' '/loc/scheme'
-            key is route bytes,  val = cat of (saider.qb64b,) of reply 'rpy' msg
+            Routes such as '/end/role/' and '/loc/scheme'
+            key is route bytes,  vals = saider.qb64b of reply 'rpy' msg
 
         .eans is named subDB instance of CesrSuber with klas=Saider that maps
             cid.role.eid to said of reply SAD as auth:  authN by controller cid
@@ -613,11 +615,13 @@ class Baser(dbing.LMDBer):
         # SAD support datetime stamps and signatures indexed and not-indexed
         # all sad  sdts (sad datetime serializations) maps said to date-time
         self.sdts = subing.CesrSuber(db=self, subkey='sdts.', klas=coring.Dater)
-        # all sad ssgs (sad indexed signature serializations) maps SAD SAID to
-        # quadruple (Prefixer, Seqner, Diger, Siger) of trans signer's est evt
-        # for key state of signature in Siger
-        self.ssgs = subing.CatCesrIoSetSuber(db=self, subkey='ssgs',
-            klas=(coring.Prefixer, coring.Seqner, coring.Diger, coring.Siger))
+
+        # all sad ssgs (sad indexed signature serializations) maps SAD quadkeys
+        # given by quadruple (saider.qb64, prefixer.qb64, seqner.q64, diger.qb64)
+        #  of reply and trans signer's key state est evt to val Siger for each
+        # signature.
+        self.ssgs = subing.CesrIoSetSuber(db=self, subkey='ssgs', klas=coring.Siger)
+
         # all sad scgs  (sad non-indexed signature serializations) maps SAD SAID
         # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
         # nontrans qb64 of Prefixer is same as Verfer

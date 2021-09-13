@@ -6,6 +6,7 @@ keri.core.eventing module
 import datetime
 import json
 import logging
+import collections
 from collections import namedtuple, deque
 from dataclasses import dataclass, astuple
 from math import ceil
@@ -21,7 +22,7 @@ from . import coring
 from .coring import (Versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
                      Seqner, Siger, Cigar, Dater,
                      Verfer, Diger, Nexter, Prefixer, Serder, Tholder)
-from ..db import basing
+from ..db import basing, subing
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN
 
 from ..kering import (MissingEntryError,
@@ -3217,53 +3218,74 @@ class Kevery:
         Process escrows for reply messages. Escrows are keyed by reply route
         and val is reply said
 
+        triple (prefixer, seqner, diger)
+        quadruple (prefixer, seqner, diger, siger)
 
         """
+        klases = (coring.Prefixer, coring.Seqner, coring.Diger)
         for (route, ion), saider in self.db.rpes.getIoItemIter():
             try:
-                # val=(saider, prefixer, seqner, diger)
+                tsgs = []  # transferable signature groups
+                sigers = []
+                old = None  # empty keys
+                for keys, siger in self.db.ssgs.getItemIter(keys=(saider.qb64, "")):
+                    triple = keys[1:]
+                    if triple != old:  # new tsg
+                        if sigers:  # append tsg made for old and sigers
+                            tsgs.append((*subing.klasify(sers=old, klases=klases), sigers))
+                            sigers = []
+                        old = triple
+                    sigers.append(siger)
+                if sigers and old:
+                    tsgs.append((*subing.klasify(sers=old, klases=klases), sigers))
+                    sigers = []
+
                 keys = (saider.qb64, )
                 dater = self.db.sdts.get(keys=keys)
                 serder = self.db.rpys.get(keys=keys)
-                #quadkeys=(saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
-                #sigers= [siger for (siger, ) in self.db.ssgs.get(keys=quadkeys)]
-                quadruples = self.db.ssgs.get(keys=keys)
+                try:
+                    if not (dater and serder and tsgs):
+                        raise ValueError(f"Missing escrow artifacts at said={saider.qb64}"
+                                         f"for route={route}.")
 
-                if not (dater and serder and quadruples):
-                    raise ValueError(f"Missing escrow artifacts at said={saider.qb64}"
-                                     f"for route={route}.")
+                    # do date math for stale escrow
+                    if ((helping.nowUTC() - dater.datetime) >
+                            datetime.timedelta(seconds=self.TimeoutRPE)):
+                        # escrow stale so raise ValidationError which unescrows below
+                        logger.info("Kevery unescrow error: Stale reply escrow "
+                                    " at route = %s\n", route)
 
-                # do date math for stale escrow
-                if (helping.nowUTC() - dater) > datetime.timedelta(seconds=self.TimeoutRPE):
-                    # escrow stale so raise ValidationError which unescrows below
-                    logger.info("Kevery unescrow error: Stale reply escrow "
-                                " at route = %s\n", route)
+                        raise ValidationError(f"Stale reply escrow at route = {route}.")
 
-                    raise ValidationError(f"Stale reply escrow at route = {route}.")
-                tsgs = []  #
-                # self.processReply(serder=serder,tsgs=tsgs)
+                    self.processReply(serder=serder, tsgs=tsgs)
 
-            except UnverifiedReplyError as ex:
-                # still waiting on missing prior event to validate
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Kevery unescrow attempt failed: %s\n", ex.args[0])
-                else:
-                    logger.error("Kevery unescrow attempt failed: %s\n", ex.args[0])
+                except UnverifiedReplyError as ex:
+                    # still waiting on missing prior event to validate
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.exception("Kevery unescrow attempt failed: %s\n", ex.args[0])
+                    else:
+                        logger.error("Kevery unescrow attempt failed: %s\n", ex.args[0])
+
+                except Exception as ex:  # other error so remove from reply escrow
+                    self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow
+                    self.removeReply(saider)# remove escrow reply artifacts
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
+                    else:
+                        logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
+
+                else:  # unescrow succeded
+                    self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow only
+                    logger.info("Kevery unescrow succeeded for reply=\n%s\n",
+                                serder.pretty())
 
             except Exception as ex:  # log diagnostics errors etc
-                # other error so remove from reply escrow
-                # remove escrow artifacts
-
-                # self.db.rpes.remIokey(iokeys=(route, ion))
+                self.db.rpes.remIokey(iokeys=(route, ion))  # remove escrow
+                self.removeReply(saider)# remove escrow reply artifacts
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
                 else:
                     logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
-
-            else:  # unescrow succeded
-                # self.db.rpes.remIokey(iokeys=(route, ion))
-                logger.info("Kevery unescrow succeeded for reply=\n%s\n",
-                            serder.pretty())
 
 
     def removeStaleReplyEndRole(self, saider):
@@ -3490,9 +3512,7 @@ class Kevery:
                             " on nonlocal reply msg=\n%s\n", serder.pretty())
                     continue  # skip own sig attachment on non-local reply msg
 
-
             spre = prefixer.qb64
-
             if cid != spre:  # sig not by cid=controller
                 logger.info("Kevery process: skipped sig not from cid="
                         "%s on reply msg=\n%s\n", cid, serder.pretty())
@@ -3500,7 +3520,6 @@ class Kevery:
 
             if osaider:  # check that sn of est evt is also >= existing
                 pass
-
 
             # retrieve sdig of last event at sn of signer.
             sdig = self.db.getKeLast(key=snKey(pre=spre, sn=seqner.sn))
@@ -3520,19 +3539,17 @@ class Kevery:
             if not sserder.compare(diger=diger):  # signer's dig not match est evt
                 raise ValidationError(f"Bad trans indexed sig group at sn = "
                                       f"{seqner.sn} for reply = {serder.ked}.")
-
             #verify sigs
             if not (sverfers := sserder.verfers):
                 raise ValidationError(f"Invalid reply from signer={spre}, no "
                                 f"keys at signer's est. event sn={seqner.sn}.")
 
             # fetch any escrowed sigs, extract just the siger from each quad
-            # quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
-            # esigers = [siger for (siger, ) in self.db.ssgs.get(keys=quadkeys)]
-            esigers = [siger for _, _, _, siger in
-                               self.db.ssgs.get(keys=(saider.qb64, ))]
+            quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+            esigers = self.db.ssgs.get(keys=quadkeys)
+            #esigers = [siger for _, _, _, siger in
+                               #self.db.ssgs.get(keys=(saider.qb64, ))]
             sigers.extend(esigers)
-
             sigers, valid = validateSigs(serder=serder,
                                          sigers=sigers,
                                          verfers=sverfers,
@@ -3743,10 +3760,10 @@ class Kevery:
                          "signer's est. event sn={}.".format(spre, seqner.sn))
 
             # fetch any escrowed sigs, extract just the siger from each quad
-            # quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
-            # esigers = [siger for (siger, ) in self.db.ssgs.get(keys=quadkeys)]
-            esigers = [siger for _, _, _, siger in
-                                         self.db.ssgs.get(keys=(saider.qb64, ))]
+            quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+            esigers = self.db.ssgs.get(keys=quadkeys)
+            #esigers = [siger for _, _, _, siger in
+                                         #self.db.ssgs.get(keys=(saider.qb64, ))]
             sigers.extend(esigers)
 
             sigers, valid = validateSigs(serder=serder,
@@ -3754,8 +3771,6 @@ class Kevery:
                                          verfers=sverfers,
                                          tholder=sserder.tholder)
             # no error so at least one verified siger
-
-
             if valid:  # meet threshold so save
                 # All constraints satisfied so update new reply SAD and its dts and cigar
                 self.updateReply(serder=serder, saider=saider, dater=dater,
@@ -3796,18 +3811,16 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 siger is indexed sig from trans endorser's key from est evt
         """
-        if sigers is None:
-            sigers = []
+        #if sigers is None:
+            #sigers = []
         keys = (saider.qb64, )
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder) # first one idempotent
         if cigar:
             self.db.scgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
-        for siger in sigers:
-            # quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
-            # self.db.ssgs.put(keys=keys, vals=[(siger, ) for siger in sigers])
-            quad = (prefixer, seqner, diger, siger)
-            self.db.ssgs.put(keys=keys, vals=[(*quad, )])
+        if sigers:
+            quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+            self.db.ssgs.put(keys=quadkeys, vals=sigers)
 
 
     def removeReply(self, saider):
@@ -3821,7 +3834,7 @@ class Kevery:
         if saider:
             keys = (saider.qb64, )
 
-            self.db.ssgs.rem(keys=keys)
+            self.db.ssgs.rem(keys=(saider.qb64, ""))  # remove whole branch
             self.db.scgs.rem(keys=keys)
             self.db.rpys.rem(keys=keys)
             self.db.sdts.rem(keys=keys)
@@ -3849,10 +3862,9 @@ class Kevery:
         keys = (saider.qb64, )
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder) # first one idempotent
-        for siger in sigers:
-            quad = (prefixer, seqner, diger, siger)
-            self.db.ssgs.put(keys=keys, vals=[(*quad, )])
-        self.db.rpes.put(keys=(route, ), vals=[saider])  # unpack y, = (x,)
+        quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+        self.db.ssgs.put(keys=quadkeys, vals=sigers)
+        self.db.rpes.put(keys=(route, ), vals=[saider])
 
 
     def updateEnd(self, keys, saider, allow=None):

@@ -1648,10 +1648,12 @@ def test_reply(mockHelpingNowUTC):
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
         assert serder.dig == serderR.dig
-        quadruples = nelHab.db.ssgs.get(keys=saidkeys)
-        assert len(quadruples) == 3
-        prefixer, seqner, diger, siger = quadruples[0]
-        assert prefixer.qb64 == tamHab.pre
+        quadkeys = (serderR.said,
+                    tamHab.pre,
+                    coring.Seqner(sn=tamHab.kever.lastEst.s).qb64,
+                    tamHab.kever.lastEst.d)
+        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        assert len(sigers) == 3 == len(tamHab.kever.verfers)
         escrowkeys = ("/end/role", )  # escrow route base not full route
         [saider] = nelHab.db.rpes.get(keys=escrowkeys)
         assert saider.qb64 == serder.said
@@ -1677,23 +1679,26 @@ def test_reply(mockHelpingNowUTC):
 
         # process escrow reply
         nelKvy.processEscrowReply()
-        #saidkeys = (serderR.said, )
-        #dater = nelHab.db.sdts.get(keys=saidkeys)
-        #assert dater.dts == help.helping.DTS_BASE_0
-        #serder = nelHab.db.rpys.get(keys=saidkeys)
-        #assert serder.dig == serderR.dig
-        #quadruples = nelHab.db.ssgs.get(keys=saidkeys)
-        #assert len(quadruples) == 3
-        #prefixer, seqner, diger, siger = quadruples[0]
-        #assert prefixer.qb64 == tamHab.pre
+        saidkeys = (serderR.said, )
+        dater = nelHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = nelHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serderR.dig
+        quadkeys = (serderR.said,
+                    tamHab.pre,
+                    coring.Seqner(sn=tamHab.kever.lastEst.s).qb64,
+                    tamHab.kever.lastEst.d)
+        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        assert len(sigers) == 3 == len(tamHab.kever.verfers)
+        escrowkeys = ("/end/role", )  # escrow route base not full route
+        assert not nelHab.db.rpes.get(keys=escrowkeys)
 
-        #endkeys = (tamHab.pre, role, wesHab.pre)
-        #saider = nelHab.db.eans.get(keys=endkeys)
-        #assert saider.qb64 == serder.said
-        #ender = nelHab.db.ends.get(keys=endkeys)
-        #assert ender.allow == True
-        #assert ender.name == ""
-
+        endkeys = (tamHab.pre, role, wesHab.pre)
+        saider = nelHab.db.eans.get(keys=endkeys)
+        assert saider.qb64 == serder.said
+        ender = nelHab.db.ends.get(keys=endkeys)
+        assert ender.allow == True
+        assert ender.name == ""
 
         # do wok as witness for tam
         # with trans cid for tam and eid for wok
@@ -1716,10 +1721,12 @@ def test_reply(mockHelpingNowUTC):
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
         assert serder.dig == serderR.dig
-        quadruples = nelHab.db.ssgs.get(keys=saidkeys)
-        assert len(quadruples) == 3
-        prefixer, seqner, diger, siger = quadruples[0]
-        assert prefixer.qb64 == tamHab.pre
+        quadkeys = (serderR.said,
+                        tamHab.pre,
+                        coring.Seqner(sn=tamHab.kever.lastEst.s).qb64,
+                        tamHab.kever.lastEst.d)
+        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        assert len(sigers) == 3 == len(tamHab.kever.verfers)
 
         endkeys = (tamHab.pre, role, wokHab.pre)
         saider = nelHab.db.eans.get(keys=endkeys)
@@ -1841,10 +1848,12 @@ def test_reply(mockHelpingNowUTC):
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
         assert serder.dig == serderR.dig
-        quadruples = nelHab.db.ssgs.get(keys=saidkeys)
-        assert len(quadruples) == 3
-        prefixer, seqner, diger, siger = quadruples[0]
-        assert prefixer.qb64 == tamHab.pre
+        quadkeys = (serderR.said,
+                    tamHab.pre,
+                    coring.Seqner(sn=tamHab.kever.lastEst.s).qb64,
+                    tamHab.kever.lastEst.d)
+        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        assert len(sigers) == 3 == len(tamHab.kever.verfers)
 
         lockeys = (tamHab.pre, scheme)
         saider = nelHab.db.lans.get(keys=lockeys)
