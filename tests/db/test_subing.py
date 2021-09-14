@@ -15,6 +15,8 @@ from keri.app import keeping
 from keri.help import helping
 
 
+
+
 def test_suber():
     """
     Test Suber LMDBer sub database class
@@ -878,7 +880,7 @@ def test_cat_suber():
             assert klas == sklas
         assert not sdb.sdb.flags()["dupsort"]
 
-        # test .toval and tovals  needs .klas to work
+
         dater = coring.Dater(dts="2021-01-01T00:00:00.000000+00:00")
         datb = dater.qb64b
         assert datb == b'1AAG2021-01-01T00c00c00d000000p00c00'
@@ -1586,4 +1588,4 @@ def test_crypt_signer_suber():
 
 
 if __name__ == "__main__":
-    test_cesr_ioset_suber()
+    test_klasify()

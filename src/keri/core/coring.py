@@ -1048,7 +1048,7 @@ class Seqner(Matter):
         Property snh:  sequence number as hex
         Returns .sn int converted to hex str
         """
-        return "{:x}".format(self.sn)
+        return f"{self.sn:x}"  # "{:x}".format(self.sn)
 
 
 class Dater(Matter):

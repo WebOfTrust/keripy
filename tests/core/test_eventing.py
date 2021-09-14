@@ -1650,7 +1650,7 @@ def test_reply(mockHelpingNowUTC):
         assert serder.dig == serderR.dig
         quadkeys = (serderR.said,
                     tamHab.pre,
-                    coring.Seqner(sn=tamHab.kever.lastEst.s).qb64,
+                    f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
         sigers = nelHab.db.ssgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
@@ -1710,7 +1710,7 @@ def test_reply(mockHelpingNowUTC):
         assert serder.dig == serderR.dig
         quadkeys = (serderR.said,
                         tamHab.pre,
-                        coring.Seqner(sn=tamHab.kever.lastEst.s).qb64,
+                        f"{tamHab.kever.lastEst.s:032x}",
                         tamHab.kever.lastEst.d)
         sigers = nelHab.db.ssgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
@@ -1750,7 +1750,7 @@ def test_reply(mockHelpingNowUTC):
         assert serder.dig == serder0.dig
         quadkeys = (serder0.said,
                     tamHab.pre,
-                    coring.Seqner(sn=tamHab.kever.lastEst.s).qb64,
+                    f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
         sigers = nelHab.db.ssgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
@@ -1772,7 +1772,7 @@ def test_reply(mockHelpingNowUTC):
         assert serder.dig == serder1.dig
         quadkeys = (serder1.said,
                         tamHab.pre,
-                        coring.Seqner(sn=tamHab.kever.lastEst.s).qb64,
+                        f"{tamHab.kever.lastEst.s:032x}",
                         tamHab.kever.lastEst.d)
         sigers = nelHab.db.ssgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
@@ -1812,7 +1812,7 @@ def test_reply(mockHelpingNowUTC):
         assert serder.dig == serderR.dig
         quadkeys = (serderR.said,
                         tamHab.pre,
-                        coring.Seqner(sn=tamHab.kever.lastEst.s).qb64,
+                        f"{tamHab.kever.lastEst.s:032x}",
                         tamHab.kever.lastEst.d)
         sigers = nelHab.db.ssgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
@@ -1913,7 +1913,7 @@ def test_reply(mockHelpingNowUTC):
         assert serder.dig == serderR.dig
         quadkeys = (serderR.said,
                     tamHab.pre,
-                    coring.Seqner(sn=tamHab.kever.lastEst.s).qb64,
+                    f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
         sigers = nelHab.db.ssgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
@@ -1951,7 +1951,7 @@ def test_reply(mockHelpingNowUTC):
         assert serder.dig == serderR.dig
         quadkeys = (serderR.said,
                         tamHab.pre,
-                        coring.Seqner(sn=tamHab.kever.lastEst.s).qb64,
+                        f"{tamHab.kever.lastEst.s:032x}",
                         tamHab.kever.lastEst.d)
         sigers = nelHab.db.ssgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)

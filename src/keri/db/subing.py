@@ -50,20 +50,6 @@ from . import dbing
 logger = help.ogler.getLogger()
 
 
-def klasify(sers: Iterable, klases: Iterable):
-    """
-    Convert each qb64 serialization in sers in instance of corresponding klas in
-    klases.
-    Useful for converting iterable of CESR serializations to associated iterable
-    of CESR subclass instances
-
-    Parameters:
-        sers (Iterable): of serialized CESR subclass, str .qb64 or bytes .qb64b
-        klases (Iterable): of class reference of CESR subclass
-    """
-    return tuple(klas(qb64=ser) for ser, klas in zip(sers, klases))
-
-
 class SuberBase():
     """
     Base class for Sub DBs of LMDBer

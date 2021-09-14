@@ -12,9 +12,9 @@ import fractions
 from dataclasses import dataclass, asdict
 
 from keri.help import helping
-from keri.help.helping import isign, sceil, dictify
+from keri.help.helping import isign, sceil
 from keri.help.helping import extractValues
-from keri.help.helping import datify
+from keri.help.helping import dictify, datify, klasify
 
 def test_utilities():
     """
@@ -98,6 +98,9 @@ def test_datify():
 
 
 def test_dictify():
+    """
+    Test convert dataclass to dict
+    """
 
     @dataclass
     class Point:
@@ -126,6 +129,58 @@ def test_dictify():
 
     c = Circle(radius=4)
     assert dictify(c) == {'area': 50.24, 'perimeter': 25.12}
+
+
+def test_klasify():
+    """
+    Test klasify utility function
+    """
+    from keri.core.coring import Dater, Seqner, Diger
+
+    dater = Dater(dts="2021-01-01T00:00:00.000000+00:00")
+    assert dater.qb64 == '1AAG2021-01-01T00c00c00d000000p00c00'
+
+    seqner = Seqner(sn=20)
+    assert seqner.qb64 == '0AAAAAAAAAAAAAAAAAAAAAFA'
+
+    diger = Diger(ser=b"Hello Me Maties.")
+    assert diger.qb64 == 'Eurq5IDrYVpYoBB_atyW3gPXBEB5XBDuEG5wMbjcauwk'
+
+    sers = (dater.qb64, seqner.qb64, diger.qb64)
+    klases = (Dater, Seqner, Diger)
+    triple = klasify(sers=sers, klases=klases)
+    results = tuple(val.qb64 for val in triple)
+    assert sers == results
+
+    args = ("qb64", "snh", "qb64")
+    sers = (dater.qb64, seqner.snh, diger.qb64)
+    triple = klasify(sers=sers, klases=klases, args=args)
+    results = tuple(val.qb64 for val in triple)
+    assert results == (dater.qb64, seqner.qb64, diger.qb64)
+
+    klases = (str, Seqner, Diger)
+    args = (None, "snh", "qb64")
+    sers = (25, f"{seqner.sn:032x}", diger.qb64)
+    assert sers == (25,
+                    '00000000000000000000000000000014',
+                    'Eurq5IDrYVpYoBB_atyW3gPXBEB5XBDuEG5wMbjcauwk')
+    t, s, d = klasify(sers=sers, klases=klases, args=args)
+    assert t == "25"
+    assert s.sn == 20
+    assert d.qb64 == diger.qb64
+
+
+    klases = (None, Seqner, Diger)
+    args = (None, "snh", "qb64")
+    sers = ("hello", f"{seqner.sn:032x}", diger.qb64)
+    t, s, d = klasify(sers=sers, klases=klases, args=args)
+    assert t == "hello"
+    assert s.sn == 20
+    assert d.qb64 == diger.qb64
+
+    """Done Test"""
+
+
 
 
 def test_extractvalues():
@@ -225,6 +280,4 @@ def test_iso8601():
 
 
 if __name__ == "__main__":
-    test_datify()
-    test_utilities()
-    test_dictify()
+    test_klasify()

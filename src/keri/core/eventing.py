@@ -3275,9 +3275,9 @@ class Kevery:
                     logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
 
 
-    def fetchTsgs(self, saider):
+    def fetchTsgs(self, saider, snh=None):
         """
-        Fetch tsgs for saider from .db.ssgs
+        Fetch tsgs for saider from .db.ssgs. When sn then only fetch if sn < snh
         Returns:
             tsgs (list): of tsg quadruple of form (prefixer, seqner, diger, sigers)
                 where:
@@ -3289,21 +3289,25 @@ class Kevery:
         Parameters:
             saider (Saider): instance of said for reply SAD to which signatures
                 are attached
+            snh (str): 32 char zero pad lowercase hex of sequence number f"{sn:032x}"
         """
         klases = (coring.Prefixer, coring.Seqner, coring.Diger)
+        args = ("qb64", "snh", "qb64")
         tsgs = []  # transferable signature groups
         sigers = []
         old = None  # empty keys
         for keys, siger in self.db.ssgs.getItemIter(keys=(saider.qb64, "")):
             triple = keys[1:]
             if triple != old:  # new tsg
+                if snh is not None and triple[1] >= snh:  # only lower sn
+                    break
                 if sigers:  # append tsg made for old and sigers
-                    tsgs.append((*subing.klasify(sers=old, klases=klases), sigers))
+                    tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
                     sigers = []
                 old = triple
             sigers.append(siger)
         if sigers and old:
-            tsgs.append((*subing.klasify(sers=old, klases=klases), sigers))
+            tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
             sigers = []
 
         return tsgs
@@ -3709,7 +3713,8 @@ class Kevery:
                                 f"keys at signer's est. event sn={seqner.sn}.")
 
             # fetch any escrowed sigs, extract just the siger from each quad
-            quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+            # want sn in numerical order so use hex
+            quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
             esigers = self.db.ssgs.get(keys=quadkeys)
             sigers.extend(esigers)
             sigers, valid = validateSigs(serder=serder,
@@ -3761,8 +3766,8 @@ class Kevery:
         self.db.rpys.put(keys=keys, val=serder) # first one idempotent
         if cigar:
             self.db.scgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
-        if sigers:
-            quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+        if sigers:  # want sn in numerical order so use hex
+            quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
             self.db.ssgs.put(keys=quadkeys, vals=sigers)
 
 
@@ -3805,7 +3810,7 @@ class Kevery:
         keys = (saider.qb64, )
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder) # first one idempotent
-        quadkeys = (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64)
+        quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
         self.db.ssgs.put(keys=quadkeys, vals=sigers)
         self.db.rpes.put(keys=(route, ), vals=[saider])
 
