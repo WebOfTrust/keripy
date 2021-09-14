@@ -112,8 +112,8 @@ def test_suffix():
     """
     Test suffix unsuffix stuff
     """
-    assert dbing.SuffixSize == 22
-    assert dbing.MaxSuffix ==  5444517870735015415413993718908291383295
+    assert dbing.SuffixSize == 32
+    assert dbing.MaxSuffix ==  340282366920938463463374607431768211455
     assert dbing.MaxSuffix >= dbing.MaxON
 
     key = "ABCDEFG.FFFFFF"
@@ -121,20 +121,20 @@ def test_suffix():
 
     ion = 0
     iokey = dbing.suffix(key, ion)
-    assert iokey == b'ABCDEFG.FFFFFF.AAAAAAAAAAAAAAAAAAAAAA'
+    assert iokey == b'ABCDEFG.FFFFFF.00000000000000000000000000000000'
     k, i = dbing.unsuffix(iokey)
     assert k == keyb
     assert i == ion
 
     ion = 64
     iokey = dbing.suffix(keyb, ion)
-    assert iokey == b'ABCDEFG.FFFFFF.AAAAAAAAAAAAAAAAAAAABA'
+    assert iokey == b'ABCDEFG.FFFFFF.00000000000000000000000000000040'
     k, i = dbing.unsuffix(iokey)
     assert k == keyb
     assert i == ion
 
     iokey = dbing.suffix(key, dbing.MaxSuffix)
-    assert iokey ==  b'ABCDEFG.FFFFFF.______________________'
+    assert iokey ==  b'ABCDEFG.FFFFFF.ffffffffffffffffffffffffffffffff'
     k, i = dbing.unsuffix(iokey)
     assert k == keyb
     assert i == dbing.MaxSuffix
@@ -766,16 +766,16 @@ def test_lmdber():
         assert dber.appendIoSetVal(db, key1, val=b"k") == 4
         assert dber.getIoSetVals(db, key1) == [b"w", b"n", b"y", b"d", b"k"]
 
-        assert dber.getIoSetItems(db, key0) == [(b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAA', b'z'),
-                                                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAB', b'm'),
-                                                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAC', b'x'),
-                                                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAD', b'a')]
+        assert dber.getIoSetItems(db, key0) == [(b'ABC.ZYX.00000000000000000000000000000000', b'z'),
+                                                (b'ABC.ZYX.00000000000000000000000000000001', b'm'),
+                                                (b'ABC.ZYX.00000000000000000000000000000002', b'x'),
+                                                (b'ABC.ZYX.00000000000000000000000000000003', b'a')]
 
         assert ([(bytes(iokey), bytes(val)) for iokey, val in dber.getIoSetItemsIter(db, key0)] ==
-                [(b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAA', b'z'),
-                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAB', b'm'),
-                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAC', b'x'),
-                (b'ABC.ZYX.AAAAAAAAAAAAAAAAAAAAAD', b'a')])
+                [(b'ABC.ZYX.00000000000000000000000000000000', b'z'),
+                (b'ABC.ZYX.00000000000000000000000000000001', b'm'),
+                (b'ABC.ZYX.00000000000000000000000000000002', b'x'),
+                (b'ABC.ZYX.00000000000000000000000000000003', b'a')])
 
         for iokey, val in dber.getIoSetItemsIter(db, key0):
             assert dber.delIoSetIokey(db, iokey)

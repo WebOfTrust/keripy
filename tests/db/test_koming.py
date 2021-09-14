@@ -726,19 +726,19 @@ def test_ioset_komer():
             assert loc == wit3loc
 
         # test IoItem methods
-        iokeys0 = [b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.AAAAAAAAAAAAAAAAAAAAAA',
-                  b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.AAAAAAAAAAAAAAAAAAAAAB',
-                  b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.AAAAAAAAAAAAAAAAAAAAAC']
+        iokeys0 = [b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.00000000000000000000000000000000',
+                  b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.00000000000000000000000000000001',
+                  b'EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY.witness.00000000000000000000000000000002']
         iokeys0 = [endDB._tokeys(iokey) for iokey in iokeys0]
         assert iokeys0 == [('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
                             'witness',
-                            'AAAAAAAAAAAAAAAAAAAAAA'),
+                            '00000000000000000000000000000000'),
                            ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
                             'witness',
-                            'AAAAAAAAAAAAAAAAAAAAAB'),
+                            '00000000000000000000000000000001'),
                            ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
                             'witness',
-                            'AAAAAAAAAAAAAAAAAAAAAC')]
+                            '00000000000000000000000000000002')]
 
         i = 0
         for iokeys, end in endDB.getIoSetItem(keys=keys0):
@@ -778,21 +778,21 @@ def test_ioset_komer():
 
 
         # test getAllIoItem
-        iokeys1 = [b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E.witness.AAAAAAAAAAAAAAAAAAAAAA']
+        iokeys1 = [b'EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E.witness.00000000000000000000000000000000']
         iokeys1 = [endDB._tokeys(iokey) for iokey in iokeys1]
         iokeysall = iokeys0 + iokeys1
         assert iokeysall ==  [('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
                                 'witness',
-                                'AAAAAAAAAAAAAAAAAAAAAA'),
+                                '00000000000000000000000000000000'),
                                ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
                                 'witness',
-                                'AAAAAAAAAAAAAAAAAAAAAB'),
+                                '00000000000000000000000000000001'),
                                ('EmB26yMzroICh-opKNdkYyP000kwevU18WQI95JaJDjY',
                                 'witness',
-                                'AAAAAAAAAAAAAAAAAAAAAC'),
+                                '00000000000000000000000000000002'),
                                ('EsLkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E',
                                 'witness',
-                                'AAAAAAAAAAAAAAAAAAAAAA')]
+                                '00000000000000000000000000000000')]
 
         i = 0
         for iokeys, end in endDB.getAllIoItemIter(keys=(cid0, "")):

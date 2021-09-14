@@ -3222,23 +3222,10 @@ class Kevery:
         quadruple (prefixer, seqner, diger, siger)
 
         """
-        klases = (coring.Prefixer, coring.Seqner, coring.Diger)
+        # klases = (coring.Prefixer, coring.Seqner, coring.Diger)
         for (route, ion), saider in self.db.rpes.getIoItemIter():
             try:
-                tsgs = []  # transferable signature groups
-                sigers = []
-                old = None  # empty keys
-                for keys, siger in self.db.ssgs.getItemIter(keys=(saider.qb64, "")):
-                    triple = keys[1:]
-                    if triple != old:  # new tsg
-                        if sigers:  # append tsg made for old and sigers
-                            tsgs.append((*subing.klasify(sers=old, klases=klases), sigers))
-                            sigers = []
-                        old = triple
-                    sigers.append(siger)
-                if sigers and old:
-                    tsgs.append((*subing.klasify(sers=old, klases=klases), sigers))
-                    sigers = []
+                tsgs = self.fetchTsgs(saider=saider)
 
                 keys = (saider.qb64, )
                 dater = self.db.sdts.get(keys=keys)
@@ -3286,6 +3273,40 @@ class Kevery:
                     logger.exception("Kevery unescrowed due to error: %s\n", ex.args[0])
                 else:
                     logger.error("Kevery unescrowed due to error: %s\n", ex.args[0])
+
+
+    def fetchTsgs(self, saider):
+        """
+        Fetch tsgs for saider from .db.ssgs
+        Returns:
+            tsgs (list): of tsg quadruple of form (prefixer, seqner, diger, sigers)
+                where:
+                    prefixer (Prefixer): instance trans signer aid,
+                    seqner (Seqner): of sn of trans signer key state est event
+                    diger (Diger): of digest of trans signer key state est event
+                    signers (list): of Siger instances of indexed signatures
+
+        Parameters:
+            saider (Saider): instance of said for reply SAD to which signatures
+                are attached
+        """
+        klases = (coring.Prefixer, coring.Seqner, coring.Diger)
+        tsgs = []  # transferable signature groups
+        sigers = []
+        old = None  # empty keys
+        for keys, siger in self.db.ssgs.getItemIter(keys=(saider.qb64, "")):
+            triple = keys[1:]
+            if triple != old:  # new tsg
+                if sigers:  # append tsg made for old and sigers
+                    tsgs.append((*subing.klasify(sers=old, klases=klases), sigers))
+                    sigers = []
+                old = triple
+            sigers.append(siger)
+        if sigers and old:
+            tsgs.append((*subing.klasify(sers=old, klases=klases), sigers))
+            sigers = []
+
+        return tsgs
 
 
     def removeStaleReplyEndRole(self, saider):

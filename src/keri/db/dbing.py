@@ -65,8 +65,8 @@ ProemSize = 32  # does not include trailing separator
 MaxProem = int("f"*(ProemSize), 16)
 MaxON = int("f"*32, 16)  # largest possible ordinal number, sequence or first seen
 
-SuffixSize = 22  # does not include trailing separator
-MaxSuffix = coring.b64ToInt(coring.B64ChrByIdx[63]*(SuffixSize))
+SuffixSize = 32  # does not include trailing separator
+MaxSuffix = int("f"*(SuffixSize), 16)
 
 def dgKey(pre, dig):
     """
@@ -171,7 +171,7 @@ def splitKeyDT(key):
 def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, str]=b'.'):
     """
     Returns:
-       iokey (bytes): actual DB key after concatenating suffix as base64 version
+       iokey (bytes): actual DB key after concatenating suffix as hex version
        of insertion ordering ordinal int ion using separator sep.
 
     Parameters:
@@ -185,7 +185,7 @@ def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, st
         key = key.encode("utf-8")  # encode str to bytes
     if hasattr(sep, "encode"):
         sep = sep.encode("utf-8")
-    ion = coring.intToB64b(ion, SuffixSize)
+    ion =  b"%032x" % ion
     return sep.join((key, ion))
 
 
@@ -194,7 +194,7 @@ def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: Union[bytes, str]=b'.
     Returns:
        result (tuple): (key, ion) by splitting iokey at rightmost separator sep
             strip off suffix, where key is bytes apparent effective DB key and
-            ion is the insertion ordering int converted from stripped of base64
+            ion is the insertion ordering int converted from stripped of hex
             suffix
 
     Parameters:
@@ -208,7 +208,7 @@ def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: Union[bytes, str]=b'.
     if hasattr(sep, "encode"):
         sep = sep.encode("utf-8")
     key, ion = iokey.rsplit(sep=sep, maxsplit=1)
-    ion = coring.b64ToInt(ion)
+    ion = int(ion, 16)
     return (key, ion)
 
 
