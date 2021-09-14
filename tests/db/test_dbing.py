@@ -279,6 +279,10 @@ def test_lmdber():
                                                         (b'a', b'2', b'wee'),
                                                         (b'b', b'1', b'woo')]
 
+        assert dber.delTopVal(db, key=b"a.")
+        items = [ (key, bytes(val)) for key, val in dber.getTopItemIter(db=db )]
+        assert items == [(b'b.1', b'woo')]
+
         # test OrdVal OrdItem ordinal numbered event sub db
         db = dber.env.open_db(key=b'seen.')
 

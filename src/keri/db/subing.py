@@ -173,6 +173,21 @@ class SuberBase():
             yield (self._tokeys(key), self._des(val))
 
 
+    def trim(self, keys: Union[str, Iterable]=b""):
+        """
+        Removes all entries whose keys startswith keys. Enables removal of whole
+        branches of db key space. To ensure that proper separation of a branch
+        include empty string as last key in keys. For example ("a","") deletes
+        'a.1'and 'a.2' but not 'ab'
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+        """
+        return(self.db.delTopVal(db=self.sdb, key=self._tokey(keys)))
+
 
 class Suber(SuberBase):
     """

@@ -3687,8 +3687,14 @@ class Kevery:
                         "%s on reply msg=\n%s\n", aid, serder.pretty())
                 continue  # skip invalid signature is not from aid
 
-            if osaider:  # check that sn of est evt is also >= existing
-                pass
+            if osaider:  # check that sn of signer est evt is also >= existing
+                if (otsgs := self.fetchTsgs(osaider)):
+                    _, osqr, _, _ = otsgs[0] # zeroth should be authoritative
+                    if not seqner.sn >= osqr.sn:
+                        logger.info("Kevery process: skipped signature sn="
+                                    "%s not later than prior on reply msg=\n%s\n",
+                                               seqner.sn, serder.pretty())
+                        continue  # skip invalid signature is not from aid
 
             # retrieve sdig of last event at sn of signer.
             sdig = self.db.getKeLast(key=snKey(pre=spre, sn=seqner.sn))
@@ -3729,9 +3735,10 @@ class Kevery:
                                  sigers=sigers)
                 self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
                 # remove stale signatures .ssgs for this saider
+                # this ensures that zeroth tsg is authoritative
                 for prr, snr, dgr, _ in self.fetchTsgs(saider, snh=seqner.snh):
                     if snr.sn != seqner.sn or dgr.qb64 != diger.qb64:
-                        self.db.ssgs.rem(keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64))
+                        self.db.ssgs.trim(keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, ""))
 
                 accepted = True
 
@@ -3787,7 +3794,7 @@ class Kevery:
         if saider:
             keys = (saider.qb64, )
 
-            self.db.ssgs.rem(keys=(saider.qb64, ""))  # remove whole branch
+            self.db.ssgs.trim(keys=(saider.qb64, ""))  # remove whole branch
             self.db.scgs.rem(keys=keys)
             self.db.rpys.rem(keys=keys)
             self.db.sdts.rem(keys=keys)
