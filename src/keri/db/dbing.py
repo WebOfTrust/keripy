@@ -65,8 +65,8 @@ ProemSize = 32  # does not include trailing separator
 MaxProem = int("f"*(ProemSize), 16)
 MaxON = int("f"*32, 16)  # largest possible ordinal number, sequence or first seen
 
-SuffixSize = 22  # does not include trailing separator
-MaxSuffix = coring.b64ToInt(coring.B64ChrByIdx[63]*(SuffixSize))
+SuffixSize = 32  # does not include trailing separator
+MaxSuffix = int("f"*(SuffixSize), 16)
 
 def dgKey(pre, dig):
     """
@@ -171,7 +171,7 @@ def splitKeyDT(key):
 def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, str]=b'.'):
     """
     Returns:
-       iokey (bytes): actual DB key after concatenating suffix as base64 version
+       iokey (bytes): actual DB key after concatenating suffix as hex version
        of insertion ordering ordinal int ion using separator sep.
 
     Parameters:
@@ -185,7 +185,7 @@ def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, st
         key = key.encode("utf-8")  # encode str to bytes
     if hasattr(sep, "encode"):
         sep = sep.encode("utf-8")
-    ion = coring.intToB64b(ion, SuffixSize)
+    ion =  b"%032x" % ion
     return sep.join((key, ion))
 
 
@@ -194,7 +194,7 @@ def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: Union[bytes, str]=b'.
     Returns:
        result (tuple): (key, ion) by splitting iokey at rightmost separator sep
             strip off suffix, where key is bytes apparent effective DB key and
-            ion is the insertion ordering int converted from stripped of base64
+            ion is the insertion ordering int converted from stripped of hex
             suffix
 
     Parameters:
@@ -208,7 +208,7 @@ def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: Union[bytes, str]=b'.
     if hasattr(sep, "encode"):
         sep = sep.encode("utf-8")
     key, ion = iokey.rsplit(sep=sep, maxsplit=1)
-    ion = coring.b64ToInt(ion)
+    ion = int(ion, 16)
     return (key, ion)
 
 
@@ -607,9 +607,12 @@ class LMDBer:
 
     def getTopItemIter(self, db, key=b''):
         """
+        Iterates over branch of db given by key
+
         Returns:
-            items (abc.Iterator): iterator over (full key, val) tuples where
-                full key is full database key for val not truncated prefix top key
+            items (abc.Iterator): iterator of (full key, val) tuples over a
+                branch of the db given by top key where: full key is full database
+                key for val not truncated top key
 
         Works for both dupsort==False and dupsort==True
         Because cursor.iternext() advances cursor after returning item its safe
@@ -632,6 +635,43 @@ class LMDBer:
                         break  # done
                     yield (ckey, cval)  # another entry in branch startswith key
             return  # done raises StopIteration
+
+
+    def delTopVal(self, db, key=b''):
+        """
+        Deletes all values in branch of db given top key.
+
+        Returns:
+            result (bool): True if values were deleted at key. False otherwise
+                if no values at key
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): truncated top key, a key space prefix to get all the items
+                        from multiple branches of the key space. If top key is
+                        empty then gets all items in database
+
+        Works for both dupsort==False and dupsort==True
+        Because cursor.iternext() advances cursor after returning item its safe
+        to delete the item within the iteration loop.
+
+        Raises StopIteration Error when empty.
+
+        """
+        # when deleting can't use cursor.iternext() because the cursor advances
+        # twice (skips one) once for iternext and once for delete.
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            result = False
+            cursor = txn.cursor()
+            if cursor.set_range(key):  # move to val at key >= key if any
+                ckey, cval = cursor.item()
+                while ckey:  # end of database key == b''
+                    ckey = bytes(ckey)
+                    if not ckey.startswith(key): #  prev entry if any last in branch
+                        break  # done
+                    result = cursor.delete() or result # delete moves cursor to next item
+                    ckey, cval = cursor.item()  # cursor now at next item after deleted
+            return result
 
 
     # For subdbs with no duplicate values allowed at each key. (dupsort==False)
@@ -1543,8 +1583,7 @@ class LMDBer:
     def delIoVals(self,db, key):
         """
         Deletes all values at key in db if key present.
-        Returns True If key exists and dups deleted Else False
-        Assumes DB opened with dupsort=True
+        Returns True If key exists
 
         Parameters:
             db is opened named sub db with dupsort=True

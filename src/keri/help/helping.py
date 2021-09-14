@@ -76,6 +76,26 @@ def datify(cls, d):
         return d  # Not a dataclass.
 
 
+def klasify(sers: Iterable, klases: Iterable, args: Iterable=None):
+    """
+    Convert each qb64 serialization in sers in instance of corresponding klas in
+    klases.
+    Useful for converting iterable of CESR serializations to associated iterable
+    of CESR subclass instances
+
+    Parameters:
+        sers (Iterable): of serialized CESR subclass, str .qb64 or bytes .qb64b
+        klases (Iterable): of class reference of CESR subclass
+    """
+    if not args:
+        args = ("qb64", ) * len(klases)
+
+    return tuple(klas(**{arg: ser}) if arg is not None
+                                    else klas(ser) if klas is not None
+                                    else ser
+                            for ser, klas, arg in zip(sers, klases, args))
+
+
 def keyToKey64u(key):
     """
     Returns 64u

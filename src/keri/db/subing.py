@@ -50,20 +50,6 @@ from . import dbing
 logger = help.ogler.getLogger()
 
 
-def klasify(sers: Iterable, klases: Iterable):
-    """
-    Convert each qb64 serialization in sers in instance of corresponding klas in
-    klases.
-    Useful for converting iterable of CESR serializations to associated iterable
-    of CESR subclass instances
-
-    Parameters:
-        sers (Iterable): of serialized CESR subclass, str .qb64 or bytes .qb64b
-        klases (Iterable): of class reference of CESR subclass
-    """
-    return tuple(klas(qb64=ser) for ser, klas in zip(sers, klases))
-
-
 class SuberBase():
     """
     Base class for Sub DBs of LMDBer
@@ -186,6 +172,21 @@ class SuberBase():
         for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             yield (self._tokeys(key), self._des(val))
 
+
+    def trim(self, keys: Union[str, Iterable]=b""):
+        """
+        Removes all entries whose keys startswith keys. Enables removal of whole
+        branches of db key space. To ensure that proper separation of a branch
+        include empty string as last key in keys. For example ("a","") deletes
+        'a.1'and 'a.2' but not 'ab'
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+        """
+        return(self.db.delTopVal(db=self.sdb, key=self._tokey(keys)))
 
 
 class Suber(SuberBase):
@@ -612,7 +613,7 @@ class IoSetSuber(SuberBase):
     def rem(self, keys: Union[str, Iterable], val: Union[str, bytes, memoryview]=b''):
         """
         Removes entry at effective key made from keys and hidden ordinal suffix
-        that matches val is any. Otherwise delets all values at effective key.
+        that matches val if any. Otherwise deletes all values at effective key.
 
         Parameters:
             keys (Iterable): of key strs to be combined in order to form key

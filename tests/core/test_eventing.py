@@ -1648,13 +1648,77 @@ def test_reply(mockHelpingNowUTC):
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
         assert serder.dig == serderR.dig
-        quadruples = nelHab.db.ssgs.get(keys=saidkeys)
-        assert len(quadruples) == 3
-        prefixer, seqner, diger, siger = quadruples[0]
-        assert prefixer.qb64 == tamHab.pre
+        quadkeys = (serderR.said,
+                    tamHab.pre,
+                    f"{tamHab.kever.lastEst.s:032x}",
+                    tamHab.kever.lastEst.d)
+        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        assert len(sigers) == 3 == len(tamHab.kever.verfers)
         escrowkeys = ("/end/role", )  # escrow route base not full route
-        [(saider,)] = nelHab.db.rpes.get(keys=escrowkeys)
+        [saider] = nelHab.db.rpes.get(keys=escrowkeys)
         assert saider.qb64 == serder.said
+
+        serder0 = serderR
+
+        # use Nel's parser and kevery for tam to provide its url as controller role
+        # for itself at its own location
+        # add endpoint with reply route add
+        route = "/loc/scheme"
+
+        scheme = eventing.Schemes.http
+        url = "http://localhost:8080/controller/tam"
+
+        # with trans cid for nel and eid for wat
+        data = dict(
+                     eid=tamHab.pre,
+                     scheme=scheme,
+                     url=url,
+                   )
+
+        serderR = eventing.reply(route=route, data=data,)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
+
+        assert serderR.raw == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ECdQJkLqcnjoH_yXlb-wTLFARLmtWQ07v8IQ'
+                            b'8uQlsrNA","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
+                            b'd":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","scheme":"http","url":"htt'
+                            b'p://localhost:8080/controller/tam"}}')
+
+
+        assert serderR.said == 'ECdQJkLqcnjoH_yXlb-wTLFARLmtWQ07v8IQ8uQlsrNA'
+
+        # Sign Reply
+        msg = tamHab.endorse(serder=serderR)
+        assert msg == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ECdQJkLqcnjoH_yXlb-wTLFA'
+                    b'RLmtWQ07v8IQ8uQlsrNA","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"/loc/scheme","a":{"eid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaR'
+                    b'MirZ4I8M","scheme":"http","url":"http://localhost:8080/controlle'
+                    b'r/tam"}}-VBg-FABEQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M0AAA'
+                    b'AAAAAAAAAAAAAAAAAAAAETbIi40gakUBXSBVi55Vnadttn4A-GKsHIAeZxnfn_zg'
+                    b'-AADAAXE8h9aPJ9iOCbUUs--RjL_f0xdZKlzbRJES2OAXEPgXi0dksszbBs19Sws'
+                    b'jD7VxKf69_YmcPToGodogaMLjlCgABuzSoDI9BvkG4T8WDPeHBy9aFDImSJRb9Kd'
+                    b'uHScC8-r6x-qR7CZYUMIV6iR73b3SAH78uEBy20o8MROn97dT9DAACQfC_3ySkKT'
+                    b'z6XBIWwVQ8KwXXlalWqOxjPVq8C2QSd8Eo-dVcEQe3bfVd9jM9HygM0y4ZWhL81e'
+                    b'aa_za_DVWWDw')
+
+        # use Tam's parser and kevery to process
+        nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
+        # check escrow
+        saidkeys = (serderR.said, )
+        dater = nelHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = nelHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serderR.dig
+        quadkeys = (serderR.said,
+                        tamHab.pre,
+                        f"{tamHab.kever.lastEst.s:032x}",
+                        tamHab.kever.lastEst.d)
+        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        assert len(sigers) == 3 == len(tamHab.kever.verfers)
+        escrowkeys = ("/loc/scheme", )  # escrow route base not full route
+        [saider] = nelHab.db.rpes.get(keys=escrowkeys)
+        assert saider.qb64 == serder.said
+
+        serder1 = serderR
 
         # add tam kel to nel and process escrows
         tamicp = tamHab.makeOwnInception()
@@ -1677,26 +1741,56 @@ def test_reply(mockHelpingNowUTC):
 
         # process escrow reply
         nelKvy.processEscrowReply()
-        #saidkeys = (serderR.said, )
-        #dater = nelHab.db.sdts.get(keys=saidkeys)
-        #assert dater.dts == help.helping.DTS_BASE_0
-        #serder = nelHab.db.rpys.get(keys=saidkeys)
-        #assert serder.dig == serderR.dig
-        #quadruples = nelHab.db.ssgs.get(keys=saidkeys)
-        #assert len(quadruples) == 3
-        #prefixer, seqner, diger, siger = quadruples[0]
-        #assert prefixer.qb64 == tamHab.pre
 
-        #endkeys = (tamHab.pre, role, wesHab.pre)
-        #saider = nelHab.db.eans.get(keys=endkeys)
-        #assert saider.qb64 == serder.said
-        #ender = nelHab.db.ends.get(keys=endkeys)
-        #assert ender.allow == True
-        #assert ender.name == ""
+        #verify /end/role escrow removed
+        saidkeys = (serder0.said, )
+        dater = nelHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = nelHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serder0.dig
+        quadkeys = (serder0.said,
+                    tamHab.pre,
+                    f"{tamHab.kever.lastEst.s:032x}",
+                    tamHab.kever.lastEst.d)
+        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        assert len(sigers) == 3 == len(tamHab.kever.verfers)
+        escrowkeys = ("/end/role", )  # escrow route base not full route
+        assert not nelHab.db.rpes.get(keys=escrowkeys)
+
+        endkeys = (tamHab.pre, role, wesHab.pre)
+        saider = nelHab.db.eans.get(keys=endkeys)
+        assert saider.qb64 == serder.said
+        ender = nelHab.db.ends.get(keys=endkeys)
+        assert ender.allow == True
+        assert ender.name == ""
+
+        #verify /loc/scheme escrow removed
+        saidkeys = (serder1.said, )
+        dater = nelHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = nelHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serder1.dig
+        quadkeys = (serder1.said,
+                        tamHab.pre,
+                        f"{tamHab.kever.lastEst.s:032x}",
+                        tamHab.kever.lastEst.d)
+        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        assert len(sigers) == 3 == len(tamHab.kever.verfers)
+        escrowkeys = ("/loc/scheme", )  # escrow route base not full route
+        assert not nelHab.db.rpes.get(keys=escrowkeys)
+
+        lockeys = (tamHab.pre, scheme)
+        saider = nelHab.db.lans.get(keys=lockeys)
+        assert saider.qb64 == serder.said
+        locer = nelHab.db.locs.get(keys=lockeys)
+        assert locer.url == url
+        assert locer.cids == []
 
 
         # do wok as witness for tam
         # with trans cid for tam and eid for wok
+        role = eventing.Roles.witness  # witness role
+        route = "/end/role/add"  # add authZ
         data = dict( cid=tamHab.pre,
                          role=role,
                          eid=wokHab.pre,
@@ -1716,10 +1810,12 @@ def test_reply(mockHelpingNowUTC):
         assert dater.dts == help.helping.DTS_BASE_0
         serder = nelHab.db.rpys.get(keys=saidkeys)
         assert serder.dig == serderR.dig
-        quadruples = nelHab.db.ssgs.get(keys=saidkeys)
-        assert len(quadruples) == 3
-        prefixer, seqner, diger, siger = quadruples[0]
-        assert prefixer.qb64 == tamHab.pre
+        quadkeys = (serderR.said,
+                        tamHab.pre,
+                        f"{tamHab.kever.lastEst.s:032x}",
+                        tamHab.kever.lastEst.d)
+        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        assert len(sigers) == 3 == len(tamHab.kever.verfers)
 
         endkeys = (tamHab.pre, role, wokHab.pre)
         saider = nelHab.db.eans.get(keys=endkeys)
@@ -1728,20 +1824,14 @@ def test_reply(mockHelpingNowUTC):
         assert ender.allow == True
         assert ender.name == ""
 
-        # deauthorize wok
-
+        # add test to deauthorize wok
 
         # use Nel's parser and kevery for wok to provide its url as witness for tam
-        # Provide wat location
+        # Provide wok location
         # add endpoint with reply route add
         route = "/loc/scheme"
-
-        # watcher role
-        role = eventing.Roles.witness
-
         scheme = eventing.Schemes.http
         url = "http://localhost:8080/witness/wok"
-
         # with trans cid for nel and eid for wat
         data = dict(
                      eid=wokHab.pre,
@@ -1790,16 +1880,16 @@ def test_reply(mockHelpingNowUTC):
         assert locer.url == url
         assert locer.cids == []
 
-        # use Nel's parser and kevery for tam to provide its url as controller role
+        # use Nel's parser and kevery for tam to update its url as controller role
         # for itself at its own location
         # add endpoint with reply route add
         route = "/loc/scheme"
 
-        # watcher role
+        # controller role
         role = eventing.Roles.controller
 
         scheme = eventing.Schemes.http
-        url = "http://localhost:8080/controller/tam"
+        url = "http://localhost:8088/controller/tam"
 
         # with trans cid for nel and eid for wat
         data = dict(
@@ -1808,43 +1898,25 @@ def test_reply(mockHelpingNowUTC):
                      url=url,
                    )
 
-        serderR = eventing.reply(route=route, data=data,)
-        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
-
-        assert serderR.raw == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ECdQJkLqcnjoH_yXlb-wTLFARLmtWQ07v8IQ'
-                            b'8uQlsrNA","dt":"2021-01-01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"ei'
-                            b'd":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M","scheme":"http","url":"htt'
-                            b'p://localhost:8080/controller/tam"}}')
-
-
-        assert serderR.said == 'ECdQJkLqcnjoH_yXlb-wTLFARLmtWQ07v8IQ8uQlsrNA'
-
+        serderR = eventing.reply(route=route, data=data, dts=help.helping.DTS_BASE_1)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_1
         # Sign Reply
         msg = tamHab.endorse(serder=serderR)
-        assert msg == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ECdQJkLqcnjoH_yXlb-wTLFA'
-                    b'RLmtWQ07v8IQ8uQlsrNA","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                    b'":"/loc/scheme","a":{"eid":"EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaR'
-                    b'MirZ4I8M","scheme":"http","url":"http://localhost:8080/controlle'
-                    b'r/tam"}}-VBg-FABEQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M0AAA'
-                    b'AAAAAAAAAAAAAAAAAAAAETbIi40gakUBXSBVi55Vnadttn4A-GKsHIAeZxnfn_zg'
-                    b'-AADAAXE8h9aPJ9iOCbUUs--RjL_f0xdZKlzbRJES2OAXEPgXi0dksszbBs19Sws'
-                    b'jD7VxKf69_YmcPToGodogaMLjlCgABuzSoDI9BvkG4T8WDPeHBy9aFDImSJRb9Kd'
-                    b'uHScC8-r6x-qR7CZYUMIV6iR73b3SAH78uEBy20o8MROn97dT9DAACQfC_3ySkKT'
-                    b'z6XBIWwVQ8KwXXlalWqOxjPVq8C2QSd8Eo-dVcEQe3bfVd9jM9HygM0y4ZWhL81e'
-                    b'aa_za_DVWWDw')
 
         # use Tam's parser and kevery to process
-        nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
+        nelPrs.parse(ims=bytearray(msg))
 
         saidkeys = (serderR.said, )
         dater = nelHab.db.sdts.get(keys=saidkeys)
-        assert dater.dts == help.helping.DTS_BASE_0
+        assert dater.dts == help.helping.DTS_BASE_1
         serder = nelHab.db.rpys.get(keys=saidkeys)
         assert serder.dig == serderR.dig
-        quadruples = nelHab.db.ssgs.get(keys=saidkeys)
-        assert len(quadruples) == 3
-        prefixer, seqner, diger, siger = quadruples[0]
-        assert prefixer.qb64 == tamHab.pre
+        quadkeys = (serderR.said,
+                    tamHab.pre,
+                    f"{tamHab.kever.lastEst.s:032x}",
+                    tamHab.kever.lastEst.d)
+        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        assert len(sigers) == 3 == len(tamHab.kever.verfers)
 
         lockeys = (tamHab.pre, scheme)
         saider = nelHab.db.lans.get(keys=lockeys)
@@ -1852,6 +1924,46 @@ def test_reply(mockHelpingNowUTC):
         locer = nelHab.db.locs.get(keys=lockeys)
         assert locer.url == url
         assert locer.cids == []
+
+        # Tam as trans authZ its own controller role
+        role = eventing.Roles.controller  # controller role
+        route = "/end/role/add"  # add endpoint with reply route add
+        # with trans cid for tam and eid for wes
+        data = dict( cid=tamHab.pre,
+                     role=role,
+                     eid=tamHab.pre,
+                   )
+
+        serderR = eventing.reply(route=route, data=data)
+        assert serderR.ked['dt'] == help.helping.DTS_BASE_0
+
+        # Sign Reply
+        msg = tamHab.endorse(serder=serderR)
+
+        # use Nel's parser and kevery to authZ tam as tam end controller
+        nelPrs.parse(ims=bytearray(msg))
+
+        #verify /end/role escrow removed
+        saidkeys = (serderR.said, )
+        dater = nelHab.db.sdts.get(keys=saidkeys)
+        assert dater.dts == help.helping.DTS_BASE_0
+        serder = nelHab.db.rpys.get(keys=saidkeys)
+        assert serder.dig == serderR.dig
+        quadkeys = (serderR.said,
+                        tamHab.pre,
+                        f"{tamHab.kever.lastEst.s:032x}",
+                        tamHab.kever.lastEst.d)
+        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        assert len(sigers) == 3 == len(tamHab.kever.verfers)
+        escrowkeys = ("/end/role", )  # escrow route base not full route
+        assert not nelHab.db.rpes.get(keys=escrowkeys)
+
+        endkeys = (tamHab.pre, role, tamHab.pre)
+        saider = nelHab.db.eans.get(keys=endkeys)
+        assert saider.qb64 == serder.said
+        ender = nelHab.db.ends.get(keys=endkeys)
+        assert ender.allow == True
+        assert ender.name == ""
 
 
     assert not os.path.exists(wamKS.path)

@@ -168,7 +168,9 @@ class Habitat:
         self.psr = parsing.Parser(framed=True, kvy=self.kvy)
         self.mgr = None  # wait to setup until after ks is known to be opened
         self.pre = None  # wait to setup until after db is known to be opened
+        self.delpre = None
         self.inited = False
+        self.accepted = False
 
         # save init kwy word arg parameters as ._inits in order to later finish
         # init setup elseqhere after databases are opened if not below
@@ -180,7 +182,7 @@ class Habitat:
 
     def setup(self, *, seed=None, aeid=None, secrecies=None, code=coring.MtrDex.Blake3_256,
                  isith=None, icount=1, nsith=None, ncount=None,
-                 toad=None, wits=None, algo=None, salt=None, tier=None,):
+                 toad=None, wits=None, algo=None, salt=None, tier=None, delpre=None):
         """
         Setup habitat. Assumes that both .db and .ks have been opened.
         This allows dependency injection of .db and .ks into habitat instance
@@ -291,12 +293,23 @@ class Habitat:
             else:
                 nxt = ""
 
-            serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+            if delpre:
+                serder = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
+                                          delpre=delpre,
                                            sith=cst,
                                            nxt=nxt,
                                            toad=toad,
                                            wits=wits,
                                            code=code)
+
+            else:
+                serder = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                                           sith=cst,
+                                           nxt=nxt,
+                                           toad=toad,
+                                           wits=wits,
+                                           code=code)
+
             self.pre = serder.ked["i"]  # new pre
             self.mgr.move(old=opre, new=self.pre)
 
@@ -311,8 +324,11 @@ class Habitat:
             self.kvy.processEvent(serder=serder, sigers=sigers)
             # self.psr = parsing.Parser(framed=True, kvy=self.kvy)
             if self.pre not in self.kevers:
-                raise kering.ConfigurationError("Improper Habitat inception for "
+                if not self.delpre:
+                    raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
+            else:
+                self.accepted = True
 
         self.inited = True
 
@@ -320,9 +336,13 @@ class Habitat:
         if self.pre is None:
             raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
 
+
         if self.pre not in self.kevers:
-            raise kering.ConfigurationError("Missing Habitat KEL for "
+            if  not self.delpre:
+                raise kering.ConfigurationError("Missing Habitat KEL for "
                                             "pre={}.".format(self.pre))
+        else:
+            self.accepted == True
 
         self.prefixes.add(self.pre)  # ordered set so add is idempotent
 
