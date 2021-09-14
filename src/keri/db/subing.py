@@ -598,7 +598,7 @@ class IoSetSuber(SuberBase):
     def rem(self, keys: Union[str, Iterable], val: Union[str, bytes, memoryview]=b''):
         """
         Removes entry at effective key made from keys and hidden ordinal suffix
-        that matches val is any. Otherwise delets all values at effective key.
+        that matches val if any. Otherwise deletes all values at effective key.
 
         Parameters:
             keys (Iterable): of key strs to be combined in order to form key

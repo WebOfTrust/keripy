@@ -3277,7 +3277,7 @@ class Kevery:
 
     def fetchTsgs(self, saider, snh=None):
         """
-        Fetch tsgs for saider from .db.ssgs. When sn then only fetch if sn < snh
+        Fetch tsgs for saider from .db.ssgs. When sn then only fetch if sn <= snh
         Returns:
             tsgs (list): of tsg quadruple of form (prefixer, seqner, diger, sigers)
                 where:
@@ -3299,7 +3299,7 @@ class Kevery:
         for keys, siger in self.db.ssgs.getItemIter(keys=(saider.qb64, "")):
             triple = keys[1:]
             if triple != old:  # new tsg
-                if snh is not None and triple[1] >= snh:  # only lower sn
+                if snh is not None and triple[1] > snh:  # only lower sn
                     break
                 if sigers:  # append tsg made for old and sigers
                     tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
@@ -3728,6 +3728,11 @@ class Kevery:
                                  prefixer=prefixer, seqner=seqner, diger=diger,
                                  sigers=sigers)
                 self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
+                # remove stale signatures .ssgs for this saider
+                for prr, snr, dgr, _ in self.fetchTsgs(saider, snh=seqner.snh):
+                    if snr.sn != seqner.sn or dgr.qb64 != diger.qb64:
+                        self.db.ssgs.rem(keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64))
+
                 accepted = True
 
             else:  # not meet threshold so escrow
