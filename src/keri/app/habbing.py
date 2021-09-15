@@ -19,15 +19,17 @@ from hio.base import doing
 from hio.core.serial import serialing
 
 from .. import kering
-from .. import help
-from ..core.coring import Serder
-from ..db.dbing import snKey, dgKey
-from ..help import helping
-from ..db import dbing, basing, koming
-from . import keeping
-from ..core import coring, eventing, parsing
-from . import apping
 from ..kering import UnverifiedProofError, ValidationError
+from .. import help
+
+from ..core import coring, eventing, parsing
+from ..core.coring import Serder
+from . import keeping
+from ..db import dbing, basing
+from ..db.dbing import snKey, dgKey
+
+from ..end import ending
+
 
 logger = help.ogler.getLogger()
 
@@ -739,6 +741,23 @@ class Habitat:
         for msg in self.db.cloneAllPreIter(key=key):
             msgs.extend(msg)
         return msgs
+
+
+    def fetchLocUrl(self, eid: str, scheme: str=kering.Schemes.http):
+        """
+        Returns:
+            url (str): for endpoint provider given by eid
+                       empty string when url is nullified
+                       None when no location record
+        """
+
+
+    def fetchLoc(self, eid: str, scheme: str=kering.Schemes.http):
+        """
+        Returns:
+            location (basing.LocationRecord): instance or None
+        """
+
 
 
     def makeOwnEvent(self, sn):

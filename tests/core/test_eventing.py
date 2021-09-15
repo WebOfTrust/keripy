@@ -11,6 +11,7 @@ import pysodium
 import blake3
 from math import ceil
 
+from keri import kering
 from keri.kering import Version
 from keri.kering import (ValidationError, EmptyMaterialError, DerivationError,
                          ShortageError)
@@ -38,6 +39,7 @@ from keri.db.basing import openDB
 
 from keri.app import habbing, keeping
 from keri.app.keeping import openKS, Manager
+
 
 from keri import help
 
@@ -1209,7 +1211,7 @@ def test_reply(mockHelpingNowUTC):
       "a" :
       {
          "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "role": "watcher",  # one of eventing.Roles
+         "role": "watcher",  # one of kering.Roles
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
       }
     }
@@ -1223,7 +1225,7 @@ def test_reply(mockHelpingNowUTC):
       "a" :
       {
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-         "scheme": "http",  # one of eventing.Schemes
+         "scheme": "http",  # one of keirng.Schemes
          "url":  "http://localhost:8080/watcher/wilma",
       }
     }
@@ -1338,7 +1340,7 @@ def test_reply(mockHelpingNowUTC):
         route = "/end/role/add"
 
         # watcher role
-        role = eventing.Roles.watcher
+        role = kering.Roles.watcher
 
         # with trans cid for nel and eid for wat
         data = dict( cid=nelHab.pre,
@@ -1485,7 +1487,7 @@ def test_reply(mockHelpingNowUTC):
         route = "/end/role/add"
 
         # watcher role
-        role = eventing.Roles.watcher
+        role = kering.Roles.watcher
 
         # with trans cid and eid
         data = dict( cid=nelHab.pre,
@@ -1550,9 +1552,9 @@ def test_reply(mockHelpingNowUTC):
         route = "/loc/scheme"
 
         # watcher role
-        role = eventing.Roles.watcher
+        role = kering.Roles.watcher
 
-        scheme = eventing.Schemes.http
+        scheme = kering.Schemes.http
         url = "http://localhost:8080/watcher/wat"
 
         # with trans cid for nel and eid for wat
@@ -1608,7 +1610,7 @@ def test_reply(mockHelpingNowUTC):
         route = "/end/role/add"
 
         # witness role
-        role = eventing.Roles.witness
+        role = kering.Roles.witness
 
         # with trans cid for tam and eid for wes
         data = dict( cid=tamHab.pre,
@@ -1665,7 +1667,7 @@ def test_reply(mockHelpingNowUTC):
         # add endpoint with reply route add
         route = "/loc/scheme"
 
-        scheme = eventing.Schemes.http
+        scheme = kering.Schemes.http
         url = "http://localhost:8080/controller/tam"
 
         # with trans cid for nel and eid for wat
@@ -1789,7 +1791,7 @@ def test_reply(mockHelpingNowUTC):
 
         # do wok as witness for tam
         # with trans cid for tam and eid for wok
-        role = eventing.Roles.witness  # witness role
+        role = kering.Roles.witness  # witness role
         route = "/end/role/add"  # add authZ
         data = dict( cid=tamHab.pre,
                          role=role,
@@ -1830,7 +1832,7 @@ def test_reply(mockHelpingNowUTC):
         # Provide wok location
         # add endpoint with reply route add
         route = "/loc/scheme"
-        scheme = eventing.Schemes.http
+        scheme = kering.Schemes.http
         url = "http://localhost:8080/witness/wok"
         # with trans cid for nel and eid for wat
         data = dict(
@@ -1886,9 +1888,9 @@ def test_reply(mockHelpingNowUTC):
         route = "/loc/scheme"
 
         # controller role
-        role = eventing.Roles.controller
+        role = kering.Roles.controller
 
-        scheme = eventing.Schemes.http
+        scheme = kering.Schemes.http
         url = "http://localhost:8088/controller/tam"
 
         # with trans cid for nel and eid for wat
@@ -1926,7 +1928,7 @@ def test_reply(mockHelpingNowUTC):
         assert locer.cids == []
 
         # Tam as trans authZ its own controller role
-        role = eventing.Roles.controller  # controller role
+        role = kering.Roles.controller  # controller role
         route = "/end/role/add"  # add endpoint with reply route add
         # with trans cid for tam and eid for wes
         data = dict( cid=tamHab.pre,
@@ -2037,7 +2039,7 @@ def test_expose():
     wits = [preW1, preW2, preW3]
     toad = 2
 
-    role = eventing.Roles.watcher
+    role = kering.Roles.watcher
 
     data = dict( cid=preC,
                  role=role,

@@ -5,12 +5,25 @@ Generic Constants and Classes
 import sys
 from collections import namedtuple
 
+
+FALSY = (False, 0, "?0", "no", "false", "False", "off")
+TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
+
 Versionage = namedtuple("Versionage", "major minor")
 
 Version = Versionage(major=1, minor=0)  # KERI Protocol Version
 
 SEPARATOR =  "\r\n\r\n"
 SEPARATOR_BYTES = SEPARATOR.encode("utf-8")
+
+
+Schemage = namedtuple("Schemage", 'tcp http https')
+Schemes = Schemage(tcp='tcp', http='http', https='https')
+
+Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror')
+Roles = Rolage(controller='controller', witness='witness', registrar='registrar',
+               watcher='watcher', judge='judge', juror='juror')
+
 
 
 class KeriError(Exception):

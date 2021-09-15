@@ -16,14 +16,15 @@ from orderedset import OrderedSet as oset
 
 from hio.help import decking
 
-from .. import help
-from ..help import helping
+from .. import kering
+from ..kering import Version
 from . import coring
 from .coring import (Versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
                      Seqner, Siger, Cigar, Dater,
                      Verfer, Diger, Nexter, Prefixer, Serder, Tholder)
 from ..db import basing, subing
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN
+from ..end import ending
 
 from ..kering import (MissingEntryError,
                       ExtractionError, ShortageError, ColdStartError,
@@ -33,7 +34,10 @@ from ..kering import (MissingEntryError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError)
-from ..kering import Version
+
+
+from .. import help
+from ..help import helping
 
 logger = help.ogler.getLogger()
 
@@ -54,13 +58,6 @@ KSN_LABELS = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "k", "n",
 
 RPY_LABELS = ["v", "t", "d", "dt", "r", "a"]
 
-
-Schemage = namedtuple("Schemage", 'tcp http https')
-Schemes = Schemage(tcp='tcp', http='http', https='https')
-
-Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror')
-Roles = Rolage(controller='controller', witness='witness', registrar='registrar',
-               watcher='watcher', judge='judge', juror='juror')
 
 
 @dataclass(frozen=True)
@@ -3438,7 +3435,7 @@ class Kevery:
           "a" :
           {
              "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of eventing.Roles
+             "role": "watcher",  # one of kering.Roles
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
           }
         }
@@ -3452,7 +3449,7 @@ class Kevery:
           "a" :
           {
              "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of eventing.Roles
+             "role": "watcher",  # one of kering.Roles
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
           }
         }
@@ -3492,7 +3489,7 @@ class Kevery:
         cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
         cid = cider.qb64  # controller authorizing eid at role
         role = data["role"]
-        if role not in Roles:
+        if role not in kering.Roles:
             raise ValidationError(f"Invalid role={role} from attributes in "
                                   f"{Ilks.rpy} msg={serder.ked}.")
         eider = coring.Prefixer(qb64=data["eid"] )  # raises error if unsupported code
@@ -3550,7 +3547,7 @@ class Kevery:
           "a" :
           {
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-             "scheme": "http",  # one of eventing.Schemes
+             "scheme": "http",  # one of kering.Schemes
              "url":  "http://localhost:8080/watcher/wilma",
           }
         }
@@ -3564,7 +3561,7 @@ class Kevery:
           "a" :
           {
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-             "scheme": "http",  # one of eventing.Schemes
+             "scheme": "http",  # one of kering.Schemes
              "url":  "",  # Nullifies
           }
         }
@@ -3599,7 +3596,7 @@ class Kevery:
         eider = coring.Prefixer(qb64=data["eid"] )  # raises error if unsupported code
         eid = eider.qb64  # controller of endpoint at role
         scheme = data["scheme"]
-        if scheme not in Schemes:
+        if scheme not in kering.Schemes:
             raise ValidationError("Invalid scheme={} from attributes in {} "
                                   "msg={}.".format(scheme, Ilks.rpy, serder.ked))
         url = data["url"]

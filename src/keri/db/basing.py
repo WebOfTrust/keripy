@@ -146,7 +146,7 @@ class EndpointRecord:  # ends
       "a" :
       {
          "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "role": "watcher",  # one of eventing.Roles
+         "role": "watcher",  # one of kering.Roles
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
       }
     }
@@ -160,7 +160,7 @@ class EndpointRecord:  # ends
       "a" :
       {
          "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "role": "watcher",  # one of eventing.Roles
+         "role": "watcher",  # one of kering.Roles
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
       }
     }
@@ -223,7 +223,7 @@ class LocationRecord:  # locs
       "a" :
       {
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-         "scheme": "http",  # one of eventing.Schemes
+         "scheme": "http",  # one of kering.Schemes
          "url":  "http://localhost:8080/watcher/wilma",
       }
     }
@@ -237,7 +237,7 @@ class LocationRecord:  # locs
       "a" :
       {
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-         "scheme": "http",  # one of eventing.Schemes
+         "scheme": "http",  # one of kering.Schemes
          "url":  "",
       }
     }
