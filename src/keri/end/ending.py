@@ -10,6 +10,8 @@ import os
 import json
 from collections import namedtuple
 from collections.abc import Mapping
+from dataclasses import dataclass, asdict, field
+import typing
 from typing import Union
 
 import falcon
@@ -44,6 +46,7 @@ KeriMimes = Mimage(json='application/keri+json',
 
 FALSY = (False, 0, "?0", "no", "false", "False", "off")
 TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
+
 
 # Signature HTTP header support
 Signage = namedtuple("Signage", "markers indexed signer ordinal digest kind",

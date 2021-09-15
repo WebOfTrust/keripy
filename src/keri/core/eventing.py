@@ -2117,6 +2117,21 @@ class Kever:
         else:
             delegator = self.delegator
 
+        if not seqner or not diger:
+            pass
+            #  id own is delgator then create cue to created delegating event
+            #  this may include MFA business logic
+
+            #  escrow event here
+            #inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
+            #sn = validateSN(sn=serder.ked["s"], inceptive=inceptive)
+            #self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+            #raise MissingDelegationError("No delegating event from {} at {} for "
+                                                 #"evt = {}.".format(delegator,
+                                                                        #diger.qb64,
+                                                                        #serder.ked))
+
+
         ssn = validateSN(sn=seqner.snh, inceptive=False)
 
         # get the dig of the delegating event

@@ -93,6 +93,28 @@ class HabitatRecord:  # habs
 
 
 @dataclass
+class WitnessRecord:  # wits
+    """
+    Tracks the last message index retrieved from the witness mailbox
+    Database Key is the identifier prefix of the witness that is storing
+    events in a mailbox
+    """
+    topics: dict
+
+
+@dataclass
+class GroupIdentifier:  # gids
+    """
+    Track group identifiers that we are participating in
+    Database Key is the identifier prefix of the group identifier
+    """
+    lid: str  # local identifier that contributes to the group
+    gid: str  # group identifier prefix
+    cst: str  # group signing threshold of the next key commitment
+    aids: list  # all identifiers participating in the group identity
+
+
+@dataclass
 class EndpointRecord:  # ends
     """
     Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by
@@ -173,6 +195,7 @@ class EndAuthRecord:  # nested in locs
     def __iter__(self):
         return iter(asdict(self))
 
+
 @dataclass
 class LocationRecord:  # locs
     """
@@ -226,27 +249,6 @@ class LocationRecord:  # locs
     def __iter__(self):
         return iter(asdict(self))
 
-
-@dataclass
-class WitnessRecord:  # wits
-    """
-    Tracks the last message index retrieved from the witness mailbox
-    Database Key is the identifier prefix of the witness that is storing
-    events in a mailbox
-    """
-    topics: dict
-
-
-@dataclass
-class GroupIdentifier:  # gids
-    """
-    Track group identifiers that we are participating in
-    Database Key is the identifier prefix of the group identifier
-    """
-    lid: str  # local identifier that contributes to the group
-    gid: str  # group identifier prefix
-    cst: str  # group signing threshold of the next key commitment
-    aids: list  # all identifiers participating in the group identity
 
 
 def openDB(name="test", **kwa):
