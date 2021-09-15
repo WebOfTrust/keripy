@@ -750,6 +750,8 @@ class Habitat:
                        empty string when url is nullified
                        None when no location record
         """
+        loc = self.db.locs.get(keys=(eid, scheme))
+        return (loc.url if loc else loc)
 
 
     def fetchLoc(self, eid: str, scheme: str=kering.Schemes.http):
@@ -757,7 +759,42 @@ class Habitat:
         Returns:
             location (basing.LocationRecord): instance or None
         """
+        return self.db.locs.get(keys=(eid, scheme))
 
+
+    def fetchLocs(self, eid: str, scheme: str=""):
+        """
+        Returns:
+           locs (dict): locs keyed by scheme for given eid
+
+        Parameters:
+            eid (str): identifier prefix qb64 of endpoint provider
+            scheme (str): url scheme
+        """
+        return {keys[1]: loc for keys, loc in self.db.locs.getItemIter(keys=(eid, scheme))}
+
+
+    def fetchEndAllow(self, cid: str, role: str, eid: str):
+        """
+        Returns:
+            allow (bool): True if eid is allowed as endpoint provider for cid
+                          in role. False otherwise.
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid in role
+            role (str): endpoint role such as (controller, witness, watcher, etc)
+            eid (str): identifier prefix qb64 of endpoint provider in role
+        """
+        end = self.db.ends.get(keys=(cid, role, eid))
+        return (end.allow if end else end)
+
+
+    def fetchEnd(self, cid: str, role: str, eid: str):
+        """
+        Returns:
+            endpoint (basing.EndpointRecord): instance or None
+        """
+        return self.db.ends.get(keys=(cid, role, eid))
 
 
     def makeOwnEvent(self, sn):
