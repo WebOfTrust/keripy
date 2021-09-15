@@ -66,3 +66,14 @@ def getendpointbyprefix(qb64):
 
     d = endpoints[qb64]
     return d
+
+
+witness_resolver = {
+    "EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg": ["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
+                                                     "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
+                                                     "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"]
+}
+
+
+def getwitnessesforprefix(qb64):
+    return witness_resolver[qb64]

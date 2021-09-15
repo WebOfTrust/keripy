@@ -5,7 +5,6 @@ keri.app.indirecting module
 
 simple indirect mode demo support classes
 """
-import json
 
 import falcon
 from hio.base import doing
@@ -16,7 +15,7 @@ from hio.help import decking
 from . import habbing, keeping, directing, storing, httping
 from .. import help
 from ..app import obtaining
-from ..core import eventing, parsing, coring
+from ..core import eventing, parsing
 from ..db import basing
 from ..peer import exchanging
 from ..vdr import verifying
