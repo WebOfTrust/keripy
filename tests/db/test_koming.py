@@ -191,6 +191,8 @@ def test_kom_get_item_iter():
                         (('bc', '3'), {'a': 'Fat', 'b': 'Green'}),
                         (('bc', '4'), {'a': 'Eat', 'b': 'White'})]
 
+        assert mydb.cntAll() == 8
+
         assert mydb.trim(keys=("b", ""))
         items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
         assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
