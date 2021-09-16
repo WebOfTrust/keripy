@@ -16,14 +16,15 @@ from orderedset import OrderedSet as oset
 
 from hio.help import decking
 
-from .. import help
-from ..help import helping
+from .. import kering
+from ..kering import Version
 from . import coring
 from .coring import (Versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
                      Seqner, Siger, Cigar, Dater,
                      Verfer, Diger, Nexter, Prefixer, Serder, Tholder)
 from ..db import basing, subing
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN
+from ..end import ending
 
 from ..kering import (MissingEntryError,
                       ExtractionError, ShortageError, ColdStartError,
@@ -33,7 +34,10 @@ from ..kering import (MissingEntryError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError)
-from ..kering import Version
+
+
+from .. import help
+from ..help import helping
 
 logger = help.ogler.getLogger()
 
@@ -54,13 +58,6 @@ KSN_LABELS = ["v", "i", "s", "t", "p", "d", "f", "dt", "et", "kt", "k", "n",
 
 RPY_LABELS = ["v", "t", "d", "dt", "r", "a"]
 
-
-Schemage = namedtuple("Schemage", 'tcp http https')
-Schemes = Schemage(tcp='tcp', http='http', https='https')
-
-Rolage = namedtuple("Rolage", 'controller witness registrar watcher judge juror')
-Roles = Rolage(controller='controller', witness='witness', registrar='registrar',
-               watcher='watcher', judge='judge', juror='juror')
 
 
 @dataclass(frozen=True)
@@ -2117,6 +2114,21 @@ class Kever:
         else:
             delegator = self.delegator
 
+        if not seqner or not diger:
+            pass
+            #  id own is delgator then create cue to created delegating event
+            #  this may include MFA business logic
+
+            #  escrow event here
+            #inceptive = True if serder.ked["t"] in (Ilks.icp, Ilks.dip) else False
+            #sn = validateSN(sn=serder.ked["s"], inceptive=inceptive)
+            #self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers)
+            #raise MissingDelegationError("No delegating event from {} at {} for "
+                                                 #"evt = {}.".format(delegator,
+                                                                        #diger.qb64,
+                                                                        #serder.ked))
+
+
         ssn = validateSN(sn=seqner.snh, inceptive=False)
 
         # get the dig of the delegating event
@@ -3410,7 +3422,7 @@ class Kevery:
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
         EndpointRecord:
-            allow: bool = False  # True eid allowed (add), False eid disallowed (cut)
+            allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
             name: str = ""  # optional user friendly name of endpoint
 
         Reply Message:
@@ -3423,7 +3435,7 @@ class Kevery:
           "a" :
           {
              "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of eventing.Roles
+             "role": "watcher",  # one of kering.Roles
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
           }
         }
@@ -3437,7 +3449,7 @@ class Kevery:
           "a" :
           {
              "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of eventing.Roles
+             "role": "watcher",  # one of kering.Roles
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
           }
         }
@@ -3460,9 +3472,9 @@ class Kevery:
         """
         # reply specific logic
         if route.startswith("/end/role/add"):
-            allow = True
+            allowed = True
         elif route.startswith("/end/role/cut"):
-            allow = False
+            allowed = False
         else:  # unsupported route
             raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
                                   f"msg={serder.ked}.")
@@ -3477,7 +3489,7 @@ class Kevery:
         cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
         cid = cider.qb64  # controller authorizing eid at role
         role = data["role"]
-        if role not in Roles:
+        if role not in kering.Roles:
             raise ValidationError(f"Invalid role={role} from attributes in "
                                   f"{Ilks.rpy} msg={serder.ked}.")
         eider = coring.Prefixer(qb64=data["eid"] )  # raises error if unsupported code
@@ -3492,7 +3504,7 @@ class Kevery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified reply.")
 
-        self.updateEnd(keys=keys, saider=saider, allow=allow)  # update .eans and .ends
+        self.updateEnd(keys=keys, saider=saider, allowed=allowed)  # update .eans and .ends
 
 
     def processReplyLocScheme(self, *, serder, saider, route,
@@ -3535,7 +3547,7 @@ class Kevery:
           "a" :
           {
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-             "scheme": "http",  # one of eventing.Schemes
+             "scheme": "http",  # one of kering.Schemes
              "url":  "http://localhost:8080/watcher/wilma",
           }
         }
@@ -3549,7 +3561,7 @@ class Kevery:
           "a" :
           {
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-             "scheme": "http",  # one of eventing.Schemes
+             "scheme": "http",  # one of kering.Schemes
              "url":  "",  # Nullifies
           }
         }
@@ -3584,7 +3596,7 @@ class Kevery:
         eider = coring.Prefixer(qb64=data["eid"] )  # raises error if unsupported code
         eid = eider.qb64  # controller of endpoint at role
         scheme = data["scheme"]
-        if scheme not in Schemes:
+        if scheme not in kering.Schemes:
             raise ValidationError("Invalid scheme={} from attributes in {} "
                                   "msg={}.".format(scheme, Ilks.rpy, serder.ked))
         url = data["url"]
@@ -3827,7 +3839,7 @@ class Kevery:
         self.db.rpes.put(keys=(route, ), vals=[saider])
 
 
-    def updateEnd(self, keys, saider, allow=None):
+    def updateEnd(self, keys, saider, allowed=None):
         """
         Update end auth database .eans and end database .ends.
 
@@ -3839,9 +3851,10 @@ class Kevery:
         """
         # update .eans and .ends
         self.db.eans.pin(keys=keys, val=saider)  # overwrite
-        if not (ender := self.db.ends.get(keys=keys)):
-            ender = basing.EndpointRecord()  # create new default record
-        ender.allow = allow  # update allow status
+        if (ender := self.db.ends.get(keys=keys)):  # preexisiting record
+            ender.allowed = allowed  # update allowed status
+        else:  # no preexisting record
+            ender = basing.EndpointRecord(allowed=allowed)  # create new record
         self.db.ends.pin(keys=keys, val=ender)  # overwrite
 
 
@@ -3855,10 +3868,11 @@ class Kevery:
             url (str): endpoint url
         """
         self.db.lans.pin(keys=keys, val=saider)  # overwrite
-        if not (locer := self.db.locs.get(keys=keys)):
-            locer = basing.LocationRecord(url=url)  # update existing record
-        else:
+        if (locer := self.db.locs.get(keys=keys)):  # preexisiting record
+            locer.url=url  # update preexisting record
+        else:  # no preexisting record
             locer = basing.LocationRecord(url=url)  # create new record
+
         self.db.locs.pin(keys=keys, val=locer)  # overwrite
 
 

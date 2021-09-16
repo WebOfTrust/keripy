@@ -93,6 +93,28 @@ class HabitatRecord:  # habs
 
 
 @dataclass
+class WitnessRecord:  # wits
+    """
+    Tracks the last message index retrieved from the witness mailbox
+    Database Key is the identifier prefix of the witness that is storing
+    events in a mailbox
+    """
+    topics: dict
+
+
+@dataclass
+class GroupIdentifier:  # gids
+    """
+    Track group identifiers that we are participating in
+    Database Key is the identifier prefix of the group identifier
+    """
+    lid: str  # local identifier that contributes to the group
+    gid: str  # group identifier prefix
+    cst: str  # group signing threshold of the next key commitment
+    aids: list  # all identifiers participating in the group identity
+
+
+@dataclass
 class EndpointRecord:  # ends
     """
     Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by
@@ -104,16 +126,16 @@ class EndpointRecord:  # ends
     identifier of the controller acting in a role i.e. watcher identifier.
 
     Attributes:
-        allow (bool):  True means eid is allowed as controller of endpoint in role
+        allowed (bool):  True means eid is allowed as controller of endpoint in role
                        False means eid is disallowed as conroller of endpint in role
         name (str): user fieldly name for eid in role
 
 
     An end authorization reply message is required from which the field values
     for this record are extracted. A routes of /end/role/eid/add  /end/role/eid/cut
-    Uses add-cut model with allow field
-    allow==True eid is allowed (add) as endpoint provider for cid at role and name
-    allow==False eid is disallowed (cut) as endpoint provider for cid at role and name
+    Uses add-cut model with allowed field
+    allowed==True eid is allowed (add) as endpoint provider for cid at role and name
+    allowed==False eid is disallowed (cut) as endpoint provider for cid at role and name
 
     {
       "v" : "KERI10JSON00011c_",
@@ -124,7 +146,7 @@ class EndpointRecord:  # ends
       "a" :
       {
          "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "role": "watcher",  # one of eventing.Roles
+         "role": "watcher",  # one of kering.Roles
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
       }
     }
@@ -138,13 +160,13 @@ class EndpointRecord:  # ends
       "a" :
       {
          "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "role": "watcher",  # one of eventing.Roles
+         "role": "watcher",  # one of kering.Roles
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
       }
     }
 
     """
-    allow: bool = False  # True eid allowed (add), False eid disallowed (cut)
+    allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
     name: str = ""  # optional user friendly name of endpoint
 
     def __iter__(self):
@@ -173,6 +195,7 @@ class EndAuthRecord:  # nested in locs
     def __iter__(self):
         return iter(asdict(self))
 
+
 @dataclass
 class LocationRecord:  # locs
     """
@@ -200,7 +223,7 @@ class LocationRecord:  # locs
       "a" :
       {
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-         "scheme": "http",  # one of eventing.Schemes
+         "scheme": "http",  # one of kering.Schemes
          "url":  "http://localhost:8080/watcher/wilma",
       }
     }
@@ -214,7 +237,7 @@ class LocationRecord:  # locs
       "a" :
       {
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-         "scheme": "http",  # one of eventing.Schemes
+         "scheme": "http",  # one of kering.Schemes
          "url":  "",
       }
     }
@@ -226,27 +249,6 @@ class LocationRecord:  # locs
     def __iter__(self):
         return iter(asdict(self))
 
-
-@dataclass
-class WitnessRecord:  # wits
-    """
-    Tracks the last message index retrieved from the witness mailbox
-    Database Key is the identifier prefix of the witness that is storing
-    events in a mailbox
-    """
-    topics: dict
-
-
-@dataclass
-class GroupIdentifier:  # gids
-    """
-    Track group identifiers that we are participating in
-    Database Key is the identifier prefix of the group identifier
-    """
-    lid: str  # local identifier that contributes to the group
-    gid: str  # group identifier prefix
-    cst: str  # group signing threshold of the next key commitment
-    aids: list  # all identifiers participating in the group identity
 
 
 def openDB(name="test", **kwa):

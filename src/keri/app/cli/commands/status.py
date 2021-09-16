@@ -36,7 +36,7 @@ def handler(args):
                         continue
                     print(f"\t{pre}")
 
-            cnt = hab.db.gids.getCnt()
+            cnt = hab.db.gids.cntAll()
             if cnt > 0:
                 print()
                 print("Groups:")

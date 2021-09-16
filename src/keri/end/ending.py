@@ -10,6 +10,8 @@ import os
 import json
 from collections import namedtuple
 from collections.abc import Mapping
+from dataclasses import dataclass, asdict, field
+import typing
 from typing import Union
 
 import falcon
@@ -17,12 +19,14 @@ import falcon
 import hio
 from hio.core import tcp, http, wiring
 
+from .. import kering
 from .. import help
-from  ..app import keeping, habbing, directing
+from  ..app import keeping, habbing
 from  ..db import basing
-from  ..core import coring, eventing
+from  ..core import coring
 
 logger = help.ogler.getLogger()
+
 
 Mimage = namedtuple("Mimage", "json mgpk cbor cesr")
 
@@ -41,9 +45,6 @@ KeriMimes = Mimage(json='application/keri+json',
 # getattr(KeriMimes, coring.Serials.json.lower())
 
 
-
-FALSY = (False, 0, "?0", "no", "false", "False", "off")
-TRUTHY =  (True, 1, "?1", "yes" "true", "True", 'on')
 
 # Signature HTTP header support
 Signage = namedtuple("Signage", "markers indexed signer ordinal digest kind",
@@ -210,7 +211,7 @@ def designature(value):
 
         if "indexed" not in  items:
             raise ValueError("Missing indexed field in Signature header signage.")
-        indexed = items["indexed"] not in FALSY  # make bool
+        indexed = items["indexed"] not in kering.FALSY  # make bool
         del items["indexed"]
 
         if "signer" in items:
@@ -290,7 +291,7 @@ class PointEnd(hio.base.Tymee):
                                    title='JSON Error',
                                    description='Malformed JSON.')
 
-        if role not in eventing.Roles:
+        if role not in kering.Roles:
             raise falcon.HTTPError(falcon.HTTP_400,
                                    title='Malformed JSON',
                                    description='Invalid role.')
@@ -301,7 +302,7 @@ class PointEnd(hio.base.Tymee):
                                        title='Malformed JSON',
                                        description='Missing label.')
         scheme = data["scheme"]
-        if scheme not in eventing.Schemes:
+        if scheme not in kering.Schemes:
             raise falcon.HTTPError(falcon.HTTP_400,
                                    title='Malformed JSON',
                                    description='Invalid scheme.')

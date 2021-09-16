@@ -180,6 +180,32 @@ def test_kom_get_item_iter():
         assert items == [(('b', '1'), {'a': 'Big', 'b': 'Blue'}),
                          (('b', '2'), {'a': 'Tall', 'b': 'Red'})]
 
+
+        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
+                        (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
+                        (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
+                        (('a', '4'), {'a': 'Eat', 'b': 'White'}),
+                        (('b', '1'), {'a': 'Big', 'b': 'Blue'}),
+                        (('b', '2'), {'a': 'Tall', 'b': 'Red'}),
+                        (('bc', '3'), {'a': 'Fat', 'b': 'Green'}),
+                        (('bc', '4'), {'a': 'Eat', 'b': 'White'})]
+
+        assert mydb.cntAll() == 8
+
+        assert mydb.trim(keys=("b", ""))
+        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
+                        (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
+                        (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
+                        (('a', '4'), {'a': 'Eat', 'b': 'White'}),
+                        (('bc', '3'), {'a': 'Fat', 'b': 'Green'}),
+                        (('bc', '4'), {'a': 'Eat', 'b': 'White'})]
+
+        assert mydb.trim()
+        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        assert items == []
+
     assert not os.path.exists(db.path)
     assert not db.opened
 
