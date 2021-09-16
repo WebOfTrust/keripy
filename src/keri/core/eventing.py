@@ -3761,8 +3761,9 @@ class Kevery:
                 # remove stale signatures .ssgs for this saider
                 # this ensures that zeroth tsg is authoritative
                 for prr, snr, dgr, _ in self.fetchTsgs(saider, snh=seqner.snh):
-                    if snr.sn != seqner.sn or dgr.qb64 != diger.qb64:
-                        self.db.ssgs.trim(keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, ""))
+                    if ((snr.sn < seqner.sn) or
+                        (snr.sn == seqner.sn and dgr.qb64 != diger.qb64)):
+                            self.db.ssgs.trim(keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, ""))
 
                 accepted = True
 
