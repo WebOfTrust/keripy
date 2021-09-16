@@ -126,16 +126,16 @@ class EndpointRecord:  # ends
     identifier of the controller acting in a role i.e. watcher identifier.
 
     Attributes:
-        allow (bool):  True means eid is allowed as controller of endpoint in role
+        allowed (bool):  True means eid is allowed as controller of endpoint in role
                        False means eid is disallowed as conroller of endpint in role
         name (str): user fieldly name for eid in role
 
 
     An end authorization reply message is required from which the field values
     for this record are extracted. A routes of /end/role/eid/add  /end/role/eid/cut
-    Uses add-cut model with allow field
-    allow==True eid is allowed (add) as endpoint provider for cid at role and name
-    allow==False eid is disallowed (cut) as endpoint provider for cid at role and name
+    Uses add-cut model with allowed field
+    allowed==True eid is allowed (add) as endpoint provider for cid at role and name
+    allowed==False eid is disallowed (cut) as endpoint provider for cid at role and name
 
     {
       "v" : "KERI10JSON00011c_",
@@ -166,7 +166,7 @@ class EndpointRecord:  # ends
     }
 
     """
-    allow: bool = False  # True eid allowed (add), False eid disallowed (cut)
+    allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
     name: str = ""  # optional user friendly name of endpoint
 
     def __iter__(self):

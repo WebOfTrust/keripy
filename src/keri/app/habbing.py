@@ -17,6 +17,7 @@ import lmdb
 
 from hio.base import doing
 from hio.core.serial import serialing
+from hio.help import hicting
 
 from .. import kering
 from ..kering import UnverifiedProofError, ValidationError
@@ -743,15 +744,12 @@ class Habitat:
         return msgs
 
 
-    def fetchLocUrl(self, eid: str, scheme: str=kering.Schemes.http):
+    def fetchEnd(self, cid: str, role: str, eid: str):
         """
         Returns:
-            url (str): for endpoint provider given by eid
-                       empty string when url is nullified
-                       None when no location record
+            endpoint (basing.EndpointRecord): instance or None
         """
-        loc = self.db.locs.get(keys=(eid, scheme))
-        return (loc.url if loc else loc)
+        return self.db.ends.get(keys=(cid, role, eid))
 
 
     def fetchLoc(self, eid: str, scheme: str=kering.Schemes.http):
@@ -762,22 +760,10 @@ class Habitat:
         return self.db.locs.get(keys=(eid, scheme))
 
 
-    def fetchLocs(self, eid: str, scheme: str=""):
+    def fetchEndAllowed(self, cid: str, role: str, eid: str):
         """
         Returns:
-           locs (dict): locs keyed by scheme for given eid
-
-        Parameters:
-            eid (str): identifier prefix qb64 of endpoint provider
-            scheme (str): url scheme
-        """
-        return {keys[1]: loc for keys, loc in self.db.locs.getItemIter(keys=(eid, scheme))}
-
-
-    def fetchEndAllow(self, cid: str, role: str, eid: str):
-        """
-        Returns:
-            allow (bool): True if eid is allowed as endpoint provider for cid
+            allowed (bool): True if eid is allowed as endpoint provider for cid
                           in role. False otherwise.
         Parameters:
             cid (str): identifier prefix qb64 of controller authZ endpoint provided
@@ -786,15 +772,55 @@ class Habitat:
             eid (str): identifier prefix qb64 of endpoint provider in role
         """
         end = self.db.ends.get(keys=(cid, role, eid))
-        return (end.allow if end else end)
+        return (end.allowed if end else False)
 
 
-    def fetchEnd(self, cid: str, role: str, eid: str):
+    def fetchUrl(self, eid: str, scheme: str=kering.Schemes.http):
         """
         Returns:
-            endpoint (basing.EndpointRecord): instance or None
+            url (str): for endpoint provider given by eid
+                       empty string when url is nullified
+                       None when no location record
         """
-        return self.db.ends.get(keys=(cid, role, eid))
+        loc = self.db.locs.get(keys=(eid, scheme))
+        return (loc.url if loc else loc)
+
+
+    def fetchUrls(self, eid: str, scheme: str=""):
+        """
+        Returns:
+           surls (hicting.Mict): urls keyed by scheme for given eid. Assumes that
+                user independently verifies that the eid is allowed for a
+                given cid and role
+
+        Parameters:
+            eid (str): identifier prefix qb64 of endpoint provider
+            scheme (str): url scheme
+        """
+        return hicting.Mict([(keys[1], loc.url) for keys, loc in
+                    self.db.locs.getItemIter(keys=(eid, scheme)) if loc.url])
+
+
+    def fetchRoleUrls(self, cid: str, role: str=""):
+        """
+        Returns:
+           rurls (hicting.Mict):  of nested dicts. The top level dict rurls is keyed by
+                        role for a given cid. Each value in rurls is eurls dict
+                        dict keyed by the eid of authorized endpoint provider and
+                        each value in eurls is a lurls dict keyed by scheme
+
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid in role
+            role (str): endpoint role such as (controller, witness, watcher, etc)
+        """
+        rurls = hicting.Mict()
+        for  (_, erole , eid), end in self.db.ends.getItemIter(keys=(cid, role)):
+            if end.allowed:
+                surls = self.fetchUrls(eid)
+                if surls:
+                    rurls.add(erole, hicting.Mict([(eid, self.fetchUrls(eid))]))
+        return rurls
 
 
     def makeOwnEvent(self, sn):

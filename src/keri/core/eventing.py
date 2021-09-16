@@ -3422,7 +3422,7 @@ class Kevery:
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
         EndpointRecord:
-            allow: bool = False  # True eid allowed (add), False eid disallowed (cut)
+            allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
             name: str = ""  # optional user friendly name of endpoint
 
         Reply Message:
@@ -3472,9 +3472,9 @@ class Kevery:
         """
         # reply specific logic
         if route.startswith("/end/role/add"):
-            allow = True
+            allowed = True
         elif route.startswith("/end/role/cut"):
-            allow = False
+            allowed = False
         else:  # unsupported route
             raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
                                   f"msg={serder.ked}.")
@@ -3504,7 +3504,7 @@ class Kevery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified reply.")
 
-        self.updateEnd(keys=keys, saider=saider, allow=allow)  # update .eans and .ends
+        self.updateEnd(keys=keys, saider=saider, allowed=allowed)  # update .eans and .ends
 
 
     def processReplyLocScheme(self, *, serder, saider, route,
@@ -3839,7 +3839,7 @@ class Kevery:
         self.db.rpes.put(keys=(route, ), vals=[saider])
 
 
-    def updateEnd(self, keys, saider, allow=None):
+    def updateEnd(self, keys, saider, allowed=None):
         """
         Update end auth database .eans and end database .ends.
 
@@ -3851,9 +3851,10 @@ class Kevery:
         """
         # update .eans and .ends
         self.db.eans.pin(keys=keys, val=saider)  # overwrite
-        if not (ender := self.db.ends.get(keys=keys)):
-            ender = basing.EndpointRecord()  # create new default record
-        ender.allow = allow  # update allow status
+        if (ender := self.db.ends.get(keys=keys)):  # preexisiting record
+            ender.allowed = allowed  # update allowed status
+        else:  # no preexisting record
+            ender = basing.EndpointRecord(allowed=allowed)  # create new record
         self.db.ends.pin(keys=keys, val=ender)  # overwrite
 
 
@@ -3867,10 +3868,11 @@ class Kevery:
             url (str): endpoint url
         """
         self.db.lans.pin(keys=keys, val=saider)  # overwrite
-        if not (locer := self.db.locs.get(keys=keys)):
-            locer = basing.LocationRecord(url=url)  # update existing record
-        else:
+        if (locer := self.db.locs.get(keys=keys)):  # preexisiting record
+            locer.url=url  # update preexisting record
+        else:  # no preexisting record
             locer = basing.LocationRecord(url=url)  # create new record
+
         self.db.locs.pin(keys=keys, val=locer)  # overwrite
 
 
