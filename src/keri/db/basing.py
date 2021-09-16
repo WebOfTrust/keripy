@@ -118,7 +118,10 @@ class GroupIdentifier:  # gids
 class EndpointRecord:  # ends
     """
     Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by
-    cid,role, and eid. The namespace is a tree of branches with each leaf at a
+    cid,role, and eid. Serves as aggregation mechanism for authorization and other
+    functions such as UX naming with regards the endpoint.
+
+    The namespace is a tree of branches with each leaf at a
     specific (cid, role, eid). Retrieval by branch returns groups of leaves as
     appropriate for a cid braanch or cid.role branch.
     Database Keys are (cid, role, eid) where cid is attributable controller identifier
@@ -126,8 +129,14 @@ class EndpointRecord:  # ends
     identifier of the controller acting in a role i.e. watcher identifier.
 
     Attributes:
-        allowed (bool):  True means eid is allowed as controller of endpoint in role
-                       False means eid is disallowed as conroller of endpint in role
+        allowed (bool): AuthZ via reply message
+                        True means eid is allowed as controller of endpoint in role
+                        False means eid is disallowed as conroller of endpint in role
+                        None means eid is neither allowed or disallowed (no reply msg)
+        enabled (bool): AuthZ via expose message
+                        True means eid is enabled as controller of endpoint in role
+                        False means eid is disenabled as conroller of endpint in role
+                        None means eid is neither enabled or disenabled (no expose msg)
         name (str): user fieldly name for eid in role
 
 
@@ -165,8 +174,13 @@ class EndpointRecord:  # ends
       }
     }
 
+    An end authorization expose message provides enablement via an exposure of
+    and anchored seal to the expose message on the authorizing KEL.
+
+
     """
-    allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
+    allowed: bool = None  # True eid allowed (add), False eid disallowed (cut), None neither
+    enabled: bool = None  # True eid enabled (add), False eid disenabled (cut), None neither
     name: str = ""  # optional user friendly name of endpoint
 
     def __iter__(self):

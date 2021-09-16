@@ -772,7 +772,7 @@ class Habitat:
             eid (str): identifier prefix qb64 of endpoint provider in role
         """
         end = self.db.ends.get(keys=(cid, role, eid))
-        return (end.allowed if end else False)
+        return (end.allowed if end else None)
 
 
     def fetchUrl(self, eid: str, scheme: str=kering.Schemes.http):
@@ -807,7 +807,7 @@ class Habitat:
            rurls (hicting.Mict):  of nested dicts. The top level dict rurls is keyed by
                         role for a given cid. Each value in rurls is eurls dict
                         dict keyed by the eid of authorized endpoint provider and
-                        each value in eurls is a lurls dict keyed by scheme
+                        each value in eurls is a surls dict keyed by scheme
 
         Parameters:
             cid (str): identifier prefix qb64 of controller authZ endpoint provided

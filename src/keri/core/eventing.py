@@ -3454,21 +3454,6 @@ class Kevery:
           }
         }
 
-        BADA (Best Available Data Acceptance) model for each reply message.
-        Latest-Seen-Signed Pairwise comparison of new update reply compared to
-        old already accepted reply from same source for same route (same data).
-        Accept new reply (update) if new reply is later than old reply where:
-            1) Later means date-time-stamp of new is greater than old
-        If non-trans signer then also (AND)
-            2) Later means sn (sequence number) of last (if forked) Est evt that
-               provides keys for signature(s) of new is greater than or equal to
-               sn of last Est evt that provides keys for signature(s) of new.
-
-        If nontrans and last Est Evt is not yet accepted then escrow.
-        If nontrans and partially signed then escrow.
-
-        Escrow process logic is route dependent and is dispatched by route,
-        i.e. route is address of buffer with route specific handler of escrow.
         """
         # reply specific logic
         if route.startswith("/end/role/add"):
@@ -3566,21 +3551,7 @@ class Kevery:
           }
         }
 
-        BADA (Best Available Data Acceptance) model for each reply message.
-        Latest-Seen-Signed Pairwise comparison of new update reply compared to
-        old already accepted reply from same source for same route (same data).
-        Accept new reply (update) if new reply is later than old reply where:
-            1) Later means date-time-stamp of new is greater than old
-        If non-trans signer then also (AND)
-            2) Later means sn (sequence number) of last (if forked) Est evt that
-               provides keys for signature(s) of new is greater than or equal to
-               sn of last Est evt that provides keys for signature(s) of new.
 
-        If nontrans and last Est Evt is not yet accepted then escrow.
-        If nontrans and partially signed then escrow.
-
-        Escrow process logic is route dependent and is dispatched by route,
-        i.e. route is address of buffer with route specific handler of escrow.
         """
         # reply specific logic
         if not route.startswith("/loc/scheme"):
@@ -3645,6 +3616,32 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
+        BADA (Best Available Data Acceptance) model for each reply message.
+        Latest-Seen-Signed Pairwise comparison of new update reply compared to
+        old already accepted reply from same source for same route (same data).
+        Accept new reply (update) if new reply is later than old reply where:
+            1) If transferable: Later is True
+                 A) If sn (sequence number) of last (if forked) Est evt that provides
+                 keys for signature(s) of new is greater than sn of last Est evt
+                 that provides keys for signature(s) of old.
+
+                 Or
+
+                 B) If sn of new equals sn of old And date-time-stamp of new is
+                    greater than old
+
+            2) Else If non-transferable: Later it True
+                 If date-time-stamp of new is greater than old
+
+            4) Else Later is False
+
+
+        If nontrans and last Est Evt is not yet accepted then escrow.
+        If nontrans and partially signed then escrow.
+
+        Escrow process logic is route dependent and is dispatched by route,
+        i.e. route is address of buffer with route specific handler of escrow.
+
         """
         # BADA logic.
         accepted = False  # flag to raise UnverifiedReplyError not accepted
@@ -3654,11 +3651,9 @@ class Kevery:
         # Is new later than old if old?
         # get date-time raises error if empty or invalid format
         dater = coring.Dater(dts=serder.ked["dt"])
-        if osaider:  # get old
-            if (odater := self.db.sdts.get(keys=osaider.qb64b)):
-                if dater.datetime <= odater.datetime:
-                    raise ValidationError(f"Stale update of {route} from {aid} "
-                                          f"via {Ilks.rpy}={serder.ked}.")
+        odater = None
+        if osaider:
+            odater = self.db.sdts.get(keys=osaider.qb64b)
 
         for cigar in cigars:  # process each couple to verify sig and write to db
             if cigar.verfer.transferable:  # ignore invalid transferable verfers
@@ -3674,6 +3669,14 @@ class Kevery:
                 logger.info("Kevery process: skipped cig not from aid="
                         "%s on reply msg=\n%s\n", aid, serder.pretty())
                 continue  # skip invalid cig's verfer is not aid
+
+            if odater:  # get old compare datetimes to see if later
+                if dater.datetime <= odater.datetime:
+                    logger.info("Kevery process: skipped stale update from "
+                        "%s of reply msg=\n%s\n", aid, serder.pretty())
+                    continue  # skip if not later
+                    #raise ValidationError(f"Stale update of {route} from {aid} "
+                                          #f"via {Ilks.rpy}={serder.ked}.")
 
             if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
                 logger.info("Kevery process: skipped nonverifying cig from "
@@ -3699,14 +3702,23 @@ class Kevery:
                         "%s on reply msg=\n%s\n", aid, serder.pretty())
                 continue  # skip invalid signature is not from aid
 
-            if osaider:  # check that sn of signer est evt is also >= existing
+            if osaider:  # check if later logic  sn > or sn == and dt >
                 if (otsgs := self.fetchTsgs(osaider)):
                     _, osqr, _, _ = otsgs[0] # zeroth should be authoritative
-                    if not seqner.sn >= osqr.sn:
-                        logger.info("Kevery process: skipped signature sn="
-                                    "%s not later than prior on reply msg=\n%s\n",
-                                               seqner.sn, serder.pretty())
-                        continue  # skip invalid signature is not from aid
+
+                    if seqner.sn < osqr.sn:  # sn earlier
+                        logger.info("Kevery process: skipped stale key state sig"
+                                    "from %s sn=%s<%s on reply msg=\n%s\n",
+                                        aid, seqner.sn, osqr.sn, serder.pretty())
+                        continue  # skip if sn earlier
+
+                    if seqner.sn == osqr.sn:  # sn same so check datetime
+                        if odater:
+                            if dater.datetime <= odater.datetime:
+                                logger.info("Kevery process: skipped stale key"
+                                "state sig datetime from %s on reply msg=\n%s\n",
+                                                           aid, serder.pretty())
+                                continue  # skip if not later
 
             # retrieve sdig of last event at sn of signer.
             sdig = self.db.getKeLast(key=snKey(pre=spre, sn=seqner.sn))
@@ -3851,7 +3863,7 @@ class Kevery:
         """
         # update .eans and .ends
         self.db.eans.pin(keys=keys, val=saider)  # overwrite
-        if (ender := self.db.ends.get(keys=keys)):  # preexisiting record
+        if (ender := self.db.ends.get(keys=keys)):  # preexisting record
             ender.allowed = allowed  # update allowed status
         else:  # no preexisting record
             ender = basing.EndpointRecord(allowed=allowed)  # create new record
@@ -3868,7 +3880,7 @@ class Kevery:
             url (str): endpoint url
         """
         self.db.lans.pin(keys=keys, val=saider)  # overwrite
-        if (locer := self.db.locs.get(keys=keys)):  # preexisiting record
+        if (locer := self.db.locs.get(keys=keys)):  # preexisting record
             locer.url=url  # update preexisting record
         else:  # no preexisting record
             locer = basing.LocationRecord(url=url)  # create new record
