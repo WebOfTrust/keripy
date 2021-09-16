@@ -3654,11 +3654,9 @@ class Kevery:
         # Is new later than old if old?
         # get date-time raises error if empty or invalid format
         dater = coring.Dater(dts=serder.ked["dt"])
-        if osaider:  # get old
-            if (odater := self.db.sdts.get(keys=osaider.qb64b)):
-                if dater.datetime <= odater.datetime:
-                    raise ValidationError(f"Stale update of {route} from {aid} "
-                                          f"via {Ilks.rpy}={serder.ked}.")
+        odater = None
+        if osaider:
+            odater = self.db.sdts.get(keys=osaider.qb64b)
 
         for cigar in cigars:  # process each couple to verify sig and write to db
             if cigar.verfer.transferable:  # ignore invalid transferable verfers
@@ -3674,6 +3672,14 @@ class Kevery:
                 logger.info("Kevery process: skipped cig not from aid="
                         "%s on reply msg=\n%s\n", aid, serder.pretty())
                 continue  # skip invalid cig's verfer is not aid
+
+            if odater:  # get old compare datetimes to see if later
+                if dater.datetime <= odater.datetime:
+                    logger.info("Kevery process: skipped stale update from "
+                        "%s of reply msg=\n%s\n", aid, serder.pretty())
+                    continue  # skip if not later
+                    #raise ValidationError(f"Stale update of {route} from {aid} "
+                                          #f"via {Ilks.rpy}={serder.ked}.")
 
             if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
                 logger.info("Kevery process: skipped nonverifying cig from "
@@ -3699,14 +3705,23 @@ class Kevery:
                         "%s on reply msg=\n%s\n", aid, serder.pretty())
                 continue  # skip invalid signature is not from aid
 
-            if osaider:  # check that sn of signer est evt is also >= existing
+            if osaider:  # check if later logic  sn > or sn == and dt >
                 if (otsgs := self.fetchTsgs(osaider)):
                     _, osqr, _, _ = otsgs[0] # zeroth should be authoritative
-                    if not seqner.sn >= osqr.sn:
-                        logger.info("Kevery process: skipped signature sn="
-                                    "%s not later than prior on reply msg=\n%s\n",
-                                               seqner.sn, serder.pretty())
-                        continue  # skip invalid signature is not from aid
+
+                    if seqner.sn < osqr.sn:  # sn earlier
+                        logger.info("Kevery process: skipped stale key state sig"
+                                    "from %s sn=%s<%s on reply msg=\n%s\n",
+                                        aid, seqner.sn, osqr.sn, serder.pretty())
+                        continue  # skip if sn earlier
+
+                    if seqner.sn == osqr.sn:  # sn same so check datetime
+                        if odater:
+                            if dater.datetime <= odater.datetime:
+                                logger.info("Kevery process: skipped stale key"
+                                "state sig datetime from %s on reply msg=\n%s\n",
+                                                           aid, serder.pretty())
+                                continue  # skip if not later
 
             # retrieve sdig of last event at sn of signer.
             sdig = self.db.getKeLast(key=snKey(pre=spre, sn=seqner.sn))
