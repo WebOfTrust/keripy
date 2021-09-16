@@ -3454,21 +3454,6 @@ class Kevery:
           }
         }
 
-        BADA (Best Available Data Acceptance) model for each reply message.
-        Latest-Seen-Signed Pairwise comparison of new update reply compared to
-        old already accepted reply from same source for same route (same data).
-        Accept new reply (update) if new reply is later than old reply where:
-            1) Later means date-time-stamp of new is greater than old
-        If non-trans signer then also (AND)
-            2) Later means sn (sequence number) of last (if forked) Est evt that
-               provides keys for signature(s) of new is greater than or equal to
-               sn of last Est evt that provides keys for signature(s) of new.
-
-        If nontrans and last Est Evt is not yet accepted then escrow.
-        If nontrans and partially signed then escrow.
-
-        Escrow process logic is route dependent and is dispatched by route,
-        i.e. route is address of buffer with route specific handler of escrow.
         """
         # reply specific logic
         if route.startswith("/end/role/add"):
@@ -3566,21 +3551,7 @@ class Kevery:
           }
         }
 
-        BADA (Best Available Data Acceptance) model for each reply message.
-        Latest-Seen-Signed Pairwise comparison of new update reply compared to
-        old already accepted reply from same source for same route (same data).
-        Accept new reply (update) if new reply is later than old reply where:
-            1) Later means date-time-stamp of new is greater than old
-        If non-trans signer then also (AND)
-            2) Later means sn (sequence number) of last (if forked) Est evt that
-               provides keys for signature(s) of new is greater than or equal to
-               sn of last Est evt that provides keys for signature(s) of new.
 
-        If nontrans and last Est Evt is not yet accepted then escrow.
-        If nontrans and partially signed then escrow.
-
-        Escrow process logic is route dependent and is dispatched by route,
-        i.e. route is address of buffer with route specific handler of escrow.
         """
         # reply specific logic
         if not route.startswith("/loc/scheme"):
@@ -3644,6 +3615,32 @@ class Kevery:
                 seqner is sequence number of trans endorser's est evt for keys for sigs
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
+
+        BADA (Best Available Data Acceptance) model for each reply message.
+        Latest-Seen-Signed Pairwise comparison of new update reply compared to
+        old already accepted reply from same source for same route (same data).
+        Accept new reply (update) if new reply is later than old reply where:
+            1) If transferable: Later is True
+                 A) If sn (sequence number) of last (if forked) Est evt that provides
+                 keys for signature(s) of new is greater than sn of last Est evt
+                 that provides keys for signature(s) of old.
+
+                 Or
+
+                 B) If sn of new equals sn of old And date-time-stamp of new is
+                    greater than old
+
+            2) Else If non-transferable: Later it True
+                 If date-time-stamp of new is greater than old
+
+            4) Else Later is False
+
+
+        If nontrans and last Est Evt is not yet accepted then escrow.
+        If nontrans and partially signed then escrow.
+
+        Escrow process logic is route dependent and is dispatched by route,
+        i.e. route is address of buffer with route specific handler of escrow.
 
         """
         # BADA logic.
