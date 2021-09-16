@@ -4299,8 +4299,6 @@ def test_reload_kever(mockHelpingNowUTC):
 
 
 if __name__ == "__main__":
-    test_expose()
-    # pytest.main(['-vv', 'test_eventing.py::test_reload_kever'])
-    # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
+    pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
 
 
