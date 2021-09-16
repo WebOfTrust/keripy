@@ -1120,6 +1120,11 @@ def test_reply(mockHelpingNowUTC):
 
         assert tamHab.fetchEndAllowed(cid=tamHab.pre, role='controller', eid=tamHab.pre)
 
+        # test fetchWitnessUrls
+        rurls = nelHab.fetchWitnessUrls(cid=tamHab.pre)
+        assert len(rurls) == 2
+        assert rurls["witness"][wokHab.pre]['http'] == 'http://localhost:8080/witness/wok'
+
     assert not os.path.exists(wamKS.path)
     assert not os.path.exists(wamDB.path)
     assert not os.path.exists(wokKS.path)
