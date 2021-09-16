@@ -775,6 +775,36 @@ class Habitat:
         return (end.allowed if end else None)
 
 
+    def fetchEndEnabled(self, cid: str, role: str, eid: str):
+        """
+        Returns:
+            allowed (bool): True if eid is allowed as endpoint provider for cid
+                          in role. False otherwise.
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid in role
+            role (str): endpoint role such as (controller, witness, watcher, etc)
+            eid (str): identifier prefix qb64 of endpoint provider in role
+        """
+        end = self.db.ends.get(keys=(cid, role, eid))
+        return (end.enabled if end else None)
+
+
+    def fetchEndAuthzed(self, cid: str, role: str, eid: str):
+        """
+        Returns:
+            allowed (bool): True if eid is allowed as endpoint provider for cid
+                          in role. False otherwise.
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid in role
+            role (str): endpoint role such as (controller, witness, watcher, etc)
+            eid (str): identifier prefix qb64 of endpoint provider in role
+        """
+        end = self.db.ends.get(keys=(cid, role, eid))
+        return ((end.enabled or end.allowed) if end else None)
+
+
     def fetchUrl(self, eid: str, scheme: str=kering.Schemes.http):
         """
         Returns:
@@ -816,11 +846,46 @@ class Habitat:
         """
         rurls = hicting.Mict()
         for  (_, erole , eid), end in self.db.ends.getItemIter(keys=(cid, role)):
-            if end.allowed:
+            if end.allowed or end.enabled:
                 surls = self.fetchUrls(eid)
                 if surls:
-                    rurls.add(erole, hicting.Mict([(eid, self.fetchUrls(eid))]))
+                    rurls.add(erole, hicting.Mict([(eid, surls)]))
         return rurls
+
+
+    def fetchWitnessUrls(self, cid: str, enabled: bool=True, allowed: bool=True):
+        """
+        Fetch witness urls for witnesses of cid at latest key state or enabled or
+        allowed witnesses if not a witness at latest key state.
+
+        Returns:
+           rurls (hicting.Mict):  of nested dicts. The top level dict rurls is keyed by
+                        role for a given cid. Each value in rurls is eurls dict
+                        dict keyed by the eid of authorized endpoint provider and
+                        each value in eurls is a surls dict keyed by scheme
+
+        Parameters:
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid in role
+            enabled (bool): True means fetch any allowed witnesses as well
+            allowed (bool): True means fetech any enabled witnesses as well
+        """
+        rurls = hicting.Mict()
+        if (kever := self.kevers[cid] if cid in self.kevers else None):  # latest key state for cid
+            for eid in kever.wits:
+                surls = self.fetchUrls(eid)
+                if surls:
+                    rurls.add(kering.Roles.witness, hicting.Mict([(eid, surls)]))
+
+        keys=(cid, kering.Roles.witness)
+        for (_, erole , eid), end in self.db.ends.getItemIter(keys):  # only witness
+            if (enabled and end.enabled) or (allowed and end.allowed):
+                surls = self.fetchUrls(eid)
+                if surls:
+                    rurls.add(erole, hicting.Mict([(eid, surls)]))
+
+        return rurls
+
 
 
     def makeOwnEvent(self, sn):
