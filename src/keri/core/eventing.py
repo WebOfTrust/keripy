@@ -3851,7 +3851,7 @@ class Kevery:
         """
         # update .eans and .ends
         self.db.eans.pin(keys=keys, val=saider)  # overwrite
-        if (ender := self.db.ends.get(keys=keys)):  # preexisiting record
+        if (ender := self.db.ends.get(keys=keys)):  # preexisting record
             ender.allowed = allowed  # update allowed status
         else:  # no preexisting record
             ender = basing.EndpointRecord(allowed=allowed)  # create new record
@@ -3868,7 +3868,7 @@ class Kevery:
             url (str): endpoint url
         """
         self.db.lans.pin(keys=keys, val=saider)  # overwrite
-        if (locer := self.db.locs.get(keys=keys)):  # preexisiting record
+        if (locer := self.db.locs.get(keys=keys)):  # preexisting record
             locer.url=url  # update preexisting record
         else:  # no preexisting record
             locer = basing.LocationRecord(url=url)  # create new record

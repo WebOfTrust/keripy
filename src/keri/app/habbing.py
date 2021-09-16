@@ -772,7 +772,7 @@ class Habitat:
             eid (str): identifier prefix qb64 of endpoint provider in role
         """
         end = self.db.ends.get(keys=(cid, role, eid))
-        return (end.allowed if end else False)
+        return (end.allowed if end else None)
 
 
     def fetchUrl(self, eid: str, scheme: str=kering.Schemes.http):
