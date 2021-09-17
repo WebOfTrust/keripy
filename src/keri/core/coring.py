@@ -3172,7 +3172,7 @@ class CounterCodex:
     NonTransReceiptCouples:         str =  '-C'  # Composed Base64 Couple, pre+cig.
     TransReceiptQuadruples:         str =  '-D'  # Composed Base64 Quadruple, pre+snu+dig+sig.
     FirstSeenReplayCouples:         str =  '-E'  # Composed Base64 Couple, fnu+dts.
-    TransIdxSigGroups:          str =  '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
+    TransIdxSigGroups:              str =  '-F'  # Composed Base64 Group, pre+snu+dig+ControllerIdxSigs group.
     SealSourceCouples:              str =  '-G'  # Composed Base64 couple, snu+dig of given delegator's or issuer's event
     TransLastIdxSigGroups:          str =  '-H'  # Composed Base64 Group, pre+ControllerIdxSigs group.
     SealSourceTriples:              str =  '-I'  # Composed Base64 triple, pre+snu+dig of anchoring source event
