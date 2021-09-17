@@ -335,6 +335,7 @@ class Habitat:
 
         self.inited = True
 
+
     def reinitialize(self):
         if self.pre is None:
             raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
@@ -593,7 +594,13 @@ class Habitat:
 
 
     def sanction(self, serder):
-        # Sign and messagize the `exn` message with the current signing keys (should be a Habitat method, what name?)
+        """
+        Sign and messagize the `exn` message with the current signing keys
+        (should be a Habitat method, what name?)
+
+        This seems redundant to endorse below and less capable just add
+        parameters to endorse to use different group
+        """
         sigers = self.mgr.sign(ser=serder.raw, verfers=self.kever.verfers)
 
         msg = bytearray()
@@ -821,7 +828,7 @@ class Habitat:
         Returns:
            surls (hicting.Mict): urls keyed by scheme for given eid. Assumes that
                 user independently verifies that the eid is allowed for a
-                given cid and role
+                given cid and role. If url is empty then does not return
 
         Parameters:
             eid (str): identifier prefix qb64 of endpoint provider
@@ -886,6 +893,54 @@ class Habitat:
 
         return rurls
 
+
+    def endrolize(self, eid, role=kering.Roles.controller, allow=True):
+        """
+
+        Returns:
+            msg (bytearray): reply message allowing/disallowing endpoint provider
+               eid in role
+
+        Parameters:
+            eid (str): qb64 of endpoint provider to be authorized
+            role (str): authorized role for eid
+            allow (bool): True means add eid at role as authorized
+                          False means cut eid at role as unauthorized
+        """
+        data = dict(cid=self.pre, role=role, eid=eid)
+        route = "/end/role/add" if allow else "/end/role/cut"
+        return self.makeReply(route=route, data=data)
+
+
+    def locschemize(self, url, scheme="http"):
+        """
+        Returns:
+           msg (bytearray): reply message of own url service endpoint at scheme
+
+        Parameters:
+            url (str): url of endpoint, may have scheme missing or not
+                       If url is empty then nullifies location
+            scheme (str): url scheme must matche scheme in url if any
+
+        """
+        data = data = dict( eid=self.pre, scheme=scheme, url=url)
+        return self.makeReply(route="/loc/scheme", data=data)
+
+
+    def makeReply(self, **kwa):
+        """
+        Returns:
+            msg (bytearray): reply message
+
+        Parameters:
+            route is route path string that indicates data flow handler (behavior)
+                to processs the reply
+            data is list of dicts of comitted data such as seals
+            dts is date-time-stamp of message at time or creation
+            version is Version instance
+            kind is serialization kind
+        """
+        return self.endorse(eventing.reply(**kwa))
 
 
     def makeOwnEvent(self, sn):

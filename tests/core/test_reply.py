@@ -1078,9 +1078,14 @@ def test_reply(mockHelpingNowUTC):
         assert not items
 
         items = [ (keys, locer.url) for keys,  locer
+                      in tamHab.db.locs.getItemIter(keys=(wamHab.pre, ""))]
+        assert not items
+
+        items = [ (keys, locer.url) for keys,  locer
                       in tamHab.db.locs.getItemIter(keys=(watHab.pre, ""))]
         assert items == [(('BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs', 'http'),
                           'http://localhost:8080/watcher/wat')]
+
 
         items = [ (keys, locer.url) for keys,  locer
                       in tamHab.db.locs.getItemIter(keys=(welHab.pre, ""))]
@@ -1124,6 +1129,152 @@ def test_reply(mockHelpingNowUTC):
         rurls = nelHab.fetchWitnessUrls(cid=tamHab.pre)
         assert len(rurls) == 2
         assert rurls["witness"][wokHab.pre]['http'] == 'http://localhost:8080/witness/wok'
+
+        msgs = bytearray()
+        msgs.extend(tamHab.endrolize(eid=wesHab.pre, role=kering.Roles.witness))
+        msgs.extend(tamHab.endrolize(eid=wokHab.pre, role=kering.Roles.witness))
+        msgs.extend(tamHab.endrolize(eid=wamHab.pre, role=kering.Roles.witness))
+        msgs.extend(wesHab.locschemize(url='http://localhost:8080/witness/wes'))
+        msgs.extend(wokHab.locschemize(url='http://localhost:8080/witness/wok'))
+        msgs.extend(wamHab.locschemize(url='http://localhost:8080/witness/wam'))
+
+        tamHab.psr.parse(bytearray(msgs))
+        wesHab.psr.parse(bytearray(msgs))
+        wokHab.psr.parse(bytearray(msgs))
+        wamHab.psr.parse(bytearray(msgs))
+
+        nelHab.psr.parse(bytearray(msgs))
+        watHab.psr.parse(bytearray(msgs))
+        welHab.psr.parse(bytearray(msgs))
+
+        msgs = bytearray()
+        msgs.extend(nelHab.endrolize(eid=nelHab.pre, role=kering.Roles.controller))
+        msgs.extend(nelHab.endrolize(eid=watHab.pre, role=kering.Roles.watcher))
+        msgs.extend(nelHab.endrolize(eid=welHab.pre, role=kering.Roles.watcher))
+        msgs.extend(nelHab.locschemize(url='http://localhost:8080/controller/nel'))
+        msgs.extend(watHab.locschemize(url='http://localhost:8080/watcher/wat'))
+        msgs.extend(welHab.locschemize(url='http://localhost:8080/watcher/wel'))
+
+
+        tamHab.psr.parse(bytearray(msgs))
+        wesHab.psr.parse(bytearray(msgs))
+        wokHab.psr.parse(bytearray(msgs))
+        wamHab.psr.parse(bytearray(msgs))
+
+        nelHab.psr.parse(bytearray(msgs))
+        watHab.psr.parse(bytearray(msgs))
+        welHab.psr.parse(bytearray(msgs))
+
+        # get all roles in ends
+        items = [ (keys, ender.allowed) for keys,  ender
+                      in nelHab.db.ends.getItemIter(keys=(tamHab.pre, ""))]
+        assert items == [(('EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M',
+                            'controller',
+                            'EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M'),
+                           True),
+                          (('EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M',
+                            'witness',
+                            'BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY'),
+                           True),
+                          (('EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M',
+                            'witness',
+                            'BHKrk1-LQqCiERonyH0msupuFf_BrJIVJcqyC6bERhCk'),
+                           True),
+                          (('EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M',
+                            'witness',
+                            'BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc'),
+                           True)]
+
+        items = [ (keys, ender.allowed) for keys,  ender
+                      in nelHab.db.ends.getItemIter(keys=(nelHab.pre, ""))]
+        assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
+                            'controller',
+                            'Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI'),
+                           True),
+                          (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
+                            'watcher',
+                            'BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI'),
+                           True),
+                          (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
+                            'watcher',
+                            'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs'),
+                           True)]
+
+
+
+        items = [ (keys, ender.allowed) for keys,  ender
+                      in tamHab.db.ends.getItemIter(keys=(tamHab.pre, ""))]
+        assert items == [(('EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M',
+                            'controller',
+                            'EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M'),
+                           True),
+                          (('EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M',
+                            'witness',
+                            'BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY'),
+                           True),
+                          (('EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M',
+                            'witness',
+                            'BHKrk1-LQqCiERonyH0msupuFf_BrJIVJcqyC6bERhCk'),
+                           True),
+                          (('EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M',
+                            'witness',
+                            'BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc'),
+                           True)]
+
+
+        items = [ (keys, ender.allowed) for keys,  ender
+                      in tamHab.db.ends.getItemIter(keys=(nelHab.pre, ""))]
+        assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
+                            'controller',
+                            'Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI'),
+                           True),
+                          (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
+                            'watcher',
+                            'BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI'),
+                           True),
+                          (('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI',
+                            'watcher',
+                            'BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs'),
+                           True)]
+
+
+        # tam locs
+        items = [ (keys, locer.url) for keys,  locer
+                      in tamHab.db.locs.getItemIter(keys=(tamHab.pre, ""))]
+        assert items == [(('EQSPzsnxx3hHA9FMk_oh_nO-nVOXYCQ-BLaRMirZ4I8M', 'http'),
+                          'http://localhost:8088/controller/tam')]
+
+        items = [ (keys, locer.url) for keys,  locer
+                      in tamHab.db.locs.getItemIter(keys=(nelHab.pre, ""))]
+        assert items == [(('Bsr9jFyYr-wCxJbUJs0smX8UDSDDQUoO4-v_FTApyPvI', 'http'),
+                          'http://localhost:8080/controller/nel')]
+
+        items = [ (keys, locer.url) for keys, locer
+                      in tamHab.db.locs.getItemIter(keys=(wesHab.pre, ""))]
+        assert items == [(('BFUOWBaJz-sB_6b-_u_P9W8hgBQ8Su9mAtN9cY2sVGiY', 'http'),
+                          'http://localhost:8080/witness/wes')]
+
+        items = [ (keys, locer.url) for keys,  locer
+                      in tamHab.db.locs.getItemIter(keys=(wokHab.pre, ""))]
+        assert [(('BpVvny4hN_jxigw_PxIE5NXAuBM70FjigRdE-hgg4Stc', 'http'),
+                 'http://localhost:8080/witness/wok')]
+
+        items = [ (keys, locer.url) for keys,  locer
+                      in tamHab.db.locs.getItemIter(keys=(wamHab.pre, ""))]
+        assert [(('BHKrk1-LQqCiERonyH0msupuFf_BrJIVJcqyC6bERhCk', 'http'),
+                 'http://localhost:8080/witness/wam')]
+
+        items = [ (keys, locer.url) for keys,  locer
+                      in tamHab.db.locs.getItemIter(keys=(watHab.pre, ""))]
+        assert items == [(('BXphIkYC1U2ardvt2kGLThDRh2q9N-yT08WSRlpHwtGs', 'http'),
+                          'http://localhost:8080/watcher/wat')]
+
+
+        items = [ (keys, locer.url) for keys,  locer
+                      in tamHab.db.locs.getItemIter(keys=(welHab.pre, ""))]
+        assert items == [(('BPR6e5pqTwaT-wNJasfLsf5HCozso1-IKPqTkkrPWgQI', 'http'),
+                          'http://localhost:8080/watcher/wel')]
+
 
     assert not os.path.exists(wamKS.path)
     assert not os.path.exists(wamDB.path)

@@ -25,7 +25,6 @@ Roles = Rolage(controller='controller', witness='witness', registrar='registrar'
                watcher='watcher', judge='judge', juror='juror')
 
 
-
 class KeriError(Exception):
     """
     Base Class for keri exceptions
