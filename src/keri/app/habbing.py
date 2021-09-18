@@ -963,30 +963,37 @@ class Habitat:
         """
 
 
-    def replyEndRole(self, aid, role=None, scheme=None):
+    def replyEndRole(self, aid, role=None, scheme=None, eids=None):
         """
         Reply returns a message stream composed from entries authed by the given
         aid from the appropriate reply database including associated attachments
         in order to disseminate (percolate) BADA reply data authentication proofs.
 
         aid and not role and not scheme then:
-            end authz for all eid in all roles and loc url for all schemes at each eid
+            end authz for all eids in all roles and loc url for all schemes at each eid
+            if eids then only eids in eids else all eids
 
         aid and not role and scheme then:
             end authz for all eid in all roles and loc url for scheme at each eid
+            if eids then only eids in eids else all eids
 
         aid and role and not scheme then:
             end authz for all eid in role and loc url for all schemes at each eid
+            if eids then only eids in eids else all eids
 
         aid and role and scheme then:
             end authz for all eid in role and loc url for scheme at each eid
+            if eids then only eids in eids else all eids
 
 
         Parameters:
             aid
             role
             scheme
+            eids
         """
+        if eids == None:
+            eids = []
 
 
     def replyOobi(self, aid, url=None):

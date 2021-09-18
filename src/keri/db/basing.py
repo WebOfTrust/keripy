@@ -34,9 +34,13 @@ from orderedset import OrderedSet as oset
 from hio.base import doing
 
 from .. import kering
-from ..help import helping
+
 from ..core import coring, eventing, parsing
 from . import dbing, koming, subing
+
+from .. import help
+
+logger = help.ogler.getLogger()
 
 
 class dbdict(dict):
@@ -86,10 +90,16 @@ class dbdict(dict):
 @dataclass
 class OobiRecord:  # information for responding to OOBI query
     """
-    Habitat prefixes keyed by habitat name
+    Keyed by aid in oobis field of HabitatRecord
+    Determines endpoints that it will responde with given oobi query at aid
     """
-    prefix: str  # aid qb64
-    watchers: list  # aids qb64 of watchers
+    aid: str = None # qb64
+    role: str = None  # one of kering.Roles None is any or all
+    scheme: str = None  # one of kering.Schemes None is any or all
+    eids: list[str] = field(default_factory=list)  # of qb64  empty is any
+
+    def __iter__(self):
+        return iter(asdict(self))
 
 
 @dataclass
@@ -98,7 +108,8 @@ class HabitatRecord:  # baser.habs
     Habitat information keyed by habitat name (baser.habs)
     """
     prefix: str  # aid qb64
-    watchers: list  # aids qb64 of watchers
+    watchers: list[str] = field(default_factory=list) # aids qb64 of watchers
+    oobis: list[OobiRecord] = field(default_factory=dict)  # keyed by aid
 
 
 @dataclass
@@ -112,7 +123,7 @@ class TopicsRecord:  # baser.tops
 
 
 @dataclass
-class GroupIdRecord:  # gids
+class GroupIdRecord:  # baser.gids
     """
     Track group identifiers that we are participating in
     Database Key is the identifier prefix of the group identifier
@@ -124,7 +135,7 @@ class GroupIdRecord:  # gids
 
 
 @dataclass
-class EndpointRecord:  # ends
+class EndpointRecord:  # baser.ends
     """
     Service Endpoint ID (SEID) Record with fields and keys to manage endpoints by
     cid,role, and eid. Serves as aggregation mechanism for authorization and other
@@ -197,7 +208,7 @@ class EndpointRecord:  # ends
 
 
 @dataclass
-class EndAuthRecord:  # nested in locs
+class EndAuthRecord:  # nested as field value in baser.locs
     """
     Service Endpoint Authorization Record provides cross reference field for search
     purposes to find authorization for endpoint provider eid. The default is
@@ -220,7 +231,7 @@ class EndAuthRecord:  # nested in locs
 
 
 @dataclass
-class LocationRecord:  # locs
+class LocationRecord:  # baser.locs
     """
     Service Endpoint Record with url for endpoint of a given scheme  The eid is
     usually a nontransferable identifier when its used for roles witness or watcher
