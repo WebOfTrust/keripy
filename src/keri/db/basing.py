@@ -104,7 +104,7 @@ class HabitatRecord:  # baser.habs
 @dataclass
 class TopicsRecord:  # baser.tops
     """
-    Tracks the last message index retrieved from the witness mailbox
+    Tracks the last message topic index retrieved from the witness mailbox
     Database Key is the identifier prefix of the witness that is storing
     events in a mailbox. (baser.tops)
     """
