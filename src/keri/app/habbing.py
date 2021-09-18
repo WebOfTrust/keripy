@@ -335,8 +335,11 @@ class Habitat:
             else:
                 self.accepted = True
 
-            # add other oobi records here
-            # read in oobi from config file if any
+            if self.accepted:
+                pass
+                # process reply messages to db for own authz end and loc url records
+                # add other .habs.oobis permissioning records here
+                # may read these in from oobi config files if any
 
 
         self.inited = True
