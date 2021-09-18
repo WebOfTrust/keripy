@@ -839,7 +839,7 @@ class Habitat:
 
 
     def fetchRoleUrls(self, cid: str, *,  role: str="", scheme: str="",
-                      enabled: bool=True, allowed: bool=True):
+                      eids=None, enabled: bool=True, allowed: bool=True):
         """
         Returns:
            rurls (hicting.Mict):  of nested dicts. The top level dict rurls is keyed by
@@ -852,27 +852,36 @@ class Habitat:
                        eid in role
             role (str): endpoint role such as (controller, witness, watcher, etc)
             scheme (str): url scheme
+            eids (list): when provided restrict returns to only eids in eids
+            enabled (bool): True means fetch any allowed witnesses as well
+            allowed (bool): True means fetech any enabled witnesses as well
         """
+        if eids is None:
+            eids = []
+
         rurls = hicting.Mict()
 
         if role == kering.Roles.witness:
             if (kever := self.kevers[cid] if cid in self.kevers else None):
                 # latest key state for cid
                 for eid in kever.wits:
-                    surls = self.fetchUrls(eid, scheme=scheme)
-                    if surls:
-                        rurls.add(kering.Roles.witness, hicting.Mict([(eid, surls)]))
+                    if not eids or eid in eids:
+                        surls = self.fetchUrls(eid, scheme=scheme)
+                        if surls:
+                            rurls.add(kering.Roles.witness,
+                                      hicting.Mict([(eid, surls)]))
 
         for  (_, erole , eid), end in self.db.ends.getItemIter(keys=(cid, role)):
             if (enabled and end.enabled) or (allowed and end.allowed):
-                surls = self.fetchUrls(eid, scheme=scheme)
-                if surls:
-                    rurls.add(erole, hicting.Mict([(eid, surls)]))
+                if not eids or eid in eids:
+                    surls = self.fetchUrls(eid, scheme=scheme)
+                    if surls:
+                        rurls.add(erole, hicting.Mict([(eid, surls)]))
         return rurls
 
 
-    def fetchWitnessUrls(self, cid: str, scheme: str="", enabled: bool=True,
-                         allowed: bool=True):
+    def fetchWitnessUrls(self, cid: str, scheme: str="", eids=None,
+                         enabled: bool=True, allowed: bool=True):
         """
         Fetch witness urls for witnesses of cid at latest key state or enabled or
         allowed witnesses if not a witness at latest key state.
@@ -885,13 +894,16 @@ class Habitat:
 
         Parameters:
             cid (str): identifier prefix qb64 of controller authZ endpoint provided
-                       eid in role
+                       eid is witness
+            scheme (str): url scheme
+            eids (list): when provided restrict returns to only eids in eids
             enabled (bool): True means fetch any allowed witnesses as well
             allowed (bool): True means fetech any enabled witnesses as well
         """
         return (self.fetchRoleUrls(cid=cid,
                                    role=kering.Roles.witness,
                                    scheme=scheme,
+                                   eids=eids,
                                    enabled=enabled,
                                    allowed=allowed))
 
@@ -992,7 +1004,7 @@ class Habitat:
             scheme
             eids
         """
-        if eids == None:
+        if eids is None:
             eids = []
 
 
