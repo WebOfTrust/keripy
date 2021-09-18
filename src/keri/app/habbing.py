@@ -317,21 +317,30 @@ class Habitat:
             self.mgr.move(old=opre, new=self.pre)
 
             # may want db method that updates .habs. and .prefixes together
+            # default oobi
+            oobi = basing.OobiRecord(aid=self.pre, role=kering.Roles.controller)
             self.db.habs.put(keys=self.name,
-                             val=basing.HabitatRecord(prefix=self.pre, watchers=[]))
+                             val=basing.HabitatRecord(prefix=self.pre,
+                                                      oobis=[oobi]))
             self.prefixes.add(self.pre)
 
-            # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
             # create inception event
             sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
             self.kvy.processEvent(serder=serder, sigers=sigers)
-            # self.psr = parsing.Parser(framed=True, kvy=self.kvy)
+
             if self.pre not in self.kevers:
                 if not self.delpre:
                     raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
             else:
                 self.accepted = True
+
+            if self.accepted:
+                pass
+                # process reply messages to db for own authz end and loc url records
+                # add other .habs.oobis permissioning records here
+                # may read these in from oobi config files if any
+
 
         self.inited = True
 
@@ -839,7 +848,7 @@ class Habitat:
 
 
     def fetchRoleUrls(self, cid: str, *,  role: str="", scheme: str="",
-                      enabled: bool=True, allowed: bool=True):
+                      eids=None, enabled: bool=True, allowed: bool=True):
         """
         Returns:
            rurls (hicting.Mict):  of nested dicts. The top level dict rurls is keyed by
@@ -852,27 +861,36 @@ class Habitat:
                        eid in role
             role (str): endpoint role such as (controller, witness, watcher, etc)
             scheme (str): url scheme
+            eids (list): when provided restrict returns to only eids in eids
+            enabled (bool): True means fetch any allowed witnesses as well
+            allowed (bool): True means fetech any enabled witnesses as well
         """
+        if eids is None:
+            eids = []
+
         rurls = hicting.Mict()
 
         if role == kering.Roles.witness:
             if (kever := self.kevers[cid] if cid in self.kevers else None):
                 # latest key state for cid
                 for eid in kever.wits:
-                    surls = self.fetchUrls(eid, scheme=scheme)
-                    if surls:
-                        rurls.add(kering.Roles.witness, hicting.Mict([(eid, surls)]))
+                    if not eids or eid in eids:
+                        surls = self.fetchUrls(eid, scheme=scheme)
+                        if surls:
+                            rurls.add(kering.Roles.witness,
+                                      hicting.Mict([(eid, surls)]))
 
         for  (_, erole , eid), end in self.db.ends.getItemIter(keys=(cid, role)):
             if (enabled and end.enabled) or (allowed and end.allowed):
-                surls = self.fetchUrls(eid, scheme=scheme)
-                if surls:
-                    rurls.add(erole, hicting.Mict([(eid, surls)]))
+                if not eids or eid in eids:
+                    surls = self.fetchUrls(eid, scheme=scheme)
+                    if surls:
+                        rurls.add(erole, hicting.Mict([(eid, surls)]))
         return rurls
 
 
-    def fetchWitnessUrls(self, cid: str, scheme: str="", enabled: bool=True,
-                         allowed: bool=True):
+    def fetchWitnessUrls(self, cid: str, scheme: str="", eids=None,
+                         enabled: bool=True, allowed: bool=True):
         """
         Fetch witness urls for witnesses of cid at latest key state or enabled or
         allowed witnesses if not a witness at latest key state.
@@ -885,13 +903,16 @@ class Habitat:
 
         Parameters:
             cid (str): identifier prefix qb64 of controller authZ endpoint provided
-                       eid in role
+                       eid is witness
+            scheme (str): url scheme
+            eids (list): when provided restrict returns to only eids in eids
             enabled (bool): True means fetch any allowed witnesses as well
             allowed (bool): True means fetech any enabled witnesses as well
         """
         return (self.fetchRoleUrls(cid=cid,
                                    role=kering.Roles.witness,
                                    scheme=scheme,
+                                   eids=eids,
                                    enabled=enabled,
                                    allowed=allowed))
 
@@ -992,23 +1013,25 @@ class Habitat:
             scheme
             eids
         """
-        if eids == None:
+        if eids is None:
             eids = []
 
 
-    def replyOobi(self, aid, url=None):
+    def replyOobi(self, aid):
         """
         Reply returns a message stream composed from entries authed by the given
         aid from the appropriate reply database including associated attachments
         in order to disseminate (percolate) BADA reply data authentication proofs.
 
-        Each Habitat may have a custom configuration of how to reply to an OOBI query
+        Each Habitats .habs.oobis permits which oobis it may reply to.
 
         Parameters:
-            aid
-            url
-        """
+            aid (str): qb64 of identifier in oobi
 
+        """
+        # default logic is that if self.pre is witness of aid and has a loc url
+        # for self then reply with loc scheme for all witnesses even if self
+        # not permiteed in .habs.oobis
 
 
     def makeOwnEvent(self, sn):
