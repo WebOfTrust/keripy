@@ -84,20 +84,29 @@ class dbdict(dict):
 
 
 @dataclass
-class HabitatRecord:  # habs
+class OobiRecord:  # information for responding to OOBI query
     """
     Habitat prefixes keyed by habitat name
     """
-    prefix: str
-    watchers: list
+    prefix: str  # aid qb64
+    watchers: list  # aids qb64 of watchers
 
 
 @dataclass
-class WitnessRecord:  # wits
+class HabitatRecord:  # baser.habs
+    """
+    Habitat information keyed by habitat name (baser.habs)
+    """
+    prefix: str  # aid qb64
+    watchers: list  # aids qb64 of watchers
+
+
+@dataclass
+class TopicsRecord:  # baser.tops
     """
     Tracks the last message index retrieved from the witness mailbox
     Database Key is the identifier prefix of the witness that is storing
-    events in a mailbox
+    events in a mailbox. (baser.tops)
     """
     topics: dict
 
@@ -526,10 +535,10 @@ class Baser(dbing.LMDBer):
             and endpoint network location scheme to endpoint location details
             key is eid.scheme, val is serialized LocationRecord dataclass
 
-        .wits is named subDB instance of Komer that maps Witness identifier
-            prefix to index of last received mailbox message.
+        .tops is named subDB instance of Komer that maps Witness identifier
+            prefix to topic index of last received mailbox message.
             key is witness prefix identifier
-            value is serialized WitnessRecord dataclass
+            value is serialized TopicsRecord dataclass
 
         .gids is named subDB instance of Komer that maps group identifier prefix
             to the local identifier prefix and list of remote identifier prefixes
@@ -676,9 +685,9 @@ class Baser(dbing.LMDBer):
 
 
         # index of last retrieved message from witness mailbox
-        self.wits = koming.Komer(db=self,
+        self.tops = koming.Komer(db=self,
                                  subkey='wits.',
-                                 schema=WitnessRecord, )
+                                 schema=TopicsRecord, )
 
         # group identifiers that we are participating in
         self.gids = koming.Komer(db=self,
