@@ -12,11 +12,10 @@ from hio.core.serial import serialing
 from hio.core.tcp import clienting, serving
 
 from . import keeping, habbing, directing
-from .. import help
 from ..db import basing
+from .. import help
 
 logger = help.ogler.getLogger()
-
 
 
 def setupController(name="who", temp=False, sith=None, count=1,

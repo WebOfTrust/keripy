@@ -589,9 +589,9 @@ class Poller(doing.DoDoer):
         clientDoer = http.clienting.ClientDoer(client=client)
         self.extend([clientDoer])
 
-        witrec = self.hab.db.wits.get(self.witness)
+        witrec = self.hab.db.tops.get(self.witness)
         if witrec is None:
-            witrec = basing.WitnessRecord(topics=dict())
+            witrec = basing.TopicsRecord(topics=dict())
 
         topics = dict()
         q = dict(pre=self.hab.pre, topics=topics)
@@ -618,7 +618,7 @@ class Poller(doing.DoDoer):
                 self.msgs.append(msg.encode("utf=8"))
 
                 witrec.topics[tpc] = int(idx)
-                self.hab.db.wits.pin(self.witness, witrec)
+                self.hab.db.tops.pin(self.witness, witrec)
                 yield
             yield
 

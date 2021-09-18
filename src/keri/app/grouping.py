@@ -160,7 +160,7 @@ class MultiSigInceptDoer(doing.DoDoer):
                         _ = (yield self.tock)
 
                 #  Add this group identifier prefix to my list of group identifiers I participate in
-                bid = basing.GroupIdentifier(lid=self.hab.pre, gid=mssrdr.pre, cst=nsith, aids=aids)
+                bid = basing.GroupIdRecord(lid=self.hab.pre, gid=mssrdr.pre, cst=nsith, aids=aids)
                 self.hab.db.gids.pin(group, bid)
 
                 self.cues.append(dict(
