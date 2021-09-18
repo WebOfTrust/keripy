@@ -88,7 +88,7 @@ setup(
     },
     tests_require=[
                     'coverage>=5.5',
-                    'pytest>=6.2.4',
+                    'pytest>=6.2.5',
                   ],
     setup_requires=[
     ],
