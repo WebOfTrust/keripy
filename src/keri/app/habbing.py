@@ -1014,19 +1014,21 @@ class Habitat:
             eids = []
 
 
-    def replyOobi(self, aid, url=None):
+    def replyOobi(self, aid):
         """
         Reply returns a message stream composed from entries authed by the given
         aid from the appropriate reply database including associated attachments
         in order to disseminate (percolate) BADA reply data authentication proofs.
 
-        Each Habitat may have a custom configuration of how to reply to an OOBI query
+        Each Habitats .habs.oobis permits which oobis it may reply to.
 
         Parameters:
-            aid
-            url
-        """
+            aid (str): qb64 of identifier in oobi
 
+        """
+        # default logic is that if self.pre is witness of aid and has a loc url
+        # for self then reply with loc scheme for all witnesses even if self
+        # not permiteed in .habs.oobis
 
 
     def makeOwnEvent(self, sn):
