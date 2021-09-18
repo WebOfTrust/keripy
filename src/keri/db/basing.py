@@ -103,7 +103,7 @@ class WitnessRecord:  # wits
 
 
 @dataclass
-class GroupIdentifier:  # gids
+class GroupIdRecord:  # gids
     """
     Track group identifiers that we are participating in
     Database Key is the identifier prefix of the group identifier
@@ -683,7 +683,7 @@ class Baser(dbing.LMDBer):
         # group identifiers that we are participating in
         self.gids = koming.Komer(db=self,
                                  subkey='gids.',
-                                 schema=GroupIdentifier, )
+                                 schema=GroupIdRecord, )
 
 
 

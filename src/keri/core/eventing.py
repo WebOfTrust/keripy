@@ -1255,7 +1255,7 @@ def reply(route="",
 
     {
       "v" : "KERI10JSON00011c_",
-      "t" : "rep",
+      "t" : "rpy",
       "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
       "dt": "2020-08-22T17:50:12.988921+00:00",
       "r" : "logs/processor",
@@ -3428,7 +3428,7 @@ class Kevery:
         Reply Message:
         {
           "v" : "KERI10JSON00011c_",
-          "t" : "rep",
+          "t" : "rpy",
           "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
           "dt": "2020-08-22T17:50:12.988921+00:00",
           "r" : "/end/role/add",
@@ -3442,7 +3442,7 @@ class Kevery:
 
         {
           "v" : "KERI10JSON00011c_",
-          "t" : "rep",
+          "t" : "rpy",
           "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
           "dt": "2020-08-22T17:50:12.988921+00:00",
           "r" : "/end/role/cut",
@@ -3525,7 +3525,7 @@ class Kevery:
 
         {
           "v" : "KERI10JSON00011c_",
-          "t" : "rep",
+          "t" : "rpy",
           "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
           "dt": "2020-08-22T17:50:12.988921+00:00",
           "r" : "/loc/scheme",
@@ -3539,7 +3539,7 @@ class Kevery:
 
         {
           "v" : "KERI10JSON00011c_",
-          "t" : "rep",
+          "t" : "rpy",
           "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
           "dt": "2020-08-22T17:50:12.988921+00:00",
           "r" : "/loc/scheme",

@@ -838,7 +838,8 @@ class Habitat:
                     self.db.locs.getItemIter(keys=(eid, scheme)) if loc.url])
 
 
-    def fetchRoleUrls(self, cid: str, role: str=""):
+    def fetchRoleUrls(self, cid: str, *,  role: str="", scheme: str="",
+                      enabled: bool=True, allowed: bool=True):
         """
         Returns:
            rurls (hicting.Mict):  of nested dicts. The top level dict rurls is keyed by
@@ -850,17 +851,28 @@ class Habitat:
             cid (str): identifier prefix qb64 of controller authZ endpoint provided
                        eid in role
             role (str): endpoint role such as (controller, witness, watcher, etc)
+            scheme (str): url scheme
         """
         rurls = hicting.Mict()
+
+        if role == kering.Roles.witness:
+            if (kever := self.kevers[cid] if cid in self.kevers else None):
+                # latest key state for cid
+                for eid in kever.wits:
+                    surls = self.fetchUrls(eid, scheme=scheme)
+                    if surls:
+                        rurls.add(kering.Roles.witness, hicting.Mict([(eid, surls)]))
+
         for  (_, erole , eid), end in self.db.ends.getItemIter(keys=(cid, role)):
-            if end.allowed or end.enabled:
-                surls = self.fetchUrls(eid)
+            if (enabled and end.enabled) or (allowed and end.allowed):
+                surls = self.fetchUrls(eid, scheme=scheme)
                 if surls:
                     rurls.add(erole, hicting.Mict([(eid, surls)]))
         return rurls
 
 
-    def fetchWitnessUrls(self, cid: str, enabled: bool=True, allowed: bool=True):
+    def fetchWitnessUrls(self, cid: str, scheme: str="", enabled: bool=True,
+                         allowed: bool=True):
         """
         Fetch witness urls for witnesses of cid at latest key state or enabled or
         allowed witnesses if not a witness at latest key state.
@@ -877,21 +889,11 @@ class Habitat:
             enabled (bool): True means fetch any allowed witnesses as well
             allowed (bool): True means fetech any enabled witnesses as well
         """
-        rurls = hicting.Mict()
-        if (kever := self.kevers[cid] if cid in self.kevers else None):  # latest key state for cid
-            for eid in kever.wits:
-                surls = self.fetchUrls(eid)
-                if surls:
-                    rurls.add(kering.Roles.witness, hicting.Mict([(eid, surls)]))
-
-        keys=(cid, kering.Roles.witness)
-        for (_, erole , eid), end in self.db.ends.getItemIter(keys):  # only witness
-            if (enabled and end.enabled) or (allowed and end.allowed):
-                surls = self.fetchUrls(eid)
-                if surls:
-                    rurls.add(erole, hicting.Mict([(eid, surls)]))
-
-        return rurls
+        return (self.fetchRoleUrls(cid=cid,
+                                   role=kering.Roles.witness,
+                                   scheme=scheme,
+                                   enabled=enabled,
+                                   allowed=allowed))
 
 
     def endrolize(self, eid, role=kering.Roles.controller, allow=True):
@@ -941,6 +943,65 @@ class Habitat:
             kind is serialization kind
         """
         return self.endorse(eventing.reply(**kwa))
+
+
+    def replyLocScheme(self, eid, scheme=None):
+        """
+        Reply returns a message stream composed from entries authed by the given
+        aid from the appropriate reply database including associated attachments
+        in order to disseminate (percolate) BADA reply data authentication proofs.
+
+        eid and and not scheme then:
+            loc url for all schemes at eid
+
+        eid and scheme then:
+            loc url for scheme at eid
+
+        Parameters:
+            eid
+            scheme
+        """
+
+
+    def replyEndRole(self, aid, role=None, scheme=None):
+        """
+        Reply returns a message stream composed from entries authed by the given
+        aid from the appropriate reply database including associated attachments
+        in order to disseminate (percolate) BADA reply data authentication proofs.
+
+        aid and not role and not scheme then:
+            end authz for all eid in all roles and loc url for all schemes at each eid
+
+        aid and not role and scheme then:
+            end authz for all eid in all roles and loc url for scheme at each eid
+
+        aid and role and not scheme then:
+            end authz for all eid in role and loc url for all schemes at each eid
+
+        aid and role and scheme then:
+            end authz for all eid in role and loc url for scheme at each eid
+
+
+        Parameters:
+            aid
+            role
+            scheme
+        """
+
+
+    def replyOobi(self, aid, url=None):
+        """
+        Reply returns a message stream composed from entries authed by the given
+        aid from the appropriate reply database including associated attachments
+        in order to disseminate (percolate) BADA reply data authentication proofs.
+
+        Each Habitat may have a custom configuration of how to reply to an OOBI query
+
+        Parameters:
+            aid
+            url
+        """
+
 
 
     def makeOwnEvent(self, sn):
