@@ -317,21 +317,27 @@ class Habitat:
             self.mgr.move(old=opre, new=self.pre)
 
             # may want db method that updates .habs. and .prefixes together
+            # default oobi
+            oobi = basing.OobiRecord(aid=self.pre, role=kering.Roles.controller)
             self.db.habs.put(keys=self.name,
-                             val=basing.HabitatRecord(prefix=self.pre, watchers=[]))
+                             val=basing.HabitatRecord(prefix=self.pre,
+                                                      oobis=[oobi]))
             self.prefixes.add(self.pre)
 
-            # self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
             # create inception event
             sigers = self.mgr.sign(ser=serder.raw, verfers=verfers)
             self.kvy.processEvent(serder=serder, sigers=sigers)
-            # self.psr = parsing.Parser(framed=True, kvy=self.kvy)
+
             if self.pre not in self.kevers:
                 if not self.delpre:
                     raise kering.ConfigurationError("Improper Habitat inception for "
                                                 "pre={}.".format(self.pre))
             else:
                 self.accepted = True
+
+            # add other oobi records here
+            # read in oobi from config file if any
+
 
         self.inited = True
 
