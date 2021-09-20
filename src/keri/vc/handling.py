@@ -8,6 +8,7 @@ from hio.help import decking
 
 from . import proving
 from .. import help
+from ..app import agenting
 from ..core.coring import dumps, Deversify
 from ..core.scheming import JSONSchema
 from ..kering import ShortageError
@@ -166,10 +167,10 @@ class ApplyHandler(doing.DoDoer):
             yield
 
 
-class IssueHandler(doing.Doer):
+class IssueHandler(doing.DoDoer):
     """
     Sample class that handles a credential Issue `exn` message.  By default, this handler
-    stores the credential in the provided wallet.  The incoming message must have the following format:
+    verifies the credential with the provided verifier.  The incoming message must have the following format:
 
          {
        "vc" [
@@ -209,7 +210,7 @@ class IssueHandler(doing.Doer):
 
     resource = "/credential/issue"
 
-    def __init__(self, wallet, typ=JSONSchema(), cues=None, **kwa):
+    def __init__(self, hab, verifier, typ=JSONSchema(), cues=None, **kwa):
         """
 
         Parameters:
@@ -219,12 +220,15 @@ class IssueHandler(doing.Doer):
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.wallet = wallet
+        self.verifier = verifier
         self.typ = typ
+        self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
-        super(IssueHandler, self).__init__(**kwa)
+        doers = [self.witq, doing.doify(self.msgDo), doing.doify(self.verifierDo)]
 
-    def do(self, tymth, tock=0.0, **opts):
+        super(IssueHandler, self).__init__(doers=doers, **kwa)
+
+    def msgDo(self, tymth, tock=0.0, **opts):
         """
 
         Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
@@ -256,10 +260,46 @@ class IssueHandler(doing.Doer):
                     msg = bytearray(raw)
                     msg.extend(proof.encode("utf-8"))
 
-                    proving.parseCredential(ims=msg, wallet=self.wallet, typ=self.typ)
+                    proving.parseCredential(ims=msg, verifier=self.verifier, typ=self.typ)
                 yield
 
             yield
+
+    def verifierDo(self, tymth, tock=0.0, **opts):
+        """
+        Process cues from Verifier coroutine
+
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.verifier.cues:
+                cue = self.verifier.cues.popleft()
+                cueKin = cue["kin"]
+
+                if cueKin == "saved":
+                    creder = cue["creder"]
+                    proof = cue["proof"]
+
+                    logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
+                    logger.info(creder.pretty())
+                    print("Credential: {}, Schema: {},  Saved".format(creder.said, creder.schema))
+                    print(creder.pretty())
+                    print(proof)
+
+
+                elif cueKin == "query":
+                    qargs = cue["q"]
+                    self.witq.query(**qargs)
+
+                yield self.tock
+            yield self.tock
 
 
 class RequestHandler(doing.Doer):
@@ -329,7 +369,6 @@ class RequestHandler(doing.Doer):
                 if len(matches) > 0:
                     pe = presentation_exchange(matches)
                     exn = exchanging.exchange(route="/presentation/proof", payload=pe)
-                    print(exn.pretty())
                     self.cues.append(dict(dest=requestor.qb64, rep=exn, topic="credential"))
 
                 yield

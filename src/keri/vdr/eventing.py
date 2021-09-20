@@ -215,6 +215,7 @@ def issue(
         regk,
         version=Version,
         kind=Serials.json,
+        dt=None
 ):
     """
 
@@ -236,6 +237,9 @@ def issue(
                dt=helping.nowIso8601()
                )
 
+    if dt is not None:
+        ked["dt"] = dt
+
     return Serder(ked=ked)  # return serialized ked
 
 
@@ -245,6 +249,7 @@ def revoke(
         dig,
         version=Version,
         kind=Serials.json,
+        dt=None
 ):
     """
 
@@ -271,6 +276,9 @@ def revoke(
                dt=helping.nowIso8601()
                )
 
+    if dt is not None:
+        ked["dt"] = dt
+
     return Serder(ked=ked)  # return serialized ked
 
 
@@ -281,6 +289,7 @@ def backerIssue(
         regd,
         version=Version,
         kind=Serials.json,
+        dt=None,
 ):
     """
 
@@ -310,6 +319,9 @@ def backerIssue(
                dt=helping.nowIso8601(),
                )
 
+    if dt is not None:
+        ked["dt"] = dt
+
     return Serder(ked=ked)  # return serialized ked
 
 
@@ -321,6 +333,7 @@ def backerRevoke(
         dig,
         version=Version,
         kind=Serials.json,
+        dt=None
 ):
     """
 
@@ -350,6 +363,9 @@ def backerRevoke(
                ra=seal._asdict(),
                dt=helping.nowIso8601(),
                )
+
+    if dt is not None:
+        ked["dt"] = dt
 
     return Serder(ked=ked)  # return serialized ked
 
@@ -1022,7 +1038,7 @@ class Tevery:
 
     """
 
-    def __init__(self, tevers=None, reger=None, db=None, regk=None, local=False):
+    def __init__(self, reger=None, db=None, regk=None, local=False):
         """
         Initialize instance:
 
@@ -1034,12 +1050,19 @@ class Tevery:
             local is Boolean, True means only process msgs for own events if .pre
                         False means only process msgs for not own events if .pre
         """
-        self.tevers = tevers if tevers is not None else dict()
         self.db = db if db is not None else basing.Baser(reopen=True)  # default name = "main"
         self.reger = reger if reger is not None else Registry()
         self.regk = regk  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions
         self.cues = deque()
+
+    @property
+    def tevers(self):
+        """
+        Returns .reger.tevers
+        """
+        return self.reger.tevers
+
 
     def processEvent(self, serder, seqner, diger, wigers=None):
         """

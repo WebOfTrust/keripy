@@ -6,8 +6,7 @@ keri.core.eventing module
 import datetime
 import json
 import logging
-import collections
-from collections import namedtuple, deque
+from collections import namedtuple
 from dataclasses import dataclass, astuple
 from math import ceil
 from urllib.parse import urlsplit
@@ -22,13 +21,10 @@ from . import coring
 from .coring import (Versify, Serials, Ilks, MtrDex, NonTransDex, CtrDex, Counter,
                      Seqner, Siger, Cigar, Dater,
                      Verfer, Diger, Nexter, Prefixer, Serder, Tholder)
-from ..db import basing, subing
+from ..db import basing
 from ..db.dbing import dgKey, snKey, fnKey, splitKeySN
-from ..end import ending
 
 from ..kering import (MissingEntryError,
-                      ExtractionError, ShortageError, ColdStartError,
-                      SizedGroupError, UnexpectedCountCodeError,
                       ValidationError, MissingSignatureError,
                       MissingWitnessSignatureError, UnverifiedReplyError,
                       MissingDelegationError, OutOfOrderError,

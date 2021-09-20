@@ -9,11 +9,12 @@ A special purpose Verifiable Data Registry (VDR)
 """
 from dataclasses import dataclass
 
-from keri.db import koming
+from keri.db import koming, subing
 
 from .. import kering
 from ..core import coring
 from ..db import dbing
+from ..vc import proving
 
 
 @dataclass
@@ -130,7 +131,41 @@ class Registry(dbing.LMDBer):
         Duplicates are inserted in lexocographic order by value, insertion order.
 
         """
+        self.tvts = None
+        self.tels = None
+        self.ancs = None
+        self.tibs = None
+        self.baks = None
+        self.oots = None
+        self.twes = None
+        self.taes = None
+        self.regs = None
+
+        self.creds = None
+        self.cdts = None
+        self.cpse = None
+        self.seals = None
+        self.issus = None
+        self.subjs = None
+        self.schms = None
+
+        self.mre = None
+        self.mie = None
+        self.pse = None
+        self.mase = None
+
+        self._tevers = dict()
+
         super(Registry, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
+
+
+    @property
+    def tevers(self):
+        """
+        Returns .db.kevers
+        """
+        return self._tevers
+
 
     def reopen(self, **kwa):
         """
@@ -151,10 +186,40 @@ class Registry(dbing.LMDBer):
         self.twes = self.env.open_db(key=b'twes.')
         self.taes = self.env.open_db(key=b'taes.')
 
+        # Holds the credential
+        self.creds = proving.CrederSuber(db=self, subkey="creds.")
+
+        # Credential signature anchors for proof
+        self.seals = subing.CatCesrIoSetSuber(db=self, subkey='seals.',
+                                              klas=(coring.Prefixer, coring.Seqner, coring.Diger, coring.Siger))
+
+        # Partially signed credential escrow
+        self.cpse = subing.CesrSuber(db=self, subkey='cpse.', klas=coring.Saider)
+
+        # Index of credentials by issuer.  My credentials issued, key == hab.pre
+        self.issus = subing.CesrDupSuber(db=self, subkey='issus.', klas=coring.Saider)
+        # Index of credentials by subject.  My credentials received, key == hab.pre
+        self.subjs = subing.CesrDupSuber(db=self, subkey='subjs.', klas=coring.Saider)
+        # Index of credentials by schema
+        self.schms = subing.CesrDupSuber(db=self, subkey='schms.', klas=coring.Saider)
+
+        # Partially signed credential escrow
+        self.pse = subing.CesrSuber(db=self, subkey='pse.', klas=coring.Dater)
+        # Missing reegistry escrow
+        self.mre = subing.CesrSuber(db=self, subkey='mre.', klas=coring.Dater)
+        # Missing issuer escrow
+        self.mie = subing.CesrSuber(db=self, subkey='mie.', klas=coring.Dater)
+
+        # Missing anchor seal escrow for Issuer Events before they reach the Tevery
+        self.mase = subing.IoSetSuber(db=self, subkey="mase.")
+
+
+
         # registry keys keyed by Registry name
         self.regs = koming.Komer(db=self,
                                  subkey='regs.',
                                  schema=RegistryRecord, )
+
 
         return self.env
 
@@ -162,7 +227,7 @@ class Registry(dbing.LMDBer):
     def clonePreIter(self, pre, fn=0):
         """
         Returns iterator of first seen event messages with attachments for the
-        TEL prefix pre starting at first seen order number, fn.
+        TEL prefix pre starting at fir`st seen order number, fn.
         Essentially a replay in first seen order with attachments
         """
         if hasattr(pre, 'encode'):

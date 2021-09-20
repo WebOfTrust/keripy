@@ -5,16 +5,20 @@ keri.vc.proving module
 """
 
 import json
+import logging
+from typing import Union
+from collections.abc import Iterable
 
 import cbor2 as cbor
 import msgpack
 
-from .. import help
+from .. import help, kering
 from ..core import coring
 from ..core.coring import (Serials, sniff, Versify, Deversify, Rever, Counter,
                            CtrDex, Prefixer, Seqner, Diger, Siger, Saider, Ids)
 from ..core.parsing import Parser, Colds
 from ..core.scheming import JSONSchema
+from ..db import subing
 from ..kering import Version, VersionError, ShortageError, DeserializationError, ColdStartError, ExtractionError
 
 KERI_REGISTRY_TYPE = "KERICredentialRegistry"
@@ -60,22 +64,125 @@ def credential(schema,
     return Credentialer(crd=vc, typ=typ)
 
 
-def parseCredential(ims=b'', wallet=None, typ=JSONSchema()):
+def parseCredential(ims, verifier, typ):
+    parsator = allParsator(ims=ims, verifier=verifier, typ=typ)
+
+    while True:
+        try:
+            next(parsator)
+        except StopIteration:
+            break
+
+
+def allParsator(ims, verifier, typ):
+    if not isinstance(ims, bytearray):
+        ims = bytearray(ims)  # so make bytearray copy
+
+    while ims:  # only process until ims empty
+        try:
+            done = yield from credParsator(ims=ims,
+                                           verifier=verifier,
+                                           typ=typ
+                                           )
+
+        except kering.SizedGroupError as ex:  # error inside sized group
+            print(ex)
+            # processOneIter already flushed group so do not flush stream
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception("Parser msg extraction error: %s\n", ex.args[0])
+            else:
+                logger.error("Parser msg extraction error: %s\n", ex.args[0])
+
+        except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
+            print(ex)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception("Parser msg extraction error: %s\n", ex.args[0])
+            else:
+                logger.error("Parser msg extraction error: %s\n", ex.args[0])
+            del ims[:]  # delete rest of stream to force cold restart
+
+        except (kering.ValidationError, Exception) as ex:  # non Extraction Error
+            print(ex)
+            # Non extraction errors happen after successfully extracted from stream
+            # so we don't flush rest of stream just resume
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception("Parser msg non-extraction error: %s\n", ex)
+            else:
+                logger.error("Parser msg non-extraction error: %s\n", ex)
+        yield
+
+    return True
+
+
+
+def credentialParsator(ims, verifier, typ):
+    if not isinstance(ims, bytearray):
+        ims = bytearray(ims)  # so make bytearray copy
+
+        while True:  # continuous stream processing never stop
+            try:
+                done = yield from credParsator(ims=ims,
+                                               verifier=verifier,
+                                               typ=typ)
+
+            except kering.SizedGroupError as ex:  # error inside sized group
+                # processOneIter already flushed group so do not flush stream
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
+                else:
+                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
+
+            except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Parser msg extraction error: %s\n", ex.args[0])
+                else:
+                    logger.error("Parser msg extraction error: %s\n", ex.args[0])
+                del ims[:]  # delete rest of stream to force cold restart
+
+            except (kering.ValidationError, Exception) as ex:  # non Extraction Error
+                # Non extraction errors happen after successfully extracted from stream
+                # so we don't flush rest of stream just resume
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Parser msg non-extraction error: %s\n", ex.args[0])
+                else:
+                    logger.error("Parser msg non-extraction error: %s\n", ex.args[0])
+            yield
+
+
+
+def credParsator(ims=b'', verifier=None, typ=JSONSchema()):
     """
     Parse the ims bytearray as a CESR Proof Format verifiable credential
 
     Parameters:
         ims (bytearray) of serialized incoming verifiable credential in CESR Proof Format.
-        wallet (Wallet) storage for the verified credential
+        verifier (verifying.Verifier) verifier and storage for the verified credential
         typ (JSONSchema) class for resolving schema references:
 
     """
-    try:
-        creder = Credentialer(raw=ims, typ=typ)
-    except ShortageError as e:
-        raise e
-    else:
-        del ims[:creder.size]
+
+    while not ims:
+        yield
+
+    cold = Parser.sniff(ims)  # check for spurious counters at front of stream
+    if cold in (Colds.txt, Colds.bny):  # not message error out to flush stream
+        # replace with pipelining here once CESR message format supported.
+        raise kering.ColdStartError("Expecting message counter tritet={}"
+                                    "".format(cold))
+
+    while True:  # extract and deserialize message from ims
+        try:
+            creder = Credentialer(raw=ims, typ=typ)
+        except ShortageError as e:
+            raise e
+        else:
+            del ims[:creder.size]
+            break
+
+
+    # extract attachments must start with counter so know if txt or bny.
+    while not ims:
+        yield
     cold = Parser.sniff(ims)
     if cold is Colds.msg:
         raise ColdStartError("unable to parse VC, attachments expected")
@@ -92,10 +199,13 @@ def parseCredential(ims=b'', wallet=None, typ=JSONSchema()):
 
     prefixer, seqner, diger, isigers = parseProof(ims=ims)
 
-    if wallet is not None:
-        wallet.processCredential(creder, prefixer, seqner, diger, isigers)
+    try:
+        verifier.processCredential(creder, prefixer, seqner, diger, isigers)
+    except AttributeError:
+        raise kering.ValidationError("No verifier to process so dropped credential"
+                                     "= {}.".format(creder.pretty()))
 
-    return creder, prefixer, seqner, diger, isigers
+    return True  # done state
 
 
 def parseProof(ims=b''):
@@ -352,3 +462,100 @@ class Credentialer:
         Returns str JSON of .ked with pretty formatting
         """
         return json.dumps(self.crd, indent=1)
+
+
+class CrederSuber(subing.Suber):
+    """
+    Sub class of Suber where data is serialized Credentialer instance
+    Automatically serializes and deserializes using Credentialer methods
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+        """
+        super(CrederSuber, self).__init__(*pa, **kwa)
+
+
+    def put(self, keys: Union[str, Iterable], val: Credentialer):
+        """
+        Puts val at key made from keys. Does not overwrite
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Credentialer): instance
+
+        Returns:
+            result (bool): True If successful, False otherwise, such as key
+                              already in database.
+        """
+        return (self.db.putVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.raw))
+
+
+    def pin(self, keys: Union[str, Iterable], val: Credentialer):
+        """
+        Pins (sets) val at key made from keys. Overwrites.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Credentialer): instance
+
+        Returns:
+            result (bool): True If successful. False otherwise.
+        """
+        return (self.db.setVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.raw))
+
+
+    def get(self, keys: Union[str, Iterable]):
+        """
+        Gets Serder at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            Credentialer:
+            None: if no entry at keys
+
+        Usage:
+            Use walrus operator to catch and raise missing entry
+            if (creder := mydb.get(keys)) is None:
+                raise ExceptionHere
+            use creder here
+
+        """
+        val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
+        return Credentialer(raw=bytes(val)) if val is not None else None
+
+
+    def rem(self, keys: Union[str, Iterable]):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+        """
+        return self.db.delVal(db=self.sdb, key=self._tokey(keys))
+
+
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
+        """
+        Return iterator over the all the items in subdb
+
+        Returns:
+            iterator: of tuples of keys tuple and val coring.Serder for
+            each entry in db
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield self._tokeys(key), Credentialer(raw=bytes(val))

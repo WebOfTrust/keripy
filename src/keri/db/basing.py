@@ -130,6 +130,7 @@ class GroupIdRecord:  # baser.gids
     """
     lid: str  # local identifier that contributes to the group
     gid: str  # group identifier prefix
+    dig: str  # qb64 of latest digest in the group
     cst: str  # group signing threshold of the next key commitment
     aids: list  # all identifiers participating in the group identity
 
@@ -282,7 +283,6 @@ class LocationRecord:  # baser.locs
 
     def __iter__(self):
         return iter(asdict(self))
-
 
 
 def openDB(name="test", **kwa):
@@ -704,10 +704,11 @@ class Baser(dbing.LMDBer):
         self.gids = koming.Komer(db=self,
                                  subkey='gids.',
                                  schema=GroupIdRecord, )
+        # group partial aid list escrow
+        self.gpae = subing.IoSetSuber(db=self, subkey="gpae.")
 
-
-
-
+        # group partial signature escrow
+        self.gpse = subing.IoSetSuber(db=self, subkey="gpse.")
         return self.env
 
     def reload(self):

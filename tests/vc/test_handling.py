@@ -5,14 +5,15 @@ tests.vc.handling module
 """
 from hio.base import doing
 
-from keri.app import keeping, habbing
+from keri.app import keeping, habbing, indirecting
 from keri.core import coring, scheming, eventing, parsing
 from keri.core.scheming import CacheResolver, JSONSchema
 from keri.db import basing
 from keri.peer import exchanging
 from keri.vc.handling import IssueHandler, envelope, RequestHandler
 from keri.vc.proving import credential, parseCredential
-from keri.vc.walleting import Wallet, openPocket
+from keri.vc.walleting import Wallet
+from keri.vdr import viring, verifying, issuing
 
 
 def test_issuing():
@@ -21,20 +22,24 @@ def test_issuing():
     with basing.openDB(name="sid") as sidDB, \
             keeping.openKS(name="sid") as sidKS, \
             basing.openDB(name="red") as redDB, \
-            openPocket(name="red") as redPDB:
+            habbing.openHab(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
+            viring.openReg(name="red") as redPDB:
+        wanDoers = indirecting.setupWitness(name="wan", hab=wanHab, temp=True, tcpPort=5632, httpPort=5642)
+
         limit = 1.0
         tock = 1.0
         doist = doing.Doist(limit=limit, tock=tock)
 
-        sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True)
+        sidHab = habbing.Habitat(ks=sidKS, db=sidDB, salt=sidSalt, temp=True,
+                                 wits=["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"])
         sidPre = sidHab.pre
-        assert sidPre == "E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E"
+        assert sidPre == "EWJuxKtF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU_sAqM"
 
-        sidIcpMsg = sidHab.makeOwnInception()
-
+        # sidIcpMsg = sidHab.makeOwnInception()
+        #
         redKvy = eventing.Kevery(db=redDB)
-        parsing.Parser().parse(ims=bytearray(sidIcpMsg), kvy=redKvy)
-        assert redKvy.kevers[sidPre].sn == 0  # accepted event
+        # parsing.Parser().parse(ims=bytearray(sidIcpMsg), kvy=redKvy)
+        # assert redKvy.kevers[sidPre].sn == 0  # accepted event
 
         sed = dict()
         sed["$id"] = ""
@@ -47,10 +52,12 @@ def test_issuing():
                 ),
                 lei=dict(
                     type="string"
-                )
+                ),
             )
         ))
 
+        verifier = verifying.Verifier(hab=sidHab, reger=redPDB)
+        issuer = issuing.Issuer(hab=sidHab, reger=verifier.reger)
         schemer = scheming.Schemer(sed=sed, code=coring.MtrDex.Blake3_256)
         assert schemer.said == "EBd67C13qqQcsJVxvBBOdasGIALYUIofv6xoedUj-438"
 
@@ -59,8 +66,7 @@ def test_issuing():
         jsonSchema = JSONSchema(resolver=cache)
 
         # Create Red's wallet and Issue Handler for receiving the credential
-        redWallet = Wallet(hab=sidHab, db=redPDB)
-        redIssueHandler = IssueHandler(wallet=redWallet, typ=jsonSchema)
+        redIssueHandler = IssueHandler(hab=sidHab, verifier=verifier, typ=jsonSchema)
         redExc = exchanging.Exchanger(hab=sidHab, tymth=doist.tymen(), handlers=[redIssueHandler])
 
         # Build the credential subject and then the Credentialer for the full credential
@@ -68,26 +74,29 @@ def test_issuing():
             i="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
             lei="254900OPPU84GM83MG36",
             issuanceDate="2021-06-27T21:26:21.233257+00:00",
+            si=sidHab.pre,
         )
 
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
                             subject=credSubject,
+                            status=issuer.regk,
                             typ=jsonSchema)
 
-        assert creder.said == "Eo_1yYIr2fb1dNx_0NBu7_cXt5S9uksUd78W0WD8DFS4"
+        assert creder.said == "EQ6QvRIRCB5xIs5JxGYOL2TI-oOYpEC8y5w-QlPwgjH4"
 
+        issuer.issue(creder=creder)
         msg = sidHab.endorse(serder=creder)
-        assert msg == (
-            b'{"v":"KERI10JSON000135_","i":"Eo_1yYIr2fb1dNx_0NBu7_cXt5S9uksUd7'
-            b'8W0WD8DFS4","x":"EBd67C13qqQcsJVxvBBOdasGIALYUIofv6xoedUj-438","'
-            b'ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","d":{"i":"did'
-            b':keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36'
-            b'","issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}-VA0-FABE4Y'
-            b'PqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAA'
-            b'AElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAA9JGgHDciYtbWJ'
-            b'sWfv_vOulGL4yfg4EKBlqLaay9xS1C163mff9X-Z-6PD9pUM7KZeghQmU1y-xjBN'
-            b'g1kY010CQ')
+        assert msg == (b'{"v":"KERI10JSON00019d_","i":"EQ6QvRIRCB5xIs5JxGYOL2TI-oOYpEC8y5'
+                       b'w-QlPwgjH4","x":"EBd67C13qqQcsJVxvBBOdasGIALYUIofv6xoedUj-438","'
+                       b'ti":"EWJuxKtF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU_sAqM","d":{"i":"did'
+                       b':keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36'
+                       b'","issuanceDate":"2021-06-27T21:26:21.233257+00:00","si":"EWJuxK'
+                       b'tF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU_sAqM"},"ri":"EQNgVMXpmIWmPLoNg'
+                       b'Pxj1-xCMTm0-K8f3sBlUckNZSTY"}-VA0-FABEWJuxKtF-w3DD9RuHIO0zcIo7ea'
+                       b'kSkcUT6XBfGU_sAqM0AAAAAAAAAAAAAAAAAAAAAAAEK29DLvJwcxTSkPvaBJttJk'
+                       b'uzZ3NUgBKyx_eV2k7bcZs-AABAAjppmEaJJC4LsGdyaFOi2sS1lf83Oe7gxTEchZ'
+                       b'eL1Ep836nhwblFfk4kMEzAC_B_T4XPrjedFyN6gyMFPPHePCA')
 
         # Create the issue credential payload
         pl = dict(
@@ -101,33 +110,33 @@ def test_issuing():
 
         # Parse the exn issue credential message on Red's side
         parsing.Parser().parse(ims=bytearray(excMsg), kvy=redKvy, exc=redExc)
-        doist.do(doers=[redExc])
+        doers = wanDoers + [redExc]
+        doist.do(doers=doers)
         assert doist.tyme == limit
 
-        ser = (
-            b'{"v":"KERI10JSON000135_","i":"Eo_1yYIr2fb1dNx_0NBu7_cXt5S9uksUd7'
-            b'8W0WD8DFS4","x":"EBd67C13qqQcsJVxvBBOdasGIALYUIofv6xoedUj-438","'
-            b'ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","d":{"i":"did'
-            b':keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36'
-            b'","issuanceDate":"2021-06-27T21:26:21.233257+00:00"}}')
-        sig0 = (
-            b'AA9JGgHDciYtbWJsWfv_vOulGL4yfg4EKBlqLaay9xS1C163mff9X-Z-6PD9pUM7'
-            b'KZeghQmU1y-xjBNg1kY010CQ'
-        )
+        ser = (b'{"v":"KERI10JSON00019d_","i":"EQ6QvRIRCB5xIs5JxGYOL2TI-oOYpEC8y5w-QlPwgjH4",'
+               b'"x":"EBd67C13qqQcsJVxvBBOdasGIALYUIofv6xoedUj-438","ti":"EWJuxKtF-w3DD9RuHIO'
+               b'0zcIo7eakSkcUT6XBfGU_sAqM","d":{"i":"did:keri:Efaavv0oadfghasdfn443fhbyyr4v"'
+               b',"lei":"254900OPPU84GM83MG36","issuanceDate":"2021-06-27T21:26:21.233257+00:'
+               b'00","si":"EWJuxKtF-w3DD9RuHIO0zcIo7eakSkcUT6XBfGU_sAqM"},"ri":"EQNgVMXpmIWmP'
+               b'LoNgPxj1-xCMTm0-K8f3sBlUckNZSTY"}')
+        sig0 = (b'AAjppmEaJJC4LsGdyaFOi2sS1lf83Oe7gxTEchZeL1Ep836nhwblFfk4kMEzAC_B_T4XPrjedFyN'
+                b'6gyMFPPHePCA')
 
         # verify we can load serialized VC by SAID
         key = creder.said.encode("utf-8")
-        assert bytearray(redPDB.getSers(key)) == ser
+        assert redPDB.creds.get(key).raw == ser
 
         # verify the signature
-        sigs = redPDB.getSigs(key)
+        seals = redPDB.seals.get(key)
+        sigs = [sig for (_, _, _, sig) in seals]
         assert len(sigs) == 1
-        assert bytearray(sigs[0]) == sig0
+        assert sigs[0].qb64b == sig0
 
         # verify we can look up credential by Schema SAID
-        schema = redPDB.getSchms(schemer.saider.qb64b)
+        schema = redPDB.schms.get(schemer.saider.qb64b)
         assert len(schema) == 1
-        assert schema[0] == key
+        assert schema[0].qb64b == key
 
 
 def test_proving():
@@ -141,7 +150,7 @@ def test_proving():
             keeping.openKS(name="vic") as vicKS, \
             basing.openDB(name="han") as hanDB, \
             keeping.openKS(name="han") as hanKS, \
-            openPocket(name="han") as hanPDB:
+            viring.openReg(name="han") as hanPDB:
         limit = 1.0
         tock = 1.0
         doist = doing.Doist(limit=limit, tock=tock)
@@ -191,27 +200,34 @@ def test_proving():
 
         credSubject = dict(
             i="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
+            si=hanHab.pre,
             lei="254900OPPU84GM83MG36",
             issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
 
+        verifier = verifying.Verifier(hab=hanHab, reger=hanPDB)
+        issuer = issuing.Issuer(hab=hanHab, reger=hanPDB)
+
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
                             subject=credSubject,
-                            typ=JSONSchema(resolver=cache))
+                            status=issuer.regk,
+                            typ=JSONSchema(resolver=cache),
+                            )
 
-        assert creder.said == "Eo_1yYIr2fb1dNx_0NBu7_cXt5S9uksUd78W0WD8DFS4"
+        assert creder.said == "EmQSuvSzEkfdi62_obUFRqWrbWkEq7VHpHA5tECO8JQc"
 
         msg = sidHab.endorse(serder=creder)
-        hanWallet = Wallet(hab=hanHab, db=hanPDB)
+        hanWallet = Wallet(db=hanPDB)
 
-        creder, prefixer, seqner, diger, isigers = parseCredential(ims=msg,
-                                                                   wallet=hanWallet,
-                                                                   typ=JSONSchema(resolver=cache))
+        issuer.issue(creder=creder)
+        parseCredential(ims=msg,
+                        verifier=verifier,
+                        typ=JSONSchema(resolver=cache))
 
         # verify we can load serialized VC by SAID
         key = creder.said.encode("utf-8")
-        assert hanPDB.getSers(key) is not None
+        assert hanPDB.creds.get(key) is not None
 
         # Create Red's wallet and Issue Handler for receiving the credential
         hanRequestHandler = RequestHandler(wallet=hanWallet, typ=jsonSchema)
@@ -256,7 +272,9 @@ def test_proving():
 
         proof = (
             "-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw"
-            "-AxDNI7_ZmaI-AABAA9JGgHDciYtbWJsWfv_vOulGL4yfg4EKBlqLaay9xS1C163mff9X-Z-6PD9pUM7KZeghQmU1y-xjBNg1kY010CQ")
+            "-AxDNI7_ZmaI-AABAAQlH125aHYBnKH2shx6b0V2TFXfND1Omm8QonlDXJwhLDowNACRFBjpU9H1BKc5tqlWzrdgsR9r5S4YQEEioBCw"
+        )
+
         assert vcs[0]["proof"] == proof
 
 

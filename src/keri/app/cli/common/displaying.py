@@ -16,12 +16,12 @@ def printGroups(hab):
         hab (Habitat): environment for whom to print groups
 
     """
-    groups = hab.db.gids.getItemIter()
-    for (name,), group in groups:
-        printGroup(hab, name, group)
+    group = hab.group()
+    if group:
+        printGroup(hab, group)
 
 
-def printGroup(hab, name, group):
+def printGroup(hab, group):
     """
     Print identifier and participant information for a specific group
 
@@ -31,7 +31,7 @@ def printGroup(hab, name, group):
         group (GroupIdentifier): the local identifier and list of participants
 
     """
-    print("Group: ", name)
+    print("Group: ", group.gid)
     printIdentifier(hab, group.gid)
 
     aids = group.aids

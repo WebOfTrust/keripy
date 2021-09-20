@@ -20,6 +20,7 @@ from keri.db import basing
 from keri.demo.demoing import HanDirector
 from keri.peer import exchanging
 from keri.vc import walleting, handling
+from keri.vdr import viring, verifying
 
 logger = help.ogler.getLogger()
 
@@ -59,7 +60,8 @@ def setupController(secrets, witnessPort=5631, localPort=5629, indirect=False):
     hab = habbing.Habitat(name="han", secrecies=secrecies, temp=True)
     logger.info("\nDirect Mode demo of %s:\nNamed %s listening on TCP port %s, witness on TCP Port %s.\n\n",
                 hab.pre, hab.name, localPort, witnessPort)
-    wallet = walleting.Wallet(hab=hab, name="han")
+    reger = viring.Registry(name="han")
+    wallet = walleting.Wallet(db=reger, name="han")
 
     # setup doers
     ksDoer = keeping.KeeperDoer(keeper=hab.ks)  # doer do reopens if not opened and closes
@@ -75,7 +77,8 @@ def setupController(secrets, witnessPort=5631, localPort=5629, indirect=False):
 
     jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
 
-    issueHandler = handling.IssueHandler(wallet=wallet, typ=jsonSchema)
+    verifier = verifying.Verifier(hab=hab, reger=reger)
+    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, typ=jsonSchema)
     requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
 
     witnessClient = clienting.Client(host='127.0.0.1', port=witnessPort, wl=wl)
