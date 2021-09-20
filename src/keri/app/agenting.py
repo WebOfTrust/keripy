@@ -420,14 +420,29 @@ class KiwiServer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, controller, rep, cues=None, app=None, insecure=False, **kwa):
+    def __init__(self, hab, controller, rep, issuers=None, cues=None, app=None, insecure=False, **kwa):
+        """
+        Create a KIWI web server for Agents capable of performing KERI and ACDC functions for the controller
+        of an identifier.
+
+        Parameters:
+            hab Habitat is the environment of the identifier prefix
+            controller qb64 is the identifier prefix that can send commands to this web server:
+            rep Respondant that routes responses to the appropriate mailboxes
+            issuers is dict of credential Issuers keyed by regk of credential Registry
+            cues is Deck from Kevery handling key events:
+            app falcon.App to register handlers with:
+            insecure bool is True to allow requests without verifying KERI Http Signature Header,
+                defaults to False
+
+        """
         self.hab = hab
         self.controller = controller
         self.rep = rep
         self.kevts = decking.Deck()
         self.tevts = decking.Deck()
         self.app = app if app is not None else falcon.App(cors_enable=True)
-        self.issuers = dict()
+        self.issuers = issuers if issuers is not None else dict()
 
         if insecure:
             self.app.add_middleware(httping.InsecureSignatureComponent())
@@ -448,12 +463,11 @@ class KiwiServer(doing.DoDoer):
         self.app.add_route("/multisig/incept", self, suffix="multisig_incept")
         self.app.add_route("/multisig/rotate", self, suffix="multisig_rotate")
         self.app.add_route("/multisig", self, suffix="multisig")
-        self.gicpr = grouping.MultiSigInceptDoer(hab=hab)
-        self.grotr = grouping.MultiSigRotateDoer(hab=hab)
+        self.gdoer = grouping.MultiSigGroupDoer(hab=hab)
 
         self.witq = WitnessInquisitor(hab=hab, klas=TCPWitnesser)
 
-        doers = [self.witq, self.registryIcpr, self.gicpr, self.grotr, doing.doify(self.receiptDo), doing.doify(
+        doers = [self.witq, self.registryIcpr, self.gdoer,doing.doify(self.receiptDo), doing.doify(
             self.publishDo)]
 
         super(KiwiServer, self).__init__(doers=doers, **kwa)
@@ -502,8 +516,8 @@ class KiwiServer(doing.DoDoer):
         yield self.tock
 
         while True:
-            while self.grotr.cues:
-                cue = self.grotr.cues.popleft()
+            while self.gdoer.cues:
+                cue = self.gdoer.cues.popleft()
                 exn = exchanging.exchange(route="/multisig/results", payload=cue, date=helping.nowIso8601())
                 self.rep.reps.append(dict(dest=self.controller, rep=exn, topic="multisig"))
 
@@ -537,20 +551,16 @@ class KiwiServer(doing.DoDoer):
 
         types = ["VerifiableCredential", body.get("type")]
 
+        data = body.get("credentialData")
+
         d = dict(
             i="",
             type=types,
-            LEI=body.get("LEI"),
             si=recipientIdentifier,
             dt=nowIso8601()
         )
 
-        d |= {"personLegalName": body.get("personLegalName")} \
-            if body.get("personLegalName") is not None else {}
-        d |= {"officialRole": body.get("officialRole")} \
-            if body.get("officialRole") is not None else {}
-        d |= {"engagementContextRole": body.get("engagementContextRole")} \
-            if body.get("engagementContextRole") is not None else {}
+        d |= data
 
         saider = scheming.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.i)
         d["i"] = saider.qb64
@@ -575,6 +585,8 @@ class KiwiServer(doing.DoDoer):
         pl = dict(
             vc=[handling.envelope(msg, typ=jsonSchema)]
         )
+
+        # TODO:  Send message or messages to other participants of multisig group about this issuance
 
         exn = exchanging.exchange(route="/credential/issue", payload=pl)
         self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn, topic="credential"))
@@ -673,9 +685,10 @@ class KiwiServer(doing.DoDoer):
             if key in body:
                 msg[key] = body[key]
 
+        msg["op"] = grouping.Ops.rot
         msg["group"] = body["group"]
 
-        self.grotr.msgs.append(msg)
+        self.gdoer.msgs.append(msg)
 
         rep.status = falcon.HTTP_202
 
@@ -728,9 +741,10 @@ class KiwiServer(doing.DoDoer):
                     exn = exchanging.exchange(route="/multisig/incept", payload=dict(msg), date=helping.nowIso8601())
                     self.rep.reps.append(dict(dest=aid, rep=exn, topic="multisig"))
 
+        msg["op"] = grouping.Ops.icp
         msg["group"] = body["group"]
 
-        self.gicpr.msgs.append(msg)
+        self.gdoer.msgs.append(msg)
 
         rep.status = falcon.HTTP_202
 
@@ -847,7 +861,4 @@ class KiwiServer(doing.DoDoer):
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
-
-
-
 

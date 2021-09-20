@@ -63,7 +63,7 @@ class SuberBase():
     """
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, db: Type[dbing.LMDBer], *,
+    def __init__(self, db: dbing.LMDBer, *,
                        subkey: str='docs.',
                        dupsort: bool=False,
                        sep: str=None,
@@ -194,7 +194,7 @@ class Suber(SuberBase):
     Sub DB of LMDBer. Subclass of SuberBase
     """
 
-    def __init__(self, db: Type[dbing.LMDBer], *,
+    def __init__(self, db: dbing.LMDBer, *,
                        subkey: str = 'docs.',
                        dupsort: bool=False, **kwa):
         """

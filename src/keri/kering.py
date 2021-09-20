@@ -367,3 +367,19 @@ class InvalidEventTypeError(KeriError):
     Usage:
         raise InvalidEventTypeError("error message")
     """
+
+
+class MissingAidError(KeriError):
+    """
+    Error trying to process a group identifier without having all the other group members
+    Usage:
+        raise MissingAidError("error message")
+    """
+
+
+class InvalidGroupError(KeriError):
+    """
+    Error trying to process a group identifier for an identifier that is not a participant in the group
+    Usage:
+        raise MissingAidError("error message")
+    """

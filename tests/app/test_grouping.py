@@ -14,9 +14,12 @@ def test_digest_ungrouping():
     for dig in digs:
         nexter = coring.Nexter(qb64=dig)
 
-        dig = grouping.extractDig(nexter, tholder)
+        dig = grouping.Groupy.extractDig(nexter, tholder)
         msdigers.append(dig)
 
 
     nxt = coring.Nexter(sith="3", digs=[diger.qb64 for diger in msdigers]).qb64
     assert nxt == "EQL9rtA6EKES8Ig4GEfabNtd7DTvt0_-jp230QhBeaXA"
+
+def test_multisig_rotate():
+    pass

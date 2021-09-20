@@ -54,7 +54,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
     def __init__(self, name, **kwa):
         self.hab, doers = existing.openHabitat(name=name)
-        self.rotr = grouping.MultiSigRotateDoer(hab=self.hab)
+        self.rotr = grouping.MultiSigGroupDoer(hab=self.hab)
         self.msg = kwa
 
         mbd = indirecting.MailboxDirector(hab=self.hab, topics=['/receipt', '/multisig'])
@@ -70,6 +70,7 @@ class GroupMultisigRotate(doing.DoDoer):
         # enter context
         yield self.tock
 
+        self.msg["op"] = grouping.Ops.rot
         self.rotr.msgs.append(self.msg)
 
         while not self.rotr.cues:

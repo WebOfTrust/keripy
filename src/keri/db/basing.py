@@ -284,6 +284,28 @@ class LocationRecord:  # baser.locs
         return iter(asdict(self))
 
 
+@dataclass
+class WitnessRecord:  # wits
+    """
+    Tracks the last message index retrieved from the witness mailbox
+    Database Key is the identifier prefix of the witness that is storing
+    events in a mailbox
+    """
+    topics: dict
+
+
+@dataclass
+class GroupIdentifier:  # gids
+    """
+    Track group identifiers that we are participating in
+    Database Key is the identifier prefix of the group identifier
+    """
+    lid: str  # local identifier that contributes to the group
+    gid: str  # group identifier prefix
+    dig: str  # qb64 of latest digest in the group
+    cst: str  # group signing threshold of the next key commitment
+    aids: list  # all identifiers participating in the group identity
+
 
 def openDB(name="test", **kwa):
     """
@@ -704,6 +726,10 @@ class Baser(dbing.LMDBer):
         self.gids = koming.Komer(db=self,
                                  subkey='gids.',
                                  schema=GroupIdRecord, )
+        # group partial aid list escrow
+        self.gpae = subing.Suber(db=self, subkey="gpae.")
+        # group partial signature escrow
+        self.gpse = subing.Suber(db=self, subkey="gpse.")
 
 
 
