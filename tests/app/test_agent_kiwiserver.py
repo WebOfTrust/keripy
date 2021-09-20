@@ -8,11 +8,10 @@ import json
 import falcon
 from falcon import testing
 
-from app import test_grouping
-from keri import kering
+from ..app import test_grouping
 from keri.app import habbing, agenting, storing, grouping
-from keri.core import coring, eventing, parsing
-from keri.db import basing, dbing
+from keri.core import coring
+from keri.vc import proving
 from keri.vdr import viring, issuing, verifying
 
 
@@ -22,12 +21,18 @@ def test_credential_handlers(mockHelpingNowUTC):
         app = falcon.App()
 
         reger = viring.Registry(name=hab.name, temp=True)
+        verifier = verifying.Verifier(hab=hab, name="verifier", reger=reger)
         issuer = issuing.Issuer(hab=hab, name=hab.name, reger=reger, noBackers=True)
+
+        assert len(issuer.cues) == 2
+        cue = issuer.cues.popleft()
+        assert cue["kin"] == "kevt"
+        cue = issuer.cues.popleft()
+        assert cue["kin"] == "send"
 
         issuers = dict()
         issuers[issuer.regk] = issuer
         repd = storing.Respondant(hab=hab)
-        verifier = verifying.Verifier(hab=hab, name="verifier")
 
         kiwi = agenting.KiwiServer(hab=hab,
                                    rep=repd,
@@ -92,7 +97,8 @@ def test_credential_handlers(mockHelpingNowUTC):
         evt = cue["msg"]
         assert evt == tevt
 
-        assert bytes(kiwi.cms) == cred
+        creder = proving.Credentialer(raw=cred)
+        assert reger.creds.get(creder.saider.qb64b).raw == creder.raw
 
         result = client.simulate_post(path="/credential/revoke",
                                       body=b'{"registry": "E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38", "said": '
@@ -120,25 +126,19 @@ def test_credential_handlers(mockHelpingNowUTC):
 
 
 def test_credential_handlers_singlesig(mockHelpingNowUTC):
-    with habbing.openHab(name="test", transferable=True) as hab, \
+    with test_grouping.openMutlsig(prefix="test") as (hab1, hab2, hab3), \
             habbing.openHab(name="recp", transferable=True) as recp:
         app = falcon.App()
 
-        gid = "EyfirWU1lrFwWJOKfvhVjHZ9ADJwbLFzw04wb8SUP_0c"
-        par1 = "ENJCK8DmQt5CV9cYI_5fchKtD3JFbdCDKvDiaESDK2-g"
-
-        group = basing.GroupIdentifier(lid=hab.pre, gid=gid, dig="", cst="1", aids=[hab.pre, par1])
-        hab.db.gids.put("test-group", group)
-
-        reger = viring.Registry(name=hab.name, temp=True)
-        issuer = issuing.Issuer(hab=hab, name=hab.name, reger=reger, noBackers=True)
+        reger = viring.Registry(name=hab1.name, temp=True)
+        verifier = verifying.Verifier(hab=hab1, name="verifier", reger=reger)
+        issuer = issuing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
 
         issuers = dict()
         issuers[issuer.regk] = issuer
-        repd = storing.Respondant(hab=hab)
-        verifier = verifying.Verifier(hab=hab, name="verifier")
+        repd = storing.Respondant(hab=hab1)
 
-        kiwi = agenting.KiwiServer(hab=hab,
+        kiwi = agenting.KiwiServer(hab=hab1,
                                    rep=repd,
                                    verifier=verifier,
                                    issuers=issuers,
@@ -160,9 +160,8 @@ def test_credential_handlers_singlesig(mockHelpingNowUTC):
 
         data = dict(LEI=LEI)
         body = dict(
-            registry=issuer.regk,
+            registry="test",
             schema=schema,
-            source=hab.pre,
             recipient=recp.pre,
             type="vLEIGLEIFCredential",
             credentialData=data
@@ -183,43 +182,40 @@ def test_credential_handlers_singlesig(mockHelpingNowUTC):
             b'-AABAAqyIShWPH1LrXJ32DOvm0gcTxneTAvOPTDHtIPscVslopfheKbrXKBLeYtdgOVj8TTffxB-bWnnxwYYbPcp40AA')
 
         assert len(issuer.cues) == 1
+
         cue = issuer.cues.popleft()
         assert cue["kin"] == "multisig"
-        assert cue["group"] == "test-group"
         assert cue["op"] == grouping.Ops.ixn
         assert cue["data"] == [dict(
-            i="EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0",
+            i="EY6abBtd60qGCttqOSOW27w_DZhi9U1p2K6RV0G4wqiE",
             s="0",
-            d="EnfAA4Gqw05dzKCdbfH2D13_FRYKg-sJw1dzH1oW6EM8"
+            d="EwUyilaYsfLo7zFqXFnp1T9nvsbd2b1IAaCW-i9LFQyo"
         )]
-
-        assert bytes(kiwi.cms) == cred
 
         result = client.simulate_post(path="/credential/revoke",
                                       body=b'{"registry": "E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38", "said": '
                                            b'"EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0"}')
         assert result.status == falcon.HTTP_CONFLICT
         assert result.text == ("Invalid revoke of EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0 that has not been "
-                               "issued pre=E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38.")
+                               "issued pre=E-b2o4iuCAD2D68XAYxA3L8vqWJ1pxAXyxRSL95CiGS0.")
 
 
 def test_issue_credential_full_multisig():
     with test_grouping.openMutlsig(prefix="test") as (hab1, hab2, hab3), \
             habbing.openHab(name="recp", transferable=True) as recp:
-
         # Verify the group identifier was incepted properly and matches the identifiers
         assert hab1.pre == "ELQoqCOdxWcd3zhQTW7io5XJYAJLmhpbY8YqQF0sxZLo"
         assert hab2.pre == "EH-i-vxKSbaJQtal3V_ltrtjs7O1nuCHn4iqxdvdGOj0"
         assert hab3.pre == "EuK3T40uWRDXGZF9YApOjoTkLeDjjr7UPUqfCp5B04Fo"
 
         gid = "EbRGD66vYtbohJwGh-B2uPwHUDH3WrLcc_1Gn1ksSEu0"
-        group1 = hab1.db.gids.get("g_test_1")
+        group1 = hab1.db.gids.get(hab1.pre)
         assert group1.gid == gid
         assert group1.lid == hab1.pre
-        group2 = hab2.db.gids.get("g_test_2")
+        group2 = hab2.db.gids.get(hab2.pre)
         assert group2.gid == gid
         assert group2.lid == hab2.pre
-        group3 = hab3.db.gids.get("g_test_3")
+        group3 = hab3.db.gids.get(hab3.pre)
         assert group3.gid == gid
         assert group3.lid == hab3.pre
 
@@ -228,12 +224,21 @@ def test_issue_credential_full_multisig():
         app = falcon.App()
 
         reger = viring.Registry(name=hab1.name, temp=True)
+        verifier = verifying.Verifier(hab=hab1, name="verifier", reger=reger)
         issuer = issuing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
+
+        assert len(issuer.cues) == 1
+        cue = issuer.cues.popleft()
+        assert cue["kin"] == "multisig"
+        assert cue["data"] == [dict(
+            i='EY6abBtd60qGCttqOSOW27w_DZhi9U1p2K6RV0G4wqiE',
+            s='0',
+            d='EwUyilaYsfLo7zFqXFnp1T9nvsbd2b1IAaCW-i9LFQyo'
+        )]
 
         issuers = dict()
         issuers[issuer.regk] = issuer
         repd = storing.Respondant(hab=hab1)
-        verifier = verifying.Verifier(hab=hab1, name="verifier")
 
         kiwi = agenting.KiwiServer(hab=hab1,
                                    rep=repd,
@@ -264,89 +269,17 @@ def test_issue_credential_full_multisig():
         result = client.simulate_post(path="/credential/issue", body=b)
         assert result.status == falcon.HTTP_200
 
+        creder = proving.Credentialer(crd=result.json, kind=coring.Serials.json)
+        print(creder.pretty())
+
         # The Issuer will have cue'd up a multisig request to be processed
         assert len(issuer.cues) == 1
         cue = issuer.cues.popleft()
+
         assert cue["kin"] == "multisig"
-
-        # Mimic the Doified loop in Kiwi server to process the cue for each participant
-        msg = dict(
-            op=cue["op"],
-            group=cue["group"],
-            data=cue["data"],
-        )
-
-        g1 = grouping.Groupy(hab=hab1)
-        g2 = grouping.Groupy(hab=hab2)
-        g3 = grouping.Groupy(hab=hab3)
-
-        # Run the cue'd up multisig event thru Groupy objects to get an IXN event generated and signed
-        missing = False
-        try:
-            g1.processMessage(f"g_test_1", msg)
-        except kering.MissingSignatureError:
-            missing = True
-
-        assert missing is True
-
-        # Original cue was for g1 so update the group name
-        missing = False
-        msg["group"] = "g_test_2"
-        try:
-            g2.processMessage(f"g_test_2", msg)
-        except kering.MissingSignatureError:
-            missing = True
-
-        assert missing is True
-
-        # Original cue was for g1 so update the group name
-        missing = False
-        msg["group"] = "g_test_3"
-        try:
-            g3.processMessage(f"g_test_3", msg)
-        except kering.MissingSignatureError:
-            missing = True
-
-        assert missing is True
-
-        assert hab1.kever.sn == 1
-        assert hab2.kever.sn == 1
-        assert hab3.kever.sn == 1
-
-        assert hab1.kever.ilk == coring.Ilks.ixn
-        assert hab2.kever.ilk == coring.Ilks.ixn
-        assert hab3.kever.ilk == coring.Ilks.ixn
-
-        raw = hab1.db.gpse.getLast("g_test_1")
-        msg = json.loads(raw)
-        gid = msg["pre"]
-        dig = msg["dig"]
-
-        dgkey = dbing.dgKey(gid, dig)
-        eraw = hab1.db.getEvt(dgkey)
-        mssrdr = coring.Serder(raw=bytes(eraw))  # escrowed event
-
-        dgkey = dbing.dgKey(mssrdr.preb, mssrdr.digb)
-        sigs = hab1.db.getSigs(dgkey)
-        sigs.extend(hab2.db.getSigs(dgkey))
-        sigs.extend(hab3.db.getSigs(dgkey))
-
-        sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
-
-        evt = bytearray(eraw)
-        evt.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                  count=len(sigers)).qb64b)  # attach cnt
-        for sig in sigs:
-            evt.extend(sig)
-
-        # Kevery for each Hab to process the IXM event
-        kev1 = eventing.Kevery(db=hab1.db, lax=False, local=False)
-        kev2 = eventing.Kevery(db=hab2.db, lax=False, local=False)
-        kev3 = eventing.Kevery(db=hab3.db, lax=False, local=False)
-
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev3)
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev2)
-        parsing.Parser().parse(ims=bytearray(evt), kvy=kev1)
-
-        assert mssrdr.ked["a"] is not None
-        assert mssrdr.ked["t"] == coring.Ilks.ixn
+        data = cue["data"]
+        assert len(data) == 1
+        print(data[0])
+        assert data[0]['s'] == '0'
+        assert data[0]['i'] == creder.saider.qb64
+        assert 'd' in data[0]

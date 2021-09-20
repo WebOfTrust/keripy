@@ -65,11 +65,11 @@ def openMutlsig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
 
         for idx, groupy in enumerate(groupies):
             try:
-                groupy.processMessage(f"g_{prefix}_{idx + 1}", imsg)
+                groupy.processMessage(imsg)
             except kering.MissingSignatureError:
                 pass
 
-        raw = hab1.db.gpse.getLast(f"g_{prefix}_1")
+        raw = hab1.db.gpse.getLast(hab1.pre)
         msg = json.loads(raw)
         gid = msg["pre"]
         dig = msg["dig"]
@@ -110,7 +110,7 @@ def test_multisig_rotate():
         assert hab3.pre == "EuK3T40uWRDXGZF9YApOjoTkLeDjjr7UPUqfCp5B04Fo"
 
         gid = "EbRGD66vYtbohJwGh-B2uPwHUDH3WrLcc_1Gn1ksSEu0"
-        group1 = hab1.db.gids.get("g_test_1")
+        group1 = hab1.db.gids.get(hab1.pre)
         assert group1.gid == gid
 
         g1 = grouping.Groupy(hab=hab1)
@@ -131,7 +131,7 @@ def test_multisig_rotate():
         for idx, groupy in enumerate(groupies):
             missing = False
             try:
-                groupy.processMessage(f"g_test_{idx + 1}", imsg)
+                groupy.processMessage(imsg)
             except kering.MissingAidError:
                 missing = True
             assert missing is True
@@ -157,7 +157,7 @@ def test_multisig_rotate():
             except kering.MissingSignatureError:
                 pass
 
-        raw = hab1.db.gpse.getLast(f"g_test_1")
+        raw = hab1.db.gpse.getLast(hab1.pre)
         msg = json.loads(raw)
         gid = msg["pre"]
         dig = msg["dig"]
@@ -200,7 +200,7 @@ def test_multisig_interact():
         assert hab3.pre == "EuK3T40uWRDXGZF9YApOjoTkLeDjjr7UPUqfCp5B04Fo"
 
         gid = "EbRGD66vYtbohJwGh-B2uPwHUDH3WrLcc_1Gn1ksSEu0"
-        group1 = hab1.db.gids.get("g_test_1")
+        group1 = hab1.db.gids.get(hab1.pre)
         assert group1.gid == gid
 
         g1 = grouping.Groupy(hab=hab1)
@@ -218,12 +218,12 @@ def test_multisig_interact():
         for idx, groupy in enumerate(groupies):
             missing = False
             try:
-                groupy.processMessage(f"g_test_{idx + 1}", imsg)
+                groupy.processMessage(imsg)
             except kering.MissingSignatureError:
                 missing = True
             assert missing is True
 
-        raw = hab1.db.gpse.getLast(f"g_test_1")
+        raw = hab1.db.gpse.getLast(hab1.pre)
         msg = json.loads(raw)
         gid = msg["pre"]
         dig = msg["dig"]

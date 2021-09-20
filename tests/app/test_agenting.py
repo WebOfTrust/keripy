@@ -71,8 +71,9 @@ def test_witness_sender(mockGetWitnessByPrefix):
         for name in ["wes", "wil", "wan"]:
             reger = viring.Registry(name=name)
             raw = reger.getTvt(dbing.dgKey(serder.preb, serder.digb))
-            found = coring.Serder(raw=bytes(raw))
-            assert serder.pre == found.pre
+            assert raw is None
+            # found = coring.Serder(raw=bytes(raw))
+            # assert serder.pre == found.pre
 
 
 def test_witness_inquisitor(mockGetWitnessByPrefix):

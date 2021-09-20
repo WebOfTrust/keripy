@@ -421,6 +421,9 @@ class Habitat:
         """
         return self.db.prefixes
 
+    def group(self):
+        return self.db.gids.get(self.pre)
+
 
     def rotate(self, sith=None, count=None, erase=None,
                toad=None, cuts=None, adds=None, data=None):
@@ -637,8 +640,7 @@ class Habitat:
         if self.kever.prefixer.transferable:
             # create SealEvent for endorsers est evt whose keys use to sign
 
-            groups = self.db.gids.getItemIter()
-            group = next(groups, None)
+            group = self.db.gids.get(self.pre)
 
             if group is None:
                 seal = eventing.SealEvent(i=self.kever.prefixer.qb64,
@@ -646,7 +648,6 @@ class Habitat:
                                           d=self.kever.lastEst.d)
                 indices = None
             else:
-                _, group = group
                 kever = self.kevers[group.gid]
                 seal = eventing.SealEvent(i=kever.prefixer.qb64,
                                           s=hex(kever.lastEst.s),

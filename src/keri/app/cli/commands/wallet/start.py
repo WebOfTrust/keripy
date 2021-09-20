@@ -58,7 +58,7 @@ def runWallet(name="wallet"):
     wallet = walleting.Wallet(db=verifier.reger, name=name)
 
     jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
-    issueHandler = handling.IssueHandler(verifier=verifier, typ=jsonSchema)
+    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, typ=jsonSchema)
     requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
     exchanger = exchanging.Exchanger(hab=hab, handlers=[issueHandler, requestHandler])
 

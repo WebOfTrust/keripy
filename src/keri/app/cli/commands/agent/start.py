@@ -27,10 +27,6 @@ d = "Runs KERI Agent controller.\n"
 d += "Example:\nagent -t 5621\n"
 parser = argparse.ArgumentParser(description=d)
 parser.set_defaults(handler=lambda args: launch(args))
-parser.add_argument('-H', '--http',
-                    action='store',
-                    default=5620,
-                    help="Local port number the HTTP server listens on. Default is 5620.")
 parser.add_argument('-T', '--tcp',
                     action='store',
                     default=5621,
@@ -58,10 +54,9 @@ def launch(args):
     logger = help.ogler.getLogger()
 
     logger.info("\n******* Starting Agent for %s listening: http/%s, tcp/%s "
-                ".******\n\n", args.name, args.http, args.tcp)
+                ".******\n\n", args.name, args.admin_http_port, args.tcp)
 
     doers = runAgent(controller=args.pre, name=args.name, insecure=args.insecure,
-                     httpPort=int(args.http),
                      tcp=int(args.tcp),
                      adminHttpPort=int(args.admin_http_port))
     try:
@@ -73,10 +68,10 @@ def launch(args):
 
 
     logger.info("\n******* Ended Agent for %s listening: http/%s, tcp/%s"
-                ".******\n\n", args.name, args.http, args.tcp)
+                ".******\n\n", args.name, args.admin_http_port, args.tcp)
 
 
-def runAgent(controller, name="agent", insecure=False, httpPort=5620, tcp=5621, adminHttpPort=5623):
+def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5623):
     """
     Setup and run one agent
     """
@@ -88,22 +83,23 @@ def runAgent(controller, name="agent", insecure=False, httpPort=5620, tcp=5621, 
     tcpServerDoer = tcpServing.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server)
 
-    verifier = verifying.Verifier(hab=hab, name="verifier")
+    verifier = verifying.Verifier(hab=hab, name=hab.name)
     wallet = walleting.Wallet(db=verifier.reger, name=name)
 
     handlers = []
 
     proofs = decking.Deck()
     jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
-    issueHandler = handling.IssueHandler(verifier=verifier, typ=jsonSchema)
+    issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, typ=jsonSchema)
     requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
     proofHandler = handling.ProofHandler(proofs=proofs)
 
     mbx = storing.Mailboxer(name=hab.name)
     mih = grouping.MultisigInceptHandler(hab=hab, controller=controller, mbx=mbx)
-    meh = grouping.MultisigEventHandler(hab=hab, mbx=mbx, controller=controller)
+    ish = grouping.MultisigIssueHandler(hab=hab, controller=controller, mbx=mbx)
+    meh = grouping.MultisigEventHandler(hab=hab, verifier=verifier)
 
-    handlers.extend([issueHandler, requestHandler, proofHandler, mih, meh])
+    handlers.extend([issueHandler, requestHandler, proofHandler, mih, ish, meh])
 
     exchanger = exchanging.Exchanger(hab=hab, handlers=handlers)
 

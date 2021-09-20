@@ -1038,7 +1038,7 @@ class Tevery:
 
     """
 
-    def __init__(self, tevers=None, reger=None, db=None, regk=None, local=False):
+    def __init__(self, reger=None, db=None, regk=None, local=False):
         """
         Initialize instance:
 
@@ -1050,12 +1050,19 @@ class Tevery:
             local is Boolean, True means only process msgs for own events if .pre
                         False means only process msgs for not own events if .pre
         """
-        self.tevers = tevers if tevers is not None else dict()
         self.db = db if db is not None else basing.Baser(reopen=True)  # default name = "main"
         self.reger = reger if reger is not None else Registry()
         self.regk = regk  # local prefix for restrictions on local events
         self.local = True if local else False  # local vs nonlocal restrictions
         self.cues = deque()
+
+    @property
+    def tevers(self):
+        """
+        Returns .reger.tevers
+        """
+        return self.reger.tevers
+
 
     def processEvent(self, serder, seqner, diger, wigers=None):
         """

@@ -153,7 +153,18 @@ class Registry(dbing.LMDBer):
         self.pse = None
         self.mase = None
 
+        self._tevers = dict()
+
         super(Registry, self).__init__(headDirPath=headDirPath, reopen=reopen, **kwa)
+
+
+    @property
+    def tevers(self):
+        """
+        Returns .db.kevers
+        """
+        return self._tevers
+
 
     def reopen(self, **kwa):
         """

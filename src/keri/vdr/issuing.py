@@ -36,7 +36,7 @@ class Issuer:
 
     """
 
-    def __init__(self, hab, name="test", cues=None, reger=None, tevers=None, estOnly=False,
+    def __init__(self, hab, name="test", cues=None, reger=None, estOnly=False,
                  temp=False, **kwa):
         """
         Initialize Instance
@@ -56,12 +56,9 @@ class Issuer:
         self.name = name
         self.estOnly = estOnly
         self.cues = cues if cues is not None else decking.Deck()
-        self.incept = None
-        self.ianchor = None
         self.regk = None
 
         self.reger = reger if reger is not None else Registry(name=name, temp=temp)
-        self.tevers = tevers if tevers is not None else dict()
         self.inited = False
 
         # save init kwy word arg parameters as ._inits in order to later finish
@@ -87,11 +84,10 @@ class Issuer:
 
             self.cnfg = [TraitDex.NoBackers] if self.noBackers else []
 
-            group = self.group()
+            group = self.hab.group()
             if group is None:
                 pre = self.hab.pre
             else:
-                name, group = group
                 pre = group.gid
 
             self.regser = eventing.incept(pre,
@@ -103,8 +99,7 @@ class Issuer:
             self.reger.regs.put(keys=self.name,
                                 val=viring.RegistryRecord(registryKey=self.regk))
 
-            self.tvy = eventing.Tevery(tevers=self.tevers, reger=self.reger, db=self.hab.db,
-                                       regk=self.regk, local=True)
+            self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
             self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
             try:
@@ -112,8 +107,7 @@ class Issuer:
             except kering.MissingAnchorError:
                 logger.info("Credential registry missing anchor for inception = {}".format(self.regser.ked))
         else:
-            self.tvy = eventing.Tevery(tevers=self.tevers, reger=self.reger, db=self.hab.db,
-                                       regk=self.regk, local=True)
+            self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
             self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
             clone = self.reger.clonePreIter(self.regk)
@@ -130,6 +124,13 @@ class Issuer:
             self.regi = int(tever.serder.ked["s"], 16)
 
         self.inited = True
+
+    @property
+    def tevers(self):
+        """
+        Returns .db.tevers
+        """
+        return self.reger.tevers
 
     def rotate(self, toad=None, cuts=None, adds=None):
         """
@@ -152,6 +153,10 @@ class Issuer:
         self.anchorMsg(serder)
 
         tever = self.tevers[self.regk]
+        self.backers = tever.baks
+        self.regi = int(tever.serder.ked["s"], 16)
+
+        return True
 
     def issue(self, creder, dt=None):
         """
@@ -213,7 +218,7 @@ class Issuer:
 
     def anchorMsg(self, serder, reason=None, seal=None):
 
-        group = self.group()
+        group = self.hab.group()
 
         rseal = SealEvent(serder.pre, serder.ked["s"], serder.dig)
         rseal = rseal._asdict()
@@ -241,9 +246,8 @@ class Issuer:
 
         else:
             if seal is None:
-                (name,) = group[0]
                 op = grouping.Ops.rot if self.estOnly else grouping.Ops.ixn
-                mmsg = dict(kin="multisig", group=name, op=op, data=[rseal], reason=reason)
+                mmsg = dict(kin="multisig", op=op, data=[rseal], reason=reason)
                 self.cues.append(mmsg)
 
                 self.escrow(serder)
@@ -315,12 +319,6 @@ class Issuer:
                 self.reger.mase.rem(regk, raw)
                 logger.info("Issuer unescrow succeeded in valid event: "
                             "event=\n%s\n", json.dumps(serder.ked, indent=1))
-
-    def group(self):
-        groups = self.hab.db.gids.getItemIter()
-        if group := next(groups, None):
-            return group
-        return None
 
 
 class IssuerDoer(doing.DoDoer):
@@ -428,7 +426,7 @@ class IssuerDoer(doing.DoDoer):
                 schemer = scheming.Schemer(raw=ref)
                 jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
 
-                group = self.issuer.group()
+                group = self.hab.group()
                 if group is None:
                     pre = self.hab.pre
                 else:
@@ -448,9 +446,6 @@ class IssuerDoer(doing.DoDoer):
                     self.issuer.issue(creder=creder, dt=dt)
                 except kering.MissingAnchorError:
                     logger.info("Missing anchor from credential issuance due to multisig identifier")
-
-                print(creder.said)
-                print(creder.pretty())
 
                 craw = self.hab.endorse(creder)
                 proving.parseCredential(ims=craw, verifier=self.verifier, typ=scheming.JSONSchema())

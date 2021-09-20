@@ -95,7 +95,7 @@ def test_create_cesr_request():
             b'-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E'
             b'-AABAAhulhMW2RDUCHK5mxHryjlQ0i3HW_6CXbAGjNnHb9U9pq6N0C9DiavUbX6SgDskKIfoQLtV_EqTI_q9AyNAstAQ')
 
-        msg = hab.query(pre=hab.pre, r="mbx", query=dict(s=0))
+        msg = hab.query(pre=hab.pre, res="mbx", query=dict(s=0))
         client = MockClient()
 
         httping.createCESRRequest(msg, client, date="2021-02-13T19:16:50.750302+00:00")

@@ -32,7 +32,7 @@ class Verifier:
     TimeoutMRI = 3600  # seconds to timeout missing issuer escrows
 
 
-    def __init__(self, hab, reger=None, creds=None, cues=None, tevers=None, **kwa):
+    def __init__(self, hab, reger=None, creds=None, cues=None, **kwa):
         """
         Initialize Verifier instance
 
@@ -43,8 +43,7 @@ class Verifier:
             tevers is dict of Tever instances keys by registry identifier
         """
         self.hab = hab
-        self.reger = reger if reger is not None else Registry(name=hab.name)
-        self.tevers = tevers if tevers is not None else dict()
+        self.reger = reger if reger is not None else Registry(name=hab.name, temp=True)
         self.creds = creds if creds is not None else decking.Deck()  # subclass of deque
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
 
@@ -60,11 +59,17 @@ class Verifier:
             self.setup()
 
     def setup(self):
-        self.tvy = eventing.Tevery(tevers=self.tevers, reger=self.reger, db=self.hab.db,
-                                   regk=None, local=False)
+        self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=None, local=False)
         self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
         self.inited = True
+
+    @property
+    def tevers(self):
+        """
+        Returns .db.tevers
+        """
+        return self.reger.tevers
 
 
     def processMessages(self, creds=None):
@@ -126,15 +131,12 @@ class Verifier:
 
         if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
             self.escrowPSC(creder, prefixer, seqner, diger, sigers)
-            self.cues.append(dict(kin="send-to-others"))
             raise kering.MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                                " for evt = {}.".format(tholder.sith,
                                                                        [siger.qb64 for siger in sigers],
                                                                        creder.crd))
 
-        print("YEAH, WE SAVED IT", len(sigers))
         self.saveCredential(creder, prefixer, seqner, diger, sigers)
-
         proof = proving.buildProof(prefixer, seqner, diger, sigers)
         self.cues.append(dict(kin="saved", creder=creder, proof=proof))
 

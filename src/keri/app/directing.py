@@ -190,8 +190,7 @@ class Reactor(doing.DoDoer):
                                       direct=self.direct)
 
         if self.verifier is not None:
-            self.tvy = Tevery(tevers=self.verifier.tevers,
-                              reger=self.verifier.reger,
+            self.tvy = Tevery(reger=self.verifier.reger,
                               db=self.hab.db,
                               regk=None, local=False)
         else:
@@ -575,8 +574,7 @@ class Reactant(doing.DoDoer):
                                       local=False)
 
         if self.verifier is not None:
-            self.tevery = Tevery(tevers=self.verifier.tevers,
-                                 reger=self.verifier.reger,
+            self.tevery = Tevery(reger=self.verifier.reger,
                                  db=self.hab.db,
                                  regk=None, local=False)
         else:

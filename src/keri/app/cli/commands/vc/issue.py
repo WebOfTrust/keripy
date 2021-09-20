@@ -85,7 +85,7 @@ class CredentialIssuer(doing.DoDoer):
         reger = viring.Registry(name=registryName)
         issuer = issuing.Issuer(hab=self.hab, name=registryName, reger=reger)
         self.verifier = verifying.Verifier(hab=self.hab, name=registryName, reger=reger, tevers=issuer.tevers)
-        meh = grouping.AutosaveMultisigEventHandler(hab=self.hab, verifier=self.verifier)
+        meh = grouping.MultisigEventHandler(hab=self.hab, verifier=self.verifier)
 
         handlers = [meh]
         exchanger = exchanging.Exchanger(hab=self.hab, handlers=handlers)
@@ -116,7 +116,6 @@ class CredentialIssuer(doing.DoDoer):
                 yield self.tock
             yield
 
-        print("DONE!")
         print(cue)
 
         self.remove(self.toRemove)

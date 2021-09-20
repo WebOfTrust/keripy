@@ -3,14 +3,11 @@
 keri.vc.walleting module
 
 """
-from .. import help, kering
-from ..core import coring
+from .. import help
 from ..core.scheming import CacheResolver
-from ..db import dbing, subing
-from ..kering import UnverifiedProofError
 
 # TODO: create this and populate with needed schema for now
-from ..vdr import verifying, viring
+from ..vdr import viring
 
 cache = CacheResolver()
 
@@ -46,15 +43,14 @@ class Wallet:
             schema: qb64 SAID of the schema for the credential
 
         """
-        saids = self.db.schms.get(keys=schema.encode("utf-8"))
+        saiders = self.db.schms.get(keys=schema.encode("utf-8"))
 
         creds = []
-        for said in saids:
-            key = bytearray(said)
-            creder = self.db.creds.get(keys=key)
+        for saider in saiders:
+            creder = self.db.creds.get(keys=saider.qb64b)
 
             # TODO:  de-dupe the seals here and extract the signatures
-            seals = self.db.seals.get(keys=key)
+            seals = self.db.seals.get(keys=saider.qb64b)
             prefixer = None
             seqner = None
             diger = None

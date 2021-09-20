@@ -24,7 +24,7 @@ from ..help import helping
 from ..help.helping import nowIso8601
 from ..peer import exchanging
 from ..vc import proving, handling
-from ..vdr import registering, viring, issuing
+from ..vdr import registering, issuing, verifying
 
 logger = help.ogler.getLogger()
 
@@ -56,7 +56,6 @@ class WitnessReceiptor(doing.DoDoer):
         self.msg = msg
         self.klas = klas if klas is not None else HttpWitnesser
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
-
 
     def receiptDo(self, tymth=None, tock=0.0, **opts):
         """
@@ -428,7 +427,8 @@ class KiwiServer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, controller, rep, verifier, issuers=None, cues=None, app=None, insecure=False, **kwa):
+    def __init__(self, hab, controller, rep, verifier, issuers=None, cues=None, app=None, insecure=False,
+                 **kwa):
         """
         Create a KIWI web server for Agents capable of performing KERI and ACDC functions for the controller
         of an identifier.
@@ -448,8 +448,9 @@ class KiwiServer(doing.DoDoer):
         self.hab = hab
         self.controller = controller
         self.rep = rep
-        self.verifier = verifier
+        self.verifier = verifier if verifier is not None else verifying.Verifier(hab=self.hab, name=hab.name)
         self.issuerCues = decking.Deck()
+        self.verifierCues = decking.Deck()
         self.app = app if app is not None else falcon.App(cors_enable=True)
         self.issuers = issuers if issuers is not None else dict()
         self.typ = scheming.JSONSchema()
@@ -481,7 +482,7 @@ class KiwiServer(doing.DoDoer):
         self.witq = WitnessInquisitor(hab=hab, klas=TCPWitnesser)
 
         doers = [self.witq, self.registryIcpr, self.gdoer, doing.doify(self.verifierDo), doing.doify(
-            self.issuerDo), doing.doify(self.groupCueDo)]
+            self.issuerDo), doing.doify(self.groupCueDo), doing.doify(self.escrowDo)]
 
         super(KiwiServer, self).__init__(doers=doers, **kwa)
 
@@ -500,17 +501,28 @@ class KiwiServer(doing.DoDoer):
         yield self.tock
 
         while True:
-            while self.verifier.cues:
-                cue = self.verifier.cues.popleft()
+            while self.verifierCues:
+                cue = self.verifierCues.popleft()
                 cueKin = cue["kin"]
 
                 if cueKin == "saved":
                     creder = cue["creder"]
                     proof = cue["proof"]
 
-                    recpt = creder.subject["si"].encode("utf-8")
+                    logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
+                    logger.info(creder.pretty())
+                    print("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
+                    print(creder.pretty())
+
+                    recpt = creder.subject["si"]
 
                     craw = bytearray(creder.raw)
+                    if len(proof) % 4:
+                        raise ValueError("Invalid attachments size={}, nonintegral"
+                                         " quadlets.".format(len(proof)))
+                    craw.extend(coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
+                                               count=(len(proof) // 4)).qb64b)
+
                     craw.extend(proof)
 
                     pl = dict(
@@ -520,15 +532,32 @@ class KiwiServer(doing.DoDoer):
                     exn = exchanging.exchange(route="/credential/issue", payload=pl)
                     self.rep.reps.append(dict(dest=recpt, rep=exn, topic="credential"))
 
-                    logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
-                    logger.info(creder.pretty())
-                    print()
 
                 elif cueKin == "query":
                     qargs = cue["q"]
                     self.witq.query(**qargs)
 
                 yield self.tock
+            yield self.tock
+
+    def escrowDo(self, tymth, tock=0.0):
+        """
+        Returns:  doifiable Doist compatible generator method
+
+        Usage:
+            add result of doify on this method to doers list
+
+        Processes the Groupy escrow for group icp, rot and ixn request messages.
+
+        """
+        # start enter context
+        yield  # enter context
+        while True:
+            for _, issuer in self.issuers.items():
+                issuer.processEscrows()
+                yield self.tock
+
+            self.verifier.processEscrows()
             yield self.tock
 
 
@@ -549,37 +578,39 @@ class KiwiServer(doing.DoDoer):
         while True:
             while self.issuerCues:
                 cue = self.issuerCues.popleft()
-                cueKin = cue['kin'] 
+                cueKin = cue['kin']
+                print(cueKin)
                 if cueKin == "send":
                     tevt = cue["tevt"]
                     witSender = WitnessPublisher(hab=self.hab, msg=tevt)
                     self.extend([witSender])
-    
+
                     while not witSender.done:
                         _ = yield self.tock
-    
+
                     self.remove([witSender])
                 elif cueKin == "kevt":
                     kevt = cue["kevt"]
                     witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
                     self.extend([witDoer])
-    
+
                     while not witDoer.done:
                         yield self.tock
-    
+
                     self.remove([witDoer])
                 elif cueKin == "multisig":
                     msg = dict(
                         op=cue["op"],
-                        group=cue["group"],
                         data=cue["data"],
                         reason=cue["reason"]
                     )
                     self.gdoer.msgs.append(msg)
+                elif cueKin == "logEvent":
+                    print("TEL event saved")
+
 
                 yield self.tock
             yield self.tock
-
 
     def groupCueDo(self, tymth, tock=0.0, **opts):
         """
@@ -606,7 +637,6 @@ class KiwiServer(doing.DoDoer):
 
             yield self.tock
 
-
     def on_post_issue(self, req, rep):
         """
 
@@ -623,6 +653,7 @@ class KiwiServer(doing.DoDoer):
         schema = body.get("schema")
         source = body.get("source")
         recipientIdentifier = body.get("recipient")
+        notify = body["notify"] if "notify" in body else True
 
         issuer = self.getIssuer(name=registry)
         if issuer is None:
@@ -635,11 +666,13 @@ class KiwiServer(doing.DoDoer):
 
         data = body.get("credentialData")
 
+        dt = data["dt"] if "dt" in data else nowIso8601()
+
         d = dict(
             i="",
             type=types,
             si=recipientIdentifier,
-            dt=nowIso8601()
+            dt=dt
         )
 
         d |= data
@@ -647,30 +680,49 @@ class KiwiServer(doing.DoDoer):
         saider = scheming.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.i)
         d["i"] = saider.qb64
 
+
         ref = scheming.jsonSchemaCache.resolve(schema)
         schemer = scheming.Schemer(raw=ref)
         jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
 
-        creder = proving.credential(issuer=self.hab.pre,
+        group = self.hab.group()
+        if group is None:
+            pre = self.hab.pre
+        else:
+            pre = group.gid
+
+        creder = proving.credential(issuer=pre,
                                     schema=schemer.said,
                                     subject=d,
                                     typ=jsonSchema,
                                     source=source,
                                     status=issuer.regk)
 
-
-
         try:
-            issuer.issue(creder=creder)
+            issuer.issue(creder=creder, dt=dt)
         except kering.MissingAnchorError:
             logger.info("Missing anchor from credential issuance due to multisig identifier")
 
         craw = self.hab.endorse(creder)
         proving.parseCredential(ims=craw, verifier=self.verifier, typ=self.typ)
 
+        if notify and group:
+            for aid in group.aids:
+                if aid != self.hab.pre:
+                    if aid not in self.hab.kevers:
+                        self.witq.query(aid)
+                    msg = dict(
+                        schema=schemer.said,
+                        source=source,
+                        recipient=recipientIdentifier,
+                        typ=body.get("type"),
+                        data=d
+                    )
+                    exn = exchanging.exchange(route="/multisig/issue", payload=msg)
+                    self.rep.reps.append(dict(dest=aid, rep=exn, topic="multisig"))
+
         rep.status = falcon.HTTP_200
         rep.data = creder.pretty().encode("utf-8")
-
 
     def on_post_revoke(self, req, rep):
         """
@@ -746,11 +798,6 @@ class KiwiServer(doing.DoDoer):
         """
         body = json.loads(req.context.raw)
 
-        if "group" not in body:
-            rep.status = falcon.HTTP_400
-            rep.text = "Invalid multisig group rotate request, 'group' is required'"
-            return
-
         msg = dict(
             sith=None,
             toad=None,
@@ -765,7 +812,6 @@ class KiwiServer(doing.DoDoer):
                 msg[key] = body[key]
 
         msg["op"] = grouping.Ops.rot
-        msg["group"] = body["group"]
 
         self.gdoer.msgs.append(msg)
 
@@ -783,11 +829,6 @@ class KiwiServer(doing.DoDoer):
 
         """
         body = json.loads(req.context.raw)
-
-        if "group" not in body:
-            rep.status = falcon.HTTP_400
-            rep.text = "Invalid multisig group inception request, 'group' is required'"
-            return
 
         if "aids" not in body:
             rep.status = falcon.HTTP_400
@@ -809,7 +850,6 @@ class KiwiServer(doing.DoDoer):
             if key in body:
                 msg[key] = body[key]
 
-
         if notify:
             for aid in aids:
                 if aid != self.hab.pre:
@@ -819,7 +859,6 @@ class KiwiServer(doing.DoDoer):
                     self.rep.reps.append(dict(dest=aid, rep=exn, topic="multisig"))
 
         msg["op"] = grouping.Ops.icp
-        msg["group"] = body["group"]
 
         self.gdoer.msgs.append(msg)
 
@@ -836,16 +875,14 @@ class KiwiServer(doing.DoDoer):
         """
         res = []
 
-        groups = self.hab.db.gids.getItemIter()
-        for (name,), group in groups:
+        group = self.hab.group()
+        if group:
             kever = self.hab.kevers[group.gid]
             ser = kever.serder
             dgkey = dbing.dgKey(ser.preb, ser.digb)
             wigs = self.hab.db.getWigs(dgkey)
 
-
             gd = dict(
-                name=name,
                 prefix=group.gid,
                 seq_no=kever.sn,
                 aids=group.aids,
@@ -874,13 +911,11 @@ class KiwiServer(doing.DoDoer):
         registry = req.params["registry"]
         issuer = self.getIssuer(registry)
 
-        groups = self.hab.db.gids.getItemIter()
-        group = next(groups, None)
+        group = self.hab.group()
 
         if group is None:
             pre = self.hab.pre
         else:
-            name, group = group
             pre = group.gid
 
         saids = issuer.reger.issus.get(keys=pre)
@@ -910,12 +945,9 @@ class KiwiServer(doing.DoDoer):
 
             creds.append(cred)
 
-
-
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(creds).encode("utf-8")
-
 
     def on_post_registry_incept(self, req, rep):
         """
@@ -940,18 +972,13 @@ class KiwiServer(doing.DoDoer):
 
         rep.status = falcon.HTTP_202
 
-
     def getIssuer(self, name):
         if name in self.issuers:
             issuer = self.issuers[name]
         else:
-            reger = viring.Registry(name=name)
-            regr = reger.regs.get(name)
-            if regr is None:
-                return None
-
-            issuer = issuing.Issuer(hab=self.hab, name=name, reger=reger, cues=self.issuerCues)
+            issuer = issuing.Issuer(hab=self.hab, name=name, reger=self.verifier.reger, cues=self.issuerCues)
             self.issuers[name] = issuer
+
         return issuer
 
 
@@ -972,7 +999,6 @@ class KiwiServer(doing.DoDoer):
             ser = kever.serder
             dgkey = dbing.dgKey(ser.preb, ser.digb)
             wigs = self.hab.db.getWigs(dgkey)
-
 
             gd = dict(
                 name=name,

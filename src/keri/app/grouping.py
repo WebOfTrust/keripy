@@ -66,13 +66,12 @@ class Groupy:
         while msgs:
             self.processMessage(**msgs.pull())
 
-    def processMessage(self, name, msg, mssrdr=None, sigers=None):
+    def processMessage(self, msg, mssrdr=None, sigers=None):
         """
         Process request message from controller to participant agent in form of dict
          for a icp/rot/ixn on the multisig group.
 
         Parameters:
-            name(str): multisig group name
             msg(dict): the request to incept/rotate/iteract this multisig group
             mssrdr(Serder): the multisig KEL event for this request
             sigers(list): list of Siger signatures on event
@@ -96,9 +95,9 @@ class Groupy:
                 for aid in aids:
                     if aid not in self.hab.kevers:
                         self.cues.append(dict(kin="query", aid=aid))
-                        self.escrowPAE(name, msg)
+                        self.escrowPAE(msg)
                         raise kering.MissingAidError(
-                            "group {} missing AID {}".format(name, aid))
+                            "group {} missing AID {}".format(self.hab.pre, aid))
 
                 mskeys, msdigers = self.extractKeysDigs(aids)
                 mssrdr = eventing.incept(keys=[mskey.qb64 for mskey in mskeys],
@@ -115,7 +114,7 @@ class Groupy:
             indices = [siger.index for siger in sigers]
             tholder = coring.Tholder(sith=sith)
             if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
-                self.escrowPSE(name, msg, mssrdr)
+                self.escrowPSE(msg, mssrdr)
                 raise kering.MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                                    " for evt = {}.".format(tholder.sith,
                                                                            [siger.qb64 for siger in sigers],
@@ -123,7 +122,7 @@ class Groupy:
 
             #  Add this group identifier prefix to my list of group identifiers I participate in
             group = basing.GroupIdRecord(lid=self.hab.pre, gid=mssrdr.pre, dig=mssrdr.dig, cst=nsith, aids=aids)
-            self.db.gids.pin(name, group)
+            self.db.gids.pin(self.hab.pre, group)
 
             self.cues.append(dict(
                 kin="logEvent",
@@ -143,10 +142,10 @@ class Groupy:
             cuts = msg["witness_cut"] if "witnesse_cut" in msg else []
             adds = msg["witness_add"] if "witnesse_add" in msg else []
 
-            group = self.hab.db.gids.get(keys=name)
-            if group is None or group.lid != self.hab.pre:
-                print("invalid group identifier {}\n".format(name))
-                raise kering.InvalidGroupError("invalid group identifier {}".format(name))
+            group = self.hab.group()
+            if group is None:
+                print("invalid group identifier {}\n".format(self.hab.pre))
+                raise kering.InvalidGroupError("invalid group identifier {}".format(self.hab.pre))
 
             others = list(group.aids)
             others.remove(group.lid)
@@ -181,9 +180,9 @@ class Groupy:
                 if aid != self.hab.pre:
                     if kever.sn < self.hab.kever.sn:
                         self.cues.append(dict(kin="query", aid=aid))
-                        self.escrowPAE(name, msg)
+                        self.escrowPAE(msg)
                         raise kering.MissingAidError(
-                            "Group {} - AID {} not at sn={}".format(name, aid, self.hab.kever.sn))
+                            "Group {} - AID {} not at sn={}".format(self.hab.pre, aid, self.hab.kever.sn))
 
             if mssrdr is None:
                 mskeys, msdigers = self.extractKeysDigs(group.aids)
@@ -205,7 +204,7 @@ class Groupy:
 
             indices = [siger.index for siger in sigers]
             if not mssrdr.tholder.satisfy(indices):  # If we still don't have all the sigers, need to escrow
-                self.escrowPSE(name, msg, mssrdr)
+                self.escrowPSE(msg, mssrdr)
                 raise kering.MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                                    " for evt = {}.".format(mssrdr.tholder.sith,
                                                                            [siger.qb64 for siger in sigers],
@@ -213,7 +212,7 @@ class Groupy:
 
             group.cst = sith
             group.dig = mssrdr.dig
-            self.hab.db.gids.pin(name, group)
+            self.hab.db.gids.pin(self.hab.pre, group)
 
             self.cues.append(dict(
                 kin="logEvent",
@@ -228,10 +227,10 @@ class Groupy:
             data = msg["data"]
             reason = msg["reason"] if "reason" in msg else ""
 
-            group = self.hab.db.gids.get(keys=name)
-            if group is None or group.lid != self.hab.pre:
-                print("invalid group identifier {}\n".format(name))
-                raise kering.InvalidGroupError("invalid group identifier {}".format(name))
+            group = self.hab.group()
+            if group is None:
+                print("invalid group identifier {}\n".format(self.hab.pre))
+                raise kering.InvalidGroupError("invalid group identifier {}".format(self.hab.pre))
 
             others = list(group.aids)
             others.remove(group.lid)
@@ -258,7 +257,7 @@ class Groupy:
 
             indices = [siger.index for siger in sigers]
             if not gkev.tholder.satisfy(indices):  # If we still don't have all the sigers, need to escrow
-                self.escrowPSE(name, msg, mssrdr)
+                self.escrowPSE(msg, mssrdr)
                 raise kering.MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
                                                    " for evt = {}.".format(gkev.tholder.sith,
                                                                            [siger.qb64 for siger in sigers],
@@ -293,24 +292,22 @@ class Groupy:
 
         return sigers
 
-    def escrowPAE(self, name, msg):
+    def escrowPAE(self, msg):
         """
         Partial AIDs Escrow
 
         Parameters:
-            name(str): multisig group name
             msg(dict): the request to incept/rotate/iteract this multisig group
 
         """
         dat = json.dumps(msg).encode("utf-8")
-        self.db.gpae.add(name, dat)
+        self.db.gpae.add(self.hab.pre, dat)
 
-    def escrowPSE(self, name, msg, mssrdr):
+    def escrowPSE(self, msg, mssrdr):
         """
         Partial Signature Escrow
 
         Parameters:
-            name(str): multisig group name
             msg(dict): the request to incept/rotate/iteract this multisig group
             mssrdr(Serder): the multisig KEL event for this request
 
@@ -318,7 +315,7 @@ class Groupy:
         msg["pre"] = mssrdr.pre
         msg["dig"] = mssrdr.dig
         dat = json.dumps(msg).encode("utf-8")
-        self.db.gpse.add(name, dat)
+        self.db.gpse.add(self.hab.pre, dat)
 
     def processEscrows(self):
         """
@@ -335,10 +332,10 @@ class Groupy:
         assuming that the AID will be in the KEL by the time we process this escrow.
 
         """
-        for (name,), mraw in self.db.gpae.getItemIter():
+        for (pre,), mraw in self.db.gpae.getItemIter():
             try:
                 msg = json.loads(mraw)
-                self.processMessage(name=name, msg=msg)
+                self.processMessage(msg=msg)
             except kering.MissingAidError as ex:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Groupy unescrow failed: %s\n", ex.args[0])
@@ -346,13 +343,13 @@ class Groupy:
                     logger.error("Groupy unescrow failed: %s\n", ex.args[0])
             except Exception as ex:  # log diagnostics errors etc
                 # error other than missing AID so remove from PA escrow
-                self.db.gpae.rem(name, val=mraw)
+                self.db.gpae.rem(pre, val=mraw)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Groupy unescrowed: %s\n", ex.args[0])
                 else:
                     logger.error("Groupy unescrowed: %s\n", ex.args[0])
             else:
-                self.db.gpae.rem(name, val=mraw)
+                self.db.gpae.rem(pre, val=mraw)
                 logger.info("Groupy unescrow succeeded in valid group op: "
                             "msg=\n%s\n", json.dumps(msg, indent=1))
 
@@ -363,7 +360,7 @@ class Groupy:
         so this escrow waits for signatures from all other participants
 
         """
-        for (name,), dat in self.db.gpse.getItemIter():
+        for (pre,), dat in self.db.gpse.getItemIter():
             msg = json.loads(dat)
 
             gid = msg["pre"]
@@ -378,7 +375,7 @@ class Groupy:
             sigers = [coring.Siger(qb64b=bytes(sig)) for sig in sigs]
 
             try:
-                self.processMessage(name, msg, mssrdr=mssrdr, sigers=sigers)
+                self.processMessage(msg, mssrdr=mssrdr, sigers=sigers)
             except kering.MissingSignatureError as ex:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Groupy unescrow failed: %s\n", ex.args[0])
@@ -386,13 +383,13 @@ class Groupy:
                     logger.error("Groupy unescrow failed: %s\n", ex.args[0])
             except Exception as ex:  # log diagnostics errors etc
                 # error other than missing sigs so remove from PA escrow
-                self.db.gpse.rem(name)
+                self.db.gpse.rem(pre)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Groupy unescrowed: %s\n", ex.args[0])
                 else:
                     logger.error("Groupy unescrowed: %s\n", ex.args[0])
             else:
-                self.db.gpse.rem(name)
+                self.db.gpse.rem(pre)
                 logger.info("Groupy unescrow succeeded in valid group op: "
                             "msg=\n%s\n", json.dumps(msg, indent=1))
 
@@ -507,13 +504,8 @@ class MultiSigGroupDoer(doing.DoDoer):
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
-                if "group" not in msg:
-                    print("group name is missing from multisig incept message")
-                    continue
-
-                group = msg["group"]
                 try:
-                    self.groupy.processMessage(name=group, msg=msg)
+                    self.groupy.processMessage(msg=msg)
                 except (kering.ValidationError, Exception) as ex:
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Multisig message error: %s\n", ex)
@@ -605,79 +597,6 @@ class MultiSigGroupDoer(doing.DoDoer):
             yield
 
 
-class MultisigEventHandler(doing.Doer):
-    """
-    Handler for multisig group rotation/interact notification EXN messages
-
-    """
-
-    resource = "/multisig/event"
-
-    def __init__(self, hab, mbx, controller, cues=None, **kwa):
-        """
-
-        Parameters:
-            hab (Habitat) is environment of participant in multisig group
-            controller (str) qb64 identity prefix of controller
-            mbx (Mailboxer) of format str names accepted for offers
-            cues (decking.Deck) of outbound cue messages from handler
-
-        """
-        self.controller = controller
-        self.hab = hab
-        self.mbx = mbx
-        self.msgs = decking.Deck()
-        self.cues = cues if cues is not None else decking.Deck()
-
-        self.kvy = eventing.Kevery(db=self.hab.db, lax=False, local=False)
-
-        super(MultisigEventHandler, self).__init__(**kwa)
-
-    def do(self, tymth, tock=0.0, **opts):
-        """
-
-        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
-
-        Parameters:
-            payload is dict representing the body of a /multisig/interact message
-            pre is qb64 identifier prefix of sender
-            sigers is list of Sigers representing the sigs on the /credential/issue message
-            verfers is list of Verfers of the keys used to sign the message
-
-        Payload:
-            evt is bytes of ixn message from another participant
-            reason is either a str expressing reason for interaction event or credential
-
-        """
-        yield self.tock
-
-        while True:
-            while self.msgs:
-                msg = self.msgs.popleft()
-                payload = msg["payload"]
-                evt = payload["evt"].encode("utf-8")
-                reason = payload["reason"]
-
-
-                parsing.Parser().parse(bytearray(evt), kvy=self.kvy)
-
-                serder = coring.Serder(raw=evt)
-
-                pre = serder.pre
-                for keys, group in self.hab.db.gids.getItemIter():
-                    if pre in group.aids:
-                        payload = dict(name=keys, lid=group.lid, gid=group.gid, evt=serder.ked, reason=reason)
-                        ser = exchanging.exchange(route="/event", payload=payload)
-                        msg = bytearray(ser.raw)
-                        msg.extend(self.hab.sanction(ser))
-
-                        self.mbx.storeMsg(self.controller+"/multisig", msg)
-
-                yield
-
-            yield
-
-
 class MultisigInceptHandler(doing.DoDoer):
     """
     Handler for multisig group inception notification EXN messages
@@ -730,7 +649,59 @@ class MultisigInceptHandler(doing.DoDoer):
             yield
 
 
-class AutosaveMultisigEventHandler(doing.Doer):
+class MultisigIssueHandler(doing.DoDoer):
+    """
+    Handler for multisig group issuance notification EXN messages
+
+    """
+    resource = "/multisig/issue"
+
+
+    def __init__(self, mbx, controller, cues=None, **kwa):
+        """
+
+        Parameters:
+            mbx (Mailboxer) of format str names accepted for offers
+            controller (str) qb64 identity prefix of controller
+            cues (decking.Deck) of outbound cue messages from handler
+
+        """
+        self.controller = controller
+        self.mbx = mbx
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
+        super(MultisigIssueHandler, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+
+        Parameters:
+            payload is dict representing the body of a multisig/incept message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /credential/issue message
+            verfers is list of Verfers of the keys used to sign the message
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                pl = msg["payload"]
+                pl["r"] = "/issue"
+                raw = json.dumps(pl).encode("utf-8")
+                self.mbx.storeMsg(self.controller+"/multisig", raw)
+
+                yield
+            yield
+
+
+class MultisigEventHandler(doing.Doer):
     """
     Handler for multisig group rotation/interact notification EXN messages
 
@@ -755,7 +726,7 @@ class AutosaveMultisigEventHandler(doing.Doer):
 
         self.kvy = eventing.Kevery(db=self.hab.db, lax=False, local=False)
 
-        super(AutosaveMultisigEventHandler, self).__init__(**kwa)
+        super(MultisigEventHandler, self).__init__(**kwa)
 
     def do(self, tymth, tock=0.0, **opts):
         """

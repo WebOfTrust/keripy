@@ -351,8 +351,7 @@ class MailboxDirector(doing.DoDoer):
                                                                direct=False)
 
         if self.verifier is not None:
-            self.tevery = Tevery(tevers=self.verifier.tevers,
-                                 reger=self.verifier.reger,
+            self.tevery = Tevery(reger=self.verifier.reger,
                                  db=self.hab.db,
                                  regk=None, local=False)
         else:
@@ -638,8 +637,7 @@ class HttpMessageHandler(doing.DoDoer):
         if self.verifier is not None:
             self.app.add_route("/tel", self)
             self.app.add_route("/req/tels", self, suffix="req")
-            self.tvy = Tevery(tevers=self.verifier.tevers,
-                              reger=self.verifier.reger,
+            self.tvy = Tevery(reger=self.verifier.reger,
                               db=self.hab.db,
                               regk=None, local=False)
             doers.extend([doing.doify(self.verifierDo)])

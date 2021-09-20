@@ -5,7 +5,7 @@ tests.vdr.verifying module
 """
 import json
 
-from app import test_grouping
+from ..app import test_grouping
 from keri import kering
 from keri.app import habbing, grouping
 from keri.core import scheming, parsing, coring
@@ -104,7 +104,7 @@ def test_verifier_multisig():
             viring.openReg(temp=True) as reger:
 
         gid = "EbRGD66vYtbohJwGh-B2uPwHUDH3WrLcc_1Gn1ksSEu0"
-        group1 = hab1.db.gids.get("g_test_1")
+        group1 = hab1.group()
         assert group1.gid == gid
 
         # Keverys so we can process the final message.
@@ -135,12 +135,12 @@ def test_verifier_multisig():
         for idx, groupy in enumerate(groupies):
             missing = False
             try:
-                groupy.processMessage(f"g_test_{idx + 1}", imsg)
+                groupy.processMessage(imsg)
             except kering.MissingSignatureError:
                 missing = True
             assert missing is True
 
-        raw = hab1.db.gpse.getLast(f"g_test_1")
+        raw = hab1.db.gpse.getLast(hab1.pre)
         msg = json.loads(raw)
         gid = msg["pre"]
         dig = msg["dig"]
@@ -173,6 +173,10 @@ def test_verifier_multisig():
 
         issuer.processEscrows()
         assert issuer.regk in issuer.tevers
+
+        assert len(issuer.cues) == 1
+        cue = issuer.cues.popleft()
+        assert cue["kin"] == "logEvent"
 
         verifier = verifying.Verifier(hab=verfer, name="verifier", reger=reger, tevers=issuer.tevers)
 
@@ -207,12 +211,12 @@ def test_verifier_multisig():
         for idx, groupy in enumerate(groupies):
             missing = False
             try:
-                groupy.processMessage(f"g_test_{idx + 1}", imsg)
+                groupy.processMessage(imsg)
             except kering.MissingSignatureError:
                 missing = True
             assert missing is True
 
-        raw = hab1.db.gpse.getLast(f"g_test_1")
+        raw = hab1.db.gpse.getLast(hab1.pre)
         msg = json.loads(raw)
         gid = msg["pre"]
         dig = msg["dig"]

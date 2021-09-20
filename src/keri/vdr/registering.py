@@ -95,7 +95,6 @@ class RegistryInceptDoer(doing.DoDoer):
                 elif cueKin == "multisig":
                     msg = dict(
                         op=cue["op"],
-                        group=cue["group"],
                         data=cue["data"],
                         reason=cue["reason"]
                     )

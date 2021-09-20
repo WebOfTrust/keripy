@@ -22,7 +22,6 @@ def demo(args):
     # --http 5620 --admin-http-port 5623
     doers = start.runAgent(controller="E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM",
                            name="multisig1", insecure=True,
-                           httpPort=5620,
                            tcp=5621,
                            adminHttpPort=5623)
 
@@ -30,7 +29,6 @@ def demo(args):
     # --http 5720 --admin-http-port 5723
     doers += start.runAgent(controller="E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM",
                             name="multisig2", insecure=True,
-                            httpPort=5720,
                             tcp=5721,
                             adminHttpPort=5723)
 
@@ -38,7 +36,6 @@ def demo(args):
     # --http 5820 --admin-http-port 5823
     doers += start.runAgent(controller="E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM",
                             name="multisig3", insecure=True,
-                            httpPort=5820,
                             tcp=5821,
                             adminHttpPort=5823)
 
