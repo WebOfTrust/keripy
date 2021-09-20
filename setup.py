@@ -99,7 +99,6 @@ setup(
             'keri_sam = keri.demo.demo_sam:main',
             'keri_ian = keri.demo.demo_ian:main',
             'keri_han = keri.demo.demo_han:main',
-            'keri_vic = keri.demo.demo_vic:main',
             'kli = keri.app.cli.kli:main',
             'klid = keri.app.cli.klid:main',
         ]

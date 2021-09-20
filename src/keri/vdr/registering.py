@@ -2,7 +2,7 @@ from hio import help
 from hio.base import doing
 from hio.help import decking
 
-from keri.app import agenting
+from keri.app import agenting, grouping
 from keri.vdr import issuing
 
 logger = help.ogler.getLogger()
@@ -15,8 +15,10 @@ class RegistryInceptDoer(doing.DoDoer):
         self.hab = hab
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.issuer = None
+        self.gdoer = grouping.MultiSigGroupDoer(hab=hab)
 
-        doers = [doing.doify(self.inceptDo, **kwa)]
+        doers = [self.gdoer, doing.doify(self.inceptDo, **kwa)]
         super(RegistryInceptDoer, self).__init__(doers=doers)
 
 
@@ -38,27 +40,86 @@ class RegistryInceptDoer(doing.DoDoer):
                 msg = self.msgs.popleft()
                 name = msg["name"]
 
-                issuer = issuing.Issuer(hab=self.hab, name=name, noBackers=True, **kwa)
+                self.issuer = issuing.Issuer(hab=self.hab, name=name, noBackers=True, **kwa)
+                self.extend([doing.doify(self.escrowDo), doing.doify(self.issuerDo)])
                 yield self.tock
 
-                tevt = issuer.incept
-                kevt = issuer.ianchor
+                while self.issuer.regk not in self.issuer.tevers:
+                    yield self.tock
 
-                witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
-                witSender = agenting.WitnessPublisher(hab=self.hab, msg=tevt)
-                self.extend([witDoer, witSender])
-                _ = yield self.tock
-
-                while not witDoer.done:
-                    _ = yield self.tock
-
-                while not witSender.done:
-                    _ = yield self.tock
-
-                self.remove([witDoer, witSender])
-
-                self.cues.append(dict(regk=issuer.regk))
+                self.cues.append(dict(regk=self.issuer.regk))
 
                 yield self.tock
 
             yield self.tock
+
+
+    def issuerDo(self, tymth, tock=0.0, **opts):
+        """
+        Process cues from credential issue coroutine
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.issuer.cues:
+                cue = self.issuer.cues.popleft()
+                cueKin = cue['kin']
+                if cueKin == "send":
+                    tevt = cue["tevt"]
+                    witSender = agenting.WitnessPublisher(hab=self.hab, msg=tevt)
+                    self.extend([witSender])
+
+                    while not witSender.done:
+                        _ = yield self.tock
+
+                    self.remove([witSender])
+                elif cueKin == "kevt":
+                    kevt = cue["kevt"]
+                    witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
+                    self.extend([witDoer])
+
+                    while not witDoer.done:
+                        yield self.tock
+
+                    self.remove([witDoer])
+
+                    self.cues.append(dict(kin="finished", regk=self.issuer.regk))
+                elif cueKin == "multisig":
+                    msg = dict(
+                        op=cue["op"],
+                        group=cue["group"],
+                        data=cue["data"],
+                        reason=cue["reason"]
+                    )
+                    self.gdoer.msgs.append(msg)
+                elif cueKin == "logEvent":
+                    self.cues.append(dict(kin="finished", regk=self.issuer.regk))
+
+
+                yield self.tock
+            yield self.tock
+
+
+    def escrowDo(self, tymth, tock=0.0):
+        """
+        Returns:  doifiable Doist compatible generator method
+
+        Usage:
+            add result of doify on this method to doers list
+
+        Processes the Groupy escrow for group icp, rot and ixn request messages.
+
+        """
+        # start enter context
+        yield  # enter context
+        while True:
+            self.issuer.processEscrows()
+            yield

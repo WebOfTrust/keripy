@@ -228,14 +228,6 @@ class UnverifiedTransferableReceiptError(ValidationError):
     """
 
 
-class UnverifiedProofError(ValidationError):
-    """
-    Error signature from credential CESR proof is unverfied
-    Usage:
-        raise UnverifiedProofError("error message")
-    """
-
-
 class DerivationError(ValidationError):
     """
     Derivation related errors
@@ -383,3 +375,36 @@ class InvalidGroupError(KeriError):
     Usage:
         raise MissingAidError("error message")
     """
+
+
+class MissingRegistryError(ValidationError):
+    """
+    Error registry is missing from the Tevers
+    Usage:
+        raise MissingRegistryError("error message")
+    """
+
+
+class MissingIssuerError(ValidationError):
+    """
+    Error issuer is missing from the Tevers
+    Usage:
+        raise MissingIssuerError("error message")
+    """
+
+
+class InvalidCredentialStateError(ValidationError):
+    """
+    Error in state of credential, either has not been issued or has been revoked
+    Usage:
+        raise InvalidCredentialStateError("error message")
+    """
+
+class UnverifiedProofError(ValidationError):
+    """
+    Error signature from credential CESR proof is unverfied
+    Usage:
+        raise UnverifiedProofError("error message")
+    """
+
+

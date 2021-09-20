@@ -579,7 +579,6 @@ class Reactant(doing.DoDoer):
                                  reger=self.verifier.reger,
                                  db=self.hab.db,
                                  regk=None, local=False)
-            doers.extend([doing.doify(self.verifierDo)])
         else:
             self.tevery = None
 
@@ -685,34 +684,6 @@ class Reactant(doing.DoDoer):
             self.kevery.processEscrows()
             if self.tevery is not None:
                 self.tevery.processEscrows()
-            yield
-        return False  # should never get here except forced close
-
-
-    def verifierDo(self, tymth=None, tock=0.0, **opts):
-        """
-         Returns doifiable Doist compatibile generator method (doer dog) to process
-            .tevery.cues deque
-
-        Doist Injected Attributes:
-            g.tock = tock  # default tock attributes
-            g.done = None  # default done state
-            g.opts
-
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
-            opts is dict of injected optional additional parameters
-
-        Usage:
-            add to doers list
-        """
-        yield  # enter context
-        while True:
-            for msg in self.verifier.processCuesIter(self.tevery.cues):
-                self.sendMessage(msg, label="replay")
-                yield  # throttle just do one cue at a time
             yield
         return False  # should never get here except forced close
 

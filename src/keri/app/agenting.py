@@ -14,9 +14,9 @@ from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
 
-from .. import kering
 from . import httping, grouping
 from .. import help
+from .. import kering
 from ..app import obtaining
 from ..core import eventing, parsing, scheming, coring
 from ..db import dbing
@@ -57,12 +57,20 @@ class WitnessReceiptor(doing.DoDoer):
         self.klas = klas if klas is not None else HttpWitnesser
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
+
     def receiptDo(self, tymth=None, tock=0.0, **opts):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
         Usage:
             add result of doify on this method to doers list
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
         """
         self.wind(tymth)
         self.tock = tock
@@ -181,8 +189,8 @@ class WitnessInquisitor(doing.DoDoer):
 
             yield
 
-    def query(self, pre, res="logs"):
-        msg = self.hab.query(pre, res=res, query=dict())  # Query for remote pre Event
+    def query(self, pre, r="logs", sn=0):
+        msg = self.hab.query(pre, res=r, query=dict())  # Query for remote pre Event
         self.msgs.append(msg)
 
 
@@ -420,7 +428,7 @@ class KiwiServer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, controller, rep, issuers=None, cues=None, app=None, insecure=False, **kwa):
+    def __init__(self, hab, controller, rep, verifier, issuers=None, cues=None, app=None, insecure=False, **kwa):
         """
         Create a KIWI web server for Agents capable of performing KERI and ACDC functions for the controller
         of an identifier.
@@ -430,6 +438,7 @@ class KiwiServer(doing.DoDoer):
             controller qb64 is the identifier prefix that can send commands to this web server:
             rep Respondant that routes responses to the appropriate mailboxes
             issuers is dict of credential Issuers keyed by regk of credential Registry
+            wallet is Wallet for local storage of credentials
             cues is Deck from Kevery handling key events:
             app falcon.App to register handlers with:
             insecure bool is True to allow requests without verifying KERI Http Signature Header,
@@ -439,10 +448,11 @@ class KiwiServer(doing.DoDoer):
         self.hab = hab
         self.controller = controller
         self.rep = rep
-        self.kevts = decking.Deck()
-        self.tevts = decking.Deck()
+        self.verifier = verifier
+        self.issuerCues = decking.Deck()
         self.app = app if app is not None else falcon.App(cors_enable=True)
         self.issuers = issuers if issuers is not None else dict()
+        self.typ = scheming.JSONSchema()
 
         if insecure:
             self.app.add_middleware(httping.InsecureSignatureComponent())
@@ -458,6 +468,9 @@ class KiwiServer(doing.DoDoer):
         self.registryIcpr = registering.RegistryInceptDoer(hab=hab)
         self.app.add_route("/credential/issue", self, suffix="issue")
         self.app.add_route("/credential/revoke", self, suffix="revoke")
+
+        self.app.add_route("/credentials/issued", self, suffix="credentials_issued")
+
         self.app.add_route("/presentation/request", self, suffix="request")
 
         self.app.add_route("/multisig/incept", self, suffix="multisig_incept")
@@ -467,50 +480,118 @@ class KiwiServer(doing.DoDoer):
 
         self.witq = WitnessInquisitor(hab=hab, klas=TCPWitnesser)
 
-        doers = [self.witq, self.registryIcpr, self.gdoer,doing.doify(self.receiptDo), doing.doify(
-            self.publishDo)]
+        doers = [self.witq, self.registryIcpr, self.gdoer, doing.doify(self.verifierDo), doing.doify(
+            self.issuerDo), doing.doify(self.groupCueDo)]
 
         super(KiwiServer, self).__init__(doers=doers, **kwa)
 
-    def receiptDo(self, tymth, tock=0.0, **opts):
+
+    def verifierDo(self, tymth, tock=0.0, **opts):
+        """
+        Process cues from Verifier coroutine
+
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+        """
         self.wind(tymth)
         self.tock = tock
         yield self.tock
 
         while True:
-            while self.kevts:
-                kevt = self.kevts.popleft()
-                witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
-                self.extend([witDoer])
+            while self.verifier.cues:
+                cue = self.verifier.cues.popleft()
+                cueKin = cue["kin"]
 
-                while not witDoer.done:
-                    yield self.tock
+                if cueKin == "saved":
+                    creder = cue["creder"]
+                    proof = cue["proof"]
 
-                self.remove([witDoer])
+                    recpt = creder.subject["si"].encode("utf-8")
+
+                    craw = bytearray(creder.raw)
+                    craw.extend(proof)
+
+                    pl = dict(
+                        vc=[handling.envelope(craw, typ=self.typ)]
+                    )
+
+                    exn = exchanging.exchange(route="/credential/issue", payload=pl)
+                    self.rep.reps.append(dict(dest=recpt, rep=exn, topic="credential"))
+
+                    logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
+                    logger.info(creder.pretty())
+                    print()
+
+                elif cueKin == "query":
+                    qargs = cue["q"]
+                    self.witq.query(**qargs)
 
                 yield self.tock
             yield self.tock
 
-    def publishDo(self, tymth, tock=0.0, **opts):
+
+    def issuerDo(self, tymth, tock=0.0, **opts):
+        """
+        Process cues from credential issue coroutine
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+        """
         self.wind(tymth)
         self.tock = tock
         yield self.tock
 
         while True:
-            while self.tevts:
-                tevt = self.tevts.popleft()
-                witSender = WitnessPublisher(hab=self.hab, msg=tevt)
-                self.extend([witSender])
-
-                while not witSender.done:
-                    _ = yield self.tock
-
-                self.remove([witSender])
+            while self.issuerCues:
+                cue = self.issuerCues.popleft()
+                cueKin = cue['kin'] 
+                if cueKin == "send":
+                    tevt = cue["tevt"]
+                    witSender = WitnessPublisher(hab=self.hab, msg=tevt)
+                    self.extend([witSender])
+    
+                    while not witSender.done:
+                        _ = yield self.tock
+    
+                    self.remove([witSender])
+                elif cueKin == "kevt":
+                    kevt = cue["kevt"]
+                    witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
+                    self.extend([witDoer])
+    
+                    while not witDoer.done:
+                        yield self.tock
+    
+                    self.remove([witDoer])
+                elif cueKin == "multisig":
+                    msg = dict(
+                        op=cue["op"],
+                        group=cue["group"],
+                        data=cue["data"],
+                        reason=cue["reason"]
+                    )
+                    self.gdoer.msgs.append(msg)
 
                 yield self.tock
             yield self.tock
 
-    def cueDo(self, tymth, tock=0.0, **opts):
+
+    def groupCueDo(self, tymth, tock=0.0, **opts):
+        """
+        Process cues from multisig group coroutine
+
+        Parameters:
+            tymth is injected function wrapper closure returned by .tymen() of
+                Tymist instance. Calling tymth() returns associated Tymist .tyme.
+            tock is injected initial tock value
+            opts is dict of injected optional additional parameters
+
+        """
         self.wind(tymth)
         self.tock = tock
         yield self.tock
@@ -518,12 +599,13 @@ class KiwiServer(doing.DoDoer):
         while True:
             while self.gdoer.cues:
                 cue = self.gdoer.cues.popleft()
-                exn = exchanging.exchange(route="/multisig/results", payload=cue, date=helping.nowIso8601())
-                self.rep.reps.append(dict(dest=self.controller, rep=exn, topic="multisig"))
+                # exn = exchanging.exchange(route="/multisig/results", payload=cue, date=helping.nowIso8601())
+                # self.rep.reps.append(dict(dest=self.controller, rep=exn, topic="multisig"))
 
                 yield self.tock
 
             yield self.tock
+
 
     def on_post_issue(self, req, rep):
         """
@@ -576,20 +658,15 @@ class KiwiServer(doing.DoDoer):
                                     source=source,
                                     status=issuer.regk)
 
-        msg = self.hab.endorse(serder=creder)
 
-        tevt, kevt = issuer.issue(vcdig=creder.said)
-        self.kevts.append(kevt)
-        self.tevts.append(tevt)
 
-        pl = dict(
-            vc=[handling.envelope(msg, typ=jsonSchema)]
-        )
+        try:
+            issuer.issue(creder=creder)
+        except kering.MissingAnchorError:
+            logger.info("Missing anchor from credential issuance due to multisig identifier")
 
-        # TODO:  Send message or messages to other participants of multisig group about this issuance
-
-        exn = exchanging.exchange(route="/credential/issue", payload=pl)
-        self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn, topic="credential"))
+        craw = self.hab.endorse(creder)
+        proving.parseCredential(ims=craw, verifier=self.verifier, typ=self.typ)
 
         rep.status = falcon.HTTP_200
         rep.data = creder.pretty().encode("utf-8")
@@ -617,10 +694,12 @@ class KiwiServer(doing.DoDoer):
                        "credentials".format(registry)
             return
 
-
-        tevt, kevt = issuer.revoke(vcdig=said)
-        self.kevts.append(kevt)
-        self.tevts.append(tevt)
+        try:
+            issuer.revoke(vcdig=said)
+        except kering.ValidationError as ex:
+            rep.status = falcon.HTTP_CONFLICT
+            rep.text = ex.args[0]
+            return
 
         rep.status = falcon.HTTP_202
 
@@ -723,9 +802,7 @@ class KiwiServer(doing.DoDoer):
             aids=aids,
             toad=None,
             witnesses=[],
-            icount=None,
             isith=None,
-            ncount=None,
             nsith=None)
 
         for key in msg:
@@ -785,7 +862,59 @@ class KiwiServer(doing.DoDoer):
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
 
+    def on_get_credentials_issued(self, req, rep):
+        """
+        Return the credntials issued by this agent
 
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        """
+        registry = req.params["registry"]
+        issuer = self.getIssuer(registry)
+
+        groups = self.hab.db.gids.getItemIter()
+        group = next(groups, None)
+
+        if group is None:
+            pre = self.hab.pre
+        else:
+            name, group = group
+            pre = group.gid
+
+        saids = issuer.reger.issus.get(keys=pre)
+        creds = []
+        for saider in saids:
+            key = saider.qb64b
+            creder = issuer.reger.creds.get(keys=key)
+
+            # TODO:  de-dupe the seals here and extract the signatures
+            seals = issuer.reger.seals.get(keys=key)
+            prefixer = None
+            seqner = None
+            diger = None
+            sigers = []
+            for seal in seals:
+                (prefixer, seqner, diger, siger) = seal
+                sigers.append(siger)
+
+            cred = dict(
+                sad=creder.crd,
+                pre=prefixer.qb64,
+                sn=seqner.sn,
+                dig=diger.qb64,
+                sigers=[sig.qb64 for sig in sigers],
+                status=issuer.tevers[issuer.regk].vcState(key)
+            )
+
+            creds.append(cred)
+
+
+
+        rep.status = falcon.HTTP_200
+        rep.content_type = "application/json"
+        rep.data = json.dumps(creds).encode("utf-8")
 
 
     def on_post_registry_incept(self, req, rep):
@@ -821,7 +950,7 @@ class KiwiServer(doing.DoDoer):
             if regr is None:
                 return None
 
-            issuer = issuing.Issuer(hab=self.hab, name=name, reger=reger)
+            issuer = issuing.Issuer(hab=self.hab, name=name, reger=reger, cues=self.issuerCues)
             self.issuers[name] = issuer
         return issuer
 
@@ -861,4 +990,3 @@ class KiwiServer(doing.DoDoer):
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
-

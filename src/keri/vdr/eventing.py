@@ -215,6 +215,7 @@ def issue(
         regk,
         version=Version,
         kind=Serials.json,
+        dt=None
 ):
     """
 
@@ -236,6 +237,9 @@ def issue(
                dt=helping.nowIso8601()
                )
 
+    if dt is not None:
+        ked["dt"] = dt
+
     return Serder(ked=ked)  # return serialized ked
 
 
@@ -245,6 +249,7 @@ def revoke(
         dig,
         version=Version,
         kind=Serials.json,
+        dt=None
 ):
     """
 
@@ -271,6 +276,9 @@ def revoke(
                dt=helping.nowIso8601()
                )
 
+    if dt is not None:
+        ked["dt"] = dt
+
     return Serder(ked=ked)  # return serialized ked
 
 
@@ -281,6 +289,7 @@ def backerIssue(
         regd,
         version=Version,
         kind=Serials.json,
+        dt=None,
 ):
     """
 
@@ -310,6 +319,9 @@ def backerIssue(
                dt=helping.nowIso8601(),
                )
 
+    if dt is not None:
+        ked["dt"] = dt
+
     return Serder(ked=ked)  # return serialized ked
 
 
@@ -321,6 +333,7 @@ def backerRevoke(
         dig,
         version=Version,
         kind=Serials.json,
+        dt=None
 ):
     """
 
@@ -350,6 +363,9 @@ def backerRevoke(
                ra=seal._asdict(),
                dt=helping.nowIso8601(),
                )
+
+    if dt is not None:
+        ked["dt"] = dt
 
     return Serder(ked=ked)  # return serialized ked
 

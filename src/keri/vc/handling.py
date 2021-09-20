@@ -209,7 +209,7 @@ class IssueHandler(doing.Doer):
 
     resource = "/credential/issue"
 
-    def __init__(self, wallet, typ=JSONSchema(), cues=None, **kwa):
+    def __init__(self, verifier, typ=JSONSchema(), cues=None, **kwa):
         """
 
         Parameters:
@@ -219,7 +219,7 @@ class IssueHandler(doing.Doer):
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.wallet = wallet
+        self.verifier = verifier
         self.typ = typ
 
         super(IssueHandler, self).__init__(**kwa)
@@ -256,7 +256,7 @@ class IssueHandler(doing.Doer):
                     msg = bytearray(raw)
                     msg.extend(proof.encode("utf-8"))
 
-                    proving.parseCredential(ims=msg, wallet=self.wallet, typ=self.typ)
+                    proving.parseCredential(ims=msg, verifier=self.verifier, typ=self.typ)
                 yield
 
             yield
@@ -329,7 +329,6 @@ class RequestHandler(doing.Doer):
                 if len(matches) > 0:
                     pe = presentation_exchange(matches)
                     exn = exchanging.exchange(route="/presentation/proof", payload=pe)
-                    print(exn.pretty())
                     self.cues.append(dict(dest=requestor.qb64, rep=exn, topic="credential"))
 
                 yield

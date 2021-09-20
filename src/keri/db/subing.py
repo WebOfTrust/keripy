@@ -45,7 +45,7 @@ from .. import help
 from ..help.helping import nonStringIterable
 from ..core import coring
 from . import dbing
-
+from ..vc import proving
 
 logger = help.ogler.getLogger()
 
@@ -465,7 +465,7 @@ class IoSetSuber(SuberBase):
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
     """
-    def __init__(self, db: Type[dbing.LMDBer], *,
+    def __init__(self, db: dbing.LMDBer, *,
                        subkey: str='docs.',
                        dupsort: bool=False, **kwa):
         """
@@ -1479,4 +1479,101 @@ class CesrDupSuber(DupSuber):
         """
         for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
+
+
+class CrederSuber(Suber):
+    """
+    Sub class of Suber where data is serialized Credentialer instance
+    Automatically serializes and deserializes using Credentialer methods
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+        """
+        super(CrederSuber, self).__init__(*pa, **kwa)
+
+
+    def put(self, keys: Union[str, Iterable], val: proving.Credentialer):
+        """
+        Puts val at key made from keys. Does not overwrite
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Credentialer): instance
+
+        Returns:
+            result (bool): True If successful, False otherwise, such as key
+                              already in database.
+        """
+        return (self.db.putVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.raw))
+
+
+    def pin(self, keys: Union[str, Iterable], val: proving.Credentialer):
+        """
+        Pins (sets) val at key made from keys. Overwrites.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Credentialer): instance
+
+        Returns:
+            result (bool): True If successful. False otherwise.
+        """
+        return (self.db.setVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.raw))
+
+
+    def get(self, keys: Union[str, Iterable]):
+        """
+        Gets Serder at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            Credentialer:
+            None: if no entry at keys
+
+        Usage:
+            Use walrus operator to catch and raise missing entry
+            if (creder := mydb.get(keys)) is None:
+                raise ExceptionHere
+            use creder here
+
+        """
+        val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
+        return proving.Credentialer(raw=bytes(val)) if val is not None else None
+
+
+    def rem(self, keys: Union[str, Iterable]):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+        """
+        return self.db.delVal(db=self.sdb, key=self._tokey(keys))
+
+
+    def getItemIter(self):
+        """
+        Return iterator over the all the items in subdb
+
+        Returns:
+            iterator: of tuples of keys tuple and val coring.Serder for
+            each entry in db
+
+        """
+        for key, val in self.db.getAllItemIter(db=self.sdb, split=False):
+            yield self._tokeys(key), proving.Credentialer(raw=bytes(val))
 

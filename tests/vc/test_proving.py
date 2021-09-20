@@ -11,7 +11,9 @@ from keri.core.coring import Serials, Counter, CtrDex, Prefixer, Seqner, Diger, 
 from keri.core.scheming import CacheResolver, JSONSchema
 from keri.db import basing
 from keri.kering import Versionage, ExtractionError, ColdStartError
+from keri.vc import proving
 from keri.vc.proving import Credentialer, credential, parseProof, buildProof
+from keri.vdr import verifying, issuing, viring
 
 
 def test_proving():
@@ -320,6 +322,37 @@ def test_build_proof():
         assert diger.qb64 == sigHab.kever.lastEst.d
         assert seqner.sn == 4
         assert len(isigers) == 3
+
+
+def test_credential_parsator():
+    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as hab, \
+            viring.openReg() as reg:
+
+        assert hab.pre == "ELfzj-TkiKYWsNKk2WE8F8VEgbu3P-_HComVHcKrvGmY"
+
+        issuer = issuing.Issuer(hab=hab, reger=reg, noBackers=True, estOnly=True, temp=True)
+
+        typ = scheming.JSONSchema()
+        credSubject = dict(
+            LEI="254900OPPU84GM83MG36",
+        )
+
+        creder = credential(issuer=hab.pre,
+                            schema="E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
+                            subject=credSubject,
+                            status=issuer.regk,
+                            typ=typ)
+
+        msg = hab.endorse(serder=creder)
+
+        verifier = verifying.Verifier(hab=hab, name="verifier")
+        proving.parseCredential(ims=msg, verifier=verifier, typ=typ)
+
+        assert len(verifier.cues) == 1
+        cue = verifier.cues.popleft()
+        assert cue['kin'] == "query"
+        q = cue["q"]
+        assert q["pre"] == issuer.regk
 
 
 if __name__ == '__main__':

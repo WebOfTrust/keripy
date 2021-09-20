@@ -636,13 +636,28 @@ class Habitat:
         """
         if self.kever.prefixer.transferable:
             # create SealEvent for endorsers est evt whose keys use to sign
-            seal = eventing.SealEvent(i=self.kever.prefixer.qb64,
-                                      s=hex(self.kever.lastEst.s),
-                                      d=self.kever.lastEst.d)
+
+            groups = self.db.gids.getItemIter()
+            group = next(groups, None)
+
+            if group is None:
+                seal = eventing.SealEvent(i=self.kever.prefixer.qb64,
+                                          s=hex(self.kever.lastEst.s),
+                                          d=self.kever.lastEst.d)
+                indices = None
+            else:
+                _, group = group
+                kever = self.kevers[group.gid]
+                seal = eventing.SealEvent(i=kever.prefixer.qb64,
+                                          s=hex(kever.lastEst.s),
+                                          d=kever.lastEst.d)
+                indices = [group.aids.index(group.lid)]
+
             # sign serder event
             sigers = self.mgr.sign(ser=serder.raw,
                                    verfers=self.kever.verfers,
-                                   indexed=True)
+                                   indexed=True,
+                                   indices=indices)
             msg = eventing.messagize(serder=serder,
                                      sigers=sigers,
                                      seal=seal,
@@ -660,49 +675,7 @@ class Habitat:
         return msg
 
 
-    def verify(self, serder, prefixer, seqner, diger, sigers):
-        if prefixer.qb64 in self.kevers:
-            # receipted event and receipter in database so get receipter est evt
-            # retrieve dig of last event at sn of est evt of receipter.
-            sdig = self.db.getKeLast(key=snKey(pre=prefixer.qb64b,
-                                               sn=seqner.sn))
-            if sdig is None:
-                # receipter's est event not yet in receipters's KEL
-                raise UnverifiedProofError("key event sn {} for pre {} is not yet in KEL"
-                                           "".format(seqner.sn, prefixer.qb64))
-
-
-            # retrieve last event itself of receipter est evt from sdig
-            sraw = self.db.getEvt(key=dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
-            # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = Serder(raw=bytes(sraw))
-            if not sserder.compare(diger=diger):  # endorser's dig not match event
-                raise ValidationError("Bad proof sig group at sn = {}"
-                                      " for ksn = {}."
-                                      "".format(seqner.sn, sserder.ked))
-
-            # verify sigs
-            sverfers = sserder.verfers
-            if not sverfers:
-                raise ValidationError("Invalid key state endorser's est. event"
-                                      " dig = {} for ksn from pre ={}, "
-                                      "no keys."
-                                      "".format(diger.qb64, prefixer.qb64))
-
-            for siger in sigers:
-                if siger.index >= len(sverfers):
-                    raise ValidationError("Index = {} to large for keys."
-                                          "".format(siger.index))
-                siger.verfer = sverfers[siger.index]  # assign verfer
-                if not siger.verfer.verify(siger.raw, serder.raw):  # verify each sig
-                    return False
-
-            return True
-        else:
-            return False
-
-
-    def verifiage(self, pre=None):
+    def verifiage(self, pre=None, sn=0, dig=None):
         """
         Returns the Tholder and Verfers for the provided identifier prefix.
         Default pre is own .pre
@@ -710,6 +683,8 @@ class Habitat:
         Parameters:
             pre(str) is qb64 str of bytes of identifier prefix.
                       default is own .pre
+            sn(int) is the sequence number of the est event
+            dig(str) is qb64 str of digest of est event
 
         """
         if not pre:
@@ -717,12 +692,33 @@ class Habitat:
 
         prefixer = coring.Prefixer(qb64=pre)
         if prefixer.transferable:
-            sever = self.kevers[pre]
-            verfers = sever.verfers
-            tholder = sever.tholder
+
+            # receipted event and receipter in database so get receipter est evt
+            # retrieve dig of last event at sn of est evt of receipter.
+            sdig = self.db.getKeLast(key=snKey(pre=prefixer.qb64b,
+                                               sn=sn))
+            if sdig is None:
+                # receipter's est event not yet in receipters's KEL
+                raise ValidationError("key event sn {} for pre {} is not yet in KEL"
+                                      "".format(sn, pre))
+
+            # retrieve last event itself of receipter est evt from sdig
+            sraw = self.db.getEvt(key=dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
+            # assumes db ensures that sraw must not be none because sdig was in KE
+            sserder = Serder(raw=bytes(sraw))
+            if dig is not None and not sserder.compare(diger=coring.Diger(qb64=dig)):  # endorser's dig not match event
+                raise ValidationError("Bad proof sig group at sn = {}"
+                                      " for ksn = {}."
+                                      "".format(sn, sserder.ked))
+
+
+            verfers = sserder.verfers
+            tholder = sserder.tholder
+
         else:
             verfers = [coring.Verfer(qb64=pre)]
             tholder = coring.Tholder(sith="1")
+
 
         return tholder, verfers
 
@@ -758,6 +754,33 @@ class Habitat:
         for msg in self.db.cloneAllPreIter(key=key):
             msgs.extend(msg)
         return msgs
+
+
+    def makeOtherEvent(self, pre, sn):
+        """
+        Returns: messagized bytearray message with attached signatures of
+                 own event at sequence number sn from retrieving event at sn
+                 and associated signatures from database.
+
+        Parameters:
+            sn is int sequence number of event
+        """
+        if pre not in self.kevers:
+            return None
+
+        msg = bytearray()
+        dig = self.db.getKeLast(dbing.snKey(pre, sn))
+        if dig is None:
+            raise kering.MissingEntryError("Missing event for pre={} at sn={}."
+                                           "".format(pre, sn))
+        dig = bytes(dig)
+        key = dbing.dgKey(pre, dig)  # digest key
+        msg.extend(self.db.getEvt(key))
+        msg.extend(coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                  count=self.db.cntSigs(key)).qb64b)  # attach cnt
+        for sig in self.db.getSigsIter(key):
+            msg.extend(sig)  # attach sig
+        return (msg)
 
 
     def fetchEnd(self, cid: str, role: str, eid: str):

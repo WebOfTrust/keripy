@@ -117,10 +117,11 @@ def test_issuing():
 
         # verify we can load serialized VC by SAID
         key = creder.said.encode("utf-8")
-        assert bytearray(redPDB.getSers(key)) == ser
+        assert redPDB.creds.get(key).raw == ser
 
         # verify the signature
-        sigs = redPDB.getSigs(key)
+        seals = redPDB.seals.get(key)
+        sigs = [sig for (_, _, _, sig) in seals]
         assert len(sigs) == 1
         assert bytearray(sigs[0]) == sig0
 
@@ -206,12 +207,12 @@ def test_proving():
         hanWallet = Wallet(hab=hanHab, db=hanPDB)
 
         creder, prefixer, seqner, diger, isigers = parseCredential(ims=msg,
-                                                                   wallet=hanWallet,
+                                                                   verifier=hanWallet,
                                                                    typ=JSONSchema(resolver=cache))
 
         # verify we can load serialized VC by SAID
         key = creder.said.encode("utf-8")
-        assert hanPDB.getSers(key) is not None
+        assert hanPDB.creds.get(key) is not None
 
         # Create Red's wallet and Issue Handler for receiving the credential
         hanRequestHandler = RequestHandler(wallet=hanWallet, typ=jsonSchema)

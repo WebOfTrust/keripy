@@ -17,8 +17,10 @@ from hio.help import decking
 
 from keri import kering
 from keri.app import agenting, forwarding
-from keri.core import coring, eventing, parsing
+from keri.core import coring, eventing, parsing, scheming
 from keri.db import dbing, basing
+from keri.peer import exchanging
+from keri.vc import proving
 
 logger = help.ogler.getLogger()
 
@@ -28,8 +30,20 @@ Ops = Opage(icp='icp', rot='rot', ixn='ixn')
 
 
 class Groupy:
+    """
+    Processor of request messages for performing icp/rot/ixn events on multisig group identifiers
+
+    """
 
     def __init__(self, hab, msgs=None, cues=None):
+        """
+
+        Parameters:
+            hab(Habitat): environment of the local participant in multisig group
+            msgs(decking.Deck): input messages of requests to perform operations on multisig group identifier
+            cues(decking.Deck): output cues from processing messages
+
+        """
         self.msgs = msgs if msgs is not None else decking.Deck()  # subclass of deque
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
         self.hab = hab
@@ -53,6 +67,17 @@ class Groupy:
             self.processMessage(**msgs.pull())
 
     def processMessage(self, name, msg, mssrdr=None, sigers=None):
+        """
+        Process request message from controller to participant agent in form of dict
+         for a icp/rot/ixn on the multisig group.
+
+        Parameters:
+            name(str): multisig group name
+            msg(dict): the request to incept/rotate/iteract this multisig group
+            mssrdr(Serder): the multisig KEL event for this request
+            sigers(list): list of Siger signatures on event
+
+        """
 
         op = msg["op"]
         if op in (Ops.icp,):
@@ -64,10 +89,9 @@ class Groupy:
             sith = msg["isith"]
             toad = msg["toad"]
             nsith = msg["nsith"]
-            wits = msg["witnesses"] if msg["witnesses"] is not None else self.hab.kever.wits
+            wits = msg["witnesses"] if "witnesses" in msg is not None else self.hab.kever.wits
             data = msg["data"] if "data" in msg else None
 
-            idx = aids.index(self.hab.pre)
             if mssrdr is None:
                 for aid in aids:
                     if aid not in self.hab.kevers:
@@ -86,15 +110,7 @@ class Groupy:
                                          code=coring.MtrDex.Blake3_256,
                                          data=data)
 
-                sigers = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
-
-                mmsg = eventing.messagize(mssrdr, sigers=sigers)
-                parsing.Parser().parseOne(ims=bytearray(mmsg), kvy=self.kvy)
-
-                for aid in aids:
-                    if aid == self.hab.pre:
-                        continue
-                    self.cues.append(dict(kin="send", recipient=aid, topic='multisig', msg=bytearray(mmsg)))
+                sigers = self.signAndPropagate(mssrdr, aids)
 
             indices = [siger.index for siger in sigers]
             tholder = coring.Tholder(sith=sith)
@@ -119,18 +135,21 @@ class Groupy:
             ))
 
         elif op in (Ops.rot,):
-            groupName = msg["group"]
             sith = msg["sith"]
             toad = msg["toad"]
             data = msg["data"]
+            reason = msg["reason"] if "reason" in msg else ""
             wits = msg["witnesses"] if "witnesses" in msg else []
             cuts = msg["witness_cut"] if "witnesse_cut" in msg else []
             adds = msg["witness_add"] if "witnesse_add" in msg else []
 
-            group = self.hab.db.gids.get(keys=groupName)
+            group = self.hab.db.gids.get(keys=name)
             if group is None or group.lid != self.hab.pre:
-                print("invalid group identifier {}\n".format(groupName))
-                raise kering.InvalidGroupError("invalid group identifier {}".format(groupName))
+                print("invalid group identifier {}\n".format(name))
+                raise kering.InvalidGroupError("invalid group identifier {}".format(name))
+
+            others = list(group.aids)
+            others.remove(group.lid)
 
             if sith is None:
                 sith = "{:x}".format(max(0, math.ceil(len(group.aids) / 2)))
@@ -150,19 +169,17 @@ class Groupy:
                 rot = self.hab.rotate()
                 self.cues.append(dict(kin="witness", msg=bytearray(rot)))
 
-                for aid in group.aids:
-                    if aid == self.hab.pre:
-                        continue
-                    self.cues.append(dict(kin="send", recipient=aid, topic='multisig', msg=bytearray(rot)))
-
-            print("Local identifier rotated, checking other group members:")
-            idx = group.aids.index(self.hab.pre)
+                exn = exchanging.exchange(route="/multisig/event", payload=dict(evt=rot.decode("utf-8"), reason=reason))
+                emsg = bytearray(exn.raw)
+                emsg.extend(self.hab.sanction(serder=exn))
+                self.cues.append(dict(kin="send", recipients=others, topic='multisig', evt=emsg,
+                                      reason=reason))
+                print("Local identifier rotated, checking other group members:")
 
             for aid in group.aids:
                 kever = self.hab.kevers[aid]
                 if aid != self.hab.pre:
                     if kever.sn < self.hab.kever.sn:
-                        print("waiting for {} to join rotation...".format(aid))
                         self.cues.append(dict(kin="query", aid=aid))
                         self.escrowPAE(name, msg)
                         raise kering.MissingAidError(
@@ -181,30 +198,22 @@ class Groupy:
                                          cuts=cuts,
                                          adds=adds,
                                          data=data,
-                                         nxt=coring.Nexter(sith=sith,
+                                         nxt=coring.Nexter(sith=sith,  # the next digest previous calculated
                                                            digs=[diger.qb64 for diger in msdigers]).qb64)
 
-                # the next digest previous calculated
-                sigers = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
-                msg = eventing.messagize(mssrdr, sigers=sigers)
-                parsing.Parser().parseOne(ims=bytearray(msg), kvy=self.kvy)
-                for aid in group.aids:
-                    if aid == self.hab.pre:
-                        continue
-                    self.cues.append(dict(kin="send", recipient=aid, topic='multisig', msg=bytearray(msg)))
+                sigers = self.signAndPropagate(mssrdr, group.aids)
 
             indices = [siger.index for siger in sigers]
-            tholder = coring.Tholder(sith=sith)
-            if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
+            if not mssrdr.tholder.satisfy(indices):  # If we still don't have all the sigers, need to escrow
                 self.escrowPSE(name, msg, mssrdr)
                 raise kering.MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
-                                                   " for evt = {}.".format(tholder.sith,
+                                                   " for evt = {}.".format(mssrdr.tholder.sith,
                                                                            [siger.qb64 for siger in sigers],
                                                                            mssrdr.ked))
 
             group.cst = sith
             group.dig = mssrdr.dig
-            self.hab.db.gids.pin(groupName, group)
+            self.hab.db.gids.pin(name, group)
 
             self.cues.append(dict(
                 kin="logEvent",
@@ -215,22 +224,116 @@ class Groupy:
                 sn=mssrdr.ked["s"]
             ))
 
+        elif op in (Ops.ixn,):
+            data = msg["data"]
+            reason = msg["reason"] if "reason" in msg else ""
+
+            group = self.hab.db.gids.get(keys=name)
+            if group is None or group.lid != self.hab.pre:
+                print("invalid group identifier {}\n".format(name))
+                raise kering.InvalidGroupError("invalid group identifier {}".format(name))
+
+            others = list(group.aids)
+            others.remove(group.lid)
+
+            gkev = self.hab.kevers[group.gid]
+            sno = gkev.sn + 1
+            if self.hab.kever.sn == gkev.sn:  # We are equal to the current group identifier, need to interact
+                ixn = self.hab.interact()
+                exn = exchanging.exchange(route="/multisig/event", payload=dict(evt=ixn.decode("utf-8"), reason=reason))
+                emsg = bytearray(exn.raw)
+                emsg.extend(self.hab.sanction(serder=exn))
+
+                self.cues.append(dict(kin="send", recipients=others, topic='multisig', evt=emsg,
+                                      reason=reason))
+
+                self.cues.append(dict(kin="witness", msg=bytearray(ixn)))
+
+            if mssrdr is None:
+                mssrdr = eventing.interact(pre=gkev.prefixer.qb64,
+                                           dig=gkev.serder.dig,
+                                           sn=sno,
+                                           data=data)
+                sigers = self.signAndPropagate(mssrdr, group.aids)
+
+            indices = [siger.index for siger in sigers]
+            if not gkev.tholder.satisfy(indices):  # If we still don't have all the sigers, need to escrow
+                self.escrowPSE(name, msg, mssrdr)
+                raise kering.MissingSignatureError("Failure satisfying sith = {} on sigs for {}"
+                                                   " for evt = {}.".format(gkev.tholder.sith,
+                                                                           [siger.qb64 for siger in sigers],
+                                                                           mssrdr.ked))
+            self.cues.append(dict(
+                kin="logEvent",
+                group=group,
+                pre=mssrdr.pre,
+                mssrdr=mssrdr,
+                sigers=sigers,
+                sn=mssrdr.ked["s"]
+            ))
+
+    def signAndPropagate(self, mssrdr, aids):
+        """
+        Sign message and cue up message to send to participants of the group as identified by
+        the list in aids
+
+        Parameters:
+            mssrdr(Serder): is event to sign and send to participants in aids
+            aids(list): list of qb64 identifier prefix of group participants
+
+        """
+        idx = aids.index(self.hab.pre)
+        sigers = self.hab.mgr.sign(ser=mssrdr.raw, verfers=self.hab.kever.verfers, indices=[idx])
+        msg = eventing.messagize(mssrdr, sigers=sigers)
+        parsing.Parser().parseOne(ims=bytearray(msg), kvy=self.kvy)
+
+        others = list(aids)
+        others.remove(self.hab.pre)
+        self.cues.append(dict(kin="send", recipients=others, topic='multisig', evt=bytearray(msg)))
+
+        return sigers
+
     def escrowPAE(self, name, msg):
+        """
+        Partial AIDs Escrow
+
+        Parameters:
+            name(str): multisig group name
+            msg(dict): the request to incept/rotate/iteract this multisig group
+
+        """
         dat = json.dumps(msg).encode("utf-8")
-        self.db.gpae.put(name, dat)
+        self.db.gpae.add(name, dat)
 
     def escrowPSE(self, name, msg, mssrdr):
+        """
+        Partial Signature Escrow
+
+        Parameters:
+            name(str): multisig group name
+            msg(dict): the request to incept/rotate/iteract this multisig group
+            mssrdr(Serder): the multisig KEL event for this request
+
+        """
         msg["pre"] = mssrdr.pre
         msg["dig"] = mssrdr.dig
         dat = json.dumps(msg).encode("utf-8")
-        self.db.gpse.put(name, dat)
+        self.db.gpse.add(name, dat)
 
     def processEscrows(self):
+        """
+        Process all escrows, once per call
+
+        """
         self.processPartialAidEscrow()
         self.processPartialSignedEscrow()
 
     def processPartialAidEscrow(self):
         """
+        Process escrow of multisig requests with missing participant AIDs.
+        Message processing will query for the AID before commiting to escrow
+        assuming that the AID will be in the KEL by the time we process this escrow.
+
         """
         for (name,), mraw in self.db.gpae.getItemIter():
             try:
@@ -243,20 +346,23 @@ class Groupy:
                     logger.error("Groupy unescrow failed: %s\n", ex.args[0])
             except Exception as ex:  # log diagnostics errors etc
                 # error other than missing AID so remove from PA escrow
-                self.db.gpae.rem(name)
+                self.db.gpae.rem(name, val=mraw)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Groupy unescrowed: %s\n", ex.args[0])
                 else:
                     logger.error("Groupy unescrowed: %s\n", ex.args[0])
             else:
-                self.db.gpae.rem(name)
+                self.db.gpae.rem(name, val=mraw)
                 logger.info("Groupy unescrow succeeded in valid group op: "
                             "msg=\n%s\n", json.dumps(msg, indent=1))
 
     def processPartialSignedEscrow(self):
         """
-        """
+        Process escrow of partially signed multisig group KEL events.  Message
+        processing will send this local controllers signature to all other participants
+        so this escrow waits for signatures from all other participants
 
+        """
         for (name,), dat in self.db.gpse.getItemIter():
             msg = json.loads(dat)
 
@@ -291,6 +397,14 @@ class Groupy:
                             "msg=\n%s\n", json.dumps(msg, indent=1))
 
     def extractKeysDigs(self, aids):
+        """
+        Extract the public key and next digest from the current est event of the other
+        participants in the multisig group.
+
+        Parameters:
+            aids(list): qb64 identifier prefix of all participants of the multisig group
+
+        """
         mskeys = []
         msdigers = []
         for aid in aids:
@@ -433,9 +547,11 @@ class MultiSigGroupDoer(doing.DoDoer):
                 if cueKin == "query":
                     self.witq.query(cue["aid"])
                 elif cueKin == "send":
-                    self.postman.send(recipient=cue["recipient"],
-                                      topic=cue["topic"],
-                                      msg=cue["msg"])
+                    recpts = cue["recipients"]
+                    for recpt in recpts:
+                        self.postman.send(recipient=recpt,
+                                          topic=cue["topic"],
+                                          msg=bytearray(cue["evt"]))
                 elif cueKin == "witness":
                     msg = cue["msg"]
                     witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
@@ -454,7 +570,6 @@ class MultiSigGroupDoer(doing.DoDoer):
 
                     if idx == sigers[0].index:  # We are the first signer, elected to send to witnesses
                         msg = eventing.messagize(mssrdr, sigers=sigers)
-
                         witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
                         self.extend([witRctDoer])
 
@@ -464,7 +579,7 @@ class MultiSigGroupDoer(doing.DoDoer):
                         self.remove([witRctDoer])
 
                     else:  # We are not the first signer, so we wait for the sigs and processed receipts
-                        while mssrdr.pre not in self.hab.kevers:
+                        while mssrdr.pre not in self.hab.kevers or self.hab.kevers[mssrdr.pre].sn < mssrdr.sn:
                             self.witq.query(mssrdr.pre)
                             _ = (yield self.tock)
                     self.cues.append(cue)
@@ -487,4 +602,191 @@ class MultiSigGroupDoer(doing.DoDoer):
         yield  # enter context
         while True:
             self.groupy.processEscrows()
+            yield
+
+
+class MultisigEventHandler(doing.Doer):
+    """
+    Handler for multisig group rotation/interact notification EXN messages
+
+    """
+
+    resource = "/multisig/event"
+
+    def __init__(self, hab, mbx, controller, cues=None, **kwa):
+        """
+
+        Parameters:
+            hab (Habitat) is environment of participant in multisig group
+            controller (str) qb64 identity prefix of controller
+            mbx (Mailboxer) of format str names accepted for offers
+            cues (decking.Deck) of outbound cue messages from handler
+
+        """
+        self.controller = controller
+        self.hab = hab
+        self.mbx = mbx
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
+        self.kvy = eventing.Kevery(db=self.hab.db, lax=False, local=False)
+
+        super(MultisigEventHandler, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+
+        Parameters:
+            payload is dict representing the body of a /multisig/interact message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /credential/issue message
+            verfers is list of Verfers of the keys used to sign the message
+
+        Payload:
+            evt is bytes of ixn message from another participant
+            reason is either a str expressing reason for interaction event or credential
+
+        """
+        yield self.tock
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                payload = msg["payload"]
+                evt = payload["evt"].encode("utf-8")
+                reason = payload["reason"]
+
+
+                parsing.Parser().parse(bytearray(evt), kvy=self.kvy)
+
+                serder = coring.Serder(raw=evt)
+
+                pre = serder.pre
+                for keys, group in self.hab.db.gids.getItemIter():
+                    if pre in group.aids:
+                        payload = dict(name=keys, lid=group.lid, gid=group.gid, evt=serder.ked, reason=reason)
+                        ser = exchanging.exchange(route="/event", payload=payload)
+                        msg = bytearray(ser.raw)
+                        msg.extend(self.hab.sanction(ser))
+
+                        self.mbx.storeMsg(self.controller+"/multisig", msg)
+
+                yield
+
+            yield
+
+
+class MultisigInceptHandler(doing.DoDoer):
+    """
+    Handler for multisig group inception notification EXN messages
+
+    """
+    resource = "/multisig/incept"
+
+
+    def __init__(self, mbx, controller, cues=None, **kwa):
+        """
+
+        Parameters:
+            mbx (Mailboxer) of format str names accepted for offers
+            controller (str) qb64 identity prefix of controller
+            cues (decking.Deck) of outbound cue messages from handler
+
+        """
+        self.controller = controller
+        self.mbx = mbx
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
+        super(MultisigInceptHandler, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+
+        Parameters:
+            payload is dict representing the body of a multisig/incept message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /credential/issue message
+            verfers is list of Verfers of the keys used to sign the message
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                pl = msg["payload"]
+                pl["r"] = "/incept"
+                raw = json.dumps(pl).encode("utf-8")
+                self.mbx.storeMsg(self.controller+"/multisig", raw)
+
+                yield
+            yield
+
+
+class AutosaveMultisigEventHandler(doing.Doer):
+    """
+    Handler for multisig group rotation/interact notification EXN messages
+
+    """
+
+    resource = "/multisig/event"
+
+    def __init__(self, hab, verifier, cues=None, **kwa):
+        """
+
+        Parameters:
+            hab (Habitat) is environment of participant in multisig group
+            controller (str) qb64 identity prefix of controller
+            mbx (Mailboxer) of format str names accepted for offers
+            cues (decking.Deck) of outbound cue messages from handler
+
+        """
+        self.hab = hab
+        self.verifier = verifier
+        self.msgs = decking.Deck()
+        self.cues = cues if cues is not None else decking.Deck()
+
+        self.kvy = eventing.Kevery(db=self.hab.db, lax=False, local=False)
+
+        super(AutosaveMultisigEventHandler, self).__init__(**kwa)
+
+    def do(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle incoming messages by parsing and verifiying the credential and storing it in the wallet
+
+        Parameters:
+            payload is dict representing the body of a /multisig/interact message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /credential/issue message
+            verfers is list of Verfers of the keys used to sign the message
+
+        Payload:
+            evt is bytes of ixn message from another participant
+            reason is either a str expressing reason for interaction event or credential
+
+        """
+        yield self.tock
+
+        while True:
+            while self.msgs:
+                msg = self.msgs.popleft()
+                payload = msg["payload"]
+                evt = payload["evt"].encode("utf-8")
+                reason = payload["reason"]
+
+
+                parsing.Parser().parse(bytearray(evt), kvy=self.kvy)
+                craw = reason.encode("utf-8")
+                proving.parseCredential(ims=craw, verifier=self.verifier, typ=scheming.JSONSchema())
+
+                yield
+
             yield

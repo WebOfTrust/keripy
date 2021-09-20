@@ -16,6 +16,7 @@ from keri.app.cli.common import existing
 from keri.core import scheming
 from keri.peer import exchanging
 from keri.vc import walleting, handling
+from keri.vdr import verifying
 
 d = "Runs KERI Agent controller.\n"
 d += "Example:\nagent -t 5621\n"
@@ -53,10 +54,11 @@ def runWallet(name="wallet"):
     """
 
     hab, doers = existing.openHabitat(name=name)
-    wallet = walleting.Wallet(hab=hab, name=name)
+    verifier = verifying.Verifier(hab=hab, name=name)
+    wallet = walleting.Wallet(db=verifier.reger, name=name)
 
     jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
-    issueHandler = handling.IssueHandler(wallet=wallet, typ=jsonSchema)
+    issueHandler = handling.IssueHandler(verifier=verifier, typ=jsonSchema)
     requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
     exchanger = exchanging.Exchanger(hab=hab, handlers=[issueHandler, requestHandler])
 

@@ -727,13 +727,10 @@ class Baser(dbing.LMDBer):
                                  subkey='gids.',
                                  schema=GroupIdRecord, )
         # group partial aid list escrow
-        self.gpae = subing.Suber(db=self, subkey="gpae.")
+        self.gpae = subing.IoSetSuber(db=self, subkey="gpae.")
+
         # group partial signature escrow
-        self.gpse = subing.Suber(db=self, subkey="gpse.")
-
-
-
-
+        self.gpse = subing.IoSetSuber(db=self, subkey="gpse.")
         return self.env
 
     def reload(self):
