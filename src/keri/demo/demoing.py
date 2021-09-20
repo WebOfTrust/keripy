@@ -6,9 +6,7 @@ keri.app.directing module
 simple direct mode demo support classes
 """
 
-import json
 import os
-from urllib import parse
 
 from hio.core import wiring
 from hio.core.serial import serialing
@@ -16,13 +14,11 @@ from hio.core.tcp import clienting, serving
 
 from .. import help
 from ..app import habbing, keeping, directing
-from ..core import coring, scheming
-from ..core.scheming import CacheResolver
+from ..core import scheming
 from ..db import basing
 from ..help import helping
 from ..peer import exchanging
-from ..vc import proving, handling, walleting
-from ..vc.handling import RequestHandler
+from ..vc import proving, handling
 
 logger = help.ogler.getLogger()
 

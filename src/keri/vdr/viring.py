@@ -14,6 +14,7 @@ from keri.db import koming, subing
 from .. import kering
 from ..core import coring
 from ..db import dbing
+from ..vc import proving
 
 
 @dataclass
@@ -186,11 +187,11 @@ class Registry(dbing.LMDBer):
         self.taes = self.env.open_db(key=b'taes.')
 
         # Holds the credential
-        self.creds = subing.CrederSuber(db=self, subkey="creds.")
+        self.creds = proving.CrederSuber(db=self, subkey="creds.")
 
         # Credential signature anchors for proof
-        self.seals = subing.CatIoSetSuber(db=self, subkey='seals.',
-                                          klas=(coring.Prefixer, coring.Seqner, coring.Diger, coring.Siger))
+        self.seals = subing.CatCesrIoSetSuber(db=self, subkey='seals.',
+                                              klas=(coring.Prefixer, coring.Seqner, coring.Diger, coring.Siger))
 
         # Partially signed credential escrow
         self.cpse = subing.CesrSuber(db=self, subkey='cpse.', klas=coring.Saider)

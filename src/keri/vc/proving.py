@@ -6,6 +6,8 @@ keri.vc.proving module
 
 import json
 import logging
+from typing import Union
+from collections.abc import Iterable
 
 import cbor2 as cbor
 import msgpack
@@ -16,8 +18,8 @@ from ..core.coring import (Serials, sniff, Versify, Deversify, Rever, Counter,
                            CtrDex, Prefixer, Seqner, Diger, Siger, Saider, Ids)
 from ..core.parsing import Parser, Colds
 from ..core.scheming import JSONSchema
+from ..db import subing
 from ..kering import Version, VersionError, ShortageError, DeserializationError, ColdStartError, ExtractionError
-from ..vdr import verifying
 
 KERI_REGISTRY_TYPE = "KERICredentialRegistry"
 
@@ -148,13 +150,13 @@ def credentialParsator(ims, verifier, typ):
 
 
 
-def credParsator(ims=b'', verifier: verifying.Verifier = None, typ=JSONSchema()):
+def credParsator(ims=b'', verifier=None, typ=JSONSchema()):
     """
     Parse the ims bytearray as a CESR Proof Format verifiable credential
 
     Parameters:
         ims (bytearray) of serialized incoming verifiable credential in CESR Proof Format.
-        verifier (Wallet) storage for the verified credential
+        verifier (verifying.Verifier) verifier and storage for the verified credential
         typ (JSONSchema) class for resolving schema references:
 
     """
@@ -460,3 +462,100 @@ class Credentialer:
         Returns str JSON of .ked with pretty formatting
         """
         return json.dumps(self.crd, indent=1)
+
+
+class CrederSuber(subing.Suber):
+    """
+    Sub class of Suber where data is serialized Credentialer instance
+    Automatically serializes and deserializes using Credentialer methods
+
+    """
+
+    def __init__(self, *pa, **kwa):
+        """
+        Parameters:
+            db (dbing.LMDBer): base db
+            subkey (str):  LMDB sub database key
+        """
+        super(CrederSuber, self).__init__(*pa, **kwa)
+
+
+    def put(self, keys: Union[str, Iterable], val: Credentialer):
+        """
+        Puts val at key made from keys. Does not overwrite
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Credentialer): instance
+
+        Returns:
+            result (bool): True If successful, False otherwise, such as key
+                              already in database.
+        """
+        return (self.db.putVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.raw))
+
+
+    def pin(self, keys: Union[str, Iterable], val: Credentialer):
+        """
+        Pins (sets) val at key made from keys. Overwrites.
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+            val (Credentialer): instance
+
+        Returns:
+            result (bool): True If successful. False otherwise.
+        """
+        return (self.db.setVal(db=self.sdb,
+                               key=self._tokey(keys),
+                               val=val.raw))
+
+
+    def get(self, keys: Union[str, Iterable]):
+        """
+        Gets Serder at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+            Credentialer:
+            None: if no entry at keys
+
+        Usage:
+            Use walrus operator to catch and raise missing entry
+            if (creder := mydb.get(keys)) is None:
+                raise ExceptionHere
+            use creder here
+
+        """
+        val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
+        return Credentialer(raw=bytes(val)) if val is not None else None
+
+
+    def rem(self, keys: Union[str, Iterable]):
+        """
+        Removes entry at keys
+
+        Parameters:
+            keys (tuple): of key strs to be combined in order to form key
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+        """
+        return self.db.delVal(db=self.sdb, key=self._tokey(keys))
+
+
+    def getItemIter(self, keys: Union[str, Iterable]=b""):
+        """
+        Return iterator over the all the items in subdb
+
+        Returns:
+            iterator: of tuples of keys tuple and val coring.Serder for
+            each entry in db
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
+            yield self._tokeys(key), Credentialer(raw=bytes(val))
