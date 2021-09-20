@@ -319,6 +319,7 @@ class Habitat:
             # may want db method that updates .habs. and .prefixes together
             # default oobi
             oobi = basing.OobiRecord(aid=self.pre, role=kering.Roles.controller)
+            # may read more from oobi permission config files if any
             self.db.habs.put(keys=self.name,
                              val=basing.HabitatRecord(prefix=self.pre,
                                                       oobis=[oobi]))
@@ -1017,7 +1018,7 @@ class Habitat:
             eids = []
 
 
-    def replyOobi(self, aid):
+    def replyToOobi(self, aid):
         """
         Reply returns a message stream composed from entries authed by the given
         aid from the appropriate reply database including associated attachments
