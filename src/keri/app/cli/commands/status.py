@@ -36,15 +36,11 @@ def handler(args):
                         continue
                     print(f"\t{pre}")
 
-            cnt = hab.db.gids.cntAll()
-            if cnt > 0:
+            group = hab.group()
+            if group:
                 print()
                 print("Groups:")
-                groups = hab.db.gids.getItemIter()
-                idx = 1
-                for (pre,), group in groups:
-                    print("\t{}. {} ({})".format(idx, group.name, pre))
-                    idx += 1
+                print("\t   {} ({})".format(name, group.gid))
                 print()
 
             if args.verbose:

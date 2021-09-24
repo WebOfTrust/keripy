@@ -1,82 +1,121 @@
-# -*- encoding: utf-8 -*-
-"""
-keri.kli.commands module
-
-"""
 import argparse
 import json
 
+from hio import help
 from hio.base import doing
 
-from keri.app import habbing
-from keri.core.coring import Matter, MtrDex, Diger
-from keri.help import helping
-from keri.vdr import issuing
+from keri import kering
+from keri.app import directing, indirecting, grouping
+from keri.app.cli.common import existing
+from keri.peer import exchanging
+from keri.vdr import issuing, verifying, viring
 
-parser = argparse.ArgumentParser(description='Issue a verifiable credential')
-parser.set_defaults(handler=lambda args: IssueDoer(hab=args.hab,
-                                                   recipientIdentifier=args.recipientIdentifier,
-                                                   lei=args.lei,
-                                                   vcfile=args.vcfile))
-parser.add_argument('--recipientIdentifier', '-ri', help='DID Subject ID')
-parser.add_argument('--lei', help='Legal Entity Identifier')
-parser.add_argument('--vcfile', '-vc', help='output file name')
+logger = help.ogler.getLogger()
+
+parser = argparse.ArgumentParser(description='Initialize a prefix')
+parser.set_defaults(handler=lambda args: issueCredential(args),
+                    transferable=True)
+parser.add_argument('--name', '-n', help='Human readable reference', required=True)
+parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
+                    default=None)
+parser.add_argument('--schema', '-s', help='qb64 SAID of Schema to issue',
+                    default=None, required=True)
+parser.add_argument('--type', '-t', help='Human readable type name of credential to issue',
+                    default=None, required=True)
+parser.add_argument('--source', '-c', help='AC/DC Source links',
+                    default=None)
+parser.add_argument('--recipient', '-R', help='qb64 identifier prefix of the recipient of the credential',
+                    default=None)
+parser.add_argument('--data', '-d', help='Credential data, \'@\' allowed', default=[], action="store", required=True)
 
 
-class IssueDoer(doing.Doer):
+def issueCredential(args):
+    name = args.name
+    if args.data is not None:
+        try:
+            if args.data.startswith("@"):
+                f = open(args.data[1:], "r")
+                data = json.load(f)
+            else:
+                data = json.loads(args.data)
+        except json.JSONDecodeError:
+            raise kering.ConfigurationError("data supplied must be value JSON to issue in a credential")
+    else:
+        raise kering.ConfigurationError("data supplied must be value JSON to issue in a credential")
 
-    def __init__(self, recipientIdentifier, lei, vcfile, tock=0.0, hab: habbing.Habitat = None, **kwa):
-        self.hab = hab
-        self.recipientIdentifier = recipientIdentifier
-        self.lei = lei
-        self.vcfile = vcfile
 
-        super(IssueDoer, self).__init__(tock, **kwa)
+    issueDoer = CredentialIssuer(name=name, registryName=args.registry_name, schema=args.schema, source=args.source,
+                                 recipient=args.recipient, typ=args.type, data=data)
 
-    def do(self, tymth, tock=0.0, **opts):
-        issuer = issuing.Issuer(hab=self.hab, name=self.hab.name, noBackers=True)
-        now = helping.nowIso8601()
-        vlei = dict(
-            type=[
-                "VerifiableCredential",
-                "vLEIGLEIFCredential"
-            ],
+    doers = [issueDoer]
+    directing.runController(doers=doers, expire=0.0)
+
+
+class CredentialIssuer(doing.DoDoer):
+    """
+    Credential issuer DoDoer
+
+    """
+
+    def __init__(self, name, registryName, schema, source, recipient, typ, data):
+        """
+
+        Parameters:
+             name:
+             registryName:
+             schema:
+             source:
+             recipient:
+             typ: (str) human readable credential type name
+             data: (dict) credential data dict
+        """
+        self.name = name
+        self.hab, doers = existing.openHabitat(name=self.name)
+
+        self.msg = dict(
+            registryName=registryName,
+            schema=schema,
+            source=source,
+            recipient=recipient,
+            typ=typ,
+            data=data
         )
-        cred = dict(vlei)
-        cred['id'] = "{}".format("#" * Matter.Codes[MtrDex.Blake3_256].fs)
-        cred['issuer'] = f"did:keri:{self.hab.pre}"
-        cred['issuanceDate'] = now
-        cred['credentialSubject'] = dict(
-            id=f"did:keri:{self.recipientIdentifier}",
-            lei=self.lei
-        )
 
-        vcdig = Diger(raw=json.dumps(cred).encode("utf-8"))
-        cred['id'] = f"did:keri:{vcdig.qb64}"
-        msg = json.dumps(cred).encode("utf-8")
 
-        cigers = self.hab.mgr.sign(ser=msg, verfers=self.hab.kever.verfers, indexed=False)
+        reger = viring.Registry(name=registryName)
+        issuer = issuing.Issuer(hab=self.hab, name=registryName, reger=reger)
+        self.verifier = verifying.Verifier(hab=self.hab, name=registryName, reger=reger, tevers=issuer.tevers)
+        meh = grouping.MultisigEventHandler(hab=self.hab, verifier=self.verifier)
 
-        cred['proof'] = dict(
-            type=[
-                "KERISignature2021"
-            ],
-            created=now,
-            jws=cigers[0].qb64,
-            verificationMethod=f"did:keri:{self.hab.pre}/{issuer.regk}#0",
-            proofPurpose="assertionMethod"
-        )
+        handlers = [meh]
+        exchanger = exchanging.Exchanger(hab=self.hab, handlers=handlers)
 
-        # tevt, kevt = issuer.issue(vcdig=vcdig.qb64)
-        # self.client.tx(kevt)  # send to connected remote
-        # logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(kevt))
-        # tyme = (yield (self.tock))
-        #
-        # self.client.tx(tevt)  # send to connected remote
-        # logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(tevt))
-        # tyme = (yield (self.tock))
+        mbx = indirecting.MailboxDirector(hab=self.hab, exc=exchanger, topics=["/receipt", "/multisig"])
 
-        with open(self.vcfile, "w") as f:
-            f.write(json.dumps(cred, indent=4))
+        self.issr = issuing.IssuerDoer(hab=self.hab, issuer=issuer, verifier=self.verifier)
+        doers.extend([self.issr, mbx, exchanger])
+        self.toRemove = list(doers)
 
-        return super().do(tymth, tock, **opts)
+        doers.extend([doing.doify(self.issueDo)])
+        super(CredentialIssuer, self).__init__(doers=doers)
+
+    def issueDo(self, tymth, tock=0.0):
+        """
+        """
+        yield self.tock
+
+        self.issr.msgs.append(self.msg)
+
+        done = False
+        while not done:
+            while self.verifier.cues:
+                cue = self.verifier.cues.popleft()
+                if cue["kin"] == "saved":
+                    done = True
+
+                yield self.tock
+            yield
+
+        print(cue)
+
+        self.remove(self.toRemove)

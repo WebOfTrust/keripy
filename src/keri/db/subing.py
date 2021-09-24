@@ -46,7 +46,6 @@ from ..help.helping import nonStringIterable
 from ..core import coring
 from . import dbing
 
-
 logger = help.ogler.getLogger()
 
 
@@ -63,7 +62,7 @@ class SuberBase():
     """
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, db: Type[dbing.LMDBer], *,
+    def __init__(self, db: dbing.LMDBer, *,
                        subkey: str='docs.',
                        dupsort: bool=False,
                        sep: str=None,
@@ -194,7 +193,7 @@ class Suber(SuberBase):
     Sub DB of LMDBer. Subclass of SuberBase
     """
 
-    def __init__(self, db: Type[dbing.LMDBer], *,
+    def __init__(self, db: dbing.LMDBer, *,
                        subkey: str = 'docs.',
                        dupsort: bool=False, **kwa):
         """
@@ -465,7 +464,7 @@ class IoSetSuber(SuberBase):
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
     """
-    def __init__(self, db: Type[dbing.LMDBer], *,
+    def __init__(self, db: dbing.LMDBer, *,
                        subkey: str='docs.',
                        dupsort: bool=False, **kwa):
         """
@@ -1479,4 +1478,3 @@ class CesrDupSuber(DupSuber):
         """
         for key, val in self.db.getTopItemIter(db=self.sdb, key=self._tokey(keys)):
             yield (self._tokeys(key), self.klas(qb64b=bytes(val)))
-

@@ -13,11 +13,8 @@ from json import JSONDecodeError
 from hio.base import doing
 
 from keri import help
-from keri.app import habbing, keeping, directing, agenting, indirecting, forwarding, grouping
+from keri.app import directing, indirecting, grouping
 from keri.app.cli.common import displaying, existing
-from keri.core import coring, eventing, parsing
-from keri.db import basing, dbing
-from keri.kering import ConfigurationError
 
 # help.ogler.level = logging.INFO
 # help.ogler.reopen(name="hio", temp=True, clear=True)
@@ -70,7 +67,7 @@ class GroupMultisigIncept(doing.DoDoer):
 
     def __init__(self, name, group, **kwa):
         self.hab, doers = existing.openHabitat(name=name)
-        self.icpr = grouping.MultiSigInceptDoer(hab=self.hab)
+        self.icpr = grouping.MultiSigGroupDoer(hab=self.hab)
         self.msg = kwa
         self.msg["group"] = group
 
@@ -86,6 +83,7 @@ class GroupMultisigIncept(doing.DoDoer):
         # enter context
         yield self.tock
 
+        self.msg["op"] = grouping.Ops.icp
         self.icpr.msgs.append(self.msg)
 
         while not self.icpr.cues:

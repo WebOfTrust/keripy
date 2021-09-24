@@ -14,6 +14,10 @@ witnesses = {
     "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw": Location(ip4="127.0.0.1", tcp=5633, http=5643),  # wil
     "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c": Location(ip4="127.0.0.1", tcp=5634, http=5644),  # wes
     "BQv9IGwE8qd6GWtb_edv8kY5MpXKgCZHQYByqp0by0d4": Location(ip4="127.0.0.1", tcp=5652, http=5651),  # watcher
+    "Eu_se69BU6tYdF2o-YD411OzwbvImOfu1m023Bu8FM_I": Location(ip4="127.0.0.1", tcp=5621, http=5620),
+    "EEWuHgyO9iTgfz43mtY1IaRH-TrmV-YpcbpPoKKSpz8U": Location(ip4="127.0.0.1", tcp=5721, http=5720),
+    "E5JuUB6iOaKV5-0EeADj0S3KCvvkUZDnuLw8VPK8Qang": Location(ip4="127.0.0.1", tcp=5821, http=5820),
+
     # "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo": Location(ip4="52.188.131.0", tcp=5632, http=5642),  # wan
     # "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw": Location(ip4="52.186.43.227", tcp=5633, http=5643),  # wil
     # "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c": Location(ip4="52.186.44.60", tcp=5634, http=5644),  # wes
