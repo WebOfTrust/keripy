@@ -309,8 +309,8 @@ def reopenDB(db, clear=False, **kwa):
 
     """
     try:
-        env = db.reopen(clear=clear, **kwa)
-        yield env
+        db.reopen(clear=clear, **kwa)
+        yield db.env
 
     finally:
         db.close(clear=clear)
@@ -745,7 +745,7 @@ class Baser(dbing.LMDBer):
         with openDB(name=self.name,
                     temp=self.temp,
                     headDirPath=self.headDirPath,
-                    dirMode=self.dirMode,
+                    perm=self.perm,
                     clean=True) as copy:
 
             with reopenDB(db=self, reuse=True, readonly=True):  # reopen as readonly
