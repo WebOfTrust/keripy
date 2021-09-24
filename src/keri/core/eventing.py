@@ -3861,7 +3861,8 @@ class Kevery:
             for msg in cloner:
                 msgs.extend(msg)
 
-            self.cues.push(dict(kin="replay", msgs=msgs, dest=src))
+            if msgs:
+                self.cues.push(dict(kin="replay", msgs=msgs, dest=src))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
 
@@ -4313,6 +4314,7 @@ class Kevery:
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
             for ekey, edig in self.db.getPseItemsNextIter(key=key):
+                eserder = None
                 try:
                     pre, sn = splitKeySN(ekey)  # get pre and sn from escrow item
                     dgkey = dgKey(pre, bytes(edig))
@@ -4414,7 +4416,9 @@ class Kevery:
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than waiting on sigs or seal so remove from escrow
                     self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
-                    self.cues.append(dict(kin="psUnescrow", serder=eserder))
+                    if eserder is not None:
+                        self.cues.append(dict(kin="psUnescrow", serder=eserder))
+
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed: %s\n", ex.args[0])
                     else:

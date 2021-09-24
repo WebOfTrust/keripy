@@ -137,11 +137,11 @@ def adminInterface(controller, hab, insecure, proofs, cues, mbx, verifier, admin
     wiq = agenting.WitnessInquisitor(hab=hab)
 
     proofHandler = AdminProofHandler(hab=hab, controller=controller, mbx=mbx, verifier=verifier, wiq=wiq, proofs=proofs)
-    cueHandler = AdminCueHandler(hab=hab, controller=controller, mbx=mbx, msgs=cues)
+    cueHandler = AdminCueHandler(hab=hab, controller=controller, mbx=mbx, cues=cues)
     server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler, kiwiServer]
+    doers = [httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler, cueHandler, kiwiServer]
 
     return doers
 

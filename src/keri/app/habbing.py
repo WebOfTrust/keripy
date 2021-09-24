@@ -8,6 +8,7 @@ import json
 from contextlib import contextmanager
 
 from hio.base import doing
+from hio.help import hicting
 
 from . import keeping
 from .. import help
@@ -16,7 +17,7 @@ from ..core import coring, eventing, parsing
 from ..core.coring import Serder
 from ..db import dbing, basing
 from ..db.dbing import snKey, dgKey
-from ..kering import UnverifiedProofError, ValidationError, MissingDelegationError, MissingSignatureError
+from ..kering import ValidationError, MissingDelegationError, MissingSignatureError
 
 logger = help.ogler.getLogger()
 
@@ -348,11 +349,9 @@ class Habitat:
         # if it's delegated and accepted and not in kevers, error
         # if it's not delegated and not in kevers, error
         if (self.delpre and self.accepted) and self.pre not in self.kevers \
-                or not self.delpre and self.pre not in self.kevers:if  not self.delpre:
-                raise kering.ConfigurationError("Missing Habitat KEL for "
+                or not self.delpre and self.pre not in self.kevers:
+            raise kering.ConfigurationError("Missing Habitat KEL for "
                                             "pre={}.".format(self.pre))
-        else:
-            self.accepted == True
 
         self.prefixes.add(self.pre)  # ordered set so add is idempotent
 

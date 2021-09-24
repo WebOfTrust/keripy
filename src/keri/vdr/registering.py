@@ -47,8 +47,6 @@ class RegistryInceptDoer(doing.DoDoer):
                 while self.issuer.regk not in self.issuer.tevers:
                     yield self.tock
 
-                self.cues.append(dict(regk=self.issuer.regk))
-
                 yield self.tock
 
             yield self.tock
@@ -73,7 +71,7 @@ class RegistryInceptDoer(doing.DoDoer):
                 cue = self.issuer.cues.popleft()
                 cueKin = cue['kin']
                 if cueKin == "send":
-                    tevt = cue["tevt"]
+                    tevt = cue["msg"]
                     witSender = agenting.WitnessPublisher(hab=self.hab, msg=tevt)
                     self.extend([witSender])
 
@@ -82,7 +80,7 @@ class RegistryInceptDoer(doing.DoDoer):
 
                     self.remove([witSender])
                 elif cueKin == "kevt":
-                    kevt = cue["kevt"]
+                    kevt = cue["msg"]
                     witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
                     self.extend([witDoer])
 

@@ -116,6 +116,4 @@ class CredentialIssuer(doing.DoDoer):
                 yield self.tock
             yield
 
-        print(cue)
-
         self.remove(self.toRemove)

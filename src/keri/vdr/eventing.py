@@ -1184,7 +1184,8 @@ class Tevery:
             for msg in cloner:
                 msgs.extend(msg)
 
-            self.cues.append(dict(kin="replay", dest=src, msgs=msgs))
+            if msgs:
+                self.cues.append(dict(kin="replay", dest=src, msgs=msgs))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
 

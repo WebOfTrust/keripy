@@ -71,11 +71,16 @@ class RegistryInceptor(doing.DoDoer):
         msg = dict(name=self.registryName)
         self.icpr.msgs.append(msg)
 
-        while not self.icpr.cues:
+        regk = None
+        while not regk:
+            while self.icpr.cues:
+                cue = self.icpr.cues.popleft()
+                if cue["kin"] == "finished":
+                    regk = cue["regk"]
+                    break
+                yield self.tock
             yield self.tock
 
-        rep = self.icpr.cues.popleft()
-        regk = rep["regk"]
         print("Regsitry:  {}({}) \n\tcreated for Identifier Prefix:  {}".format(self.registryName, regk, self.hab.pre))
 
         self.remove(self.toRemove)
