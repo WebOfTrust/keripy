@@ -219,8 +219,8 @@ class Keeper(dbing.LMDBer):
     TempHeadDir = "/tmp"
     TempPrefix = "keri_keep_"
     TempSuffix = "_test"
-    MaxNamedDBs = 8
     Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700 == 960
+    MaxNamedDBs = 8
 
     def __init__(self, headDirPath=None, perm=None, reopen=False, **kwa):
         """
@@ -265,7 +265,7 @@ class Keeper(dbing.LMDBer):
         """
         Open sub databases
         """
-        super(Keeper, self).reopen(**kwa)
+        opened = super(Keeper, self).reopen(**kwa)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character
@@ -285,7 +285,7 @@ class Keeper(dbing.LMDBer):
         self.pubs = koming.Komer(db=self,
                                  subkey='pubs.',
                                  schema=PubSet,)  # public key set at pre.ridx
-        return self.env
+        return self.opened
 
 
 class KeeperDoer(doing.Doer):
