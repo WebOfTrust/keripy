@@ -34,7 +34,7 @@ class Mailboxer(dbing.LMDBer):
 
         Parameters:
             headDirPath:
-            dirMode:
+            perm:
             reopen:
             kwa:
         """

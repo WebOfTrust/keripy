@@ -1766,7 +1766,7 @@ def test_clean_baser():
         with basing.openDB(name=natHab.db.name,
                           temp=natHab.db.temp,
                           headDirPath=natHab.db.headDirPath,
-                          dirMode=natHab.db.dirMode,
+                          perm=natHab.db.perm,
                           clean=True) as copy:
             assert copy.path.endswith("/keri/clean/db/nat")
             assert copy.env.stat()['entries'] >= 18

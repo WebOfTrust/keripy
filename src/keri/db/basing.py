@@ -309,8 +309,8 @@ def reopenDB(db, clear=False, **kwa):
 
     """
     try:
-        env = db.reopen(clear=clear, **kwa)
-        yield env
+        db.reopen(clear=clear, **kwa)
+        yield db.env
 
     finally:
         db.close(clear=clear)
@@ -709,7 +709,9 @@ class Baser(dbing.LMDBer):
 
         # group partial signature escrow
         self.gpse = subing.IoSetSuber(db=self, subkey="gpse.")
+
         return self.env
+
 
     def reload(self):
         """
@@ -721,7 +723,9 @@ class Baser(dbing.LMDBer):
         for keys, data in self.habs.getItemIter():
             if (state := self.states.get(keys=data.prefix)) is not None:
                 try:
-                    kever = eventing.Kever(state=state, db=self, prefixes=self.prefixes, local=True)
+                    kever = eventing.Kever(state=state, db=self,
+                                           prefixes=self.prefixes,
+                                           local=True)
                 except kering.MissingEntryError as ex:  # no kel event for keystate
                     removes.append(keys)  # remove from .habs
                     continue
@@ -746,7 +750,7 @@ class Baser(dbing.LMDBer):
         with openDB(name=self.name,
                     temp=self.temp,
                     headDirPath=self.headDirPath,
-                    dirMode=self.dirMode,
+                    perm=self.perm,
                     clean=True) as copy:
 
             with reopenDB(db=self, reuse=True, readonly=True):  # reopen as readonly

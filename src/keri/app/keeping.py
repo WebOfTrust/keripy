@@ -219,10 +219,10 @@ class Keeper(dbing.LMDBer):
     TempHeadDir = "/tmp"
     TempPrefix = "keri_keep_"
     TempSuffix = "_test"
+    Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700 == 960
     MaxNamedDBs = 8
-    DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700 == 960
 
-    def __init__(self, headDirPath=None, dirMode=None, reopen=False, **kwa):
+    def __init__(self, headDirPath=None, perm=None, reopen=False, **kwa):
         """
         Setup named sub databases.
 
@@ -238,8 +238,8 @@ class Keeper(dbing.LMDBer):
             headDirPath is optional str head directory pathname for main database
                 If not provided use default .HeadDirpath
                 default headDirPath=None so uses self.HeadDirPath
-            dirMode is numeric optional os dir permissions mode
-                default dirMode=None so do not set mode
+            perm is numeric optional os dir permissions mode
+                default perm=None so do not set mode
             reopen is boolean, IF True then database will be reopened by this init
                 default reopen=True
 
@@ -255,17 +255,17 @@ class Keeper(dbing.LMDBer):
         Duplicates are inserted in lexocographic order by value, insertion order.
 
         """
-        if dirMode is None:
-            dirMode = self.DirMode  # defaults to restricted permissions for non temp
+        if perm is None:
+            perm = self.Perm  # defaults to restricted permissions for non temp
 
-        super(Keeper, self).__init__(headDirPath=headDirPath, dirMode=dirMode,
+        super(Keeper, self).__init__(headDirPath=headDirPath, perm=perm,
                                      reopen=reopen, **kwa)
 
     def reopen(self, **kwa):
         """
         Open sub databases
         """
-        super(Keeper, self).reopen(**kwa)
+        opened = super(Keeper, self).reopen(**kwa)
 
         # Create by opening first time named sub DBs within main DB instance
         # Names end with "." as sub DB name must include a non Base64 character
@@ -285,7 +285,7 @@ class Keeper(dbing.LMDBer):
         self.pubs = koming.Komer(db=self,
                                  subkey='pubs.',
                                  schema=PubSet,)  # public key set at pre.ridx
-        return self.env
+        return self.opened
 
 
 class KeeperDoer(doing.Doer):

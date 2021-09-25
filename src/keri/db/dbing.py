@@ -56,7 +56,7 @@ from collections import abc
 import lmdb
 from orderedset import OrderedSet as oset
 
-from hio.base import doing
+from hio.help import filing
 
 from ..help import helping
 from ..core import coring
@@ -256,34 +256,44 @@ def openLMDB(cls=None, name="test", temp=True, **kwa):
             lmdber.close(clear=lmdber.temp)  # clears if lmdber.temp
 
 
-class LMDBer:
+class LMDBer(filing.Filer):
     """
     LBDBer base class for LMDB manager instances.
     Creates a specific instance of an LMDB database directory and environment.
 
+    Attributes:  (inherited)
+        .name (str): unique path component used in directory or file path name
+        .base (str): another unique path component inserted before name
+        .temp (bool): True means use /tmp directory
+        .headDirPath is head directory path
+        .path is full directory path
+        .perm is numeric os permissions for directory and/or file(s)
+        .filed (bool): True means .path ends in file.
+                       False means .path ends in directory
+        .mode (str): file open mode if filed
+        .fext (str): file extension if filed
+        .file (File)
+        .opened is Boolean, True means directory created and if file then file
+                is opened. False otherwise
+
     Attributes:
-        .name is LMDB database name did2offer
-        .temp is Boolean, True means open db in /tmp directory
-        .headDirPath is head directory path for db
-        .mode is numeric os dir permissions for db directory
-        .path is LMDB main (super) database directory path
-        .env is LMDB main (super) database environment
-        .opened is Boolean, True means LMDB .env at .path is opened.
-                            Otherwise LMDB .env is closed
+        .env (lmdb.env): LMDB main (super) database environment
+        .readonly (bool): True means open LMDB env as readonly
 
     Properties:
 
-    Fire/Directory Creation Mode Notes:
-        DirMode is for Restricted Access Permissions to directory of db
+    File/Directory Creation Mode Notes:
+        .Perm provides default restricted access permissions to directory and/or files
+        stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
+        0o1700==960
 
         stat.S_ISVTX  is Sticky bit. When this bit is set on a directory it means
             that a file in that directory can be renamed or deleted only by the
             owner of the file, by the owner of the directory, or by a privileged process.
+            When this bit is set on a file it means nothing
         stat.S_IRUSR Owner has read permission.
         stat.S_IWUSR Owner has write permission.
         stat.S_IXUSR Owner has execute permission.
-
-        # stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
     """
     HeadDirPath = "/usr/local/var"  # default in /usr/local/var
     TailDirPath = "keri/db"
@@ -294,53 +304,52 @@ class LMDBer:
     TempHeadDir = "/tmp"
     TempPrefix = "keri_lmdb_"
     TempSuffix = "_test"
+    Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
     MaxNamedDBs = 64
-    DirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700==960
 
-    def __init__(self, name='main', temp=False, headDirPath=None, dirMode=None,
-                 reopen=True, clear=False, reuse=False, clean=False, readonly=False):
+
+    def __init__(self, readonly=False, **kwa):
         """
         Setup main database directory at .dirpath.
-        Create main database environment at .env using .dirpath.
+        Create main database environment at .env using .path.
 
         Parameters:
-            name (str): directory path name differentiator for main database
-                When system employs more than one keri database, name allows
+            name (str): directory path name differentiator directory/file
+                When system employs more than one keri installation, name allows
                 differentiating each instance by name
+            base (str): optional directory path segment inserted before name
+                that allows further differentation with a hierarchy. "" means
+                optional.
             temp (bool): assign to .temp
                 True then open in temporary directory, clear on close
                 Otherwise then open persistent directory, do not clear on close
             headDirPath (str): optional head directory pathname for main database
                 Default .HeadDirPath
-            dirMode (int): optional numeric os dir permissions for database
+            mode (int): optional numeric os dir permissions for database
                 directory and database files. Default .DirMode
-            reopen (bool): True means database will be reopened by this init
-                              False means databse not opened by this init
+            reopen (bool): True means (re)opened by this init
+                           False  means not (re)opened by this init but later
             clear (bool): True means remove directory upon close if reopon
-                             False means do not remove directory upon close if reopen
+                          False means do not remove directory upon close if reopen
             reuse (bool): True means reuse self.path if already exists
-                             False means do not reuse but remake self.path
+                          False means do not reuse but remake self.path
             clean (bool): True means path uses clean tail variant
                              False means path uses normal tail variant
+            filed (bool): True means .path is file path not directory path
+                          False means .path is directiory path not file path
+            mode (str): File open mode when filed
+            fext (str): File extension when filed
+
             readonly (bool): True means open database in readonly mode
                                 False means open database in read/write mode
 
         """
-        self.name = name
-        self.temp = True if temp else False
-        self.headDirPath = headDirPath if headDirPath is not None else self.HeadDirPath
-        self.dirMode = dirMode if dirMode is not None else self.DirMode
-        self.path = None
         self.env = None
-        self.opened = False
-
-        if reopen:
-            self.reopen(headDirPath=self.headDirPath, dirMode=dirMode,
-                        clear=clear, reuse=reuse, clean=clean, readonly=readonly)
+        self.readonly = True if readonly else False
+        super(LMDBer, self).__init__(**kwa)
 
 
-    def reopen(self, temp=None, headDirPath=None, dirMode=None, clear=False,
-               reuse=False, clean=False, readonly=False):
+    def reopen(self, readonly=False, **kwa):
         """
         Open if closed or close and reopen if opened or create and open if not
         if not preexistent, directory path for lmdb at .path and then
@@ -348,128 +357,33 @@ class LMDBer:
 
         Parameters:
             temp (bool): assign to .temp
-                True then open in temporary directory, clear on close
-                Othewise then open persistent directory, do not clear on close
+                         True means open in temporary directory, clear on close
+                         False means open persistent directory, do not clear on close
             headDirPath (str): optional head directory pathname for main database
-                Default .HeadDirpath
-            dirMode (int): optional numeric os dir permissions for database
-                directory and database files. Default .DirMode
+                               Default .HeadDirpath
+            perm (int): optional numeric os dir permissions for database
+                         directory and database files. Default .Perm
             clear (bool): True means remove directory upon close
                              False means do not remove directory upon close
             reuse (bool): True means reuse self.path if already exists
                              False means do not reuse but remake self.path
             clean (bool): True means path uses clean tail variant
                              False means path uses normal tail variant
+            mode (str): file open mode when .filed
+            fext (str): File extension when .filed
             readonly (bool): True means open database in readonly mode
                                 False means open database in read/write mode
         """
-        self.close(clear=clear)
-
-        if temp is not None:
-            self.temp = temp
-        if headDirPath is not None:
-            self.headDirPath = headDirPath
-        if dirMode is not None:
-            self.dirMode = dirMode
-
-        if not reuse or not self.path:
-            self.path = self.makePath(name=self.name,
-                                      temp=self.temp,
-                                      headDirPath=self.headDirPath,
-                                      dirMode=self.dirMode,
-                                      clean=clean)
+        opened = super(LMDBer, self).reopen(**kwa)
+        if readonly is not None:
+            self.readonly = readonly
 
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs,
-                             mode=self.dirMode, readonly=readonly)
-        self.opened = True
-        return self.env
-
-
-    def makePath(self, name, temp=None, headDirPath=None, dirMode=None, clean=False):
-        """
-        Make .path by opening or creating and opening if not preexistent, directory
-        path for lmdb and assigning to .path
-
-        Parameters:
-            name (str): unique name alias portion of path
-            temp (bool): optional
-                None means ignore,
-                True means open temporary directory, may clear on close
-                False menans open persistent directory, may not clear on close
-
-            headDirPath (str): optional head directory pathname of main database
-
-            dirMode (int): directory permissions such as
-                stat.S_IRUSR Owner has read permission.
-                stat.S_IWUSR Owner has write permission.
-                stat.S_IXUSR Owner has execute permission.
-
-            clean (bool): True means make path for cleaned version of db and
-                               remove old directory at clean path if exists
-                             False means make path for regular version of db
-        """
-        temp = True if temp else False
-
-        if headDirPath is None:
-            headDirPath = self.HeadDirPath
-        if dirMode is None:
-            dirMode = self.DirMode
-
-        tailDirPath = self.CleanTailDirPath if clean else self.TailDirPath
-        altTailDirPath = self.AltCleanTailDirPath if clean else self.AltTailDirPath
-
-        if temp:
-            headDirPath = tempfile.mkdtemp(prefix=self.TempPrefix,
-                                           suffix=self.TempSuffix,
-                                           dir=self.TempHeadDir)
-            path = os.path.abspath(
-                                os.path.join(headDirPath,
-                                             tailDirPath,
-                                             name))
-
-            if clean and os.path.exists(path):
-                shutil.rmtree(path)
-
-            os.makedirs(path)
-
-        else:
-            path = os.path.abspath(
-                                os.path.expanduser(
-                                    os.path.join(headDirPath,
-                                                 tailDirPath,
-                                                 name)))
-
-            if clean and os.path.exists(path):
-                shutil.rmtree(path)
-
-            if not os.path.exists(path):
-                try:
-                    os.makedirs(path)
-                except OSError as ex:
-                    headDirPath = self.AltHeadDirPath
-                    path = os.path.abspath(
-                                        os.path.expanduser(
-                                            os.path.join(headDirPath,
-                                                         altTailDirPath,
-                                                         name)))
-                    if not os.path.exists(path):
-                        os.makedirs(path)
-            else:
-                if not os.access(path, os.R_OK | os.W_OK):
-                    headDirPath = self.AltHeadDirPath
-                    path = os.path.abspath(
-                                        os.path.expanduser(
-                                            os.path.join(headDirPath,
-                                                         altTailDirPath,
-                                                         name)))
-                    if not os.path.exists(path):
-                        os.makedirs(path)
-
-            os.chmod(path, dirMode)  # set dir creation mode
-
-        return path
+                             mode=self.perm, readonly=self.readonly)
+        self.opened = True if opened and self.env else False
+        return self.opened
 
 
     def close(self, clear=False):
@@ -485,18 +399,8 @@ class LMDBer:
                 pass
 
         self.env = None
-        self.opened = False
 
-        if clear:
-            self.clearDirPath()
-
-
-    def clearDirPath(self):
-        """
-        Remove lmdb directory at end of .path
-        """
-        if self.path and os.path.exists(self.path):
-            shutil.rmtree(self.path)
+        return(super(LMDBer, self).close(clear=clear))
 
 
     # For subdbs with no duplicate values allowed at each key. (dupsort==False)

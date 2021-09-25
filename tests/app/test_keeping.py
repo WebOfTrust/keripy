@@ -244,8 +244,8 @@ def test_keeper():
     stat.S_IWUSR Owner has write permission.
     stat.S_IXUSR Owner has execute permission.
     """
-    dirMode = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
-    assert dirMode == 0o1700
+    perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
+    assert perm == 0o1700
 
     # set mode to sticky bit plus rwx only for owner/user
     keeper = keeping.Keeper(reopen=True)
@@ -257,7 +257,7 @@ def test_keeper():
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "1700"
-    assert keeper.DirMode == dirMode
+    assert keeper.Perm == perm
 
     assert isinstance(keeper.gbls.sdb, lmdb._Database)
     assert isinstance(keeper.pris.sdb, lmdb._Database)
@@ -269,7 +269,7 @@ def test_keeper():
     assert not keeper.opened
 
     # set to unrestricted mode
-    keeper = keeping.Keeper(dirMode=0o775, reopen=True)
+    keeper = keeping.Keeper(perm=0o775, reopen=True)
     assert isinstance(keeper, keeping.Keeper)
     assert keeper.name == "main"
     assert keeper.temp == False
