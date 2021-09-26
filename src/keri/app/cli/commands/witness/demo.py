@@ -1,6 +1,8 @@
 import argparse
+import logging
 
 from keri.app import habbing, indirecting, directing
+from keri import help
 
 parser = argparse.ArgumentParser(description="Run a demo collection of witnesses")
 parser.set_defaults(handler=lambda args: demo(args))

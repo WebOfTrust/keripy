@@ -74,7 +74,6 @@ class WitnessReceiptor(doing.DoDoer):
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
-
         sn = self.hab.kever.sn
         wits = self.hab.kever.wits
 
@@ -122,7 +121,6 @@ class WitnessReceiptor(doing.DoDoer):
             _ = (yield self.tock)
 
         self.remove(witers)
-
         return True
 
 
@@ -182,7 +180,6 @@ class WitnessInquisitor(doing.DoDoer):
                 yield self.tock
 
             msg = self.msgs.popleft()
-
             witer = random.choice(witers)
             witer.msgs.append(msg)
 
@@ -274,7 +271,7 @@ class TCPWitnesser(doing.DoDoer):
         self.sent = sent if sent is not None else decking.Deck()
         self.parser = None
         doers = doers if doers is not None else []
-        doers.extend([doing.doify(self.receiptDo), doing.doify(self.escrowDo)])
+        doers.extend([doing.doify(self.receiptDo)])
 
         self.kevery = eventing.Kevery(db=self.hab.db,
                                       **kwa)
@@ -336,12 +333,6 @@ class TCPWitnesser(doing.DoDoer):
             add result of doify on this method to doers list
         """
         yield from self.parser.parsator()  # process messages continuously
-
-    def escrowDo(self, tymth=None, tock=0.0, **opts):
-        yield  # enter context
-        while True:
-            self.kevery.processEscrows()
-            yield
 
 
 class HttpWitnesser(doing.DoDoer):
@@ -415,7 +406,6 @@ class HttpWitnesser(doing.DoDoer):
         while True:
             while not self.client.responses:
                 rep = self.client.respond()
-
                 self.sent.append(rep)
                 yield
             yield
@@ -479,7 +469,12 @@ class KiwiServer(doing.DoDoer):
         self.app.add_route("/multisig", self, suffix="multisig")
         self.gdoer = grouping.MultiSigGroupDoer(hab=hab)
 
-        self.witq = WitnessInquisitor(hab=hab, klas=TCPWitnesser)
+        self.app.add_route("/delegate/incept", self, suffix="delegate_incept")
+        self.app.add_route("/delegate/rotate", self, suffix="delegate_rotate")
+        # self.delcptr = delegating.InceptDoer(name="")
+        # self.delrotr = delegating.RotateDoer(hab=hab)
+
+        self.witq = WitnessInquisitor(hab=hab, klas=HttpWitnesser)
 
         doers = [self.witq, self.registryIcpr, self.gdoer, doing.doify(self.verifierDo), doing.doify(
             self.issuerDo), doing.doify(self.groupCueDo), doing.doify(self.escrowDo)]
@@ -981,7 +976,6 @@ class KiwiServer(doing.DoDoer):
 
         return issuer
 
-
     def on_get_id(self, req, rep):
         """
         Return the groups this environment is a part of
@@ -1016,3 +1010,9 @@ class KiwiServer(doing.DoDoer):
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
+
+    def on_post_delegate_incept(self, req, rep):
+        rep.status = falcon.HTTP_202
+
+    def on_post_delegate_rotate(self, req, rep):
+        rep.status = falcon.HTTP_202

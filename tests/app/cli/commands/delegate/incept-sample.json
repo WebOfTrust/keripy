@@ -1,10 +1,5 @@
 {
-  "delegatorPrefix": "EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
-  "delegatorWits": [
-    "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
-    "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
-    "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
-  ],
+  "delpre": "EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
   "salt": "abcdef0123456789",
   "wits": ["BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"],
   "transferable": true,
@@ -12,4 +7,4 @@
   "ncount": 1,
   "isith": 1,
   "nsith": 1
-  }
+}

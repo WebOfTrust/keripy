@@ -115,7 +115,7 @@ class DelegateRotateDoer(doing.DoDoer):
         delPre = self.data[0]["i"]
         delK = self.hab.kevers[delPre]
 
-        verfers, digers, cst, nst = self.hab.mgr.rotate(pre=delK.prefixer.qb64, temp=False)
+        verfers, digers, cst, nst = self.hab.interact(pre=delK.prefixer.qb64, temp=False)
         rotSrdr = eventing.deltate(pre=delK.prefixer.qb64,
                                    keys=[verfer.qb64 for verfer in verfers],
                                    dig=delK.serder.diger.qb64,

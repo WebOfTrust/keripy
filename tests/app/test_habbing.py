@@ -119,9 +119,6 @@ def test_habitat_reinitialization():
 
 
 def test_habitat_reinitialization_reload():
-    """
-    Test Reinitializing Habitat class
-    """
     if os.path.exists('/usr/local/var/keri/db/bob-test'):
         shutil.rmtree('/usr/local/var/keri/db/bob-test')
     if os.path.exists('/usr/local/var/keri/keep/bob-test'):
@@ -131,7 +128,6 @@ def test_habitat_reinitialization_reload():
 
     with basing.openDB(name=name, clear=True, temp=False) as db, \
             keeping.openKS(name=name, clear=True, temp=False) as ks:
-
         hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
         oidig = hab.iserder.dig
         opre = hab.pre
@@ -142,7 +138,6 @@ def test_habitat_reinitialization_reload():
     # openDB with reload=True which should reload .habs into db.kevers and db.prefixes
     with basing.openDB(name=name, temp=False, reload=True) as db, \
             keeping.openKS(name=name, temp=False) as ks:
-
         assert opre in db.prefixes
         assert opre in db.kevers
 
@@ -175,6 +170,31 @@ def test_habitat_reinitialization_reload():
 
     assert not os.path.exists(hab.ks.path)
     assert not os.path.exists(hab.db.path)
+    """End Test"""
+
+
+def test_habitat_with_delegation():
+    """
+    Test Habitat class
+    """
+    delhab = habbing.Habitat(name="del", temp=True)
+    delpre = delhab.pre
+    assert delpre == "E5R24em6RjYzygDkAqM2Sr3cYkFJIObwxc7bvJ68w0rU"
+
+    bobhab = habbing.Habitat(name="bob", temp=True, delpre=delpre)
+    assert bobhab.pre == "EP5Mtq4GUNpSerefl7gyFzEth1IHslD8yPUd5TqxCIDk"
+
+    assert bobhab.delserder.pre == "EP5Mtq4GUNpSerefl7gyFzEth1IHslD8yPUd5TqxCIDk"
+    assert bobhab.delserder.ked["s"] == '0'
+    assert bobhab.delserder.dig == "EInoiW2u40h0bgm3gu2C4xFXW-QVrDeJ3VG97QjbCKFQ"
+
+    assert bobhab.accepted is False
+
+    bobhab.db.close(clear=True)
+    bobhab.ks.close(clear=True)
+    delhab.db.close(clear=True)
+    delhab.ks.close(clear=True)
+
     """End Test"""
 
 

@@ -11,5 +11,4 @@ else
   kli vc registry incept --name gleif
 fi
 
-#kli agent start --name gleif --pre E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM --insecure
-kli send --name gleif --target 5621
+kli agent start --name gleif --pre E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM --insecure

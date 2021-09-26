@@ -20,23 +20,20 @@ need to call it
 """
 
 import os
-import stat
 import shutil
-import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass, asdict, field
 import typing
 import functools
 
 import lmdb
+from hio.base import doing
 from orderedset import OrderedSet as oset
 
-from hio.base import doing
-
+from . import dbing, koming, subing
 from .. import kering
 
 from ..core import coring, eventing, parsing
-from . import dbing, koming, subing
 
 from .. import help
 
@@ -429,7 +426,7 @@ class Baser(dbing.LMDBer):
         .pdes is named sub DB of partially delegated escrowed couples
             that map digest to seal source couple that provides source
             (delegator or issuer) event seal. Each couples is concatenations
-            of full qualified items, snu+dig of of authorizing (delegating or
+            of full qualified items, snu+dig of authorizing (delegating or
             issuing) source event.
             dgKey
             Values are couples used to lookup source event in .kels sub DB

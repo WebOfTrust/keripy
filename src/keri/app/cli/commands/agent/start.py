@@ -18,7 +18,7 @@ from keri import help
 from keri import kering
 from keri.app import directing, agenting, indirecting, storing, grouping
 from keri.app.cli.common import existing
-from keri.core import scheming
+from keri.core import scheming, coring
 from keri.peer import exchanging
 from keri.vc import walleting, handling, proving
 from keri.vdr import verifying
@@ -49,7 +49,7 @@ parser.add_argument("-I", '--insecure',
 
 
 def launch(args):
-    help.ogler.level = logging.INFO
+    help.ogler.level = logging.CRITICAL
     help.ogler.reopen(name="keri", temp=True, clear=True)
     logger = help.ogler.getLogger()
 
@@ -104,10 +104,12 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
     exchanger = exchanging.Exchanger(hab=hab, handlers=handlers)
 
     cues = decking.Deck()
-    mbd = indirecting.MailboxDirector(hab=hab, exc=exchanger, verifier=verifier, topics=["/receipt", "/replay",
-                                                                                         "/multisig", "/credential"],
+    mbd = indirecting.MailboxDirector(hab=hab,
+                                      exc=exchanger,
+                                      verifier=verifier,
+                                      topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate"],
                                       cues=cues)
-
+    # configure a kevery
     doers.extend([exchanger, directant, tcpServerDoer, mbd])
     doers.extend(adminInterface(controller=controller,
                                 hab=hab,
@@ -134,12 +136,12 @@ def adminInterface(controller, hab, insecure, proofs, cues, mbx, verifier, admin
     mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
     wiq = agenting.WitnessInquisitor(hab=hab)
 
-    proofHandler = AdminProofHandler(hab=hab, controller=controller, mbx=mbx, verifier=verifier, wiq=wiq,
-                                     proofs=proofs)
+    proofHandler = AdminProofHandler(hab=hab, controller=controller, mbx=mbx, verifier=verifier, wiq=wiq, proofs=proofs)
+    cueHandler = AdminCueHandler(hab=hab, controller=controller, mbx=mbx, cues=cues)
     server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler, kiwiServer]
+    doers = [httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler, cueHandler, kiwiServer]
 
     return doers
 
@@ -209,3 +211,83 @@ class AdminProofHandler(doing.Doer):
                 yield
 
             yield
+
+
+class AdminCueHandler(doing.DoDoer):
+    """
+
+    """
+
+    def __init__(self, controller, hab, mbx, cues=None, **kwa):
+        """
+
+        Parameters:
+            mbx is Mailboxer for saving messages for controller
+            cues is cues Deck from external mailbox to process
+
+        """
+        self.controller = controller
+        self.hab = hab
+        self.mbx = mbx
+        self.cues = cues if cues is not None else decking.Deck()
+
+        super(AdminCueHandler, self).__init__(doers=[doing.doify(self.cueDo)], **kwa)
+
+    def cueDo(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle cues coming out of our external Mailbox listener and forward to controller
+        mailbox if appropriate
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.cues:
+                cue = self.cues.popleft()
+                cueKin = cue["kin"]  # type or kind of cue
+                if cueKin in ("notice",):
+                    serder = cue["serder"]
+
+                    ilk = serder.kex["t"]
+
+                    if ilk in (coring.Ilks.rot,):
+                        pre = serder.pre
+                        for keys, group in self.hab.db.gids.getItemIter():
+                            if pre in group.aids:
+                                payload = dict(name=keys, lid=group.lid, gid=group.gid, rot=serder.ked)
+                                ser = exchanging.exchange(route="/rotate", payload=payload)
+                                msg = bytearray(ser.raw)
+                                msg.extend(self.hab.sanction(ser))
+
+                                self.mbx.storeMsg(self.controller + "/multisig", msg)
+                elif cueKin in ("delegating",):
+                    srdr = cue["serder"]
+                    msg = self.hab.interact(data=[
+                        dict(i=srdr.pre, s=srdr.ked["s"], d=srdr.dig)
+                    ])
+                    witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg)
+                    self.extend([witRctDoer])
+
+                    while not witRctDoer.done:
+                        yield self.tock
+
+                    self.remove([witRctDoer])
+                elif cueKin in ("psUnescrow",):
+                    srdr = cue["serder"]
+                    wits = srdr.ked["b"]
+                    witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.HttpWitnesser, wits=wits)
+                    self.extend([witq])
+
+                    while srdr.pre not in self.hab.kevers:
+                        witq.query(pre=srdr.pre)
+                        yield 1.0
+
+                    print("Successfully deletated to", srdr.pre)
+
+
+                yield self.tock
+            yield self.tock
+

@@ -49,8 +49,8 @@ def rotate(args):
     else:
         data = None
 
-
-    rotDoer = RotateDoer(name=name, proto=args.proto, wits=args.witnesses, cuts=args.witness_cut, adds=args.witness_add,
+    print(args)
+    rotDoer = RotateDoer(name=name, proto=args.proto, wits=args.witnesses, cuts=args.cuts, adds=args.witness_add,
                          sith=args.sith, count=args.next_count, toad=args.toad, erase=args.erase, data=data)
 
     doers = [rotDoer]
