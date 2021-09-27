@@ -194,9 +194,13 @@ def test_resolution():
     cache = CacheResolver()
     cache.add("did:keri:EQtF_DhWj-uCPTsq4BONO0yR0PWLpUITkSqHoW0JjndZ", ref)
 
-    schemer = Schemer(raw=scer, typ=JSONSchema(resolver=cache))
-    assert schemer.verify(payload) is True
-    assert schemer.verify(badload) is False
+    schemer = Schemer(raw=scer)
+    schemer.typ = JSONSchema(resolver=cache)
+    v = schemer.verify(payload)
+    assert v is True
+    v = schemer.verify(badload)
+    print("Bad", v)
+    assert v is False
 
 
 if __name__ == '__main__':

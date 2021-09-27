@@ -400,6 +400,7 @@ class InvalidCredentialStateError(ValidationError):
         raise InvalidCredentialStateError("error message")
     """
 
+
 class UnverifiedProofError(ValidationError):
     """
     Error signature from credential CESR proof is unverfied
@@ -408,3 +409,37 @@ class UnverifiedProofError(ValidationError):
     """
 
 
+class MissingChainError(KeriError):
+    """
+    Error chain from AC/DC credential is not verified.
+
+    Usage:
+        raise MissingChainError("error message")
+    """
+
+
+class RevokedChainError(KeriError):
+    """
+    Error chain from AC/DC credential is not verified.
+
+    Usage:
+        raise RevokedChainError("error message")
+    """
+
+
+class MissingSchemaError(KeriError):
+    """
+    Error loading AC/DC credential schema from cache.
+
+    Usage:
+        raise MissingSchemaError("error message")
+    """
+
+
+class FailedSchemaValidationError(KeriError):
+    """
+    Error from AC/DC credential is not valid against its schema.
+
+    Usage:
+        raise FailedSchemaValidationError("error message")
+    """

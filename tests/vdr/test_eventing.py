@@ -694,7 +694,9 @@ def test_tevery():
         diger = rotser.diger
 
         tvy.processEvent(serder=iss, seqner=seqner, diger=diger)
-        assert tev.vcState(vcdig) == VcStates.issued
+        status, lastSeen = tev.vcState(vcdig)
+        assert status == VcStates.issued
+        assert lastSeen is not None
         assert tev.vcSn(vcdig) == 0
 
         # revoke the vc
@@ -708,7 +710,9 @@ def test_tevery():
         diger = rotser.diger
 
         tvy.processEvent(serder=rev, seqner=seqner, diger=diger)
-        assert tev.vcState(vcdig) == VcStates.revoked
+        status, lastSeen = tev.vcState(vcdig)
+        assert status == VcStates.revoked
+        assert lastSeen is not None
         assert tev.vcSn(vcdig) == 1
 
 

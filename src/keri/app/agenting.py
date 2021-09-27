@@ -440,7 +440,6 @@ class KiwiServer(doing.DoDoer):
         self.rep = rep
         self.verifier = verifier if verifier is not None else verifying.Verifier(hab=self.hab, name=hab.name)
         self.issuerCues = decking.Deck()
-        self.verifierCues = decking.Deck()
         self.app = app if app is not None else falcon.App(cors_enable=True)
         self.issuers = issuers if issuers is not None else dict()
         self.typ = scheming.JSONSchema()
@@ -496,8 +495,8 @@ class KiwiServer(doing.DoDoer):
         yield self.tock
 
         while True:
-            while self.verifierCues:
-                cue = self.verifierCues.popleft()
+            while self.verifier.cues:
+                cue = self.verifier.cues.popleft()
                 cueKin = cue["kin"]
 
                 if cueKin == "saved":
@@ -521,7 +520,7 @@ class KiwiServer(doing.DoDoer):
                     craw.extend(proof)
 
                     pl = dict(
-                        vc=[handling.envelope(craw, typ=self.typ)]
+                        vc=[handling.envelope(craw)]
                     )
 
                     exn = exchanging.exchange(route="/credential/issue", payload=pl)
@@ -574,7 +573,6 @@ class KiwiServer(doing.DoDoer):
             while self.issuerCues:
                 cue = self.issuerCues.popleft()
                 cueKin = cue['kin']
-                print(cueKin)
                 if cueKin == "send":
                     tevt = cue["tevt"]
                     witSender = WitnessPublisher(hab=self.hab, msg=tevt)
@@ -664,21 +662,17 @@ class KiwiServer(doing.DoDoer):
         dt = data["dt"] if "dt" in data else nowIso8601()
 
         d = dict(
-            i="",
-            type=types,
-            si=recipientIdentifier,
-            dt=dt
+            d="",
+            i=recipientIdentifier,
+            dt=dt,
+            t=types,
         )
 
         d |= data
 
         saider = scheming.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.i)
-        d["i"] = saider.qb64
+        d["d"] = saider.qb64
 
-
-        ref = scheming.jsonSchemaCache.resolve(schema)
-        schemer = scheming.Schemer(raw=ref)
-        jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
 
         group = self.hab.group()
         if group is None:
@@ -687,19 +681,17 @@ class KiwiServer(doing.DoDoer):
             pre = group.gid
 
         creder = proving.credential(issuer=pre,
-                                    schema=schemer.said,
+                                    schema=schema,
                                     subject=d,
-                                    typ=jsonSchema,
                                     source=source,
                                     status=issuer.regk)
-
         try:
             issuer.issue(creder=creder, dt=dt)
         except kering.MissingAnchorError:
             logger.info("Missing anchor from credential issuance due to multisig identifier")
 
         craw = self.hab.endorse(creder)
-        proving.parseCredential(ims=craw, verifier=self.verifier, typ=self.typ)
+        proving.parseCredential(ims=craw, verifier=self.verifier)
 
         if notify and group:
             for aid in group.aids:
@@ -707,7 +699,7 @@ class KiwiServer(doing.DoDoer):
                     if aid not in self.hab.kevers:
                         self.witq.query(aid)
                     msg = dict(
-                        schema=schemer.said,
+                        schema=schema,
                         source=source,
                         recipient=recipientIdentifier,
                         typ=body.get("type"),
@@ -752,13 +744,14 @@ class KiwiServer(doing.DoDoer):
 
     def on_post_request(self, req, rep):
         """
+        HTTP handler for credential presentation request generation
 
         Parameters:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
 
         Body:
-            recipient: SCID of recipient of credential to request
+            recipient: SCID of holder of credential to request
             schema:  SAID of schema
 
         """
@@ -766,12 +759,9 @@ class KiwiServer(doing.DoDoer):
         recipientIdentifier = body.get("recipient")
         schema = body.get("schema")
 
-        ref = scheming.jsonSchemaCache.resolve(schema)
-        schemer = scheming.Schemer(raw=ref)
-
         pl = dict(
             input_descriptors=[
-                dict(x=schemer.said)
+                dict(x=schema)
             ]
         )
 
@@ -929,13 +919,15 @@ class KiwiServer(doing.DoDoer):
                 (prefixer, seqner, diger, siger) = seal
                 sigers.append(siger)
 
+            status, lastSeen = issuer.tevers[issuer.regk].vcState(key)
             cred = dict(
                 sad=creder.crd,
                 pre=prefixer.qb64,
                 sn=seqner.sn,
                 dig=diger.qb64,
                 sigers=[sig.qb64 for sig in sigers],
-                status=issuer.tevers[issuer.regk].vcState(key)
+                status=status,
+                lastSeen=lastSeen,
             )
 
             creds.append(cred)

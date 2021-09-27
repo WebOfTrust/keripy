@@ -210,7 +210,7 @@ class IssueHandler(doing.DoDoer):
 
     resource = "/credential/issue"
 
-    def __init__(self, hab, verifier, typ=JSONSchema(), cues=None, **kwa):
+    def __init__(self, hab, verifier, cues=None, **kwa):
         """
 
         Parameters:
@@ -221,7 +221,6 @@ class IssueHandler(doing.DoDoer):
         self.cues = cues if cues is not None else decking.Deck()
 
         self.verifier = verifier
-        self.typ = typ
         self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
 
         doers = [self.witq, doing.doify(self.msgDo), doing.doify(self.verifierDo)]
@@ -260,7 +259,7 @@ class IssueHandler(doing.DoDoer):
                     msg = bytearray(raw)
                     msg.extend(proof.encode("utf-8"))
 
-                    proving.parseCredential(ims=msg, verifier=self.verifier, typ=self.typ)
+                    proving.parseCredential(ims=msg, verifier=self.verifier)
                 yield
 
             yield
@@ -332,11 +331,10 @@ class RequestHandler(doing.Doer):
 
     resource = "/presentation/request"
 
-    def __init__(self, wallet, typ=JSONSchema(), cues=None, **kwa):
+    def __init__(self, wallet, cues=None, **kwa):
         self.msgs = decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.wallet = wallet
-        self.typ = typ
 
         super(RequestHandler, self).__init__(**kwa)
 
@@ -485,7 +483,7 @@ def envelope(msg, typ=JSONSchema()):
 
     ims = bytearray(msg)
     try:
-        creder = Credentialer(raw=ims, typ=typ)
+        creder = Credentialer(raw=ims)
     except ShortageError as e:
         raise e
     else:
