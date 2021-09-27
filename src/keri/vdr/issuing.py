@@ -419,12 +419,9 @@ class IssuerDoer(doing.DoDoer):
 
                 d |= data
 
-                saider = scheming.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.i)
+                saider = scheming.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
                 d["i"] = saider.qb64
 
-                ref = scheming.jsonSchemaCache.resolve(schema)
-                schemer = scheming.Schemer(raw=ref)
-                jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
 
                 group = self.hab.group()
                 if group is None:
@@ -434,9 +431,8 @@ class IssuerDoer(doing.DoDoer):
                     pre = group.gid
 
                 creder = proving.credential(issuer=pre,
-                                            schema=schemer.said,
+                                            schema=schema,
                                             subject=d,
-                                            typ=jsonSchema,
                                             source=source,
                                             status=self.issuer.regk)
 
@@ -448,7 +444,7 @@ class IssuerDoer(doing.DoDoer):
                     logger.info("Missing anchor from credential issuance due to multisig identifier")
 
                 craw = self.hab.endorse(creder)
-                proving.parseCredential(ims=craw, verifier=self.verifier, typ=scheming.JSONSchema())
+                proving.parseCredential(ims=craw, verifier=self.verifier)
 
                 yield self.tock
 

@@ -51,16 +51,15 @@ def test_credential_handlers(mockHelpingNowUTC):
         msg = kiwi.registryIcpr.msgs.popleft()
         assert msg == dict(name="test")
 
-        schema = "E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4"
+        schema = "ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc"
         LEI = "1234567890abcdefg"
 
         data = dict(LEI=LEI)
         body = dict(
             registry=issuer.regk,
             schema=schema,
-            source=hab.pre,
             recipient=recp.pre,
-            type="vLEIGLEIFCredential",
+            type="GLEIFvLEICredential",
             credentialData=data
         )
         b = json.dumps(body).encode("utf-8")
@@ -68,26 +67,24 @@ def test_credential_handlers(mockHelpingNowUTC):
         assert result.status == falcon.HTTP_200
 
         tevt = (
-            b'{"v":"KERI10JSON0000ba_","i":"EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0","s":"0","t":"iss",'
-            b'"ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38",'
-            b'"dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAAAAAAAAAAgEh57w4eMiFg8hy8gZmA'
-            b'-FnLWIgQzDcC2OMmpiyCUZz_k')
+            b'{"v":"KERI10JSON0000ba_","i":"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNa'
+            b'qXXjJYulW8","s":"0","t":"iss","ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15'
+            b'PEcJ7f9ejHjJMC38","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0A'
+            b'AAAAAAAAAAAAAAAAAAAAAgEz9MG5UtqItcTyGHurKAdWodVv71L9fzx32OAKrB4Lts')
         kevt = (
-            b'{"v":"KERI10JSON000107_","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","s":"2","t":"ixn",'
-            b'"p":"ET6FzE7z8CFUDyfKjq__QIln5RwHBJrJz5amM9XYukLc",'
-            b'"a":[{"i":"EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0","s":"0",'
-            b'"d":"EnfAA4Gqw05dzKCdbfH2D13_FRYKg-sJw1dzH1oW6EM8"}]}-AABAAko7tF62BU4AhJgksyo'
-            b'-H4GeQH7KvxN7qZMxQvYNXRXUqc2UvEeI39cfCfi-_FYCmXf9j5oh1uSspEE7B8iYxDg')
+            b'{"v":"KERI10JSON000107_","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7'
+            b'pEE-YfcI9E","s":"2","t":"ixn","p":"ET6FzE7z8CFUDyfKjq__QIln5RwHB'
+            b'JrJz5amM9XYukLc","a":[{"i":"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNaqX'
+            b'XjJYulW8","s":"0","d":"EDkZCcOySbAPMfXC-d6aSkyv4uV7zFyxAMhMwCbr5'
+            b'RUg"}]}-AABAA4RZ3h8hzbTQ_70xofGN3mPMSuaUVvlqlA2a2RSfTny7GcA3MsDP'
+            b'r5nF6yppe4Ajj3oZM24WX0TqlIfVHAMaYCA')
         cred = (
-            b'{"v":"KERI10JSON0001ff_","i":"EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0",'
-            b'"x":"E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4","ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"d":{"i":"EW16NAGaPl2EwitjEnNKzYci5pqljuP7wXeuHMm72m_U","type":["VerifiableCredential",'
-            b'"vLEIGLEIFCredential"],"si":"EgGTr6JW6geC7wlSIz6qPsYz8a-ITy52o3urlh0F2MLE",'
-            b'"dt":"2021-01-01T00:00:00.000000+00:00","LEI":"1234567890abcdefg"},'
-            b'"s":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38"}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE'
-            b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI'
-            b'-AABAAqyIShWPH1LrXJ32DOvm0gcTxneTAvOPTDHtIPscVslopfheKbrXKBLeYtdgOVj8TTffxB-bWnnxwYYbPcp40AA')
+            b'{"v":"KERI10JSON0001ce_","d":"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNaqXXjJYulW8",'
+            b'"s":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
+            b'"a":{"d":"EBDdZ9LiUoY4mwNaswmiNYnbpi8ZMAtn5_37mKBZOiL4",'
+            b'"i":"EgGTr6JW6geC7wlSIz6qPsYz8a-ITy52o3urlh0F2MLE","dt":"2021-01-01T00:00:00.000000+00:00",'
+            b'"t":["VerifiableCredential","GLEIFvLEICredential"],"LEI":"1234567890abcdefg",'
+            b'"ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38"},"p":[]}')
 
         assert len(issuer.cues) == 2
         cue = issuer.cues.popleft()
@@ -100,22 +97,31 @@ def test_credential_handlers(mockHelpingNowUTC):
         creder = proving.Credentialer(raw=cred)
         assert reger.creds.get(creder.saider.qb64b).raw == creder.raw
 
+        # Try to revoke a credential that doesn't exist and get the appropriate error
         result = client.simulate_post(path="/credential/revoke",
                                       body=b'{"registry": "E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38", "said": '
-                                           b'"EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0"}')
+                                           b'"EhFUqi_LAldgF0I6XmN9JGjc7Wh7ld1yCRiUxtMDVvow"}')
+        assert result.status == falcon.HTTP_409
+
+        # Now revoke the actual credential
+        result = client.simulate_post(path="/credential/revoke",
+                                      body=b'{"registry": "E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38", "said": '
+                                           b'"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNaqXXjJYulW8"}')
         assert result.status == falcon.HTTP_202
 
         rev = (
-            b'{"v":"KERI10JSON0000ed_","i":"EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0","s":"1","t":"rev",'
-            b'"ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38","p":"EnfAA4Gqw05dzKCdbfH2D13_FRYKg-sJw1dzH1oW6EM8",'
-            b'"dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAAAAAAAAAAwEojtwjysa0rQw'
-            b'-bP1FIPqSvCnrclFSyuzI4NLQ0MimJY')
+            b'{"v":"KERI10JSON0000ed_","i":"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNa'
+            b'qXXjJYulW8","s":"1","t":"rev","ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15'
+            b'PEcJ7f9ejHjJMC38","p":"EDkZCcOySbAPMfXC-d6aSkyv4uV7zFyxAMhMwCbr5'
+            b'RUg","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAA'
+            b'AAAAAAAAwExysv80VRWFIfGEBFmcCjEOs8SGeZ9Rx8-NuK2F9FyWc')
         rkevt = (
-            b'{"v":"KERI10JSON000107_","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","s":"3","t":"ixn",'
-            b'"p":"Eh57w4eMiFg8hy8gZmA-FnLWIgQzDcC2OMmpiyCUZz_k",'
-            b'"a":[{"i":"EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0","s":"1",'
-            b'"d":"EtmnkuN7O2lZKeD-Setw_4XcWqc-_LP55yT0QkMQ23wo"}]}-AABAAt7jWpQkBYrMX6k'
-            b'-XpcPxtLdwuUgpbxg45zoDLJKLs1y3tm7PlBgDBiMR15YCUK-g3nST59cGr0FRwRUn0RXcBQ')
+            b'{"v":"KERI10JSON000107_","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7'
+            b'pEE-YfcI9E","s":"3","t":"ixn","p":"Ez9MG5UtqItcTyGHurKAdWodVv71L'
+            b'9fzx32OAKrB4Lts","a":[{"i":"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNaqX'
+            b'XjJYulW8","s":"1","d":"EoSOeEKX0h3JIUHRWtQuX3ajKWbTHaXXRfcgsXCOl'
+            b'x8I"}]}-AABAA8xSLe89nS_jf4H4bJa8xhP5CFWDvQgbGA_JLLUYI7-EErjxUuCv'
+            b'c-n8AuT1DPnjRiSRg0mTkXOS0cK0eHxPEDg')
         assert len(issuer.cues) == 2
         cue = issuer.cues.popleft()
         evt = cue["msg"]
@@ -155,7 +161,7 @@ def test_credential_handlers_singlesig(mockHelpingNowUTC):
         msg = kiwi.registryIcpr.msgs.popleft()
         assert msg == dict(name="test")
 
-        schema = "E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4"
+        schema = "ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc"
         LEI = "1234567890abcdefg"
 
         data = dict(LEI=LEI)
@@ -163,24 +169,12 @@ def test_credential_handlers_singlesig(mockHelpingNowUTC):
             registry="test",
             schema=schema,
             recipient=recp.pre,
-            type="vLEIGLEIFCredential",
+            type="GLEIFvLEICredential",
             credentialData=data
         )
         b = json.dumps(body).encode("utf-8")
         result = client.simulate_post(path="/credential/issue", body=b)
         assert result.status == falcon.HTTP_200
-
-        cred = (
-            b'{"v":"KERI10JSON0001ff_","i":"EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0",'
-            b'"x":"E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4","ti":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"d":{"i":"EW16NAGaPl2EwitjEnNKzYci5pqljuP7wXeuHMm72m_U","type":["VerifiableCredential",'
-            b'"vLEIGLEIFCredential"],"si":"EgGTr6JW6geC7wlSIz6qPsYz8a-ITy52o3urlh0F2MLE",'
-            b'"dt":"2021-01-01T00:00:00.000000+00:00","LEI":"1234567890abcdefg"},'
-            b'"s":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38"}-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE'
-            b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI'
-            b'-AABAAqyIShWPH1LrXJ32DOvm0gcTxneTAvOPTDHtIPscVslopfheKbrXKBLeYtdgOVj8TTffxB-bWnnxwYYbPcp40AA')
-
         assert len(issuer.cues) == 1
 
         cue = issuer.cues.popleft()
@@ -250,7 +244,7 @@ def test_issue_credential_full_multisig():
         assert kiwi is not None
 
         # Create the credential to be issued
-        schema = "E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4"
+        schema = "ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc"
         LEI = "1234567890abcdefg"
 
         data = dict(LEI=LEI)
@@ -259,7 +253,7 @@ def test_issue_credential_full_multisig():
             schema=schema,
             source=hab1.pre,
             recipient=recp.pre,
-            type="vLEIGLEIFCredential",
+            type="GLEIFvLEICredential",
             credentialData=data
         )
         b = json.dumps(body).encode("utf-8")
@@ -270,7 +264,6 @@ def test_issue_credential_full_multisig():
         assert result.status == falcon.HTTP_200
 
         creder = proving.Credentialer(crd=result.json, kind=coring.Serials.json)
-        print(creder.pretty())
 
         # The Issuer will have cue'd up a multisig request to be processed
         assert len(issuer.cues) == 1

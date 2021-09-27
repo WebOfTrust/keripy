@@ -38,9 +38,9 @@ BIS_LABELS = ["v", "i", "s", "t", "ra", "dt"]
 REV_LABELS = ["v", "i", "s", "t", "p", "dt"]
 BRV_LABELS = ["v", "i", "s", "t", "ra", "p", "dt"]
 
-VcState = namedtuple("VcState", 'issued revoked')
+VcState = namedtuple("VcState", 'issued revoked expired')
 
-VcStates = VcState(issued='issued', revoked="revoked")
+VcStates = VcState(issued='issued', revoked="revoked", expired="expired")
 
 
 def incept(
@@ -807,13 +807,19 @@ class Tever:
           vcpre:  the VC identifier
         """
         vci = nsKey([self.prefixer.qb64, vcpre])
-        cnt = self.reger.cntTels(vci)
-        if cnt == 1:
-            return VcStates.issued
-        elif cnt == 2:
-            return VcStates.revoked
 
-        return None
+        digs = []
+        for _, dig in self.reger.getTelItemPreIter(pre=vci):
+            digs.append(dig)
+
+        if len(digs) == 0:
+            return None, None
+
+        status = VcStates.issued if len(digs) == 1 else VcStates.revoked
+        dig = bytes(digs[-1])
+        lastSeen = self.reger.tets.get(keys=(vci.decode("utf-8"), dig.decode("utf-8")))
+
+        return status, lastSeen
 
     def vcSn(self, vcpre):
         """
@@ -859,6 +865,7 @@ class Tever:
         if baks:
             self.reger.delBaks(key)
             self.reger.putBaks(key, [bak.encode("utf-8") for bak in baks])
+        self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=coring.Dater())
         self.reger.putTvt(key, serder.raw)
         self.reger.putTel(snKey(pre, sn), dig)
         logger.info("Tever state: %s Added to TEL valid event=\n%s\n",

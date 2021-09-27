@@ -6,8 +6,8 @@ keri.vc.proving module
 
 import json
 import logging
-from typing import Union
 from collections.abc import Iterable
+from typing import Union
 
 import cbor2 as cbor
 import msgpack
@@ -17,7 +17,6 @@ from ..core import coring
 from ..core.coring import (Serials, sniff, Versify, Deversify, Rever, Counter,
                            CtrDex, Prefixer, Seqner, Diger, Siger, Saider, Ids)
 from ..core.parsing import Parser, Colds
-from ..core.scheming import JSONSchema
 from ..db import subing
 from ..kering import Version, VersionError, ShortageError, DeserializationError, ColdStartError, ExtractionError
 
@@ -29,9 +28,8 @@ logger = help.ogler.getLogger()
 def credential(schema,
                issuer,
                subject,
-               source=None,
                status=None,
-               typ=JSONSchema(),
+               source=None,
                version=Version,
                kind=Serials.json):
     """
@@ -40,32 +38,31 @@ def credential(schema,
         issuer is the identifier prefix of the issuer
         subject is dict of the values being assigned to the subject of this credential
         source is list of source credentials to which this credential is chained
-        typ is schema type
         version is Version instance
         kind is serialization kind
 
     """
     vs = Versify(version=version, kind=kind, size=0)
 
+    source = source if source is not None else []
+
     vc = dict(
         v=vs,
-        i="",
-        x=schema,
-        ti=issuer,
-        d=subject
+        d="",
+        s=schema,
+        i=issuer,
+        a=subject,
+        p=source
     )
 
-    if source is not None:
-        vc["s"] = source
-
     if status is not None:
-        vc["ri"] = status
+        vc["a"]["ri"] = status
 
-    return Credentialer(crd=vc, typ=typ)
+    return Credentialer(crd=vc)
 
 
-def parseCredential(ims, verifier, typ):
-    parsator = allParsator(ims=ims, verifier=verifier, typ=typ)
+def parseCredential(ims, verifier):
+    parsator = allParsator(ims=ims, verifier=verifier)
 
     while True:
         try:
@@ -74,7 +71,7 @@ def parseCredential(ims, verifier, typ):
             break
 
 
-def allParsator(ims, verifier, typ):
+def allParsator(ims, verifier):
     if not isinstance(ims, bytearray):
         ims = bytearray(ims)  # so make bytearray copy
 
@@ -82,11 +79,9 @@ def allParsator(ims, verifier, typ):
         try:
             done = yield from credParsator(ims=ims,
                                            verifier=verifier,
-                                           typ=typ
                                            )
 
         except kering.SizedGroupError as ex:  # error inside sized group
-            print(ex)
             # processOneIter already flushed group so do not flush stream
             if logger.isEnabledFor(logging.DEBUG):
                 logger.exception("Parser msg extraction error: %s\n", ex.args[0])
@@ -94,7 +89,6 @@ def allParsator(ims, verifier, typ):
                 logger.error("Parser msg extraction error: %s\n", ex.args[0])
 
         except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
-            print(ex)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.exception("Parser msg extraction error: %s\n", ex.args[0])
             else:
@@ -102,7 +96,6 @@ def allParsator(ims, verifier, typ):
             del ims[:]  # delete rest of stream to force cold restart
 
         except (kering.ValidationError, Exception) as ex:  # non Extraction Error
-            print(ex)
             # Non extraction errors happen after successfully extracted from stream
             # so we don't flush rest of stream just resume
             if logger.isEnabledFor(logging.DEBUG):
@@ -115,15 +108,14 @@ def allParsator(ims, verifier, typ):
 
 
 
-def credentialParsator(ims, verifier, typ):
+def credentialParsator(ims, verifier):
     if not isinstance(ims, bytearray):
         ims = bytearray(ims)  # so make bytearray copy
 
         while True:  # continuous stream processing never stop
             try:
                 done = yield from credParsator(ims=ims,
-                                               verifier=verifier,
-                                               typ=typ)
+                                               verifier=verifier)
 
             except kering.SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -150,7 +142,7 @@ def credentialParsator(ims, verifier, typ):
 
 
 
-def credParsator(ims=b'', verifier=None, typ=JSONSchema()):
+def credParsator(ims=b'', verifier=None):
     """
     Parse the ims bytearray as a CESR Proof Format verifiable credential
 
@@ -172,7 +164,7 @@ def credParsator(ims=b'', verifier=None, typ=JSONSchema()):
 
     while True:  # extract and deserialize message from ims
         try:
-            creder = Credentialer(raw=ims, typ=typ)
+            creder = Credentialer(raw=ims)
         except ShortageError as e:
             raise e
         else:
@@ -201,7 +193,8 @@ def credParsator(ims=b'', verifier=None, typ=JSONSchema()):
 
     try:
         verifier.processCredential(creder, prefixer, seqner, diger, isigers)
-    except AttributeError:
+    except AttributeError as ex:
+        print(ex)
         raise kering.ValidationError("No verifier to process so dropped credential"
                                      "= {}.".format(creder.pretty()))
 
@@ -266,7 +259,7 @@ class Credentialer:
 
     """
 
-    def __init__(self, raw=b'', crd=None, kind=None, typ=JSONSchema(), code=coring.MtrDex.Blake3_256):
+    def __init__(self, raw=b'', crd=None, kind=None, code=coring.MtrDex.Blake3_256):
         """
         Creates a serializer/deserializer for a Verifiable Credential in CESR Proof Format
 
@@ -281,7 +274,6 @@ class Credentialer:
 
         """
         self._code = code  # need default code for .diger
-        self._typ = typ
 
         if raw:  # deserialize raw using property setter
             self.raw = raw  # raw property setter does the deserialization
@@ -291,14 +283,6 @@ class Credentialer:
         else:
             raise ValueError("Improper initialization need raw or ked.")
 
-        # try:
-        #     scer = self._typ.resolve(self.crd["x"])
-        #     schemer = Schemer(raw=scer, typ=self._typ)
-        #
-        #     if not schemer.verify(self.raw):
-        #         raise ValidationError("subject is not valid against the schema")
-        # except ValueError:
-        #     logger.info("unable to load / validate schema")
 
     @staticmethod
     def _inhale(raw):
@@ -352,7 +336,7 @@ class Credentialer:
             raise ValueError("Unsupported version = {}.{}".format(version.major,
                                                                   version.minor))
 
-        crd["i"] = Saider.Dummy * coring.Matter.Codes[coring.MtrDex.Blake3_256].fs
+        crd["d"] = Saider.Dummy * coring.Matter.Codes[coring.MtrDex.Blake3_256].fs
 
         if not kind:
             kind = knd
@@ -377,8 +361,8 @@ class Credentialer:
             raise ValueError("Malformed version string size = {}".format(vs))
         crd["v"] = vs
 
-        saider = Saider(sad=crd, code=coring.MtrDex.Blake3_256, label=Ids.i)
-        crd["i"] = saider.qb64
+        saider = Saider(sad=crd, code=coring.MtrDex.Blake3_256, label=Ids.d)
+        crd["d"] = saider.qb64
 
         raw = coring.dumps(crd, kind)
 
@@ -403,7 +387,7 @@ class Credentialer:
         self._kind = kind
         self._version = version
         self._size = size
-        self._saider = Saider(qb64=self._crd[Ids.i], code=coring.MtrDex.Blake3_256, label=Ids.i)
+        self._saider = Saider(qb64=self._crd[Ids.d], code=coring.MtrDex.Blake3_256, label=Ids.d)
 
     @property
     def crd(self):
@@ -440,22 +424,22 @@ class Credentialer:
     @property
     def issuer(self):
         """ issuer property getter"""
-        return self.crd["ti"]
+        return self.crd["i"]
 
     @property
     def schema(self):
         """ schema property getter"""
-        return self.crd["x"]
+        return self.crd["s"]
 
     @property
     def subject(self):
         """ subject property getter"""
-        return self.crd["d"]
+        return self.crd["a"]
 
     @property
     def status(self):
         """ status property getter"""
-        return self.crd["ri"]
+        return self.crd["a"]["ri"]
 
     def pretty(self):
         """

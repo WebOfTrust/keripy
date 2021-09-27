@@ -56,6 +56,7 @@ def runWallet(name="wallet"):
     hab, doers = existing.openHabitat(name=name)
     verifier = verifying.Verifier(hab=hab, name=name)
     wallet = walleting.Wallet(db=verifier.reger, name=name)
+    walletDoer = walleting.WalletDoer(hab=hab, verifier=verifier)
 
     jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
     issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, typ=jsonSchema)
@@ -66,7 +67,7 @@ def runWallet(name="wallet"):
     rep = storing.Respondant(hab=hab, mbx=mbx)
     mdir = indirecting.MailboxDirector(hab=hab, exc=exchanger, rep=rep, topics=["/receipt", "/replay", "/credential"])
 
-    doers.extend([exchanger, mdir, rep])
+    doers.extend([exchanger, mdir, rep, walletDoer])
 
     try:
         tock = 0.03125

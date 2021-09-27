@@ -68,14 +68,9 @@ class GroupMultisigInteract(doing.DoDoer):
         # enter context
         yield self.tock
 
-        msg = dict(op=grouping.Ops.rot, reason="Standard Rotation")
+        msg = dict(op=grouping.Ops.ixn, reason="Standard Interaction")
         msg["group"] = self.msg["group"]
-        msg["sith"] = self.msg["sith"]
-        msg["toad"] = self.msg["toad"]
         msg["data"] = self.msg["data"]
-        msg["wits"] = self.msg["witnesses"] if "witnesses" in msg else []
-        msg["cuts"] = self.msg["witness_cut"] if "witnesse_cut" in msg else []
-        msg["adds"] = self.msg["witness_add"] if "witnesse_add" in msg else []
 
         self.rotr.msgs.append(msg)
 

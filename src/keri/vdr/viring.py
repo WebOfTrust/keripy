@@ -140,6 +140,7 @@ class Registry(dbing.LMDBer):
         self.twes = None
         self.taes = None
         self.regs = None
+        self.tets = None
 
         self.creds = None
         self.cdts = None
@@ -152,6 +153,8 @@ class Registry(dbing.LMDBer):
         self.mre = None
         self.mie = None
         self.pse = None
+        self.mce = None
+        self.mse = None
         self.mase = None
 
         self._tevers = dict()
@@ -185,6 +188,7 @@ class Registry(dbing.LMDBer):
         self.oots = self.env.open_db(key=b'oots.')
         self.twes = self.env.open_db(key=b'twes.')
         self.taes = self.env.open_db(key=b'taes.')
+        self.tets = subing.CesrSuber(db=self, subkey='tets.', klas=coring.Dater)
 
         # Holds the credential
         self.creds = proving.CrederSuber(db=self, subkey="creds.")
@@ -209,6 +213,10 @@ class Registry(dbing.LMDBer):
         self.mre = subing.CesrSuber(db=self, subkey='mre.', klas=coring.Dater)
         # Missing issuer escrow
         self.mie = subing.CesrSuber(db=self, subkey='mie.', klas=coring.Dater)
+        # Broken chain escrow
+        self.mce = subing.CesrSuber(db=self, subkey='mce.', klas=coring.Dater)
+        # Missing schema escrow
+        self.mse = subing.CesrSuber(db=self, subkey='mse.', klas=coring.Dater)
 
         # Missing anchor seal escrow for Issuer Events before they reach the Tevery
         self.mase = subing.IoSetSuber(db=self, subkey="mase.")
