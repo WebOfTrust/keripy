@@ -24,10 +24,10 @@ logger = help.ogler.getLogger()
 
 
 class Delegatey:
-    def __init__(self, db, ks, msgs=None, posts=None):
+    def __init__(self, name, db, ks, msgs=None, posts=None):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.posts = posts if posts is not None else decking.Deck()
-
+        self.name = name
         self.db = db
         self.ks = ks
         self.hab = None
@@ -45,7 +45,7 @@ class Delegatey:
         delpre = msg["delpre"] if "delpre" in msg else None
 
         if self.hab is None:
-            self.hab = Habitat(db=self.db, ks=self.ks, seed=seed, salt=salt, icount=icount, isith=isith,
+            self.hab = Habitat(name=self.name, db=self.db, ks=self.ks, seed=seed, salt=salt, icount=icount, isith=isith,
                                ncount=ncount, nsith=nsith, toad=toad, wits=wits, delpre=delpre, )
 
         self.posts.append(dict(srdr=self.hab.delserder, sigers=self.hab.delsigers))
@@ -69,7 +69,6 @@ class Delegatey:
 
 class InceptDoer(doing.DoDoer):
     def __init__(self, name, msgs=None, cues=None, ):
-        self.name = name
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.ks = keeping.Keeper(name=name, temp=False)  # not opened by default, doer opens
@@ -83,7 +82,7 @@ class InceptDoer(doing.DoDoer):
             doing.doify(self.msgDo),
             doing.doify(self.postDo),
         ]
-        self.delegatey = Delegatey(db=self.db, ks=self.ks, msgs=self.msgs)
+        self.delegatey = Delegatey(name=name, db=self.db, ks=self.ks, msgs=self.msgs)
         super(InceptDoer, self).__init__(doers=doers)
 
     def escrowDo(self, tymth, tock=0.0):
@@ -135,6 +134,9 @@ class InceptDoer(doing.DoDoer):
             while self.delegatey.msgs:
                 msg = self.delegatey.msgs.popleft()
                 try:
+                    if "name" not in msg:
+                        msg["name"] = self.delegatey.name
+
                     self.delegatey.processMessage(msg=msg)
                 except (kering.MissingAnchorError, Exception) as ex:
                     if logger.isEnabledFor(logging.DEBUG):
