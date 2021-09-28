@@ -20,9 +20,11 @@ def test_credential_handlers(mockHelpingNowUTC):
             habbing.openHab(name="recp", transferable=True) as recp:
         app = falcon.App()
 
+        ims = bytearray()
         reger = viring.Registry(name=hab.name, temp=True)
         verifier = verifying.Verifier(hab=hab, name="verifier", reger=reger)
         issuer = issuing.Issuer(hab=hab, name=hab.name, reger=reger, noBackers=True)
+        gdoer = grouping.MultiSigGroupDoer(hab=hab, ims=ims)
 
         assert len(issuer.cues) == 2
         cue = issuer.cues.popleft()
@@ -37,6 +39,7 @@ def test_credential_handlers(mockHelpingNowUTC):
         kiwi = agenting.KiwiServer(hab=hab,
                                    rep=repd,
                                    verifier=verifier,
+                                   gdoer=gdoer,
                                    issuers=issuers,
                                    app=app,
                                    controller="",
@@ -67,21 +70,21 @@ def test_credential_handlers(mockHelpingNowUTC):
         assert result.status == falcon.HTTP_200
 
         tevt = (
-            b'{"v":"KERI10JSON0000ba_","i":"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNa'
-            b'qXXjJYulW8","s":"0","t":"iss","ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15'
+            b'{"v":"KERI10JSON0000ba_","i":"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P98'
+            b'2bk6dq_TBo","s":"0","t":"iss","ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15'
             b'PEcJ7f9ejHjJMC38","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0A'
-            b'AAAAAAAAAAAAAAAAAAAAAgEz9MG5UtqItcTyGHurKAdWodVv71L9fzx32OAKrB4Lts')
+            b'AAAAAAAAAAAAAAAAAAAAAgEU11Yo0QlBdXPZmztI1JMoUvzdK3N8RvQBgEjwkud_aI')
         kevt = (
             b'{"v":"KERI10JSON000107_","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7'
             b'pEE-YfcI9E","s":"2","t":"ixn","p":"ET6FzE7z8CFUDyfKjq__QIln5RwHB'
-            b'JrJz5amM9XYukLc","a":[{"i":"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNaqX'
-            b'XjJYulW8","s":"0","d":"EDkZCcOySbAPMfXC-d6aSkyv4uV7zFyxAMhMwCbr5'
-            b'RUg"}]}-AABAA4RZ3h8hzbTQ_70xofGN3mPMSuaUVvlqlA2a2RSfTny7GcA3MsDP'
-            b'r5nF6yppe4Ajj3oZM24WX0TqlIfVHAMaYCA')
+            b'JrJz5amM9XYukLc","a":[{"i":"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P982b'
+            b'k6dq_TBo","s":"0","d":"E3koeMJIrYBh1ROB1qhMg-aD4blvD1X1sJ0PumtJx'
+            b'g4g"}]}-AABAAg9F9i7jJsoQW1QyO2p3zVEYZ0OCg-MrmiIT_z8DnlLMent3EAzK'
+            b'3AqZLSNLAt0-rbCNW3pEbMei_dLOjonB0Dg')
         cred = (
-            b'{"v":"KERI10JSON0001ce_","d":"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNaqXXjJYulW8",'
+            b'{"v":"KERI10JSON0001ce_","d":"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P982bk6dq_TBo",'
             b'"s":"ES63gXI-FmM6yQ7ISVIH__hOEhyE6W6-Ev0cArldsxuc","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",'
-            b'"a":{"d":"EBDdZ9LiUoY4mwNaswmiNYnbpi8ZMAtn5_37mKBZOiL4",'
+            b'"a":{"d":"EK4u1L3M5kWaZhCP1VZV9gp-zxHMAgrSz04REpRoGsj4",'
             b'"i":"EgGTr6JW6geC7wlSIz6qPsYz8a-ITy52o3urlh0F2MLE","dt":"2021-01-01T00:00:00.000000+00:00",'
             b'"t":["VerifiableCredential","GLEIFvLEICredential"],"LEI":"1234567890abcdefg",'
             b'"ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38"},"p":[]}')
@@ -106,22 +109,22 @@ def test_credential_handlers(mockHelpingNowUTC):
         # Now revoke the actual credential
         result = client.simulate_post(path="/credential/revoke",
                                       body=b'{"registry": "E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38", "said": '
-                                           b'"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNaqXXjJYulW8"}')
+                                           b'"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P982bk6dq_TBo"}')
         assert result.status == falcon.HTTP_202
 
         rev = (
-            b'{"v":"KERI10JSON0000ed_","i":"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNa'
-            b'qXXjJYulW8","s":"1","t":"rev","ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15'
-            b'PEcJ7f9ejHjJMC38","p":"EDkZCcOySbAPMfXC-d6aSkyv4uV7zFyxAMhMwCbr5'
-            b'RUg","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAA'
-            b'AAAAAAAAwExysv80VRWFIfGEBFmcCjEOs8SGeZ9Rx8-NuK2F9FyWc')
+            b'{"v":"KERI10JSON0000ed_","i":"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P98'
+            b'2bk6dq_TBo","s":"1","t":"rev","ri":"E3Eqm8wGRsW_Fxtq1ypXyQZj2c15'
+            b'PEcJ7f9ejHjJMC38","p":"E3koeMJIrYBh1ROB1qhMg-aD4blvD1X1sJ0PumtJx'
+            b'g4g","dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAA'
+            b'AAAAAAAAwE6aqRdE9Phc4TvZIqVXLiC0-3DITkln0qCxEAxDZEJwE')
         rkevt = (
             b'{"v":"KERI10JSON000107_","i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7'
-            b'pEE-YfcI9E","s":"3","t":"ixn","p":"Ez9MG5UtqItcTyGHurKAdWodVv71L'
-            b'9fzx32OAKrB4Lts","a":[{"i":"Eoi8WwQ0EQJ7TDpysGFVO6JBMONAbgoFNaqX'
-            b'XjJYulW8","s":"1","d":"EoSOeEKX0h3JIUHRWtQuX3ajKWbTHaXXRfcgsXCOl'
-            b'x8I"}]}-AABAA8xSLe89nS_jf4H4bJa8xhP5CFWDvQgbGA_JLLUYI7-EErjxUuCv'
-            b'c-n8AuT1DPnjRiSRg0mTkXOS0cK0eHxPEDg')
+            b'pEE-YfcI9E","s":"3","t":"ixn","p":"EU11Yo0QlBdXPZmztI1JMoUvzdK3N'
+            b'8RvQBgEjwkud_aI","a":[{"i":"ElWLL4-TVsqbK_ovfcMN74foFxRNt25P982b'
+            b'k6dq_TBo","s":"1","d":"Emheh-wT2AjMRPx_CKY2otv2TuL2cOIVe0Aauitqw'
+            b'zAA"}]}-AABAAGgzpdBudkosIuPT6Gku2ICnf9zBLMaPn1jzZD8dLF4x8a5VQ0mQ'
+            b'GCtS-Kyo7mb1OFICJ-5-c-odJkIvBfZU5Aw')
         assert len(issuer.cues) == 2
         cue = issuer.cues.popleft()
         evt = cue["msg"]
@@ -136,9 +139,11 @@ def test_credential_handlers_singlesig(mockHelpingNowUTC):
             habbing.openHab(name="recp", transferable=True) as recp:
         app = falcon.App()
 
+        ims = bytearray()
         reger = viring.Registry(name=hab1.name, temp=True)
         verifier = verifying.Verifier(hab=hab1, name="verifier", reger=reger)
         issuer = issuing.Issuer(hab=hab1, name=hab1.name, reger=reger, noBackers=True)
+        gdoer = grouping.MultiSigGroupDoer(hab=hab1, ims=ims)
 
         issuers = dict()
         issuers[issuer.regk] = issuer
@@ -147,6 +152,7 @@ def test_credential_handlers_singlesig(mockHelpingNowUTC):
         kiwi = agenting.KiwiServer(hab=hab1,
                                    rep=repd,
                                    verifier=verifier,
+                                   gdoer=gdoer,
                                    issuers=issuers,
                                    app=app,
                                    controller="",
@@ -230,13 +236,16 @@ def test_issue_credential_full_multisig():
             d='EwUyilaYsfLo7zFqXFnp1T9nvsbd2b1IAaCW-i9LFQyo'
         )]
 
+        ims = bytearray()
         issuers = dict()
         issuers[issuer.regk] = issuer
         repd = storing.Respondant(hab=hab1)
+        gdoer = grouping.MultiSigGroupDoer(hab=hab1, ims=ims)
 
         kiwi = agenting.KiwiServer(hab=hab1,
                                    rep=repd,
                                    verifier=verifier,
+                                   gdoer=gdoer,
                                    issuers=issuers,
                                    app=app,
                                    controller="",

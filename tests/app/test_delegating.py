@@ -81,7 +81,7 @@ def test_delegating():
         debHab.kvy.processEscrows()
         # after process interact and escrow, ensure we have the out of escrow event
         assert debHab.kvy.cues[2]["kin"] == "psUnescrow"
-        assert debHab.kvy.cues[2]["pre"] == debpre
+        assert danHab.kvy.cues[2]["serder"].ked["i"] == debpre
 
         # finally ensure we can accept the delegation
         debHab.delegationAccepted()

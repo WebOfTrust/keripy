@@ -70,12 +70,13 @@ def test_verifier():
             missing = True
 
         assert missing is True
-        assert len(verifier.cues) == 1
+        assert len(verifier.cues) == 2
         cue = verifier.cues.popleft()
         assert cue["kin"] == "query"
         q = cue["q"]
-        assert q["pre"] == creder.said
+        assert q["pre"] == hab.pre
         issuer.issue(creder=creder)
+        cue = verifier.cues.popleft()
 
         # Now that the credential has been issued, process escrows and it will find the TEL event
         verifier.processEscrows()
@@ -333,11 +334,12 @@ def test_verifier_chained_credential():
             missing = True
 
         assert missing is True
-        assert len(ronverfer.cues) == 1
+        assert len(ronverfer.cues) == 2
         cue = ronverfer.cues.popleft()
         assert cue["kin"] == "query"
         q = cue["q"]
-        assert q["pre"] == creder.said
+        assert q["pre"] == ron.pre
+        ronverfer.cues.popleft()
 
         roniss.issue(creder=creder)
 
@@ -406,11 +408,13 @@ def test_verifier_chained_credential():
             missing = True
 
         assert missing is True
-        assert len(ianverfer.cues) == 1
+        assert len(ianverfer.cues) == 2
         cue = ianverfer.cues.popleft()
         assert cue["kin"] == "query"
         q = cue["q"]
-        assert q["pre"] == vLeiCreder.said
+        assert q["pre"] == ian.pre
+        cue = ianverfer.cues.popleft()
+
 
         ianiss.issue(creder=vLeiCreder)
 

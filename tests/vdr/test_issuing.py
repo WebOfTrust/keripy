@@ -56,37 +56,37 @@ def test_issuer(mockHelpingNowUTC):
         creder = credential(hab=hab, regk=issuer.regk)
         issuer.issue(creder=creder)
         kevt, tevt = events(issuer)
-        assert tevt == (b'{"v":"KERI10JSON00012d_","i":"EFguVgWVfo7pVVlH30dOq7pOwbYNO-1JGQ'
-                        b'GfQwV3wcXg","ii":"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",'
+        assert tevt == (b'{"v":"KERI10JSON00012d_","i":"EDGhJ8V1tuwH55Bk0fBFe9L0za2BUNOt2F'
+                        b'X4GUeOLNHQ","ii":"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",'
                         b'"s":"0","t":"bis","ra":{"i":"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDG'
                         b'eLWHb9vSY","s":1,"d":"EpltHxeKueSR1a7e0_oSAhgO6U7VDnX7x4KqNCwBqb'
                         b'I0"},"dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAA'
-                        b'AAAAAAAAwEC9nTy6EUblbjfKpv6I1E3IxzTudrbzWW2KI1IC0TozU')
+                        b'AAAAAAAAwEx7i6wv4YzDRTO9_iHkTQSXrvLYldSd_UEjNfqia3Pqc')
         assert kevt == (b'{"v":"KERI10JSON000107_","i":"EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wu'
                         b'k5aMtSrMtY","s":"3","t":"ixn","p":"Ef12IRHtb_gVo5ClaHHNV90b43adA'
-                        b'0f8vRs3jeU-AstY","a":[{"i":"EFguVgWVfo7pVVlH30dOq7pOwbYNO-1JGQGf'
-                        b'QwV3wcXg","s":"0","d":"E7snf6oiWWseTB6B0V1ehv-UXhUsi7OD41_MNqxfg'
-                        b'eQI"}]}-AABAAuY0VJfdvgyw5lH6ktLRZ3vycdQlHVKPZY_VwhS2WYoQfHJAbth3'
-                        b'_IwkY7DhX5bm6OqBET3_rCNXCeMcWEXLYCQ')
+                        b'0f8vRs3jeU-AstY","a":[{"i":"EDGhJ8V1tuwH55Bk0fBFe9L0za2BUNOt2FX4'
+                        b'GUeOLNHQ","s":"0","d":"ENNTabgWbaNqOKLqEZdQCjxbafwwSoXNzAsE1Enq-'
+                        b'kdk"}]}-AABAAS9RaaKhprhdUWCncJ7t1kUJbRjtmYowfuycasun1dBxc-jqAldB'
+                        b'ZY_6m5mL9DkqKYnUvnyLufx-iLQMZhgfnAQ')
         ser = Serder(raw=tevt)
-        assert ser.diger.qb64 == 'E7snf6oiWWseTB6B0V1ehv-UXhUsi7OD41_MNqxfgeQI'
+        assert ser.diger.qb64 == 'ENNTabgWbaNqOKLqEZdQCjxbafwwSoXNzAsE1Enq-kdk'
 
         issuer.revoke(vcdig=creder.said)
         kevt, tevt = events(issuer)
-        assert tevt == (b'{"v":"KERI10JSON00012c_","i":"EFguVgWVfo7pVVlH30dOq7pOwbYNO-1JGQ'
-                        b'GfQwV3wcXg","s":"1","t":"brv","p":"E7snf6oiWWseTB6B0V1ehv-UXhUsi'
-                        b'7OD41_MNqxfgeQI","ra":{"i":"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGe'
+        assert tevt == (b'{"v":"KERI10JSON00012c_","i":"EDGhJ8V1tuwH55Bk0fBFe9L0za2BUNOt2F'
+                        b'X4GUeOLNHQ","s":"1","t":"brv","p":"ENNTabgWbaNqOKLqEZdQCjxbafwwS'
+                        b'oXNzAsE1Enq-kdk","ra":{"i":"EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGe'
                         b'LWHb9vSY","s":1,"d":"EpltHxeKueSR1a7e0_oSAhgO6U7VDnX7x4KqNCwBqbI'
                         b'0"},"dt":"2021-01-01T00:00:00.000000+00:00"}-GAB0AAAAAAAAAAAAAAA'
-                        b'AAAAAABAE7ppAreO02K7WLyY7ZOYFDDgKF4nZgWF-wwJSXzTlcdA')
+                        b'AAAAAABAEwRLQcXWTn2AJtgSznMSH4q62f4QEHw1ab9NfsThia0Q')
         assert kevt == (b'{"v":"KERI10JSON000107_","i":"EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wu'
-                  b'k5aMtSrMtY","s":"4","t":"ixn","p":"EC9nTy6EUblbjfKpv6I1E3IxzTudr'
-                  b'bzWW2KI1IC0TozU","a":[{"i":"EFguVgWVfo7pVVlH30dOq7pOwbYNO-1JGQGf'
-                  b'QwV3wcXg","s":"1","d":"Eq0OsV29_1Q2dExl6aMhzJfIarRuhFGOs_l2syXQS'
-                  b'5js"}]}-AABAApCWeFhuU1deoJXKB8HKG80_wL-NRuFpXmNbNc6S3GAiW7YKymsL'
-                  b'OZu4nlcFBTqC-BIpkoieksfrNqZqW9BIQDg')
+                        b'k5aMtSrMtY","s":"4","t":"ixn","p":"Ex7i6wv4YzDRTO9_iHkTQSXrvLYld'
+                        b'Sd_UEjNfqia3Pqc","a":[{"i":"EDGhJ8V1tuwH55Bk0fBFe9L0za2BUNOt2FX4'
+                        b'GUeOLNHQ","s":"1","d":"ELkzsQE3_TD2qe7xdyc1XkAJs4UoHeHnOExK4aPDZ'
+                        b'ngo"}]}-AABAA7dtqz8VJf0-O9NQjTODNCOsNxbX8prjZlNUynoh-IZ8ReOS60_m'
+                        b'_UiMl6vLzFVOXjGKJM0X5ehBrNgFfusfsAw')
         ser = Serder(raw=tevt)
-        assert ser.diger.qb64 == 'Eq0OsV29_1Q2dExl6aMhzJfIarRuhFGOs_l2syXQS5js'
+        assert ser.diger.qb64 == 'ELkzsQE3_TD2qe7xdyc1XkAJs4UoHeHnOExK4aPDZngo'
 
         with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
             hab = buildHab(db, kpr)
@@ -122,7 +122,7 @@ def test_issuer(mockHelpingNowUTC):
             issuer.issue(creder=creder)
             kevt, tevt = events(issuer)
             ser = Serder(raw=tevt)
-            assert ser.pre == "EvlgfWdjbhcQrvbMOtXd0kttEr7aXx1k9mhKJo0xvDmc"
+            assert ser.pre == "EIrM2s0pcRE0KXFtytuuLugELkF7f0uCeD1y9fqRuumc"
             assert ser.ked["ri"] == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
             assert ser.ked["t"] == "iss"
 
@@ -130,15 +130,15 @@ def test_issuer(mockHelpingNowUTC):
             assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
             assert ser.ked["t"] == "ixn"
             seal = ser.ked["a"][0]
-            assert seal["i"] == "EvlgfWdjbhcQrvbMOtXd0kttEr7aXx1k9mhKJo0xvDmc"
+            assert seal["i"] == "EIrM2s0pcRE0KXFtytuuLugELkF7f0uCeD1y9fqRuumc"
             assert seal["s"] == "0"
-            assert seal["d"] == 'Eff_ZBMwWa-ptEnqMq4BQlDBc-C8x1Olgtjt3AskjBYk'
+            assert seal["d"] == 'E7530zxhPK3yFd39cnb8sWTWiyR9eDkZRGdgjmSgV5VM'
 
             issuer.revoke(vcdig=creder.said)
             kevt, tevt = events(issuer)
 
             ser = Serder(raw=tevt)
-            assert ser.pre == "EvlgfWdjbhcQrvbMOtXd0kttEr7aXx1k9mhKJo0xvDmc"
+            assert ser.pre == "EIrM2s0pcRE0KXFtytuuLugELkF7f0uCeD1y9fqRuumc"
             assert ser.ked["t"] == "rev"
             assert ser.ked["ri"] == "Ezm53Qww2LTJ1yksEL06Wtt-5D23QKdJEGI0egFyLehw"
 
@@ -146,9 +146,9 @@ def test_issuer(mockHelpingNowUTC):
             assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
             assert ser.ked["t"] == "ixn"
             seal = ser.ked["a"][0]
-            assert seal["i"] == "EvlgfWdjbhcQrvbMOtXd0kttEr7aXx1k9mhKJo0xvDmc"
+            assert seal["i"] == "EIrM2s0pcRE0KXFtytuuLugELkF7f0uCeD1y9fqRuumc"
             assert seal["s"] == "1"
-            assert seal["d"] == 'EnhbJzR77iB6s-tgbtixIg_mnMbI2gVm1xl4VT6U5V8U'
+            assert seal["d"] == 'E_4NkYeNImN0uRLszsqNZbrtNo3na7qPjbHiuJxYV0uM'
 
     with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
         hab = buildHab(db, kpr)
@@ -174,7 +174,7 @@ def test_issuer(mockHelpingNowUTC):
         kevt, tevt = events(issuer)
 
         ser = Serder(raw=tevt)
-        assert ser.pre == "EuawwEmmGROoQ8518D3voY9-WcRomtUOj14aBK9z6ros"
+        assert ser.pre == "EPrcGi4z6FyyhqRCm3bYU07XUpuJgwcKT2EKME1MvZN0"
         assert ser.ked["t"] == "bis"
         seal = ser.ked["ra"]
         assert seal["i"] == "EaU321874i434f59ab7cMH6YlN52PJ395nrLS_6tLq6c"
@@ -183,7 +183,7 @@ def test_issuer(mockHelpingNowUTC):
         assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
         assert ser.ked["t"] == "ixn"
         seal = ser.ked["a"][0]
-        assert seal["i"] == "EuawwEmmGROoQ8518D3voY9-WcRomtUOj14aBK9z6ros"
+        assert seal["i"] == "EPrcGi4z6FyyhqRCm3bYU07XUpuJgwcKT2EKME1MvZN0"
         assert seal["s"] == "0"
 
         issuer.rotate(adds=["B9DfgIp33muOuCI0L8db_TldMJXv892UmW8yfpUuKzkw",
@@ -208,7 +208,7 @@ def test_issuer(mockHelpingNowUTC):
         kevt, tevt = events(issuer)
 
         ser = Serder(raw=tevt)
-        assert ser.pre == "EuawwEmmGROoQ8518D3voY9-WcRomtUOj14aBK9z6ros"
+        assert ser.pre == "EPrcGi4z6FyyhqRCm3bYU07XUpuJgwcKT2EKME1MvZN0"
         assert ser.ked["t"] == "brv"
         seal = ser.ked["ra"]
         # ensure the ra seal digest matches the vrt event digest
@@ -218,7 +218,7 @@ def test_issuer(mockHelpingNowUTC):
         assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
         assert ser.ked["t"] == "ixn"
         seal = ser.ked["a"][0]
-        assert seal["i"] == "EuawwEmmGROoQ8518D3voY9-WcRomtUOj14aBK9z6ros"
+        assert seal["i"] == "EPrcGi4z6FyyhqRCm3bYU07XUpuJgwcKT2EKME1MvZN0"
         assert seal["s"] == "1"
 
     with basing.openDB(name="bob") as db, keeping.openKS(name="bob") as kpr, viring.openReg() as reg:
@@ -245,7 +245,7 @@ def test_issuer(mockHelpingNowUTC):
         kevt, tevt = events(issuer)
 
         ser = Serder(raw=tevt)
-        assert ser.pre == "EvlgfWdjbhcQrvbMOtXd0kttEr7aXx1k9mhKJo0xvDmc"
+        assert ser.pre == "EIrM2s0pcRE0KXFtytuuLugELkF7f0uCeD1y9fqRuumc"
         assert ser.ked["t"] == "iss"
 
         ser = Serder(raw=kevt)
@@ -256,7 +256,7 @@ def test_issuer(mockHelpingNowUTC):
         kevt, tevt = events(issuer)
 
         ser = Serder(raw=tevt)
-        assert ser.pre == "EvlgfWdjbhcQrvbMOtXd0kttEr7aXx1k9mhKJo0xvDmc"
+        assert ser.pre == "EIrM2s0pcRE0KXFtytuuLugELkF7f0uCeD1y9fqRuumc"
         assert ser.ked["t"] == "rev"
 
         ser = Serder(raw=kevt)
@@ -302,7 +302,7 @@ def test_issuer(mockHelpingNowUTC):
         kevt, tevt = events(issuer)
 
         ser = Serder(raw=tevt)
-        assert ser.pre == "EuawwEmmGROoQ8518D3voY9-WcRomtUOj14aBK9z6ros"
+        assert ser.pre == "EPrcGi4z6FyyhqRCm3bYU07XUpuJgwcKT2EKME1MvZN0"
         assert ser.ked["t"] == "bis"
 
         ser = Serder(raw=kevt)
@@ -326,7 +326,7 @@ def test_issuer(mockHelpingNowUTC):
         issuer.revoke(vcdig=creder.said)
         kevt, tevt = events(issuer)
         ser = Serder(raw=tevt)
-        assert ser.pre == "EuawwEmmGROoQ8518D3voY9-WcRomtUOj14aBK9z6ros"
+        assert ser.pre == "EPrcGi4z6FyyhqRCm3bYU07XUpuJgwcKT2EKME1MvZN0"
         assert ser.ked["t"] == "brv"
 
         ser = Serder(raw=kevt)
@@ -366,7 +366,8 @@ def credential(hab, regk):
 
     """
     credSubject = dict(
-        si="EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8",
+        d="",
+        i="EJJR2nmwyYAfSVPzhzS6b5CMZAoTNZH3ULvaU6Z-i0d8",
         LEI="254900OPPU84GM83MG36",
     )
 

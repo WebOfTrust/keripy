@@ -905,7 +905,6 @@ class Tever:
         # check if fully anchored
         if not self.verifyAnchor(serder=serder, seqner=seqner, diger=diger):
             self.escrowALEvent(serder=serder, seqner=seqner, diger=diger, bigers=bigers, baks=baks)
-
             raise MissingAnchorError("Failure verify event = {} "
                                      "".format(serder.ked))
 

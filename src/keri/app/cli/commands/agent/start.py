@@ -21,7 +21,7 @@ from keri.app.cli.common import existing
 from keri.core import scheming, coring
 from keri.peer import exchanging
 from keri.vc import walleting, handling, proving
-from keri.vdr import verifying
+from keri.vdr import verifying, viring
 
 d = "Runs KERI Agent controller.\n"
 d += "Example:\nagent -t 5621\n"
@@ -55,7 +55,7 @@ def launch(args):
 
     logger.info("\n******* Starting Agent for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.admin_http_port, args.tcp)
-
+    print("Starting agent", args.name)
     doers = runAgent(controller=args.pre, name=args.name, insecure=args.insecure,
                      tcp=int(args.tcp),
                      adminHttpPort=int(args.admin_http_port))
@@ -83,7 +83,8 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
     tcpServerDoer = tcpServing.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server)
 
-    verifier = verifying.Verifier(hab=hab, name=hab.name)
+    reger = viring.Registry(name=hab.name, temp=False)
+    verifier = verifying.Verifier(hab=hab, name=hab.name, reger=reger)
     wallet = walleting.Wallet(db=verifier.reger, name=name)
 
     handlers = []
@@ -118,19 +119,22 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
                                 cues=cues,
                                 verifier=verifier,
                                 mbx=mbx,
+                                mbd=mbd,
                                 adminHttpPort=adminHttpPort))
 
     return doers
 
 
-def adminInterface(controller, hab, insecure, proofs, cues, mbx, verifier, adminHttpPort=5623):
+def adminInterface(controller, hab, insecure, proofs, cues, mbx, mbd, verifier, adminHttpPort=5623):
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
 
     rep = storing.Respondant(hab=hab, mbx=mbx)
 
     httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep)
-    kiwiServer = agenting.KiwiServer(hab=hab, controller=controller, verifier=verifier, app=app,
+    gdoer = grouping.MultiSigGroupDoer(hab=hab, ims=mbd.ims)
+
+    kiwiServer = agenting.KiwiServer(hab=hab, controller=controller, verifier=verifier, gdoer=gdoer.msgs, app=app,
                                      rep=rep, insecure=insecure)
 
     mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
@@ -141,7 +145,7 @@ def adminInterface(controller, hab, insecure, proofs, cues, mbx, verifier, admin
     server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler, cueHandler, kiwiServer]
+    doers = [httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler, cueHandler, gdoer, kiwiServer]
 
     return doers
 
@@ -170,8 +174,6 @@ class AdminProofHandler(doing.Doer):
         """
         yield  # enter context
 
-        logger = help.ogler.getLogger()
-
         while True:
             while self.presentations:
                 (pre, presentation) = self.presentations.popleft()
@@ -179,17 +181,6 @@ class AdminProofHandler(doing.Doer):
                 vcproof = bytearray(presentation["proof"].encode("utf-8"))
 
                 creder = proving.Credentialer(crd=vc)
-
-                # msg = self.verifier.query(regk,
-                #                           vcid,
-                #                           res="tels")
-                # self.wiq.msgs.append(msg)
-                # yield 2.0
-                #
-                # while regk not in self.verifier.tevers:
-                #     logger.info("%s:\n waiting for retrieval of TEL %s.\n\n",
-                #                 self.hab.pre, regk)
-                #     yield self.tock
 
                 prefixer, seqner, diger, isigers = proving.parseProof(vcproof)
                 status = self.verifier.verify(pre, creder, prefixer, seqner, diger, isigers)
@@ -248,22 +239,7 @@ class AdminCueHandler(doing.DoDoer):
             while self.cues:
                 cue = self.cues.popleft()
                 cueKin = cue["kin"]  # type or kind of cue
-                if cueKin in ("notice",):
-                    serder = cue["serder"]
-
-                    ilk = serder.kex["t"]
-
-                    if ilk in (coring.Ilks.rot,):
-                        pre = serder.pre
-                        for keys, group in self.hab.db.gids.getItemIter():
-                            if pre in group.aids:
-                                payload = dict(name=keys, lid=group.lid, gid=group.gid, rot=serder.ked)
-                                ser = exchanging.exchange(route="/rotate", payload=payload)
-                                msg = bytearray(ser.raw)
-                                msg.extend(self.hab.sanction(ser))
-
-                                self.mbx.storeMsg(self.controller + "/multisig", msg)
-                elif cueKin in ("delegating",):
+                if cueKin in ("delegating",):
                     srdr = cue["serder"]
                     msg = self.hab.interact(data=[
                         dict(i=srdr.pre, s=srdr.ked["s"], d=srdr.dig)
