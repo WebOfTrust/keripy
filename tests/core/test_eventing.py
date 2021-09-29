@@ -2005,7 +2005,7 @@ def test_kevery():
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
-    with openDB("controller") as conlgr, openDB("validator") as vallgr:
+    with openDB(name="controller") as conlgr, openDB(name="validator") as vallgr:
         event_digs = [] # list of event digs in sequence
 
         # create event stream
@@ -2242,7 +2242,7 @@ def test_multisig_digprefix():
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
-    with openDB("controller") as conlgr, openDB("validator") as vallgr:
+    with openDB(name="controller") as conlgr, openDB(name="validator") as vallgr:
 
         # create event stream
         msgs = bytearray()
@@ -2402,7 +2402,7 @@ def test_recovery():
     signers = [Signer(qb64=secret) for secret in secrets]  # faster
     assert [signer.qb64 for signer in signers] == secrets
 
-    with openDB("controller") as conlgr, openDB("validator") as vallgr:
+    with openDB(name="controller") as conlgr, openDB(name="validator") as vallgr:
         event_digs = [] # list of event digs in sequence to verify against database
 
         # create event stream
@@ -2675,7 +2675,7 @@ def test_receipt():
     valpre = valPrefixer.qb64
     assert valpre == 'B8KY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
 
-    with openDB("controller") as coeLogger, openDB("validator") as valLogger:
+    with openDB(name="controller") as coeLogger, openDB(name="validator") as valLogger:
         coeKevery = Kevery(db=coeLogger)
         valKevery = Kevery(db=valLogger)
         event_digs = [] # list of event digs in sequence to verify against database
@@ -2989,7 +2989,7 @@ def test_direct_mode():
     assert [signer.qb64 for signer in valSigners] == valSecrets
 
 
-    with openDB("controller") as coeLogger, openDB("validator") as valLogger:
+    with openDB(name="controller") as coeLogger, openDB(name="validator") as valLogger:
         #  init Keverys
         coeKevery = Kevery(db=coeLogger)
         valKevery = Kevery(db=valLogger)
@@ -3456,7 +3456,7 @@ def test_direct_mode_cbor_mgpk():
     assert [signer.qb64 for signer in valSigners] == valSecrets
 
 
-    with openDB("controller") as coeLogger, openDB("validator") as valLogger:
+    with openDB(name="controller") as coeLogger, openDB(name="validator") as valLogger:
         #  init Keverys
         coeKevery = Kevery(db=coeLogger)
         valKevery = Kevery(db=valLogger)

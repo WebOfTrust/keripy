@@ -32,8 +32,8 @@ def test_incept():
     for name in ["wan", "wil", "wes", "multisig1", "multisig2", "multisig3"]:
         if os.path.exists('/usr/local/var/keri/db/{}'.format(name)):
             shutil.rmtree('/usr/local/var/keri/db/{}'.format(name))
-        if os.path.exists('/usr/local/var/keri/keep/{}'.format(name)):
-            shutil.rmtree('/usr/local/var/keri/keep/{}'.format(name))
+        if os.path.exists('/usr/local/var/keri/ks/{}'.format(name)):
+            shutil.rmtree('/usr/local/var/keri/ks/{}'.format(name))
 
 
     with habbing.openHab(name="wan", salt=b'wann-the-witness', transferable=False, temp=False) as wanHab, \

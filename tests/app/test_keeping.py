@@ -187,8 +187,8 @@ def test_openkeeper():
         assert isinstance(ks, keeping.Keeper)
         assert ks.name == "test"
         assert isinstance(ks.env, lmdb.Environment)
-        assert ks.path.startswith("/tmp/keri_keep_")
-        assert ks.path.endswith("_test/keri/keep/test")
+        assert ks.path.startswith("/tmp/keri_ks_")
+        assert ks.path.endswith("_test/keri/ks/test")
         assert ks.env.path() == ks.path
         assert os.path.exists(ks.path)
         assert ks.opened
@@ -200,8 +200,8 @@ def test_openkeeper():
         assert isinstance(ks, keeping.Keeper)
         assert ks.name == "blue"
         assert isinstance(ks.env, lmdb.Environment)
-        assert ks.path.startswith("/tmp/keri_keep_")
-        assert ks.path.endswith("_test/keri/keep/blue")
+        assert ks.path.startswith("/tmp/keri_ks_")
+        assert ks.path.endswith("_test/keri/ks/blue")
         assert ks.env.path() == ks.path
         assert os.path.exists(ks.path)
         assert ks.opened
@@ -253,7 +253,7 @@ def test_keeper():
     assert keeper.name == "main"
     assert keeper.temp == False
     assert isinstance(keeper.env, lmdb.Environment)
-    assert keeper.path.endswith("keri/keep/main")
+    assert keeper.path.endswith("keri/ks/main")
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "1700"
@@ -274,7 +274,7 @@ def test_keeper():
     assert keeper.name == "main"
     assert keeper.temp == False
     assert isinstance(keeper.env, lmdb.Environment)
-    assert keeper.path.endswith("keri/keep/main")
+    assert keeper.path.endswith("keri/ks/main")
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
     assert oct(os.stat(keeper.path).st_mode)[-4:] == "0775"
@@ -299,7 +299,7 @@ def test_keeper():
     keeper.reopen()
     assert keeper.opened
     assert isinstance(keeper.env, lmdb.Environment)
-    assert keeper.path.endswith("keri/keep/main")
+    assert keeper.path.endswith("keri/ks/main")
     assert keeper.env.path() == keeper.path
     assert os.path.exists(keeper.path)
 
@@ -317,8 +317,8 @@ def test_keeper():
         assert keeper.name == "test"
         assert keeper.temp == True
         assert isinstance(keeper.env, lmdb.Environment)
-        assert keeper.path.startswith("/tmp/keri_keep_")
-        assert keeper.path.endswith("_test/keri/keep/test")
+        assert keeper.path.startswith("/tmp/keri_ks_")
+        assert keeper.path.endswith("_test/keri/ks/test")
         assert keeper.env.path() == keeper.path
         assert os.path.exists(keeper.path)
 
@@ -567,7 +567,7 @@ def test_keeperdoer():
     assert [val[1] for val in doist.deeds] == [0.0, 0.0]  #  retymes
     for doer in doers:
         assert doer.keeper.opened
-        assert "_test/keri/keep/test" in doer.keeper.path
+        assert "_test/keri/ks/test" in doer.keeper.path
 
     doist.recur()
     assert doist.tyme == 0.03125  # on next cycle

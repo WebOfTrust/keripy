@@ -27,8 +27,8 @@ def test_habitat():
 def test_habitat_rotate_with_witness():
     if os.path.exists('/usr/local/var/keri/db/phil-test'):
         shutil.rmtree('/usr/local/var/keri/db/phil-test')
-    if os.path.exists('/usr/local/var/keri/keep/phil-test'):
-        shutil.rmtree('/usr/local/var/keri/keep/phil-test')
+    if os.path.exists('/usr/local/var/keri/ks/phil-test'):
+        shutil.rmtree('/usr/local/var/keri/ks/phil-test')
 
     name = "phil-test"
     with basing.openDB(name=name, temp=False) as db, \
@@ -65,8 +65,8 @@ def test_habitat_reinitialization():
     """
     if os.path.exists('/usr/local/var/keri/db/bob-test'):
         shutil.rmtree('/usr/local/var/keri/db/bob-test')
-    if os.path.exists('/usr/local/var/keri/keep/bob-test'):
-        shutil.rmtree('/usr/local/var/keri/keep/bob-test')
+    if os.path.exists('/usr/local/var/keri/ks/bob-test'):
+        shutil.rmtree('/usr/local/var/keri/ks/bob-test')
 
     name = "bob-test"
 
@@ -121,8 +121,8 @@ def test_habitat_reinitialization():
 def test_habitat_reinitialization_reload():
     if os.path.exists('/usr/local/var/keri/db/bob-test'):
         shutil.rmtree('/usr/local/var/keri/db/bob-test')
-    if os.path.exists('/usr/local/var/keri/keep/bob-test'):
-        shutil.rmtree('/usr/local/var/keri/keep/bob-test')
+    if os.path.exists('/usr/local/var/keri/ks/bob-test'):
+        shutil.rmtree('/usr/local/var/keri/ks/bob-test')
 
     name = "bob-test"
 

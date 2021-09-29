@@ -2148,4 +2148,4 @@ def test_baserdoer():
 
 
 if __name__ == "__main__":
-    test_clean_baser()
+    test_baser()

@@ -38,7 +38,7 @@ def test_parser():
                 'ALq-w1UKkdrppwZzGTtz4PWYEeWm0-sDHzOv5sq96xJY'
                 ]
 
-    with openDB("controller") as conDB, openDB("validator") as valDB:
+    with openDB(name="controller") as conDB, openDB(name="validator") as valDB:
         event_digs = [] # list of event digs in sequence
 
         # create event stream
