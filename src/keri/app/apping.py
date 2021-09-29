@@ -18,7 +18,7 @@ from .. import help
 logger = help.ogler.getLogger()
 
 
-def setupController(name="who", temp=False, sith=None, count=1,
+def setupController(name="who", base="main", temp=False, sith=None, count=1,
                     remotePort=5621, localPort=5620):
     """
     Setup and return doers list to run controller

@@ -3,11 +3,13 @@
 keri.app.configing module
 
 """
-import os
-import stat
-import shutil
-import tempfile
-from contextlib import contextmanager
+
+from hio.help import filing
+
+from .. import help
+
+logger = help.ogler.getLogger()
+
 
 
 class Configer():
