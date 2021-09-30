@@ -85,12 +85,14 @@ class dbdict(dict):
 
 
 @dataclass
-class OobiRecord:  # information for responding to OOBI query
+class OobiQueryRecord:  # information for responding to OOBI query
     """
     Keyed by aid in oobis field of HabitatRecord
-    Determines endpoints that it will responde with given oobi query at aid
+    Determines endpoints that it will respond with given oobi query at cid
+    cid is aid of controller with endpoint.
+    eids are aids of endpoint providers for a role
     """
-    aid: str = None # qb64
+    cid: str = None # qb64
     role: str = None  # one of kering.Roles None is any or all
     scheme: str = None  # one of kering.Schemes None is any or all
     eids: list[str] = field(default_factory=list)  # of qb64  empty is any
@@ -106,7 +108,7 @@ class HabitatRecord:  # baser.habs
     """
     prefix: str  # aid qb64
     watchers: list[str] = field(default_factory=list) # aids qb64 of watchers
-    oobis: list[OobiRecord] = field(default_factory=dict)  # keyed by aid
+    oobis: list[OobiQueryRecord] = field(default_factory=dict)  # keyed by aid
 
 
 @dataclass
@@ -276,7 +278,7 @@ class LocationRecord:  # baser.locs
 
     """
     url: str  # full url including host:port/path?query scheme is optional
-    cids: list[EndAuthRecord] = field(default_factory=list)  # optional authorization record references
+    # cids: list[EndAuthRecord] = field(default_factory=list)  # optional authorization record references
 
     def __iter__(self):
         return iter(asdict(self))

@@ -544,7 +544,7 @@ def test_reply(mockHelpingNowUTC):
         assert saider.qb64 == serder.said
         locer = tamHab.db.locs.get(keys=lockeys)
         assert locer.url == url
-        assert locer.cids == []
+        # assert locer.cids == []
 
         # use Nel's parser and kevery to process for own location
         nelHab.psr.parse(ims=bytearray(msg))
@@ -565,7 +565,7 @@ def test_reply(mockHelpingNowUTC):
         assert saider.qb64 == serder.said
         locer = nelHab.db.locs.get(keys=lockeys)
         assert locer.url == url
-        assert locer.cids == []
+        # assert locer.cids == []
 
         # Tam as trans authZ for witnesses
         # add endpoint with reply route add
@@ -748,7 +748,7 @@ def test_reply(mockHelpingNowUTC):
         assert saider.qb64 == serder.said
         locer = nelHab.db.locs.get(keys=lockeys)
         assert locer.url == url
-        assert locer.cids == []
+        # assert locer.cids == []
 
 
         # do wok as witness for tam
@@ -842,7 +842,7 @@ def test_reply(mockHelpingNowUTC):
         assert saider.qb64 == serder.said
         locer = nelHab.db.locs.get(keys=lockeys)
         assert locer.url == url
-        assert locer.cids == []
+        # assert locer.cids == []
 
         # use Nel's parser and kevery for tam to update its url as controller role
         # for itself at its own location
@@ -887,7 +887,7 @@ def test_reply(mockHelpingNowUTC):
         assert saider.qb64 == serder.said
         locer = nelHab.db.locs.get(keys=lockeys)
         assert locer.url == url
-        assert locer.cids == []
+        # assert locer.cids == []
 
         # use Tam's parser and kevery for tam to update its own url as own
         # controller role for itself at its own location
@@ -912,7 +912,7 @@ def test_reply(mockHelpingNowUTC):
         assert saider.qb64 == serder.said
         locer = tamHab.db.locs.get(keys=lockeys)
         assert locer.url == url
-        assert locer.cids == []
+        # assert locer.cids == []
 
 
 
@@ -1113,8 +1113,7 @@ def test_reply(mockHelpingNowUTC):
         assert len(rurls.getall("watcher")) == 1
 
         assert tamHab.fetchLoc(eid=watHab.pre) == basing.LocationRecord(
-                               url='http://localhost:8080/watcher/wat',
-                               cids=[])
+                               url='http://localhost:8080/watcher/wat')
 
         assert tamHab.fetchUrl(eid=watHab.pre) == 'http://localhost:8080/watcher/wat'
 

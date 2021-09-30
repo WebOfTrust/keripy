@@ -315,7 +315,7 @@ class Habitat:
 
             # may want db method that updates .habs. and .prefixes together
             # default oobi
-            oobi = basing.OobiRecord(aid=self.pre, role=kering.Roles.controller)
+            oobi = basing.OobiQueryRecord(cid=self.pre, role=kering.Roles.controller)
             # may read more from oobi permission config files if any
             self.db.habs.put(keys=self.name,
                              val=basing.HabitatRecord(prefix=self.pre,
@@ -996,31 +996,31 @@ class Habitat:
         """
 
 
-    def replyEndRole(self, aid, role=None, scheme=None, eids=None):
+    def replyEndRole(self, cid, role=None, scheme=None, eids=None):
         """
         Reply returns a message stream composed from entries authed by the given
-        aid from the appropriate reply database including associated attachments
+        cid from the appropriate reply database including associated attachments
         in order to disseminate (percolate) BADA reply data authentication proofs.
 
-        aid and not role and not scheme then:
+        cid and not role and not scheme then:
             end authz for all eids in all roles and loc url for all schemes at each eid
             if eids then only eids in eids else all eids
 
-        aid and not role and scheme then:
+        cid and not role and scheme then:
             end authz for all eid in all roles and loc url for scheme at each eid
             if eids then only eids in eids else all eids
 
-        aid and role and not scheme then:
+        cid and role and not scheme then:
             end authz for all eid in role and loc url for all schemes at each eid
             if eids then only eids in eids else all eids
 
-        aid and role and scheme then:
+        cid and role and scheme then:
             end authz for all eid in role and loc url for scheme at each eid
             if eids then only eids in eids else all eids
 
 
         Parameters:
-            aid
+            cid
             role
             scheme
             eids
@@ -1038,7 +1038,7 @@ class Habitat:
         Each Habitats .habs.oobis permits which oobis it may reply to.
 
         Parameters:
-            aid (str): qb64 of identifier in oobi
+            aid (str): qb64 of identifier in oobi, may be cid or eid
 
         """
         # default logic is that if self.pre is witness of aid and has a loc url
