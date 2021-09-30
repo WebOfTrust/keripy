@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from hio.base import doing
 from hio.help import hicting
 
-from . import keeping
+from . import keeping, configing
 from .. import help
 from .. import kering
 from ..core import coring, eventing, parsing
@@ -23,7 +23,7 @@ logger = help.ogler.getLogger()
 
 
 @contextmanager
-def openHab(name="test", salt=b'0123456789abcdef', temp=True, **kwa):
+def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, **kwa):
     """
     Context manager wrapper for Habitat instance.
     Defaults to temporary database and keeper.
@@ -36,11 +36,12 @@ def openHab(name="test", salt=b'0123456789abcdef', temp=True, **kwa):
 
     """
 
-    with basing.openDB(name=name, temp=temp) as db, \
-            keeping.openKS(name=name, temp=temp) as ks:
+    with basing.openDB(name=base if base else name, temp=temp) as db, \
+            keeping.openKS(name=base if base else name, temp=temp) as ks, \
+            configing.openCF(name=name, base=base, temp=temp) as cf:
         salt = coring.Salter(raw=salt).qb64
-        hab = Habitat(name=name, ks=ks, db=db, temp=temp, salt=salt,
-                      icount=1, isith=1, ncount=1, nsith=1, **kwa)
+        hab = Habitat(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp,
+                      salt=salt, icount=1, isith=1, ncount=1, nsith=1, **kwa)
 
         yield hab
 
@@ -54,8 +55,6 @@ def existingHab(name="test", **kwa):
 
     Parameters:
         name(str): name of habitat to create
-
-
     """
 
     with basing.openDB(name=name, temp=False, reload=True) as db, \
@@ -78,6 +77,7 @@ class Habitat:
         erase (bool): If True erase old private keys, Otherwise not.
         db (basing.Baser): lmdb data base for KEL etc
         ks (keeping.Keeper): lmdb key store
+        cf (configing.Configer): config file instance
         ridx (int): rotation index (inception == 0) needed for key replay
         kvy (eventing.Kevery): instance for local processing of local msgs
         psr (parsing.Parser):  parses local messages for .kvy
@@ -95,22 +95,25 @@ class Habitat:
 
     """
 
-    def __init__(self, *, name='test', ks=None, db=None,
+    def __init__(self, *, name='test', base="", ks=None, db=None, cf=None,
                  transferable=True, temp=False, erase=True, create=True,
                  **kwa):
         """
         Initialize instance.
 
         Parameters:
-            name is str alias name for local controller of habitat
-            ks is keystore lmdb Keeper instance
-            db is database lmdb Baser instance
-            transferable is Boolean True means pre is transferable (default)
+            name (str): alias name for local controller of habitat
+            base (str): optional directory path segment inserted before name
+                that allows further differentation with a hierarchy. "" means
+                optional.
+            ks (Keeper):  keystore lmdb subclass instance
+            db (Baser): database lmdb subclass instance
+            cf (Configer): config file instance
+            transferable (bool): True means pre is transferable (default)
                     False means pre is nontransferable
-            temp is Boolean used for persistence of lmdb ks and db directories
-                and mode for key generation
-            erase is Boolean True means erase private keys once stale
-            create is Boolean True means create if identifier doesn't already exist
+            temp (bool): True means store .ks, .db, and .cf in /tmp for testing
+            erase (bool): True means erase private keys once stale
+            create (bool): True means create if identifier doesn't already exist
 
         Parameters: Passed through via kwa to setup for later init
             seed (str): qb64 private-signing key (seed) for the aeid from which
@@ -128,16 +131,16 @@ class Habitat:
                 all secrets are re-encrypted using new aeid. In this case the
                 provided prikey must not be empty. A change in aeid should require
                 a second authentication mechanism besides the prikey.
-            secrecies is list of list of secrets to preload key pairs if any
-            code is prefix derivation code
-            isith is incepting signing threshold as int, str hex, or list
-            icount is incepting key count for number of keys
-            nsith is next signing threshold as int, str hex or list
-            ncount is next key count for number of next keys
-            toad is int or str hex of witness threshold
-            wits is list of qb64 prefixes of witnesses
-            salt is qb64 salt for creating key pairs
-            tier is security tier for generating keys from salt
+            secrecies (list): of list of secrets to preload key pairs if any
+            code (str): prefix derivation code
+            isith (Union[int, str, list]): incepting signing threshold as int, str hex, or list
+            icount (int): incepting key count for number of keys
+            nsith (Union[int, str, list]): next signing threshold as int, str hex or list
+            ncount (int): next key count for number of next keys
+            toad (Union[int,str]): int or str hex of witness threshold
+            wits (list): of qb64 prefixes of witnesses
+            salt (str): qb64 salt for creating key pairs
+            tier (str): security tier for generating keys from salt
 
         """
         self.name = name
@@ -145,12 +148,16 @@ class Habitat:
         self.temp = temp
         self.erase = erase
         self.create = create
-        self.db = db if db is not None else basing.Baser(name=name,
+        self.db = db if db is not None else basing.Baser(name=base if base else name,
                                                          temp=self.temp,
                                                          reopen=True)
-        self.ks = ks if ks is not None else keeping.Keeper(name=name,
+        self.ks = ks if ks is not None else keeping.Keeper(name=base if base else name,
                                                            temp=self.temp,
                                                            reopen=True)
+        self.cf = cf if cf is not None else configing.Configer(name=name,
+                                                               base=base,
+                                                               temp=self.temp,
+                                                               reopen=True)
         self.ridx = 0  # rotation index of latest establishment event
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy)

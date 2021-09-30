@@ -11,7 +11,7 @@ from hio.core import wiring
 from hio.core.serial import serialing
 from hio.core.tcp import clienting, serving
 
-from . import keeping, habbing, directing
+from . import keeping, habbing, directing, configing
 from ..db import basing
 from .. import help
 
@@ -22,15 +22,23 @@ def setupController(name="who", base="main", temp=False, sith=None, count=1,
                     remotePort=5621, localPort=5620):
     """
     Setup and return doers list to run controller
+
+    base is the name used for shared resources i.e. Baser and Keeper
+    name is the name used for a specific habitat
+    The habitat specific config file will be in base/name
     """
     # setup databases  for dependency injection
-    ks = keeping.Keeper(name=name, temp=temp)  # not opened by default, doer opens
+    ks = keeping.Keeper(name=base, temp=temp)  # not opened by default, doer opens
     ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
-    db = basing.Baser(name=name, temp=temp)  # not opened by default, doer opens
+    db = basing.Baser(name=base, temp=temp)  # not opened by default, doer opens
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
     # setup habitat
-    hab = habbing.Habitat(name=name, ks=ks, db=db, temp=temp, isith=sith, icount=count, )
+    cf = configing.Configer(name=name, base=base, temp=temp)
+    # config file suffix:
+
+    hab = habbing.Habitat(name=name, ks=ks, db=db, cf=cf, temp=temp,
+                          isith=sith, icount=count, )
     habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
 
     # setup wirelog to create test vectors
