@@ -13,6 +13,7 @@ from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
+from orderedset import OrderedSet as oset
 
 from . import httping, grouping
 from .. import help
@@ -150,10 +151,11 @@ class WitnessInquisitor(doing.DoDoer):
         self.wits = wits
         self.klas = klas if klas is not None else HttpWitnesser
         self.msgs = msgs if msgs is not None else decking.Deck()
+        self.smsgs = oset()
 
-        super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
+        super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.receiptDo), doing.doify(self.msgDo)], **kwa)
 
-    def receiptDo(self, tymth=None, tock=0.0, **opts):
+    def receiptDo(self, tymth=None, tock=1.0, **opts):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
@@ -176,22 +178,35 @@ class WitnessInquisitor(doing.DoDoer):
         self.extend(witers)
 
         while True:
-            while not self.msgs:
+            while not self.smsgs:
                 yield self.tock
 
-            msg = self.msgs.popleft()
+            msg = self.smsgs.pop()
             witer = random.choice(witers)
             witer.msgs.append(msg)
 
             yield
 
+    def msgDo(self, tymth=None, tock=0.0, **opts):
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
+            while not self.msgs:
+                yield self.tock
+
+            msg = self.msgs.popleft()
+            self.smsgs.add(msg)
+
+
     def query(self, pre, r="logs", sn=0):
         msg = self.hab.query(pre, res=r, query=dict())  # Query for remote pre Event
-        self.msgs.append(msg)
+        self.msgs.append(bytes(msg))
 
     def telquery(self, ri, i, r="tels"):
         msg = self.hab.query(i, res=r, query=dict(ri=ri))  # Query for remote pre Event
-        self.msgs.append(msg)
+        self.msgs.append(bytes(msg))
 
 
 class WitnessPublisher(doing.DoDoer):
