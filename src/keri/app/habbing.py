@@ -314,9 +314,6 @@ class Habitat:
             self.mgr.move(old=opre, new=self.pre)
 
             # may want db method that updates .habs. and .prefixes together
-            # default oobiq
-            # oobiq = basing.OobiQueryRecord(cid=self.pre, role=kering.Roles.controller)
-            # may read more from oobiq permission config files if any
             self.db.habs.put(keys=self.name,
                              val=basing.HabitatRecord(prefix=self.pre))
             self.prefixes.add(self.pre)
@@ -336,6 +333,8 @@ class Habitat:
                                                 "pre={} {}".format(self.pre, ex))
 
             self.accepted = self.pre in self.kevers
+
+            # read in self.cf config file and process any oobis or endpoints
 
         self.inited = True
 
@@ -979,9 +978,13 @@ class Habitat:
 
     def replyLocScheme(self, eid, scheme=None):
         """
-        Reply returns a message stream composed from entries authed by the given
-        aid from the appropriate reply database including associated attachments
+        Returns a reply message stream composed of entries authed by the given
+        eid from the appropriate reply database including associated attachments
         in order to disseminate (percolate) BADA reply data authentication proofs.
+
+        Currently uses promiscuous model for permitting endpoint discovery.
+        Future is to use identity constraint graph to constrain discovery
+        of whom by whom.
 
         eid and and not scheme then:
             loc url for all schemes at eid
@@ -990,16 +993,20 @@ class Habitat:
             loc url for scheme at eid
 
         Parameters:
-            eid
-            scheme
+            eid (str): endpoint provider id
+            scheme (str): url scheme
         """
 
 
-    def replyEndRole(self, cid, role=None, scheme=None, eids=None):
+    def replyEndRole(self, cid, role=None, eids=None, scheme=None):
         """
-        Reply returns a message stream composed from entries authed by the given
+        Returns a reply message stream composed of entries authed by the given
         cid from the appropriate reply database including associated attachments
         in order to disseminate (percolate) BADA reply data authentication proofs.
+
+        Currently uses promiscuous model for permitting endpoint discovery.
+        Future is to use identity constraint graph to constrain discovery
+        of whom by whom.
 
         cid and not role and not scheme then:
             end authz for all eids in all roles and loc url for all schemes at each eid
@@ -1019,10 +1026,11 @@ class Habitat:
 
 
         Parameters:
-            cid
-            role
-            scheme
-            eids
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid is witness
+            role (str): authorized role for eid
+            eids (list): when provided restrict returns to only eids in eids
+            scheme (str): url scheme
         """
         if eids is None:
             eids = []
@@ -1030,11 +1038,13 @@ class Habitat:
 
     def replyToOobi(self, aid):
         """
-        Reply returns a message stream composed from entries authed by the given
+        Returns a reply message stream composed of entries authed by the given
         aid from the appropriate reply database including associated attachments
         in order to disseminate (percolate) BADA reply data authentication proofs.
 
-        Each Habitats .habs.oobis permits which oobis it may reply to.
+        Currently uses promiscuous model for permitting oobi initiated endpoint
+        discovery. Future is to use identity constraint graph to constrain
+        discovery of whom by whom.
 
         Parameters:
             aid (str): qb64 of identifier in oobi, may be cid or eid

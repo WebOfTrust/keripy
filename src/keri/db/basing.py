@@ -100,7 +100,13 @@ class OobiQueryRecord:  # information for responding to OOBI query
     or none allowed depending on the habitat type or function. Defaults rules
     for each pairing of querier and replier.
 
-    This functionality is aspirational for now.
+    This functionality is aspirational for now. It is likely that we need an
+    endpoint identity constraint graph to properly model the endpoint relationship
+    permissing constraint structure. For now we just operate with a promiscuous
+    constraint policy for endpoint discovery .
+
+    Usage:
+        oobiqs: dict[str, OobiQueryRecord] = field(default_factory=dict)
     """
     cid: str = None # qb64
     role: str = None  # one of kering.Roles None is any or all
@@ -118,7 +124,7 @@ class HabitatRecord:  # baser.habs
     """
     prefix: str  # aid qb64
     watchers: list[str] = field(default_factory=list) # aids qb64 of watchers
-    # oobiqs: dict[str, OobiQueryRecord] = field(default_factory=dict)  # keyed by aid
+    #
 
 
 @dataclass

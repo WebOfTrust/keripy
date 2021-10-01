@@ -19,24 +19,37 @@ logger = help.ogler.getLogger()
 
 
 def setupController(name="who", base="main", temp=False, sith=None, count=1,
-                    remotePort=5621, localPort=5620):
+                    urls=None, remote="eve", oobis=None):
     """
     Setup and return doers list to run controller
 
     base is the name used for shared resources i.e. Baser and Keeper
     name is the name used for a specific habitat
     The habitat specific config file will be in base/name
+    urls (list[str]): local endpoint urls
+    remote (str): name of remote direct mode target
+
+    Load endpoint database with named target urls including http not just tcp
+
     """
-    # setup databases  for dependency injection
+    if not urls:
+        urls = ["ftp://localhost:5620/"]
+
+    if not oobis:
+        oobis = [f"ftp://localhost:5621/{remote}"]  # blind oobi
+
+    # setup databases  for dependency injection and config file
     ks = keeping.Keeper(name=base, temp=temp)  # not opened by default, doer opens
     ksDoer = keeping.KeeperDoer(keeper=ks)  # doer do reopens if not opened and closes
     db = basing.Baser(name=base, temp=temp)  # not opened by default, doer opens
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
+    cf = configing.Configer(name=name, base=base, temp=temp)
+    conf = cf.get()
+    if not conf: # load config file
+
+        pass
 
     # setup habitat
-    cf = configing.Configer(name=name, base=base, temp=temp)
-    # config file suffix:
-
     hab = habbing.Habitat(name=name, ks=ks, db=db, cf=cf, temp=temp,
                           isith=sith, icount=count, )
     habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
@@ -49,15 +62,19 @@ def setupController(name="who", base="main", temp=False, sith=None, count=1,
                         reopen=True, headDirPath=path)
     wireDoer = wiring.WireLogDoer(wl=wl)  # setup doer
 
-    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
-    clientDoer = clienting.ClientDoer(client=client)  # setup doer
-    director = directing.Director(hab=hab, client=client, tock=0.125)
-    reactor = directing.Reactor(hab=hab, client=client)
+
 
     server = serving.Server(host="", port=localPort, wl=wl)
     serverDoer = serving.ServerDoer(server=server)  # setup doer
     directant = directing.Directant(hab=hab, server=server)
     # Reactants created on demand by directant
+
+
+
+    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
+    clientDoer = clienting.ClientDoer(client=client)  # setup doer
+    director = directing.Director(hab=hab, client=client, tock=0.125)
+    reactor = directing.Reactor(hab=hab, client=client)
 
     logger.info("\nDirect Mode controller %s:\nNamed %s on TCP port %s to port %s.\n\n",
                     hab.pre, hab.name, localPort, remotePort)
