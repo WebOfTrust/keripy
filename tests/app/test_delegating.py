@@ -14,7 +14,7 @@ def test_delegating():
         db.reopen()
 
         # start delegation
-        delegatey = delegating.Delegatey(db=db, ks=ks)
+        delegatey = delegating.Delegatey(name="deb", db=db, ks=ks)
         msg = dict(
             delpre=danHab.pre,
             salt="0123456789abcdef",
@@ -28,10 +28,12 @@ def test_delegating():
         delegatey.processMessage(msg)
         debHab = delegatey.hab
 
+        assert delegatey.hab.name == "deb"
+
         danpre = danHab.pre
         debpre = debHab.pre
         assert danpre == "EqueYwA9skz3SLqOYe8Lu4vzYDIJZSU984yrK3l1bEvw"
-        assert debpre == "Emyq6e6iYwcNGfHCThc4GgP4_TEfnYgCX9WhqnIhTrlE"
+        assert debpre == "Exd3lO6YoAhP7CP2zCu2h1thLzl1_ux7IzuUrAbCIvoc"
 
         delsrdr = delegatey.posts[0]["srdr"]
         delsigers = delegatey.posts[0]["sigers"]
@@ -65,7 +67,7 @@ def test_delegating():
         assert isrdr.ked["t"] == "ixn"
         assert isrdr.ked["a"][0]["i"] == debpre
         assert isrdr.ked["a"][0]["s"] == "0"
-        assert isrdr.ked["a"][0]["d"] == "EObmnyZtLKidoMUUdS-l90jXwiPvhYivablDGa1UbZNI"
+        assert isrdr.ked["a"][0]["d"] == "EXYtHVmEoXMboHOBfaZ-BEsStcQ9E2YQ8zqR6CSaCpK4"
 
         danHab.kvy.processEscrows()
         # after process interact and escrow, ensure we have the out of escrow event
@@ -81,7 +83,7 @@ def test_delegating():
         debHab.kvy.processEscrows()
         # after process interact and escrow, ensure we have the out of escrow event
         assert debHab.kvy.cues[2]["kin"] == "psUnescrow"
-        assert debHab.kvy.cues[2]["pre"] == debpre
+        assert danHab.kvy.cues[2]["serder"].ked["i"] == debpre
 
         # finally ensure we can accept the delegation
         debHab.delegationAccepted()

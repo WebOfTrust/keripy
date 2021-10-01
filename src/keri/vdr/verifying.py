@@ -106,18 +106,21 @@ class Verifier:
 
         if regk not in self.tevers:  # registry event not found yet
             self.escrowMRE(creder, prefixer, seqner, diger, sigers)
-            self.cues.append(dict(kin="query", q=dict(r="tels", pre=regk)))
+            self.cues.append(dict(kin="query", q=dict(r="logs", pre=creder.issuer, sn=seqner)))
+            self.cues.append(dict(kin="telquery", q=dict(r="tels", ri=regk, i=vcid)))
             raise kering.MissingRegistryError("registry identifier {} not in Tevers".format(regk))
 
         state, lastSeen = self.tevers[regk].vcState(vcid)
         if state is None:  # credential issuance event not found yet
             self.escrowMRE(creder, prefixer, seqner, diger, sigers)
-            self.cues.append(dict(kin="query", q=dict(r="tels", pre=vcid)))
+            self.cues.append(dict(kin="query", q=dict(r="logs", pre=creder.issuer, sn=seqner)))
+            self.cues.append(dict(kin="telquery", q=dict(r="tels", ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} not in Tevers".format(vcid))
 
         if state is VcStates.expired:
             self.escrowMRE(creder, prefixer, seqner, diger, sigers)
-            self.cues.append(dict(kin="query", q=dict(r="tels", pre=vcid)))
+            self.cues.append(dict(kin="query", q=dict(r="logs", pre=creder.issuer, sn=seqner)))
+            self.cues.append(dict(kin="telquery", q=dict(r="tels", ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} is out of date".format(vcid))
         elif state is VcStates.revoked:  # no escrow, credential has been revoked
             raise kering.InvalidCredentialStateError("credential {} in registrying is not in issued state".format(vcid,
@@ -173,7 +176,6 @@ class Verifier:
                 else:  # VcStatus == VcStates.Issued
                     logger.info("Successfully validated credential chain {} for credential {}"
                                 .format(label, creder.said))
-
 
 
         self.saveCredential(creder, prefixer, seqner, diger, sigers)
@@ -293,7 +295,6 @@ class Verifier:
 
         """
         for (said,), dater in db.getItemIter():
-
             creder, prefixer, seqner, diger, sigers = self._read(said)
 
             try:

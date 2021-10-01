@@ -17,7 +17,7 @@ from hio.help import decking
 
 from keri import kering
 from keri.app import agenting, forwarding
-from keri.core import coring, eventing, parsing, scheming
+from keri.core import coring, eventing, parsing
 from keri.db import dbing, basing
 from keri.peer import exchanging
 from keri.vc import proving
@@ -90,6 +90,7 @@ class Groupy:
             nsith = msg["nsith"]
             wits = msg["witnesses"] if "witnesses" in msg is not None else self.hab.kever.wits
             data = msg["data"] if "data" in msg else None
+            delpre = msg["delpre"] if "delpre" in msg else None
 
             if mssrdr is None:
                 for aid in aids:
@@ -100,16 +101,30 @@ class Groupy:
                             "group {} missing AID {}".format(self.hab.pre, aid))
 
                 mskeys, msdigers = self.extractKeysDigs(aids)
-                mssrdr = eventing.incept(keys=[mskey.qb64 for mskey in mskeys],
-                                         sith=sith,
-                                         toad=toad,
-                                         wits=wits,
-                                         nxt=coring.Nexter(sith=nsith,
-                                                           digs=[diger.qb64 for diger in msdigers]).qb64,
-                                         code=coring.MtrDex.Blake3_256,
-                                         data=data)
 
-                sigers = self.signAndPropagate(mssrdr, aids)
+                if delpre:
+                    mssrdr = eventing.delcept(keys=[mskey.qb64 for mskey in mskeys],
+                                              sith=sith,
+                                              toad=toad,
+                                              wits=wits,
+                                              nxt=coring.Nexter(digs=[diger.qb64 for diger in msdigers]).qb64,
+                                              code=coring.MtrDex.Blake3_256,
+                                              data=data,
+                                              delpre=delpre)
+                    sigers = self.signAndPropagate(mssrdr, aids)
+
+                else:
+
+                    mssrdr = eventing.incept(keys=[mskey.qb64 for mskey in mskeys],
+                                             sith=sith,
+                                             toad=toad,
+                                             wits=wits,
+                                             nxt=coring.Nexter(sith=nsith,
+                                                               digs=[diger.qb64 for diger in msdigers]).qb64,
+                                             code=coring.MtrDex.Blake3_256,
+                                             data=data)
+
+                    sigers = self.signAndPropagate(mssrdr, aids)
 
             indices = [siger.index for siger in sigers]
             tholder = coring.Tholder(sith=sith)
@@ -449,7 +464,7 @@ class MultiSigGroupDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, msgs=None, cues=None):
+    def __init__(self, hab, ims=None, msgs=None, cues=None):
         """
         Creates the DoDoer needed to modify a multisig group identifier.  Requires the
         name of the environment whose identifier is a member of the group being created.
@@ -464,9 +479,8 @@ class MultiSigGroupDoer(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.groupy = Groupy(hab=self.hab)
-        self.kvy = eventing.Kevery(db=hab.db,
-                                   lax=False,
-                                   local=False)
+        self.ims = ims if ims is not None else bytearray()
+        self.msgToSend = None
 
         self.postman = forwarding.Postman(hab=self.hab)
         self.witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.TCPWitnesser)
@@ -546,12 +560,11 @@ class MultiSigGroupDoer(doing.DoDoer):
                                           msg=bytearray(cue["evt"]))
                 elif cueKin == "witness":
                     msg = cue["msg"]
-                    witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
+                    witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.HttpWitnesser)
                     self.extend([witRctDoer])
 
                     while not witRctDoer.done:
                         _ = yield self.tock
-
                     self.remove([witRctDoer])
 
                 elif cueKin == "logEvent":
@@ -561,20 +574,33 @@ class MultiSigGroupDoer(doing.DoDoer):
                     idx = group.aids.index(self.hab.pre)
 
                     if idx == sigers[0].index:  # We are the first signer, elected to send to witnesses
-                        msg = eventing.messagize(mssrdr, sigers=sigers)
-                        witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
-                        self.extend([witRctDoer])
 
-                        while not witRctDoer.done:
-                            _ = yield self.tock
+                        if mssrdr.ked["t"] in (coring.Ilks.dip, coring.Ilks.drt):
+                            # Process event in local hab, send to delegator, don't receipt.
+                            self.msgToSend = eventing.messagize(mssrdr, sigers=sigers)
+                            self.ims.extend(bytearray(self.msgToSend))
 
-                        self.remove([witRctDoer])
+                            di = mssrdr.ked["di"]
+                            self.postman.send(recipient=di,
+                                              topic="delegate",
+                                              msg=bytearray(self.msgToSend))
+                        else:
+
+                            msg = eventing.messagize(mssrdr, sigers=sigers)
+                            witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=msg, klas=agenting.TCPWitnesser)
+                            self.extend([witRctDoer])
+
+                            while not witRctDoer.done:
+                                _ = yield self.tock
+
+                            self.remove([witRctDoer])
+                            self.cues.append(cue)
 
                     else:  # We are not the first signer, so we wait for the sigs and processed receipts
                         while mssrdr.pre not in self.hab.kevers or self.hab.kevers[mssrdr.pre].sn < mssrdr.sn:
                             self.witq.query(mssrdr.pre)
                             _ = (yield self.tock)
-                    self.cues.append(cue)
+                        self.cues.append(cue)
 
                 yield self.tock
 

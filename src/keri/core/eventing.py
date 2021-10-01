@@ -4462,8 +4462,9 @@ class Kevery:
                 except Exception as ex:  # log diagnostics errors etc
                     # error other than waiting on sigs or seal so remove from escrow
                     self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
-                    if eserder is not None:
-                        self.cues.push(dict(kin="psUnescrow", serder=eserder))
+
+                    if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt):
+                        self.cues.append(dict(kin="psUnescrow", serder=eserder))
 
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Kevery unescrowed: %s\n", ex.args[0])
@@ -4476,7 +4477,10 @@ class Kevery:
                     # valid event escrow.
                     self.db.delPse(snKey(pre, sn), edig)  # removes one escrow at key val
                     self.db.delPde(dgkey)  # remove escrow if any
-                    self.cues.push(dict(kin="psUnescrow", pre=pre.decode("utf-8")))
+
+                    if eserder is not None and eserder.ked["t"] in (Ilks.dip, Ilks.drt):
+                        self.cues.append(dict(kin="psUnescrow", serder=eserder))
+
                     logger.info("Kevery unescrow succeeded in valid event: "
                                 "event=\n%s\n", json.dumps(eserder.ked, indent=1))
 

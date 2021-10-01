@@ -40,7 +40,8 @@ def test_proving():
 
         schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
         credSubject = dict(
-            id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
+            d="",
+            i="E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",  # this needs to be generated from a KEL
             lei="254900OPPU84GM83MG36",
             issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
@@ -53,15 +54,16 @@ def test_proving():
                             subject=credSubject)
 
         msg = sidHab.endorse(serder=creder)
-        assert msg == (b'{"v":"KERI10JSON00013c_","d":"EswuIxiAp08fJi8bLhgQLBRAIDohPVj33E'
-                       b'Vwcu67HbnM","s":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","'
-                       b'i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","a":{"id":"did'
-                       b':keri:Efaavv0oadfghasdfn443fhbyyr4v","lei":"254900OPPU84GM83MG36'
-                       b'","issuanceDate":"2021-06-27T21:26:21.233257+00:00"},"p":[]}-VA0'
-                       b'-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAAWGmUiK'
-                       b'WKUf2H_mbuu3BMANZ94RuHCP3VgDd5CJcVz74CgyvdbDrDuiw61nh2R4_2MWFlub'
-                       b'lc0ywkkhH3U3G3BA')
+        assert msg == (b'{"v":"KERI10JSON000174_","d":"EID77B8V8O60IHFCiB6R93BisHHQ-L9CC_'
+                       b'Et2w1Zb1Ww","s":"EeCCZi1R5xHUlhsyQNm_7NrUQTEKZH5P9vBomnc9AihY","'
+                       b'i":"E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E","a":{"d":"Evfz'
+                       b'9lXZM_uFnNM1wJhdmyjt4lbtyt5ulmPwNvtL2w6A","i":"E4YPqsEOaPNaZxVIb'
+                       b'Y-Gx2bJgP-c7AH_K7pEE-YfcI9E","lei":"254900OPPU84GM83MG36","issua'
+                       b'nceDate":"2021-06-27T21:26:21.233257+00:00"},"p":[]}-VA0-FABE4YP'
+                       b'qsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAA'
+                       b'ElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI-AABAAk9ST4uE4G1lIVB'
+                       b'UiTDal2v-xa2E_vB2UUbXSueLl470LAkum9L6E4s4rt-3XprStZceTchjmJ_FRTI'
+                       b'-Q1wrPAQ')
 
         creder = Credentialer(raw=msg)
         proof = msg[creder.size:]
@@ -215,16 +217,16 @@ def test_credential():
 
     assert cred.size == len(cred.raw)
     assert cred.raw == (
-        b'{"v":"KERI10JSON0002ad_","d":"Ee9jrJ9ykNKoYrbX7tdara-QoVWvpLV-0yu1p7uypjFM",'
+        b'{"v":"KERI10JSON0002d9_","d":"EMRnP1k-86yYMTON-NrDJOi3P31kcbXckg2tj8QCzBEM",'
         b'"s":"EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q","i":"EYNHFK056fqNSG_MDE7d'
-        b'_Eqk0bazefvd4eeQLMPPNBnM","a":{"d":"","issuanceDate":"2021-06-27T21:26:21.23'
-        b'3257+00:00","type":["VerifiablePresentation","LegalEntityEngagementContextRo'
-        b'levLEICredential"],"personLegalName":"John Doe","engagementContextRole":"Pro'
-        b'ject Manager","credentialStatus":"EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkgg'
-        b't","LEI":"254900OPPU84GM83MG36","i":"Ee-sbdl62ON0uzObBPf9fbvnnaJ_Lf39Av4_XSH'
-        b'WQ4QY","ri":"ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M"},"p":[{"qualified'
-        b'vLEIIssuervLEICredential":"EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]'
-        b'}')
+        b'_Eqk0bazefvd4eeQLMPPNBnM","a":{"d":"El9mrwBT9Zeq7rtuQF5VXHsHDUa9YCGEKsq1drBS'
+        b'OOvc","issuanceDate":"2021-06-27T21:26:21.233257+00:00","type":["VerifiableP'
+        b'resentation","LegalEntityEngagementContextRolevLEICredential"],"personLegalN'
+        b'ame":"John Doe","engagementContextRole":"Project Manager","credentialStatus"'
+        b':"EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt","LEI":"254900OPPU84GM83MG36",'
+        b'"i":"Ee-sbdl62ON0uzObBPf9fbvnnaJ_Lf39Av4_XSHWQ4QY","ri":"ETQoH02zJRCTNz-Wl3n'
+        b'nkUD_RVSzSwcoNvmfa18AWt3M"},"p":[{"qualifiedvLEIIssuervLEICredential":"EGtyT'
+        b'hM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD"}]}')
 
 
 def test_parse_proof():
@@ -288,7 +290,8 @@ def test_build_proof():
 
         schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
         credSubject = dict(
-            id="did:keri:Efaavv0oadfghasdfn443fhbyyr4v",  # this needs to be generated from a KEL
+            d="",
+            i="E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",  # this needs to be generated from a KEL
             lei="254900OPPU84GM83MG36",
             issuanceDate="2021-06-27T21:26:21.233257+00:00",
         )
@@ -313,11 +316,11 @@ def test_build_proof():
 
         proof = buildProof(prefixer, seqner, diger, sigers)
         assert proof == (b'-FABEiRjCnZfca8gUZqecerjGpjkiY8dIkGudP6GfapWi5MU0AAAAAAAAAAAAAAA'
-                         b'AAAAAABAECc96yX1sYswnD6LXEcoNuJ0ehi8gkFMEGedqURhXMBU-AADAAp9GwCT'
-                         b'RwuTQMGKIE7QjQuLIvLdVsEY0jONR65zWT-R1iFHdy3BGnsmcKtKnwEQhQsEjZ16'
-                         b'3YrlnHGt8xkRKtDgABo6JNP6kiSntgnGBvOq1PxS5a4g6qJ9kV6MvarztnmvFVri'
-                         b'i2heoyn8W_UYfghIfc1HUDEttWyBIQJ8ORBk-vCwACMeJlZuy12nKKjbkhwRKurV'
-                         b'DwxncYQpSHVrMHM0iXtMvHoHGH-_SCK-f8J7jHg7tF45O33n-TkgI_QTnBz7qgDQ')
+                         b'AAAAAABAECc96yX1sYswnD6LXEcoNuJ0ehi8gkFMEGedqURhXMBU-AADAA8jPya7'
+                         b'QXiXZRPIYrtoel7cAhN2dS57ejZBEE501Cr4i5kBMDFu6qEPK9l1CBtZU2Djeh0T'
+                         b'8ZI1wyUqTeQgrpAgAB031v3FUTPZoPY19kv7xrf49HyPSukG7qhrZJEltiMcuzTQ'
+                         b'mAYsHIJzygD9XleyA3HcsTgB9pObBPTqPOfv7ZCgACzLFfAe0YvpKU5Lslt78f_H'
+                         b'SgdZJPca1tCTt0bPC00TWg11HbI_t0vdGNQkogIVzcoZnsK4FVZe1CeveRZym2BA')
 
         prefixer, seqner, diger, isigers = parseProof(proof)
         assert prefixer.qb64 == sigHab.pre
@@ -334,6 +337,7 @@ def test_credential_parsator():
         issuer = issuing.Issuer(hab=hab, reger=reg, noBackers=True, estOnly=True, temp=True)
 
         credSubject = dict(
+            d="",
             LEI="254900OPPU84GM83MG36",
         )
 
@@ -347,11 +351,12 @@ def test_credential_parsator():
         verifier = verifying.Verifier(hab=hab, name="verifier")
         proving.parseCredential(ims=msg, verifier=verifier)
 
-        assert len(verifier.cues) == 1
+        assert len(verifier.cues) == 2
         cue = verifier.cues.popleft()
+        print(cue)
         assert cue['kin'] == "query"
         q = cue["q"]
-        assert q["pre"] == issuer.regk
+        assert q["pre"] == hab.pre
 
 
 if __name__ == '__main__':
