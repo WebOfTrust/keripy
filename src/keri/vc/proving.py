@@ -51,12 +51,15 @@ def credential(schema,
         d="",
         s=schema,
         i=issuer,
-        a=subject,
+        a={},
         p=source
     )
 
     if status is not None:
-        vc["a"]["ri"] = status
+        subject["ri"] = status
+
+    _, sad = coring.Saider.saidify(sad=subject, kind=kind, label=coring.Ids.d)
+    vc["a"] = sad
 
     return Credentialer(crd=vc)
 
@@ -194,7 +197,6 @@ def credParsator(ims=b'', verifier=None):
     try:
         verifier.processCredential(creder, prefixer, seqner, diger, isigers)
     except AttributeError as ex:
-        print(ex)
         raise kering.ValidationError("No verifier to process so dropped credential"
                                      "= {}.".format(creder.pretty()))
 

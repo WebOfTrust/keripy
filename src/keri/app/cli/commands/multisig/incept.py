@@ -7,13 +7,15 @@ keri.kli.commands.multisig module
 
 import argparse
 import json
+import logging
 import sys
 from json import JSONDecodeError
 
 from hio.base import doing
+from hio.help import decking
 
 from keri import help
-from keri.app import directing, indirecting, grouping
+from keri.app import directing, indirecting, grouping, agenting
 from keri.app.cli.common import displaying, existing
 
 # help.ogler.level = logging.INFO
@@ -66,18 +68,27 @@ def inceptMultisig(args):
 class GroupMultisigIncept(doing.DoDoer):
 
     def __init__(self, name, group, **kwa):
+        self.name = name
         self.hab, doers = existing.openHabitat(name=name)
-        self.icpr = grouping.MultiSigGroupDoer(hab=self.hab)
         self.msg = kwa
         self.msg["group"] = group
 
-        mbd = indirecting.MailboxDirector(hab=self.hab, topics=['/receipt', '/multisig'])
-        doers.extend([self.icpr, mbd])
+        topics = ['/receipt', '/multisig', '/replay']
+        if "delpre" in self.msg:
+            topics.append('/delegate')
+
+
+        self.mbd = indirecting.MailboxDirector(hab=self.hab, topics=topics)
+        self.icpr = grouping.MultiSigGroupDoer(hab=self.hab, ims=self.mbd.ims)
+        self.witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.HttpWitnesser)
+
+
+        doers.extend([self.witq, doing.doify(self.cueDo), self.icpr, self.mbd])
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.inceptDo)])
 
-        super(GroupMultisigIncept, self).__init__(doers=doers, **kwa)
+        super(GroupMultisigIncept, self).__init__(doers=doers)
 
     def inceptDo(self, tymth, tock=0.0, **opts):
         # enter context
@@ -97,3 +108,40 @@ class GroupMultisigIncept(doing.DoDoer):
         displaying.printIdentifier(self.hab, rep["pre"])
 
         self.remove(self.toRemove)
+
+    def cueDo(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle cues coming out of our external Mailbox listener and forward to controller
+        mailbox if appropriate
+
+        """
+        self.wind(tymth)
+        self.tock = tock
+        yield self.tock
+
+        while True:
+            while self.mbd.cues:
+                cue = self.mbd.cues.popleft()
+                cueKin = cue["kin"]  # type or kind of cue
+                if cueKin in ("psUnescrow",):
+                    if self.icpr.msgToSend is not None:
+
+                        witRctDoer = agenting.WitnessReceiptor(hab=self.hab, msg=self.icpr.msgToSend,
+                                                               klas=agenting.TCPWitnesser)
+                        self.extend([witRctDoer])
+
+                        while not witRctDoer.done:
+                            _ = yield self.tock
+
+                        self.remove([witRctDoer])
+
+                        serder = cue["serder"]
+                        self.icpr.cues.append(dict(pre=serder.pre))
+                elif cue["kin"] == "delegatage":
+                    delpre = cue["delpre"]
+                    self.witq.query(delpre)
+
+                yield self.tock
+            yield self.tock
+

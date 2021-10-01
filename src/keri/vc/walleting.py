@@ -135,5 +135,8 @@ class WalletDoer(doing.DoDoer):
                     qargs = cue["q"]
                     self.witq.query(**qargs)
 
+                elif cueKin == "telquery":
+                    qargs = cue["q"]
+                    self.witq.telquery(**qargs)
                 yield self.tock
             yield self.tock

@@ -3,7 +3,7 @@ from hio.base import doing
 from hio.help import decking
 
 from keri.app import agenting, grouping
-from keri.vdr import issuing
+from keri.vdr import issuing, viring
 
 logger = help.ogler.getLogger()
 
@@ -40,7 +40,8 @@ class RegistryInceptDoer(doing.DoDoer):
                 msg = self.msgs.popleft()
                 name = msg["name"]
 
-                self.issuer = issuing.Issuer(hab=self.hab, name=name, noBackers=True, **kwa)
+                reger = viring.Registry(name=self.hab.name, temp=False)
+                self.issuer = issuing.Issuer(hab=self.hab, name=name, reger=reger, noBackers=True, **kwa)
                 self.extend([doing.doify(self.escrowDo), doing.doify(self.issuerDo)])
                 yield self.tock
 
@@ -79,6 +80,8 @@ class RegistryInceptDoer(doing.DoDoer):
                         _ = yield self.tock
 
                     self.remove([witSender])
+                    self.cues.append(dict(kin="finished", regk=self.issuer.regk))
+
                 elif cueKin == "kevt":
                     kevt = cue["msg"]
                     witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
@@ -89,7 +92,6 @@ class RegistryInceptDoer(doing.DoDoer):
 
                     self.remove([witDoer])
 
-                    self.cues.append(dict(kin="finished", regk=self.issuer.regk))
                 elif cueKin == "multisig":
                     msg = dict(
                         op=cue["op"],

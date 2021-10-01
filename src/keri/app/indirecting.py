@@ -386,10 +386,17 @@ class MailboxDirector(doing.DoDoer):
 
         wits = self.hab.kever.wits
 
+        group = self.hab.group()
         for wit in wits:
             poller = Poller(hab=self.hab, topics=self.topics, witness=wit)
             self.pollers.append(poller)
             self.extend([poller])
+
+            if group is not None:
+                poller = GroupPoller(hab=self.hab, group=group, topics=self.topics, witness=wit)
+                self.pollers.append(poller)
+                self.extend([poller])
+
             _ = (yield self.tock)
 
         while True:
@@ -590,6 +597,83 @@ class Poller(doing.DoDoer):
 
                 witrec.topics[tpc] = int(idx)
                 self.hab.db.tops.pin(self.witness, witrec)
+                yield
+            yield
+
+
+class GroupPoller(doing.DoDoer):
+    """
+    Polls remote SSE endpoint for event that are KERI messages to be processed for a group identifier
+    if one exists
+
+    """
+
+    def __init__(self, hab, group, witness, topics, msgs=None, **kwa):
+        """
+        Returns doist compatible doing.Doer that polls a witness for mailbox messages
+        as SSE events
+
+        Parameters:
+            hab:
+            witness:
+            topics:
+            msgs:
+
+        """
+        self.hab = hab
+        self.group = group
+        self.witness = witness
+        self.topics = topics
+        self.msgs = None if msgs is not None else decking.Deck()
+        doers = [doing.doify(self.eventDo)]
+
+        super(GroupPoller, self).__init__(doers=doers, **kwa)
+
+    def eventDo(self, tymth=None, tock=0.0, **opts):
+        """
+        Returns:
+           doifiable Doist compatible generator method
+
+        Usage:
+            add result of doify on this method to doers list
+        """
+        loc = obtaining.getwitnessbyprefix(self.witness)
+
+        client = http.clienting.Client(hostname=loc.ip4, port=loc.http)
+        clientDoer = http.clienting.ClientDoer(client=client)
+        self.extend([clientDoer])
+
+        tkey = "{}.{}".format(self.group.gid, self.witness)
+        witrec = self.hab.db.tops.get(tkey)
+        if witrec is None:
+            witrec = basing.TopicsRecord(topics=dict())
+
+        topics = dict()
+        q = dict(pre=self.group.gid, topics=topics)
+        for topic in self.topics:
+            if topic in witrec.topics:
+                topics[topic] = witrec.topics[topic] + 1
+            else:
+                topics[topic] = 0
+
+        msg = self.hab.query(pre=self.group.gid, res="mbx", query=q)
+        httping.createCESRRequest(msg, client)
+
+        while client.requests:
+            yield self.tock
+
+        while True:
+            while client.events:
+                evt = client.events.popleft()
+                idx = evt["id"]
+                msg = evt["data"]
+                tpc = evt["name"]
+                # ser = coring.Serder(raw=msg.encode("utf-8"))
+
+                self.msgs.append(msg.encode("utf=8"))
+
+                witrec.topics[tpc] = int(idx)
+                self.hab.db.tops.pin(tkey, witrec)
                 yield
             yield
 

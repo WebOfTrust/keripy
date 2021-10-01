@@ -13,7 +13,7 @@ from hio.help import decking
 from keri.vdr import viring
 from .. import kering, help
 from ..app import grouping, agenting
-from ..core import parsing, coring, scheming
+from ..core import parsing, coring
 from ..core.coring import Counter, Seqner, CtrDex, MtrDex, Serder
 from ..core.eventing import SealEvent, SealSource, TraitDex
 from ..db.dbing import snKey, dgKey
@@ -58,7 +58,7 @@ class Issuer:
         self.cues = cues if cues is not None else decking.Deck()
         self.regk = None
 
-        self.reger = reger if reger is not None else Registry(name=name, temp=temp)
+        self.reger = reger if reger is not None else Registry(name=self.hab.name, temp=temp)
         self.inited = False
 
         # save init kwy word arg parameters as ._inits in order to later finish
@@ -419,10 +419,6 @@ class IssuerDoer(doing.DoDoer):
 
                 d |= data
 
-                saider = scheming.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Ids.d)
-                d["i"] = saider.qb64
-
-
                 group = self.hab.group()
                 if group is None:
                     pre = self.hab.pre
@@ -470,7 +466,7 @@ class IssuerDoer(doing.DoDoer):
 
                 cueKin = cue['kin']
                 if cueKin == "send":
-                    tevt = cue["tevt"]
+                    tevt = cue["msg"]
                     witSender = agenting.WitnessPublisher(hab=self.hab, msg=tevt)
                     self.extend([witSender])
 
@@ -479,7 +475,7 @@ class IssuerDoer(doing.DoDoer):
 
                     self.remove([witSender])
                 elif cueKin == "kevt":
-                    kevt = cue["kevt"]
+                    kevt = cue["msg"]
                     witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=kevt)
                     self.extend([witDoer])
 

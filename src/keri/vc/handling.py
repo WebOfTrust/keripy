@@ -221,7 +221,7 @@ class IssueHandler(doing.DoDoer):
         self.cues = cues if cues is not None else decking.Deck()
 
         self.verifier = verifier
-        self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.TCPWitnesser)
+        self.witq = agenting.WitnessInquisitor(hab=hab, klas=agenting.HttpWitnesser)
 
         doers = [self.witq, doing.doify(self.msgDo), doing.doify(self.verifierDo)]
 
@@ -284,18 +284,19 @@ class IssueHandler(doing.DoDoer):
 
                 if cueKin == "saved":
                     creder = cue["creder"]
-                    proof = cue["proof"]
 
                     logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
                     logger.info(creder.pretty())
                     print("Credential: {}, Schema: {},  Saved".format(creder.said, creder.schema))
                     print(creder.pretty())
-                    print(proof)
-
 
                 elif cueKin == "query":
                     qargs = cue["q"]
                     self.witq.query(**qargs)
+
+                elif cueKin == "telquery":
+                    qargs = cue["q"]
+                    self.witq.telquery(**qargs)
 
                 yield self.tock
             yield self.tock

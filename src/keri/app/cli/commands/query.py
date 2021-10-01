@@ -73,7 +73,7 @@ class QueryDoer(doing.DoDoer):
 
         msg = self.hab.query(self.pre, res="logs")  # Query for remote pre Event
         client.tx(msg)  # send to connected remote
-        yield 5.0
+        yield 1.0
 
         while self.pre not in kevery.kevers:
             yield self.tock

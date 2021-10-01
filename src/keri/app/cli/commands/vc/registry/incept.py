@@ -54,7 +54,7 @@ class RegistryInceptor(doing.DoDoer):
         self.registryName = registryName
         self.hab, doers = existing.openHabitat(name=self.name)
 
-        mbx = indirecting.MailboxDirector(hab=self.hab, topics=["/receipt", "/multisig"])
+        mbx = indirecting.MailboxDirector(hab=self.hab, topics=["/receipt", "/multisig", "/replay"])
         self.icpr = registering.RegistryInceptDoer(hab=self.hab)
         doers.extend([self.icpr, mbx])
         self.toRemove = list(doers)
