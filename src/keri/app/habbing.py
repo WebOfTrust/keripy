@@ -314,12 +314,11 @@ class Habitat:
             self.mgr.move(old=opre, new=self.pre)
 
             # may want db method that updates .habs. and .prefixes together
-            # default oobi
-            oobi = basing.OobiQueryRecord(cid=self.pre, role=kering.Roles.controller)
-            # may read more from oobi permission config files if any
+            # default oobiq
+            # oobiq = basing.OobiQueryRecord(cid=self.pre, role=kering.Roles.controller)
+            # may read more from oobiq permission config files if any
             self.db.habs.put(keys=self.name,
-                             val=basing.HabitatRecord(prefix=self.pre,
-                                                      oobis=[oobi]))
+                             val=basing.HabitatRecord(prefix=self.pre))
             self.prefixes.add(self.pre)
 
             # create inception event

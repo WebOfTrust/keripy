@@ -87,15 +87,25 @@ class dbdict(dict):
 @dataclass
 class OobiQueryRecord:  # information for responding to OOBI query
     """
-    Keyed by aid in oobis field of HabitatRecord
-    Determines endpoints that it will respond with given oobi query at cid
+    Keyed by cid in oobis field of HabitatRecord  (oobiq).
+    Determines which endpoints are allowed as responses to oobi query for cid
     cid is aid of controller with endpoint.
-    eids are aids of endpoint providers for a role
+    role is functional role of endpoint provider
+    eids are aids of endpoint providers for a role.
+    schemes are url schemes of endpoint url
+
+    This record acts as a constraint tree with path cid.role.eid.scheme.
+    Partial path specification permits the resultant subtree. Full path
+    specification permits only the leaf. No record could be either all allowed
+    or none allowed depending on the habitat type or function. Defaults rules
+    for each pairing of querier and replier.
+
+    This functionality is aspirational for now.
     """
     cid: str = None # qb64
     role: str = None  # one of kering.Roles None is any or all
-    scheme: str = None  # one of kering.Schemes None is any or all
     eids: list[str] = field(default_factory=list)  # of qb64  empty is any
+    scheme: str = None  # one of kering.Schemes None is any or all
 
     def __iter__(self):
         return iter(asdict(self))
@@ -108,7 +118,7 @@ class HabitatRecord:  # baser.habs
     """
     prefix: str  # aid qb64
     watchers: list[str] = field(default_factory=list) # aids qb64 of watchers
-    oobis: list[OobiQueryRecord] = field(default_factory=dict)  # keyed by aid
+    # oobiqs: dict[str, OobiQueryRecord] = field(default_factory=dict)  # keyed by aid
 
 
 @dataclass
