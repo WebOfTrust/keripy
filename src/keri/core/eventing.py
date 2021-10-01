@@ -1213,6 +1213,52 @@ def query(res,
     return Serder(ked=ked)  # return serialized ked
 
 
+def queryNew(route="",
+             reply="",
+             data=None,
+             dts=None,
+             version=Version,
+             kind=Serials.json):
+    """
+    Returns serder of query 'qry' message.
+    Utility function to automate creation of query messages.
+
+
+    Parameters:
+        route is route path string that indicates data flow handler (behavior)
+            to processs the reply
+        data is list of dicts of comitted data such as seals
+        dts is date-time-stamp of message at time or creation
+        version is Version instance
+        kind is serialization kind
+
+
+    {
+      "v" : "KERI10JSON00011c_",
+      "t" : "qry",
+      "dt": "2020-08-22T17:50:12.988921+00:00",
+      "r" : "logs",
+      "rr": "log/processor",
+      "q" :
+      {
+        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+        "sn": "5",
+        "dt": "2020-08-01T12:20:05.123456+00:00",
+      }
+    }
+    """
+    vs = Versify(version=version, kind=kind, size=0)
+    ilk = Ilks.req
+
+    ked = dict(v=vs,  # version string
+               t=ilk,
+               r=res,  # resource type for single item request
+               q=qry
+               )
+
+    return Serder(ked=ked)  # return serialized ked
+
+
 def reply(route="",
           data=None,
           dts=None,
@@ -1225,10 +1271,10 @@ def reply(route="",
     'd' field.
 
      Parameters:
-        route is route path string that indicates data flow handler (behavior)
-            to processs the reply
-        data is list of dicts of comitted data such as seals
-        dts is date-time-stamp of message at time or creation
+        route (str):  '/' delimited path identifier of data flow handler
+            (behavior) to processs the reply if any
+        data (dict): attribute section of reply
+        dts (str):  ISO-8601 date-time-stamp of message at time or creation
         version is Version instance
         kind is serialization kind
 

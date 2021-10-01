@@ -232,7 +232,7 @@ def nowUTC():
 
 def nowIso8601():
     """
-    Returns time now in ISO 8601 format
+    Returns time now in specific ISO 8601 format (RFC-3339)
     use now(timezone.utc)
 
     YYYY-MM-DDTHH:MM:SS.ffffff+HH:MM[:SS[.ffffff]]
@@ -246,7 +246,7 @@ def nowIso8601():
 
 def toIso8601(dt=None):
     """
-    Returns str datetime dt in ISO 8601 format
+    Returns str datetime dt in specific ISO 8601 format (RFC-3339)
     Converts datetime object dt to ISO 8601 formt
     If dt is missing use now(timezone.utc)
 
@@ -264,7 +264,8 @@ def toIso8601(dt=None):
 
 def fromIso8601(dts):
     """
-    Returns datetime object from ISO 8601 formated str or bytes
+    Returns datetime object from specific ISO 8601 formated str or bytes
+    (RFC-3339)
     Converts dts from ISO 8601 format to datetime object
 
     YYYY-MM-DDTHH:MM:SS.ffffff+HH:MM[:SS[.ffffff]]
