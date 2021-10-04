@@ -7,6 +7,8 @@ Witness command line interface
 """
 import argparse
 import logging
+import os
+import sys
 
 import falcon
 from hio.base import doing
@@ -22,6 +24,13 @@ from keri.core import scheming, coring
 from keri.peer import exchanging
 from keri.vc import walleting, handling, proving
 from keri.vdr import verifying, viring
+
+
+WEB_DIR_PATH = os.path.dirname(
+                os.path.abspath(
+                    sys.modules.get(__name__).__file__))
+STATIC_DIR_PATH = os.path.join(WEB_DIR_PATH, 'static')
+
 
 d = "Runs KERI Agent controller.\n"
 d += "Example:\nagent -t 5621\n"
@@ -39,13 +48,17 @@ parser.add_argument('-n', '--name',
                     action='store',
                     default="agent",
                     help="Name of controller. Default is agent.")
-parser.add_argument('-p', '--pre',
+parser.add_argument('-c', '--controller',
                     action='store',
                     default=None,
                     help="Identifier prefix to accept control messages from.")
 parser.add_argument("-I", '--insecure',
                     action='store_true',
                     help="Run admin HTTP server without checking signatures on controlling requests")
+parser.add_argument("-p", "--path",
+                    action="store",
+                    default=STATIC_DIR_PATH,
+                    help="Location of the KIWI app bundle for this agent")
 
 
 def launch(args):
@@ -56,9 +69,9 @@ def launch(args):
     logger.info("\n******* Starting Agent for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.admin_http_port, args.tcp)
     print("Starting agent", args.name)
-    doers = runAgent(controller=args.pre, name=args.name, insecure=args.insecure,
+    doers = runAgent(controller=args.controller, name=args.name, insecure=args.insecure,
                      tcp=int(args.tcp),
-                     adminHttpPort=int(args.admin_http_port))
+                     adminHttpPort=int(args.admin_http_port), path=args.path)
     try:
         tock = 0.03125
         doist = doing.Doist(limit=0.0, tock=tock, real=True)
@@ -71,7 +84,7 @@ def launch(args):
                 ".******\n\n", args.name, args.admin_http_port, args.tcp)
 
 
-def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5623):
+def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5623, path=STATIC_DIR_PATH):
     """
     Setup and run one agent
     """
@@ -90,9 +103,12 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
     handlers = []
 
     proofs = decking.Deck()
+    issuerCues = decking.Deck()
+
     jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
     issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, typ=jsonSchema)
     requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
+    applyHandler = handling.ApplyHandler(hab=hab, verifier=verifier, name=name, issuerCues=issuerCues)
     proofHandler = handling.ProofHandler(proofs=proofs)
 
     mbx = storing.Mailboxer(name=hab.name)
@@ -100,14 +116,16 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
     ish = grouping.MultisigIssueHandler(hab=hab, controller=controller, mbx=mbx)
     meh = grouping.MultisigEventHandler(hab=hab, verifier=verifier)
 
-    handlers.extend([issueHandler, requestHandler, proofHandler, mih, ish, meh])
+    handlers.extend([issueHandler, requestHandler, proofHandler, applyHandler, mih, ish, meh])
 
     exchanger = exchanging.Exchanger(hab=hab, handlers=handlers)
 
+    rep = storing.Respondant(hab=hab, mbx=mbx)
     cues = decking.Deck()
     mbd = indirecting.MailboxDirector(hab=hab,
                                       exc=exchanger,
                                       verifier=verifier,
+                                      rep=rep,
                                       topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate"],
                                       cues=cues)
     # configure a kevery
@@ -117,17 +135,23 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
                                 insecure=insecure,
                                 proofs=proofs,
                                 cues=cues,
+                                issuerCues=issuerCues,
                                 verifier=verifier,
                                 mbx=mbx,
                                 mbd=mbd,
-                                adminHttpPort=adminHttpPort))
+                                adminHttpPort=adminHttpPort,
+                                path=path))
 
     return doers
 
 
-def adminInterface(controller, hab, insecure, proofs, cues, mbx, mbd, verifier, adminHttpPort=5623):
+def adminInterface(controller, hab, insecure, proofs, cues, issuerCues, mbx, mbd, verifier, adminHttpPort=5623,
+                   path=STATIC_DIR_PATH):
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
+    print("creating static sink for", path)
+    sink = http.serving.StaticSink(staticDirPath=path)
+    app.add_sink(sink, prefix=sink.DefaultStaticSinkBasePath)
 
     rep = storing.Respondant(hab=hab, mbx=mbx)
 
@@ -135,7 +159,7 @@ def adminInterface(controller, hab, insecure, proofs, cues, mbx, mbd, verifier, 
     gdoer = grouping.MultiSigGroupDoer(hab=hab, ims=mbd.ims)
 
     kiwiServer = agenting.KiwiServer(hab=hab, controller=controller, verifier=verifier, gdoer=gdoer.msgs, app=app,
-                                     rep=rep, insecure=insecure)
+                                     rep=rep, issuerCues=issuerCues, insecure=insecure)
 
     mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
     wiq = agenting.WitnessInquisitor(hab=hab)

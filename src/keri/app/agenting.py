@@ -183,7 +183,7 @@ class WitnessInquisitor(doing.DoDoer):
 
             msg = self.smsgs.pop()
             witer = random.choice(witers)
-            witer.msgs.append(msg)
+            witer.msgs.append(bytearray(msg))
 
             yield
 
@@ -436,7 +436,8 @@ class KiwiServer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, controller, rep, verifier, gdoer, issuers=None, cues=None, app=None, insecure=False,
+    def __init__(self, hab, controller, rep, verifier, gdoer, issuers=None, issuerCues=None, cues=None, app=None,
+                 insecure=False,
                  **kwa):
         """
         Create a KIWI web server for Agents capable of performing KERI and ACDC functions for the controller
@@ -460,7 +461,6 @@ class KiwiServer(doing.DoDoer):
         self.controller = controller
         self.rep = rep
         self.verifier = verifier if verifier is not None else verifying.Verifier(hab=self.hab, name=hab.name)
-        self.issuerCues = decking.Deck()
         self.app = app if app is not None else falcon.App(cors_enable=True)
         self.issuers = issuers if issuers is not None else dict()
         self.typ = scheming.JSONSchema()
@@ -473,10 +473,12 @@ class KiwiServer(doing.DoDoer):
         self.app.req_options.media_handlers.update(media.Handlers())
         self.app.resp_options.media_handlers.update(media.Handlers())
         self.cues = cues if cues is not None else decking.Deck()
+        self.issuerCues = issuerCues if issuerCues is not None else decking.Deck()
 
         self.app.add_route("/id", self, suffix="id")
         self.app.add_route("/registry/incept", self, suffix="registry_incept")
         self.registryIcpr = registering.RegistryInceptDoer(hab=hab)
+        self.app.add_route("/credential/apply", self, suffix="apply")
         self.app.add_route("/credential/issue", self, suffix="issue")
         self.app.add_route("/credential/revoke", self, suffix="revoke")
 
@@ -527,7 +529,7 @@ class KiwiServer(doing.DoDoer):
 
                     logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
                     logger.info(creder.pretty())
-                    print("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
+                    print("Credential: {}, Schema: {},  Saved".format(creder.said, creder.schema))
                     print(creder.pretty())
 
                     recpt = creder.subject["i"]
@@ -633,8 +635,33 @@ class KiwiServer(doing.DoDoer):
             yield self.tock
 
 
+    def on_post_apply(self, req, rep):
+        """
+        Apply for a credential with the given credential fields.
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
+        body = json.loads(req.context.raw)
+        schema = body.get("schema")
+        typ = body.get("type")
+        issuer = body.get("issuer")
+        values = body.get("values")
+
+        apply = handling.credential_apply(issuer=issuer, schema=schema, typ=typ, formats=[], body=values)
+
+        exn = exchanging.exchange(route="/credential/apply", payload=apply)
+        self.rep.reps.append(dict(dest=issuer, rep=exn, topic="credential"))
+
+
     def on_post_issue(self, req, rep):
         """
+        Initiate a credential issuanace from this agent's identifier
 
         Parameters:
             req: falcon.Request HTTP request
@@ -683,7 +710,6 @@ class KiwiServer(doing.DoDoer):
                                     subject=d,
                                     source=source,
                                     status=issuer.regk)
-        print(creder.raw)
         try:
             issuer.issue(creder=creder, dt=dt)
         except kering.MissingAnchorError:
