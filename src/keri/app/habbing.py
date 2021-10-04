@@ -6,18 +6,20 @@ keri.app.habbing module
 """
 import json
 from contextlib import contextmanager
+from urllib.parse import urlsplit
 
 from hio.base import doing
 from hio.help import hicting
 
-from . import keeping, configing
+
 from .. import help
 from .. import kering
+from ..kering import ValidationError, MissingDelegationError, MissingSignatureError
 from ..core import coring, eventing, parsing
 from ..core.coring import Serder
 from ..db import dbing, basing
 from ..db.dbing import snKey, dgKey
-from ..kering import ValidationError, MissingDelegationError, MissingSignatureError
+from . import keeping, configing
 
 logger = help.ogler.getLogger()
 
@@ -363,6 +365,45 @@ class Habitat:
         # ridx for replay may be an issue when loading from existing
         self.ridx = self.ks.sits.get(self.pre).new.ridx
 
+
+    def reconfigure(self):
+        """
+        Apply configuration from config file managed by .cf.  Assumes that .pre
+        and signing keys have been setup in order to create own endpoint auth when
+        provided in .cf.
+
+        conf
+        {
+          dt: "isodatetime",
+          curls: ["ftp://localhost:5620/"],
+          iurls: ["ftp://localhost:5621/?name=eve"],
+        }
+        """
+
+        conf = self.cf.get()
+        if "dt" in conf: # datetime of config file
+            dt = help.fromIso8601(conf["dt"])  # raises error if not convert
+            msgs = bytearray()
+            msgs.extend(self.endrolize(eid=self.pre,
+                                       role=kering.Roles.controller,
+                                       dts=help.toIso8601(dt=dt)))
+            if "curls" in conf:
+                curls = conf["curls"]
+                for url in curls:
+                    splits = urlsplit(url)
+                    scheme = (splits.scheme if splits.scheme in kering.Schemes
+                                            else kering.Schemes.http)
+                    msgs.extend(self.locschemize(url=rul,
+                                                 scheme=scheme,
+                                                 dts=help.toIso8601(dt=dt)))
+
+            self.psr.parse(ims=msgs)
+
+            if "iurls" in conf:
+                for url in conf["iurls"]:
+                    splits = urlsplit(url)
+
+
     def recreate(self, serder, opre, verfers):
 
         self.pre = serder.ked["i"]  # new pre
@@ -488,6 +529,7 @@ class Habitat:
 
         return msg
 
+
     def interact(self, data=None):
         """
         Perform interaction operation. Register interaction in database.
@@ -511,6 +553,7 @@ class Habitat:
 
         return msg
 
+
     def query(self, pre, res, query=None):
         """
         Returns query message for querying for a single element of type res
@@ -533,6 +576,7 @@ class Habitat:
             msg.extend(siger.qb64b)
 
         return msg
+
 
     def receipt(self, serder):
         """
@@ -562,6 +606,7 @@ class Habitat:
 
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
+
 
     def witness(self, serder):
         """
@@ -597,27 +642,6 @@ class Habitat:
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
-    def sanction(self, serder):
-        """
-        Sign and messagize the `exn` message with the current signing keys
-        (should be a Habitat method, what name?)
-
-        This seems redundant to endorse below and less capable just add
-        parameters to endorse to use different group
-        """
-        sigers = self.mgr.sign(ser=serder.raw, verfers=self.kever.verfers)
-
-        msg = bytearray()
-        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
-        msg.extend(self.pre.encode("utf-8"))
-
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
-        msg.extend(counter.qb64b)
-        for siger in sigers:
-            msg.extend(siger.qb64b)
-
-        return msg
 
     def endorse(self, serder):
         """
@@ -663,6 +687,29 @@ class Habitat:
             msg = eventing.messagize(serder=serder,
                                      cigars=cigars,
                                      pipelined=True)
+
+        return msg
+
+
+    def sanction(self, serder):
+        """
+        Sign and messagize the `exn` message with the current signing keys
+        (should be a Habitat method, what name?)
+
+        This seems redundant to endorse below and less capable just add
+        parameters to endorse to use different group
+        """
+        sigers = self.mgr.sign(ser=serder.raw, verfers=self.kever.verfers)
+
+        msg = bytearray()
+        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
+        msg.extend(self.pre.encode("utf-8"))
+
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
 
         return msg
 
@@ -863,7 +910,7 @@ class Habitat:
         Returns:
            rurls (hicting.Mict):  of nested dicts. The top level dict rurls is keyed by
                         role for a given cid. Each value in rurls is eurls dict
-                        dict keyed by the eid of authorized endpoint provider and
+                        keyed by the eid of authorized endpoint provider and
                         each value in eurls is a surls dict keyed by scheme
 
         Parameters:
@@ -927,7 +974,7 @@ class Habitat:
                                    allowed=allowed))
 
 
-    def endrolize(self, eid, role=kering.Roles.controller, allow=True):
+    def endrolize(self, eid, role=kering.Roles.controller, allow=True, dts=None):
         """
 
         Returns:
@@ -939,13 +986,15 @@ class Habitat:
             role (str): authorized role for eid
             allow (bool): True means add eid at role as authorized
                           False means cut eid at role as unauthorized
+            dts (str): RFC-3339 profile of iso8601 datetime string.
+                       None means use now.
         """
         data = dict(cid=self.pre, role=role, eid=eid)
         route = "/end/role/add" if allow else "/end/role/cut"
-        return self.makeReply(route=route, data=data)
+        return self.makeReply(route=route, data=data, dts=dts)
 
 
-    def locschemize(self, url, scheme="http"):
+    def locschemize(self, url, scheme="http", dts=None):
         """
         Returns:
            msg (bytearray): reply message of own url service endpoint at scheme
@@ -954,10 +1003,12 @@ class Habitat:
             url (str): url of endpoint, may have scheme missing or not
                        If url is empty then nullifies location
             scheme (str): url scheme must matche scheme in url if any
+            dts (str): RFC-3339 profile of iso8601 datetime string.
+                       None means use now.
 
         """
         data = data = dict( eid=self.pre, scheme=scheme, url=url)
-        return self.makeReply(route="/loc/scheme", data=data)
+        return self.makeReply(route="/loc/scheme", data=data, dts=dts)
 
 
     def makeReply(self, **kwa):

@@ -19,24 +19,35 @@ logger = help.ogler.getLogger()
 
 
 def setupController(name="who", base="main", temp=False, sith=None, count=1,
-                    urls=None, remote="eve", oobis=None):
+                    curls=None, remote="eve", iurls=None):
     """
     Setup and return doers list to run controller
 
-    base is the name used for shared resources i.e. Baser and Keeper
-    name is the name used for a specific habitat
-    The habitat specific config file will be in base/name
-    urls (list[str]): local endpoint urls
-    remote (str): name of remote direct mode target
+    Parameters:
+        name is the name used for a specific habitat
+        base is the name used for shared resources i.e. Baser and Keeper
+               The habitat specific config file will be in base/name
+        curls (list[str]): local controller's service endpoint urls
+        remote (str): name of remote direct mode target
+        iurls (list[str]):  oobi  urls
 
     Load endpoint database with named target urls including http not just tcp
 
-    """
-    if not urls:
-        urls = ["ftp://localhost:5620/"]
 
-    if not oobis:
-        oobis = [f"ftp://localhost:5621/{remote}"]  # blind oobi
+    conf file json
+    {
+      dt: "isodatetime",
+      curls: ["ftp://localhost:5620/"],
+      iurls: ["ftp://localhost:5621/?name=eve"],
+    }
+    """
+
+
+    if not curls:
+        curls = ["ftp://localhost:5620/"]
+
+    if not iurls:
+        iurls = [f"ftp://localhost:5621/?name={remote}"]  # blind oobi
 
     # setup databases  for dependency injection and config file
     ks = keeping.Keeper(name=base, temp=temp)  # not opened by default, doer opens
@@ -45,9 +56,10 @@ def setupController(name="who", base="main", temp=False, sith=None, count=1,
     dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
     cf = configing.Configer(name=name, base=base, temp=temp)
     conf = cf.get()
-    if not conf: # load config file
+    if not conf: # setup config file
+        conf = dict(dt=help.nowIso8601(), curls=curls, iurls=iurls)
+        cf.put(conf)
 
-        pass
 
     # setup habitat
     hab = habbing.Habitat(name=name, ks=ks, db=db, cf=cf, temp=temp,
@@ -57,20 +69,19 @@ def setupController(name="who", base="main", temp=False, sith=None, count=1,
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)
     path = os.path.join(path, 'logs')
-
     wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='keri',
                         reopen=True, headDirPath=path)
     wireDoer = wiring.WireLogDoer(wl=wl)  # setup doer
 
 
-
+    # setup local directmode tcp server
     server = serving.Server(host="", port=localPort, wl=wl)
     serverDoer = serving.ServerDoer(server=server)  # setup doer
     directant = directing.Directant(hab=hab, server=server)
     # Reactants created on demand by directant
 
 
-
+    # setup default remote direct mode client to remote party
     client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
     clientDoer = clienting.ClientDoer(client=client)  # setup doer
     director = directing.Director(hab=hab, client=client, tock=0.125)

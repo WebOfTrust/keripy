@@ -278,8 +278,8 @@ class Parser:
         """
         Returns generator to parse all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
+        Generator completes as soon as ims is empty.
         If ims not provided then parse messages from .ims
-        Must be framed.
 
         Parameters:
             ims is bytearray of incoming message stream. May contain one or more
@@ -423,8 +423,10 @@ class Parser:
     def parsator(self, ims=None, framed=None, pipeline=None, kvy=None, tvy=None, exc=None):
         """
         Returns generator to continually parse messages from incoming message
-        stream, ims. One yield from per each messages. Continually yields
-        to wait while ims is empty.
+        stream, ims. Empty yields when ims is emply.
+        Useful for always running servers.
+        One yield from per each message if any.
+        Continually yields while ims is empty.
         If ims not provided then parse messages from .ims
 
         Parameters:
@@ -491,7 +493,7 @@ class Parser:
                     logger.error("Parser msg non-extraction error: %s\n", ex.args[0])
             yield
 
-        return True
+        return True  # should never return
 
 
     def msgParsator(self, ims=None, framed=True, pipeline=False, kvy=None, tvy=None, exc=None):
