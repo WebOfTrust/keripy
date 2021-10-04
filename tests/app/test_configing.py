@@ -3,6 +3,9 @@
 tests.app.configin module
 """
 import os
+import shutil
+
+import pytest
 
 from hio.base import doing
 from keri.app import configing
@@ -14,6 +17,8 @@ def test_configer():
     """
     # Test Filer with file not dir
     filepath = '/usr/local/var/keri/cf/main/conf.json'
+    if os.path.exists(filepath):
+        os.remove(filepath)
 
     cfr = configing.Configer()  # defaults
     assert cfr.path == filepath
@@ -41,36 +46,52 @@ def test_configer():
     assert cfr.file.closed
     assert cfr.path == filepath
     assert os.path.exists(cfr.path)
-
-    cfr.reopen()  # reuse False so remake
-    assert cfr.opened
-    assert not cfr.file.closed
-    assert cfr.path == filepath
-    assert os.path.exists(cfr.path)
+    with pytest.raises(ValueError):
+        rdata = cfr.get()
 
     cfr.reopen(reuse=True)  # reuse True and clear False so don't remake
     assert cfr.opened
     assert not cfr.file.closed
     assert cfr.path == filepath
     assert os.path.exists(cfr.path)
+    assert (rdata := cfr.get()) == wdata  # not empty
+
+    cfr.reopen()  # reuse False so remake but not clear
+    assert cfr.opened
+    assert not cfr.file.closed
+    assert cfr.path == filepath
+    assert os.path.exists(cfr.path)
+    assert (rdata := cfr.get()) == wdata  # not empty
 
     cfr.reopen(reuse=True, clear=True)  # clear True so remake even if reuse
     assert cfr.opened
     assert not cfr.file.closed
     assert cfr.path == filepath
     assert os.path.exists(cfr.path)
+    assert (rdata := cfr.get()) == {}  # empty
+    wdata = dict(name="hope", oobi="abc")
+    assert cfr.put(wdata)
+    rdata = cfr.get()
+    assert rdata == wdata
 
     cfr.reopen(clear=True)  # clear True so remake
     assert cfr.opened
     assert not cfr.file.closed
     assert cfr.path == filepath
     assert os.path.exists(cfr.path)
+    assert (rdata := cfr.get()) == {}  # empty
+    wdata = dict(name="hope", oobi="abc")
+    assert cfr.put(wdata)
+    rdata = cfr.get()
+    assert rdata == wdata
 
     cfr.close(clear=True)
     assert not os.path.exists(cfr.path)
+    with pytest.raises(AttributeError):
+        rdata = cfr.get()
 
-    #test openCF
-    with configing.openCF() as cfr:  # default uses temp==True
+    #test openCF json
+    with configing.openCF() as cfr:  # default uses json and temp==True
         filepath = '/tmp/keri_cf_2_zu01lb_test/keri/cf/main/test.json'
         assert cfr.path.startswith('/tmp/keri_')
         assert cfr.path.endswith('_test/keri/cf/main/test.json')
@@ -78,10 +99,9 @@ def test_configer():
         assert os.path.exists(cfr.path)
         assert cfr.file
         assert not cfr.file.closed
-
     assert not os.path.exists(cfr.path)  # if temp cleans
 
-
+    #test openCF mgpk
     with configing.openCF(fext='mgpk') as cfr:  # default uses temp==True
         assert cfr.path.startswith('/tmp/keri_')
         assert cfr.path.endswith('_test/keri/cf/main/test.mgpk')
@@ -93,9 +113,9 @@ def test_configer():
         assert cfr.put(wdata)
         rdata = cfr.get()
         assert rdata == wdata
-
     assert not os.path.exists(cfr.path)  # if temp cleans
 
+    # test openCF cbor
     with configing.openCF(fext='cbor') as cfr:  # default uses temp==True
         assert cfr.path.startswith('/tmp/keri_')
         assert cfr.path.endswith('_test/keri/cf/main/test.cbor')
@@ -107,7 +127,6 @@ def test_configer():
         assert cfr.put(wdata)
         rdata = cfr.get()
         assert rdata == wdata
-
     assert not os.path.exists(cfr.path)  # if temp cleans
 
     """Done Test"""
@@ -237,4 +256,4 @@ def test_configer_doer():
 
 
 if __name__ == "__main__":
-    test_configer()
+    test_configer_doer()

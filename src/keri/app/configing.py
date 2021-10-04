@@ -30,6 +30,9 @@ def openCF(cls=None, filed=True, **kwa):
 class Configer(filing.Filer):
     """
     Habitat Config File
+
+    Attributes:  (see Filer for inherited attributres)
+        human (bool): True means use human friendly HJSON when fext is JSON
     """
     TailDirPath = "keri/cf"
     CleanTailDirPath = "keri/clean/cf"
@@ -37,8 +40,8 @@ class Configer(filing.Filer):
     AltCleanTailDirPath = ".keri/clean/cf"
     TempPrefix = "keri_cf_"
 
-    def __init__(self, name="conf", base="main", filed=True, mode="wb+",
-                 fext="json", **kwa):
+    def __init__(self, name="conf", base="main", filed=True, mode="r+b",
+                 fext="json", human=True, **kwa):
         """
         Setup config file .file at .path
 
@@ -66,8 +69,9 @@ class Configer(filing.Filer):
                              False means path uses normal tail variant
             filed (bool): True means .path is file path not directory path
                           False means .path is directiory path not file path
-            mode (str): File open mode when filed
+            mode (str): File open mode when filed default non-truncate r+w
             fext (str): File extension when filed
+            human(bool): True means use human friendly HJSON when fext is json
 
         """
         super(Configer, self).__init__(name=name,
@@ -76,6 +80,7 @@ class Configer(filing.Filer):
                                        mode=mode,
                                        fext=fext,
                                        **kwa)
+        self.human = True if human else False
 
 
     def put(self, data: dict):
@@ -83,6 +88,12 @@ class Configer(filing.Filer):
         Serialize data dict and write to file given by .path where serialization is
         given by .fext path's extension of either JSON, MsgPack, or CBOR for extension
         .json, .mgpk, or .cbor respectively
+
+        Parameters:
+            data (dict): to be serialized per file extension on .path
+
+        Raises:
+            IOError if unsupported file extension
         """
         self.file.seek(0)
         self.file.truncate()
@@ -103,26 +114,32 @@ class Configer(filing.Filer):
 
     def get(self):
         """
-        Return data read from file path as dict
+        Returns:
+            data (dict): converted from contents of file path given extention
+                         empty dict if empty file
+
+        Raises:
+            IOError if unsupported file extension
+
         file may be either json, msgpack, or cbor given by extension .json, .mgpk, or
         .cbor respectively
-        Otherwise raise IOError
+
         """
+        it = {}
         self.file.seek(0)
-        root, ext = os.path.splitext(self.path)
-        if ext == '.json':  # json.load works with bytes as well as str
-            it = json.loads(self.file.read().decode("utf-8"))
-        elif ext == '.mgpk':
-            it = msgpack.load(self.file)
-        elif ext == '.cbor':
-            it = cbor.load(self.file)
-        else:
-            raise IOError(f"Invalid file path ext '{path}' "
-                         f"not '.json', '.mgpk', or 'cbor'.")
-
+        ser = self.file.read()
+        if ser:  # not empty
+            root, ext = os.path.splitext(self.path)
+            if ext == '.json':  # json.load works with bytes as well as str
+                it = json.loads(ser.decode("utf-8"))
+            elif ext == '.mgpk':
+                it = msgpack.loads(ser)
+            elif ext == '.cbor':
+                it = cbor.loads(ser)
+            else:
+                raise IOError(f"Invalid file path ext '{path}' "
+                             f"not '.json', '.mgpk', or 'cbor'.")
         return it
-
-
 
 
 class ConfigerDoer(doing.Doer):

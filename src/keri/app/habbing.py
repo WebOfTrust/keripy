@@ -348,6 +348,8 @@ class Habitat:
 
         self.accepted = True
 
+
+
     def reinitialize(self):
         if self.pre is None:
             raise kering.ConfigurationError("Improper Habitat reinitialization missing prefix")
@@ -399,7 +401,7 @@ class Habitat:
 
             self.psr.parse(ims=msgs)
 
-            if "iurls" in conf:
+            if "iurls" in conf:  # process OOBI URLs
                 for url in conf["iurls"]:
                     splits = urlsplit(url)
 

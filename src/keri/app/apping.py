@@ -11,9 +11,10 @@ from hio.core import wiring
 from hio.core.serial import serialing
 from hio.core.tcp import clienting, serving
 
-from . import keeping, habbing, directing, configing
-from ..db import basing
+from .. import kering
 from .. import help
+from ..db import basing
+from . import keeping, habbing, directing, configing
 
 logger = help.ogler.getLogger()
 
@@ -46,8 +47,8 @@ def setupController(name="who", base="main", temp=False, sith=None, count=1,
     if not curls:
         curls = ["ftp://localhost:5620/"]
 
-    if not iurls:
-        iurls = [f"ftp://localhost:5621/?name={remote}"]  # blind oobi
+    if not iurls:  # blind oobi
+        iurls = [f"ftp://localhost:5621/?role={kering.Roles.peer}&name={remote}"]
 
     # setup databases  for dependency injection and config file
     ks = keeping.Keeper(name=base, temp=temp)  # not opened by default, doer opens
