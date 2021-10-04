@@ -76,6 +76,7 @@ class QueryDoer(doing.DoDoer):
         yield 1.0
 
         while self.pre not in kevery.kevers:
+            client.tx(msg)  # send to connected remote
             yield self.tock
 
         displaying.printIdentifier(self.hab, self.pre)

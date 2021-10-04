@@ -288,6 +288,8 @@ class Respondant(doing.DoDoer):
                 exn = rep["rep"]
                 topic = rep["topic"]
 
+                print("sending to", recipient)
+                print(exn.pretty())
                 while recipient not in self.hab.kevers:
                     yield self.tock
 
