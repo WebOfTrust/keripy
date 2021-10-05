@@ -337,6 +337,7 @@ class Habitat:
             self.accepted = self.pre in self.kevers
 
             # read in self.cf config file and process any oobis or endpoints
+            self.reconfigure()
 
         self.inited = True
 
@@ -377,8 +378,8 @@ class Habitat:
         conf
         {
           dt: "isodatetime",
-          curls: ["ftp://localhost:5620/"],
-          iurls: ["ftp://localhost:5621/?name=eve"],
+          curls: ["tcp://localhost:5620/"],
+          iurls: ["tcp://localhost:5621/?name=eve"],
         }
         """
 
@@ -395,7 +396,7 @@ class Habitat:
                     splits = urlsplit(url)
                     scheme = (splits.scheme if splits.scheme in kering.Schemes
                                             else kering.Schemes.http)
-                    msgs.extend(self.locschemize(url=rul,
+                    msgs.extend(self.locschemize(url=url,
                                                  scheme=scheme,
                                                  dts=help.toIso8601(dt=dt)))
 

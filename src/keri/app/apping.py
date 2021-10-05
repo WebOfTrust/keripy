@@ -38,8 +38,8 @@ def setupController(name="who", base="main", temp=False, sith=None, count=1,
     conf file json
     {
       dt: "isodatetime",
-      curls: ["ftp://localhost:5620/"],
-      iurls: ["ftp://localhost:5621/?name=eve"],
+      curls: ["tcp://localhost:5620/"],
+      iurls: ["tcp://localhost:5621/?name=eve"],
     }
     """
 

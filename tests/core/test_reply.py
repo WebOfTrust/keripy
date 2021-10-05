@@ -1275,6 +1275,12 @@ def test_reply(mockHelpingNowUTC):
                           'http://localhost:8080/watcher/wel')]
 
 
+    assert not os.path.exists(nelKS.path)
+    assert not os.path.exists(nelDB.path)
+    assert not os.path.exists(watKS.path)
+    assert not os.path.exists(watDB.path)
+    assert not os.path.exists(welKS.path)
+    assert not os.path.exists(welDB.path)
     assert not os.path.exists(wamKS.path)
     assert not os.path.exists(wamDB.path)
     assert not os.path.exists(wokKS.path)
