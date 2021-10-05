@@ -95,6 +95,9 @@ class Configer(filing.Filer):
         Raises:
             IOError if unsupported file extension
         """
+        if not self.file or self.file.closed:
+            raise ValueError(f"File '{self.path}' not opened.")
+
         self.file.seek(0)
         self.file.truncate()
         root, ext = os.path.splitext(self.path)
@@ -125,6 +128,9 @@ class Configer(filing.Filer):
         .cbor respectively
 
         """
+        if not self.file or self.file.closed:
+            raise ValueError(f"File '{self.path}' not opened.")
+
         it = {}
         self.file.seek(0)
         ser = self.file.read()

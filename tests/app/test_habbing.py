@@ -128,12 +128,15 @@ def test_habitat_reinitialization_reload():
         shutil.rmtree('/usr/local/var/keri/db/bob-test')
     if os.path.exists('/usr/local/var/keri/ks/bob-test'):
         shutil.rmtree('/usr/local/var/keri/ks/bob-test')
+    if os.path.exists('/usr/local/var/keri/cf/bob-test.json'):
+        os.remove('/usr/local/var/keri/cf/bob-test.json')
 
     name = "bob-test"
 
     with basing.openDB(name=name, clear=True, temp=False) as db, \
-            keeping.openKS(name=name, clear=True, temp=False) as ks:
-        hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
+            keeping.openKS(name=name, clear=True, temp=False) as ks, \
+            configing.openCF(name=name, base="", clear=True, temp=False) as  cf:
+        hab = habbing.Habitat(name=name, ks=ks, db=db, cf=cf, icount=1, temp=False)
         oidig = hab.iserder.dig
         opre = hab.pre
         opub = hab.kever.verfers[0].qb64
@@ -142,11 +145,12 @@ def test_habitat_reinitialization_reload():
 
     # openDB with reload=True which should reload .habs into db.kevers and db.prefixes
     with basing.openDB(name=name, temp=False, reload=True) as db, \
-            keeping.openKS(name=name, temp=False) as ks:
+            keeping.openKS(name=name, temp=False) as ks, \
+            configing.openCF(name=name, base="", temp=False) as cf:
         assert opre in db.prefixes
         assert opre in db.kevers
 
-        hab = habbing.Habitat(name=name, ks=ks, db=db, icount=1, temp=False)
+        hab = habbing.Habitat(name=name, ks=ks, db=db, cf=cf, icount=1, temp=False)
         assert hab.pre == opre
         assert hab.prefixes is db.prefixes
         assert hab.kevers is db.kevers
@@ -170,9 +174,11 @@ def test_habitat_reinitialization_reload():
         assert hab.kever.serder.dig != odig
         assert hab.kever.serder.dig == ndig
 
+        hab.cf.close(clear=True)
         hab.ks.close(clear=True)
         hab.db.close(clear=True)
 
+    assert not os.path.exists(hab.cf.path)
     assert not os.path.exists(hab.ks.path)
     assert not os.path.exists(hab.db.path)
     """End Test"""
@@ -364,6 +370,5 @@ def test_habitat_reconfigure(mockHelpingNowUTC):
 
 
 if __name__ == "__main__":
-    # test_habitat_rotate_with_witness()
-    test_habitat_reconfigure()
+    test_habitat_reinitialization_reload()
     # pytest.main(['-vv', 'test_reply.py::test_reply'])

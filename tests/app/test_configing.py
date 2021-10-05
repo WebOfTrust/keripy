@@ -94,7 +94,7 @@ def test_configer():
 
     cfr.close(clear=True)
     assert not os.path.exists(cfr.path)
-    with pytest.raises(AttributeError):
+    with pytest.raises(ValueError):
         rdata = cfr.get()
 
     #test openCF json
