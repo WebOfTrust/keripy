@@ -30,7 +30,7 @@ def test_direct_mode_with_manager():
     valSalt = Salter(raw=b'1123456789abcdea').qb64
 
 
-    with openDB("controller") as coeLogger, openDB("validator") as valLogger, \
+    with openDB(name="controller") as coeLogger, openDB(name="validator") as valLogger, \
          openKS(name="controller") as coeKpr, openKS(name="validator") as valKpr:
         # Init key pair manager
         coeMgr = Manager(ks=coeKpr, salt=coeSalt)

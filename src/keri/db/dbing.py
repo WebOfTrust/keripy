@@ -56,7 +56,7 @@ from collections import abc
 import lmdb
 from orderedset import OrderedSet as oset
 
-from hio.help import filing
+from hio.base import filing
 
 from ..help import helping
 from ..core import coring
@@ -221,7 +221,7 @@ def clearDatabaserDir(path):
 
 
 @contextmanager
-def openLMDB(cls=None, name="test", temp=True, **kwa):
+def openLMDB(*, cls=None, name="test", temp=True, **kwa):
     """
     Context manager wrapper LMDBer instances.
     Defaults to temporary databases.
@@ -262,23 +262,23 @@ class LMDBer(filing.Filer):
     Creates a specific instance of an LMDB database directory and environment.
 
     Attributes:  (inherited)
-        .name (str): unique path component used in directory or file path name
-        .base (str): another unique path component inserted before name
-        .temp (bool): True means use /tmp directory
-        .headDirPath is head directory path
-        .path is full directory path
-        .perm is numeric os permissions for directory and/or file(s)
-        .filed (bool): True means .path ends in file.
+        name (str): unique path component used in directory or file path name
+        base (str): another unique path component inserted before name
+        temp (bool): True means use /tmp directory
+        headDirPath is head directory path
+        path is full directory path
+        perm is numeric os permissions for directory and/or file(s)
+        filed (bool): True means .path ends in file.
                        False means .path ends in directory
-        .mode (str): file open mode if filed
-        .fext (str): file extension if filed
-        .file (File)
-        .opened is Boolean, True means directory created and if file then file
+        mode (str): file open mode if filed
+        fext (str): file extension if filed
+        file (File)
+        opened is Boolean, True means directory created and if file then file
                 is opened. False otherwise
 
     Attributes:
-        .env (lmdb.env): LMDB main (super) database environment
-        .readonly (bool): True means open LMDB env as readonly
+        env (lmdb.env): LMDB main (super) database environment
+        readonly (bool): True means open LMDB env as readonly
 
     Properties:
 

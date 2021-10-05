@@ -142,18 +142,26 @@ class Keeper(dbing.LMDBer):
     Keeper sets up named sub databases for key pair storage (KS).
     Methods provide key pair creation, storage, and data signing.
 
-    Inherited Attributes:
-        .name is LMDB database name did2offer
-        .temp is Boolean, True means open db in /tmp directory
-        .headDirPath is head directory path for db
-        .mode is numeric os dir permissions for db directory
-        .path is LMDB main (super) database directory path
-        .env is LMDB main (super) database environment
-        .opened is Boolean, True means LMDB .env at .path is opened.
-                            Otherwise LMDB .env is closed
+     Attributes:  (inherited)
+        name (str): unique path component used in directory or file path name
+        base (str): another unique path component inserted before name
+        temp (bool): True means use /tmp directory
+        headDirPath is head directory path
+        path is full directory path
+        perm is numeric os permissions for directory and/or file(s)
+        filed (bool): True means .path ends in file.
+                       False means .path ends in directory
+        mode (str): file open mode if filed
+        fext (str): file extension if filed
+        file (File)
+        opened is Boolean, True means directory created and if file then file
+                is opened. False otherwise
+        env (lmdb.env): LMDB main (super) database environment
+        readonly (bool): True means open LMDB env as readonly
 
     Attributes:
-        .gbls is named sub DB whose values are global parameters or all prefixes
+        gbls (subing.Suber): named sub DB whose values are global parameters
+            for all prefixes
             Key is parameter labels
             Value is parameter
                parameters:
@@ -168,14 +176,16 @@ class Keeper(dbing.LMDBer):
                    salt (bytes): root salt for generating key pairs
                    tier (bytes): default root security tier for root salt
 
-        .pris is named sub DB whose keys are public key from key pair and values
-            are private keys from key pair
+        pris (subing.CryptSignerSuber): named sub DB whose keys are public key
+            from key pair and values are private keys from key pair
             Key is public key (fully qualified qb64)
             Value is private key (fully qualified qb64)
-        .pres is named sub DB whose values are prefixes or first public keys
+        pres (subing.CesrSuber): named sub DB whose values are prefixes or first
+            public keys
             Key is first public key in key sequence for a prefix (fully qualified qb64)
             Value is prefix or first public key (temporary) (fully qualified qb64
-        .prms is named sub DB whose values are serialized dicts of PrePrm instance
+        prms (koming.Komer): named sub DB whose values are serialized dicts of
+            PrePrm instance
             Key is identifier prefix (fully qualified qb64)
             Value is  serialized parameter dict (JSON) of public key parameters
             {
@@ -185,7 +195,8 @@ class Keeper(dbing.LMDBer):
                 stem: ,
                 tier: ,
             }
-        .sits is named sub DB whose values are serialized dicts of PreSit instance
+        sits (koming.Komer): named sub DB whose values are serialized dicts of
+            PreSit instance
             Key is identifer prefix (fully qualified qb64)
             Value is  serialized parameter dict (JSON) of public key situation
                 {
@@ -193,7 +204,8 @@ class Keeper(dbing.LMDBer):
                   new: { pubs: ridx:, kidx:, dt:},
                   nxt: { pubs: ridx:, kidx:, dt:}
                 }
-        .pubs is named sub DB whose values are serialized lists of public keys
+        .pubs (koming.Komer): named sub DB whose values are serialized lists of
+            public keys
             Enables lookup of public keys from prefix and ridx for replay of
             public keys by prefix in establishment event order.
             Key is prefix.ridx (rotation index as 32 char hex string)
@@ -203,23 +215,11 @@ class Keeper(dbing.LMDBer):
 
     Properties:
 
-    Directory Mode for Restricted Access Permissions
-    stat.S_ISVTX  is Sticky bit. When this bit is set on a directory it means
-        that a file in that directory can be renamed or deleted only by the
-        owner of the file, by the owner of the directory, or by a privileged process.
 
-    stat.S_IRUSR Owner has read permission.
-    stat.S_IWUSR Owner has write permission.
-    stat.S_IXUSR Owner has execute permission.
     """
-    HeadDirPath = "/usr/local/var"  # default in /usr/local/var
-    TailDirPath = "keri/keep"
-    AltHeadDirPath = "~"  # put in ~ as fallback when desired not permitted
-    AltTailDirPath = ".keri/keep"
-    TempHeadDir = "/tmp"
-    TempPrefix = "keri_keep_"
-    TempSuffix = "_test"
-    Perm = stat.S_ISVTX | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR  # 0o1700 == 960
+    TailDirPath = "keri/ks"
+    AltTailDirPath = ".keri/ks"
+    TempPrefix = "keri_ks_"
     MaxNamedDBs = 8
 
     def __init__(self, headDirPath=None, perm=None, reopen=False, **kwa):

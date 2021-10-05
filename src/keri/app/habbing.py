@@ -6,24 +6,26 @@ keri.app.habbing module
 """
 import json
 from contextlib import contextmanager
+from urllib.parse import urlsplit
 
 from hio.base import doing
 from hio.help import hicting
 
-from . import keeping
+
 from .. import help
 from .. import kering
+from ..kering import ValidationError, MissingDelegationError, MissingSignatureError
 from ..core import coring, eventing, parsing
 from ..core.coring import Serder
 from ..db import dbing, basing
 from ..db.dbing import snKey, dgKey
-from ..kering import ValidationError, MissingDelegationError, MissingSignatureError
+from . import keeping, configing
 
 logger = help.ogler.getLogger()
 
 
 @contextmanager
-def openHab(name="test", salt=b'0123456789abcdef', temp=True, **kwa):
+def openHab(name="test", base="", salt=b'0123456789abcdef', temp=True, **kwa):
     """
     Context manager wrapper for Habitat instance.
     Defaults to temporary database and keeper.
@@ -36,11 +38,12 @@ def openHab(name="test", salt=b'0123456789abcdef', temp=True, **kwa):
 
     """
 
-    with basing.openDB(name=name, temp=temp) as db, \
-            keeping.openKS(name=name, temp=temp) as ks:
+    with basing.openDB(name=base if base else name, temp=temp) as db, \
+            keeping.openKS(name=base if base else name, temp=temp) as ks, \
+            configing.openCF(name=name, base=base, temp=temp) as cf:
         salt = coring.Salter(raw=salt).qb64
-        hab = Habitat(name=name, ks=ks, db=db, temp=temp, salt=salt,
-                      icount=1, isith=1, ncount=1, nsith=1, **kwa)
+        hab = Habitat(name=name, base=base, ks=ks, db=db, cf=cf, temp=temp,
+                      salt=salt, icount=1, isith=1, ncount=1, nsith=1, **kwa)
 
         yield hab
 
@@ -54,8 +57,6 @@ def existingHab(name="test", **kwa):
 
     Parameters:
         name(str): name of habitat to create
-
-
     """
 
     with basing.openDB(name=name, temp=False, reload=True) as db, \
@@ -78,6 +79,7 @@ class Habitat:
         erase (bool): If True erase old private keys, Otherwise not.
         db (basing.Baser): lmdb data base for KEL etc
         ks (keeping.Keeper): lmdb key store
+        cf (configing.Configer): config file instance
         ridx (int): rotation index (inception == 0) needed for key replay
         kvy (eventing.Kevery): instance for local processing of local msgs
         psr (parsing.Parser):  parses local messages for .kvy
@@ -95,22 +97,25 @@ class Habitat:
 
     """
 
-    def __init__(self, *, name='test', ks=None, db=None,
+    def __init__(self, *, name='test', base="", ks=None, db=None, cf=None,
                  transferable=True, temp=False, erase=True, create=True,
                  **kwa):
         """
         Initialize instance.
 
         Parameters:
-            name is str alias name for local controller of habitat
-            ks is keystore lmdb Keeper instance
-            db is database lmdb Baser instance
-            transferable is Boolean True means pre is transferable (default)
+            name (str): alias name for local controller of habitat
+            base (str): optional directory path segment inserted before name
+                that allows further differentation with a hierarchy. "" means
+                optional.
+            ks (Keeper):  keystore lmdb subclass instance
+            db (Baser): database lmdb subclass instance
+            cf (Configer): config file instance
+            transferable (bool): True means pre is transferable (default)
                     False means pre is nontransferable
-            temp is Boolean used for persistence of lmdb ks and db directories
-                and mode for key generation
-            erase is Boolean True means erase private keys once stale
-            create is Boolean True means create if identifier doesn't already exist
+            temp (bool): True means store .ks, .db, and .cf in /tmp for testing
+            erase (bool): True means erase private keys once stale
+            create (bool): True means create if identifier doesn't already exist
 
         Parameters: Passed through via kwa to setup for later init
             seed (str): qb64 private-signing key (seed) for the aeid from which
@@ -128,16 +133,16 @@ class Habitat:
                 all secrets are re-encrypted using new aeid. In this case the
                 provided prikey must not be empty. A change in aeid should require
                 a second authentication mechanism besides the prikey.
-            secrecies is list of list of secrets to preload key pairs if any
-            code is prefix derivation code
-            isith is incepting signing threshold as int, str hex, or list
-            icount is incepting key count for number of keys
-            nsith is next signing threshold as int, str hex or list
-            ncount is next key count for number of next keys
-            toad is int or str hex of witness threshold
-            wits is list of qb64 prefixes of witnesses
-            salt is qb64 salt for creating key pairs
-            tier is security tier for generating keys from salt
+            secrecies (list): of list of secrets to preload key pairs if any
+            code (str): prefix derivation code
+            isith (Union[int, str, list]): incepting signing threshold as int, str hex, or list
+            icount (int): incepting key count for number of keys
+            nsith (Union[int, str, list]): next signing threshold as int, str hex or list
+            ncount (int): next key count for number of next keys
+            toad (Union[int,str]): int or str hex of witness threshold
+            wits (list): of qb64 prefixes of witnesses
+            salt (str): qb64 salt for creating key pairs
+            tier (str): security tier for generating keys from salt
 
         """
         self.name = name
@@ -145,12 +150,16 @@ class Habitat:
         self.temp = temp
         self.erase = erase
         self.create = create
-        self.db = db if db is not None else basing.Baser(name=name,
+        self.db = db if db is not None else basing.Baser(name=base if base else name,
                                                          temp=self.temp,
                                                          reopen=True)
-        self.ks = ks if ks is not None else keeping.Keeper(name=name,
+        self.ks = ks if ks is not None else keeping.Keeper(name=base if base else name,
                                                            temp=self.temp,
                                                            reopen=True)
+        self.cf = cf if cf is not None else configing.Configer(name=name,
+                                                               base=base,
+                                                               temp=self.temp,
+                                                               reopen=True)
         self.ridx = 0  # rotation index of latest establishment event
         self.kvy = eventing.Kevery(db=self.db, lax=False, local=True)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy)
@@ -307,12 +316,8 @@ class Habitat:
             self.mgr.move(old=opre, new=self.pre)
 
             # may want db method that updates .habs. and .prefixes together
-            # default oobi
-            oobi = basing.OobiRecord(aid=self.pre, role=kering.Roles.controller)
-            # may read more from oobi permission config files if any
             self.db.habs.put(keys=self.name,
-                             val=basing.HabitatRecord(prefix=self.pre,
-                                                      oobis=[oobi]))
+                             val=basing.HabitatRecord(prefix=self.pre))
             self.prefixes.add(self.pre)
 
             # create inception event
@@ -331,6 +336,9 @@ class Habitat:
 
             self.accepted = self.pre in self.kevers
 
+            # read in self.cf config file and process any oobis or endpoints
+            self.reconfigure()
+
         self.inited = True
 
     def delegationAccepted(self):
@@ -340,6 +348,8 @@ class Habitat:
             raise Exception()
 
         self.accepted = True
+
+
 
     def reinitialize(self):
         if self.pre is None:
@@ -357,6 +367,45 @@ class Habitat:
 
         # ridx for replay may be an issue when loading from existing
         self.ridx = self.ks.sits.get(self.pre).new.ridx
+
+
+    def reconfigure(self):
+        """
+        Apply configuration from config file managed by .cf.  Assumes that .pre
+        and signing keys have been setup in order to create own endpoint auth when
+        provided in .cf.
+
+        conf
+        {
+          dt: "isodatetime",
+          curls: ["tcp://localhost:5620/"],
+          iurls: ["tcp://localhost:5621/?name=eve"],
+        }
+        """
+
+        conf = self.cf.get()
+        if "dt" in conf: # datetime of config file
+            dt = help.fromIso8601(conf["dt"])  # raises error if not convert
+            msgs = bytearray()
+            msgs.extend(self.endrolize(eid=self.pre,
+                                       role=kering.Roles.controller,
+                                       dts=help.toIso8601(dt=dt)))
+            if "curls" in conf:
+                curls = conf["curls"]
+                for url in curls:
+                    splits = urlsplit(url)
+                    scheme = (splits.scheme if splits.scheme in kering.Schemes
+                                            else kering.Schemes.http)
+                    msgs.extend(self.locschemize(url=url,
+                                                 scheme=scheme,
+                                                 dts=help.toIso8601(dt=dt)))
+
+            self.psr.parse(ims=msgs)
+
+            if "iurls" in conf:  # process OOBI URLs
+                for url in conf["iurls"]:
+                    splits = urlsplit(url)
+
 
     def recreate(self, serder, opre, verfers):
 
@@ -483,6 +532,7 @@ class Habitat:
 
         return msg
 
+
     def interact(self, data=None):
         """
         Perform interaction operation. Register interaction in database.
@@ -506,6 +556,7 @@ class Habitat:
 
         return msg
 
+
     def query(self, pre, res, query=None):
         """
         Returns query message for querying for a single element of type res
@@ -528,6 +579,7 @@ class Habitat:
             msg.extend(siger.qb64b)
 
         return msg
+
 
     def receipt(self, serder):
         """
@@ -557,6 +609,7 @@ class Habitat:
 
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
+
 
     def witness(self, serder):
         """
@@ -592,27 +645,6 @@ class Habitat:
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
-    def sanction(self, serder):
-        """
-        Sign and messagize the `exn` message with the current signing keys
-        (should be a Habitat method, what name?)
-
-        This seems redundant to endorse below and less capable just add
-        parameters to endorse to use different group
-        """
-        sigers = self.mgr.sign(ser=serder.raw, verfers=self.kever.verfers)
-
-        msg = bytearray()
-        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
-        msg.extend(self.pre.encode("utf-8"))
-
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
-        msg.extend(counter.qb64b)
-        for siger in sigers:
-            msg.extend(siger.qb64b)
-
-        return msg
 
     def endorse(self, serder):
         """
@@ -658,6 +690,29 @@ class Habitat:
             msg = eventing.messagize(serder=serder,
                                      cigars=cigars,
                                      pipelined=True)
+
+        return msg
+
+
+    def sanction(self, serder):
+        """
+        Sign and messagize the `exn` message with the current signing keys
+        (should be a Habitat method, what name?)
+
+        This seems redundant to endorse below and less capable just add
+        parameters to endorse to use different group
+        """
+        sigers = self.mgr.sign(ser=serder.raw, verfers=self.kever.verfers)
+
+        msg = bytearray()
+        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
+        msg.extend(self.pre.encode("utf-8"))
+
+        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
+                                 count=len(sigers))
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
 
         return msg
 
@@ -858,7 +913,7 @@ class Habitat:
         Returns:
            rurls (hicting.Mict):  of nested dicts. The top level dict rurls is keyed by
                         role for a given cid. Each value in rurls is eurls dict
-                        dict keyed by the eid of authorized endpoint provider and
+                        keyed by the eid of authorized endpoint provider and
                         each value in eurls is a surls dict keyed by scheme
 
         Parameters:
@@ -922,7 +977,7 @@ class Habitat:
                                    allowed=allowed))
 
 
-    def endrolize(self, eid, role=kering.Roles.controller, allow=True):
+    def endrolize(self, eid, role=kering.Roles.controller, allow=True, dts=None):
         """
 
         Returns:
@@ -934,13 +989,15 @@ class Habitat:
             role (str): authorized role for eid
             allow (bool): True means add eid at role as authorized
                           False means cut eid at role as unauthorized
+            dts (str): RFC-3339 profile of iso8601 datetime string.
+                       None means use now.
         """
         data = dict(cid=self.pre, role=role, eid=eid)
         route = "/end/role/add" if allow else "/end/role/cut"
-        return self.makeReply(route=route, data=data)
+        return self.makeReply(route=route, data=data, dts=dts)
 
 
-    def locschemize(self, url, scheme="http"):
+    def locschemize(self, url, scheme="http", dts=None):
         """
         Returns:
            msg (bytearray): reply message of own url service endpoint at scheme
@@ -949,10 +1006,12 @@ class Habitat:
             url (str): url of endpoint, may have scheme missing or not
                        If url is empty then nullifies location
             scheme (str): url scheme must matche scheme in url if any
+            dts (str): RFC-3339 profile of iso8601 datetime string.
+                       None means use now.
 
         """
         data = data = dict( eid=self.pre, scheme=scheme, url=url)
-        return self.makeReply(route="/loc/scheme", data=data)
+        return self.makeReply(route="/loc/scheme", data=data, dts=dts)
 
 
     def makeReply(self, **kwa):
@@ -973,9 +1032,13 @@ class Habitat:
 
     def replyLocScheme(self, eid, scheme=None):
         """
-        Reply returns a message stream composed from entries authed by the given
-        aid from the appropriate reply database including associated attachments
+        Returns a reply message stream composed of entries authed by the given
+        eid from the appropriate reply database including associated attachments
         in order to disseminate (percolate) BADA reply data authentication proofs.
+
+        Currently uses promiscuous model for permitting endpoint discovery.
+        Future is to use identity constraint graph to constrain discovery
+        of whom by whom.
 
         eid and and not scheme then:
             loc url for all schemes at eid
@@ -984,39 +1047,44 @@ class Habitat:
             loc url for scheme at eid
 
         Parameters:
-            eid
-            scheme
+            eid (str): endpoint provider id
+            scheme (str): url scheme
         """
 
 
-    def replyEndRole(self, aid, role=None, scheme=None, eids=None):
+    def replyEndRole(self, cid, role=None, eids=None, scheme=None):
         """
-        Reply returns a message stream composed from entries authed by the given
-        aid from the appropriate reply database including associated attachments
+        Returns a reply message stream composed of entries authed by the given
+        cid from the appropriate reply database including associated attachments
         in order to disseminate (percolate) BADA reply data authentication proofs.
 
-        aid and not role and not scheme then:
+        Currently uses promiscuous model for permitting endpoint discovery.
+        Future is to use identity constraint graph to constrain discovery
+        of whom by whom.
+
+        cid and not role and not scheme then:
             end authz for all eids in all roles and loc url for all schemes at each eid
             if eids then only eids in eids else all eids
 
-        aid and not role and scheme then:
+        cid and not role and scheme then:
             end authz for all eid in all roles and loc url for scheme at each eid
             if eids then only eids in eids else all eids
 
-        aid and role and not scheme then:
+        cid and role and not scheme then:
             end authz for all eid in role and loc url for all schemes at each eid
             if eids then only eids in eids else all eids
 
-        aid and role and scheme then:
+        cid and role and scheme then:
             end authz for all eid in role and loc url for scheme at each eid
             if eids then only eids in eids else all eids
 
 
         Parameters:
-            aid
-            role
-            scheme
-            eids
+            cid (str): identifier prefix qb64 of controller authZ endpoint provided
+                       eid is witness
+            role (str): authorized role for eid
+            eids (list): when provided restrict returns to only eids in eids
+            scheme (str): url scheme
         """
         if eids is None:
             eids = []
@@ -1024,14 +1092,16 @@ class Habitat:
 
     def replyToOobi(self, aid):
         """
-        Reply returns a message stream composed from entries authed by the given
+        Returns a reply message stream composed of entries authed by the given
         aid from the appropriate reply database including associated attachments
         in order to disseminate (percolate) BADA reply data authentication proofs.
 
-        Each Habitats .habs.oobis permits which oobis it may reply to.
+        Currently uses promiscuous model for permitting oobi initiated endpoint
+        discovery. Future is to use identity constraint graph to constrain
+        discovery of whom by whom.
 
         Parameters:
-            aid (str): qb64 of identifier in oobi
+            aid (str): qb64 of identifier in oobi, may be cid or eid
 
         """
         # default logic is that if self.pre is witness of aid and has a loc url

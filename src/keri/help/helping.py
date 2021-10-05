@@ -78,10 +78,11 @@ def datify(cls, d):
 
 def klasify(sers: Iterable, klases: Iterable, args: Iterable=None):
     """
-    Convert each qb64 serialization in sers in instance of corresponding klas in
-    klases.
+    Convert each qb64 serialization ser  in sers to instance of corresponding
+    klas in klases modified by corresponding arg in args.
     Useful for converting iterable of CESR serializations to associated iterable
-    of CESR subclass instances
+    of CESR subclass instances.
+    When klas in klases is None then return corresponding ser without conversion
 
     Parameters:
         sers (Iterable): of serialized CESR subclass, str .qb64 or bytes .qb64b
@@ -231,7 +232,7 @@ def nowUTC():
 
 def nowIso8601():
     """
-    Returns time now in ISO 8601 format
+    Returns time now in RFC-3339 profile of ISO 8601 format.
     use now(timezone.utc)
 
     YYYY-MM-DDTHH:MM:SS.ffffff+HH:MM[:SS[.ffffff]]
@@ -245,7 +246,7 @@ def nowIso8601():
 
 def toIso8601(dt=None):
     """
-    Returns str datetime dt in ISO 8601 format
+    Returns str datetime dt in RFC-3339 profile of ISO 8601 format.
     Converts datetime object dt to ISO 8601 formt
     If dt is missing use now(timezone.utc)
 
@@ -263,7 +264,7 @@ def toIso8601(dt=None):
 
 def fromIso8601(dts):
     """
-    Returns datetime object from ISO 8601 formated str or bytes
+    Returns datetime object from RFC-3339 profile of ISO 8601 format str or bytes.
     Converts dts from ISO 8601 format to datetime object
 
     YYYY-MM-DDTHH:MM:SS.ffffff+HH:MM[:SS[.ffffff]]

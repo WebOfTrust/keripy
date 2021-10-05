@@ -14,8 +14,8 @@ def test_kel_commands():
     for name in ["wan", "wil", "wes", "test"]:
         if os.path.exists('/usr/local/var/keri/db/{}'.format(name)):
             shutil.rmtree('/usr/local/var/keri/db/{}'.format(name))
-        if os.path.exists('/usr/local/var/keri/keep/{}'.format(name)):
-            shutil.rmtree('/usr/local/var/keri/keep/{}'.format(name))
+        if os.path.exists('/usr/local/var/keri/ks/{}'.format(name)):
+            shutil.rmtree('/usr/local/var/keri/ks/{}'.format(name))
 
     with habbing.openHab(name="wan", salt=b'wann-the-witness', transferable=False, temp=False) as wanHab, \
             habbing.openHab(name="wil", salt=b'will-the-witness', transferable=False, temp=False) as wilHab, \

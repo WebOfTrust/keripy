@@ -1053,15 +1053,22 @@ class Seqner(Matter):
 
 class Dater(Matter):
     """
-    Dater is subclass of Matter, cryptographic material, for ISO-8601 datetimes.
-    Dater provides a custom Base64 coding of an ASCII ISO-8601 datetime by replacing
-    the three non-Base64 characters ':.+' with the Base64 equivalents 'cdp'.
+    Dater is subclass of Matter, cryptographic material, for RFC-3339 profile of
+    ISO-8601 formatted datetimes.
+
+    Dater provides a custom Base64 coding of an ASCII RFC-3339 profile of an
+    ISO-8601 datetime by replacing the three non-Base64 characters, ':.+' with
+    the Base64 equivalents, 'cdp' respectively.
     Dater provides a more compact representation than would be obtained by converting
-    the raw ASCII ISO-8601 datetime to Base64.
+    the raw ASCII RFC-3339 profile ISO-8601 datetime to Base64.
     Dater supports datetimes as attached crypto material in replay of events for
     the datetime of when the event was first seen.
     Restricted to specific 32 byte variant of ISO-8601 date time with microseconds
-    and UTC offset in HH:MM. For example:
+    and UTC offset in HH:MM (See RFC-3339).
+    Uses default initialization derivation code = MtrDex.DateTime.
+    Raises error on init if code not  MtrDex.DateTime
+
+    Examples: given RFC-3339 profiles of ISO-8601 datetime strings:
 
     '2020-08-22T17:50:09.988921+00:00'
     '2020-08-22T17:50:09.988921-01:00'
@@ -1071,10 +1078,7 @@ class Dater(Matter):
     '1AAG2020-08-22T17c50c09d988921p00c00'
     '1AAG2020-08-22T17c50c09d988921-01c00'
 
-    Useful when parsing attached first seen couples with fn  + dt
-
-    Uses default initialization code = MtrDex.DateTime
-    Raises error on init if code not  MtrDex.DateTime
+    Example uses: attached first seen couples with fn+dt
 
     Attributes:
 
