@@ -105,7 +105,7 @@ class Configer(filing.Filer):
         elif ext == '.cbor':
             cbor.dump(data, self.file)
         else:
-            raise IOError(f"Invalid file path ext '{path}' "
+            raise IOError(f"Invalid file path ext '{ext}' "
                           f"not '.json', '.mgpk', or 'cbor'.")
         self.file.flush()
         os.fsync(self.file.fileno())
@@ -137,7 +137,7 @@ class Configer(filing.Filer):
             elif ext == '.cbor':
                 it = cbor.loads(ser)
             else:
-                raise IOError(f"Invalid file path ext '{path}' "
+                raise IOError(f"Invalid file path ext '{ext}' "
                              f"not '.json', '.mgpk', or 'cbor'.")
         return it
 

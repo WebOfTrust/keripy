@@ -1248,7 +1248,7 @@ def queryNew(route="",
     }
     """
     vs = Versify(version=version, kind=kind, size=0)
-    ilk = Ilks.req
+    ilk = Ilks.qry
 
     ked = dict(v=vs,  # version string
                t=ilk,

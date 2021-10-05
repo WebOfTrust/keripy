@@ -74,7 +74,8 @@ def setupController(name="who", base="main", temp=False, sith=None, count=1,
                         reopen=True, headDirPath=path)
     wireDoer = wiring.WireLogDoer(wl=wl)  # setup doer
 
-
+    localPort = 5620
+    remotePort = 5621
     # setup local directmode tcp server
     server = serving.Server(host="", port=localPort, wl=wl)
     serverDoer = serving.ServerDoer(server=server)  # setup doer
