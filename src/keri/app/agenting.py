@@ -13,6 +13,7 @@ from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
+from orderedset import OrderedSet as oset
 
 from . import httping, grouping
 from .. import help
@@ -150,10 +151,11 @@ class WitnessInquisitor(doing.DoDoer):
         self.wits = wits
         self.klas = klas if klas is not None else HttpWitnesser
         self.msgs = msgs if msgs is not None else decking.Deck()
+        self.smsgs = oset()
 
-        super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
+        super(WitnessInquisitor, self).__init__(doers=[doing.doify(self.receiptDo), doing.doify(self.msgDo)], **kwa)
 
-    def receiptDo(self, tymth=None, tock=0.0, **opts):
+    def receiptDo(self, tymth=None, tock=1.0, **opts):
         """
         Returns doifiable Doist compatible generator method (doer dog)
 
@@ -176,22 +178,35 @@ class WitnessInquisitor(doing.DoDoer):
         self.extend(witers)
 
         while True:
+            while not self.smsgs:
+                yield self.tock
+
+            msg = self.smsgs.pop()
+            witer = random.choice(witers)
+            witer.msgs.append(bytearray(msg))
+
+            yield
+
+    def msgDo(self, tymth=None, tock=0.0, **opts):
+        self.wind(tymth)
+        self.tock = tock
+        _ = (yield self.tock)
+
+        while True:
             while not self.msgs:
                 yield self.tock
 
             msg = self.msgs.popleft()
-            witer = random.choice(witers)
-            witer.msgs.append(msg)
+            self.smsgs.add(msg)
 
-            yield
 
     def query(self, pre, r="logs", sn=0):
         msg = self.hab.query(pre, res=r, query=dict())  # Query for remote pre Event
-        self.msgs.append(msg)
+        self.msgs.append(bytes(msg))
 
     def telquery(self, ri, i, r="tels"):
         msg = self.hab.query(i, res=r, query=dict(ri=ri))  # Query for remote pre Event
-        self.msgs.append(msg)
+        self.msgs.append(bytes(msg))
 
 
 class WitnessPublisher(doing.DoDoer):
@@ -421,7 +436,8 @@ class KiwiServer(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, controller, rep, verifier, gdoer, issuers=None, cues=None, app=None, insecure=False,
+    def __init__(self, hab, controller, rep, verifier, gdoer, issuers=None, issuerCues=None, cues=None, app=None,
+                 insecure=False,
                  **kwa):
         """
         Create a KIWI web server for Agents capable of performing KERI and ACDC functions for the controller
@@ -445,7 +461,6 @@ class KiwiServer(doing.DoDoer):
         self.controller = controller
         self.rep = rep
         self.verifier = verifier if verifier is not None else verifying.Verifier(hab=self.hab, name=hab.name)
-        self.issuerCues = decking.Deck()
         self.app = app if app is not None else falcon.App(cors_enable=True)
         self.issuers = issuers if issuers is not None else dict()
         self.typ = scheming.JSONSchema()
@@ -458,10 +473,12 @@ class KiwiServer(doing.DoDoer):
         self.app.req_options.media_handlers.update(media.Handlers())
         self.app.resp_options.media_handlers.update(media.Handlers())
         self.cues = cues if cues is not None else decking.Deck()
+        self.issuerCues = issuerCues if issuerCues is not None else decking.Deck()
 
         self.app.add_route("/id", self, suffix="id")
         self.app.add_route("/registry/incept", self, suffix="registry_incept")
         self.registryIcpr = registering.RegistryInceptDoer(hab=hab)
+        self.app.add_route("/credential/apply", self, suffix="apply")
         self.app.add_route("/credential/issue", self, suffix="issue")
         self.app.add_route("/credential/revoke", self, suffix="revoke")
 
@@ -512,7 +529,7 @@ class KiwiServer(doing.DoDoer):
 
                     logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
                     logger.info(creder.pretty())
-                    print("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
+                    print("Credential: {}, Schema: {},  Saved".format(creder.said, creder.schema))
                     print(creder.pretty())
 
                     recpt = creder.subject["i"]
@@ -618,8 +635,33 @@ class KiwiServer(doing.DoDoer):
             yield self.tock
 
 
+    def on_post_apply(self, req, rep):
+        """
+        Apply for a credential with the given credential fields.
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
+        body = json.loads(req.context.raw)
+        schema = body.get("schema")
+        typ = body.get("type")
+        issuer = body.get("issuer")
+        values = body.get("values")
+
+        apply = handling.credential_apply(issuer=issuer, schema=schema, typ=typ, formats=[], body=values)
+
+        exn = exchanging.exchange(route="/credential/apply", payload=apply)
+        self.rep.reps.append(dict(dest=issuer, rep=exn, topic="credential"))
+
+
     def on_post_issue(self, req, rep):
         """
+        Initiate a credential issuanace from this agent's identifier
 
         Parameters:
             req: falcon.Request HTTP request
@@ -668,7 +710,6 @@ class KiwiServer(doing.DoDoer):
                                     subject=d,
                                     source=source,
                                     status=issuer.regk)
-        print(creder.raw)
         try:
             issuer.issue(creder=creder, dt=dt)
         except kering.MissingAnchorError:

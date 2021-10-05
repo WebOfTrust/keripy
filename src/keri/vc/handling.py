@@ -5,6 +5,9 @@ keri.vc.handling module
 """
 from hio.base import doing
 from hio.help import decking
+from keri import kering
+from keri.help import helping
+from keri.vdr import issuing
 
 from . import proving
 from .. import help
@@ -21,6 +24,7 @@ logger = help.ogler.getLogger()
 class OfferHandler(doing.Doer):
     """
     Sample handler to a credential offer message from an Issuer to a Holder for a credential based
+
     on
         {
            "v": "KERI10JSON00011c_",                               // KERI Version String
@@ -129,20 +133,23 @@ class ApplyHandler(doing.DoDoer):
 
     resource = "/credential/apply"
 
-    def __init__(self, hab, typ=JSONSchema(), cues=None, **kwa):
+    def __init__(self, hab, verifier, name, issuerCues=None, cues=None, **kwa):
         """
 
         Parameters:
             hab (Habitat) credential wallet that will hold the issued credentials
-            typ (JSONSchema) credential type to accept
+            verifier (Verifier) Local credential verifier used to verify and save any issued credential
         """
-        self.msgs = decking.Deck()
+        self.hab = hab
+        self.verifier = verifier
+        self.name = name
+        self.issuer = None
+        self.issuerCues = issuerCues if issuerCues is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.hab = hab
-        self.typ = typ
+        self.msgs = decking.Deck()
 
-        super(ApplyHandler, self).__init__(**kwa)
+        super(ApplyHandler, self).__init__(doers=[doing.doify(self.escrowDo)], **kwa)
 
     def do(self, tymth, tock=0.0, **opts):
         """
@@ -156,15 +163,84 @@ class ApplyHandler(doing.DoDoer):
             verfers is list of Verfers of the keys used to sign the message
 
         """
+        yield self.tock
+        self.issuer = issuing.Issuer(hab=self.hab, name=self.name, reger=self.verifier.reger, cues=self.issuerCues)
 
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
-                payload = msg["payload"]
-                logger.info(payload)
-                yield
+                recipientIdentifier = msg["pre"]
 
-            yield
+                payload = msg["payload"]
+
+                schema = payload["schema"]
+                issuer = payload["issuer"]
+                source = []
+
+                if issuer != self.hab.pre:
+                    logger.info("request for incorrect issuer {} to {}".format(issuer, self.hab.pre))
+                    continue
+
+                typ = payload["type"]
+                if typ != "QualifiedvLEIIssuervLEICredential":
+                    logger.info("credential type {} is invalid, only QualifiedvLEIIssuervLEICredential can be "
+                                "auto-issued".format(typ))
+                    continue
+
+
+                types = ["VerifiableCredential", typ]
+
+
+                data = payload["body"]
+                dt = data["dt"] if "dt" in data else helping.nowIso8601()
+
+                d = dict(
+                    d="",
+                    i=recipientIdentifier.qb64,
+                    dt=dt,
+                    t=types,
+                )
+
+                d |= data
+
+                group = self.hab.group()
+                if group is None:
+                    pre = self.hab.pre
+                else:
+                    pre = group.gid
+
+                creder = proving.credential(issuer=pre,
+                                            schema=schema,
+                                            subject=d,
+                                            source=source,
+                                            status=self.issuer.regk)
+                try:
+                    self.issuer.issue(creder=creder, dt=dt)
+                except kering.MissingAnchorError:
+                    logger.info("Missing anchor from credential issuance due to multisig identifier")
+
+                craw = self.hab.endorse(creder)
+                proving.parseCredential(ims=craw, verifier=self.verifier)
+
+                yield self.tock
+
+            yield self.tock
+
+    def escrowDo(self, tymth, tock=0.0):
+        """
+        Returns:  doifiable Doist compatible generator method
+
+        Usage:
+            add result of doify on this method to doers list
+
+        Processes the Groupy escrow for group icp, rot and ixn request messages.
+
+        """
+        # start enter context
+        yield  # enter context
+        while True:
+            self.issuer.processEscrows()
+            yield self.tock
 
 
 class IssueHandler(doing.DoDoer):
@@ -243,6 +319,7 @@ class IssueHandler(doing.DoDoer):
         while True:
             while self.msgs:
                 msg = self.msgs.popleft()
+                print("got message")
                 payload = msg["payload"]
                 envelopes = payload["vc"]
                 for envlop in envelopes:
@@ -250,6 +327,8 @@ class IssueHandler(doing.DoDoer):
                     proof = envlop["proof"]
 
                     vs = crd["v"]
+
+                    print("got credential")
 
                     kind, version, size = Deversify(vs)
                     raw = dumps(ked=crd, kind=kind)
@@ -523,7 +602,7 @@ def presentation_exchange(credentials):
     return d
 
 
-def credential_apply(issuer, schema, formats):
+def credential_apply(issuer, schema, typ, formats, body):
     """
         {
            "v": "KERI10JSON00011c_",                               // KERI Version String
@@ -539,6 +618,9 @@ def credential_apply(issuer, schema, formats):
                  "cesr": {
                    "proof_type": ["Ed25519Signature2018"]
                  }
+              },
+              "body": {
+                 // fields specific to the credential specified in the input_descriptor
               }
            } //embedded credential_submission, may contain credential_fullfilment responding to presentation_def above
         }
@@ -547,13 +629,15 @@ def credential_apply(issuer, schema, formats):
         issuer (str) is qb64 identifier prefix of the issuer
         schema (str) is qb64 SAID of schema being applied for
         formats (list of CredentialFormat) is list of acceptable credential formats
+        body (map) of values being applied for
 
     """
 
     d = dict(
         issuer=issuer,
-        input_descriptors=[schema],
-        format=[]
+        schema=schema,
+        type=typ,
+        body=body
     )
 
     for fmt in formats:

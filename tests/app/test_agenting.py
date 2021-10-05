@@ -7,7 +7,6 @@ tests.app.agenting module
 from hio.base import doing
 
 from keri.app import habbing, indirecting, agenting
-from keri.core import coring
 from keri.core.eventing import SealSource
 from keri.db import dbing
 from keri.vdr import eventing, viring, issuing
@@ -90,12 +89,19 @@ def test_witness_inquisitor(mockGetWitnessByPrefix):
 
         palWitDoer = agenting.WitnessReceiptor(hab=palHab, klas=agenting.TCPWitnesser)
         qinWitDoer = agenting.WitnessReceiptor(hab=qinHab, klas=agenting.TCPWitnesser)
-        witq = agenting.WitnessInquisitor(hab=qinHab, klas=agenting.TCPWitnesser)
+        qinWitq = agenting.WitnessInquisitor(hab=qinHab, klas=agenting.TCPWitnesser)
+
+        # query up a few to make sure it still works
+        qinWitq.query(pre=palHab.pre)
+        qinWitq.query(pre=palHab.pre)
+        qinWitq.query(pre=palHab.pre)
+        palWitq = agenting.WitnessInquisitor(hab=palHab, klas=agenting.TCPWitnesser)
+        palWitq.query(pre=qinHab.pre)
 
         limit = 1.0
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
-        doers = wanDoers + wilDoers + wesDoers + [palWitDoer, qinWitDoer, witq]
+        doers = wanDoers + wilDoers + wesDoers + [palWitDoer, qinWitDoer]
         doist.do(doers=doers)
 
         for hab in [palHab, qinHab]:
@@ -110,4 +116,45 @@ def test_witness_inquisitor(mockGetWitnessByPrefix):
             wigs = wesHab.db.getWigs(dgkey)
             assert len(wigs) == 3
 
-        # witq.query(pre=palHab.pre)
+        doist = doing.Doist(limit=limit, tock=tock)
+        doers = wanDoers + wilDoers + wesDoers + [qinWitq, palWitq]
+        doist.do(doers=doers)
+
+        assert palHab.pre in qinHab.kevers
+        assert qinHab.pre in palHab.kevers
+
+
+def test_witness_inquisitor_dedupe(mockGetWitnessByPrefix):
+    with habbing.openHab(name="pal", salt=b'0123456789abcdef', transferable=True,
+                         wits=[]) as palHab, \
+            habbing.openHab(name="qin", salt=b'abcdef0123456789', transferable=True,
+                            wits=[]) as qinHab:
+        witq = agenting.WitnessInquisitor(hab=qinHab, klas=agenting.TCPWitnesser)
+
+        # query up a few to make sure it still works
+        witq.query(pre=palHab.pre)
+        witq.query(pre=palHab.pre)
+        witq.query(pre=palHab.pre)
+
+        assert len(witq.smsgs) == 0
+        assert len(witq.msgs) == 3
+
+        msgDo = witq.msgDo()
+
+        next(msgDo)
+        next(msgDo)
+        assert len(witq.msgs) == 0
+        assert len(witq.smsgs) == 1
+
+        witq.query(pre=palHab.pre)
+        witq.query(pre=palHab.pre)
+        witq.query(pre=qinHab.pre)
+        next(msgDo)
+        assert len(witq.msgs) == 0
+        assert len(witq.smsgs) == 2
+
+        smsg = witq.smsgs.pop()
+        assert smsg == (b'{"v":"KERI10JSON000067_","t":"req","r":"logs","q":{"i":"EGhub0DVJ1LdJ-n_rPxR'
+                        b'qFuttSGZa_pLwC8G4X1qL7JA"}}-HABEGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA-'
+                        b'AABAA98K_G_MASsS6rmTnQvNxeMhRTPgZg83NSJla1edSxN43RPXsZIxHdrMqRKx8-6BSjqyMNNS'
+                        b'D1iBWywvyHCcmDw')

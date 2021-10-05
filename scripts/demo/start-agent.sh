@@ -11,4 +11,4 @@ else
   kli vc registry incept --name gleif --registry-name root
 fi
 
-kli agent start --name gleif --pre E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM --insecure --tcp 5921 --admin-http-port 5923
+kli agent start --name gleif --controller E4Zq5dxbnWKq5K-Bssn4g_qhBbSwNSI2MH4QYnkEUFDM --insecure --tcp 5921 --admin-http-port 5923
