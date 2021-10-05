@@ -1252,8 +1252,10 @@ def queryNew(route="",
 
     ked = dict(v=vs,  # version string
                t=ilk,
-               r=res,  # resource type for single item request
-               q=qry
+               dt=dts if dts is not None else helping.nowIso8601(),
+               r=route,  # resource type for single item request
+               rr=reply,
+               q=data,
                )
 
     return Serder(ked=ked)  # return serialized ked
