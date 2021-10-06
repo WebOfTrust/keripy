@@ -97,6 +97,81 @@ def test_configer():
     with pytest.raises(ValueError):
         rdata = cfr.get()
 
+    # Test with altPath by using not permitted headDirPath /opt/keri to force Alt
+    filepath = '/Users/samuel/.keri/cf/main/conf.json'
+    if os.path.exists(filepath):
+        os.remove(filepath)
+
+    cfr = configing.Configer(headDirPath="/root/keri")
+    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    assert cfr.opened
+    assert os.path.exists(cfr.path)
+    assert cfr.file
+    assert not cfr.file.closed
+    assert not cfr.file.read()
+    data = dict(name="habi", oobi="ABCDEFG")
+    wmsg = coring.dumps(data)
+    assert hasattr(wmsg, "decode")  # bytes
+    assert len(wmsg) == cfr.file.write(wmsg)
+    assert 0 == cfr.file.seek(0)
+    rmsg = cfr.file.read()
+    assert rmsg == wmsg
+    assert data == coring.loads(rmsg)
+
+    wdata = dict(name="hope", oobi="abc")
+    assert cfr.put(wdata)
+    rdata = cfr.get()
+    assert rdata == wdata
+
+    cfr.close()
+    assert not cfr.opened
+    assert cfr.file.closed
+    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    assert os.path.exists(cfr.path)
+    with pytest.raises(ValueError):
+        rdata = cfr.get()
+
+    cfr.reopen(reuse=True)  # reuse True and clear False so don't remake
+    assert cfr.opened
+    assert not cfr.file.closed
+    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    assert os.path.exists(cfr.path)
+    assert (rdata := cfr.get()) == wdata  # not empty
+
+    cfr.reopen()  # reuse False so remake but not clear
+    assert cfr.opened
+    assert not cfr.file.closed
+    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    assert os.path.exists(cfr.path)
+    assert (rdata := cfr.get()) == wdata  # not empty
+
+    cfr.reopen(reuse=True, clear=True)  # clear True so remake even if reuse
+    assert cfr.opened
+    assert not cfr.file.closed
+    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    assert os.path.exists(cfr.path)
+    assert (rdata := cfr.get()) == {}  # empty
+    wdata = dict(name="hope", oobi="abc")
+    assert cfr.put(wdata)
+    rdata = cfr.get()
+    assert rdata == wdata
+
+    cfr.reopen(clear=True)  # clear True so remake
+    assert cfr.opened
+    assert not cfr.file.closed
+    assert cfr.path.endswith(".keri/cf/main/conf.json")
+    assert os.path.exists(cfr.path)
+    assert (rdata := cfr.get()) == {}  # empty
+    wdata = dict(name="hope", oobi="abc")
+    assert cfr.put(wdata)
+    rdata = cfr.get()
+    assert rdata == wdata
+
+    cfr.close(clear=True)
+    assert not os.path.exists(cfr.path)
+    with pytest.raises(ValueError):
+        rdata = cfr.get()
+
     #test openCF json
     with configing.openCF() as cfr:  # default uses json and temp==True
         filepath = '/tmp/keri_cf_2_zu01lb_test/keri/cf/main/test.json'
@@ -263,4 +338,4 @@ def test_configer_doer():
 
 
 if __name__ == "__main__":
-    test_configer_doer()
+    test_configer()
