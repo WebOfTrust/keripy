@@ -102,7 +102,7 @@ def test_configer():
     if os.path.exists(filepath):
         os.remove(filepath)
 
-    cfr = configing.Configer(headDirPath="/opt/keri")
+    cfr = configing.Configer(headDirPath="/root/keri")
     assert cfr.path.endswith(".keri/cf/main/conf.json")
     assert cfr.opened
     assert os.path.exists(cfr.path)
