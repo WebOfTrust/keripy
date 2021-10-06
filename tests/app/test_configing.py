@@ -139,6 +139,7 @@ def test_configer():
     assert cfr.file
     assert not cfr.file.closed
     assert not cfr.file.read()
+
     data = dict(name="habi", oobi="ABCDEFG")
     wmsg = coring.dumps(data)
     assert hasattr(wmsg, "decode")  # bytes
