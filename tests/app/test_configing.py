@@ -29,6 +29,9 @@ def test_configer():
     assert cfr.file
     assert not cfr.file.closed
     assert not cfr.file.read()
+    assert cfr.human
+
+    # plain json manually
     data = dict(name="habi", oobi="ABCDEFG")
     wmsg = coring.dumps(data)
     assert hasattr(wmsg, "decode")  # bytes
@@ -38,10 +41,14 @@ def test_configer():
     assert rmsg == wmsg
     assert data == coring.loads(rmsg)
 
+     # default is hjson for .human == True
     wdata = dict(name="hope", oobi="abc")
     assert cfr.put(wdata)
     rdata = cfr.get()
     assert rdata == wdata
+    assert 0 == cfr.file.seek(0)
+    rmsg = cfr.file.read()
+    assert rmsg == b'{\n  name: hope\n  oobi: abc\n}'  # hjson
 
     cfr.close()
     assert not cfr.opened
@@ -96,6 +103,29 @@ def test_configer():
     assert not os.path.exists(cfr.path)
     with pytest.raises(ValueError):
         rdata = cfr.get()
+
+    # Test with plain json human==False
+    cfr = configing.Configer(human=False)
+    # assert cfr.path == filepath
+    # github runner does not allow /usr/local/var
+    assert cfr.path.endswith("keri/cf/main/conf.json")
+    assert cfr.opened
+    assert os.path.exists(cfr.path)
+    assert cfr.file
+    assert not cfr.human
+    assert not cfr.file.closed
+    assert not cfr.file.read()
+
+    #  .human == False
+    wdata = dict(name="hope", oobi="abc")
+    assert cfr.put(wdata)
+    rdata = cfr.get()
+    assert rdata == wdata
+    assert 0 == cfr.file.seek(0)
+    rmsg = cfr.file.read()
+    assert rmsg == b'{\n  "name": "hope",\n  "oobi": "abc"\n}'  # plain json
+    cfr.close(clear=True)
+    assert not os.path.exists(cfr.path)
 
     # Test with altPath by using not permitted headDirPath /opt/keri to force Alt
     filepath = '/Users/samuel/.keri/cf/main/conf.json'
@@ -172,15 +202,36 @@ def test_configer():
     with pytest.raises(ValueError):
         rdata = cfr.get()
 
-    #test openCF json
+    #test openCF hjson
     with configing.openCF() as cfr:  # default uses json and temp==True
         filepath = '/tmp/keri_cf_2_zu01lb_test/keri/cf/main/test.json'
         assert cfr.path.startswith('/tmp/keri_')
         assert cfr.path.endswith('_test/keri/cf/main/test.json')
         assert cfr.opened
+        assert cfr.human
         assert os.path.exists(cfr.path)
         assert cfr.file
         assert not cfr.file.closed
+        wdata = dict(name="hope", oobi="abc")
+        assert cfr.put(wdata)
+        rdata = cfr.get()
+        assert rdata == wdata
+    assert not os.path.exists(cfr.path)  # if temp cleans
+
+    #test openCF json
+    with configing.openCF(human=False) as cfr:  # default uses json and temp==True
+        filepath = '/tmp/keri_cf_2_zu01lb_test/keri/cf/main/test.json'
+        assert cfr.path.startswith('/tmp/keri_')
+        assert cfr.path.endswith('_test/keri/cf/main/test.json')
+        assert cfr.opened
+        assert not cfr.human
+        assert os.path.exists(cfr.path)
+        assert cfr.file
+        assert not cfr.file.closed
+        wdata = dict(name="hope", oobi="abc")
+        assert cfr.put(wdata)
+        rdata = cfr.get()
+        assert rdata == wdata
     assert not os.path.exists(cfr.path)  # if temp cleans
 
     #test openCF mgpk

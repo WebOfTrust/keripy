@@ -6,6 +6,7 @@ keri.app.configing module
 import os
 import json
 
+import hjson
 import msgpack
 import cbor2 as  cbor
 
@@ -31,8 +32,16 @@ class Configer(filing.Filer):
     """
     Habitat Config File
 
+    Supports four serializations. HJSON, JSON, MGPK (MsgPack), and CBOR
+    The serialization is determined by the file extension .fext which may be
+    either '.json', '.mgpk', or '.cbor'.  The default is that .json extension
+    uses HJSON because HJSON can get (load) a strict json file.
+    To use strict json on put (dump) then set .human to false.
+
+    See https://github.com/hjson/hjson-py
+
     Attributes:  (see Filer for inherited attributres)
-        human (bool): True means use human friendly HJSON when fext is JSON
+        human (bool): True (default) means use human friendly HJSON when fext is JSON
     """
     TailDirPath = "keri/cf"
     CleanTailDirPath = "keri/clean/cf"
@@ -83,7 +92,7 @@ class Configer(filing.Filer):
         self.human = True if human else False
 
 
-    def put(self, data: dict):
+    def put(self, data: dict, human=None):
         """
         Serialize data dict and write to file given by .path where serialization is
         given by .fext path's extension of either JSON, MsgPack, or CBOR for extension
@@ -98,24 +107,30 @@ class Configer(filing.Filer):
         if not self.file or self.file.closed:
             raise ValueError(f"File '{self.path}' not opened.")
 
+        human = human if human is not None else self.human
         self.file.seek(0)
         self.file.truncate()
         root, ext = os.path.splitext(self.path)
         if ext == '.json':  # json can't dump to binary
-            self.file.write(json.dumps(data, indent=2).encode("utf-8"))
+            if human:
+                ser = hjson.dumps(data)
+            else:
+                ser = json.dumps(data, indent=2)
+            ser = ser.encode("utf-8")
         elif ext == '.mgpk':
-            msgpack.dump(data, self.file)
+            ser = msgpack.dumps(data)
         elif ext == '.cbor':
-            cbor.dump(data, self.file)
+            ser = cbor.dumps(data)
         else:
             raise IOError(f"Invalid file path ext '{ext}' "
                           f"not '.json', '.mgpk', or 'cbor'.")
+        self.file.write(ser)
         self.file.flush()
         os.fsync(self.file.fileno())
         return True
 
 
-    def get(self):
+    def get(self, human=None):
         """
         Returns:
             data (dict): converted from contents of file path given extention
@@ -131,13 +146,17 @@ class Configer(filing.Filer):
         if not self.file or self.file.closed:
             raise ValueError(f"File '{self.path}' not opened.")
 
+        human = human if human is not None else self.human
         it = {}
         self.file.seek(0)
         ser = self.file.read()
         if ser:  # not empty
             root, ext = os.path.splitext(self.path)
             if ext == '.json':  # json.load works with bytes as well as str
-                it = json.loads(ser.decode("utf-8"))
+                if human:
+                    it = hjson.loads(ser.decode("utf-8"))
+                else:
+                    it = json.loads(ser.decode("utf-8"))
             elif ext == '.mgpk':
                 it = msgpack.loads(ser)
             elif ext == '.cbor':
