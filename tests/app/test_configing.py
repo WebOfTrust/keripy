@@ -124,6 +124,8 @@ def test_configer():
     assert 0 == cfr.file.seek(0)
     rmsg = cfr.file.read()
     assert rmsg == b'{\n  "name": "hope",\n  "oobi": "abc"\n}'  # plain json
+    cfr.close(clear=True)
+    assert not os.path.exists(cfr.path)
 
     # Test with altPath by using not permitted headDirPath /opt/keri to force Alt
     filepath = '/Users/samuel/.keri/cf/main/conf.json'
