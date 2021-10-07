@@ -219,7 +219,7 @@ class AdminProofHandler(doing.Doer):
                 # TODO: Add SAID signature on exn, then sanction `fwd` envelope
                 ser = exchanging.exchange(route="/cmd/presentation/proof", payload=pl)
                 msg = bytearray(ser.raw)
-                msg.extend(self.hab.sanction(ser))
+                msg.extend(self.hab.endorse(ser, last=True))
 
                 self.mbx.storeMsg(self.controller + "/credential", msg)
 

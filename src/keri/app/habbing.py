@@ -570,22 +570,8 @@ class Habitat:
         query = query if query is not None else dict()
         query['i'] = pre
         serder = eventing.query(query=query, **kwa)
-        kever = self.kever
-        sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
 
-        # use messagize or endorse instead
-        msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-
-        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
-        msg.extend(self.pre.encode("utf-8"))
-
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
-        msg.extend(counter.qb64b)
-        for siger in sigers:
-            msg.extend(siger.qb64b)
-
-        return msg
+        return self.endorse(serder, last=True)
 
 
     def receipt(self, serder):
@@ -653,73 +639,55 @@ class Habitat:
         return msg
 
 
-    def endorse(self, serder):
+    def endorse(self, serder, last=False, pipelined=True):
         """
         Returns msg with own endorsement of msg from serder with attached signature
         groups based on own pre transferable or non-transferable.
-        Useful for endorsing key state message when provided via serder from
-        Kever.state()
-        Future add support for processing into db once have support for storing
-           key state in db.
+
+        Parameters:
+            serder (Serder): instance of msg
+            last (bool): True means use SealLast. False means use SealEvent
+                         query messages use SealLast
+            pipelined (bool): True means use pipelining attachment code
+
+        Useful for endorsing message when provided via serder such as state,
+        reply, query or similar.
         """
         if self.kever.prefixer.transferable:
-            # create SealEvent for endorsers est evt whose keys use to sign
-
-            group = self.db.gids.get(self.pre)
-
-            if group is None:
-                seal = eventing.SealEvent(i=self.kever.prefixer.qb64,
-                                          s=hex(self.kever.lastEst.s),
-                                          d=self.kever.lastEst.d)
-                indices = None
-            else:
+            # create SealEvent or SealLast for endorser's est evt whose keys are
+            # used to sign
+            group = self.db.gids.get(self.pre)  # is it a group ID
+            if group is None:  # not a group use own kever
+                kever = self.kever
+                indices = None  # use default order
+            else:  # group so use gid kever
                 kever = self.kevers[group.gid]
+                indices = [group.aids.index(group.lid)]  # use group order
+
+            if last:
+                seal = eventing.SealLast(i=kever.prefixer.qb64)
+            else:
                 seal = eventing.SealEvent(i=kever.prefixer.qb64,
                                           s=hex(kever.lastEst.s),
                                           d=kever.lastEst.d)
-                indices = [group.aids.index(group.lid)]
 
-            # sign serder event
             sigers = self.mgr.sign(ser=serder.raw,
                                    verfers=self.kever.verfers,
                                    indexed=True,
                                    indices=indices)
+
             msg = eventing.messagize(serder=serder,
                                      sigers=sigers,
                                      seal=seal,
-                                     pipelined=True)
+                                     pipelined=pipelined)
 
         else:
-            # sign serder event
             cigars = self.mgr.sign(ser=serder.raw,
                                    verfers=self.kever.verfers,
                                    indexed=False)
             msg = eventing.messagize(serder=serder,
                                      cigars=cigars,
-                                     pipelined=True)
-
-        return msg
-
-
-    def sanction(self, serder):
-        """
-        Sign and messagize the `exn` message with the current signing keys
-        (should be a Habitat method, what name?)
-
-        This seems redundant to endorse below and less capable just add
-        parameters to endorse to use different group
-        """
-        sigers = self.mgr.sign(ser=serder.raw, verfers=self.kever.verfers)
-
-        msg = bytearray()
-        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
-        msg.extend(self.pre.encode("utf-8"))
-
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
-        msg.extend(counter.qb64b)
-        for siger in sigers:
-            msg.extend(siger.qb64b)
+                                     pipelined=pipelined)
 
         return msg
 

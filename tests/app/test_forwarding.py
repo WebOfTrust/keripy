@@ -40,7 +40,7 @@ def test_postman(mockGetWitnessByPrefixOneWitness):
 
         exn = exchanging.exchange(route="/echo", payload=dict(msg="test"))
         msg = bytearray(exn.raw)
-        msg.extend(hab.sanction(exn))
+        msg.extend(hab.endorse(exn, last=True))
         pman.send(recipient=recpHab.pre, topic="echo", msg=msg)
 
         doers = wesDoers + [pman]

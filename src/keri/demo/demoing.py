@@ -450,7 +450,7 @@ class IanDirector(directing.Director):
             tyme = (yield self.tock)
 
             excSrdr = exchanging.exchange(route="/credential/issue", payload=pl)
-            excMsg = self.hab.sanction(excSrdr)
+            excMsg = self.hab.endorse(excSrdr, last=True)
 
             self.peerClient.tx(excMsg)
             logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(excMsg))

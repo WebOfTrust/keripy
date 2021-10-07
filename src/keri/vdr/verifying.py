@@ -60,11 +60,13 @@ class Verifier:
         if self.hab.inited:
             self.setup()
 
+
     def setup(self):
         self.tvy = vdr.eventing.Tevery(reger=self.reger, db=self.hab.db, regk=None, local=False)
         self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
         self.inited = True
+
 
     @property
     def tevers(self):
@@ -72,6 +74,7 @@ class Verifier:
         Returns .db.tevers
         """
         return self.reger.tevers
+
 
     def processMessages(self, creds=None):
         """
@@ -85,6 +88,7 @@ class Verifier:
 
         while creds:
             self.processCredential(**creds.pull())
+
 
     def processCredential(self, creder, prefixer, seqner, diger, sigers):
         """
@@ -398,23 +402,11 @@ class Verifier:
         """
         Returns query message for querying registry
         """
-        kever = self.hab.kever
+
         serder = vdr.eventing.query(regk=regk, vcid=vcid, dt=dt, dta=dta,
                                 dtb=dtb, **kwa)
+        return self.hab.endorse(serder, last=True)
 
-        sigers = self.hab.mgr.sign(ser=serder.raw, verfers=kever.verfers)
-        msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-
-        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
-        msg.extend(self.hab.pre.encode("utf-8"))
-
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(sigers))
-        msg.extend(counter.qb64b)
-        for siger in sigers:
-            msg.extend(siger.qb64b)
-
-        return msg
 
     def verifyChain(self, label, nodeSubject, nodeSaid):
         """

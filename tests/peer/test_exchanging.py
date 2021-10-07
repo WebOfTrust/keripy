@@ -25,6 +25,9 @@ def test_exchanger():
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
+        # should instead create sidHab here so can use it later more aligned with
+        # normal use case
+
         # Init key pair managers
         sidMgr = keeping.Manager(ks=sidKS, salt=sidSalt)
 
@@ -63,13 +66,12 @@ def test_exchanger():
         pl = dict(x="y")
         sidExcSrdr = exchanging.exchange(route="/test/message", payload=pl)
 
-        # Create exn message, sign it and attack Signer Seal
+        # Create exn message, sign it and attach Signer Seal
         sigers = sidMgr.sign(ser=sidExcSrdr.raw, verfers=verfers)
 
         excMsg = bytearray(sidExcSrdr.raw)
         excMsg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
         excMsg.extend(sidPre.encode("utf-8"))
-
         counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
                                  count=len(sigers))
         excMsg.extend(counter.qb64b)

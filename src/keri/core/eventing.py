@@ -79,19 +79,31 @@ LastEstLoc = namedtuple("LastEstLoc", 's d')
 #  for the following Seal namedtuples use the ._asdict() method to convert to dict
 #  when using in events
 
-# Digest Seal: dig is qb64 digest of data
+# Digest Seal: uniple (d,)
+# d = dig is qb64 digest of data
 SealDigest = namedtuple("SealDigest", 'd')
 
-# Root Seal: root is qb64 digest that is merkle tree root of data tree
+# Root Seal: uniple (rd,)
+# rd = root dig id qb64 digest that is root of data digest Merkle tree
 SealRoot = namedtuple("SealRoot", 'rd')
 
-# Event Seal: triple (i,s , d)
+# Backer Seal: couple (bi, d)
+# bi = pre qb64 backer nontrans identifier prefix
+# d = dig is qb64 digest of backer metadata attached to event with anchored seal
+SealBacker = namedtuple("SealBacker", 'bi d')
+
+# Event Seal: triple (i, s, d)
 # i = pre is qb64 of identifier prefix of KEL for event,
 # s = sn of event as lowercase hex string  no leading zeros,
 # d = dig is qb64 digest of event
 SealEvent = namedtuple("SealEvent", 'i s d')
 
-# Event Location Seal:
+# Last Estalishment Event Seal: uniple (i,)
+# i = pre is qb64 of identifier prefix of KEL from which to get last est, event
+# used to indicate to get the latest keys available from KEL for 'i'
+SealLast = namedtuple("SealLast", 'i')
+
+# Event Location Seal: quadruple (i, s, t, p)
 # i = pre is qb64 of identifier prefix of KEL,
 # s = sn of event as lowercase hex string  no leading zeros,
 # t = message type ilk is str,
@@ -103,17 +115,17 @@ SealLocation = namedtuple("SealLocation", 'i s t p')
 # d = dig is qb64 digest of source event (delegator or issuer)
 SealSource = namedtuple("SealSource", 's d')
 
-# State Latest (current) Event:
+# State (latest current) Event: triple (s, t, d)
 # s = sn of latest event as lowercase hex string  no leading zeros,
 # t = message type of latest event (ilk)
 # d = digest of latest event
 StateEvent = namedtuple("StateEvent", 's t d')
 
-# State Latest Establishment Event:
+# State (latest current) Establishment Event: quadruple (s, d, br, ba)
 # s = sn of latest est event as lowercase hex string  no leading zeros,
 # d = digest of latest establishment event
-# wr = witness remove list (cuts) from latest est event
-# wa = witness add list (adds) from latest est event
+# br = backer (witness) remove list (cuts) from latest est event
+# ba = backer (witness) add list (adds) from latest est event
 StateEstEvent = namedtuple("StateEstEvent", 's d br ba')
 
 
@@ -1334,15 +1346,22 @@ def expose(route="",
     return Serder(ked=sad)  # return serialized Self-Addressed Data (SAD)
 
 
-def messagize(serder, sigers=None, seal=None, wigers=None, cigars=None, pipelined=False):
+def messagize(serder,*, sigers=None, seal=None, wigers=None, cigars=None,
+              pipelined=False):
     """
     Attaches indexed signatures from sigers and/or cigars and/or wigers to
     KERI message data from serder
     Parameters:
-        serder is Serder instance containing the event
-        sigers is optional list of Siger instance to create indexed signatures
-        seal is optional seal when present use complex attachment group of triple
-            pre+snu+dig made from (i,s,d) of seal plus attached indexed sigs in sigers
+        serder (Serder): instance containing the event
+        sigers (list): of Siger instances (optional) to create indexed signatures
+        seal (Union[SealEvent, SealLast]): optional if sigers and
+            If SealEvent use attachment group code TransIdxSigGroups plus attach
+                triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
+                plus attached indexed sigs in sigers
+            Else If SealLast use attachment group code TransLastIdxSigGroups plus
+                attach uniple pre made from (i,) of seal plus ControllerIdxSigs
+                plus attached indexed sigs in sigers
+            Else use ControllerIdxSigs plus attached indexed sigs in sigers
         wigers is optional list of Siger instances of witness index signatures
         cigars is optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
@@ -1360,11 +1379,15 @@ def messagize(serder, sigers=None, seal=None, wigers=None, cigars=None, pipeline
                          "".format(serder.ked))
 
     if sigers:
-        if seal is not None:
+        if isinstance(seal, SealEvent):
             atc.extend(Counter(CtrDex.TransIdxSigGroups, count=1).qb64b)
             atc.extend(seal.i.encode("utf-8"))
             atc.extend(Seqner(snh=seal.s).qb64b)
             atc.extend(seal.d.encode("utf-8"))
+
+        elif isinstance(seal, SealLast):
+            atc.extend(Counter(CtrDex.TransLastIdxSigGroups, count=1).qb64b)
+            atc.extend(seal.i.encode("utf-8"))
 
         atc.extend(Counter(code=CtrDex.ControllerIdxSigs, count=len(sigers)).qb64b)
         for siger in sigers:
@@ -3742,7 +3765,6 @@ class Kevery:
         return accepted
 
 
-
     def updateReply(self, *, serder, saider, dater, cigar=None, prefixer=None,
                     seqner=None, diger=None, sigers=None):
         """
@@ -3774,6 +3796,7 @@ class Kevery:
             quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
             self.db.ssgs.put(keys=quadkeys, vals=sigers)
 
+
     def removeReply(self, saider):
         """
         Remove Reply SAD artifacts given by saider.
@@ -3789,6 +3812,7 @@ class Kevery:
             self.db.scgs.rem(keys=keys)
             self.db.rpys.rem(keys=keys)
             self.db.sdts.rem(keys=keys)
+
 
     def escrowReply(self, *, serder, saider, dater, route, prefixer, seqner,
                     diger, sigers):
@@ -3816,6 +3840,7 @@ class Kevery:
         self.db.ssgs.put(keys=quadkeys, vals=sigers)
         self.db.rpes.put(keys=(route, ), vals=[saider])
 
+
     def updateEnd(self, keys, saider, allowed=None):
         """
         Update end auth database .eans and end database .ends.
@@ -3833,6 +3858,7 @@ class Kevery:
         else:  # no preexisting record
             ender = basing.EndpointRecord(allowed=allowed)  # create new record
         self.db.ends.pin(keys=keys, val=ender)  # overwrite
+
 
     def updateLoc(self, keys, saider, url):
         """

@@ -202,11 +202,11 @@ class WitnessInquisitor(doing.DoDoer):
 
     def query(self, pre, r="logs", sn=0, **kwa):
         msg = self.hab.query(pre, route=r, query=dict(), **kwa)  # Query for remote pre Event
-        self.msgs.append(bytes(msg))
+        self.msgs.append(bytes(msg))  # bytes not bytearray so set membership compare works
 
     def telquery(self, ri, i, r="tels", **kwa):
         msg = self.hab.query(i, route=r, query=dict(ri=ri), **kwa)  # Query for remote pre Event
-        self.msgs.append(bytes(msg))
+        self.msgs.append(bytes(msg))  # bytes not bytearray so set membership compare works
 
 
 class WitnessPublisher(doing.DoDoer):
