@@ -1156,26 +1156,31 @@ class Tevery:
             else:  # duplicitious
                 raise LikelyDuplicitousError("Likely Duplicitous event={} with sn {}.".format(ked, sn))
 
-    def processQuery(self, serder, src=None, sigers=None):
+
+    def processQuery(self, serder, source=None, sigers=None, cigars=None):
         """
         Process query mode replay message for collective or single element query.
         Assume promiscuous mode for now.
 
         Parameters:
             serder (Serder) is query message serder
-            src (qb64) identifier prefix of event sender
+            source (qb64) identifier prefix of querier
             sigers (list) of Siger instances of attached controller indexed sigs
 
         """
         ked = serder.ked
 
         ilk = ked["t"]
-        res = ked["r"]
-        qry = ked["q"]
+        route = ked["r"]
+        replyRoute = ked["rr"]
+        query = ked["q"]
 
-        if res == "tels":
-            mgmt = qry["ri"]
-            vcpre = qry["i"]
+        # do signature validation and replay attack prevention logic here
+        # src, dt, route
+
+        if route == "tels":
+            mgmt = query["ri"]
+            vcpre = query["i"]
             vck = nsKey([mgmt, vcpre])
 
             cloner = self.reger.clonePreIter(pre=mgmt, fn=0)  # create iterator at 0
@@ -1188,7 +1193,7 @@ class Tevery:
                 msgs.extend(msg)
 
             if msgs:
-                self.cues.append(dict(kin="replay", dest=src, msgs=msgs))
+                self.cues.append(dict(kin="replay", dest=source, msgs=msgs))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
 

@@ -25,7 +25,7 @@ def test_verifier_query(mockHelpingNowUTC):
         verfer = verifying.Verifier(hab=hab)
         msg = verfer.query(issuer.regk,
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
-                           res="tels")
+                           route="tels")
         assert msg == (b'{"v":"KERI10JSON0000cb_","t":"qry","dt":"2021-01-01T00:00:00.000'
                         b'000+00:00","r":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55c'
                         b'nHl4WgNZ_RE-gKXqgcX4","ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT7'

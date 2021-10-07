@@ -394,13 +394,13 @@ class Verifier:
 
         return creder, prefixer, seqner, diger, sigers
 
-    def query(self, regk, vcid, *, dt=None, dta=None, dtb=None, res="", **kwa):
+    def query(self, regk, vcid, *, dt=None, dta=None, dtb=None, **kwa):
         """
-        Returns query message for querying for a single element of type res
+        Returns query message for querying registry
         """
         kever = self.hab.kever
         serder = eventing.query(regk=regk, vcid=vcid, dt=dt, dta=dta,
-                                dtb=dtb, route=res, **kwa)
+                                dtb=dtb, **kwa)
 
         sigers = self.hab.mgr.sign(ser=serder.raw, verfers=kever.verfers)
         msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted

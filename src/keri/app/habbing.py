@@ -387,7 +387,7 @@ class Habitat:
         if "dt" in conf: # datetime of config file
             dt = help.fromIso8601(conf["dt"])  # raises error if not convert
             msgs = bytearray()
-            msgs.extend(self.endrolize(eid=self.pre,
+            msgs.extend(self.makeEndRole(eid=self.pre,
                                        role=kering.Roles.controller,
                                        stamp=help.toIso8601(dt=dt)))
             if "curls" in conf:
@@ -396,7 +396,7 @@ class Habitat:
                     splits = urlsplit(url)
                     scheme = (splits.scheme if splits.scheme in kering.Schemes
                                             else kering.Schemes.http)
-                    msgs.extend(self.locschemize(url=url,
+                    msgs.extend(self.makeLocScheme(url=url,
                                                  scheme=scheme,
                                                  stamp=help.toIso8601(dt=dt)))
 
@@ -557,16 +557,23 @@ class Habitat:
         return msg
 
 
-    def query(self, pre, route="", query=None, **kwa):
+    def query(self, pre, query=None, **kwa):
         """
-        Returns query message for querying for a single element of type res
+        Returns query message for querying at route for query parameter 'i' = pre
+
+        Need to fix this
+        Assumes query is always for querying route = 'logs' to replay logs
+        need to remove pre parameter and have caller insert in query
+
         """
-        kever = self.kever
+
         query = query if query is not None else dict()
         query['i'] = pre
-        serder = eventing.query(route=route, query=query, **kwa)
-
+        serder = eventing.query(query=query, **kwa)
+        kever = self.kever
         sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
+
+        # use messagize or endorse instead
         msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
 
         msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
@@ -716,6 +723,7 @@ class Habitat:
 
         return msg
 
+
     def verifiage(self, pre=None, sn=0, dig=None):
         """
         Returns the Tholder and Verfers for the provided identifier prefix.
@@ -758,8 +766,8 @@ class Habitat:
             verfers = [coring.Verfer(qb64=pre)]
             tholder = coring.Tholder(sith="1")
 
-
         return tholder, verfers
+
 
     def replay(self, pre=None, fn=0):
         """
@@ -778,6 +786,7 @@ class Habitat:
         for msg in self.db.clonePreIter(pre=pre, fn=fn):
             msgs.extend(msg)
         return msgs
+
 
     def replayAll(self, key=b''):
         """
@@ -977,9 +986,24 @@ class Habitat:
                                    allowed=allowed))
 
 
-    def endrolize(self, eid, role=kering.Roles.controller, allow=True, stamp=None):
+    def reply(self, **kwa):
         """
+        Returns:
+            msg (bytearray): reply message
 
+        Parameters:
+            route is route path string that indicates data flow handler (behavior)
+                to processs the reply
+            data is list of dicts of comitted data such as seals
+            dts is date-time-stamp of message at time or creation
+            version is Version instance
+            kind is serialization kind
+        """
+        return self.endorse(eventing.reply(**kwa))
+
+
+    def makeEndRole(self, eid, role=kering.Roles.controller, allow=True, stamp=None):
+        """
         Returns:
             msg (bytearray): reply message allowing/disallowing endpoint provider
                eid in role
@@ -994,10 +1018,10 @@ class Habitat:
         """
         data = dict(cid=self.pre, role=role, eid=eid)
         route = "/end/role/add" if allow else "/end/role/cut"
-        return self.makeReply(route=route, data=data, stamp=stamp)
+        return self.reply(route=route, data=data, stamp=stamp)
 
 
-    def locschemize(self, url, scheme="http", stamp=None):
+    def makeLocScheme(self, url, scheme="http", stamp=None):
         """
         Returns:
            msg (bytearray): reply message of own url service endpoint at scheme
@@ -1011,23 +1035,7 @@ class Habitat:
 
         """
         data = data = dict( eid=self.pre, scheme=scheme, url=url)
-        return self.makeReply(route="/loc/scheme", data=data, stamp=stamp)
-
-
-    def makeReply(self, **kwa):
-        """
-        Returns:
-            msg (bytearray): reply message
-
-        Parameters:
-            route is route path string that indicates data flow handler (behavior)
-                to processs the reply
-            data is list of dicts of comitted data such as seals
-            dts is date-time-stamp of message at time or creation
-            version is Version instance
-            kind is serialization kind
-        """
-        return self.endorse(eventing.reply(**kwa))
+        return self.reply(route="/loc/scheme", data=data, stamp=stamp)
 
 
     def replyLocScheme(self, eid, scheme=None):
@@ -1132,6 +1140,7 @@ class Habitat:
             msg.extend(sig)  # attach sig
         return (msg)
 
+
     def makeOwnInception(self):
         """
         Returns: messagized bytearray message with attached signatures of
@@ -1139,6 +1148,7 @@ class Habitat:
                  from database.
         """
         return self.makeOwnEvent(sn=0)
+
 
     def processCues(self, cues):
         """
@@ -1151,6 +1161,7 @@ class Habitat:
         for msg in self.processCuesIter(cues):
             msgs.extend(msg)
         return msgs
+
 
     def processCuesIter(self, cues):
         """

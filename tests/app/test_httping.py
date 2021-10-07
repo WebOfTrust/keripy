@@ -73,7 +73,7 @@ def test_create_cesr_request(mockHelpingNowUTC):
         verfer = verifying.Verifier(hab=hab)
         msg = verfer.query(issuer.regk,
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
-                           res="tels")
+                           route="tels")
         client = MockClient()
 
         httping.createCESRRequest(msg, client, date="2021-02-13T19:16:50.750302+00:00")

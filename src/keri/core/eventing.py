@@ -1175,47 +1175,6 @@ def state(pre,
     return Serder(ked=ksd)  # return serialized ksd
 
 
-#def query(res,
-          #qry,
-          #version=Version,
-          #kind=Serials.json):
-    #"""
-    #Returns serder of query event message.
-    #Utility function to automate creation of query messages.
-
-     #Parameters:
-        #pre is identifier prefix qb64
-        #res is str resouce to be queried
-        #qry is dict of query parameter specific to the resource
-        #version is Version instance
-        #kind is serialization kind
-
-    #{
-      #"v" : "KERI10JSON00011c_",
-      #"t" : "qry",
-      #"dt": "2020-08-22T17:50:12.988921+00:00",
-      #"r" : "logs",
-      #"rr": "log/processor",
-      #"q" :
-      #{
-        #"i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        #"sn": "5",
-        #"dt": "2020-08-01T12:20:05.123456+00:00",
-      #}
-    #}
-    #"""
-    #vs = Versify(version=version, kind=kind, size=0)
-    #ilk = Ilks.req
-
-    #ked = dict(v=vs,  # version string
-               #t=ilk,
-               #r=res,  # resource type for single item request
-               #q=qry
-               #)
-
-    #return Serder(ked=ked)  # return serialized ked
-
-
 def query(route="",
           replyRoute="",
           query=None,
@@ -3892,34 +3851,39 @@ class Kevery:
 
         self.db.locs.pin(keys=keys, val=locer)  # overwrite
 
-    def processQuery(self, serder, src=None, sigers=None):
+
+    def processQuery(self, serder, source=None, sigers=None, cigars=None):
         """
         Process query mode replay message for collective or single element query.
         Assume promiscuous mode for now.
 
         Parameters:
             serder (Serder) is query message serder
-            src (qb64) identifier prefix of event sender
+            source (qb64) identifier prefix of querier
             sigers (list) of Siger instances of attached controller indexed sigs
 
         """
         ked = serder.ked
 
         ilk = ked["t"]
-        res = ked["r"]
-        qry = ked["q"]
+        route = ked["r"]
+        replyRoute = ked["rr"]
+        query = ked["q"]
 
-        if res == "logs":
-            pre = qry["i"]
-            cloner = self.db.clonePreIter(pre=pre, fn=0)  # create iterator at 0
+        # do signature validation and replay attack prevention logic here
+        # src, dt, route
+
+        if route == "logs":
+            pre = query["i"]
             msgs = bytearray()  # outgoing messages
-            for msg in cloner:
+            for msg in self.db.clonePreIter(pre=pre, fn=0):
                 msgs.extend(msg)
 
             if msgs:
-                self.cues.push(dict(kin="replay", msgs=msgs, dest=src))
+                self.cues.push(dict(kin="replay", msgs=msgs, dest=source))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
+
 
     def fetchEstEvent(self, pre, sn):
         """
