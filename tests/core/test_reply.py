@@ -305,7 +305,7 @@ def test_reply(mockHelpingNowUTC):
         assert ender.name == ""
 
         # Redo with Updated not stale datetime
-        serderR = eventing.reply(route=route, data=data, dts=help.helping.DTS_BASE_1)
+        serderR = eventing.reply(route=route, data=data, stamp=help.helping.DTS_BASE_1)
         assert serderR.ked['dt'] == help.helping.DTS_BASE_1
 
         assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EwZH6wJVwwqb2tmhYKYa-GyiO75k4MqkuMKy'
@@ -468,7 +468,7 @@ def test_reply(mockHelpingNowUTC):
                          eid=watHab.pre,
                          )
 
-        serderR = eventing.reply(route=route, data=data, dts=help.helping.DTS_BASE_2)
+        serderR = eventing.reply(route=route, data=data, stamp=help.helping.DTS_BASE_2)
         assert serderR.ked['dt'] == help.helping.DTS_BASE_2
         msg = nelHab.endorse(serder=serderR)
         # Tam process
@@ -862,7 +862,7 @@ def test_reply(mockHelpingNowUTC):
                      url=url,
                    )
 
-        serderR = eventing.reply(route=route, data=data, dts=help.helping.DTS_BASE_1)
+        serderR = eventing.reply(route=route, data=data, stamp=help.helping.DTS_BASE_1)
         assert serderR.ked['dt'] == help.helping.DTS_BASE_1
         # Sign Reply
         msg = tamHab.endorse(serder=serderR)
@@ -1130,12 +1130,12 @@ def test_reply(mockHelpingNowUTC):
         assert rurls["witness"][wokHab.pre]['http'] == 'http://localhost:8080/witness/wok'
 
         msgs = bytearray()
-        msgs.extend(tamHab.endrolize(eid=wesHab.pre, role=kering.Roles.witness))
-        msgs.extend(tamHab.endrolize(eid=wokHab.pre, role=kering.Roles.witness))
-        msgs.extend(tamHab.endrolize(eid=wamHab.pre, role=kering.Roles.witness))
-        msgs.extend(wesHab.locschemize(url='http://localhost:8080/witness/wes'))
-        msgs.extend(wokHab.locschemize(url='http://localhost:8080/witness/wok'))
-        msgs.extend(wamHab.locschemize(url='http://localhost:8080/witness/wam'))
+        msgs.extend(tamHab.makeEndRole(eid=wesHab.pre, role=kering.Roles.witness))
+        msgs.extend(tamHab.makeEndRole(eid=wokHab.pre, role=kering.Roles.witness))
+        msgs.extend(tamHab.makeEndRole(eid=wamHab.pre, role=kering.Roles.witness))
+        msgs.extend(wesHab.makeLocScheme(url='http://localhost:8080/witness/wes'))
+        msgs.extend(wokHab.makeLocScheme(url='http://localhost:8080/witness/wok'))
+        msgs.extend(wamHab.makeLocScheme(url='http://localhost:8080/witness/wam'))
 
         tamHab.psr.parse(bytearray(msgs))
         wesHab.psr.parse(bytearray(msgs))
@@ -1147,12 +1147,12 @@ def test_reply(mockHelpingNowUTC):
         welHab.psr.parse(bytearray(msgs))
 
         msgs = bytearray()
-        msgs.extend(nelHab.endrolize(eid=nelHab.pre, role=kering.Roles.controller))
-        msgs.extend(nelHab.endrolize(eid=watHab.pre, role=kering.Roles.watcher))
-        msgs.extend(nelHab.endrolize(eid=welHab.pre, role=kering.Roles.watcher))
-        msgs.extend(nelHab.locschemize(url='http://localhost:8080/controller/nel'))
-        msgs.extend(watHab.locschemize(url='http://localhost:8080/watcher/wat'))
-        msgs.extend(welHab.locschemize(url='http://localhost:8080/watcher/wel'))
+        msgs.extend(nelHab.makeEndRole(eid=nelHab.pre, role=kering.Roles.controller))
+        msgs.extend(nelHab.makeEndRole(eid=watHab.pre, role=kering.Roles.watcher))
+        msgs.extend(nelHab.makeEndRole(eid=welHab.pre, role=kering.Roles.watcher))
+        msgs.extend(nelHab.makeLocScheme(url='http://localhost:8080/controller/nel'))
+        msgs.extend(watHab.makeLocScheme(url='http://localhost:8080/watcher/wat'))
+        msgs.extend(welHab.makeLocScheme(url='http://localhost:8080/watcher/wel'))
 
 
         tamHab.psr.parse(bytearray(msgs))

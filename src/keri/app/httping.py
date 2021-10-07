@@ -147,7 +147,7 @@ def createCESRRequest(msg, client, date=None):
     if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.ksn, Ilks.rct):
         resource = "/kel"
         body = serder.raw
-    elif ilk in (Ilks.req,):
+    elif ilk in (Ilks.qry, ):
         resource = "/" + ilk + "/" + serder.ked['r']
         body = serder.raw
     elif ilk in (Ilks.fwd,):

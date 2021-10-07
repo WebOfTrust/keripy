@@ -55,11 +55,11 @@ bis = backed vc issue, registry-backed transaction event log credential issuance
 brv = backed vc revoke, registry-backed transaction event log credential revocation
 """
 
-Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn req qry rpy exn exp '
+Ilkage = namedtuple("Ilkage", ('icp rot ixn dip drt rct ksn qry rpy exn exp '
                                'fwd vcp vrt iss rev bis brv '))
 
 Ilks = Ilkage(icp='icp', rot='rot', ixn='ixn', dip='dip', drt='drt', rct='rct',
-              ksn='ksn', req='req', qry='qry', rpy='rpy', exn='exn', exp='exp',
+              ksn='ksn', qry='qry', rpy='rpy', exn='exn', exp='exp',
               fwd='fwd', vcp='vcp', vrt='vrt', iss='iss', rev='rev',
               bis='bis', brv='brv')
 
@@ -1141,16 +1141,16 @@ class Dater(Matter):
     @property
     def dts(self):
         """
-        Property dts:
-        Returns .qb64 translated to ISO 8601 DateTime str
+        Property dts:  date-time-stamp str
+        Returns .qb64 translated to RFC-3339 profile of ISO 8601 datetime str
         """
         return self.qb64[self.Codes[self.code].hs:].translate(self.FromB64)
 
     @property
     def dtsb(self):
         """
-        Property dtsb:
-        Returns .qb64 translated to ISO 8601 DateTime bytes
+        Property dtsb:  date-time-stamp bytes
+        Returns .qb64 translated to RFC-3339 profile of ISO 8601 datetime bytes
         """
         return self.qb64[self.Codes[self.code].hs:].translate(self.FromB64).encode("utf-8")
 
@@ -1158,7 +1158,7 @@ class Dater(Matter):
     def datetime(self):
         """
         Property datetime:
-        Returns datetime.datetime instance converted from .dts ISO 8601 DateTime str
+        Returns datetime.datetime instance converted from .dts
         """
         return helping.fromIso8601(self.dts)
 

@@ -15,7 +15,7 @@ from .. import help, kering
 from ..core import parsing, coring, scheming
 from ..help import helping
 from ..vc import proving
-from ..vdr import eventing
+from .. import vdr
 from ..vdr.eventing import VcStates
 from ..vdr.viring import Registry
 
@@ -61,7 +61,7 @@ class Verifier:
             self.setup()
 
     def setup(self):
-        self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=None, local=False)
+        self.tvy = vdr.eventing.Tevery(reger=self.reger, db=self.hab.db, regk=None, local=False)
         self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
         self.inited = True
@@ -147,7 +147,7 @@ class Verifier:
 
         # Verify the signatures are valid and that the signature threshold as of the signing event is met
         tholder, verfers = self.hab.verifiage(pre=prefixer.qb64, sn=seqner.sn, dig=diger.qb64)
-        _, indices = eventing.verifySigs(creder, sigers, verfers)
+        _, indices = vdr.eventing.verifySigs(creder, sigers, verfers)
 
         if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
             self.escrowPSC(creder, prefixer, seqner, diger, sigers)
@@ -394,12 +394,13 @@ class Verifier:
 
         return creder, prefixer, seqner, diger, sigers
 
-    def query(self, regk, vcid, res, dt=None, dta=None, dtb=None):
+    def query(self, regk, vcid, *, dt=None, dta=None, dtb=None, **kwa):
         """
-        Returns query message for querying for a single element of type res
+        Returns query message for querying registry
         """
         kever = self.hab.kever
-        serder = eventing.query(regk=regk, vcid=vcid, res=res, dt=dt, dta=dta, dtb=dtb)
+        serder = vdr.eventing.query(regk=regk, vcid=vcid, dt=dt, dta=dta,
+                                dtb=dtb, **kwa)
 
         sigers = self.hab.mgr.sign(ser=serder.raw, verfers=kever.verfers)
         msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted

@@ -871,11 +871,11 @@ class Parser:
                                       "= {}.".format(serder.pretty()))
 
 
-        elif ilk in (Ilks.req, ):  # query message
+        elif ilk in (Ilks.qry, ):  # query message
             args = dict(serder=serder)
             if ssgs:
                 pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one
-                args["src"] = pre.qb64
+                args["source"] = pre.qb64
                 args["sigers"] = sigers
 
             elif cigars:
@@ -885,15 +885,15 @@ class Parser:
                 raise kering.ValidationError("Missing attached requester signature(s) "
                                              "to key log query msg = {}.".format(serder.pretty()))
 
-            res = serder.ked["r"]
-            if res in ["logs"]:
+            route = serder.ked["r"]
+            if route in ["logs"]:
                 try:
                     kvy.processQuery(**args)
                 except AttributeError:
                     raise kering.ValidationError("No kevery to process so dropped msg"
                                                  "= {}.".format(serder.pretty()))
 
-            elif res in ["tels"]:
+            elif route in ["tels"]:
                 try:
                     tvy.processQuery(**args)
                 except AttributeError as e:
@@ -902,7 +902,7 @@ class Parser:
 
             else:
                 raise kering.ValidationError("Invalid resource type {} so dropped msg"
-                                             "= {}.".format(res, serder.pretty()))
+                                             "= {}.".format(route, serder.pretty()))
 
         elif ilk in (Ilks.exn, ):
             args = dict(serder=serder)

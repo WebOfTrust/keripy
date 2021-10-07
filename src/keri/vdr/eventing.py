@@ -19,6 +19,7 @@ from orderedset import OrderedSet as oset
 from ..core.coring import (MtrDex, Serder, Serials, Versify, Prefixer,
                               Ilks, Seqner, Verfer)
 from ..core.eventing import SealEvent, ample, TraitDex, verifySigs, validateSN
+from .. import core
 from ..db import basing
 from ..db.dbing import dgKey, snKey
 from ..help import helping
@@ -372,10 +373,12 @@ def backerRevoke(
 
 def query(regk,
           vcid,
-          res,
+          route="",
+          replyRoute="",
           dt=None,
           dta=None,
           dtb=None,
+          stamp=None,
           version=Version,
           kind=Serials.json):
 
@@ -392,31 +395,25 @@ def query(regk,
         kind is serialization kind
     """
     vs = Versify(version=version, kind=kind, size=0)
-    ilk = Ilks.req
+    ilk = Ilks.qry
 
-    qry = dict(
-        i=vcid,
-        ri=regk
-    )
+    query = dict(i=vcid, ri=regk)
 
     if dt is not None:
-        qry["dt"] = dt
+        query["dt"] = dt
 
     if dta is not None:
-        qry["dta"] = dt
+        query["dta"] = dt
 
     if dtb is not None:
-        qry["dtb"] = dt
+        query["dtb"] = dt
 
-
-    ked = dict(v=vs,  # version string
-               t=ilk,
-               r=res,  # resource type for single item request
-               q=qry
-               )
-
-    return Serder(ked=ked)  # return serialized ked
-
+    return core.eventing.query(route=route,
+                               replyRoute=replyRoute,
+                               query=query,
+                               stamp=stamp,
+                               version=version,
+                               kind=kind)
 
 
 class Tever:
@@ -1159,26 +1156,31 @@ class Tevery:
             else:  # duplicitious
                 raise LikelyDuplicitousError("Likely Duplicitous event={} with sn {}.".format(ked, sn))
 
-    def processQuery(self, serder, src=None, sigers=None):
+
+    def processQuery(self, serder, source=None, sigers=None, cigars=None):
         """
         Process query mode replay message for collective or single element query.
         Assume promiscuous mode for now.
 
         Parameters:
             serder (Serder) is query message serder
-            src (qb64) identifier prefix of event sender
+            source (qb64) identifier prefix of querier
             sigers (list) of Siger instances of attached controller indexed sigs
 
         """
         ked = serder.ked
 
         ilk = ked["t"]
-        res = ked["r"]
-        qry = ked["q"]
+        route = ked["r"]
+        replyRoute = ked["rr"]
+        query = ked["q"]
 
-        if res == "tels":
-            mgmt = qry["ri"]
-            vcpre = qry["i"]
+        # do signature validation and replay attack prevention logic here
+        # src, dt, route
+
+        if route == "tels":
+            mgmt = query["ri"]
+            vcpre = query["i"]
             vck = nsKey([mgmt, vcpre])
 
             cloner = self.reger.clonePreIter(pre=mgmt, fn=0)  # create iterator at 0
@@ -1191,7 +1193,7 @@ class Tevery:
                 msgs.extend(msg)
 
             if msgs:
-                self.cues.append(dict(kin="replay", dest=src, msgs=msgs))
+                self.cues.append(dict(kin="replay", dest=source, msgs=msgs))
         else:
             raise ValidationError("invalid query message {} for evt = {}".format(ilk, ked))
 
