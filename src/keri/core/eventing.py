@@ -1027,7 +1027,7 @@ def state(pre,
           eilk,
           keys,
           eevt,
-          dts=None,  # default current datetime
+          stamp=None,  # default current datetime
           sith=None,  # default based on keys
           nxt="",
           toad=None,  # default based on wits
@@ -1043,16 +1043,19 @@ def state(pre,
     Utility function to automate creation of rotation events.
 
     Parameters:
-        pre is identifier prefix qb64
-        sn is int sequence number of latest event
-        dig is digest of latest event
-        eilk is message type (ilk) oflatest event
+        pre (str): identifier prefix qb64
+        sn (int); sequence number of latest event
+        pig (str): qb64 digest of prior event
+        dig (str): qb64 digest of latest (current) event
+        eilk (str): event (message) type (ilk) of latest (current) event
         keys is list of qb64 signing keys
         eevt is namedtuple of fields from latest establishment event s,d,wr,wa
             s = sn
             d = digest
             wr = witness remove list (cuts)
             wa = witness add list (adds)
+        stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                      creation of message or data
         sith is string or list format for signing threshold
         nxt  is qb64 next digest xor if any
         toad is int of witness threshold
@@ -1103,8 +1106,8 @@ def state(pre,
     if eilk not in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt):
         raise ValueError("Invalid evernt type et=  in key state.".format(eilk))
 
-    if dts is None:
-        dts = helping.nowIso8601()
+    if stamp is None:
+        stamp = helping.nowIso8601()
 
     if sith is None:
         sith = "{:x}".format(max(1, ceil(len(keys) / 2)))
@@ -1156,7 +1159,7 @@ def state(pre,
                p=pig,
                d=dig,
                f="{:x}".format(fn),  # lowercase hex string no leading zeros
-               dt=dts,
+               dt=stamp,
                et=eilk,
                kt=sith,  # hex string no leading zeros lowercase
                k=keys,  # list of qb64
@@ -1172,65 +1175,68 @@ def state(pre,
     return Serder(ked=ksd)  # return serialized ksd
 
 
-def query(res,
-          qry,
+#def query(res,
+          #qry,
+          #version=Version,
+          #kind=Serials.json):
+    #"""
+    #Returns serder of query event message.
+    #Utility function to automate creation of query messages.
+
+     #Parameters:
+        #pre is identifier prefix qb64
+        #res is str resouce to be queried
+        #qry is dict of query parameter specific to the resource
+        #version is Version instance
+        #kind is serialization kind
+
+    #{
+      #"v" : "KERI10JSON00011c_",
+      #"t" : "qry",
+      #"dt": "2020-08-22T17:50:12.988921+00:00",
+      #"r" : "logs",
+      #"rr": "log/processor",
+      #"q" :
+      #{
+        #"i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+        #"sn": "5",
+        #"dt": "2020-08-01T12:20:05.123456+00:00",
+      #}
+    #}
+    #"""
+    #vs = Versify(version=version, kind=kind, size=0)
+    #ilk = Ilks.req
+
+    #ked = dict(v=vs,  # version string
+               #t=ilk,
+               #r=res,  # resource type for single item request
+               #q=qry
+               #)
+
+    #return Serder(ked=ked)  # return serialized ked
+
+
+def query(route="",
+          replyRoute="",
+          query=None,
+          stamp=None,
           version=Version,
           kind=Serials.json):
-    """
-    Returns serder of query event message.
-    Utility function to automate creation of query messages.
-
-     Parameters:
-        pre is identifier prefix qb64
-        res is str resouce to be queried
-        qry is dict of query parameter specific to the resource
-        version is Version instance
-        kind is serialization kind
-
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "qry",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs",
-      "rr": "log/processor",
-      "q" :
-      {
-        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        "sn": "5",
-        "dt": "2020-08-01T12:20:05.123456+00:00",
-      }
-    }
-    """
-    vs = Versify(version=version, kind=kind, size=0)
-    ilk = Ilks.req
-
-    ked = dict(v=vs,  # version string
-               t=ilk,
-               r=res,  # resource type for single item request
-               q=qry
-               )
-
-    return Serder(ked=ked)  # return serialized ked
-
-
-def queryNew(route="",
-             reply="",
-             data=None,
-             dts=None,
-             version=Version,
-             kind=Serials.json):
     """
     Returns serder of query 'qry' message.
     Utility function to automate creation of query messages.
 
 
     Parameters:
-        route is route path string that indicates data flow handler (behavior)
-            to processs the reply
-        data is list of dicts of comitted data such as seals
-        dts is date-time-stamp of message at time or creation
-        version is Version instance
-        kind is serialization kind
+        route (str): namesapaced path, '/' delimited, that indicates data flow
+                     handler (behavior) to processs the query
+        replyRoute (str): namesapaced path, '/' delimited, that indicates data flow
+                     handler (behavior) to processs reply message to query if any.
+        query (dict): query data paramaters modifiers
+        stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                      creation of message
+        version (Version): KERI message Version namedtuple instance
+        kind (str): serialization kind value of Serials
 
 
     {
@@ -1252,10 +1258,10 @@ def queryNew(route="",
 
     ked = dict(v=vs,  # version string
                t=ilk,
-               dt=dts if dts is not None else helping.nowIso8601(),
+               dt=stamp if stamp is not None else helping.nowIso8601(),
                r=route,  # resource type for single item request
-               rr=reply,
-               q=data,
+               rr=replyRoute,
+               q=query,
                )
 
     return Serder(ked=ked)  # return serialized ked
@@ -1263,7 +1269,7 @@ def queryNew(route="",
 
 def reply(route="",
           data=None,
-          dts=None,
+          stamp=None,
           version=Version,
           kind=Serials.json):
     """
@@ -1276,9 +1282,10 @@ def reply(route="",
         route (str):  '/' delimited path identifier of data flow handler
             (behavior) to processs the reply if any
         data (dict): attribute section of reply
-        dts (str):  ISO-8601 date-time-stamp of message at time or creation
-        version is Version instance
-        kind is serialization kind
+        stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                      creation of message or data
+        version (Version):  KERI message Version namedtuple instance
+        kind (str): serialization kind value of Serials
 
     {
       "v" : "KERI10JSON00011c_",
@@ -1303,7 +1310,7 @@ def reply(route="",
     sad = dict(v=vs,  # version string
                t=Ilks.rpy,
                d="",
-               dt=dts if dts is not None else helping.nowIso8601(),
+               dt=stamp if stamp is not None else helping.nowIso8601(),
                r=route if route is not None else "",  # route
                a=data if data else {},  # attributes
                )
@@ -2354,7 +2361,7 @@ class Kever:
                       pig=(self.serder.ked["p"] if "p" in self.serder.ked else ""),
                       dig=self.serder.dig,
                       fn=self.fn,
-                      dts=self.dater.dts,  # need to add dater object for first seen dts
+                      stamp=self.dater.dts,  # need to add dater object for first seen dts
                       eilk=self.ilk,
                       keys=[verfer.qb64 for verfer in self.verfers],
                       eevt=eevt,

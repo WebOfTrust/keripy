@@ -305,7 +305,7 @@ def test_reply(mockHelpingNowUTC):
         assert ender.name == ""
 
         # Redo with Updated not stale datetime
-        serderR = eventing.reply(route=route, data=data, dts=help.helping.DTS_BASE_1)
+        serderR = eventing.reply(route=route, data=data, stamp=help.helping.DTS_BASE_1)
         assert serderR.ked['dt'] == help.helping.DTS_BASE_1
 
         assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EwZH6wJVwwqb2tmhYKYa-GyiO75k4MqkuMKy'
@@ -468,7 +468,7 @@ def test_reply(mockHelpingNowUTC):
                          eid=watHab.pre,
                          )
 
-        serderR = eventing.reply(route=route, data=data, dts=help.helping.DTS_BASE_2)
+        serderR = eventing.reply(route=route, data=data, stamp=help.helping.DTS_BASE_2)
         assert serderR.ked['dt'] == help.helping.DTS_BASE_2
         msg = nelHab.endorse(serder=serderR)
         # Tam process
@@ -862,7 +862,7 @@ def test_reply(mockHelpingNowUTC):
                      url=url,
                    )
 
-        serderR = eventing.reply(route=route, data=data, dts=help.helping.DTS_BASE_1)
+        serderR = eventing.reply(route=route, data=data, stamp=help.helping.DTS_BASE_1)
         assert serderR.ked['dt'] == help.helping.DTS_BASE_1
         # Sign Reply
         msg = tamHab.endorse(serder=serderR)

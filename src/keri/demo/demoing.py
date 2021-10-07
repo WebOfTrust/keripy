@@ -550,7 +550,7 @@ class HanDirector(directing.Director):
             print(f'{self.hab.name}\'s Wallet ({self.hab.pre}) ')
             print()
 
-            msg = self.hab.query(self.issuerpre, res="logs")  # Query for remote pre Event
+            msg = self.hab.query(self.issuerpre, route="logs")  # Query for remote pre Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
@@ -629,7 +629,7 @@ class CamDirector(directing.Director):
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
-            msg = self.hab.query(self.remotePre, res="logs")  # Query for remote pre Event
+            msg = self.hab.query(self.remotePre, route="logs")  # Query for remote pre Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))

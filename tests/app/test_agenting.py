@@ -3,9 +3,10 @@
 tests.app.agenting module
 
 """
+import pytest
 
 from hio.base import doing
-
+from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting
 from keri.core.eventing import SealSource
 from keri.db import dbing
@@ -75,7 +76,7 @@ def test_witness_sender(mockGetWitnessByPrefix):
             # assert serder.pre == found.pre
 
 
-def test_witness_inquisitor(mockGetWitnessByPrefix):
+def test_witness_inquisitor(mockGetWitnessByPrefix, mockHelpingNowUTC):
     with habbing.openHab(name="wan", salt=b'wann-the-witness', transferable=False) as wanHab, \
             habbing.openHab(name="wil", salt=b'will-the-witness', transferable=False) as wilHab, \
             habbing.openHab(name="wes", salt=b'wess-the-witness', transferable=False) as wesHab, \
@@ -92,11 +93,12 @@ def test_witness_inquisitor(mockGetWitnessByPrefix):
         qinWitq = agenting.WitnessInquisitor(hab=qinHab, klas=agenting.TCPWitnesser)
 
         # query up a few to make sure it still works
-        qinWitq.query(pre=palHab.pre)
-        qinWitq.query(pre=palHab.pre)
-        qinWitq.query(pre=palHab.pre)
+        stamp = nowIso8601()  # need same time stamp or not duplicate
+        qinWitq.query(pre=palHab.pre, stamp=stamp)
+        qinWitq.query(pre=palHab.pre, stamp=stamp)
+        qinWitq.query(pre=palHab.pre, stamp=stamp)
         palWitq = agenting.WitnessInquisitor(hab=palHab, klas=agenting.TCPWitnesser)
-        palWitq.query(pre=qinHab.pre)
+        palWitq.query(pre=qinHab.pre, stamp=stamp)
 
         limit = 1.0
         tock = 0.03125
@@ -124,7 +126,7 @@ def test_witness_inquisitor(mockGetWitnessByPrefix):
         assert qinHab.pre in palHab.kevers
 
 
-def test_witness_inquisitor_dedupe(mockGetWitnessByPrefix):
+def test_witness_inquisitor_dedupe(mockGetWitnessByPrefix, mockHelpingNowUTC):
     with habbing.openHab(name="pal", salt=b'0123456789abcdef', transferable=True,
                          wits=[]) as palHab, \
             habbing.openHab(name="qin", salt=b'abcdef0123456789', transferable=True,
@@ -132,9 +134,10 @@ def test_witness_inquisitor_dedupe(mockGetWitnessByPrefix):
         witq = agenting.WitnessInquisitor(hab=qinHab, klas=agenting.TCPWitnesser)
 
         # query up a few to make sure it still works
-        witq.query(pre=palHab.pre)
-        witq.query(pre=palHab.pre)
-        witq.query(pre=palHab.pre)
+        stamp = nowIso8601()  # need same time stamp or not duplicate
+        witq.query(pre=palHab.pre, stamp=stamp)
+        witq.query(pre=palHab.pre, stamp=stamp)
+        witq.query(pre=palHab.pre, stamp=stamp)
 
         assert len(witq.smsgs) == 0
         assert len(witq.msgs) == 3
@@ -144,17 +147,23 @@ def test_witness_inquisitor_dedupe(mockGetWitnessByPrefix):
         next(msgDo)
         next(msgDo)
         assert len(witq.msgs) == 0
-        assert len(witq.smsgs) == 1
+        assert len(witq.smsgs) == 1  # no duplicates allowed in set
 
-        witq.query(pre=palHab.pre)
-        witq.query(pre=palHab.pre)
-        witq.query(pre=qinHab.pre)
+        witq.query(pre=qinHab.pre, stamp=stamp)
+        witq.query(pre=qinHab.pre, stamp=stamp)
+        witq.query(pre=qinHab.pre, stamp=stamp)
         next(msgDo)
         assert len(witq.msgs) == 0
-        assert len(witq.smsgs) == 2
+        assert len(witq.smsgs) == 2  # one for palHab one for qinHab
 
         smsg = witq.smsgs.pop()
-        assert smsg == (b'{"v":"KERI10JSON000067_","t":"req","r":"logs","q":{"i":"EGhub0DVJ1LdJ-n_rPxR'
-                        b'qFuttSGZa_pLwC8G4X1qL7JA"}}-HABEGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA-'
-                        b'AABAA98K_G_MASsS6rmTnQvNxeMhRTPgZg83NSJla1edSxN43RPXsZIxHdrMqRKx8-6BSjqyMNNS'
-                        b'D1iBWywvyHCcmDw')
+        assert smsg == (b'{"v":"KERI10JSON000097_","t":"qry","dt":"2021-01-01T00:00:00.000000+00:00","'
+                        b'r":"logs","rr":"","q":{"i":"EGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA"}}-'
+                        b'HABEGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA-AABAAiSajpCB5wYLkWXFTV-TiGEN'
+                        b'58AXzuvoo5S9WPD_1zonUcay_PwoCV-Xbk9cXNYyy_EjgHrKCLcj16XzDb-y3Dg')
+
+        smsg = witq.smsgs.pop()
+        assert smsg == (b'{"v":"KERI10JSON000097_","t":"qry","dt":"2021-01-01T00:00:00.000000+00:00","'
+                        b'r":"logs","rr":"","q":{"i":"EhseHwdptGefggyGOIKXbMyLW4LYaZov2nXwb8STvvNk"}}-'
+                        b'HABEGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA-AABAAc85BBRst-40GPr-Sd5Qcr8v'
+                        b'mFG934mMhYuZekFtK-6w_vJ-_6wu-zVhTlZW-evGTFlNGcwnI7YYcRI9zLwyIDQ')

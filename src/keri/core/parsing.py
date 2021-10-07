@@ -871,7 +871,7 @@ class Parser:
                                       "= {}.".format(serder.pretty()))
 
 
-        elif ilk in (Ilks.req, ):  # query message
+        elif ilk in (Ilks.qry, ):  # query message
             args = dict(serder=serder)
             if ssgs:
                 pre, sigers = ssgs[-1] if ssgs else (None, None)  # use last one if more than one

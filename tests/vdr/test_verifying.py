@@ -18,7 +18,7 @@ from keri.vdr import verifying, issuing, viring, eventing
 from ..app import test_grouping
 
 
-def test_verifier_query():
+def test_verifier_query(mockHelpingNowUTC):
     with habbing.openHab(name="test", transferable=True, temp=True) as hab:
         issuer = issuing.Issuer(hab=hab, name="test", temp=True)
 
@@ -26,11 +26,12 @@ def test_verifier_query():
         msg = verfer.query(issuer.regk,
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            res="tels")
-        assert msg == b'{"v":"KERI10JSON00009b_","t":"req","r":"tels",' \
-                      b'"q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",' \
-                      b'"ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT78Tt2r9M4"}}-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP' \
-                      b'-c7AH_K7pEE-YfcI9E-AABAAhulhMW2RDUCHK5mxHryjlQ0i3HW_6CXbAGjNnHb9U9pq6N0C9DiavUbX6SgDsk' \
-                      b'KIfoQLtV_EqTI_q9AyNAstAQ'
+        assert msg == (b'{"v":"KERI10JSON0000cb_","t":"qry","dt":"2021-01-01T00:00:00.000'
+                        b'000+00:00","r":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55c'
+                        b'nHl4WgNZ_RE-gKXqgcX4","ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT7'
+                        b'8Tt2r9M4"}}-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABA'
+                        b'A4WmPtNJALt6f4Xn-HnsPrfplKgAeyxQIxsYm9T-rTNFIpdyOnxynA0wgcEJ_FOc'
+                        b'To9R0krY25tQvpBOzfT0aDA')
 
 
 def test_verifier():

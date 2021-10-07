@@ -53,7 +53,7 @@ class Delegatey:
     def genQuery(self, pre):
         query = dict()
         query['i'] = pre
-        serder = eventing.query(res="logs", qry=query)
+        serder = eventing.query(route="logs", query=query)
 
         msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
         msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)

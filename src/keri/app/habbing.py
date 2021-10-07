@@ -389,7 +389,7 @@ class Habitat:
             msgs = bytearray()
             msgs.extend(self.endrolize(eid=self.pre,
                                        role=kering.Roles.controller,
-                                       dts=help.toIso8601(dt=dt)))
+                                       stamp=help.toIso8601(dt=dt)))
             if "curls" in conf:
                 curls = conf["curls"]
                 for url in curls:
@@ -398,7 +398,7 @@ class Habitat:
                                             else kering.Schemes.http)
                     msgs.extend(self.locschemize(url=url,
                                                  scheme=scheme,
-                                                 dts=help.toIso8601(dt=dt)))
+                                                 stamp=help.toIso8601(dt=dt)))
 
             self.psr.parse(ims=msgs)
 
@@ -557,14 +557,14 @@ class Habitat:
         return msg
 
 
-    def query(self, pre, res, query=None):
+    def query(self, pre, route="", query=None, **kwa):
         """
         Returns query message for querying for a single element of type res
         """
         kever = self.kever
         query = query if query is not None else dict()
         query['i'] = pre
-        serder = eventing.query(res=res, qry=query)
+        serder = eventing.query(route=route, query=query, **kwa)
 
         sigers = self.mgr.sign(ser=serder.raw, verfers=kever.verfers)
         msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
@@ -977,7 +977,7 @@ class Habitat:
                                    allowed=allowed))
 
 
-    def endrolize(self, eid, role=kering.Roles.controller, allow=True, dts=None):
+    def endrolize(self, eid, role=kering.Roles.controller, allow=True, stamp=None):
         """
 
         Returns:
@@ -989,15 +989,15 @@ class Habitat:
             role (str): authorized role for eid
             allow (bool): True means add eid at role as authorized
                           False means cut eid at role as unauthorized
-            dts (str): RFC-3339 profile of iso8601 datetime string.
-                       None means use now.
+            stamp (str): date-time-stamp RFC-3339 profile of iso8601 datetime.
+                          None means use now.
         """
         data = dict(cid=self.pre, role=role, eid=eid)
         route = "/end/role/add" if allow else "/end/role/cut"
-        return self.makeReply(route=route, data=data, dts=dts)
+        return self.makeReply(route=route, data=data, stamp=stamp)
 
 
-    def locschemize(self, url, scheme="http", dts=None):
+    def locschemize(self, url, scheme="http", stamp=None):
         """
         Returns:
            msg (bytearray): reply message of own url service endpoint at scheme
@@ -1006,12 +1006,12 @@ class Habitat:
             url (str): url of endpoint, may have scheme missing or not
                        If url is empty then nullifies location
             scheme (str): url scheme must matche scheme in url if any
-            dts (str): RFC-3339 profile of iso8601 datetime string.
-                       None means use now.
+            stamp (str): date-time-stamp RFC-3339 profile of iso8601 datetime.
+                          None means use now.
 
         """
         data = data = dict( eid=self.pre, scheme=scheme, url=url)
-        return self.makeReply(route="/loc/scheme", data=data, dts=dts)
+        return self.makeReply(route="/loc/scheme", data=data, stamp=stamp)
 
 
     def makeReply(self, **kwa):

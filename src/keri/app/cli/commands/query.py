@@ -71,7 +71,7 @@ class QueryDoer(doing.DoDoer):
         self.extend([clientDoer, doifiedDoer])
         self.toRemove.extend([clientDoer, doifiedDoer])
 
-        msg = self.hab.query(self.pre, res="logs")  # Query for remote pre Event
+        msg = self.hab.query(self.pre, route="logs")  # Query for remote pre Event
         client.tx(msg)  # send to connected remote
         yield 1.0
 

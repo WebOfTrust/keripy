@@ -579,7 +579,7 @@ class Poller(doing.DoDoer):
             else:
                 topics[topic] = 0
 
-        msg = self.hab.query(pre=self.hab.pre, res="mbx", query=q)
+        msg = self.hab.query(pre=self.hab.pre, route="mbx", query=q)
         httping.createCESRRequest(msg, client)
 
         while client.requests:
@@ -656,7 +656,7 @@ class GroupPoller(doing.DoDoer):
             else:
                 topics[topic] = 0
 
-        msg = self.hab.query(pre=self.group.gid, res="mbx", query=q)
+        msg = self.hab.query(pre=self.group.gid, route="mbx", query=q)
         httping.createCESRRequest(msg, client)
 
         while client.requests:
@@ -719,7 +719,7 @@ class HttpMessageHandler(doing.DoDoer):
 
         if self.verifier is not None:
             self.app.add_route("/tel", self)
-            self.app.add_route("/req/tels", self, suffix="req")
+            self.app.add_route("/qry/tels", self, suffix="req")
             self.tvy = Tevery(reger=self.verifier.reger,
                               db=self.hab.db,
                               regk=None, local=False)
