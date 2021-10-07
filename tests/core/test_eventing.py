@@ -27,9 +27,10 @@ from keri.core.eventing import (TraitDex, LastEstLoc, Serials, Versify,
 from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deSourceCouple,
                                 deReceiptTriple,
                                 deTransReceiptQuadruple, deTransReceiptQuintuple)
-from keri.core.eventing import (SealDigest, SealRoot, SealEvent, SealLocation,
+from keri.core.eventing import (SealDigest, SealRoot, SealBacker,
+                                SealEvent, SealLast, SealLocation,
                                 StateEvent, StateEstEvent)
-from keri.core.eventing import (incept, rotate, interact, receipt,
+from keri.core.eventing import (incept, rotate, interact, receipt, query,
                                 delcept, deltate, state, messagize)
 from keri.core.eventing import Kever, Kevery
 
@@ -630,9 +631,9 @@ def test_lastestloc():
 
     """End Test """
 
-def test_seals():
+def test_seals_states():
     """
-    Test seal namedtuples
+    Test seal and state namedtuples
 
     """
     seal = SealDigest(d='E12345')
@@ -640,12 +641,23 @@ def test_seals():
     assert 'E12345' in seal
     assert seal.d == 'E12345'
     assert seal._asdict() == dict(d='E12345')
+    assert seal._fields == ('d', )
 
     seal = SealRoot(rd='EABCDE')
     assert isinstance(seal, SealRoot)
     assert 'EABCDE' in seal
     assert seal.rd == 'EABCDE'
     assert seal._asdict() == dict(rd='EABCDE')
+    assert seal._fields == ('rd', )
+
+    seal = SealBacker(bi='B4321', d='EABCDE')
+    assert isinstance(seal, SealBacker)
+    assert 'B4321' in seal
+    assert seal.bi == 'B4321'
+    assert 'EABCDE' in seal
+    assert seal.d == 'EABCDE'
+    assert seal._asdict() == dict(bi='B4321', d='EABCDE')
+    assert seal._fields == ('bi', 'd')
 
     seal = SealEvent(i='B4321', s='1', d='Eabcd')
     assert isinstance(seal, SealEvent)
@@ -657,6 +669,13 @@ def test_seals():
     assert seal.d == 'Eabcd'
     assert seal._asdict() == dict(i='B4321', s='1', d='Eabcd')
     assert seal._fields == ('i', 's', 'd')
+
+    seal = SealLast(i='B4321')
+    assert isinstance(seal, SealLast)
+    assert 'B4321' in seal
+    assert seal.i == 'B4321'
+    assert seal._asdict() == dict(i='B4321')
+    assert seal._fields == ('i', )
 
     seal = SealLocation(i='B4321', s='1', t='ixn', p='Eabcd')
     assert isinstance(seal, SealLocation)
@@ -670,6 +689,30 @@ def test_seals():
     assert seal.p == 'Eabcd'
     assert seal._asdict() == dict(i='B4321', s='1', t='ixn', p='Eabcd')
     assert seal._fields == ('i', 's', 't', 'p')
+
+    seal = StateEvent(s='1', t='ixn', d='Eabcd')
+    assert isinstance(seal, StateEvent)
+    assert '1' in seal
+    assert seal.s == '1'
+    assert 'ixn' in seal
+    assert seal.t == 'ixn'
+    assert 'Eabcd' in seal
+    assert seal.d == 'Eabcd'
+    assert seal._asdict() == dict(s='1', t='ixn', d='Eabcd')
+    assert seal._fields == ('s', 't', 'd')
+
+    seal = StateEstEvent(s='1', d='Eabcd', br=['E9876'], ba=['E1234'])
+    assert isinstance(seal, StateEstEvent)
+    assert '1' in seal
+    assert seal.s == '1'
+    assert 'Eabcd' in seal
+    assert seal.d == 'Eabcd'
+    assert ['E9876'] in seal
+    assert seal.br == ['E9876']
+    assert ['E1234'] in seal
+    assert seal.ba == ['E1234']
+    assert seal._asdict() == dict(s='1', d='Eabcd', br=['E9876'], ba=['E1234'])
+    assert seal._fields == ('s', 'd', 'br', 'ba')
 
     """End Test """
 
@@ -1197,7 +1240,6 @@ def test_state(mockHelpingNowUTC):
     """Done Test"""
 
 
-
 def test_messagize():
     """
     Test messagize utility function
@@ -1213,7 +1255,7 @@ def test_messagize():
 
         sigers = mgr.sign(ser=serder.raw, verfers=verfers)  # default indexed True
         assert isinstance(sigers[0], Siger)
-        msg = messagize(serder, sigers)
+        msg = messagize(serder, sigers=sigers)
         assert bytearray(b'{"v":"KERI10JSON0000c1_","i":"ECE-_06hkl9stCfQu4IluYevW5_YlxHc6e'
                          b'GOM-ijM93o","s":"0","t":"icp","kt":"1","k":["D6J_jzCECalv_iTKSwx'
                          b'zPnuycxEi5fRuo3UUN7T0CVGM"],"n":"","bt":"0","b":[],"c":[],"a":[]'
@@ -1222,7 +1264,7 @@ def test_messagize():
 
 
         # Test with pipelined
-        msg =  messagize(serder, sigers, pipelined=True)
+        msg =  messagize(serder, sigers=sigers, pipelined=True)
         assert msg == bytearray(b'{"v":"KERI10JSON0000c1_","i":"ECE-_06hkl9stCfQu4IluYevW5_YlxHc6e'
                                 b'GOM-ijM93o","s":"0","t":"icp","kt":"1","k":["D6J_jzCECalv_iTKSwx'
                                 b'zPnuycxEi5fRuo3UUN7T0CVGM"],"n":"","bt":"0","b":[],"c":[],"a":[]'
@@ -1234,7 +1276,7 @@ def test_messagize():
         seal = SealEvent(i='DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, sigers, seal=seal)
+        msg = messagize(serder, sigers=sigers, seal=seal)
         assert msg == bytearray(b'{"v":"KERI10JSON0000c1_","i":"ECE-_06hkl9stCfQu4IluYevW5_YlxHc6e'
                                 b'GOM-ijM93o","s":"0","t":"icp","kt":"1","k":["D6J_jzCECalv_iTKSwx'
                                 b'zPnuycxEi5fRuo3UUN7T0CVGM"],"n":"","bt":"0","b":[],"c":[],"a":[]'
@@ -1244,7 +1286,7 @@ def test_messagize():
                                 b'W0052it_g6rX30kDA')
 
         # Test with pipelined
-        msg = messagize(serder, sigers, seal=seal, pipelined=True)
+        msg = messagize(serder, sigers=sigers, seal=seal, pipelined=True)
         assert msg == bytearray(b'{"v":"KERI10JSON0000c1_","i":"ECE-_06hkl9stCfQu4IluYevW5_YlxHc6e'
                                 b'GOM-ijM93o","s":"0","t":"icp","kt":"1","k":["D6J_jzCECalv_iTKSwx'
                                 b'zPnuycxEi5fRuo3UUN7T0CVGM"],"n":"","bt":"0","b":[],"c":[],"a":[]'
@@ -1404,6 +1446,31 @@ def test_messagize():
                                   b'gr4_dD0JyfN6CjZhsOqqUYFmRhABQ-vPywggLATxBDnqQ3aBg-CABBmMfUwIOywR'
                                   b'kyc5GyQXfgDA4UOAMvjvnXcaK9G939ArM0BT7b5PzUBmts-lblgOBzdThIQjKCbq'
                                   b'8gMinhymgr4_dD0JyfN6CjZhsOqqUYFmRhABQ-vPywggLATxBDnqQ3aBg')
+
+        # Test with query message
+        ked = serder.ked
+        qserder = query(route="log",
+                        query=dict(i='DyvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
+                        stamp=help.helping.DTS_BASE_0)
+
+
+        # create SealEvent for endorsers est evt whose keys use to sign
+        seal = SealLast(i=ked["i"])
+        msg = messagize(qserder, sigers=sigers, seal=seal)
+        assert msg ==  (b'{"v":"KERI10JSON000096_","t":"qry","dt":"2021-01-01T00:00:00.000'
+                        b'000+00:00","r":"log","rr":"","q":{"i":"DyvCLRr5luWmp7keDvDuLP0kI'
+                        b'qcyBYq79b3Dho1QvrjI"}}-HABECE-_06hkl9stCfQu4IluYevW5_YlxHc6eGOM-'
+                        b'ijM93o-AABAA0X9eyML4ioPIk9AuBQFN5hGnGeRgywzNorzFydvyFTm-sjjLrFan'
+                        b'tYynSBLWXjxYc5c_sW0052it_g6rX30kDA')
+
+
+        # create SealEvent for endorsers est evt whose keys use to sign
+        msg = messagize(qserder, sigers=sigers, seal=seal, pipelined=True)
+        assert msg == (b'{"v":"KERI10JSON000096_","t":"qry","dt":"2021-01-01T00:00:00.000'
+                       b'000+00:00","r":"log","rr":"","q":{"i":"DyvCLRr5luWmp7keDvDuLP0kI'
+                       b'qcyBYq79b3Dho1QvrjI"}}-VAj-HABECE-_06hkl9stCfQu4IluYevW5_YlxHc6e'
+                       b'GOM-ijM93o-AABAA0X9eyML4ioPIk9AuBQFN5hGnGeRgywzNorzFydvyFTm-sjjL'
+                       b'rFantYynSBLWXjxYc5c_sW0052it_g6rX30kDA')
 
         """ Done Test """
 
@@ -4299,6 +4366,7 @@ def test_reload_kever(mockHelpingNowUTC):
 
 
 if __name__ == "__main__":
-    pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
+    # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
+    test_messagize()
 
 

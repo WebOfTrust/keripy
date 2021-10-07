@@ -92,9 +92,9 @@ def test_create_cesr_request(mockHelpingNowUTC):
         assert headers["Content-Type"] == "application/cesr+json"
         assert headers["Content-Length"] == 203
         assert headers["CESR-DATE"] == "2021-02-13T19:16:50.750302+00:00"
-        assert headers["CESR-ATTACHMENT"] == (b'-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABAA4WmPtNJALt'
-                                              b'6f4Xn-HnsPrfplKgAeyxQIxsYm9T-rTNFIpdyOnxynA0wgcEJ_FOcTo9R0krY25t'
-                                              b'QvpBOzfT0aDA')
+        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABAA4WmPtN'
+                                              b'JALt6f4Xn-HnsPrfplKgAeyxQIxsYm9T-rTNFIpdyOnxynA0wgcEJ_FOcTo9R0kr'
+                                              b'Y25tQvpBOzfT0aDA')
 
         msg = hab.query(pre=hab.pre, route="mbx", query=dict(s=0))
         client = MockClient()
@@ -111,9 +111,9 @@ def test_create_cesr_request(mockHelpingNowUTC):
         assert headers["Content-Type"] == "application/cesr+json"
         assert headers["Content-Length"] == 156
         assert headers["CESR-DATE"] == "2021-02-13T19:16:50.750302+00:00"
-        assert headers["CESR-ATTACHMENT"] == (b'-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABAAMX88afPpEf'
-                                              b'F_HF-E-1uZKyv8b_TdILi2x8vC3Yi7Q7yzHn2fR6Bkl2yn-ZxPqmsTfV3f-H_VQw'
-                                              b'Mgk7jYEukVCA')
+        assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABAAMX88af'
+                                              b'PpEfF_HF-E-1uZKyv8b_TdILi2x8vC3Yi7Q7yzHn2fR6Bkl2yn-ZxPqmsTfV3f-H'
+                                              b'_VQwMgk7jYEukVCA')
 
 
 if __name__ == '__main__':

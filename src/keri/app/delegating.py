@@ -54,17 +54,7 @@ class Delegatey:
         query = dict()
         query['i'] = pre
         serder = eventing.query(route="logs", query=query)
-
-        msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-        msg.extend(coring.Counter(coring.CtrDex.TransLastIdxSigGroups, count=1).qb64b)
-        msg.extend(pre.encode("utf-8"))
-
-        counter = coring.Counter(code=coring.CtrDex.ControllerIdxSigs,
-                                 count=len(self.hab.delsigers))
-        msg.extend(counter.qb64b)
-        for siger in self.hab.delsigers:
-            msg.extend(siger.qb64b)
-        return msg
+        return self.hab.endorse(serder, last=True)
 
 
 class InceptDoer(doing.DoDoer):

@@ -84,7 +84,7 @@ def test_issuing():
         # Create the `exn` message for issue credential
         sidExcSrdr = exchanging.exchange(route="/credential/issue", payload=pl)
         excMsg = bytearray(sidExcSrdr.raw)
-        excMsg.extend(sidHab.sanction(sidExcSrdr))
+        excMsg.extend(sidHab.endorse(sidExcSrdr, last=True))
 
         # Parse the exn issue credential message on Red's side
         parsing.Parser().parse(ims=bytearray(excMsg), kvy=redKvy, exc=redExc)
@@ -203,7 +203,7 @@ def test_proving():
         # Create the `exn` message for presentation request
         vicExcSrdr = exchanging.exchange(route="/presentation/request", payload=pl)
         excMsg = bytearray(vicExcSrdr.raw)
-        excMsg.extend(vicHab.sanction(vicExcSrdr))
+        excMsg.extend(vicHab.endorse(vicExcSrdr, last=True))
 
         # Parse the exn presentation request message on Han's side
         parsing.Parser().parse(ims=bytearray(excMsg), kvy=hanKvy, exc=hanExc)

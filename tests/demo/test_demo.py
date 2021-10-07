@@ -657,7 +657,6 @@ def test_indirect_mode_sam_cam_wit_demo():
         assert not doist.done
         assert samHab.pre in samHab.kevers
 
-
         # now start up cam doers
         doist.extend(camDoers)
         assert len(doist.deeds) == len(samDoers + witDoers + camDoers)

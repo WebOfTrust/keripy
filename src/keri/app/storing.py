@@ -300,7 +300,7 @@ class Respondant(doing.DoDoer):
 
                 if len(kever.wits) == 0:
                     msg = bytearray(exn.raw)
-                    msg.extend(self.hab.sanction(exn))
+                    msg.extend(self.hab.endorse(exn, last=True))
                     self.mbx.storeMsg(topic=recipient, msg=msg)
                 else:
                     wit = random.choice(kever.wits)
@@ -313,7 +313,7 @@ class Respondant(doing.DoDoer):
 
                     fwd = forwarding.forward(pre=recipient, serder=exn, topic=topic)
                     msg = bytearray(fwd.raw)
-                    msg.extend(self.hab.sanction(exn))
+                    msg.extend(self.hab.endorse(exn, last=True))
 
                     httping.createCESRRequest(msg, client, date=exn.ked["dt"])
 

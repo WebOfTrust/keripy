@@ -27,11 +27,11 @@ def test_verifier_query(mockHelpingNowUTC):
                            "Eb8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
         assert msg == (b'{"v":"KERI10JSON0000cb_","t":"qry","dt":"2021-01-01T00:00:00.000'
-                        b'000+00:00","r":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55c'
-                        b'nHl4WgNZ_RE-gKXqgcX4","ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT7'
-                        b'8Tt2r9M4"}}-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-AABA'
-                        b'A4WmPtNJALt6f4Xn-HnsPrfplKgAeyxQIxsYm9T-rTNFIpdyOnxynA0wgcEJ_FOc'
-                        b'To9R0krY25tQvpBOzfT0aDA')
+                    b'000+00:00","r":"tels","rr":"","q":{"i":"Eb8Ih8hxLi3mmkyItXK1u55c'
+                    b'nHl4WgNZ_RE-gKXqgcX4","ri":"EGZHiBoV8v5tWAt7yeTTln-CuefIGPhajTT7'
+                    b'8Tt2r9M4"}}-VAj-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E-'
+                    b'AABAA4WmPtNJALt6f4Xn-HnsPrfplKgAeyxQIxsYm9T-rTNFIpdyOnxynA0wgcEJ'
+                    b'_FOcTo9R0krY25tQvpBOzfT0aDA')
 
 
 def test_verifier():

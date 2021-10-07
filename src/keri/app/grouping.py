@@ -185,7 +185,7 @@ class Groupy:
 
                 exn = exchanging.exchange(route="/multisig/event", payload=dict(evt=rot.decode("utf-8"), reason=reason))
                 emsg = bytearray(exn.raw)
-                emsg.extend(self.hab.sanction(serder=exn))
+                emsg.extend(self.hab.endorse(serder=exn, last=True))
                 self.cues.append(dict(kin="send", recipients=others, topic='multisig', evt=emsg,
                                       reason=reason))
                 print("Local identifier rotated, checking other group members:")
@@ -256,7 +256,7 @@ class Groupy:
                 ixn = self.hab.interact()
                 exn = exchanging.exchange(route="/multisig/event", payload=dict(evt=ixn.decode("utf-8"), reason=reason))
                 emsg = bytearray(exn.raw)
-                emsg.extend(self.hab.sanction(serder=exn))
+                emsg.extend(self.hab.endorse(serder=exn, last=True))
 
                 self.cues.append(dict(kin="send", recipients=others, topic='multisig', evt=emsg,
                                       reason=reason))

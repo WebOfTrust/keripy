@@ -159,11 +159,11 @@ def test_witness_inquisitor_dedupe(mockGetWitnessByPrefix, mockHelpingNowUTC):
         smsg = witq.smsgs.pop()
         assert smsg == (b'{"v":"KERI10JSON000097_","t":"qry","dt":"2021-01-01T00:00:00.000000+00:00","'
                         b'r":"logs","rr":"","q":{"i":"EGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA"}}-'
-                        b'HABEGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA-AABAAiSajpCB5wYLkWXFTV-TiGEN'
-                        b'58AXzuvoo5S9WPD_1zonUcay_PwoCV-Xbk9cXNYyy_EjgHrKCLcj16XzDb-y3Dg')
+                        b'VAj-HABEGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA-AABAAiSajpCB5wYLkWXFTV-T'
+                        b'iGEN58AXzuvoo5S9WPD_1zonUcay_PwoCV-Xbk9cXNYyy_EjgHrKCLcj16XzDb-y3Dg')
 
         smsg = witq.smsgs.pop()
         assert smsg == (b'{"v":"KERI10JSON000097_","t":"qry","dt":"2021-01-01T00:00:00.000000+00:00","'
                         b'r":"logs","rr":"","q":{"i":"EhseHwdptGefggyGOIKXbMyLW4LYaZov2nXwb8STvvNk"}}-'
-                        b'HABEGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA-AABAAc85BBRst-40GPr-Sd5Qcr8v'
-                        b'mFG934mMhYuZekFtK-6w_vJ-_6wu-zVhTlZW-evGTFlNGcwnI7YYcRI9zLwyIDQ')
+                        b'VAj-HABEGhub0DVJ1LdJ-n_rPxRqFuttSGZa_pLwC8G4X1qL7JA-AABAAc85BBRst-40GPr-Sd5Q'
+                        b'cr8vmFG934mMhYuZekFtK-6w_vJ-_6wu-zVhTlZW-evGTFlNGcwnI7YYcRI9zLwyIDQ')
