@@ -19,7 +19,7 @@ from ..core.eventing import SealEvent, SealSource, TraitDex
 from ..db.dbing import snKey, dgKey
 from ..help import helping
 from ..vc import proving
-from ..vdr import eventing
+from .. import vdr
 from ..vdr.viring import Registry, nsKey
 
 logger = help.ogler.getLogger()
@@ -90,7 +90,7 @@ class Issuer:
             else:
                 pre = group.gid
 
-            self.regser = eventing.incept(pre,
+            self.regser = vdr.eventing.incept(pre,
                                           baks=self.backers,
                                           toad=toad,
                                           cnfg=self.cnfg,
@@ -99,7 +99,7 @@ class Issuer:
             self.reger.regs.put(keys=self.name,
                                 val=viring.RegistryRecord(registryKey=self.regk))
 
-            self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
+            self.tvy = vdr.eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
             self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
             try:
@@ -107,7 +107,7 @@ class Issuer:
             except kering.MissingAnchorError:
                 logger.info("Credential registry missing anchor for inception = {}".format(self.regser.ked))
         else:
-            self.tvy = eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
+            self.tvy = vdr.eventing.Tevery(reger=self.reger, db=self.hab.db, regk=self.regk, local=True)
             self.psr = parsing.Parser(framed=True, kvy=self.hab.kvy, tvy=self.tvy)
 
             clone = self.reger.clonePreIter(self.regk)
@@ -145,7 +145,7 @@ class Issuer:
         if self.noBackers:
             raise ValueError("Attempt to rotate registry {} that does not support backers".format(self.regk))
 
-        serder = eventing.rotate(dig=self.regser.dig, regk=self.regk, sn=self.regi + 1, toad=toad, baks=self.backers,
+        serder = vdr.eventing.rotate(dig=self.regser.dig, regk=self.regk, sn=self.regi + 1, toad=toad, baks=self.backers,
                                  adds=adds, cuts=cuts)
 
         self.regser = serder
@@ -170,9 +170,9 @@ class Issuer:
         craw = self.hab.endorse(creder)
 
         if self.noBackers:
-            serder = eventing.issue(vcdig=vcdig, regk=self.regk, dt=dt)
+            serder = vdr.eventing.issue(vcdig=vcdig, regk=self.regk, dt=dt)
         else:
-            serder = eventing.backerIssue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
+            serder = vdr.eventing.backerIssue(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
                                           dt=dt)
 
         self.anchorMsg(serder, reason=craw.decode("utf-8"))
@@ -198,9 +198,9 @@ class Issuer:
         iserder = Serder(raw=bytes(ievt))
 
         if self.noBackers:
-            serder = eventing.revoke(vcdig=vcdig, regk=self.regk, dig=iserder.dig, dt=dt)
+            serder = vdr.eventing.revoke(vcdig=vcdig, regk=self.regk, dig=iserder.dig, dt=dt)
         else:
-            serder = eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
+            serder = vdr.eventing.backerRevoke(vcdig=vcdig, regk=self.regk, regsn=self.regi, regd=self.regser.diger.qb64,
                                            dig=iserder.dig, dt=dt)
 
         self.anchorMsg(serder)
