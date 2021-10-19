@@ -24,18 +24,18 @@ class Wallet:
 
     """
 
-    def __init__(self, db: viring.Registry = None, name="test", temp=False):
+    def __init__(self, reger: viring.Registry = None, name="test", temp=False):
         """
         Create a Wallet associated with a Habitat
 
         Parameters:
-            db: (viring.Registry) the database for the wallet
+            reger: (viring.Registry) the database for the wallet
 
         """
         self.name = name
         self.temp = temp
 
-        self.db = db if db is not None else viring.Registry(name=self.name, temp=self.temp)
+        self.reger = reger if reger is not None else viring.Registry(name=self.name, temp=self.temp)
 
     def getCredentials(self, schema=None):
         """
@@ -46,14 +46,14 @@ class Wallet:
             schema: qb64 SAID of the schema for the credential
 
         """
-        saiders = self.db.schms.get(keys=schema.encode("utf-8"))
+        saiders = self.reger.schms.get(keys=schema.encode("utf-8"))
 
         creds = []
         for saider in saiders:
-            creder = self.db.creds.get(keys=saider.qb64b)
+            creder = self.reger.creds.get(keys=saider.qb64b)
 
             # TODO:  de-dupe the seals here and extract the signatures
-            seals = self.db.seals.get(keys=saider.qb64b)
+            seals = self.reger.seals.get(keys=saider.qb64b)
             prefixer = None
             seqner = None
             diger = None
@@ -61,9 +61,6 @@ class Wallet:
             for seal in seals:
                 (prefixer, seqner, diger, siger) = seal
                 sigers.append(siger)
-
-            print("found match")
-            print(creder.pretty())
 
             creds.append((creder, prefixer, seqner, diger, sigers))
 

@@ -71,7 +71,7 @@ def test_issuer(mockHelpingNowUTC):
         ser = Serder(raw=tevt)
         assert ser.diger.qb64 == 'ENNTabgWbaNqOKLqEZdQCjxbafwwSoXNzAsE1Enq-kdk'
 
-        issuer.revoke(vcdig=creder.said)
+        issuer.revoke(creder=creder)
         kevt, tevt = events(issuer)
         assert tevt == (b'{"v":"KERI10JSON00012c_","i":"EDGhJ8V1tuwH55Bk0fBFe9L0za2BUNOt2F'
                         b'X4GUeOLNHQ","s":"1","t":"brv","p":"ENNTabgWbaNqOKLqEZdQCjxbafwwS'
@@ -134,7 +134,7 @@ def test_issuer(mockHelpingNowUTC):
             assert seal["s"] == "0"
             assert seal["d"] == 'E7530zxhPK3yFd39cnb8sWTWiyR9eDkZRGdgjmSgV5VM'
 
-            issuer.revoke(vcdig=creder.said)
+            issuer.revoke(creder=creder)
             kevt, tevt = events(issuer)
 
             ser = Serder(raw=tevt)
@@ -204,7 +204,7 @@ def test_issuer(mockHelpingNowUTC):
         assert seal["i"] == "EaU321874i434f59ab7cMH6YlN52PJ395nrLS_6tLq6c"
         assert seal["s"] == "1"
 
-        issuer.revoke(vcdig=creder.said)
+        issuer.revoke(creder=creder)
         kevt, tevt = events(issuer)
 
         ser = Serder(raw=tevt)
@@ -252,7 +252,7 @@ def test_issuer(mockHelpingNowUTC):
         assert ser.pre == "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY"
         assert ser.ked["t"] == "rot"
 
-        issuer.revoke(vcdig=creder.said)
+        issuer.revoke(creder=creder)
         kevt, tevt = events(issuer)
 
         ser = Serder(raw=tevt)
@@ -323,7 +323,7 @@ def test_issuer(mockHelpingNowUTC):
         assert ser.ked["t"] == "rot"
         vrtser = Serder(raw=tevt)
 
-        issuer.revoke(vcdig=creder.said)
+        issuer.revoke(creder=creder)
         kevt, tevt = events(issuer)
         ser = Serder(raw=tevt)
         assert ser.pre == "EPrcGi4z6FyyhqRCm3bYU07XUpuJgwcKT2EKME1MvZN0"

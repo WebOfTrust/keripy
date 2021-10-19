@@ -104,7 +104,7 @@ def test_credential_handlers(mockHelpingNowUTC):
         result = client.simulate_post(path="/credential/revoke",
                                       body=b'{"registry": "E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38", "said": '
                                            b'"EhFUqi_LAldgF0I6XmN9JGjc7Wh7ld1yCRiUxtMDVvow"}')
-        assert result.status == falcon.HTTP_409
+        assert result.status == falcon.HTTP_NOT_FOUND
 
         # Now revoke the actual credential
         result = client.simulate_post(path="/credential/revoke",
@@ -195,9 +195,8 @@ def test_credential_handlers_singlesig(mockHelpingNowUTC):
         result = client.simulate_post(path="/credential/revoke",
                                       body=b'{"registry": "E3Eqm8wGRsW_Fxtq1ypXyQZj2c15PEcJ7f9ejHjJMC38", "said": '
                                            b'"EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0"}')
-        assert result.status == falcon.HTTP_CONFLICT
-        assert result.text == ("Invalid revoke of EhkvrkfiAkI88LBHk48hsMQSKmxHvk3Oktf7IDO2iVC0 that has not been "
-                               "issued pre=E-b2o4iuCAD2D68XAYxA3L8vqWJ1pxAXyxRSL95CiGS0.")
+        assert result.status == falcon.HTTP_NOT_FOUND
+        assert result.text == "credential not found"
 
 
 def test_issue_credential_full_multisig():

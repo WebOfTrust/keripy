@@ -727,6 +727,16 @@ class Baser(dbing.LMDBer):
         # group partial signature escrow
         self.gpse = subing.IoSetSuber(db=self, subkey="gpse.")
 
+        # exchange message partial signature escrow
+        self.epse = subing.SerderSuber(db=self, subkey="epse.")
+
+        # exchange message signatures
+        self.esigs = subing.CesrIoSetSuber(db=self, subkey='esigs.', klas=coring.Siger)
+
+        # exchange source prefix
+        self.esrc = subing.CesrSuber(db=self, subkey='esrc.', klas=coring.Prefixer)
+
+
         return self.env
 
 

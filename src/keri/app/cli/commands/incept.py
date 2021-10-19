@@ -36,6 +36,7 @@ class InceptOptions:
     isith: int
     ncount: int
     nsith: int
+    estOnly: bool = False
 
 
 def handler(args):
@@ -70,7 +71,11 @@ class InceptDoer(doing.DoDoer):
         db = basing.Baser(name=name, temp=False)  # not opened by default, doer opens
         self.dbDoer = basing.BaserDoer(baser=db)  # doer do reopens if not opened and closes
 
-        kwa["salt"] = coring.Salter(raw=kwa["salt"].encode("utf-8")).qb64
+        if len(kwa["salt"]) != 16:
+            kwa["salt"] = coring.Salter().qb64
+        else:
+            kwa["salt"] = coring.Salter(raw=kwa["salt"].encode("utf-8")).qb64
+
         hab = habbing.Habitat(name=name, ks=ks, db=db, temp=False, **kwa)
         self.habDoer = habbing.HabitatDoer(habitat=hab)  # setup doer
         doers = [self.ksDoer, self.dbDoer, self.habDoer, doing.doify(self.inceptDo)]

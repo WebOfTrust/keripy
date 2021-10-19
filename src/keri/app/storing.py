@@ -158,7 +158,7 @@ class MailboxServer(doing.DoDoer):
 
         self.app = app if app is not None else falcon.App(cors_enable=True)
 
-        self.app.add_route("/req/mbx", self)
+        self.app.add_route("/qry/mbx", self)
 
         doers = []
 
@@ -281,6 +281,10 @@ class Respondant(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
+        if self.hab.kever.wits:
+            self.witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.TCPWitnesser)
+            self.extend([self.witq])
+
         while True:
             while self.reps:
                 rep = self.reps.popleft()
@@ -288,10 +292,9 @@ class Respondant(doing.DoDoer):
                 exn = rep["rep"]
                 topic = rep["topic"]
 
-                print("sending to", recipient)
-                print(exn.pretty())
                 while recipient not in self.hab.kevers:
-                    yield self.tock
+                    self.witq.query(pre=recipient)
+                    yield 1.0
 
                 kever = self.hab.kevers[recipient]
                 if kever is None:

@@ -20,17 +20,16 @@ from keri import help
 from keri import kering
 from keri.app import directing, agenting, indirecting, storing, grouping
 from keri.app.cli.common import existing
-from keri.core import scheming, coring
+from keri.core import scheming
+from keri.help import helping
 from keri.peer import exchanging
 from keri.vc import walleting, handling, proving
 from keri.vdr import verifying, viring
 
-
 WEB_DIR_PATH = os.path.dirname(
-                os.path.abspath(
-                    sys.modules.get(__name__).__file__))
+    os.path.abspath(
+        sys.modules.get(__name__).__file__))
 STATIC_DIR_PATH = os.path.join(WEB_DIR_PATH, 'static')
-
 
 d = "Runs KERI Agent controller.\n"
 d += "Example:\nagent -t 5621\n"
@@ -62,13 +61,12 @@ parser.add_argument("-p", "--path",
 
 
 def launch(args):
-    help.ogler.level = logging.CRITICAL
+    help.ogler.level = logging.INFO
     help.ogler.reopen(name="keri", temp=True, clear=True)
-    logger = help.ogler.getLogger()
 
-    logger.info("\n******* Starting Agent for %s listening: http/%s, tcp/%s "
-                ".******\n\n", args.name, args.admin_http_port, args.tcp)
-    print("Starting agent", args.name)
+    print("\n******* Starting Agent for {} listening: http/{}, tcp/{} "
+          ".******\n\n".format(args.name, args.admin_http_port, args.tcp))
+
     doers = runAgent(controller=args.controller, name=args.name, insecure=args.insecure,
                      tcp=int(args.tcp),
                      adminHttpPort=int(args.admin_http_port), path=args.path)
@@ -79,9 +77,8 @@ def launch(args):
     except kering.ConfigurationError:
         print(f"prefix for {args.name} does not exist, incept must be run first", )
 
-
-    logger.info("\n******* Ended Agent for %s listening: http/%s, tcp/%s"
-                ".******\n\n", args.name, args.admin_http_port, args.tcp)
+    print("\n******* Ended Agent for {} listening: http/{}, tcp/{}"
+          ".******\n\n".format(args.name, args.admin_http_port, args.tcp))
 
 
 def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5623, path=STATIC_DIR_PATH):
@@ -96,9 +93,9 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
     tcpServerDoer = tcpServing.ServerDoer(server=server)
     directant = directing.Directant(hab=hab, server=server)
 
-    reger = viring.Registry(name=hab.name, temp=False)
+    reger = viring.Registry(name=hab.name, temp=False, db=hab.db)
     verifier = verifying.Verifier(hab=hab, name=hab.name, reger=reger)
-    wallet = walleting.Wallet(db=verifier.reger, name=name)
+    wallet = walleting.Wallet(reger=verifier.reger, name=name)
 
     handlers = []
 
@@ -107,7 +104,7 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
 
     jsonSchema = scheming.JSONSchema(resolver=scheming.jsonSchemaCache)
     issueHandler = handling.IssueHandler(hab=hab, verifier=verifier, typ=jsonSchema)
-    requestHandler = handling.RequestHandler(wallet=wallet, typ=jsonSchema)
+    requestHandler = handling.RequestHandler(hab=hab, wallet=wallet, typ=jsonSchema)
     applyHandler = handling.ApplyHandler(hab=hab, verifier=verifier, name=name, issuerCues=issuerCues)
     proofHandler = handling.ProofHandler(proofs=proofs)
 
@@ -129,7 +126,7 @@ def runAgent(controller, name="agent", insecure=False, tcp=5621, adminHttpPort=5
                                       topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate"],
                                       cues=cues)
     # configure a kevery
-    doers.extend([exchanger, directant, tcpServerDoer, mbd])
+    doers.extend([exchanger, directant, tcpServerDoer, mbd, rep])
     doers.extend(adminInterface(controller=controller,
                                 hab=hab,
                                 insecure=insecure,
@@ -149,42 +146,44 @@ def adminInterface(controller, hab, insecure, proofs, cues, issuerCues, mbx, mbd
                    path=STATIC_DIR_PATH):
     app = falcon.App(middleware=falcon.CORSMiddleware(
         allow_origins='*', allow_credentials='*', expose_headers=['cesr-attachment', 'cesr-date', 'content-type']))
-    print("creating static sink for", path)
     sink = http.serving.StaticSink(staticDirPath=path)
     app.add_sink(sink, prefix=sink.DefaultStaticSinkBasePath)
 
     rep = storing.Respondant(hab=hab, mbx=mbx)
-
-    httpHandler = indirecting.HttpMessageHandler(hab=hab, app=app, rep=rep)
     gdoer = grouping.MultiSigGroupDoer(hab=hab, ims=mbd.ims)
 
     kiwiServer = agenting.KiwiServer(hab=hab, controller=controller, verifier=verifier, gdoer=gdoer.msgs, app=app,
                                      rep=rep, issuerCues=issuerCues, insecure=insecure)
 
     mbxer = storing.MailboxServer(app=app, hab=hab, mbx=mbx)
-    wiq = agenting.WitnessInquisitor(hab=hab)
 
-    proofHandler = AdminProofHandler(hab=hab, controller=controller, mbx=mbx, verifier=verifier, wiq=wiq, proofs=proofs)
+    proofHandler = AdminProofHandler(hab=hab, controller=controller, mbx=mbx, verifier=verifier, proofs=proofs,
+                                     ims=mbd.ims)
     cueHandler = AdminCueHandler(hab=hab, controller=controller, mbx=mbx, cues=cues)
     server = http.Server(port=adminHttpPort, app=app)
     httpServerDoer = http.ServerDoer(server=server)
 
-    doers = [httpServerDoer, httpHandler, rep, mbxer, wiq, proofHandler, cueHandler, gdoer, kiwiServer]
+    doers = [httpServerDoer, rep, mbxer, proofHandler, cueHandler, gdoer, kiwiServer]
 
     return doers
 
 
-class AdminProofHandler(doing.Doer):
-    def __init__(self, hab, controller, mbx, verifier, wiq, proofs=None, **kwa):
+class AdminProofHandler(doing.DoDoer):
+    def __init__(self, hab, controller, mbx, verifier, proofs=None, ims=None, **kwa):
         self.hab = hab
         self.controller = controller
         self.mbx = mbx
         self.verifier = verifier
         self.presentations = proofs if proofs is not None else decking.Deck()
-        self.wiq = wiq
-        super(AdminProofHandler, self).__init__(**kwa)
+        self.parsed = decking.Deck()
 
-    def do(self, tymth, tock=0.0, **opts):
+        self.ims = ims if ims is not None else bytearray()
+
+        doers = [doing.doify(self.presentationDo), doing.doify(self.parsedDo)]
+
+        super(AdminProofHandler, self).__init__(doers=doers, **kwa)
+
+    def presentationDo(self, tymth, tock=0.0, **opts):
         """
 
         Handle proofs presented externally
@@ -203,28 +202,68 @@ class AdminProofHandler(doing.Doer):
                 (pre, presentation) = self.presentations.popleft()
                 vc = presentation["vc"]
                 vcproof = bytearray(presentation["proof"].encode("utf-8"))
+                msgs = bytearray(presentation["msgs"].encode("utf-8"))
+                self.ims.extend(msgs)
+                yield 3.0
 
                 creder = proving.Credentialer(crd=vc)
 
-                prefixer, seqner, diger, isigers = proving.parseProof(vcproof)
-                status = self.verifier.verify(pre, creder, prefixer, seqner, diger, isigers)
-                pl = dict(
-                    pre=pre.qb64,
-                    vc=vc,
-                    status=status,
-                )
+                # Remove credential from database so we revalidate it fully
+                self.verifier.reger.saved.rem(creder.said)
 
-                print("STORING VC PROOF FOR MY CONTROLLER", self.controller, pl)
-
-                # TODO: Add SAID signature on exn, then sanction `fwd` envelope
-                ser = exchanging.exchange(route="/cmd/presentation/proof", payload=pl)
-                msg = bytearray(ser.raw)
-                msg.extend(self.hab.endorse(ser, last=True))
-
-                self.mbx.storeMsg(self.controller + "/credential", msg)
+                msg = bytearray(creder.raw)
+                msg.extend(vcproof)
+                proving.parseCredential(ims=msg, verifier=self.verifier)
+                self.parsed.append((creder, vcproof))
 
                 yield
 
+            yield
+
+    def parsedDo(self, tymth, tock=0.0, **opts):
+        """
+
+        Handle proofs presented externally
+
+        Parameters:
+            payload is dict representing the body of a /credential/issue message
+            pre is qb64 identifier prefix of sender
+            sigers is list of Sigers representing the sigs on the /credential/issue message
+            verfers is list of Verfers of the keys used to sign the message
+
+        """
+        yield  # enter context
+
+        while True:
+            while self.parsed:
+                (creder, vcproof) = self.parsed.popleft()
+
+                c = self.verifier.reger.saved.get(creder.said)
+                if c is None:
+                    self.parsed.append((creder, vcproof))
+
+                else:
+                    regk = creder.status
+                    state, lastSeen = self.verifier.tevers[regk].vcState(creder.said)
+
+                    prefixer, seqner, diger, isigers = proving.parseProof(ims=vcproof)
+                    cred = dict(
+                        sad=creder.crd,
+                        pre=prefixer.qb64,
+                        sn=seqner.sn,
+                        dig=diger.qb64,
+                        sigers=[sig.qb64 for sig in isigers],
+                        status=state,
+                    )
+
+
+                    ser = exchanging.exchange(route="/cmd/presentation/proof", payload=cred)
+                    msg = bytearray(ser.raw)
+                    msg.extend(self.hab.endorse(ser))
+
+                    self.mbx.storeMsg(self.controller + "/presentation", msg)
+
+                yield
             yield
 
 
@@ -245,8 +284,10 @@ class AdminCueHandler(doing.DoDoer):
         self.hab = hab
         self.mbx = mbx
         self.cues = cues if cues is not None else decking.Deck()
+        self.witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.HttpWitnesser)
 
-        super(AdminCueHandler, self).__init__(doers=[doing.doify(self.cueDo)], **kwa)
+
+        super(AdminCueHandler, self).__init__(doers=[self.witq, doing.doify(self.cueDo)], **kwa)
 
     def cueDo(self, tymth, tock=0.0, **opts):
         """
@@ -275,19 +316,52 @@ class AdminCueHandler(doing.DoDoer):
                         yield self.tock
 
                     self.remove([witRctDoer])
+                if cue["kin"] == "delegatage":
+                    delpre = cue["delpre"]
+                    self.witq.query(pre=delpre)
+
                 elif cueKin in ("psUnescrow",):
                     srdr = cue["serder"]
-                    wits = srdr.ked["b"]
-                    witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.HttpWitnesser, wits=wits)
-                    self.extend([witq])
+                    if self.hab.kever.delegator is None:
+                        if srdr.pre in self.hab.kevers:
+                            kever = self.hab.kevers[srdr.pre]
+                            delpre = kever.delegator
+                            wits = kever.wits
+                        else:
+                            wits = srdr.ked["b"]
+                            delpre = srdr.ked["di"]
 
-                    while srdr.pre not in self.hab.kevers:
-                        witq.query(pre=srdr.pre)
-                        yield 1.0
+                        if delpre != self.hab.pre:
+                            continue
 
-                    print("Successfully deletated to", srdr.pre)
+                        witq = agenting.WitnessInquisitor(hab=self.hab, klas=agenting.HttpWitnesser, wits=wits)
+                        self.extend([witq])
+
+                        while srdr.pre not in self.hab.kevers:  # TODO: check sn here.
+                            witq.query(pre=srdr.pre)
+                            yield 1.0
+
+                        print("Successfully deletated to", srdr.pre, "for", srdr.ked["t"], ":", srdr.ked["s"])
+                    else:
+                        self.hab.delegatedRotationAccepted()
+                        evt = self.hab.makeOwnEvent(sn=self.hab.kever.sn)
+                        witDoer = agenting.WitnessReceiptor(hab=self.hab, msg=evt, klas=agenting.TCPWitnesser)
+                        self.extend([witDoer])
+                        while not witDoer.done:
+                            yield self.tock
+
+                        self.remove([witDoer])
+                        print("Successfully received delegation", "for", self.hab.kever.ilk, ":", self.hab.kever.sn)
+                        payload = dict(
+                            delegator=self.hab.kever.delegator,
+                            t=self.hab.kever.ilk,
+                            s=self.hab.kever.sn,
+                            dt=helping.nowIso8601())
+                        ser = exchanging.exchange(route="/delegate", payload=payload)
+                        msg = bytearray(ser.raw)
+                        msg.extend(self.hab.sanction(ser))
+                        self.mbx.storeMsg(self.controller + "/delegate", msg)
 
 
                 yield self.tock
             yield self.tock
-

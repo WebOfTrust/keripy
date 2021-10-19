@@ -10,11 +10,11 @@ import logging
 from typing import Type
 
 from hio.help import decking
+from keri.vdr import viring
 
 from .. import help, kering
 from ..core import parsing, coring, scheming
 from ..help import helping
-from ..vc import proving
 from .. import vdr
 from ..vdr.eventing import VcStates
 from ..vdr.viring import Registry
@@ -127,8 +127,9 @@ class Verifier:
             self.cues.append(dict(kin="telquery", q=dict(r="tels", ri=regk, i=vcid)))
             raise kering.MissingRegistryError("credential identifier {} is out of date".format(vcid))
         elif state is VcStates.revoked:  # no escrow, credential has been revoked
-            raise kering.InvalidCredentialStateError("credential {} in registrying is not in issued state".format(vcid,
-                                                                                                                  regk))
+            logger.error("credential {} in registrying is not in issued state".format(vcid, regk))
+            # Log this and continue instead of the previous exception so we save a revoked credential.
+            # raise kering.InvalidCredentialStateError("..."))
 
         # we don't know about this issuer
         if creder.issuer not in self.hab.kevers:
@@ -183,7 +184,7 @@ class Verifier:
 
 
         self.saveCredential(creder, prefixer, seqner, diger, sigers)
-        proof = proving.buildProof(prefixer, seqner, diger, sigers)
+        proof = viring.buildProof(prefixer, seqner, diger, sigers)
         self.cues.append(dict(kin="saved", creder=creder, proof=proof))
 
     def escrowPSC(self, creder, prefixer, seqner, diger, sigers):
@@ -316,13 +317,11 @@ class Verifier:
                 self.processCredential(creder, prefixer, seqner, diger, sigers)
 
             except etype as ex:
-                print(ex)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Verifiery unescrow failed: %s\n", ex.args[0])
                 else:
                     logger.error("Verifier unescrow failed: %s\n", ex.args[0])
             except Exception as ex:  # log diagnostics errors etc
-                print(ex)
                 # error other than missing sigs so remove from PA escrow
                 db.rem(said)
                 if logger.isEnabledFor(logging.DEBUG):
@@ -353,6 +352,7 @@ class Verifier:
 
         # Look up indicies
         saider = creder.saider
+        self.reger.saved.pin(keys=saider.qb64b, val=saider)
         self.reger.issus.add(keys=issuer, val=saider)
         self.reger.subjs.add(keys=subject, val=saider)
         self.reger.schms.add(keys=schema, val=saider)

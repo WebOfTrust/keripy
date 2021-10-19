@@ -13,6 +13,8 @@ from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking
+from keri.app import forwarding
+from keri.vdr import viring
 from orderedset import OrderedSet as oset
 
 from . import httping, grouping
@@ -185,7 +187,7 @@ class WitnessInquisitor(doing.DoDoer):
             witer = random.choice(witers)
             witer.msgs.append(bytearray(msg))
 
-            yield
+            yield 2.0
 
     def msgDo(self, tymth=None, tock=0.0, **opts):
         self.wind(tymth)
@@ -476,6 +478,7 @@ class KiwiServer(doing.DoDoer):
         self.issuerCues = issuerCues if issuerCues is not None else decking.Deck()
 
         self.app.add_route("/id", self, suffix="id")
+        self.app.add_route("/rotate", self, suffix="rotate")
         self.app.add_route("/registry/incept", self, suffix="registry_incept")
         self.registryIcpr = registering.RegistryInceptDoer(hab=hab)
         self.app.add_route("/credential/apply", self, suffix="apply")
@@ -492,14 +495,10 @@ class KiwiServer(doing.DoDoer):
         self.app.add_route("/multisig", self, suffix="multisig")
         self.gdoer = gdoer
 
-        self.app.add_route("/delegate/incept", self, suffix="delegate_incept")
-        self.app.add_route("/delegate/rotate", self, suffix="delegate_rotate")
-        # self.delcptr = delegating.InceptDoer(name="")
-        # self.delrotr = delegating.RotateDoer(hab=hab)
-
         self.witq = WitnessInquisitor(hab=hab, klas=HttpWitnesser)
+        self.postman = forwarding.Postman(hab=self.hab)
 
-        doers = [self.witq, self.registryIcpr, doing.doify(self.verifierDo), doing.doify(
+        doers = [self.witq, self.postman, self.registryIcpr, doing.doify(self.verifierDo), doing.doify(
             self.issuerDo), doing.doify(self.escrowDo)]
 
         super(KiwiServer, self).__init__(doers=doers, **kwa)
@@ -527,29 +526,24 @@ class KiwiServer(doing.DoDoer):
                     creder = cue["creder"]
                     proof = cue["proof"]
 
-                    logger.info("Credential: %s, Schema: %s,  Saved", creder.said, creder.schema)
-                    logger.info(creder.pretty())
                     print("Credential: {}, Schema: {},  Saved".format(creder.said, creder.schema))
                     print(creder.pretty())
 
                     recpt = creder.subject["i"]
 
-                    craw = bytearray(creder.raw)
-                    if len(proof) % 4:
-                        raise ValueError("Invalid attachments size={}, nonintegral"
-                                         " quadlets.".format(len(proof)))
-                    craw.extend(coring.Counter(code=coring.CtrDex.AttachedMaterialQuadlets,
-                                               count=(len(proof) // 4)).qb64b)
+                    craw = viring.messagize(creder, proof)
+                    vcs = [handling.envelope(craw)]
 
-                    craw.extend(proof)
+                    sources = self.verifier.reger.sources(creder)
+                    for craw in sources:
+                        vcs.extend([handling.envelope(craw)])
 
                     pl = dict(
-                        vc=[handling.envelope(craw)]
+                        vc=vcs
                     )
 
                     exn = exchanging.exchange(route="/credential/issue", payload=pl)
                     self.rep.reps.append(dict(dest=recpt, rep=exn, topic="credential"))
-
 
                 elif cueKin == "query":
                     qargs = cue["q"]
@@ -604,22 +598,30 @@ class KiwiServer(doing.DoDoer):
                 cueKin = cue['kin']
                 if cueKin == "send":
                     tevt = cue["msg"]
-                    witSender = WitnessPublisher(hab=self.hab, msg=tevt)
+                    subject = cue["sub"]
+                    witSender = WitnessPublisher(hab=self.hab, msg=bytearray(tevt))
                     self.extend([witSender])
 
                     while not witSender.done:
                         _ = yield self.tock
 
                     self.remove([witSender])
+                    if subject is not None:
+                        self.postman.send(recipient=subject["i"], topic="credential", msg=bytearray(tevt))
                 elif cueKin == "kevt":
                     kevt = cue["msg"]
-                    witDoer = WitnessReceiptor(hab=self.hab, msg=kevt)
+                    subject = cue["sub"]
+                    witDoer = WitnessReceiptor(hab=self.hab, msg=bytearray(kevt))
                     self.extend([witDoer])
 
                     while not witDoer.done:
                         yield self.tock
 
                     self.remove([witDoer])
+                    if subject is not None:
+                        evt = coring.Serder(raw=kevt)
+                        msg = self.hab.db.cloneEvtMsg(pre=evt.pre, fn=evt.sn, dig=evt.digb)
+                        self.postman.send(recipient=subject["i"], topic="credential", msg=bytearray(msg))
                 elif cueKin == "multisig":
                     msg = dict(
                         op=cue["op"],
@@ -759,7 +761,13 @@ class KiwiServer(doing.DoDoer):
             return
 
         try:
-            issuer.revoke(vcdig=said)
+            creder = self.verifier.reger.creds.get(keys=said)
+            if creder is None:
+                rep.status = falcon.HTTP_NOT_FOUND
+                rep.text = "credential not found"
+                return
+
+            issuer.revoke(creder=creder)
         except kering.ValidationError as ex:
             rep.status = falcon.HTTP_CONFLICT
             rep.text = ex.args[0]
@@ -782,7 +790,16 @@ class KiwiServer(doing.DoDoer):
         """
         body = json.loads(req.context.raw)
         recipientIdentifier = body.get("recipient")
+        if recipientIdentifier is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "recipient is required, none provided"
+            return
+
         schema = body.get("schema")
+        if schema is None:
+            rep.status = falcon.HTTP_400
+            rep.text = "schema is required, none provided"
+            return
 
         pl = dict(
             input_descriptors=[
@@ -794,6 +811,59 @@ class KiwiServer(doing.DoDoer):
         self.rep.reps.append(dict(dest=recipientIdentifier, rep=exn, topic="credential"))
 
         rep.status = falcon.HTTP_202
+
+    def on_post_rotate(self, req, rep):
+        """
+        Rotate the local identifier
+
+        Parameters:
+            req: falcon.Request HTTP request
+            rep: falcon.Response HTTP response
+
+        Body:
+            name: The human readable name of the new registry to create
+
+        """
+        body = json.loads(req.context.raw)
+        wits = body.get("wits")
+        toad = int(body.get("toad"))
+        isith = int(body.get("isith"))
+        count = int(body.get("count"))
+        cuts = set()
+        adds = set()
+
+        if wits:
+            ewits = self.hab.kever.wits
+
+            # wits= [a,b,c]  wits=[b, z]
+            cuts = set(ewits) - set(wits)
+            adds = set(wits) - set(ewits)
+
+        try:
+            rot = self.hab.rotate(sith=isith, count=count, erase=True, toad=toad,
+                                  cuts=list(cuts), adds=list(adds))
+
+            if self.hab.kever.delegator is None:
+
+                witDoer = WitnessReceiptor(hab=self.hab, msg=rot)
+                self.extend(doers=[witDoer])
+
+                rep.status = falcon.HTTP_200
+                rep.text = "Successful rotate to event number {}".format(self.hab.kever.sn)
+
+            else:
+                cloner = self.hab.db.clonePreIter(pre=self.hab.pre, fn=0)  # create iterator at 0
+                for msg in cloner:
+                    self.postman.send(recipient=self.hab.kever.delegator, topic="delegate", msg=msg)
+
+                self.postman.send(recipient=self.hab.kever.delegator, topic="delegate", msg=rot)
+                rep.status = falcon.HTTP_202
+
+
+        except (ValueError, TypeError) as e:
+            rep.status = falcon.HTTP_400
+            rep.text = e.args[0]
+
 
     def on_post_multisig_rotate(self, req, rep):
         """
@@ -897,6 +967,7 @@ class KiwiServer(doing.DoDoer):
                 seq_no=kever.sn,
                 aids=group.aids,
                 delegated=kever.delegated,
+                delegator=kever.delegator,
                 witnesses=kever.wits,
                 public_keys=[verfer.qb64 for verfer in kever.verfers],
                 toad=kever.toad,
@@ -929,22 +1000,21 @@ class KiwiServer(doing.DoDoer):
             pre = group.gid
 
         saids = issuer.reger.issus.get(keys=pre)
-        creds = self.get_credentials(issuer, saids)
+        creds = self.get_credentials(saids)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(creds).encode("utf-8")
 
 
-    @staticmethod
-    def get_credentials(issuer, saids):
+    def get_credentials(self, saids):
         creds = []
         for saider in saids:
             key = saider.qb64b
-            creder = issuer.reger.creds.get(keys=key)
+            creder = self.verifier.reger.creds.get(keys=key)
 
             # TODO:  de-dupe the seals here and extract the signatures
-            seals = issuer.reger.seals.get(keys=key)
+            seals = self.verifier.reger.seals.get(keys=key)
             prefixer = None
             seqner = None
             diger = None
@@ -953,7 +1023,8 @@ class KiwiServer(doing.DoDoer):
                 (prefixer, seqner, diger, siger) = seal
                 sigers.append(siger)
 
-            status, lastSeen = issuer.tevers[issuer.regk].vcState(key)
+            regk = creder.status
+            status, lastSeen = self.verifier.tevers[regk].vcState(key)
             cred = dict(
                 sad=creder.crd,
                 pre=prefixer.qb64,
@@ -977,9 +1048,6 @@ class KiwiServer(doing.DoDoer):
             rep: falcon.Response HTTP response
 
         """
-        registry = req.params["registry"]
-        issuer = self.getIssuer(registry)
-
         group = self.hab.group()
 
         if group is None:
@@ -987,8 +1055,8 @@ class KiwiServer(doing.DoDoer):
         else:
             pre = group.gid
 
-        saids = issuer.reger.subjs.get(keys=pre)
-        creds = self.get_credentials(issuer, saids)
+        saids = self.verifier.reger.subjs.get(keys=pre)
+        creds = self.get_credentials(saids)
 
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
@@ -1049,6 +1117,7 @@ class KiwiServer(doing.DoDoer):
                 prefix=habr.prefix,
                 seq_no=kever.sn,
                 delegated=kever.delegated,
+                delegator=kever.delegator,
                 witnesses=kever.wits,
                 public_keys=[verfer.qb64 for verfer in kever.verfers],
                 toad=kever.toad,
@@ -1061,9 +1130,3 @@ class KiwiServer(doing.DoDoer):
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"
         rep.data = json.dumps(res).encode("utf-8")
-
-    def on_post_delegate_incept(self, req, rep):
-        rep.status = falcon.HTTP_202
-
-    def on_post_delegate_rotate(self, req, rep):
-        rep.status = falcon.HTTP_202

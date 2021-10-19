@@ -12,7 +12,7 @@ from keri.core.scheming import CacheResolver
 from keri.db import basing
 from keri.kering import Versionage, ExtractionError, ColdStartError
 from keri.vc import proving
-from keri.vc.proving import Credentialer, credential, parseProof, buildProof
+from keri.vc.proving import Credentialer, credential, parseProof
 from keri.vdr import verifying, issuing, viring
 
 
@@ -245,14 +245,17 @@ def test_parse_proof():
     assert len(isigers) == 1
     assert isigers[0].qb64 == "AAVgLJOmUNlMZpSGV0hr-KddJmmEByoxfDdvkW161VsZO2_gjYf5OODwjyA3oSThfXGnj5Jhk5iszNuT2ZSsTMBg"
 
-    #  Invalid attachment start
+    #  pipelined attachment start
     proof = bytearray(b'-VA0-FABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE'
                       b'-YfcI9E0AAAAAAAAAAAAAAAAAAAAAAAElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI'
                       b'-AABAAVgLJOmUNlMZpSGV0hr'
                       b'-KddJmmEByoxfDdvkW161VsZO2_gjYf5OODwjyA3oSThfXGnj5Jhk5iszNuT2ZSsTMBg')
 
-    with pytest.raises(ExtractionError):
-        parseProof(proof)
+    prefixer, seqner, diger, isigers = parseProof(proof)
+    assert prefixer.qb64 == "E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E"
+    assert seqner.sn == 0
+    assert diger.qb64 == "ElHzHwX3V6itsD2Ksg_CNBbUNTBYzLYw-AxDNI7_ZmaI"
+    assert len(isigers) == 1
 
     # Invalid, can't process a message
     proof = bytearray(b'{{"v":"KERI10JSON000136_","i":"Eq1XfsuS1WNK2uLnAwfJ2SwGz8MhPUDnL0Mi1yNvTQnY",'
@@ -264,69 +267,6 @@ def test_parse_proof():
 
     with pytest.raises(ColdStartError):
         parseProof(proof)
-
-
-def test_build_proof():
-    sidSalt = coring.Salter(raw=b'0123456789abcdef').qb64
-
-    with basing.openDB(name="sid") as sigDB, \
-            keeping.openKS(name="sid") as sigKS:
-        sigHab = habbing.Habitat(ks=sigKS, db=sigDB, salt=sidSalt, icount=3, ncount=3, temp=True)
-
-        sed = dict()
-        sed["$id"] = ""
-        sed["$schema"] = "http://json-schema.org/draft-07/schema#"
-        sed.update(dict(
-            type="object",
-            properties=dict(
-                id=dict(
-                    type="string"
-                ),
-                lei=dict(
-                    type="string"
-                )
-            )
-        ))
-
-        schemer = scheming.Schemer(sed=sed, typ=scheming.JSONSchema(), code=coring.MtrDex.Blake3_256)
-        credSubject = dict(
-            d="",
-            i="E4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E",  # this needs to be generated from a KEL
-            lei="254900OPPU84GM83MG36",
-            issuanceDate="2021-06-27T21:26:21.233257+00:00",
-        )
-
-        cache = CacheResolver()
-        cache.add(schemer.said, schemer.raw)
-
-        creder = credential(issuer=sigHab.pre,
-                            schema=schemer.said,
-                            subject=credSubject)
-
-        sigHab.rotate()
-        sigHab.rotate()
-        sigHab.rotate()
-        sigHab.rotate()
-
-        prefixer = coring.Prefixer(qb64=sigHab.kever.prefixer.qb64)
-        seqner = coring.Seqner(sn=sigHab.kever.lastEst.s)
-        diger = coring.Diger(qb64=sigHab.kever.lastEst.d)
-
-        sigers = sigHab.mgr.sign(ser=creder.raw, verfers=sigHab.kever.verfers, indexed=True)
-
-        proof = buildProof(prefixer, seqner, diger, sigers)
-        assert proof == (b'-FABEiRjCnZfca8gUZqecerjGpjkiY8dIkGudP6GfapWi5MU0AAAAAAAAAAAAAAA'
-                         b'AAAAAABAECc96yX1sYswnD6LXEcoNuJ0ehi8gkFMEGedqURhXMBU-AADAA8jPya7'
-                         b'QXiXZRPIYrtoel7cAhN2dS57ejZBEE501Cr4i5kBMDFu6qEPK9l1CBtZU2Djeh0T'
-                         b'8ZI1wyUqTeQgrpAgAB031v3FUTPZoPY19kv7xrf49HyPSukG7qhrZJEltiMcuzTQ'
-                         b'mAYsHIJzygD9XleyA3HcsTgB9pObBPTqPOfv7ZCgACzLFfAe0YvpKU5Lslt78f_H'
-                         b'SgdZJPca1tCTt0bPC00TWg11HbI_t0vdGNQkogIVzcoZnsK4FVZe1CeveRZym2BA')
-
-        prefixer, seqner, diger, isigers = parseProof(proof)
-        assert prefixer.qb64 == sigHab.pre
-        assert diger.qb64 == sigHab.kever.lastEst.d
-        assert seqner.sn == 4
-        assert len(isigers) == 3
 
 
 def test_credential_parsator():
@@ -363,5 +303,4 @@ if __name__ == '__main__':
     test_proving()
     test_credentialer()
     test_credential()
-    test_build_proof()
     test_parse_proof()
